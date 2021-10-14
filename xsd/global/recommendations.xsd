@@ -1,0 +1,14 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://jeffdisher.com/cacophony/recommendations.xsd" targetNamespace="http://jeffdisher.com/cacophony/recommendations.xsd" elementFormDefault="qualified">
+	<xsd:element name="recommendations" type="tns:StreamRecommendations"/>
+	<xsd:simpleType name="IpfsCid">
+		<xsd:restriction base="xsd:string">
+			<xsd:length value="46" />
+			<xsd:pattern value="Qm[a-zA-Z0-9]*" />
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="StreamRecommendations">
+		<xsd:sequence>
+			<xsd:element name="user" type="tns:IpfsCid" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>

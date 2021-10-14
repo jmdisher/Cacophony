@@ -1,0 +1,17 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://jeffdisher.com/cacophony/index.xsd" targetNamespace="http://jeffdisher.com/cacophony/index.xsd" elementFormDefault="qualified">
+	<xsd:element name="index" type="tns:StreamIndex"/>
+	<xsd:simpleType name="IpfsCid">
+		<xsd:restriction base="xsd:string">
+			<xsd:length value="46" />
+			<xsd:pattern value="Qm[a-zA-Z0-9]*" />
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="StreamIndex">
+		<xsd:sequence>
+			<xsd:element name="version" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+			<xsd:element name="description" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
+			<xsd:element name="recommendations" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
+			<xsd:element name="stream" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>

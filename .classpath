@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-16-openjdk-amd64">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/cid.jar"/>
+	<classpathentry kind="lib" path="lib/ipfs.jar"/>
+	<classpathentry kind="lib" path="lib/multiaddr.jar"/>
+	<classpathentry kind="lib" path="lib/multibase.jar"/>
+	<classpathentry kind="lib" path="lib/multihash.jar"/>
+	<classpathentry kind="lib" path="lib/jaxb-api.jar"/>
+	<classpathentry kind="lib" path="lib/jaxb-runtime.jar"/>
+	<classpathentry kind="lib" path="lib/istack-commons-runtime.jar"/>
+	<classpathentry kind="lib" path="lib/javax.activation-api.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
