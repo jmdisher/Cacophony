@@ -140,7 +140,7 @@ public class Cacophony {
 	private static void _testRecord() throws JAXBException, PropertyException, SAXException {
 		StreamRecord record = new StreamRecord();
 		record.setDiscussion("URL");
-		record.setId(1);
+		record.setPublisherKey("public key goes here");
 		record.setName("name");
 		record.setPublishedSecondsUtc(555);
 		DataArray eltArray = new DataArray();
@@ -161,7 +161,6 @@ public class Cacophony {
 		StreamRecord readRecord = (StreamRecord) un.unmarshal(new ByteArrayInputStream(
 				("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<record xmlns=\"http://jeffdisher.com/cacophony/record.xsd\">\n"
-				+ "    <id>1</id>\n"
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>555</publishedSecondsUtc>\n"
 				+ "    <discussion>URL</discussion>\n"
@@ -171,6 +170,7 @@ public class Cacophony {
 				+ "            <mime>mim</mime>\n"
 				+ "        </element>\n"
 				+ "    </elements>\n"
+				+ "    <publisherKey>public key of the publisher (so they can be found just from this record)</publisherKey>\n"
 				+ "</record>\n").getBytes())
 		);
 		System.out.println(readRecord.getName());
