@@ -11,7 +11,7 @@
 			<xsd:element name="version" type="xsd:int" minOccurs="1" maxOccurs="1"/>
 			<xsd:element name="description" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
 			<xsd:element name="recommendations" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
-			<xsd:element name="stream" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
+			<xsd:element name="records" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
 		</xsd:sequence>
 	</xsd:complexType>
 </xsd:schema>
