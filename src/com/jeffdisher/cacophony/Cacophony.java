@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony;
 
+import com.jeffdisher.cacophony.commands.ICommand;
+
 import io.ipfs.api.IPFS;
 import io.ipfs.api.MerkleNode;
 import io.ipfs.api.NamedStreamable;
@@ -16,7 +18,7 @@ public class Cacophony {
 	 * "--addRecommendation" Adds a new channel key to the recommended list from the local channel.
 	 * "--removeRecommendation" Removes a channel key from the recommended list from the local channel.
 	 * "--listRecommendations" Lists the recommended channel keys from the local channel to stdout.
-	 * "--addToThisChannel" Adds and publishes a new entry to the local channel.
+	 * "--publishToThisChannel" Adds and publishes a new entry to the local channel.
 	 * "--listThisChannel" Lists all the entries published to this channel to stdout.
 	 * "--removeFromThisChannel" Removes a given entry from the local channel.
 	 * 
@@ -39,6 +41,22 @@ public class Cacophony {
 	 * @throws SAXException
 	 */
 	public static void main(String[] args) {
+		if (args.length > 0)
+		{
+			ICommand command = CommandParser.parseArgs(args, 1, System.err);
+			if (null != command)
+			{
+				IPFS ipfs = new IPFS(args[0]);
+			}
+			else
+			{
+				errorStart();
+			}
+		}
+		else
+		{
+			errorStart();
+		}
 		/*
 		IPFS ipfs = new IPFS("/ip4/127.0.0.1/tcp/5001");
 		Map<?, ?> map = ipfs.commands();
@@ -62,5 +80,12 @@ public class Cacophony {
 		encoder.writeObject(555L);
 		encoder.close();
 		*/
+	}
+
+	private static void errorStart()
+	{
+		System.err.println("Usage:  Cacophony /ip4/127.0.0.1/tcp/5001 <command>");
+		CommandParser.printUsage(System.err);
+		System.exit(1);
 	}
 }
