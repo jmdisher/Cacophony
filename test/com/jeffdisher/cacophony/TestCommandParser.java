@@ -30,4 +30,26 @@ class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertEquals(0, outStream.size());
 	}
+
+	@Test
+	void testMissingCommand()
+	{
+		String[] foo = {"/ip4/127.0.0.1/tcp/5001"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNull(command);
+		Assert.assertTrue(outStream.size() > 0);
+	}
+
+	@Test
+	void testBrokenArgs()
+	{
+		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNull(command);
+		Assert.assertTrue(outStream.size() > 0);
+	}
 }

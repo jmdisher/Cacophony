@@ -1,10 +1,11 @@
 package com.jeffdisher.cacophony;
 
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.logic.RemoteActions;
 
 import io.ipfs.api.IPFS;
-import io.ipfs.api.MerkleNode;
-import io.ipfs.api.NamedStreamable;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
@@ -46,7 +47,13 @@ public class Cacophony {
 			ICommand command = CommandParser.parseArgs(args, 1, System.err);
 			if (null != command)
 			{
+				System.out.println("Command to run:  " + command);
 				IPFS ipfs = new IPFS(args[0]);
+				Executor executor = new Executor();
+				RemoteActions remote = new RemoteActions(ipfs);
+				LocalActions local = new LocalActions();
+				command.scheduleActions(executor, remote, local);
+				executor.waitForCompletion();
 			}
 			else
 			{

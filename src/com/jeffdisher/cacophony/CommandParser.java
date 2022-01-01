@@ -230,7 +230,12 @@ public class CommandParser
 		ICommand matched = null;
 		for (ArgPattern pattern : ArgPattern.values())
 		{
-			if (pattern.isValid(args[startIndex]))
+			if (startIndex >= args.length)
+			{
+				errorStream.println("Missing command.");
+				break;
+			}
+			else if (pattern.isValid(args[startIndex]))
 			{
 				// We use index as in/out parameter here, hence the array.
 				int[] index = {startIndex};
@@ -252,8 +257,7 @@ public class CommandParser
 				else
 				{
 					// This is a valid pattern, but didn't parse, meaning sub-args were missing.
-					errorStream.print("Missing sub-arguments.  Usage: ");
-					pattern.printUsage(errorStream);
+					errorStream.println("Missing command sub-arguments.");
 					break;
 				}
 			}
