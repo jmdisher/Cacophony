@@ -61,9 +61,14 @@ public class CommandParser
 			File picturePath = new File(required[2]);
 			return new UpdateDescriptionCommand(name, description, picturePath);
 		}),
-		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			return new ReadDescriptionCommand();
+			String rawKey = optional[0];
+			Multihash channelPublicKey = (null != rawKey)
+					? Types.fromPublicKey(rawKey)
+					: null
+			;
+			return new ReadDescriptionCommand(channelPublicKey);
 		}),
 		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--channelPublicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

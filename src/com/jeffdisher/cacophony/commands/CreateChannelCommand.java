@@ -39,7 +39,8 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		description.setName("Unnamed");
 		description.setDescription("Description forthcoming");
 		// TODO:  Make this into a question mark icon, or something.
-		description.setPicture("");
+		// (for now, this is just a 0-byte file).
+		description.setPicture("QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH");
 		
 		StreamRecommendations recommendations = new StreamRecommendations();
 		

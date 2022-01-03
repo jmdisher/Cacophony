@@ -12,6 +12,7 @@ import io.ipfs.api.IPFS;
 import io.ipfs.api.KeyInfo;
 import io.ipfs.api.MerkleNode;
 import io.ipfs.api.NamedStreamable;
+import io.ipfs.cid.Cid;
 import io.ipfs.multihash.Multihash;
 
 
@@ -32,7 +33,6 @@ public class RemoteActions
 		Multihash publicKey = null;
 		for (KeyInfo info : ipfs.key.list())
 		{
-			System.out.println(info);
 			if (keyName.equals(info.name))
 			{
 				Assert.assertTrue(null == publicKey);
@@ -66,6 +66,16 @@ public class RemoteActions
 		return nodes.get(0).hash;
 	}
 
+	public byte[] readData(Multihash indexHash) throws IOException
+	{
+		return _ipfs.cat(indexHash);
+	}
+
+	public Multihash getPublicKey()
+	{
+		return _publicKey;
+	}
+
 	public void publishIndex(Multihash indexHash) throws IOException
 	{
 		Assert.assertTrue(null != _ipfs);
@@ -91,5 +101,12 @@ public class RemoteActions
 		String publishedPath = _ipfs.name.resolve(_publicKey);
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		Assert.assertTrue(published.equals(index58));
+	}
+
+	public Multihash resolvePublicKey(Multihash keyToResolve) throws IOException
+	{
+		String publishedPath = _ipfs.name.resolve(_publicKey);
+		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
+		return Cid.fromBase58(published);
 	}
 }

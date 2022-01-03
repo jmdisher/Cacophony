@@ -14,7 +14,7 @@ public class Cacophony {
 	 * Argument modes:
 	 * "--createNewChannel" Used to create a new empty channel for this local key.
 	 * "--updateDescription" Changes the description of the local channel.
-	 * "--readDescription" Reads the description of the local channel, writing it to stdout.
+	 * "--readDescription" Reads the description of the named public key (local channel if not provided), writing it to stdout.
 	 * "--addRecommendation" Adds a new channel key to the recommended list from the local channel.
 	 * "--removeRecommendation" Removes a channel key from the recommended list from the local channel.
 	 * "--listRecommendations" Lists the recommended channel keys from the local channel to stdout.
@@ -27,7 +27,6 @@ public class Cacophony {
 	 * "--updateNextFollowing" Does the polling cycle on the next channel being followed and advances polling state to the next.
 	 * "--startFollowing" Adds the given channel ID to the following set.
 	 * "--stopFollowing" Removes the given channel ID from the following set.
-	 * "--readRemoteDescription" Reads the description of a channel ID and prints it to stdout.
 	 * "--readRemoteRecommendations" Reads the recommended channel IDs of the given ID and prints them to stdout.
 	 * "--readRemoteChannel" Reads the contents of a given channel ID and prints it to stdout.
 	 * "--favouriteElement" Adds the given element to the favourites pool (removing it from other pools if already present).
