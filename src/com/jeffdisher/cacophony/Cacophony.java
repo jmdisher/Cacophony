@@ -1,11 +1,11 @@
 package com.jeffdisher.cacophony;
 
+import java.io.File;
+import java.io.IOException;
+
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.LocalActions;
-import com.jeffdisher.cacophony.logic.RemoteActions;
-
-import io.ipfs.api.IPFS;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
@@ -13,7 +13,6 @@ public class Cacophony {
 	/**
 	 * Argument modes:
 	 * "--createNewChannel" Used to create a new empty channel for this local key.
-	 * "--destroyThisChannel" Used to destroy any existing local channel by unbinding the publish and unpinning all channel entries.
 	 * "--updateDescription" Changes the description of the local channel.
 	 * "--readDescription" Reads the description of the local channel, writing it to stdout.
 	 * "--addRecommendation" Adds a new channel key to the recommended list from the local channel.
@@ -41,18 +40,22 @@ public class Cacophony {
 	 * @throws JAXBException
 	 * @throws SAXException
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		if (args.length > 0)
 		{
 			ICommand command = CommandParser.parseArgs(args, 1, System.err);
 			if (null != command)
 			{
 				System.out.println("Command to run:  " + command);
-				IPFS ipfs = new IPFS(args[0]);
+				File directory = new File(args[0]);
+				if (!directory.exists() && !directory.mkdirs())
+				{
+					System.err.println("Failed to create directory at " + directory);
+					System.exit(2);
+				}
 				Executor executor = new Executor();
-				RemoteActions remote = new RemoteActions(ipfs);
-				LocalActions local = new LocalActions();
-				command.scheduleActions(executor, remote, local);
+				LocalActions local = new LocalActions(directory);
+				command.scheduleActions(executor, local);
 				executor.waitForCompletion();
 			}
 			else

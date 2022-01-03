@@ -1,16 +1,82 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.IOException;
+
+import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.utils.Assert;
+
+import io.ipfs.multihash.Multihash;
 
 
-public record CreateChannelCommand() implements ICommand
+public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, RemoteActions remote, LocalActions local)
+	public void scheduleActions(Executor executor, LocalActions local) throws IOException
 	{
-		// TODO Auto-generated method stub
+		// Make sure that there is no local index in this location.
+		LocalIndex index = local.readIndex();
+		if (null != index)
+		{
+			executor.fatalError(new Exception("Index already exists"));
+		}
+		Assert.assertTrue(null == index);
 		
+		// Save the local config.
+		index = new LocalIndex(ipfs, keyName);
+		local.storeIndex(index);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		
+		// Create the empty description, recommendations, record stream, and index.
+		StreamDescription description = new StreamDescription();
+		description.setName("Unnamed");
+		description.setDescription("Description forthcoming");
+		// TODO:  Make this into a question mark icon, or something.
+		description.setPicture("");
+		
+		StreamRecommendations recommendations = new StreamRecommendations();
+		
+		StreamRecords records = new StreamRecords();
+		
+		// Save these.
+		byte[] rawDescription = GlobalData.serializeDescription(description);
+		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
+		byte[] rawRecords = GlobalData.serializeRecords(records);
+		
+		Multihash hashDescription = _saveData(executor, remote, rawDescription);
+		Multihash hashRecommendations = _saveData(executor, remote, rawRecommendations);
+		Multihash hashRecords = _saveData(executor, remote, rawRecords);
+		
+		// Create the new local index.
+		StreamIndex streamIndex = new StreamIndex();
+		streamIndex.setVersion(1);
+		streamIndex.setDescription(hashDescription.toBase58());
+		streamIndex.setRecommendations(hashRecommendations.toBase58());
+		streamIndex.setRecords(hashRecords.toBase58());
+		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
+		Multihash hashIndex = _saveData(executor, remote, rawIndex);
+		Assert.assertTrue(null != hashIndex);
+		remote.publishIndex(hashIndex);
+	}
+
+	private Multihash _saveData(Executor executor, RemoteActions remote, byte[] data)
+	{
+		try
+		{
+			return remote.saveData(data);
+		}
+		catch (IOException e)
+		{
+			executor.fatalError(e);
+			// TODO:  Remove.
+			throw Assert.unexpected(e);
+		}
 	}
 }
