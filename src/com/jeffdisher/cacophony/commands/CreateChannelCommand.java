@@ -4,11 +4,11 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -51,33 +51,11 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		Multihash hashDescription = _saveData(executor, remote, rawDescription);
-		Multihash hashRecommendations = _saveData(executor, remote, rawRecommendations);
-		Multihash hashRecords = _saveData(executor, remote, rawRecords);
+		Multihash hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
+		Multihash hashRecommendations = HighLevelIdioms.saveData(executor, remote, rawRecommendations);
+		Multihash hashRecords = HighLevelIdioms.saveData(executor, remote, rawRecords);
 		
 		// Create the new local index.
-		StreamIndex streamIndex = new StreamIndex();
-		streamIndex.setVersion(1);
-		streamIndex.setDescription(hashDescription.toBase58());
-		streamIndex.setRecommendations(hashRecommendations.toBase58());
-		streamIndex.setRecords(hashRecords.toBase58());
-		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
-		Multihash hashIndex = _saveData(executor, remote, rawIndex);
-		Assert.assertTrue(null != hashIndex);
-		remote.publishIndex(hashIndex);
-	}
-
-	private Multihash _saveData(Executor executor, RemoteActions remote, byte[] data)
-	{
-		try
-		{
-			return remote.saveData(data);
-		}
-		catch (IOException e)
-		{
-			executor.fatalError(e);
-			// TODO:  Remove.
-			throw Assert.unexpected(e);
-		}
+		HighLevelIdioms.saveAndPublishNewIndex(executor, remote, hashDescription, hashRecommendations, hashRecords);
 	}
 }

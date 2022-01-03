@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 
@@ -23,9 +24,7 @@ public record ReadDescriptionCommand(Multihash _channelPublicKey) implements ICo
 				? _channelPublicKey
 				: remote.getPublicKey()
 		;
-		Multihash indexHash = remote.resolvePublicKey(keyToResolve);
-		byte[] rawIndex = remote.readData(indexHash);
-		StreamIndex index = GlobalData.deserializeIndex(rawIndex);
+		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, keyToResolve);
 		byte[] rawDescription = remote.readData(Cid.fromBase58(index.getDescription()));
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
 		System.out.println("Channel public key: " + keyToResolve);

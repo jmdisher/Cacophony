@@ -54,11 +54,14 @@ public class CommandParser
 			String keyName = required[1];
 			return new CreateChannelCommand(ipfs, keyName);
 		}),
-		UPDATE_DESCRIPTION(true, "--updateDescription", new String[] {"--name", "--description", "--pictureFile"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		UPDATE_DESCRIPTION(true, "--updateDescription", new String[0], new String[] {"--name", "--description", "--pictureFile"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			String name = required[0];
-			String description = required[1];
-			File picturePath = new File(required[2]);
+			String name = optional[0];
+			String description = optional[1];
+			File picturePath = (null != optional[2])
+					? new File(optional[2])
+					: null
+			;
 			return new UpdateDescriptionCommand(name, description, picturePath);
 		}),
 		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
