@@ -19,7 +19,7 @@ public class Cacophony {
 	 * "--removeRecommendation" Removes a channel key from the recommended list from the local channel.
 	 * "--listRecommendations" Lists the recommended channel keys from the local channel to stdout.
 	 * "--publishToThisChannel" Adds and publishes a new entry to the local channel.
-	 * "--listThisChannel" Lists all the entries published to this channel to stdout.
+	 * "--listChannel" Lists all the entries published to the named public key (local channel if not provided) to stdout.
 	 * "--removeFromThisChannel" Removes a given entry from the local channel.
 	 * 
 	 * "--setPreferredVideoSize" Sets the maximum dimension size to use when locally caching.

@@ -10,7 +10,7 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
-import com.jeffdisher.cacophony.commands.ListThisChannelEntriesCommand;
+import com.jeffdisher.cacophony.commands.ListChannelEntriesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
@@ -95,9 +95,14 @@ public class CommandParser
 			elements = subElements.toArray(elements);
 			return new PublishCommand(name, discussionUrl, elements);
 		}),
-		LIST_THIS_CHANNEL(true, "--listThisChannel", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		LIST_THIS_CHANNEL(true, "--listChannel", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			return new ListThisChannelEntriesCommand();
+			String rawKey = optional[0];
+			Multihash channelPublicKey = (null != rawKey)
+					? Types.fromPublicKey(rawKey)
+					: null
+			;
+			return new ListChannelEntriesCommand(channelPublicKey);
 		}),
 		REMOVE_FROM_THIS_CHANNEL(true, "--removeFromThisChannel", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
