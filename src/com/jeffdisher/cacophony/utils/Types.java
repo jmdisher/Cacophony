@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.utils;
 
+import io.ipfs.cid.Cid;
 import io.ipfs.multihash.Multihash;
 
 
@@ -10,8 +11,8 @@ public class Types
 		return Multihash.fromBase58(base58Cid);
 	}
 
-	public static Multihash fromPublicKey(String hexKey)
+	public static Multihash fromPublicKey(String base64Key)
 	{
-		return Multihash.fromHex(hexKey);
+		return Cid.decode(base64Key);
 	}
 }

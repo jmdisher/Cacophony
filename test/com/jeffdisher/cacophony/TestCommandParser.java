@@ -52,4 +52,37 @@ class TestCommandParser
 		Assert.assertNull(command);
 		Assert.assertTrue(outStream.size() > 0);
 	}
+
+	@Test
+	void testCreateNewChannel()
+	{
+		String[] foo = {"/tmp/test", "--createNewChannel", "--ipfs", "/ip4/127.0.0.1/tcp/5001",  "--keyName",  "cacophony"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
+
+	@Test
+	void testReadDescriptionLocal()
+	{
+		String[] foo = {"/tmp/test", "--readDescription"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
+
+	@Test
+	void testReadDescriptionArg()
+	{
+		String[] foo = {"/tmp/test", "--readDescription", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }
