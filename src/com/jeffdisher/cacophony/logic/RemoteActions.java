@@ -109,4 +109,10 @@ public class RemoteActions
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		return Cid.fromBase58(published);
 	}
+
+	public void unpin(Multihash cid) throws IOException
+	{
+		// TODO:  Determine what to do with the result of this.
+		_ipfs.pin.rm(cid);
+	}
 }
