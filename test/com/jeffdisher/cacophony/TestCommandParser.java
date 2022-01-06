@@ -118,4 +118,15 @@ class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	void testSetGlobalPrefs()
+	{
+		String[] foo = {"/tmp/test", "--setGlobalPrefs", "--cacheWidth", "5", "--cacheHeight", "7", "--cacheGlobalBytes", "5000000000"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }

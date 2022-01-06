@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -15,6 +16,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class LocalActions
 {
 	private static final String INDEX_FILE = "index.dat";
+	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
 
 	private final File _directory;
 
@@ -25,13 +27,43 @@ public class LocalActions
 
 	public LocalIndex readIndex()
 	{
-		File indexFile = new File(_directory, INDEX_FILE);
-		LocalIndex index = null;
+		return _readFile(INDEX_FILE, LocalIndex.class);
+	}
+
+	public void storeIndex(LocalIndex index)
+	{
+		_storeFile(INDEX_FILE, index);
+	}
+
+	public GlobalPrefs readPrefs()
+	{
+		GlobalPrefs prefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+		if (null == prefs)
+		{
+			// We want to default the prefs if there isn't one.
+			int width = 1024;
+			int height = 768;
+			long cacheMaxBytes = 1_000_000_000L;
+			prefs = new GlobalPrefs(width, height, cacheMaxBytes);
+		}
+		return prefs;
+	}
+
+	public void storePrefs(GlobalPrefs prefs)
+	{
+		_storeFile(GLOBAL_PREFS_FILE, prefs);
+	}
+
+
+	private <T> T _readFile(String fileName, Class<T> clazz)
+	{
+		File indexFile = new File(_directory, fileName);
+		T object = null;
 		try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(indexFile)))
 		{
 			try
 			{
-				index = (LocalIndex) stream.readObject();
+				object = clazz.cast(stream.readObject());
 			}
 			catch (ClassNotFoundException e)
 			{
@@ -40,23 +72,23 @@ public class LocalActions
 		}
 		catch (FileNotFoundException e)
 		{
-			// This is acceptable and we just return null - means there is no config.
-			index = null;
+			// This is acceptable and we just return null - means there is no data.
+			object = null;
 		}
 		catch (IOException e)
 		{
 			// We don't expect this.
 			throw Assert.unexpected(e);
 		}
-		return index;
+		return object;
 	}
 
-	public void storeIndex(LocalIndex index)
+	private <T> void _storeFile(String fileName, T object)
 	{
-		File indexFile = new File(_directory, INDEX_FILE);
+		File indexFile = new File(_directory, fileName);
 		try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(indexFile)))
 		{
-			stream.writeObject(index);
+			stream.writeObject(object);
 		}
 		catch (FileNotFoundException e)
 		{

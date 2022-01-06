@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
+import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.utils.Types;
 
@@ -111,6 +112,22 @@ public class CommandParser
 		}),
 		
 		// Methods to manage local state.
+		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[] {"--cacheWidth", "--cacheHeight", "--cacheTotalBytes"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			int cacheWidth = (null != optional[0])
+					? Integer.parseInt(optional[0])
+					: 0
+			;
+			int cacheHeight = (null != optional[1])
+					? Integer.parseInt(optional[1])
+					: 0
+			;
+			long cacheTotalBytes = (null != optional[2])
+					? Long.parseLong(optional[2])
+					: 0L
+			;
+			return new SetGlobalPrefsCommand(cacheWidth, cacheHeight, cacheTotalBytes);
+		}),
 		
 		;
 		

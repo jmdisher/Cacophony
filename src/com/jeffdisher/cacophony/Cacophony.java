@@ -22,8 +22,10 @@ public class Cacophony {
 	 * "--listChannel" Lists all the entries published to the named public key (local channel if not provided) to stdout.
 	 * "--removeFromThisChannel" Removes a given entry from the local channel.
 	 * 
-	 * "--setPreferredVideoSize" Sets the maximum dimension size to use when locally caching.
-	 * "--setCacheLimitForRemoteChannel" Sets the cache limit for the given channel.
+	 * "--setGlobalPrefs":
+	 *  "--cacheWidth" Sets the maximum video width to cache (smallest larger size will be chosen if a smaller one isn't available).
+	 *  "--cacheHeight" Sets the maximum video width to cache (smallest larger size will be chosen if a smaller one isn't available).
+	 *  "--cacheTotalBytes" Sets the maximum number of bytes to allow for automatic caching storage (only counts leaf data elements, not intermediary meta-data).
 	 * "--updateNextFollowing" Does the polling cycle on the next channel being followed and advances polling state to the next.
 	 * "--startFollowing" Adds the given channel ID to the following set.
 	 * "--stopFollowing" Removes the given channel ID from the following set.
