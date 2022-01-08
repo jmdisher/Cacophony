@@ -4,15 +4,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.junit.Assert;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 
 
-class TestCommandParser
+public class TestCommandParser
 {
 	@Test
-	void testUsage()
+	public void testUsage()
 	{
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
@@ -21,7 +21,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testPublish()
+	public void testPublish()
 	{
 		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name", "entry name", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", "/path"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -32,7 +32,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testMissingCommand()
+	public void testMissingCommand()
 	{
 		String[] foo = {"/ip4/127.0.0.1/tcp/5001"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -43,7 +43,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testBrokenArgs()
+	public void testBrokenArgs()
 	{
 		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -54,7 +54,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testCreateNewChannel()
+	public void testCreateNewChannel()
 	{
 		String[] foo = {"/tmp/test", "--createNewChannel", "--ipfs", "/ip4/127.0.0.1/tcp/5001",  "--keyName",  "cacophony"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -65,7 +65,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testReadDescriptionLocal()
+	public void testReadDescriptionLocal()
 	{
 		String[] foo = {"/tmp/test", "--readDescription"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -76,7 +76,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testReadDescriptionArg()
+	public void testReadDescriptionArg()
 	{
 		String[] foo = {"/tmp/test", "--readDescription", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -87,7 +87,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testUpdateDescription()
+	public void testUpdateDescription()
 	{
 		String[] foo = {"/tmp/test", "--updateDescription", "--name", "name", "--description", "description", "--pictureFile", "/tmp/fake"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -98,7 +98,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testListChannel()
+	public void testListChannel()
 	{
 		String[] foo = {"/tmp/test", "--listChannel", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -109,7 +109,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testRemoveFromThisChannel()
+	public void testRemoveFromThisChannel()
 	{
 		String[] foo = {"/tmp/test", "--removeFromThisChannel", "--elementCid", "QmRntQodp7qHb3PwS8GkcaKXfeELJymB4H5D8rBfoEwq8J"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -120,7 +120,7 @@ class TestCommandParser
 	}
 
 	@Test
-	void testSetGlobalPrefs()
+	public void testSetGlobalPrefs()
 	{
 		String[] foo = {"/tmp/test", "--setGlobalPrefs", "--cacheWidth", "5", "--cacheHeight", "7", "--cacheGlobalBytes", "5000000000"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();

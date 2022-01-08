@@ -3,20 +3,20 @@ package com.jeffdisher.cacophony.logic;
 import java.util.List;
 
 import org.junit.Assert;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 
-class TestCacheAlgorithm
+public class TestCacheAlgorithm
 {
 	@Test
-	void testBytesAvailable()
+	public void testBytesAvailable()
 	{
 		CacheAlgorithm manager = new CacheAlgorithm(10, 0);
 		Assert.assertEquals(10, manager.getBytesAvailable());
 	}
 
 	@Test
-	void testAddingSmallToEmptyCache()
+	public void testAddingSmallToEmptyCache()
 	{
 		CacheAlgorithm manager = new CacheAlgorithm(10, 0);
 		boolean shouldClean = manager.needsCleanAfterAddition(5);
@@ -24,7 +24,7 @@ class TestCacheAlgorithm
 	}
 
 	@Test
-	void testAddingBigToEmptyCache()
+	public void testAddingBigToEmptyCache()
 	{
 		CacheAlgorithm manager = new CacheAlgorithm(10, 0);
 		boolean shouldClean = manager.needsCleanAfterAddition(12);
@@ -32,7 +32,7 @@ class TestCacheAlgorithm
 	}
 
 	@Test
-	void testRemovingFromNonFull()
+	public void testRemovingFromNonFull()
 	{
 		CacheAlgorithm.Candidate<Void> candidate = new CacheAlgorithm.Candidate<Void>(5, null);
 		CacheAlgorithm manager = new CacheAlgorithm(10, 9);
@@ -42,7 +42,7 @@ class TestCacheAlgorithm
 	}
 
 	@Test
-	void testRemovingFromFull()
+	public void testRemovingFromFull()
 	{
 		CacheAlgorithm.Candidate<Void> candidate = new CacheAlgorithm.Candidate<Void>(5, null);
 		CacheAlgorithm manager = new CacheAlgorithm(10, 12);
@@ -52,7 +52,7 @@ class TestCacheAlgorithm
 	}
 
 	@Test
-	void testAddAll()
+	public void testAddAll()
 	{
 		CacheAlgorithm.Candidate<Void> candidate1 = new CacheAlgorithm.Candidate<Void>(5, null);
 		CacheAlgorithm.Candidate<Void> candidate2 = new CacheAlgorithm.Candidate<Void>(57, null);
@@ -68,7 +68,7 @@ class TestCacheAlgorithm
 	}
 
 	@Test
-	void testAddSome()
+	public void testAddSome()
 	{
 		CacheAlgorithm.Candidate<Void> candidate1 = new CacheAlgorithm.Candidate<Void>(5, null);
 		CacheAlgorithm.Candidate<Void> candidate2 = new CacheAlgorithm.Candidate<Void>(57, null);
