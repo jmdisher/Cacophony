@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="all" name="Cacophony">
+
+	<property name="dir.global.workspace" value="."/>
+	<property name="dir.global.build" value="${dir.global.workspace}/build"/>
+	<property name="dir.global.build.main" value="${dir.global.build}/main"/>
+	<property name="dir.global.build.test" value="${dir.global.build}/test"/>
+	<property name="dir.global.build.testreports" value="${dir.global.build}/testreports" />
+	<property name="dir.global.src.test" value="${dir.global.workspace}/test"/>
+	<property name="dir.global.src.main" value="${dir.global.workspace}/src"/>
+	<property name="dir.global.lib" value="${dir.global.workspace}/lib"/>
+	<property name="junit.heap" value="32m"/>
+	<property name="junit.threads" value="4"/>
+
+	<!-- Set this property to run a specific test. -->
+	<property name="unit.test" value="Test*" />
+
+	<path id="buildClasspath">
+		<fileset dir="${dir.global.lib}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+	<path id="testingClasspath">
+		<fileset dir="${dir.global.lib}">
+			<include name="*.jar"/>
+		</fileset>
+		<fileset dir="${dir.global.build}">
+			<include name="${ant.project.name}.jar"/>
+		</fileset>
+	</path>
+
+	<target name="all" >
+		<antcall target="clean" />
+		<antcall target="build_main" />
+		<antcall target="build_test" />
+		<antcall target="test" />
+	</target>
+
+	<target name="clean" >
+		<antcall target="clean_main" />
+		<antcall target="clean_test" />
+	</target>
+
+	<target name="clean_main">
+		<delete dir="${dir.global.build.main}"/>
+		<delete file="${dir.global.build}/${ant.project.name}.jar"/>
+	</target>
+
+	<target name="build_main">
+		<echo message="Building ${ant.project.name}..."/>
+
+		<mkdir dir="${dir.global.build.main}"/>
+		<javac debug="true" classpathref="buildClasspath" debuglevel="source,lines,vars" includeantruntime="false" release="16" srcdir="${dir.global.src.main}" destdir="${dir.global.build.main}" includes="**/*.java">
+		</javac>
+
+		<jar destfile="${dir.global.build}/${ant.project.name}.jar" filesetmanifest="mergewithoutmain" basedir="${dir.global.build.main}">
+			<manifest>
+				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="clean_test">
+		<delete dir="${dir.global.build.test}"/>
+		<delete dir="${dir.global.testreports}"/>
+	</target>
+
+	<target name="build_test" depends="build_main">
+		<echo message="Building tests for ${ant.project.name}..."/>
+
+		<mkdir dir="${dir.global.build.test}"/>
+		<javac debug="true" classpathref="testingClasspath" debuglevel="source,lines,vars" includeantruntime="false" release="16" srcdir="${dir.global.src.test}" destdir="${dir.global.build.test}" includes="**/*.java">
+		</javac>
+	</target>
+
+	<target name="test" depends="build_test">
+		<mkdir dir="${dir.global.build.testreports}" />
+		<junit printsummary="on" haltonfailure="true" fork="true" maxmemory="${junit.heap}" threads="${junit.threads}" dir="${dir.global.workspace}">
+			<classpath>
+				<fileset dir="${dir.global.lib}">
+					<include name="*.jar"/>
+				</fileset>
+				<pathelement location="${dir.global.build}/${ant.project.name}.jar"/>
+				<pathelement location="${dir.global.build.test}" />
+			</classpath>
+			<formatter type="plain" usefile="false" />
+			<formatter type="xml" />
+			<batchtest todir="${dir.global.build.testreports}">
+				<fileset dir="${dir.global.src.test}" includes="**/${unit.test}.java" />
+			</batchtest>
+		</junit>
+	</target>
+
+</project>
+
