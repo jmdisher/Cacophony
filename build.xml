@@ -53,7 +53,11 @@
 		<javac debug="true" classpathref="buildClasspath" debuglevel="source,lines,vars" includeantruntime="false" release="16" srcdir="${dir.global.src.main}" destdir="${dir.global.build.main}" includes="**/*.java">
 		</javac>
 
-		<jar destfile="${dir.global.build}/${ant.project.name}.jar" filesetmanifest="mergewithoutmain" basedir="${dir.global.build.main}">
+		<jar destfile="${dir.global.build}/${ant.project.name}.jar">
+			<fileset dir="${dir.global.build.main}" includes="**/*.class">
+			</fileset>
+			<fileset dir="${dir.global.workspace}" includes="**/*.xsd">
+			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
 			</manifest>

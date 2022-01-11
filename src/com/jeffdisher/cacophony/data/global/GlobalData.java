@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.data.global;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
@@ -49,8 +48,8 @@ public class GlobalData {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamIndex.class);
 			Unmarshaller un = jaxb.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			Schema employeeSchema = sf.newSchema(new File("xsd/global/index.xsd"));
-			un.setSchema(employeeSchema);
+			Schema schema = sf.newSchema(GlobalData.class.getClassLoader().getResource("xsd/global/index.xsd"));
+			un.setSchema(schema);
 			result = (StreamIndex) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
 			e.printStackTrace();
@@ -86,8 +85,8 @@ public class GlobalData {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecords.class);
 			Unmarshaller un = jaxb.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			Schema employeeSchema = sf.newSchema(new File("xsd/global/records.xsd"));
-			un.setSchema(employeeSchema);
+			Schema schema = sf.newSchema(GlobalData.class.getClassLoader().getResource("xsd/global/records.xsd"));
+			un.setSchema(schema);
 			result = (StreamRecords) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
 			e.printStackTrace();
@@ -123,8 +122,8 @@ public class GlobalData {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecord.class);
 			Unmarshaller un = jaxb.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			Schema employeeSchema = sf.newSchema(new File("xsd/global/record.xsd"));
-			un.setSchema(employeeSchema);
+			Schema schema = sf.newSchema(GlobalData.class.getClassLoader().getResource("xsd/global/record.xsd"));
+			un.setSchema(schema);
 			result = (StreamRecord) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
 			e.printStackTrace();
@@ -160,8 +159,8 @@ public class GlobalData {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamDescription.class);
 			Unmarshaller un = jaxb.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			Schema employeeSchema = sf.newSchema(new File("xsd/global/description.xsd"));
-			un.setSchema(employeeSchema);
+			Schema schema = sf.newSchema(GlobalData.class.getClassLoader().getResource("xsd/global/description.xsd"));
+			un.setSchema(schema);
 			result = (StreamDescription) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
 			e.printStackTrace();
@@ -197,8 +196,8 @@ public class GlobalData {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecommendations.class);
 			Unmarshaller un = jaxb.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			Schema employeeSchema = sf.newSchema(new File("xsd/global/recommendations.xsd"));
-			un.setSchema(employeeSchema);
+			Schema schema = sf.newSchema(GlobalData.class.getClassLoader().getResource("xsd/global/recommendations.xsd"));
+			un.setSchema(schema);
 			result = (StreamRecommendations) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
 			e.printStackTrace();
