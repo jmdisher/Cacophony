@@ -68,16 +68,24 @@ echo "Attaching Cacophony instance1 to this key..."
 java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
 
 echo "Creating key on node 2..."
-PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test1)
+PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
 echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test1
+java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
 
 echo "Verify that they can each resolve each other..."
 DESCRIPTION=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: Unnamed"
 DESCRIPTION=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION" "name: Unnamed"
+
+echo "Update the names and make sure that they both see each others' updates..."
+java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --updateDescription --name "NAME1"
+java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --updateDescription --name "NAME2"
+DESCRIPTION=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --readDescription --publicKey $PUBLIC2)
+requireSubstring "$DESCRIPTION" "name: NAME2"
+DESCRIPTION=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --readDescription --publicKey $PUBLIC1)
+requireSubstring "$DESCRIPTION" "name: NAME1"
 
 kill $PID1
 kill $PID2

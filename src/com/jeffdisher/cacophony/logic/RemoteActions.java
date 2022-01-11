@@ -105,7 +105,7 @@ public class RemoteActions
 
 	public Multihash resolvePublicKey(Multihash keyToResolve) throws IOException
 	{
-		String publishedPath = _ipfs.name.resolve(_publicKey);
+		String publishedPath = _ipfs.name.resolve(keyToResolve);
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		return Cid.fromBase58(published);
 	}
