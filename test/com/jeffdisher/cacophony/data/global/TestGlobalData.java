@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.data.global;
 
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -9,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
+import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 
@@ -107,5 +109,24 @@ public class TestGlobalData {
 				+ "</recommendations>\n").getBytes();
 		StreamRecommendations didRead = GlobalData.deserializeRecommendations(input);
 		System.out.println(didRead.getUser().get(0));
+	}
+
+	@Test
+	public void testPublishWithImage() throws IOException {
+		DataElement element = new DataElement();
+		element.setCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
+		element.setMime("image/jpeg");
+		element.setSpecial(ElementSpecialType.IMAGE);
+		DataArray array = new DataArray();
+		array.getElement().add(element);
+		StreamRecord record = new StreamRecord();
+		record.setName("name");
+		record.setElements(array);
+		record.setPublisherKey("public key");
+		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
+		byte[] rawRecord = GlobalData.serializeRecord(record);
+		StreamRecord didRead = GlobalData.deserializeRecord(rawRecord);
+		Assert.assertEquals("image", ((DataElement)(didRead.getElements().getElement().get(0))).getSpecial().value());
+		System.out.println(new String(rawRecord));
 	}
 }

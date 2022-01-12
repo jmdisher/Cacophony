@@ -11,11 +11,11 @@
 			<xsd:pattern value="Qm[a-zA-Z0-9]*" />
 		</xsd:restriction>
 	</xsd:simpleType>
-	<xsd:complexType name="ElementSpecialType">
-		<xsd:choice>
-			<xsd:element name="image"/>
-		</xsd:choice>
-	</xsd:complexType>
+	<xsd:simpleType name="ElementSpecialType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="image"/>
+		</xsd:restriction>
+	</xsd:simpleType>
 	<xsd:complexType name="DataElement">
 		<xsd:sequence>
 			<xsd:element name="cid" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>

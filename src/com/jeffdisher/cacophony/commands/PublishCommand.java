@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
+import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -50,6 +51,10 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		DataElement element = new DataElement();
 		element.setCid(uploaded.toBase58());
 		element.setMime(_elements[0].mime());
+		if (_elements[0].isSpecialImage())
+		{
+			element.setSpecial(ElementSpecialType.IMAGE);
+		}
 		DataArray array = new DataArray();
 		array.getElement().add(element);
 		StreamRecord record = new StreamRecord();

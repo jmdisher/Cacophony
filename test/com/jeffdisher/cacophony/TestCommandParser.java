@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 
 import org.junit.Assert;
@@ -128,5 +129,16 @@ public class TestCommandParser
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
+	}
+
+	@Test
+	public void testPublishSpecialOnly() throws IOException
+	{
+		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name", "name", "--mime", "image/jpeg", "--file", "/tmp/fake", "--special", "image"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNull(command);
+		Assert.assertTrue(outStream.size() > 0);
 	}
 }
