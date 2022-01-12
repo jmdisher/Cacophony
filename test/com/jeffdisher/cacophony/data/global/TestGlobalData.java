@@ -17,36 +17,54 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 
 public class TestGlobalData {
 	@Test
-	public void testIndex() throws IOException {
+	public void testIndex1() throws IOException {
 		StreamIndex index = new StreamIndex();
 		index.setDescription("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		index.setRecommendations("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		index.setRecords("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		index.setVersion(5);
 		byte[] serialized = GlobalData.serializeIndex(index);
-		System.out.write(serialized);
-		byte[] input = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><index xmlns=\"http://jeffdisher.com/cacophony/index.xsd\"><version>5</version><description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description><recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations><records>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</records></index>".getBytes();
-		StreamIndex didRead = GlobalData.deserializeIndex(input);
-		System.out.println(didRead.getRecords());
+		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+				+ "<index xmlns=\"http://jeffdisher.com/cacophony/index.xsd\">\n"
+				+ "    <version>5</version>\n"
+				+ "    <description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description>\n"
+				+ "    <recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations>\n"
+				+ "    <records>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</records>\n"
+				+ "</index>\n";
+		Assert.assertEquals(expected, new String(serialized));
 	}
 
 	@Test
-	public void testRecords() throws IOException {
+	public void testIndex2() throws IOException {
+		byte[] input = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><index xmlns=\"http://jeffdisher.com/cacophony/index.xsd\"><version>5</version><description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description><recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations><records>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</records></index>".getBytes();
+		StreamIndex didRead = GlobalData.deserializeIndex(input);
+		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", didRead.getDescription());
+	}
+
+	@Test
+	public void testRecords1() throws IOException {
 		StreamRecords data = new StreamRecords();
 		data.getRecord().add("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		byte[] serialized = GlobalData.serializeRecords(data);
-		System.out.write(serialized);
-		
+		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+				+ "<records xmlns=\"http://jeffdisher.com/cacophony/records.xsd\">\n"
+				+ "    <record>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</record>\n"
+				+ "</records>\n";
+		Assert.assertEquals(expected, new String(serialized));
+	}
+
+	@Test
+	public void testRecords2() throws IOException {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<records xmlns=\"http://jeffdisher.com/cacophony/records.xsd\">\n"
 				+ "    <record>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</record>\n"
 				+ "</records>\n").getBytes();
 		StreamRecords readRecords = GlobalData.deserializeRecords(input);
-		System.out.println(readRecords.getRecord().get(0));
+		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", readRecords.getRecord().get(0));
 	}
 
 	@Test
-	public void testRecord() throws IOException {
+	public void testRecord1() throws IOException {
 		StreamRecord record = new StreamRecord();
 		record.setDiscussion("URL");
 		record.setPublisherKey("public key goes here");
@@ -59,8 +77,24 @@ public class TestGlobalData {
 		element.setCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		element.setMime("mim");
 		byte[] serialized = GlobalData.serializeRecord(record);
-		System.out.write(serialized);
-		
+		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+				+ "<record xmlns=\"http://jeffdisher.com/cacophony/record.xsd\">\n"
+				+ "    <name>name</name>\n"
+				+ "    <publishedSecondsUtc>555</publishedSecondsUtc>\n"
+				+ "    <discussion>URL</discussion>\n"
+				+ "    <elements>\n"
+				+ "        <element>\n"
+				+ "            <cid>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</cid>\n"
+				+ "            <mime>mim</mime>\n"
+				+ "        </element>\n"
+				+ "    </elements>\n"
+				+ "    <publisherKey>public key goes here</publisherKey>\n"
+				+ "</record>\n";
+		Assert.assertEquals(expected, new String(serialized));
+	}
+
+	@Test
+	public void testRecord2() throws IOException {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<record xmlns=\"http://jeffdisher.com/cacophony/record.xsd\">\n"
 				+ "    <name>name</name>\n"
@@ -75,18 +109,27 @@ public class TestGlobalData {
 				+ "    <publisherKey>public key of the publisher (so they can be found just from this record)</publisherKey>\n"
 				+ "</record>\n").getBytes();
 		StreamRecord readRecord = GlobalData.deserializeRecord(input);
-		System.out.println(readRecord.getName());
+		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", readRecord.getElements().getElement().get(0).getCid());
 	}
 
 	@Test
-	public void testDescription() throws IOException {
+	public void testDescription1() throws IOException {
 		StreamDescription data = new StreamDescription();
 		data.setDescription("description");
 		data.setName("name");
 		data.setPicture("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		byte[] serialized = GlobalData.serializeDescription(data);
-		System.out.write(serialized);
-		
+		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+				+ "<description xmlns=\"http://jeffdisher.com/cacophony/description.xsd\">\n"
+				+ "    <name>name</name>\n"
+				+ "    <description>description</description>\n"
+				+ "    <picture>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</picture>\n"
+				+ "</description>\n";
+		Assert.assertEquals(expected, new String(serialized));
+	}
+
+	@Test
+	public void testDescription2() throws IOException {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<description xmlns=\"http://jeffdisher.com/cacophony/description.xsd\">\n"
 				+ "    <name>name</name>\n"
@@ -94,21 +137,28 @@ public class TestGlobalData {
 				+ "    <picture>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</picture>\n"
 				+ "</description>\n").getBytes();
 		StreamDescription didRead = GlobalData.deserializeDescription(input);
-		System.out.println(didRead.getName());
+		Assert.assertEquals("description", didRead.getDescription());
 	}
 
 	@Test
-	public void testRecommendations() throws IOException {
+	public void testRecommendations1() throws IOException {
 		StreamRecommendations data = new StreamRecommendations();
 		data.getUser().add("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		byte[] serialized = GlobalData.serializeRecommendations(data);
-		System.out.write(serialized);
-		
+		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+				+ "<recommendations xmlns=\"http://jeffdisher.com/cacophony/recommendations.xsd\">\n"
+				+ "    <user>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</user>\n"
+				+ "</recommendations>\n";
+		Assert.assertEquals(expected, new String(serialized));
+	}
+
+	@Test
+	public void testRecommendations2() throws IOException {
 		byte[] input = ("<recommendations xmlns=\"http://jeffdisher.com/cacophony/recommendations.xsd\">\n"
 				+ "    <user>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</user>\n"
 				+ "</recommendations>\n").getBytes();
 		StreamRecommendations didRead = GlobalData.deserializeRecommendations(input);
-		System.out.println(didRead.getUser().get(0));
+		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", didRead.getUser().get(0));
 	}
 
 	@Test
@@ -127,6 +177,5 @@ public class TestGlobalData {
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		StreamRecord didRead = GlobalData.deserializeRecord(rawRecord);
 		Assert.assertEquals("image", ((DataElement)(didRead.getElements().getElement().get(0))).getSpecial().value());
-		System.out.println(new String(rawRecord));
 	}
 }
