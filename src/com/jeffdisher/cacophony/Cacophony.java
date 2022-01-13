@@ -58,6 +58,8 @@ public class Cacophony {
 				LocalActions local = new LocalActions(directory);
 				command.scheduleActions(executor, local);
 				executor.waitForCompletion();
+				// Write-back updates.
+				local.storeCacheIndex();
 			}
 			else
 			{

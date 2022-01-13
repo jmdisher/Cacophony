@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import com.jeffdisher.cacophony.data.local.CacheIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -17,8 +18,10 @@ public class LocalActions
 {
 	private static final String INDEX_FILE = "index.dat";
 	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
+	private static final String CACHE_INDEX_FILE = "cache_index.dat";
 
 	private final File _directory;
+	private CacheIndex _lazyCache;
 
 	public LocalActions(File directory)
 	{
@@ -52,6 +55,58 @@ public class LocalActions
 	public void storePrefs(GlobalPrefs prefs)
 	{
 		_storeFile(GLOBAL_PREFS_FILE, prefs);
+	}
+
+	public CacheIndex loadCacheIndex()
+	{
+		if (null == _lazyCache)
+		{
+			File file = new File(_directory, CACHE_INDEX_FILE);
+			if (file.exists())
+			{
+				try (FileInputStream stream = new FileInputStream(file))
+				{
+					_lazyCache = CacheIndex.fromStream(stream);
+				}
+				catch (FileNotFoundException e)
+				{
+					// We just checked this so it can't happen.
+					throw Assert.unexpected(e);
+				}
+				catch (IOException e)
+				{
+					// We don't expect this.
+					throw Assert.unexpected(e);
+				}
+			}
+			else
+			{
+				_lazyCache = CacheIndex.newCache();
+			}
+		}
+		return _lazyCache;
+	}
+
+	public void storeCacheIndex()
+	{
+		if (null != _lazyCache)
+		{
+			File indexFile = new File(_directory, CACHE_INDEX_FILE);
+			try (FileOutputStream stream = new FileOutputStream(indexFile))
+			{
+				_lazyCache.writeToStream(stream);
+			}
+			catch (FileNotFoundException e)
+			{
+				// We don't expect this.
+				throw Assert.unexpected(e);
+			}
+			catch (IOException e)
+			{
+				// We don't expect this.
+				throw Assert.unexpected(e);
+			}
+		}
 	}
 
 

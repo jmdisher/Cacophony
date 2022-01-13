@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.jeffdisher.cacophony.data.local.CacheIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -20,12 +21,13 @@ public class RemoteActions
 {
 	public static RemoteActions loadIpfsConfig(LocalActions actions) throws IOException
 	{
+		CacheIndex cacheIndex = actions.loadCacheIndex();
 		LocalIndex index = actions.readIndex();
 		Assert.assertTrue(null != index);
 		IPFS ipfs = new IPFS(index.ipfsHost());
 		String keyName = index.keyName();
 		Multihash publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(ipfs, keyName, publicKey);
+		return new RemoteActions(cacheIndex, ipfs, keyName, publicKey);
 	}
 
 	private static Multihash _publicKeyForName(IPFS ipfs, String keyName) throws IOException
@@ -44,12 +46,14 @@ public class RemoteActions
 	}
 
 
+	private final CacheIndex _cacheIndex;
 	private final IPFS _ipfs;
 	private final String _keyName;
 	private final Multihash _publicKey;
 
-	private RemoteActions(IPFS ipfs, String keyName, Multihash publicKey)
+	private RemoteActions(CacheIndex cacheIndex, IPFS ipfs, String keyName, Multihash publicKey)
 	{
+		_cacheIndex = cacheIndex;
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
@@ -62,8 +66,13 @@ public class RemoteActions
 		
 		List<MerkleNode> nodes = _ipfs.add(wrapper);
 		Assert.assertTrue(1 == nodes.size());
-		System.out.println("-saved: " + nodes.get(0).hash);
-		return nodes.get(0).hash;
+		// TODO:  Determine if this is the root hash.
+		Multihash hash = nodes.get(0).hash;
+		System.out.println("-saved: " + hash);
+		
+		// Update completed so notify the cache.
+		_cacheIndex.hashWasAdded(hash);
+		return hash;
 	}
 
 	public byte[] readData(Multihash indexHash) throws IOException
@@ -112,7 +121,10 @@ public class RemoteActions
 
 	public void unpin(Multihash cid) throws IOException
 	{
-		// TODO:  Determine what to do with the result of this.
-		_ipfs.pin.rm(cid);
+		if (_cacheIndex.shouldUnpinAfterRemoving(cid))
+		{
+			// TODO:  Determine what to do with the result of this.
+			_ipfs.pin.rm(cid);
+		}
 	}
 }
