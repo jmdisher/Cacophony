@@ -9,23 +9,22 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
-import io.ipfs.cid.Cid;
-import io.ipfs.multihash.Multihash;
 
-
-public record ReadDescriptionCommand(Multihash _channelPublicKey) implements ICommand
+public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
 	public void scheduleActions(Executor executor, LocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
-		Multihash keyToResolve = (null != _channelPublicKey)
+		IpfsKey keyToResolve = (null != _channelPublicKey)
 				? _channelPublicKey
 				: remote.getPublicKey()
 		;
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, keyToResolve);
-		byte[] rawDescription = remote.readData(Cid.fromBase58(index.getDescription()));
+		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
 		System.out.println("Channel public key: " + keyToResolve);
 		System.out.println("-name: " + description.getName());

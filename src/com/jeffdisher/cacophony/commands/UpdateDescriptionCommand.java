@@ -11,7 +11,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.utils.Types;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 import io.ipfs.multihash.Multihash;
 
@@ -27,7 +27,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, remote.getPublicKey());
 		
 		// Read the existing description since we might be only partially updating it.
-		byte[] rawDescription = remote.readData(Types.fromIpfsCid(index.getDescription()));
+		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
 		
 		if (null != _name)

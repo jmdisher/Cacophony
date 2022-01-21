@@ -7,13 +7,14 @@ import java.util.Optional;
 
 import com.jeffdisher.cacophony.data.local.CacheIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.api.IPFS;
 import io.ipfs.api.KeyInfo;
 import io.ipfs.api.MerkleNode;
 import io.ipfs.api.NamedStreamable;
-import io.ipfs.cid.Cid;
 import io.ipfs.multihash.Multihash;
 
 
@@ -26,19 +27,19 @@ public class RemoteActions
 		Assert.assertTrue(null != index);
 		IPFS ipfs = new IPFS(index.ipfsHost());
 		String keyName = index.keyName();
-		Multihash publicKey = _publicKeyForName(ipfs, keyName);
+		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
 		return new RemoteActions(cacheIndex, ipfs, keyName, publicKey);
 	}
 
-	private static Multihash _publicKeyForName(IPFS ipfs, String keyName) throws IOException
+	private static IpfsKey _publicKeyForName(IPFS ipfs, String keyName) throws IOException
 	{
-		Multihash publicKey = null;
+		IpfsKey publicKey = null;
 		for (KeyInfo info : ipfs.key.list())
 		{
 			if (keyName.equals(info.name))
 			{
 				Assert.assertTrue(null == publicKey);
-				publicKey = info.id;
+				publicKey = new IpfsKey(info.id);
 			}
 		}
 		Assert.assertTrue(null != publicKey);
@@ -49,9 +50,9 @@ public class RemoteActions
 	private final CacheIndex _cacheIndex;
 	private final IPFS _ipfs;
 	private final String _keyName;
-	private final Multihash _publicKey;
+	private final IpfsKey _publicKey;
 
-	private RemoteActions(CacheIndex cacheIndex, IPFS ipfs, String keyName, Multihash publicKey)
+	private RemoteActions(CacheIndex cacheIndex, IPFS ipfs, String keyName, IpfsKey publicKey)
 	{
 		_cacheIndex = cacheIndex;
 		_ipfs = ipfs;
@@ -71,16 +72,16 @@ public class RemoteActions
 		System.out.println("-saved: " + hash);
 		
 		// Update completed so notify the cache.
-		_cacheIndex.hashWasAdded(hash);
+		_cacheIndex.hashWasAdded(new IpfsFile(hash));
 		return hash;
 	}
 
-	public byte[] readData(Multihash indexHash) throws IOException
+	public byte[] readData(IpfsFile indexHash) throws IOException
 	{
-		return _ipfs.cat(indexHash);
+		return _ipfs.cat(indexHash.cid());
 	}
 
-	public Multihash getPublicKey()
+	public IpfsKey getPublicKey()
 	{
 		return _publicKey;
 	}
@@ -107,24 +108,24 @@ public class RemoteActions
 		}
 		
 		// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
-		String publishedPath = _ipfs.name.resolve(_publicKey);
+		String publishedPath = _ipfs.name.resolve(_publicKey.key());
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		Assert.assertTrue(published.equals(index58));
 	}
 
-	public Multihash resolvePublicKey(Multihash keyToResolve) throws IOException
+	public IpfsFile resolvePublicKey(IpfsKey keyToResolve) throws IOException
 	{
-		String publishedPath = _ipfs.name.resolve(keyToResolve);
+		String publishedPath = _ipfs.name.resolve(keyToResolve.key());
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
-		return Cid.fromBase58(published);
+		return IpfsFile.fromIpfsCid(published);
 	}
 
-	public void unpin(Multihash cid) throws IOException
+	public void unpin(IpfsFile cid) throws IOException
 	{
 		if (_cacheIndex.shouldUnpinAfterRemoving(cid))
 		{
 			// TODO:  Determine what to do with the result of this.
-			_ipfs.pin.rm(cid);
+			_ipfs.pin.rm(cid.cid());
 		}
 	}
 }

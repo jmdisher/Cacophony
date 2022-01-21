@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.multihash.Multihash;
@@ -19,9 +21,9 @@ public class HighLevelIdioms
 		return _saveData(executor, remote, data);
 	}
 
-	public static StreamIndex readIndexForKey(RemoteActions remote, Multihash keyToResolve) throws IOException
+	public static StreamIndex readIndexForKey(RemoteActions remote, IpfsKey keyToResolve) throws IOException
 	{
-		Multihash indexHash = remote.resolvePublicKey(keyToResolve);
+		IpfsFile indexHash = remote.resolvePublicKey(keyToResolve);
 		byte[] rawIndex = remote.readData(indexHash);
 		return GlobalData.deserializeIndex(rawIndex);
 	}

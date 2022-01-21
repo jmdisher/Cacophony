@@ -16,7 +16,8 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.utils.Types;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import io.ipfs.multihash.Multihash;
 
@@ -29,11 +30,11 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		
 		// Read the existing StreamIndex.
-		Multihash publicKey = remote.getPublicKey();
+		IpfsKey publicKey = remote.getPublicKey();
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey);
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		byte[] rawRecords = remote.readData(Types.fromIpfsCid(index.getRecords()));
+		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Upload the elements.
@@ -60,7 +61,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
 		record.setElements(array);
-		record.setPublisherKey(publicKey.toBase58());
+		record.setPublisherKey(publicKey.key().toBase58());
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		Multihash recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);

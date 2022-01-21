@@ -4,11 +4,10 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
-import io.ipfs.multihash.Multihash;
 
-
-public record RemoveRecommendationCommand(Multihash channelPublicKey) implements ICommand
+public record RemoveRecommendationCommand(IpfsKey channelPublicKey) implements ICommand
 {
 	@Override
 	public void scheduleActions(Executor executor, LocalActions local) throws IOException

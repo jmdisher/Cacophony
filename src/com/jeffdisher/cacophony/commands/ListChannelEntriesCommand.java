@@ -12,25 +12,24 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
-import io.ipfs.cid.Cid;
-import io.ipfs.multihash.Multihash;
 
-
-public record ListChannelEntriesCommand(Multihash _channelPublicKey) implements ICommand
+public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
 	public void scheduleActions(Executor executor, LocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, _channelPublicKey);
-		byte[] rawRecords = remote.readData(Cid.fromBase58(index.getRecords()));
+		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Walk the elements, reading each element.
 		for (String recordCid : records.getRecord())
 		{
-			byte[] rawRecord = remote.readData(Cid.fromBase58(recordCid));
+			byte[] rawRecord = remote.readData(IpfsFile.fromIpfsCid(recordCid));
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			System.out.println("element " + recordCid + ": " + record.getName());
 			DataArray array = record.getElements();

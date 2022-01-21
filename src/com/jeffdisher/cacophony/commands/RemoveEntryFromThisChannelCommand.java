@@ -12,12 +12,13 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.utils.Types;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import io.ipfs.multihash.Multihash;
 
 
-public record RemoveEntryFromThisChannelCommand(Multihash _elementCid) implements ICommand
+public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand
 {
 	@Override
 	public void scheduleActions(Executor executor, LocalActions local) throws IOException
@@ -27,16 +28,16 @@ public record RemoveEntryFromThisChannelCommand(Multihash _elementCid) implement
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
-		Multihash publicKey = remote.getPublicKey();
+		IpfsKey publicKey = remote.getPublicKey();
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey);
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		byte[] rawRecords = remote.readData(Types.fromIpfsCid(index.getRecords()));
+		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Make sure that we actually have the record.
 		boolean didFind = false;
-		String search = _elementCid.toBase58();
+		String search = _elementCid.cid().toBase58();
 		int foundIndex = 0;
 		for (String cid : records.getRecord())
 		{
@@ -63,7 +64,7 @@ public record RemoveEntryFromThisChannelCommand(Multihash _elementCid) implement
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{
-				Multihash cid = Multihash.fromBase58(element.getCid());
+				IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
 				remote.unpin(cid);
 			}
 			remote.unpin(_elementCid);

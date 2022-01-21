@@ -17,9 +17,8 @@ import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
-import com.jeffdisher.cacophony.utils.Types;
-
-import io.ipfs.multihash.Multihash;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class CommandParser
@@ -72,20 +71,20 @@ public class CommandParser
 		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String rawKey = optional[0];
-			Multihash channelPublicKey = (null != rawKey)
-					? Types.fromPublicKey(rawKey)
+			IpfsKey channelPublicKey = (null != rawKey)
+					? IpfsKey.fromPublicKey(rawKey)
 					: null
 			;
 			return new ReadDescriptionCommand(channelPublicKey);
 		}),
 		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--channelPublicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			Multihash channelPublicKey = Types.fromPublicKey(required[0]);
+			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
 			return new AddRecommendationCommand(channelPublicKey);
 		}),
 		REMOVE_RECOMMENDATION(true, "--removeRecommendation", new String[] {"--channelPublicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			Multihash channelPublicKey = Types.fromPublicKey(required[0]);
+			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
 			return new RemoveRecommendationCommand(channelPublicKey);
 		}),
 		LIST_RECOMMENDATIONS(true, "--listRecommendations", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
@@ -103,15 +102,15 @@ public class CommandParser
 		LIST_THIS_CHANNEL(true, "--listChannel", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String rawKey = optional[0];
-			Multihash channelPublicKey = (null != rawKey)
-					? Types.fromPublicKey(rawKey)
+			IpfsKey channelPublicKey = (null != rawKey)
+					? IpfsKey.fromPublicKey(rawKey)
 					: null
 			;
 			return new ListChannelEntriesCommand(channelPublicKey);
 		}),
 		REMOVE_FROM_THIS_CHANNEL(true, "--removeFromThisChannel", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			Multihash elementCid = Types.fromIpfsCid(required[0]);
+			IpfsFile elementCid = IpfsFile.fromIpfsCid(required[0]);
 			return new RemoveEntryFromThisChannelCommand(elementCid);
 		}),
 		

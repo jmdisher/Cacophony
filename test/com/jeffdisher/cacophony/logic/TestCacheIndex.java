@@ -7,16 +7,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.CacheIndex;
-import com.jeffdisher.cacophony.utils.Types;
-
-import io.ipfs.multihash.Multihash;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 public class TestCacheIndex
 {
-	public static final Multihash M1 = Types.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-	public static final Multihash M2 = Types.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
-	public static final Multihash M3 = Types.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
+	public static final IpfsFile M1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
+	public static final IpfsFile M2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
+	public static final IpfsFile M3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
 
 	@Test
 	public void testBasicUse()

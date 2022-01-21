@@ -9,9 +9,8 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
-
-import io.ipfs.multihash.Multihash;
 
 
 /**
@@ -79,7 +78,7 @@ public class CacheIndex
 	 * @param hash The hash we want to add.
 	 * @return True if the data isn't already present and needs to be pinned.
 	 */
-	public boolean shouldPinAfterAdding(Multihash hash)
+	public boolean shouldPinAfterAdding(IpfsFile hash)
 	{
 		return _isNewAfterIncrement(hash);
 	}
@@ -90,7 +89,7 @@ public class CacheIndex
 	 * 
 	 * @param hash The hash of the data uploaded.
 	 */
-	public void hashWasAdded(Multihash hash)
+	public void hashWasAdded(IpfsFile hash)
 	{
 		_isNewAfterIncrement(hash);
 	}
@@ -101,9 +100,9 @@ public class CacheIndex
 	 * @param hash The hash we want to remove.
 	 * @return True if this should be unpinned as its refcount is now zero.
 	 */
-	public boolean shouldUnpinAfterRemoving(Multihash hash)
+	public boolean shouldUnpinAfterRemoving(IpfsFile hash)
 	{
-		String raw = hash.toBase58();
+		String raw = hash.cid().toBase58();
 		Integer original = _map.remove(raw);
 		// We currently assume that something we would want to unpin is always here.
 		Assert.assertTrue(null != original);
@@ -117,9 +116,9 @@ public class CacheIndex
 	}
 
 
-	private boolean _isNewAfterIncrement(Multihash hash)
+	private boolean _isNewAfterIncrement(IpfsFile hash)
 	{
-		String raw = hash.toBase58();
+		String raw = hash.cid().toBase58();
 		int count = _map.getOrDefault(raw, 0);
 		boolean isNew = (0 == count);
 		count += 1;
