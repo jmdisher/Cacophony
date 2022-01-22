@@ -6,11 +6,11 @@ import java.io.ByteArrayOutputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.CacheIndex;
+import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
-public class TestCacheIndex
+public class TestGlobalPinCache
 {
 	public static final IpfsFile M1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 	public static final IpfsFile M2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
@@ -19,7 +19,7 @@ public class TestCacheIndex
 	@Test
 	public void testBasicUse()
 	{
-		CacheIndex index = CacheIndex.newCache();
+		GlobalPinCache index = GlobalPinCache.newCache();
 		index.hashWasAdded(M1);
 		Assert.assertTrue(index.shouldPinAfterAdding(M2));
 		Assert.assertFalse(index.shouldPinAfterAdding(M1));
@@ -31,19 +31,19 @@ public class TestCacheIndex
 	@Test
 	public void testEmptySerializeDeserialize()
 	{
-		CacheIndex index = CacheIndex.newCache();
+		GlobalPinCache index = GlobalPinCache.newCache();
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		index.writeToStream(outStream);
 		
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		CacheIndex read = CacheIndex.fromStream(inStream);
+		GlobalPinCache read = GlobalPinCache.fromStream(inStream);
 		Assert.assertNotNull(read);
 	}
 
 	@Test
 	public void testSerializeDeserialize()
 	{
-		CacheIndex index = CacheIndex.newCache();
+		GlobalPinCache index = GlobalPinCache.newCache();
 		index.hashWasAdded(M1);
 		Assert.assertTrue(index.shouldPinAfterAdding(M2));
 		Assert.assertFalse(index.shouldPinAfterAdding(M1));
@@ -53,7 +53,7 @@ public class TestCacheIndex
 		index.writeToStream(outStream);
 		
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		CacheIndex read = CacheIndex.fromStream(inStream);
+		GlobalPinCache read = GlobalPinCache.fromStream(inStream);
 		Assert.assertFalse(read.shouldPinAfterAdding(M2));
 		Assert.assertFalse(read.shouldUnpinAfterRemoving(M1));
 		Assert.assertTrue(read.shouldUnpinAfterRemoving(M1));
@@ -65,7 +65,7 @@ public class TestCacheIndex
 		index.writeToStream(outStream);
 		
 		inStream = new ByteArrayInputStream(outStream.toByteArray());
-		read = CacheIndex.fromStream(inStream);
+		read = GlobalPinCache.fromStream(inStream);
 		Assert.assertNotNull(read);
 	}
 }

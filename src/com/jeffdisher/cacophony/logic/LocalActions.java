@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import com.jeffdisher.cacophony.data.local.CacheIndex;
+import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -18,10 +18,10 @@ public class LocalActions
 {
 	private static final String INDEX_FILE = "index.dat";
 	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
-	private static final String CACHE_INDEX_FILE = "cache_index.dat";
+	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache.dat";
 
 	private final File _directory;
-	private CacheIndex _lazyCache;
+	private GlobalPinCache _lazyCache;
 
 	public LocalActions(File directory)
 	{
@@ -57,16 +57,16 @@ public class LocalActions
 		_storeFile(GLOBAL_PREFS_FILE, prefs);
 	}
 
-	public CacheIndex loadCacheIndex()
+	public GlobalPinCache loadGlobalPinCache()
 	{
 		if (null == _lazyCache)
 		{
-			File file = new File(_directory, CACHE_INDEX_FILE);
+			File file = new File(_directory, GLOBAL_PIN_CACHE_FILE);
 			if (file.exists())
 			{
 				try (FileInputStream stream = new FileInputStream(file))
 				{
-					_lazyCache = CacheIndex.fromStream(stream);
+					_lazyCache = GlobalPinCache.fromStream(stream);
 				}
 				catch (FileNotFoundException e)
 				{
@@ -81,17 +81,17 @@ public class LocalActions
 			}
 			else
 			{
-				_lazyCache = CacheIndex.newCache();
+				_lazyCache = GlobalPinCache.newCache();
 			}
 		}
 		return _lazyCache;
 	}
 
-	public void storeCacheIndex()
+	public void storeGlobalPinCache()
 	{
 		if (null != _lazyCache)
 		{
-			File indexFile = new File(_directory, CACHE_INDEX_FILE);
+			File indexFile = new File(_directory, GLOBAL_PIN_CACHE_FILE);
 			try (FileOutputStream stream = new FileOutputStream(indexFile))
 			{
 				_lazyCache.writeToStream(stream);

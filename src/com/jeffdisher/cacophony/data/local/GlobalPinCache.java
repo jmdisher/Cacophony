@@ -16,17 +16,17 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * The index of what data is pinned in the local node and the corresponding ref count for each entries.
  * This includes data added for any reason, be it locally uploaded, fetched for following, or fetched explicitly.
- * NOTE:  There isn't currently any special durability on the pin/unpin operations, although that will eventually be required if we don't want to leak.
+ * NOTE:  There isn't currently any special durability on the pin/unpin operations, although that will eventually be required if we don't want to become inconsistent on ctrl-c.
  */
-public class CacheIndex
+public class GlobalPinCache
 {
-	public static CacheIndex newCache()
+	public static GlobalPinCache newCache()
 	{
-		return new CacheIndex(new HashMap<>());
+		return new GlobalPinCache(new HashMap<>());
 	}
 
 	@SuppressWarnings("unchecked")
-	public static CacheIndex fromStream(InputStream inputStream)
+	public static GlobalPinCache fromStream(InputStream inputStream)
 	{
 		Map<String, Integer> map = null;
 		try (ObjectInputStream stream = new ObjectInputStream(inputStream))
@@ -47,13 +47,13 @@ public class CacheIndex
 			// We don't expect this.
 			throw Assert.unexpected(e);
 		}
-		return new CacheIndex(map);
+		return new GlobalPinCache(map);
 	}
 
 	// The key is the Multihash but we store it as a string to serialize it.
 	private final Map<String, Integer> _map;
 
-	private CacheIndex(Map<String, Integer> map)
+	private GlobalPinCache(Map<String, Integer> map)
 	{
 		Assert.assertTrue(null != map);
 		_map = map;

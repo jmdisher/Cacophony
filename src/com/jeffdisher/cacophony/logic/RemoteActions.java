@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.jeffdisher.cacophony.data.local.CacheIndex;
+import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -22,7 +22,7 @@ public class RemoteActions
 {
 	public static RemoteActions loadIpfsConfig(LocalActions actions) throws IOException
 	{
-		CacheIndex cacheIndex = actions.loadCacheIndex();
+		GlobalPinCache cacheIndex = actions.loadGlobalPinCache();
 		LocalIndex index = actions.readIndex();
 		Assert.assertTrue(null != index);
 		IPFS ipfs = new IPFS(index.ipfsHost());
@@ -47,12 +47,12 @@ public class RemoteActions
 	}
 
 
-	private final CacheIndex _cacheIndex;
+	private final GlobalPinCache _cacheIndex;
 	private final IPFS _ipfs;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
 
-	private RemoteActions(CacheIndex cacheIndex, IPFS ipfs, String keyName, IpfsKey publicKey)
+	private RemoteActions(GlobalPinCache cacheIndex, IPFS ipfs, String keyName, IpfsKey publicKey)
 	{
 		_cacheIndex = cacheIndex;
 		_ipfs = ipfs;

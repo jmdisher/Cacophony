@@ -59,7 +59,7 @@ public class Cacophony {
 				command.scheduleActions(executor, local);
 				executor.waitForCompletion();
 				// Write-back updates.
-				local.storeCacheIndex();
+				local.storeGlobalPinCache();
 			}
 			else
 			{
