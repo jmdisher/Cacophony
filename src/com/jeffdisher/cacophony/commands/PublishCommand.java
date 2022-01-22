@@ -19,8 +19,6 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
-import io.ipfs.multihash.Multihash;
-
 
 public record PublishCommand(String _name, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand
 {
@@ -48,9 +46,9 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		// Upload the file.
 		// TODO:  Use a stream to upload.
 		byte[] raw = Files.readAllBytes(_elements[0].filePath().toPath());
-		Multihash uploaded = HighLevelIdioms.saveData(executor, remote, raw);
+		IpfsFile uploaded = HighLevelIdioms.saveData(executor, remote, raw);
 		DataElement element = new DataElement();
-		element.setCid(uploaded.toBase58());
+		element.setCid(uploaded.cid().toBase58());
 		element.setMime(_elements[0].mime());
 		if (_elements[0].isSpecialImage())
 		{
@@ -64,16 +62,16 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		record.setPublisherKey(publicKey.key().toBase58());
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		Multihash recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);
+		IpfsFile recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);
 		
-		records.getRecord().add(recordHash.toBase58());
+		records.getRecord().add(recordHash.cid().toBase58());
 		
 		// Save the updated records and index.
 		rawRecords = GlobalData.serializeRecords(records);
-		Multihash recordsHash = HighLevelIdioms.saveData(executor, remote, rawRecords);
+		IpfsFile recordsHash = HighLevelIdioms.saveData(executor, remote, rawRecords);
 		
 		// Update, save, and publish the new index.
-		index.setRecords(recordsHash.toBase58());
+		index.setRecords(recordsHash.cid().toBase58());
 		HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
 	}
 }

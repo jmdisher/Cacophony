@@ -60,7 +60,7 @@ public class RemoteActions
 		_publicKey = publicKey;
 	}
 
-	public Multihash saveData(byte[] raw) throws IOException
+	public IpfsFile saveData(byte[] raw) throws IOException
 	{
 		System.out.println("Saving " + raw.length + " bytes...");
 		NamedStreamable.ByteArrayWrapper wrapper = new NamedStreamable.ByteArrayWrapper(raw);
@@ -72,8 +72,9 @@ public class RemoteActions
 		System.out.println("-saved: " + hash);
 		
 		// Update completed so notify the cache.
-		_cacheIndex.hashWasAdded(new IpfsFile(hash));
-		return hash;
+		IpfsFile file = new IpfsFile(hash);
+		_cacheIndex.hashWasAdded(file);
+		return file;
 	}
 
 	public byte[] readData(IpfsFile indexHash) throws IOException
@@ -86,18 +87,18 @@ public class RemoteActions
 		return _publicKey;
 	}
 
-	public void publishIndex(Multihash indexHash) throws IOException
+	public void publishIndex(IpfsFile indexHash) throws IOException
 	{
 		Assert.assertTrue(null != _ipfs);
 		Assert.assertTrue(null != _keyName);
 		
-		String index58 = indexHash.toBase58();
+		String index58 = indexHash.cid().toBase58();
 		
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
 		System.out.println("Publishing " + indexHash + " to " + _keyName);
 		try
 		{
-			Map<?,?> map = _ipfs.name.publish(indexHash, Optional.of(_keyName));
+			Map<?,?> map = _ipfs.name.publish(indexHash.cid(), Optional.of(_keyName));
 			String value = (String) map.get("Value");
 			Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
 			System.out.println("-Success!");

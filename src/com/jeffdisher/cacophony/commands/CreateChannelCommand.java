@@ -11,9 +11,8 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
-
-import io.ipfs.multihash.Multihash;
 
 
 public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
@@ -51,9 +50,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		Multihash hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
-		Multihash hashRecommendations = HighLevelIdioms.saveData(executor, remote, rawRecommendations);
-		Multihash hashRecords = HighLevelIdioms.saveData(executor, remote, rawRecords);
+		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
+		IpfsFile hashRecommendations = HighLevelIdioms.saveData(executor, remote, rawRecommendations);
+		IpfsFile hashRecords = HighLevelIdioms.saveData(executor, remote, rawRecords);
 		
 		// Create the new local index.
 		HighLevelIdioms.saveAndPublishNewIndex(executor, remote, hashDescription, hashRecommendations, hashRecords);

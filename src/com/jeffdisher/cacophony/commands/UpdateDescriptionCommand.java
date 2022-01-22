@@ -13,8 +13,6 @@ import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
-import io.ipfs.multihash.Multihash;
-
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath) implements ICommand
 {
@@ -42,16 +40,16 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		{
 			// Upload the picture.
 			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
-			Multihash pictureHash = HighLevelIdioms.saveData(executor, remote, rawData);
-			description.setPicture(pictureHash.toBase58());
+			IpfsFile pictureHash = HighLevelIdioms.saveData(executor, remote, rawData);
+			description.setPicture(pictureHash.cid().toBase58());
 		}
 		
 		// Serialize and upload the description.
 		rawDescription = GlobalData.serializeDescription(description);
-		Multihash hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
+		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
 		
 		// Update, save, and publish the new index.
-		index.setDescription(hashDescription.toBase58());
+		index.setDescription(hashDescription.cid().toBase58());
 		HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
 	}
 }

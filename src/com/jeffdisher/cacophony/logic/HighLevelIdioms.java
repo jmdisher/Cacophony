@@ -8,15 +8,13 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
-import io.ipfs.multihash.Multihash;
-
 
 /**
  * A collection of static helpers for common high-level operations.
  */
 public class HighLevelIdioms
 {
-	public static Multihash saveData(Executor executor, RemoteActions remote, byte[] data)
+	public static IpfsFile saveData(Executor executor, RemoteActions remote, byte[] data)
 	{
 		return _saveData(executor, remote, data);
 	}
@@ -28,23 +26,23 @@ public class HighLevelIdioms
 		return GlobalData.deserializeIndex(rawIndex);
 	}
 
-	public static Multihash saveAndPublishIndex(Executor executor, RemoteActions remote, StreamIndex streamIndex) throws IOException
+	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, StreamIndex streamIndex) throws IOException
 	{
 		return _saveAndPublishIndex(executor, remote, streamIndex);
 	}
 
-	public static Multihash saveAndPublishNewIndex(Executor executor, RemoteActions remote, Multihash description, Multihash recommendations, Multihash records) throws IOException
+	public static IpfsFile saveAndPublishNewIndex(Executor executor, RemoteActions remote, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IOException
 	{
 		StreamIndex streamIndex = new StreamIndex();
 		streamIndex.setVersion(1);
-		streamIndex.setDescription(description.toBase58());
-		streamIndex.setRecommendations(recommendations.toBase58());
-		streamIndex.setRecords(records.toBase58());
+		streamIndex.setDescription(description.cid().toBase58());
+		streamIndex.setRecommendations(recommendations.cid().toBase58());
+		streamIndex.setRecords(records.cid().toBase58());
 		return _saveAndPublishIndex(executor, remote, streamIndex);
 	}
 
 
-	private static Multihash _saveData(Executor executor, RemoteActions remote, byte[] data)
+	private static IpfsFile _saveData(Executor executor, RemoteActions remote, byte[] data)
 	{
 		try
 		{
@@ -58,10 +56,10 @@ public class HighLevelIdioms
 		}
 	}
 
-	private static Multihash _saveAndPublishIndex(Executor executor, RemoteActions remote, StreamIndex streamIndex) throws IOException
+	private static IpfsFile _saveAndPublishIndex(Executor executor, RemoteActions remote, StreamIndex streamIndex) throws IOException
 	{
 		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
-		Multihash hashIndex = _saveData(executor, remote, rawIndex);
+		IpfsFile hashIndex = _saveData(executor, remote, rawIndex);
 		Assert.assertTrue(null != hashIndex);
 		remote.publishIndex(hashIndex);
 		return hashIndex;

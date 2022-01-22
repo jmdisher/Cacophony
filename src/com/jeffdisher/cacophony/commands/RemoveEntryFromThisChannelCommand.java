@@ -15,8 +15,6 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
-import io.ipfs.multihash.Multihash;
-
 
 public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand
 {
@@ -54,8 +52,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			// Update the record list and stream index.
 			records.getRecord().remove(foundIndex);
 			rawRecords = GlobalData.serializeRecords(records);
-			Multihash newCid = remote.saveData(rawRecords);
-			index.setRecords(newCid.toBase58());
+			IpfsFile newCid = remote.saveData(rawRecords);
+			index.setRecords(newCid.cid().toBase58());
 			HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
 			
 			// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).
