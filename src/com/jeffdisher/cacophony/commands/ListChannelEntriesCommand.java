@@ -22,7 +22,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	public void scheduleActions(Executor executor, LocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, _channelPublicKey);
+		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, _channelPublicKey, null);
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		

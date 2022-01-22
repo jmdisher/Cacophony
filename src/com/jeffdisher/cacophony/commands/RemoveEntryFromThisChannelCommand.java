@@ -27,7 +27,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey);
+		IpfsFile[] previousIndexFile = new IpfsFile[1];
+		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));

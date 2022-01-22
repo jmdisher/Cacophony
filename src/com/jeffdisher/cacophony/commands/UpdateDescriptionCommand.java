@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath) implements ICommand
@@ -22,7 +23,9 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		
 		// Read the existing StreamIndex.
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, remote.getPublicKey());
+		IpfsKey publicKey = remote.getPublicKey();
+		IpfsFile[] previousIndexFile = new IpfsFile[1];
+		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
 		
 		// Read the existing description since we might be only partially updating it.
 		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));

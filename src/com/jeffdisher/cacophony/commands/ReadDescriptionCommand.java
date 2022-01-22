@@ -23,7 +23,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 				? _channelPublicKey
 				: remote.getPublicKey()
 		;
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, keyToResolve);
+		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, keyToResolve, null);
 		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
 		System.out.println("Channel public key: " + keyToResolve);

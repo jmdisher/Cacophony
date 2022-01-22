@@ -19,9 +19,13 @@ public class HighLevelIdioms
 		return _saveData(executor, remote, data);
 	}
 
-	public static StreamIndex readIndexForKey(RemoteActions remote, IpfsKey keyToResolve) throws IOException
+	public static StreamIndex readIndexForKey(RemoteActions remote, IpfsKey keyToResolve, IpfsFile[] outFile) throws IOException
 	{
 		IpfsFile indexHash = remote.resolvePublicKey(keyToResolve);
+		if (null != outFile)
+		{
+			outFile[0] = indexHash;
+		}
 		byte[] rawIndex = remote.readData(indexHash);
 		return GlobalData.deserializeIndex(rawIndex);
 	}
