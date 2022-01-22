@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.LocalActions;
@@ -21,11 +22,13 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	public void scheduleActions(Executor executor, LocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();
 		IpfsFile[] previousIndexFile = new IpfsFile[1];
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
+		cache.removeFromThisCache(HighLevelCache.Type.METADATA, previousIndexFile[0]);
 		
 		// Read the existing description since we might be only partially updating it.
 		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
@@ -44,15 +47,18 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			// Upload the picture.
 			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
 			IpfsFile pictureHash = HighLevelIdioms.saveData(executor, remote, rawData);
+			cache.addToThisCache(HighLevelCache.Type.FILE, pictureHash);
 			description.setPicture(pictureHash.cid().toBase58());
 		}
 		
 		// Serialize and upload the description.
 		rawDescription = GlobalData.serializeDescription(description);
 		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
+		cache.addToThisCache(HighLevelCache.Type.METADATA, hashDescription);
 		
 		// Update, save, and publish the new index.
 		index.setDescription(hashDescription.cid().toBase58());
-		HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+		cache.addToThisCache(HighLevelCache.Type.METADATA, indexHash);
 	}
 }
