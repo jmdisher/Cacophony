@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -22,13 +21,12 @@ public class RemoteActions
 {
 	public static RemoteActions loadIpfsConfig(LocalActions actions) throws IOException
 	{
-		GlobalPinCache cacheIndex = actions.loadGlobalPinCache();
 		LocalIndex index = actions.readIndex();
 		Assert.assertTrue(null != index);
-		IPFS ipfs = new IPFS(index.ipfsHost());
+		IPFS ipfs = actions.getSharedConnection();
 		String keyName = index.keyName();
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(cacheIndex, ipfs, keyName, publicKey);
+		return new RemoteActions(ipfs, keyName, publicKey);
 	}
 
 	private static IpfsKey _publicKeyForName(IPFS ipfs, String keyName) throws IOException
@@ -47,14 +45,12 @@ public class RemoteActions
 	}
 
 
-	private final GlobalPinCache _cacheIndex;
 	private final IPFS _ipfs;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
 
-	private RemoteActions(GlobalPinCache cacheIndex, IPFS ipfs, String keyName, IpfsKey publicKey)
+	private RemoteActions(IPFS ipfs, String keyName, IpfsKey publicKey)
 	{
-		_cacheIndex = cacheIndex;
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
@@ -71,10 +67,7 @@ public class RemoteActions
 		Multihash hash = nodes.get(0).hash;
 		System.out.println("-saved: " + hash);
 		
-		// Update completed so notify the cache.
-		IpfsFile file = new IpfsFile(hash);
-		_cacheIndex.hashWasAdded(file);
-		return file;
+		return new IpfsFile(hash);
 	}
 
 	public byte[] readData(IpfsFile indexHash) throws IOException
@@ -119,14 +112,5 @@ public class RemoteActions
 		String publishedPath = _ipfs.name.resolve(keyToResolve.key());
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		return IpfsFile.fromIpfsCid(published);
-	}
-
-	public void unpin(IpfsFile cid) throws IOException
-	{
-		if (_cacheIndex.shouldUnpinAfterRemoving(cid))
-		{
-			// TODO:  Determine what to do with the result of this.
-			_ipfs.pin.rm(cid.cid());
-		}
 	}
 }

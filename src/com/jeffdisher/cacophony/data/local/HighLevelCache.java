@@ -1,12 +1,21 @@
 package com.jeffdisher.cacophony.data.local;
 
+import java.io.IOException;
+
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
+
+import io.ipfs.api.IPFS.Pin;
 
 
 /**
- * High-level helpers for interacting with the local cache(s).
+ * High-level helpers for interacting with the local cache(s) and writing-back any changes to the pin/unpin state of the
+ * local node.
+ * From a design perspective, this class is meant to represent what is cached on the local node and, more importantly,
+ * what we know is cached on the local node.
+ * 
  * Note that there a different types of high-level cache domains:
  * 1) this channel - the cache is never pruned, only sometimes purged of deleted entries
  * 2) a channel we are following - the cache is periodically pruned
@@ -21,7 +30,7 @@ public class HighLevelCache
 	/**
 	 * The type of reference being added.
 	 */
-	public enum Type
+	public static enum Type
 	{
 		/**
 		 * A CID which points to a Cacophony XML snippet used to describe channel structure and contents.
@@ -35,18 +44,62 @@ public class HighLevelCache
 
 	public static HighLevelCache fromLocal(LocalActions local)
 	{
-		// TODO: Implement
-		return new HighLevelCache();
+		// We need to know 3 primary things in this object:
+		// 1) The global pin cache - to determine when to pin/unpin.
+		// 2) The IPFS connection's pin abstraction - to request pin/unpin.
+		// 3) Our other data caches - to determine when to modify the global pin cache.
+		return new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection().pin);
 	}
 
-	public void addToThisCache(Type type, IpfsFile cid)
+
+	private final GlobalPinCache _globalPinCache;
+	private final Pin _localNode;
+
+	public HighLevelCache(GlobalPinCache globalPinCache, Pin localNode)
 	{
-		// TODO: Implement
+		_globalPinCache = globalPinCache;
+		_localNode = localNode;
 	}
 
-	public void removeFromThisCache(Type type, IpfsFile cid)
+	/**
+	 * Adds the given cid to the cache, treating it as reachable from this channel, and having just been explicitly
+	 * uploaded.
+	 * The reason for distinguishing the case of this channel from other channels is that this channel is not restricted
+	 * or periodically garbage collected, but only unpins entries explicitly, and the updates are always explicitly
+	 * uploaded, as opposed to pinned.
+	 * 
+	 * @param cid The IPFS CID of the meta-data or file entry just uploaded.
+	 */
+	public void uploadedToThisCache(IpfsFile cid)
 	{
-		// TODO: Implement
+		// NOTE:  We will eventually need to handle the case where this cache "re-broadcasts" an element from a different channel.
+		_globalPinCache.hashWasAdded(cid);
+	}
+
+	/**
+	 * Removes the given cid from the cache, treating it as previously reachable from this channel.
+	 * The reason for distinguishing this case from the general cases is that it isn't tracked in any other cache
+	 * system.
+	 * 
+	 * @param cid The IPFS CID of the meta-data or file entry no longer reachable from this channel.
+	 */
+	public void removeFromThisCache(IpfsFile cid)
+	{
+		boolean shouldUnpin = _globalPinCache.shouldUnpinAfterRemoving(cid);
+		if (shouldUnpin)
+		{
+			// TODO:  Add this to our list of unpins to perform later - we want these to lag.
+			try
+			{
+				_localNode.rm(cid.cid());
+			}
+			catch (IOException e)
+			{
+				// TODO: Determine how to handle this.
+				throw Assert.unexpected(e);
+			}
+		}
+		
 	}
 
 	public void addToFollowCache(IpfsKey channel, Type type, IpfsFile cid)

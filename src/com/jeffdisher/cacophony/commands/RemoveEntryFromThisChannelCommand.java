@@ -31,7 +31,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		IpfsKey publicKey = remote.getPublicKey();
 		IpfsFile[] previousIndexFile = new IpfsFile[1];
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
-		cache.removeFromThisCache(HighLevelCache.Type.METADATA, previousIndexFile[0]);
+		cache.removeFromThisCache(previousIndexFile[0]);
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
@@ -57,10 +57,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			records.getRecord().remove(foundIndex);
 			rawRecords = GlobalData.serializeRecords(records);
 			IpfsFile newCid = remote.saveData(rawRecords);
-			cache.addToThisCache(HighLevelCache.Type.METADATA, newCid);
+			cache.uploadedToThisCache(newCid);
 			index.setRecords(newCid.cid().toBase58());
 			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
-			cache.addToThisCache(HighLevelCache.Type.METADATA, indexHash);
+			cache.uploadedToThisCache(indexHash);
 			
 			// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).
 			byte[] rawRecord = remote.readData(_elementCid);
@@ -69,11 +69,9 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			for (DataElement element : array.getElement())
 			{
 				IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
-				cache.removeFromThisCache(HighLevelCache.Type.FILE, cid);
-				// TODO:  Remove this once the unpin is handled within cache cleanup.
-				remote.unpin(cid);
+				cache.removeFromThisCache(cid);
 			}
-			remote.unpin(_elementCid);
+			cache.removeFromThisCache(_elementCid);
 		}
 		else
 		{

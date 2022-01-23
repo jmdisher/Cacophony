@@ -53,14 +53,14 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
 		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, hashDescription);
+		cache.uploadedToThisCache(hashDescription);
 		IpfsFile hashRecommendations = HighLevelIdioms.saveData(executor, remote, rawRecommendations);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, hashRecommendations);
+		cache.uploadedToThisCache(hashRecommendations);
 		IpfsFile hashRecords = HighLevelIdioms.saveData(executor, remote, rawRecords);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, hashRecords);
+		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(executor, remote, hashDescription, hashRecommendations, hashRecords);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, indexHash);
+		cache.uploadedToThisCache(indexHash);
 	}
 }

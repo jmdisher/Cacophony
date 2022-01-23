@@ -33,7 +33,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		IpfsKey publicKey = remote.getPublicKey();
 		IpfsFile[] previousIndexFile = new IpfsFile[1];
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
-		cache.removeFromThisCache(HighLevelCache.Type.METADATA, previousIndexFile[0]);
+		cache.removeFromThisCache(previousIndexFile[0]);
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
@@ -51,7 +51,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		// TODO:  Use a stream to upload.
 		byte[] raw = Files.readAllBytes(_elements[0].filePath().toPath());
 		IpfsFile uploaded = HighLevelIdioms.saveData(executor, remote, raw);
-		cache.addToThisCache(HighLevelCache.Type.FILE, uploaded);
+		cache.uploadedToThisCache(uploaded);
 		
 		DataElement element = new DataElement();
 		element.setCid(uploaded.cid().toBase58());
@@ -69,18 +69,18 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		IpfsFile recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, recordHash);
+		cache.uploadedToThisCache(recordHash);
 		
 		records.getRecord().add(recordHash.cid().toBase58());
 		
 		// Save the updated records and index.
 		rawRecords = GlobalData.serializeRecords(records);
 		IpfsFile recordsHash = HighLevelIdioms.saveData(executor, remote, rawRecords);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, recordsHash);
+		cache.uploadedToThisCache(recordsHash);
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.cid().toBase58());
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, indexHash);
+		cache.uploadedToThisCache(indexHash);
 	}
 }

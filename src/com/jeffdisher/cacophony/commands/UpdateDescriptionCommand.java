@@ -28,7 +28,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		IpfsKey publicKey = remote.getPublicKey();
 		IpfsFile[] previousIndexFile = new IpfsFile[1];
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
-		cache.removeFromThisCache(HighLevelCache.Type.METADATA, previousIndexFile[0]);
+		cache.removeFromThisCache(previousIndexFile[0]);
 		
 		// Read the existing description since we might be only partially updating it.
 		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
@@ -47,18 +47,18 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			// Upload the picture.
 			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
 			IpfsFile pictureHash = HighLevelIdioms.saveData(executor, remote, rawData);
-			cache.addToThisCache(HighLevelCache.Type.FILE, pictureHash);
+			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.cid().toBase58());
 		}
 		
 		// Serialize and upload the description.
 		rawDescription = GlobalData.serializeDescription(description);
 		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, hashDescription);
+		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.
 		index.setDescription(hashDescription.cid().toBase58());
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
-		cache.addToThisCache(HighLevelCache.Type.METADATA, indexHash);
+		cache.uploadedToThisCache(indexHash);
 	}
 }

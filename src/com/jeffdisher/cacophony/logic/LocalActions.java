@@ -13,6 +13,8 @@ import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.utils.Assert;
 
+import io.ipfs.api.IPFS;
+
 
 public class LocalActions
 {
@@ -22,6 +24,7 @@ public class LocalActions
 
 	private final File _directory;
 	private GlobalPinCache _lazyCache;
+	private IPFS _lazyConnection;
 
 	public LocalActions(File directory)
 	{
@@ -107,6 +110,19 @@ public class LocalActions
 				throw Assert.unexpected(e);
 			}
 		}
+	}
+
+	public IPFS getSharedConnection()
+	{
+		if (null == _lazyConnection)
+		{
+			// We don't reuse the LocalIndex since other readers of this likely want to change it and we only want to read it.
+			LocalIndex index = _readFile(INDEX_FILE, LocalIndex.class);
+			// We should not be trying to open a connection if there is no existing index.
+			Assert.assertTrue(null != index);
+			_lazyConnection = new IPFS(index.ipfsHost());
+		}
+		return _lazyConnection;
 	}
 
 
