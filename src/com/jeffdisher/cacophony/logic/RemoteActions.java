@@ -85,7 +85,7 @@ public class RemoteActions
 		Assert.assertTrue(null != _ipfs);
 		Assert.assertTrue(null != _keyName);
 		
-		String index58 = indexHash.cid().toBase58();
+		String index58 = indexHash.cid().toString();
 		
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
 		System.out.println("Publishing " + indexHash + " to " + _keyName);

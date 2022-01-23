@@ -39,7 +39,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		// Make sure that we actually have the record.
 		boolean didFind = false;
-		String search = _elementCid.cid().toBase58();
+		String search = _elementCid.cid().toString();
 		int foundIndex = 0;
 		for (String cid : records.getRecord())
 		{
@@ -58,7 +58,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			rawRecords = GlobalData.serializeRecords(records);
 			IpfsFile newCid = remote.saveData(rawRecords);
 			cache.uploadedToThisCache(newCid);
-			index.setRecords(newCid.cid().toBase58());
+			index.setRecords(newCid.cid().toString());
 			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
 			cache.uploadedToThisCache(indexHash);
 			

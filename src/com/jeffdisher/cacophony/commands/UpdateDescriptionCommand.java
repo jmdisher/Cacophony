@@ -48,7 +48,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
 			IpfsFile pictureHash = HighLevelIdioms.saveData(executor, remote, rawData);
 			cache.uploadedToThisCache(pictureHash);
-			description.setPicture(pictureHash.cid().toBase58());
+			description.setPicture(pictureHash.cid().toString());
 		}
 		
 		// Serialize and upload the description.
@@ -57,7 +57,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.
-		index.setDescription(hashDescription.cid().toBase58());
+		index.setDescription(hashDescription.cid().toString());
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
 		cache.uploadedToThisCache(indexHash);
 	}
