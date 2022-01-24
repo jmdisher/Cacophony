@@ -60,6 +60,7 @@ public class Cacophony {
 				executor.waitForCompletion();
 				// Write-back updates.
 				local.storeGlobalPinCache();
+				local.storeFollowIndex();
 			}
 			else
 			{

@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
+import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -112,6 +113,11 @@ public class CommandParser
 		{
 			IpfsFile elementCid = IpfsFile.fromIpfsCid(required[0]);
 			return new RemoveEntryFromThisChannelCommand(elementCid);
+		}),
+		START_FOLLOWING(true, "--startFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			IpfsKey publicKey = IpfsKey.fromPublicKey(required[0]);
+			return new StartFollowingCommand(publicKey);
 		}),
 		
 		// Methods to manage local state.
