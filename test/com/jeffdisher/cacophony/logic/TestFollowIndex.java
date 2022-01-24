@@ -2,11 +2,13 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.FollowIndex;
+import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -73,5 +75,22 @@ public class TestFollowIndex
 		Assert.assertEquals(K1, index.nextKeyToPoll());
 		Assert.assertEquals(F1, index.getLastFetchedRoot(K1));
 		Assert.assertEquals(null, index.getLastFetchedRoot(K2));
+	}
+
+	@Test
+	public void testIteration()
+	{
+		FollowIndex index = FollowIndex.emptyFollowIndex();
+		index.addFollowingWithInitialState(K1, F1);
+		index.addFollowingWithInitialState(K2, F2);
+		Iterator<FollowRecord> iter = index.iterator();
+		Assert.assertEquals(K2.key().toString(), iter.next().publicKey());
+		Assert.assertEquals(K1.key().toString(), iter.next().publicKey());
+		Assert.assertFalse(iter.hasNext());
+		
+		index.removeFollowing(K2);
+		iter = index.iterator();
+		Assert.assertEquals(K1.key().toString(), iter.next().publicKey());
+		Assert.assertFalse(iter.hasNext());
 	}
 }

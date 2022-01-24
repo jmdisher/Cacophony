@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +19,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * Stores and manages basic access to the keys we are following, what data we have from each, and our polling schedule.
  */
-public class FollowIndex
+public class FollowIndex implements Iterable<FollowRecord>
 {
 	public static FollowIndex emptyFollowIndex()
 	{
@@ -138,6 +139,12 @@ public class FollowIndex
 
 		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchedRoot.cid().toString(), currentTimeMillis, newElements);
 		_sortedFollowList.add(newRecord);
+	}
+
+	@Override
+	public Iterator<FollowRecord> iterator()
+	{
+		return Collections.unmodifiableList(_sortedFollowList).iterator();
 	}
 
 
