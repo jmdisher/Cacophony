@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.ListChannelEntriesCommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
@@ -131,6 +132,11 @@ public class CommandParser
 		LIST_FOLLOWEES(true, "--listFollowees", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			return new ListFolloweesCommand();
+		}),
+		LIST_CACHED_ELEMENTS_FOR_FOLLOWEE(true, "--listFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			IpfsKey followeeKey = IpfsKey.fromPublicKey(required[0]);
+			return new ListCachedElementsForFolloweeCommand(followeeKey);
 		}),
 		
 		// Methods to manage local state.

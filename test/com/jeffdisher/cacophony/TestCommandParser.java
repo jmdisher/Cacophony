@@ -174,4 +174,15 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	public void testListFollowee() throws IOException
+	{
+		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--listFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }

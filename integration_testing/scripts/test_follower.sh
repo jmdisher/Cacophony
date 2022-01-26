@@ -81,6 +81,9 @@ CANONICAL1=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Ca
 LIST=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowees)
 requireSubstring "$LIST" "Following: $CANONICAL1"
 
+LIST=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowee --publicKey "$CANONICAL1")
+requireSubstring "$LIST" "Followee has 0 elements"
+
 echo "Stop following and verify it is no longer in the list"
 java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --stopFollowing --publicKey "$PUBLIC1"
 java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowees
