@@ -77,7 +77,9 @@ echo "Make key 2 follow key 1"
 java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --startFollowing --publicKey "$PUBLIC1"
 
 echo "List followees"
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowees
+CANONICAL1=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --canonicalizeKey --key "$PUBLIC1")
+LIST=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowees)
+requireSubstring "$LIST" "Following: $CANONICAL1"
 
 echo "Stop following and verify it is no longer in the list"
 java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --stopFollowing --publicKey "$PUBLIC1"

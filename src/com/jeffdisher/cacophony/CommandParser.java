@@ -20,6 +20,8 @@ import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -147,6 +149,14 @@ public class CommandParser
 					: 0L
 			;
 			return new SetGlobalPrefsCommand(cacheWidth, cacheHeight, cacheTotalBytes);
+		}),
+		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			// This is just a utility function to make detecting keys in integration scripts more reliable.
+			String key = required[0];
+			return (Executor executor, LocalActions local) -> {
+				System.out.println(IpfsKey.fromPublicKey(key).key());
+			};
 		}),
 		
 		;

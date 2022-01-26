@@ -25,4 +25,16 @@ public class TestTypes
 		Assert.assertEquals(input, key.key().toString());
 		Assert.assertEquals("z" + key.key().toBase58(), key.key().toString());
 	}
+
+	/**
+	 * Tests the conversion between different encodings of the key.  For more details, check the decoding here:
+	 * https://github.com/multiformats/java-multibase/blob/master/src/main/java/io/ipfs/multibase/Multibase.java
+	 */
+	@Test
+	public void testKeyEncodings()
+	{
+		String base36 = "k51qzi5uqu5diuxe7gg1wgrla4c5l1bbg4mw2f574t71wpx1dkkk6eo54pi3ke";
+		IpfsKey key = IpfsKey.fromPublicKey(base36);
+		Assert.assertEquals("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV", key.key().toString());
+	}
 }

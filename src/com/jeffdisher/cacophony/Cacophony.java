@@ -47,7 +47,6 @@ public class Cacophony {
 			ICommand command = CommandParser.parseArgs(args, 1, System.err);
 			if (null != command)
 			{
-				System.out.println("Command to run:  " + command);
 				File directory = new File(args[0]);
 				if (!directory.exists() && !directory.mkdirs())
 				{
