@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +61,19 @@ public class RemoteActions
 	{
 		System.out.println("Saving " + raw.length + " bytes...");
 		NamedStreamable.ByteArrayWrapper wrapper = new NamedStreamable.ByteArrayWrapper(raw);
+		
+		List<MerkleNode> nodes = _ipfs.add(wrapper);
+		Assert.assertTrue(1 == nodes.size());
+		// TODO:  Determine if this is the root hash.
+		Multihash hash = nodes.get(0).hash;
+		System.out.println("-saved: " + hash);
+		
+		return new IpfsFile(hash);
+	}
+
+	public IpfsFile saveStream(InputStream stream) throws IOException
+	{
+		NamedStreamable.InputStreamWrapper wrapper = new NamedStreamable.InputStreamWrapper(stream);
 		
 		List<MerkleNode> nodes = _ipfs.add(wrapper);
 		Assert.assertTrue(1 == nodes.size());

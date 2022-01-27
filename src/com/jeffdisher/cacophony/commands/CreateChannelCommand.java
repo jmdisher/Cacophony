@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -39,9 +40,10 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		StreamDescription description = new StreamDescription();
 		description.setName("Unnamed");
 		description.setDescription("Description forthcoming");
-		// TODO:  Make this into a question mark icon, or something.
-		// (for now, this is just a 0-byte file).
-		description.setPicture("QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH");
+		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
+		Assert.assertTrue(null != pictureStream);
+		IpfsFile pictureHash = remote.saveStream(pictureStream);
+		description.setPicture(pictureHash.cid().toString());
 		
 		StreamRecommendations recommendations = new StreamRecommendations();
 		

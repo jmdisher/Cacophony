@@ -58,6 +58,8 @@
 			</fileset>
 			<fileset dir="${dir.global.workspace}" includes="**/*.xsd">
 			</fileset>
+			<fileset dir="${dir.global.workspace}" includes="resources/*">
+			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
 			</manifest>
