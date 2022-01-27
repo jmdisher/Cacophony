@@ -85,13 +85,18 @@ public class HighLevelCache
 	 */
 	public void removeFromThisCache(IpfsFile cid)
 	{
-		boolean shouldUnpin = _globalPinCache.shouldUnpinAfterRemoving(cid);
-		if (shouldUnpin)
+		_unpinAndRemove(cid);
+	}
+
+	public void addToFollowCache(IpfsKey channel, Type type, IpfsFile cid)
+	{
+		// TODO: Do the accounting for the size per-follower.
+		boolean shouldPin = _globalPinCache.shouldPinAfterAdding(cid);
+		if (shouldPin)
 		{
-			// TODO:  Add this to our list of unpins to perform later - we want these to lag.
 			try
 			{
-				_localNode.rm(cid.cid());
+				_localNode.add(cid.cid());
 			}
 			catch (IOException e)
 			{
@@ -99,17 +104,12 @@ public class HighLevelCache
 				throw Assert.unexpected(e);
 			}
 		}
-		
-	}
-
-	public void addToFollowCache(IpfsKey channel, Type type, IpfsFile cid)
-	{
-		// TODO: Implement
 	}
 
 	public void removeFromFollowCache(IpfsKey channel, Type type, IpfsFile cid)
 	{
-		// TODO: Implement
+		// TODO: Do the accounting for the size per-follower.
+		_unpinAndRemove(cid);
 	}
 
 	public void addToExplicitCache(Type type, IpfsFile cid)
@@ -130,5 +130,24 @@ public class HighLevelCache
 	public void removeFromTempCache(Type type, IpfsFile cid)
 	{
 		// TODO: Implement
+	}
+
+
+	private void _unpinAndRemove(IpfsFile cid)
+	{
+		boolean shouldUnpin = _globalPinCache.shouldUnpinAfterRemoving(cid);
+		if (shouldUnpin)
+		{
+			// TODO:  Add this to our list of unpins to perform later - we want these to lag.
+			try
+			{
+				_localNode.rm(cid.cid());
+			}
+			catch (IOException e)
+			{
+				// TODO: Determine how to handle this.
+				throw Assert.unexpected(e);
+			}
+		}
 	}
 }
