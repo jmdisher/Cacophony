@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -66,6 +67,7 @@ public class GlobalData {
 
 	public static StreamIndex deserializeIndex(byte[] data)
 	{
+		Assert.assertTrue(null != data);
 		StreamIndex result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamIndex.class);

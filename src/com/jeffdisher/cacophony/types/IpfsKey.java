@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.types;
 
+import com.jeffdisher.cacophony.utils.Assert;
+
 import io.ipfs.cid.Cid;
 import io.ipfs.multihash.Multihash;
 
@@ -20,6 +22,7 @@ public record IpfsKey(Multihash key)
 {
 	public static IpfsKey fromPublicKey(String keyAsString)
 	{
+		Assert.assertTrue(null != keyAsString);
 		return new IpfsKey(Cid.decode(keyAsString));
 	}
 }
