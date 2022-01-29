@@ -20,11 +20,11 @@ import io.ipfs.multihash.Multihash;
 
 public class RemoteActions
 {
-	public static RemoteActions loadIpfsConfig(LocalActions actions) throws IOException
+	public static RemoteActions loadIpfsConfig(ILocalActions local) throws IOException
 	{
-		LocalIndex index = actions.readIndex();
+		LocalIndex index = local.readIndex();
 		Assert.assertTrue(null != index);
-		IPFS ipfs = actions.getSharedConnection();
+		IPFS ipfs = local.getSharedConnection();
 		String keyName = index.keyName();
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
 		return new RemoteActions(ipfs, keyName, publicKey);

@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -18,7 +18,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, LocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);

@@ -17,7 +17,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 import io.ipfs.api.IPFS;
 
 
-public class LocalActions
+public class LocalActions implements ILocalActions
 {
 	private static final String INDEX_FILE = "index.dat";
 	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
@@ -34,16 +34,19 @@ public class LocalActions
 		_directory = directory;
 	}
 
+	@Override
 	public LocalIndex readIndex()
 	{
 		return _readFile(INDEX_FILE, LocalIndex.class);
 	}
 
+	@Override
 	public void storeIndex(LocalIndex index)
 	{
 		_storeFile(INDEX_FILE, index);
 	}
 
+	@Override
 	public GlobalPrefs readPrefs()
 	{
 		GlobalPrefs prefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
@@ -63,6 +66,7 @@ public class LocalActions
 		_storeFile(GLOBAL_PREFS_FILE, prefs);
 	}
 
+	@Override
 	public GlobalPinCache loadGlobalPinCache()
 	{
 		if (null == _lazyCache)
@@ -115,6 +119,7 @@ public class LocalActions
 		}
 	}
 
+	@Override
 	public FollowIndex loadFollowIndex()
 	{
 		if (null == _lazyFollowIndex)
@@ -167,6 +172,7 @@ public class LocalActions
 		}
 	}
 
+	@Override
 	public IPFS getSharedConnection()
 	{
 		if (null == _lazyConnection)

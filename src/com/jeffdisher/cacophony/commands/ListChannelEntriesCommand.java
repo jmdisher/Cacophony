@@ -10,7 +10,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
-import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, LocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, _channelPublicKey, null);

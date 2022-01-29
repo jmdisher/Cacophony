@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.data.local;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -42,7 +42,7 @@ public class HighLevelCache
 		FILE,
 	}
 
-	public static HighLevelCache fromLocal(LocalActions local)
+	public static HighLevelCache fromLocal(ILocalActions local)
 	{
 		// We need to know 3 primary things in this object:
 		// 1) The global pin cache - to determine when to pin/unpin.

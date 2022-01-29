@@ -4,13 +4,13 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.logic.ILocalActions;
 
 
 public record SetGlobalPrefsCommand(int _cacheWidth, int _cacheHeight, long _cacheTotalBytes) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, LocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		GlobalPrefs original = local.readPrefs();
 		GlobalPrefs prefs = original;
