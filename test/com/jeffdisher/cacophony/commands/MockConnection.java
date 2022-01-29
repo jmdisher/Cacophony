@@ -2,6 +2,8 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +14,8 @@ import org.junit.Assert;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+
+import io.ipfs.cid.Cid;
 
 
 public class MockConnection implements IConnection
@@ -38,8 +42,16 @@ public class MockConnection implements IConnection
 	@Override
 	public IpfsFile storeData(InputStream dataStream) throws IOException
 	{
-		// TODO Auto-generated method stub
-		return null;
+		// We will emulate this hash using a Java hashcode of the bytes.
+		byte[] data = dataStream.readAllBytes();
+		int hashCode = Arrays.hashCode(data);
+		byte[] hash = new byte[34];
+		ByteBuffer buffer = ByteBuffer.wrap(hash);
+		buffer.put((byte)18).put((byte)32);
+		buffer.putInt(hashCode).putInt(hashCode).putInt(hashCode).putInt(hashCode);
+		IpfsFile newFile = IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
+		_dataStore.put(newFile, data);
+		return newFile;
 	}
 
 	@Override
@@ -51,8 +63,8 @@ public class MockConnection implements IConnection
 	@Override
 	public void publish(String keyName, IpfsFile file) throws IOException
 	{
-		// TODO Auto-generated method stub
-
+		Assert.assertTrue(_keyName.equals(keyName));
+		_root = file;
 	}
 
 	@Override

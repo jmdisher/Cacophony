@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
+import org.junit.Assert;
+
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
@@ -18,6 +20,8 @@ public class MockLocalActions implements ILocalActions
 	private final IPinMechanism _pinMechanism;
 	private final FollowIndex _followIndex;
 
+	private LocalIndex _storedIndex;
+
 	public MockLocalActions(String ipfsHost, String keyName, MockConnection sharedConnection, GlobalPinCache pinCache, IPinMechanism pinMechanism, FollowIndex followIndex)
 	{
 		_ipfsHost = ipfsHost;
@@ -31,13 +35,20 @@ public class MockLocalActions implements ILocalActions
 	@Override
 	public LocalIndex readIndex()
 	{
-		return new LocalIndex(_ipfsHost, _keyName);
+		return (null != _storedIndex)
+				? _storedIndex
+				: ((null != _ipfsHost)
+					? new LocalIndex(_ipfsHost, _keyName)
+					: null
+				)
+		;
 	}
 
 	@Override
 	public void storeIndex(LocalIndex index)
 	{
-		throw new RuntimeException("Implement");
+		Assert.assertTrue(null == _storedIndex);
+		_storedIndex = index;
 	}
 
 	@Override
@@ -68,5 +79,10 @@ public class MockLocalActions implements ILocalActions
 	public GlobalPinCache loadGlobalPinCache()
 	{
 		return _pinCache;
+	}
+
+	public LocalIndex getStoredIndex()
+	{
+		return _storedIndex;
 	}
 }
