@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 
-import io.ipfs.api.IPFS;
 
 /**
  * The abstract interface for LocalActions, provided to allow mocks for testing.
@@ -16,7 +15,9 @@ public interface ILocalActions
 
 	void storeIndex(LocalIndex index);
 
-	IPFS getSharedConnection();
+	IConnection getSharedConnection();
+
+	IPinMechanism getSharedPinMechanism();
 
 	FollowIndex loadFollowIndex();
 

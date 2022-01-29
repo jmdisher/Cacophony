@@ -26,7 +26,8 @@ public class LocalActions implements ILocalActions
 
 	private final File _directory;
 	private GlobalPinCache _lazyCache;
-	private IPFS _lazyConnection;
+	private IpfsConnection _lazyConnection;
+	private IpfsPinMechanism _pinMechanism;
 	private FollowIndex _lazyFollowIndex;
 
 	public LocalActions(File directory)
@@ -173,17 +174,17 @@ public class LocalActions implements ILocalActions
 	}
 
 	@Override
-	public IPFS getSharedConnection()
+	public IConnection getSharedConnection()
 	{
-		if (null == _lazyConnection)
-		{
-			// We don't reuse the LocalIndex since other readers of this likely want to change it and we only want to read it.
-			LocalIndex index = _readFile(INDEX_FILE, LocalIndex.class);
-			// We should not be trying to open a connection if there is no existing index.
-			Assert.assertTrue(null != index);
-			_lazyConnection = new IPFS(index.ipfsHost());
-		}
+		_verifySharedConnections();
 		return _lazyConnection;
+	}
+
+	@Override
+	public IPinMechanism getSharedPinMechanism()
+	{
+		_verifySharedConnections();
+		return _pinMechanism;
 	}
 
 
@@ -231,6 +232,21 @@ public class LocalActions implements ILocalActions
 		{
 			// We don't expect this.
 			throw Assert.unexpected(e);
+		}
+	}
+
+	private void _verifySharedConnections()
+	{
+		if (null == _lazyConnection)
+		{
+			Assert.assertTrue(null == _pinMechanism);
+			// We don't reuse the LocalIndex since other readers of this likely want to change it and we only want to read it.
+			LocalIndex index = _readFile(INDEX_FILE, LocalIndex.class);
+			// We should not be trying to open a connection if there is no existing index.
+			Assert.assertTrue(null != index);
+			IPFS ipfs = new IPFS(index.ipfsHost());
+			_lazyConnection = new IpfsConnection(ipfs);
+			_pinMechanism = new IpfsPinMechanism(ipfs.pin);
 		}
 	}
 }

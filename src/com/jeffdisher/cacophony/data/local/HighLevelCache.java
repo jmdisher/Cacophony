@@ -3,11 +3,10 @@ package com.jeffdisher.cacophony.data.local;
 import java.io.IOException;
 
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.IPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
-
-import io.ipfs.api.IPFS.Pin;
 
 
 /**
@@ -48,14 +47,14 @@ public class HighLevelCache
 		// 1) The global pin cache - to determine when to pin/unpin.
 		// 2) The IPFS connection's pin abstraction - to request pin/unpin.
 		// 3) Our other data caches - to determine when to modify the global pin cache.
-		return new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection().pin);
+		return new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
 	}
 
 
 	private final GlobalPinCache _globalPinCache;
-	private final Pin _localNode;
+	private final IPinMechanism _localNode;
 
-	public HighLevelCache(GlobalPinCache globalPinCache, Pin localNode)
+	public HighLevelCache(GlobalPinCache globalPinCache, IPinMechanism localNode)
 	{
 		_globalPinCache = globalPinCache;
 		_localNode = localNode;
@@ -96,7 +95,7 @@ public class HighLevelCache
 		{
 			try
 			{
-				_localNode.add(cid.cid());
+				_localNode.add(cid);
 			}
 			catch (IOException e)
 			{
@@ -141,7 +140,7 @@ public class HighLevelCache
 			// TODO:  Add this to our list of unpins to perform later - we want these to lag.
 			try
 			{
-				_localNode.rm(cid.cid());
+				_localNode.rm(cid);
 			}
 			catch (IOException e)
 			{
