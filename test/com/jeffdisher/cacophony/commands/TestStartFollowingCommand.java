@@ -8,6 +8,7 @@ import org.junit.Test;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -26,8 +27,10 @@ public class TestStartFollowingCommand
 	@Test
 	public void testUsage() throws IOException
 	{
+		IpfsFile originalRecordsCid = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
 		MockPinMechanism remotePin = new MockPinMechanism(null);
 		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin);
+		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor();
@@ -44,8 +47,7 @@ public class TestStartFollowingCommand
 		originalRootData.setDescription(originalDescription.cid().toString());
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK2");
 		originalRootData.setRecommendations(originalRecommendations.cid().toString());
-		IpfsFile originalRecords = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
-		originalRootData.setRecords(originalRecords.cid().toString());
+		originalRootData.setRecords(originalRecordsCid.cid().toString());
 		remoteConnection.storeData(originalRoot, GlobalData.serializeIndex(originalRootData));
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
@@ -62,7 +64,7 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(pinMechanism.isPinned(originalRoot));
 		Assert.assertTrue(pinMechanism.isPinned(originalDescription));
 		Assert.assertTrue(pinMechanism.isPinned(originalRecommendations));
-		Assert.assertTrue(pinMechanism.isPinned(originalRecords));
+		Assert.assertTrue(pinMechanism.isPinned(originalRecordsCid));
 		Assert.assertTrue(pinMechanism.isPinned(originalPicture));
 	}
 }

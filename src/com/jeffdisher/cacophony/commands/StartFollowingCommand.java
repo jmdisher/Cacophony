@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -46,7 +47,22 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
 		
+		// Populate the initial cache records.
+		_populateCachedRecords(remote, cache, followIndex, GlobalData.deserializeRecords(remote.readData(recordsHash)));
+		
 		// Then, save this data back to the FollowingIndex.
 		followIndex.addFollowingWithInitialState(_publicKey, indexRoot);
+	}
+
+
+	private void _populateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, StreamRecords newRecords)
+	{
+		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
+		// For now, we just add the record CIDs, not the leaf elements.
+		// TODO:  Fetch the leaf elements and apply the correct decay algorithm to expire cache elements.
+		for (String cid : newRecords.getRecord())
+		{
+			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(cid));
+		}
 	}
 }
