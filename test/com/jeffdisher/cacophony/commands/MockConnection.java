@@ -22,15 +22,23 @@ public class MockConnection implements IConnection
 {
 	private final String _keyName;
 	private final IpfsKey _key;
+	private final MockPinMechanism _pinMechanism;
 	private final Map<IpfsFile, byte[]> _dataStore;
 
 	private IpfsFile _root;
 
-	public MockConnection(String keyName, IpfsKey key)
+	public MockConnection(String keyName, IpfsKey key, MockPinMechanism pinMechanism)
 	{
 		_keyName = keyName;
 		_key = key;
+		_pinMechanism = pinMechanism;
 		_dataStore = new HashMap<>();
+		
+		_pinMechanism.attachRemoteIngest((IpfsFile cid, byte[] data) -> {
+			Assert.assertTrue(!_dataStore.containsKey(cid));
+			_dataStore.put(cid, data);
+			return null;
+		});
 	}
 
 	@Override
@@ -50,14 +58,18 @@ public class MockConnection implements IConnection
 		buffer.put((byte)18).put((byte)32);
 		buffer.putInt(hashCode).putInt(hashCode).putInt(hashCode).putInt(hashCode);
 		IpfsFile newFile = IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
-		_dataStore.put(newFile, data);
+		_storeData(newFile, data);
 		return newFile;
 	}
 
 	@Override
 	public byte[] loadData(IpfsFile file) throws IOException
 	{
-		return _dataStore.get(file);
+		// We will only load the data if it is pinned to emulate the impacts of unpinning.
+		return _pinMechanism.isPinned(file)
+				? _dataStore.get(file)
+				: null
+		;
 	}
 
 	@Override
@@ -70,8 +82,10 @@ public class MockConnection implements IConnection
 	@Override
 	public IpfsFile resolve(IpfsKey key) throws IOException
 	{
-		Assert.assertTrue(_key.equals(key));
-		return _root;
+		return (_key.equals(key))
+				? _root
+				: _pinMechanism.remoteResolve(key)
+		;
 	}
 
 	public void setRootForKey(IpfsKey key, IpfsFile root)
@@ -82,6 +96,15 @@ public class MockConnection implements IConnection
 
 	public void storeData(IpfsFile file, byte[] data)
 	{
+		_storeData(file, data);
+	}
+
+
+	private void _storeData(IpfsFile file, byte[] data)
+	{
 		_dataStore.put(file, data);
+		
+		// We will tell the pin mechanism that this counts as pinned since it is stored.
+		_pinMechanism.addLocalFile(file);
 	}
 }

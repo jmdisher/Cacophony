@@ -30,9 +30,9 @@ public class TestCreateChannelCommand
 		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
 		Executor executor = new Executor();
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism = new MockPinMechanism();
+		MockPinMechanism pinMechanism = new MockPinMechanism(null);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY);
+		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism);
 		MockLocalActions localActions = new MockLocalActions(null, null, sharedConnection, pinCache, pinMechanism, followIndex);
 		
 		command.scheduleActions(executor, localActions);
@@ -44,11 +44,19 @@ public class TestCreateChannelCommand
 		IpfsFile root = sharedConnection.resolve(PUBLIC_KEY);
 		StreamIndex index = GlobalData.deserializeIndex(sharedConnection.loadData(root));
 		Assert.assertEquals(1, index.getVersion());
-		StreamDescription description = GlobalData.deserializeDescription(sharedConnection.loadData(IpfsFile.fromIpfsCid(index.getDescription())));
+		IpfsFile descriptionCid = IpfsFile.fromIpfsCid(index.getDescription());
+		StreamDescription description = GlobalData.deserializeDescription(sharedConnection.loadData(descriptionCid));
 		Assert.assertEquals("Unnamed", description.getName());
-		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(sharedConnection.loadData(IpfsFile.fromIpfsCid(index.getRecommendations())));
+		IpfsFile recommendationsCid = IpfsFile.fromIpfsCid(index.getRecommendations());
+		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(sharedConnection.loadData(recommendationsCid));
 		Assert.assertEquals(0, recommendations.getUser().size());
-		StreamRecords records = GlobalData.deserializeRecords(sharedConnection.loadData(IpfsFile.fromIpfsCid(index.getRecords())));
+		IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
+		StreamRecords records = GlobalData.deserializeRecords(sharedConnection.loadData(recordsCid));
 		Assert.assertEquals(0, records.getRecord().size());
+		
+		Assert.assertTrue(pinMechanism.isPinned(root));
+		Assert.assertTrue(pinMechanism.isPinned(descriptionCid));
+		Assert.assertTrue(pinMechanism.isPinned(recommendationsCid));
+		Assert.assertTrue(pinMechanism.isPinned(recommendationsCid));
 	}
 }

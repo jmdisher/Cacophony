@@ -20,16 +20,21 @@ public class TestStartFollowingCommand
 	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
+	private static final String REMOTE_KEY_NAME = "remoteKey";
+	private static final IpfsKey REMOTE_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14f");
 
 	@Test
 	public void testUsage() throws IOException
 	{
-		StartFollowingCommand command = new StartFollowingCommand(PUBLIC_KEY);
+		MockPinMechanism remotePin = new MockPinMechanism(null);
+		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin);
+		
+		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor();
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism = new MockPinMechanism();
+		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY);
+		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism);
 		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, sharedConnection, pinCache, pinMechanism, followIndex);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
@@ -41,16 +46,16 @@ public class TestStartFollowingCommand
 		originalRootData.setRecommendations(originalRecommendations.cid().toString());
 		IpfsFile originalRecords = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
 		originalRootData.setRecords(originalRecords.cid().toString());
-		sharedConnection.storeData(originalRoot, GlobalData.serializeIndex(originalRootData));
+		remoteConnection.storeData(originalRoot, GlobalData.serializeIndex(originalRootData));
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
 		IpfsFile originalPicture = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK4");
 		originalDescriptionData.setDescription("Description");
 		originalDescriptionData.setPicture(originalPicture.cid().toString());
-		sharedConnection.storeData(originalDescription, GlobalData.serializeDescription(originalDescriptionData));
+		remoteConnection.storeData(originalDescription, GlobalData.serializeDescription(originalDescriptionData));
 		
-		sharedConnection.setRootForKey(PUBLIC_KEY, originalRoot);
+		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
 		command.scheduleActions(executor, localActions);
 		
 		// Verify the states that should have changed.
