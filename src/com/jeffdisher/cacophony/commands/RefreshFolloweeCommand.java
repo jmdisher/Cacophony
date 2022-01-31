@@ -7,6 +7,8 @@ import java.util.Set;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.record.DataElement;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
@@ -88,7 +90,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, StreamRecords oldRecords, StreamRecords newRecords)
+	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, StreamRecords oldRecords, StreamRecords newRecords) throws IOException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		Set<String> removeCids = new HashSet<String>();
@@ -106,13 +108,31 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		}
 		// For now, we just add the record CIDs, not the leaf elements.
 		// TODO:  Fetch the leaf elements and apply the correct decay algorithm to expire cache elements.
-		for (String cid : removeCids)
+		for (String rawCid : removeCids)
 		{
-			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(cid));
+			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+			// TODO: Make this population use the filter and cache algorithm.
+			StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
+			for (DataElement elt : record.getElements().getElement())
+			{
+				IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, eltCid);
+			}
+			
+			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
 		}
-		for (String cid : addCids)
+		for (String rawCid : addCids)
 		{
-			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(cid));
+			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
+			
+			// TODO: Make this population use the filter and cache algorithm.
+			StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
+			for (DataElement elt : record.getElements().getElement())
+			{
+				IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
+				cache.addToFollowCache(_publicKey, HighLevelCache.Type.FILE, eltCid);
+			}
 		}
 	}
 }
