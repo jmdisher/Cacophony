@@ -40,28 +40,30 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Upload the elements.
-		// TODO:  Eventually support optional arguments and multiple files.
 		Assert.assertNull(_discussionUrl);
 		Assert.assertTrue(_elements.length > 0);
-		Assert.assertNull(_elements[0].codec());
-		Assert.assertTrue(0 == _elements[0].width());
-		Assert.assertTrue(0 == _elements[0].height());
-		
-		// Upload the file.
-		// TODO:  Use a stream to upload.
-		byte[] raw = Files.readAllBytes(_elements[0].filePath().toPath());
-		IpfsFile uploaded = HighLevelIdioms.saveData(executor, remote, raw);
-		cache.uploadedToThisCache(uploaded);
-		
-		DataElement element = new DataElement();
-		element.setCid(uploaded.cid().toString());
-		element.setMime(_elements[0].mime());
-		if (_elements[0].isSpecialImage())
-		{
-			element.setSpecial(ElementSpecialType.IMAGE);
-		}
 		DataArray array = new DataArray();
-		array.getElement().add(element);
+		for (ElementSubCommand elt : _elements)
+		{
+			Assert.assertNull(elt.codec());
+			Assert.assertTrue(0 == elt.width());
+			Assert.assertTrue(0 == elt.height());
+			
+			// Upload the file.
+			// TODO:  Use a stream to upload.
+			byte[] raw = Files.readAllBytes(elt.filePath().toPath());
+			IpfsFile uploaded = HighLevelIdioms.saveData(executor, remote, raw);
+			cache.uploadedToThisCache(uploaded);
+			
+			DataElement element = new DataElement();
+			element.setCid(uploaded.cid().toString());
+			element.setMime(elt.mime());
+			if (elt.isSpecialImage())
+			{
+				element.setSpecial(ElementSpecialType.IMAGE);
+			}
+			array.getElement().add(element);
+		}
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
 		record.setElements(array);

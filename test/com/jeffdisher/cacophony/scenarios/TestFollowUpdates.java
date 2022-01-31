@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -20,6 +21,7 @@ import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
@@ -70,7 +72,13 @@ public class TestFollowUpdates
 		// User1:  Upload an element.
 		String entryName = "entry 1";
 		File dataFile = FOLDER.newFile();
+		FileOutputStream dataStream = new FileOutputStream(dataFile);
+		dataStream.write("DATA\n".getBytes());
+		dataStream.close();
 		File imageFile = FOLDER.newFile();
+		FileOutputStream imageStream = new FileOutputStream(imageFile);
+		imageStream.write("IMAGE\n".getBytes());
+		imageStream.close();
 		ElementSubCommand[] elements = new ElementSubCommand[] {
 				new ElementSubCommand("text/plain", dataFile, null, 0, 0, false),
 				new ElementSubCommand("image/jpeg", imageFile, null, 0, 0, true),
@@ -78,11 +86,25 @@ public class TestFollowUpdates
 		PublishCommand publishCommand = new PublishCommand(entryName, null, elements);
 		publishCommand.scheduleActions(executor, localActions1);
 		
+		// Verify the data is only in the User1 data store and not yet in User2.
+		byte[] verify = sharedConnection1.loadData(IpfsFile.fromIpfsCid("QmNiPnKZFQUP9oJGGFK5UsFe1E7mmvvB441vPPxbJebizK"));
+		Assert.assertEquals("DATA\n", new String(verify));
+		verify = sharedConnection1.loadData(IpfsFile.fromIpfsCid("QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP"));
+		Assert.assertEquals("IMAGE\n", new String(verify));
+		Assert.assertNull(sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmNiPnKZFQUP9oJGGFK5UsFe1E7mmvvB441vPPxbJebizK")));
+		Assert.assertNull(sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP")));
+		
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
 		startFollowingCommand.scheduleActions(executor, localActions2);
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		listCommand.scheduleActions(executor, localActions2);
+		
+		// Verify that these elements are now in User2's data store.
+		verify = sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmNiPnKZFQUP9oJGGFK5UsFe1E7mmvvB441vPPxbJebizK"));
+		Assert.assertEquals("DATA\n", new String(verify));
+		verify = sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP"));
+		Assert.assertEquals("IMAGE\n", new String(verify));
 	}
 
 
