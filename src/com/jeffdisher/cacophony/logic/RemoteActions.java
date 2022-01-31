@@ -100,4 +100,9 @@ public class RemoteActions
 	{
 		return _ipfs.resolve(keyToResolve);
 	}
+
+	public long getSizeInBytes(IpfsFile cid)
+	{
+		return _ipfs.getSizeInBytes(cid);
+	}
 }

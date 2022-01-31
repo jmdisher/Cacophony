@@ -29,7 +29,7 @@ public class TestStartFollowingCommand
 	{
 		IpfsFile originalRecordsCid = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
 		MockPinMechanism remotePin = new MockPinMechanism(null);
-		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin);
+		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin, null);
 		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
@@ -37,7 +37,7 @@ public class TestStartFollowingCommand
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism);
+		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
 		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, sharedConnection, pinCache, pinMechanism, followIndex);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");

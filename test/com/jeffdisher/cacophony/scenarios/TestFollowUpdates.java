@@ -43,7 +43,7 @@ public class TestFollowUpdates
 		GlobalPinCache pinCache1 = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism1 = new MockPinMechanism(null);
 		FollowIndex followIndex1 = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection1 = new MockConnection(KEY_NAME1, PUBLIC_KEY1, pinMechanism1);
+		MockConnection sharedConnection1 = new MockConnection(KEY_NAME1, PUBLIC_KEY1, pinMechanism1, null);
 		MockLocalActions localActions1 = new MockLocalActions(null, null, sharedConnection1, pinCache1, pinMechanism1, followIndex1);
 		File userPic1 = FOLDER.newFile();
 		
@@ -57,7 +57,7 @@ public class TestFollowUpdates
 		GlobalPinCache pinCache2 = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism2 = new MockPinMechanism(sharedConnection1);
 		FollowIndex followIndex2 = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection2 = new MockConnection(KEY_NAME2, PUBLIC_KEY2, pinMechanism2);
+		MockConnection sharedConnection2 = new MockConnection(KEY_NAME2, PUBLIC_KEY2, pinMechanism2, sharedConnection1);
 		MockLocalActions localActions2 = new MockLocalActions(null, null, sharedConnection2, pinCache2, pinMechanism2, followIndex2);
 		File userPic2 = FOLDER.newFile();
 		

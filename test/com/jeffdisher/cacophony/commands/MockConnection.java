@@ -23,15 +23,17 @@ public class MockConnection implements IConnection
 	private final String _keyName;
 	private final IpfsKey _key;
 	private final MockPinMechanism _pinMechanism;
+	private final MockConnection _peer;
 	private final Map<IpfsFile, byte[]> _dataStore;
 
 	private IpfsFile _root;
 
-	public MockConnection(String keyName, IpfsKey key, MockPinMechanism pinMechanism)
+	public MockConnection(String keyName, IpfsKey key, MockPinMechanism pinMechanism, MockConnection peer)
 	{
 		_keyName = keyName;
 		_key = key;
 		_pinMechanism = pinMechanism;
+		_peer = peer;
 		_dataStore = new HashMap<>();
 		
 		_pinMechanism.attachRemoteIngest((IpfsFile cid, byte[] data) -> {
@@ -85,6 +87,15 @@ public class MockConnection implements IConnection
 		return (_key.equals(key))
 				? _root
 				: _pinMechanism.remoteResolve(key)
+		;
+	}
+
+	@Override
+	public long getSizeInBytes(IpfsFile cid)
+	{
+		return _pinMechanism.isPinned(cid)
+				? (long) _dataStore.get(cid).length
+				: _peer.getSizeInBytes(cid)
 		;
 	}
 

@@ -67,4 +67,18 @@ public class IpfsConnection implements IConnection
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		return IpfsFile.fromIpfsCid(published);
 	}
+
+	@Override
+	public long getSizeInBytes(IpfsFile cid)
+	{
+		try
+		{
+			Map<?,?> m = _connection.block.stat(cid.cid());
+			return ((Number)m.get("Size")).longValue();
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+	}
 }

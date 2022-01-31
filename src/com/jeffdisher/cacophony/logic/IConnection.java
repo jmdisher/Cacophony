@@ -26,4 +26,6 @@ public interface IConnection
 	void publish(String keyName, IpfsFile file) throws IOException;
 
 	IpfsFile resolve(IpfsKey key) throws IOException;
+
+	long getSizeInBytes(IpfsFile cid);
 }
