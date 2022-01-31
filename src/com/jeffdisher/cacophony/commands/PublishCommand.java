@@ -42,7 +42,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		// Upload the elements.
 		// TODO:  Eventually support optional arguments and multiple files.
 		Assert.assertNull(_discussionUrl);
-		Assert.assertTrue(1 == _elements.length);
+		Assert.assertTrue(_elements.length > 0);
 		Assert.assertNull(_elements[0].codec());
 		Assert.assertTrue(0 == _elements[0].width());
 		Assert.assertTrue(0 == _elements[0].height());
