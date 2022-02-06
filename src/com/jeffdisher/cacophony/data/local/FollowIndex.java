@@ -108,13 +108,16 @@ public class FollowIndex implements Iterable<FollowRecord>
 
 	public IpfsFile getLastFetchedRoot(IpfsKey publicKey)
 	{
-		String publicKeyString = publicKey.key().toString();
-		List<FollowRecord> list = _sortedFollowList.stream().filter((r) -> publicKeyString.equals(r.publicKey())).collect(Collectors.toList());
-		Assert.assertTrue(list.size() <= 1);
-		return (list.isEmpty())
+		FollowRecord record = _getFollowerRecord(publicKey);
+		return (null == record)
 				? null
-				: IpfsFile.fromIpfsCid(list.get(0).lastFetchedRoot())
+				: IpfsFile.fromIpfsCid(record.lastFetchedRoot())
 		;
+	}
+
+	public FollowRecord getFollowerRecord(IpfsKey publicKey)
+	{
+		return _getFollowerRecord(publicKey);
 	}
 
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
@@ -164,5 +167,16 @@ public class FollowIndex implements Iterable<FollowRecord>
 		}
 		Assert.assertTrue(null != found);
 		return found;
+	}
+
+	private FollowRecord _getFollowerRecord(IpfsKey publicKey)
+	{
+		String publicKeyString = publicKey.key().toString();
+		List<FollowRecord> list = _sortedFollowList.stream().filter((r) -> publicKeyString.equals(r.publicKey())).collect(Collectors.toList());
+		Assert.assertTrue(list.size() <= 1);
+		return (list.isEmpty())
+				? null
+				: list.get(0)
+		;
 	}
 }

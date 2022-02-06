@@ -1,8 +1,10 @@
 package com.jeffdisher.cacophony.scenarios;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -18,6 +20,9 @@ import com.jeffdisher.cacophony.commands.MockPinMechanism;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -97,8 +102,15 @@ public class TestFollowUpdates
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
 		startFollowingCommand.scheduleActions(executor, localActions2);
+		// (capture the output to verify the element is in the list)
+		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
+		PrintStream temp = System.out;
+		System.setOut(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		listCommand.scheduleActions(executor, localActions2);
+		System.setOut(temp);
+		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
+		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (not cached)\n"));
 		
 		// Verify that these elements are now in User2's data store.
 		verify = sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmNiPnKZFQUP9oJGGFK5UsFe1E7mmvvB441vPPxbJebizK"));
@@ -114,5 +126,12 @@ public class TestFollowUpdates
 		createChannel.scheduleActions(executor, localActions);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
 		updateDescription.scheduleActions(executor, localActions);
+	}
+
+	private static String _getFirstElementCid(MockConnection store, IpfsKey publicKey) throws IOException
+	{
+		StreamIndex index = GlobalData.deserializeIndex(store.loadData(store.resolve(PUBLIC_KEY1)));
+		StreamRecords records = GlobalData.deserializeRecords(store.loadData(IpfsFile.fromIpfsCid(index.getRecords())));
+		return records.getRecord().get(0);
 	}
 }
