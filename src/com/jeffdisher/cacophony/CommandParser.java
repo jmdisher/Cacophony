@@ -146,21 +146,17 @@ public class CommandParser
 		}),
 		
 		// Methods to manage local state.
-		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[] {"--cacheWidth", "--cacheHeight", "--cacheTotalBytes"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[] {"--edgeMaxPixels", "--followCacheTargetBytes"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			int cacheWidth = (null != optional[0])
+			int edgeMaxPixels = (null != optional[0])
 					? Integer.parseInt(optional[0])
 					: 0
 			;
-			int cacheHeight = (null != optional[1])
-					? Integer.parseInt(optional[1])
-					: 0
-			;
-			long cacheTotalBytes = (null != optional[2])
-					? Long.parseLong(optional[2])
+			long followCacheTargetBytes = (null != optional[1])
+					? Long.parseLong(optional[1])
 					: 0L
 			;
-			return new SetGlobalPrefsCommand(cacheWidth, cacheHeight, cacheTotalBytes);
+			return new SetGlobalPrefsCommand(edgeMaxPixels, followCacheTargetBytes);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

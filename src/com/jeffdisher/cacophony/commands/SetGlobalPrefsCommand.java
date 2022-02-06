@@ -7,7 +7,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 
 
-public record SetGlobalPrefsCommand(int _cacheWidth, int _cacheHeight, long _cacheTotalBytes) implements ICommand
+public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) implements ICommand
 {
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
@@ -15,17 +15,13 @@ public record SetGlobalPrefsCommand(int _cacheWidth, int _cacheHeight, long _cac
 		GlobalPrefs original = local.readPrefs();
 		GlobalPrefs prefs = original;
 		
-		if (_cacheWidth > 0)
+		if (_edgeMax > 0)
 		{
-			prefs = new GlobalPrefs(_cacheWidth, prefs.cacheHeight(), prefs.cacheTotalBytes());
+			prefs = new GlobalPrefs(_edgeMax, prefs.followCacheTargetBytes());
 		}
-		if (_cacheHeight > 0)
+		if (_followCacheTargetBytes > 0L)
 		{
-			prefs = new GlobalPrefs(prefs.cacheWidth(), _cacheHeight, prefs.cacheTotalBytes());
-		}
-		if (_cacheTotalBytes > 0L)
-		{
-			prefs = new GlobalPrefs(prefs.cacheWidth(), prefs.cacheHeight(), _cacheTotalBytes);
+			prefs = new GlobalPrefs(prefs.videoEdgePixelMax(), _followCacheTargetBytes);
 		}
 		if (original != prefs)
 		{
@@ -33,7 +29,7 @@ public record SetGlobalPrefsCommand(int _cacheWidth, int _cacheHeight, long _cac
 		}
 		else
 		{
-			executor.fatalError(new Exception("Must specify a postive value for at least one of width, height, or cache"));
+			executor.fatalError(new Exception("Must specify a postive value for at least one of edge size or cache"));
 		}
 	}
 }

@@ -54,10 +54,7 @@ public class LocalActions implements ILocalActions
 		if (null == prefs)
 		{
 			// We want to default the prefs if there isn't one.
-			int width = 1024;
-			int height = 768;
-			long cacheMaxBytes = 1_000_000_000L;
-			prefs = new GlobalPrefs(width, height, cacheMaxBytes);
+			prefs = GlobalPrefs.defaultPrefs();
 		}
 		return prefs;
 	}

@@ -123,7 +123,7 @@ public class TestCommandParser
 	@Test
 	public void testSetGlobalPrefs()
 	{
-		String[] foo = {"/tmp/test", "--setGlobalPrefs", "--cacheWidth", "5", "--cacheHeight", "7", "--cacheGlobalBytes", "5000000000"};
+		String[] foo = {"/tmp/test", "--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5000000000"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
