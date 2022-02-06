@@ -40,11 +40,11 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		// See if anything changed.
 		if (lastRoot.equals(indexRoot))
 		{
-			System.out.println("Follow index unchanged (" + lastRoot + ")");
+			executor.logToConsole("Follow index unchanged (" + lastRoot + ")");
 		}
 		else
 		{
-			System.out.println("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
+			executor.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
 			
 			// Cache the new root and remove the old one.
 			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);

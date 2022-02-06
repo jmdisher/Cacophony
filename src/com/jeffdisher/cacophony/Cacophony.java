@@ -53,7 +53,7 @@ public class Cacophony {
 					System.err.println("Failed to create directory at " + directory);
 					System.exit(2);
 				}
-				Executor executor = new Executor();
+				Executor executor = new Executor(System.out);
 				LocalActions local = new LocalActions(directory);
 				command.scheduleActions(executor, local);
 				executor.waitForCompletion();

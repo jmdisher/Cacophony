@@ -33,7 +33,7 @@ public class TestStartFollowingCommand
 		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		Executor executor = new Executor();
+		Executor executor = new Executor(System.out);
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();

@@ -38,7 +38,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			StreamIndex index = GlobalData.deserializeIndex(rawIndex);
 			StreamRecords records = GlobalData.deserializeRecords(remote.readData(IpfsFile.fromIpfsCid(index.getRecords())));
 			List<String> recordList = records.getRecord();
-			System.out.println("Followee has " + recordList.size() + " elements");
+			executor.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)
 			{
 				FollowingCacheElement element = cachedMapByElementCid.get(elementCid);
@@ -46,7 +46,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 						? "(not cached)"
 						: "(image: " + element.imageHash() + ", leaf: " + element.leafHash() + ")"
 				;
-				System.out.println("Element CID: " + elementCid + " " + suffix);
+				executor.logToConsole("Element CID: " + elementCid + " " + suffix);
 			}
 		}
 		else

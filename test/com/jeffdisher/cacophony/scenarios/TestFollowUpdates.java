@@ -44,7 +44,7 @@ public class TestFollowUpdates
 	@Test
 	public void testFirstFetchOneElement() throws IOException
 	{
-		Executor executor = new Executor();
+		Executor executor = new Executor(System.out);
 		
 		// Node 1.
 		GlobalPinCache pinCache1 = GlobalPinCache.newCache();
@@ -104,11 +104,9 @@ public class TestFollowUpdates
 		startFollowingCommand.scheduleActions(executor, localActions2);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		PrintStream temp = System.out;
-		System.setOut(new PrintStream(captureStream));
+		executor = new Executor(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		listCommand.scheduleActions(executor, localActions2);
-		System.setOut(temp);
 		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (not cached)\n"));
 		

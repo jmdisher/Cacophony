@@ -28,7 +28,7 @@ public class TestCreateChannelCommand
 	public void testUsage() throws IOException
 	{
 		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
-		Executor executor = new Executor();
+		Executor executor = new Executor(System.out);
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism = new MockPinMechanism(null);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();

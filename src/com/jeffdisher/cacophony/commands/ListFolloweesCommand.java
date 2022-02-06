@@ -16,7 +16,7 @@ public record ListFolloweesCommand() implements ICommand
 		FollowIndex followIndex = local.loadFollowIndex();
 		for(FollowRecord record : followIndex)
 		{
-			System.out.println("Following: " + record.publicKey());
+			executor.logToConsole("Following: " + record.publicKey());
 		}
 	}
 }

@@ -31,11 +31,11 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		{
 			byte[] rawRecord = remote.readData(IpfsFile.fromIpfsCid(recordCid));
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
-			System.out.println("element " + recordCid + ": " + record.getName());
+			executor.logToConsole("element " + recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{
-				System.out.println("\t" + element.getCid() + " - " + element.getMime());
+				executor.logToConsole("\t" + element.getCid() + " - " + element.getMime());
 			}
 		}
 	}

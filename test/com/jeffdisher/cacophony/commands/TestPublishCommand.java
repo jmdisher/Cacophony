@@ -44,7 +44,7 @@ public class TestPublishCommand
 		
 		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, null, 0, 0, false) };
 		PublishCommand command = new PublishCommand(name, discussionUrl, elements);
-		Executor executor = new Executor();
+		Executor executor = new Executor(System.out);
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism = new MockPinMechanism(null);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();

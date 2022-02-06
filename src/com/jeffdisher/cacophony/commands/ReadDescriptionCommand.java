@@ -26,9 +26,9 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, keyToResolve, null);
 		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
-		System.out.println("Channel public key: " + keyToResolve);
-		System.out.println("-name: " + description.getName());
-		System.out.println("-description: " + description.getDescription());
-		System.out.println("-picture: " + description.getPicture());
+		executor.logToConsole("Channel public key: " + keyToResolve);
+		executor.logToConsole("-name: " + description.getName());
+		executor.logToConsole("-description: " + description.getDescription());
+		executor.logToConsole("-picture: " + description.getPicture());
 	}
 }
