@@ -127,14 +127,14 @@ public class FollowIndex implements Iterable<FollowRecord>
 		_sortedFollowList.add(newRecord);
 	}
 
-	public void addNewElementToFollower(IpfsKey publicKey, IpfsFile fetchedRoot, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long currentTimeMillis)
+	public void addNewElementToFollower(IpfsKey publicKey, IpfsFile fetchedRoot, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long currentTimeMillis, long combinedSizeBytes)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
 		String imageHashString = (null != imageHash)
 				? imageHash.cid().toString()
 				: null
 		;
-		FollowingCacheElement element = new FollowingCacheElement(elementHash.cid().toString(), imageHashString, leafHash.cid().toString());
+		FollowingCacheElement element = new FollowingCacheElement(elementHash.cid().toString(), imageHashString, leafHash.cid().toString(), combinedSizeBytes);
 		FollowingCacheElement[] oldElements = record.elements();
 		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
 		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);

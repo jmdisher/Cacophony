@@ -7,6 +7,6 @@ package com.jeffdisher.cacophony.data.local;
  * The leaf node refers to the specific file actually hashed since there are often multiple options but a given follower
  * should only cache the one they care about.
  */
-public record FollowingCacheElement(String elementHash, String imageHash, String leafHash)
+public record FollowingCacheElement(String elementHash, String imageHash, String leafHash, long combinedSizeBytes)
 {
 }

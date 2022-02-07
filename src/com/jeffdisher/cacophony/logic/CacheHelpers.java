@@ -51,14 +51,17 @@ public class CacheHelpers
 				leafHash = eltCid;
 			}
 		}
+		long combinedSizeBytes = 0L;
 		if (null != imageHash)
 		{
 			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash);
+			combinedSizeBytes += remote.getSizeInBytes(imageHash);
 		}
 		if (null != leafHash)
 		{
 			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash);
+			combinedSizeBytes += remote.getSizeInBytes(leafHash);
 		}
-		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis);
+		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
 	}
 }

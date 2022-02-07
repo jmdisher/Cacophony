@@ -58,7 +58,7 @@ public class TestFollowIndex
 		index.addFollowingWithInitialState(K1, F1);
 		index.addFollowingWithInitialState(K2, F2);
 		Assert.assertEquals(K2, index.nextKeyToPoll());
-		index.addNewElementToFollower(K2, F3, F3, null, F3, 1000);
+		index.addNewElementToFollower(K2, F3, F3, null, F3, 1000, 100);
 		Assert.assertEquals(K1, index.nextKeyToPoll());
 		Assert.assertEquals(F3, index.getLastFetchedRoot(K2));
 	}
