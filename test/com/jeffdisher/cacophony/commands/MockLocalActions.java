@@ -72,7 +72,8 @@ public class MockLocalActions implements ILocalActions
 	@Override
 	public GlobalPrefs readPrefs()
 	{
-		throw new RuntimeException("Implement");
+		// We just use the defaults for our tests.
+		return GlobalPrefs.defaultPrefs();
 	}
 
 	@Override

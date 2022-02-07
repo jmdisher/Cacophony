@@ -1,11 +1,8 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -13,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
+import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -31,7 +29,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		if (null != record)
 		{
 			// We know that all the meta-data reachable from this root is cached locally, but not all the leaf data elements, so we will check the FollowRecord.
-			Map<String, FollowingCacheElement> cachedMapByElementCid = _createCachedMap(record);
+			Map<String, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
 			IpfsFile root = IpfsFile.fromIpfsCid(record.lastFetchedRoot());
 			
 			byte[] rawIndex = remote.readData(root);
@@ -53,11 +51,5 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		{
 			executor.fatalError(new Exception("Not following " + _followeeKey.key()));
 		}
-	}
-
-
-	private static Map<String, FollowingCacheElement> _createCachedMap(FollowRecord record)
-	{
-		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 }

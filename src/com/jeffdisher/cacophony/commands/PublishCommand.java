@@ -46,8 +46,6 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		for (ElementSubCommand elt : _elements)
 		{
 			Assert.assertNull(elt.codec());
-			Assert.assertTrue(0 == elt.width());
-			Assert.assertTrue(0 == elt.height());
 			
 			// Upload the file.
 			// TODO:  Use a stream to upload.
@@ -58,6 +56,8 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 			DataElement element = new DataElement();
 			element.setCid(uploaded.cid().toString());
 			element.setMime(elt.mime());
+			element.setHeight(elt.height());
+			element.setWidth(elt.width());
 			if (elt.isSpecialImage())
 			{
 				element.setSpecial(ElementSpecialType.IMAGE);

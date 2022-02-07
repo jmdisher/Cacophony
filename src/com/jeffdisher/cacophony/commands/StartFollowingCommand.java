@@ -5,11 +5,10 @@ import java.io.IOException;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -49,30 +48,24 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
 		
-		// Populate the initial cache records.
-		_populateCachedRecords(remote, cache, followIndex, GlobalData.deserializeRecords(remote.readData(recordsHash)));
-		
-		// Then, save this data back to the FollowingIndex.
+		// Create the initial following state.
 		followIndex.addFollowingWithInitialState(_publicKey, indexRoot);
+		
+		// Populate the initial cache records.
+		int videoEdgePixelMax = local.readPrefs().videoEdgePixelMax();
+		_populateCachedRecords(remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(remote.readData(recordsHash)), videoEdgePixelMax);
 	}
 
 
-	private void _populateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, StreamRecords newRecords) throws IOException
+	private void _populateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		// For now, we just add the record CIDs, not the leaf elements.
-		// TODO:  Fetch the leaf elements and apply the correct decay algorithm to expire cache elements.
+		long currentTimeMillis = System.currentTimeMillis();
+		// TODO:  Apply the correct decay algorithm to expire cache elements.
 		for (String rawCid : newRecords.getRecord())
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
-			// TODO: Make this population use the filter and cache algorithm.
-			StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
-			for (DataElement elt : record.getElements().getElement())
-			{
-				IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-				cache.addToFollowCache(_publicKey, HighLevelCache.Type.FILE, eltCid);
-			}
+			CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
 		}
 	}
 }

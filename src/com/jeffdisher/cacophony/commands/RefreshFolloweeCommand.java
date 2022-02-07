@@ -2,16 +2,17 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
+import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -80,7 +81,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 				cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
 				StreamRecords oldRecords = GlobalData.deserializeRecords(remote.readData(oldRecordsCid));
 				StreamRecords newRecords = GlobalData.deserializeRecords(remote.readData(newRecordsCid));
-				_updateCachedRecords(remote, cache, followIndex, oldRecords, newRecords);
+				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readPrefs().videoEdgePixelMax());
 				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}
 			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
@@ -90,7 +91,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, StreamRecords oldRecords, StreamRecords newRecords) throws IOException
+	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, int videoEdgePixelMax) throws IOException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		Set<String> removeCids = new HashSet<String>();
@@ -106,33 +107,31 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 				addCids.add(cid);
 			}
 		}
-		// For now, we just add the record CIDs, not the leaf elements.
-		// TODO:  Fetch the leaf elements and apply the correct decay algorithm to expire cache elements.
+		// Remove the CIDs which are no longer present and consult the follower cache to remove any associated leaf elements.
+		Map<String, FollowingCacheElement> cacheByElementCid = CacheHelpers.createCachedMap(followIndex.getFollowerRecord(_publicKey));
 		for (String rawCid : removeCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-			// TODO: Make this population use the filter and cache algorithm.
-			StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
-			for (DataElement elt : record.getElements().getElement())
+			// If this element was cached, remove it.
+			FollowingCacheElement inCache = cacheByElementCid.get(rawCid);
+			if (null != inCache)
 			{
-				IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, eltCid);
+				if (null != inCache.imageHash())
+				{
+					cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(inCache.imageHash()));
+				}
+				if (null != inCache.elementHash())
+				{
+					cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(inCache.elementHash()));
+				}
 			}
-			
 			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
 		}
+		// TODO:  Apply the correct decay algorithm to expire cache elements.
+		long currentTimeMillis = System.currentTimeMillis();
 		for (String rawCid : addCids)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
-			
-			// TODO: Make this population use the filter and cache algorithm.
-			StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
-			for (DataElement elt : record.getElements().getElement())
-			{
-				IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-				cache.addToFollowCache(_publicKey, HighLevelCache.Type.FILE, eltCid);
-			}
+			CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
 		}
 	}
 }
