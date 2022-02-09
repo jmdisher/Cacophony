@@ -20,6 +20,17 @@ import io.ipfs.cid.Cid;
 
 public class MockConnection implements IConnection
 {
+	public static IpfsFile generateHash(byte[] data)
+	{
+		int hashCode = Arrays.hashCode(data);
+		byte[] hash = new byte[34];
+		ByteBuffer buffer = ByteBuffer.wrap(hash);
+		buffer.put((byte)18).put((byte)32);
+		buffer.putInt(hashCode).putInt(hashCode).putInt(hashCode).putInt(hashCode);
+		return IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
+	}
+
+
 	private final String _keyName;
 	private final IpfsKey _key;
 	private final MockPinMechanism _pinMechanism;
@@ -54,12 +65,7 @@ public class MockConnection implements IConnection
 	{
 		// We will emulate this hash using a Java hashcode of the bytes.
 		byte[] data = dataStream.readAllBytes();
-		int hashCode = Arrays.hashCode(data);
-		byte[] hash = new byte[34];
-		ByteBuffer buffer = ByteBuffer.wrap(hash);
-		buffer.put((byte)18).put((byte)32);
-		buffer.putInt(hashCode).putInt(hashCode).putInt(hashCode).putInt(hashCode);
-		IpfsFile newFile = IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
+		IpfsFile newFile = generateHash(data);
 		_storeData(newFile, data);
 		return newFile;
 	}

@@ -75,14 +75,16 @@ public class TestFollowUpdates
 		_createInitialChannel(executor, localActions2, KEY_NAME2, "User 2", "Description 2", userPic2);
 		
 		// User1:  Upload an element.
+		String videoFileString = "VIDEO FILE\n";
+		String imageFileString = "IMAGE\n";
 		String entryName = "entry 1";
 		File dataFile = FOLDER.newFile();
 		FileOutputStream dataStream = new FileOutputStream(dataFile);
-		dataStream.write("VIDEO FILE\n".getBytes());
+		dataStream.write(videoFileString.getBytes());
 		dataStream.close();
 		File imageFile = FOLDER.newFile();
 		FileOutputStream imageStream = new FileOutputStream(imageFile);
-		imageStream.write("IMAGE\n".getBytes());
+		imageStream.write(imageFileString.getBytes());
 		imageStream.close();
 		ElementSubCommand[] elements = new ElementSubCommand[] {
 				new ElementSubCommand("video/mp4", dataFile, null, 720, 1280, false),
@@ -92,12 +94,14 @@ public class TestFollowUpdates
 		publishCommand.scheduleActions(executor, localActions1);
 		
 		// Verify the data is only in the User1 data store and not yet in User2.
-		byte[] verify = sharedConnection1.loadData(IpfsFile.fromIpfsCid("QmZSeNFT7YfgbYr3W3YvS58iSaNdNCC4YVGMdKjrMyRQN3"));
-		Assert.assertEquals("VIDEO FILE\n", new String(verify));
-		verify = sharedConnection1.loadData(IpfsFile.fromIpfsCid("QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP"));
-		Assert.assertEquals("IMAGE\n", new String(verify));
-		Assert.assertNull(sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmZSeNFT7YfgbYr3W3YvS58iSaNdNCC4YVGMdKjrMyRQN3")));
-		Assert.assertNull(sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP")));
+		IpfsFile videoFileHash = MockConnection.generateHash(videoFileString.getBytes());
+		IpfsFile imageFileHash = MockConnection.generateHash(imageFileString.getBytes());
+		byte[] verify = sharedConnection1.loadData(videoFileHash);
+		Assert.assertEquals(videoFileString, new String(verify));
+		verify = sharedConnection1.loadData(imageFileHash);
+		Assert.assertEquals(imageFileString, new String(verify));
+		Assert.assertNull(sharedConnection2.loadData(videoFileHash));
+		Assert.assertNull(sharedConnection2.loadData(imageFileHash));
 		
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
@@ -108,13 +112,13 @@ public class TestFollowUpdates
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		listCommand.scheduleActions(executor, localActions2);
 		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
-		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP, leaf: QmZSeNFT7YfgbYr3W3YvS58iSaNdNCC4YVGMdKjrMyRQN3)\n"));
+		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.cid() + ", leaf: " + videoFileHash.cid() + ")\n"));
 		
 		// Verify that these elements are now in User2's data store.
-		verify = sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmZSeNFT7YfgbYr3W3YvS58iSaNdNCC4YVGMdKjrMyRQN3"));
-		Assert.assertEquals("VIDEO FILE\n", new String(verify));
-		verify = sharedConnection2.loadData(IpfsFile.fromIpfsCid("QmaaRj2BeENjjRRP19L2ADgniT4z5ubHen7qLczcagC2kP"));
-		Assert.assertEquals("IMAGE\n", new String(verify));
+		verify = sharedConnection2.loadData(videoFileHash);
+		Assert.assertEquals(videoFileString, new String(verify));
+		verify = sharedConnection2.loadData(imageFileHash);
+		Assert.assertEquals(imageFileString, new String(verify));
 	}
 
 
