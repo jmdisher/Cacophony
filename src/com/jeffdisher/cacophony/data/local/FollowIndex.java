@@ -123,7 +123,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
-		FollowRecord newRecord = new FollowRecord(publicKey.toString(), fetchRootIndex.cid().toString(), currentTimeMillis, record.elements());
+		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchRootIndex.cid().toString(), currentTimeMillis, record.elements());
 		_sortedFollowList.add(newRecord);
 	}
 

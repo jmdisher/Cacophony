@@ -93,4 +93,14 @@ public class TestFollowIndex
 		Assert.assertEquals(K1.key().toString(), iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 	}
+
+	@Test
+	public void testUpdateAndRemove()
+	{
+		FollowIndex index = FollowIndex.emptyFollowIndex();
+		index.addFollowingWithInitialState(K1, F1);
+		Assert.assertNotNull(index.getFollowerRecord(K1));
+		index.updateFollowee(K1, F2, 1);
+		Assert.assertNotNull(index.getFollowerRecord(K1));
+	}
 }
