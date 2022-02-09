@@ -11,7 +11,9 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
@@ -30,7 +32,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
-		// We need to first verify that we aren't already following them.
+		// We need to first verify that we are already following them.
 		IpfsFile lastRoot = followIndex.getLastFetchedRoot(_publicKey);
 		Assert.assertTrue(null != lastRoot);
 		
@@ -81,7 +83,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 				cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
 				StreamRecords oldRecords = GlobalData.deserializeRecords(remote.readData(oldRecordsCid));
 				StreamRecords newRecords = GlobalData.deserializeRecords(remote.readData(newRecordsCid));
-				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readPrefs().videoEdgePixelMax());
+				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readPrefs());
 				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}
 			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
@@ -91,7 +93,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, int videoEdgePixelMax) throws IOException
+	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs) throws IOException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		Set<String> removeCids = new HashSet<String>();
@@ -127,7 +129,22 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			}
 			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
 		}
-		// TODO:  Apply the correct decay algorithm to expire cache elements.
+		
+		// First, see how much data we want to add and pre-prune our cache.
+		// NOTE:  We currently always add all new elements but we may restrict this in the future to be more like the "start following" case.
+		int videoEdgePixelMax = prefs.videoEdgePixelMax();
+		long bytesToAdd = 0L;
+		for (String rawCid : addCids)
+		{
+			// Note that we need to add the element before we can dive into it to check the size of the leaves within.
+			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(rawCid));
+			// Now, find the size of the relevant leaves within.
+			bytesToAdd += CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
+		}
+		long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
+		CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(prefs.followCacheTargetBytes(), currentCacheSizeBytes), _publicKey, bytesToAdd);
+		
+		// Now, populate the cache with the new elements.
 		long currentTimeMillis = System.currentTimeMillis();
 		for (String rawCid : addCids)
 		{

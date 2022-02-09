@@ -1,10 +1,13 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
@@ -12,7 +15,9 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -23,6 +28,9 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class CacheHelpers
 {
+	// We currently want to make sure the cache is at most 90% full before caching a new channel.
+	private static final double CACHE_MAX_MULTIPLIER_PRE_NEW_CHANNEL = 0.90;
+
 	public static Map<String, FollowingCacheElement> createCachedMap(FollowRecord record)
 	{
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
@@ -31,7 +39,6 @@ public class CacheHelpers
 	public static void addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IOException
 	{
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-		cache.addToFollowCache(followeeKey, HighLevelCache.Type.METADATA, cid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
@@ -63,5 +70,109 @@ public class CacheHelpers
 			combinedSizeBytes += remote.getSizeInBytes(leafHash);
 		}
 		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
+	}
+
+	public static long sizeInBytesToAdd(RemoteActions remote, int videoEdgePixelMax, String rawCid) throws IOException
+	{
+		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
+		IpfsFile imageHash = null;
+		IpfsFile leafHash = null;
+		int biggestEdge = 0;
+		StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
+		for (DataElement elt : record.getElements().getElement())
+		{
+			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
+			if (null != elt.getSpecial())
+			{
+				Assert.assertTrue(null == imageHash);
+				imageHash = eltCid;
+			}
+			else if ((elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
+			{
+				biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
+				leafHash = eltCid;
+			}
+		}
+		long combinedSizeBytes = 0L;
+		if (null != imageHash)
+		{
+			combinedSizeBytes += remote.getSizeInBytes(imageHash);
+		}
+		if (null != leafHash)
+		{
+			combinedSizeBytes += remote.getSizeInBytes(leafHash);
+		}
+		return combinedSizeBytes;
+	}
+
+	/**
+	 * Returns a reduced cache size we should target to shrink down the stored data before we proceed to cache a new
+	 * channel.
+	 * 
+	 * @param prefs The GlobalPrefs object.
+	 * @return The reduced cache size, in bytes, we should target.
+	 */
+	public static long getTargetCacheSizeBeforeNewChannel(GlobalPrefs prefs)
+	{
+		return (long) (CACHE_MAX_MULTIPLIER_PRE_NEW_CHANNEL * (double)prefs.followCacheTargetBytes());
+	}
+
+	/**
+	 * Sums all the element data in the given followIndex.
+	 * 
+	 * @param followIndex The index to sum.
+	 * @return The sum of all bytes in the cache.
+	 */
+	public static long getCurrentCacheSizeBytes(FollowIndex followIndex)
+	{
+		long sizeBytes = 0L;
+		for (FollowRecord record : followIndex)
+		{
+			sizeBytes += Stream.of(record.elements()).mapToLong((elt) -> elt.combinedSizeBytes()).sum();
+		}
+		return sizeBytes;
+	}
+
+	/**
+	 * Finds a list of candidates for evictions.
+	 * 
+	 * @param followIndex The index to search.
+	 * @return The list of candidates which should be considered for eviction.
+	 */
+	public static List<Candidate<FollowingCacheElement>> getEvictionCandidateList(FollowIndex followIndex)
+	{
+		List<Candidate<FollowingCacheElement>> candidates = new ArrayList<>();
+		for (FollowRecord record : followIndex)
+		{
+			for (FollowingCacheElement elt : record.elements())
+			{
+				candidates.add(new CacheAlgorithm.Candidate<FollowingCacheElement>(elt.combinedSizeBytes(), elt));
+			}
+		}
+		return candidates;
+	}
+
+	public static void pruneCacheIfNeeded(HighLevelCache cache, FollowIndex followIndex, CacheAlgorithm algorithm, IpfsKey publicKey, long bytesToAdd)
+	{
+		if (algorithm.needsCleanAfterAddition(bytesToAdd))
+		{
+			List<CacheAlgorithm.Candidate<FollowingCacheElement>> evictionCandidates = CacheHelpers.getEvictionCandidateList(followIndex);
+			List<CacheAlgorithm.Candidate<FollowingCacheElement>> toRemove = algorithm.toRemoveInResize(evictionCandidates);
+			for (CacheAlgorithm.Candidate<FollowingCacheElement> candidate : toRemove)
+			{
+				FollowingCacheElement elt = candidate.data();
+				String imageHash = elt.imageHash();
+				if (null != imageHash)
+				{
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(imageHash));
+				}
+				String leafHash = elt.leafHash();
+				if (null != leafHash)
+				{
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(leafHash));
+				}
+			}
+		}
 	}
 }

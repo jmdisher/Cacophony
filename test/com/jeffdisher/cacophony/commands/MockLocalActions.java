@@ -72,8 +72,8 @@ public class MockLocalActions implements ILocalActions
 	@Override
 	public GlobalPrefs readPrefs()
 	{
-		// We just use the defaults for our tests.
-		return GlobalPrefs.defaultPrefs();
+		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
+		return new GlobalPrefs(GlobalPrefs.defaultPrefs().videoEdgePixelMax(), 100L);
 	}
 
 	@Override
