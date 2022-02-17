@@ -63,7 +63,7 @@ public class IpfsConnection implements IConnection
 	@Override
 	public IpfsFile resolve(IpfsKey key) throws IOException
 	{
-		String publishedPath = _connection.name.resolve(key.key());
+		String publishedPath = _connection.name.resolve(key.getMultihash());
 		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 		return IpfsFile.fromIpfsCid(published);
 	}

@@ -84,13 +84,13 @@ public class TestFollowIndex
 		index.addFollowingWithInitialState(K1, F1);
 		index.addFollowingWithInitialState(K2, F2);
 		Iterator<FollowRecord> iter = index.iterator();
-		Assert.assertEquals(K2.key().toString(), iter.next().publicKey());
-		Assert.assertEquals(K1.key().toString(), iter.next().publicKey());
+		Assert.assertEquals(K2.toPublicKey(), iter.next().publicKey());
+		Assert.assertEquals(K1.toPublicKey(), iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 		
 		index.removeFollowing(K2);
 		iter = index.iterator();
-		Assert.assertEquals(K1.key().toString(), iter.next().publicKey());
+		Assert.assertEquals(K1.toPublicKey(), iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 	}
 

@@ -49,7 +49,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		}
 		else
 		{
-			executor.fatalError(new Exception("Not following " + _followeeKey.key()));
+			executor.fatalError(new Exception("Not following " + _followeeKey.toPublicKey()));
 		}
 	}
 }

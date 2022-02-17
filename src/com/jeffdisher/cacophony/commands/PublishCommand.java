@@ -67,7 +67,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
 		record.setElements(array);
-		record.setPublisherKey(publicKey.key().toString());
+		record.setPublisherKey(publicKey.toPublicKey());
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		IpfsFile recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);

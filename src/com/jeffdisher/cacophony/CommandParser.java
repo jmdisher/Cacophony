@@ -163,7 +163,7 @@ public class CommandParser
 			// This is just a utility function to make detecting keys in integration scripts more reliable.
 			String key = required[0];
 			return (Executor executor, ILocalActions local) -> {
-				System.out.println(IpfsKey.fromPublicKey(key).key());
+				System.out.println(IpfsKey.fromPublicKey(key).toPublicKey());
 			};
 		}),
 		

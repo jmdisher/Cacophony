@@ -82,7 +82,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 		boolean isNew = !_sortedFollowList.stream().anyMatch((r) -> publicKey.equals(r.publicKey()));
 		if (isNew)
 		{
-			FollowRecord record = new FollowRecord(publicKey.key().toString(), fetchRootIndex.toSafeString(), 0L, new FollowingCacheElement[0]);
+			FollowRecord record = new FollowRecord(publicKey.toPublicKey(), fetchRootIndex.toSafeString(), 0L, new FollowingCacheElement[0]);
 			_sortedFollowList.add(0, record);
 		}
 	}
@@ -124,7 +124,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
-		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchRootIndex.toSafeString(), currentTimeMillis, record.elements());
+		FollowRecord newRecord = new FollowRecord(publicKey.toPublicKey(), fetchRootIndex.toSafeString(), currentTimeMillis, record.elements());
 		_sortedFollowList.add(newRecord);
 	}
 
@@ -141,7 +141,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);
 		newElements[oldElements.length] = element;
 
-		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchedRoot.toSafeString(), currentTimeMillis, newElements);
+		FollowRecord newRecord = new FollowRecord(publicKey.toPublicKey(), fetchedRoot.toSafeString(), currentTimeMillis, newElements);
 		_sortedFollowList.add(newRecord);
 	}
 
@@ -154,7 +154,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 
 	private FollowRecord _removeRecordFromList(IpfsKey publicKey)
 	{
-		String publicKeyString = publicKey.key().toString();
+		String publicKeyString = publicKey.toPublicKey();
 		Iterator<FollowRecord> iter = _sortedFollowList.iterator();
 		FollowRecord found = null;
 		while ((null == found) && iter.hasNext())
@@ -172,7 +172,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 
 	private FollowRecord _getFollowerRecord(IpfsKey publicKey)
 	{
-		String publicKeyString = publicKey.key().toString();
+		String publicKeyString = publicKey.toPublicKey();
 		List<FollowRecord> list = _sortedFollowList.stream().filter((r) -> publicKeyString.equals(r.publicKey())).collect(Collectors.toList());
 		Assert.assertTrue(list.size() <= 1);
 		return (list.isEmpty())
