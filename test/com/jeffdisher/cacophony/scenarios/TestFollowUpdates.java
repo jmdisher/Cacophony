@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.commands.MockLocalActions;
 import com.jeffdisher.cacophony.commands.MockPinMechanism;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
+import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -52,13 +53,9 @@ public class TestFollowUpdates
 		FollowIndex followIndex1 = FollowIndex.emptyFollowIndex();
 		MockConnection sharedConnection1 = new MockConnection(KEY_NAME1, PUBLIC_KEY1, pinMechanism1, null);
 		MockLocalActions localActions1 = new MockLocalActions(null, null, sharedConnection1, pinCache1, pinMechanism1, followIndex1);
-		File userPic1 = FOLDER.newFile();
 		
 		// Create user 1.
-		FileOutputStream stream = new FileOutputStream(userPic1);
-		stream.write("User pic 1\n".getBytes());
-		stream.close();
-		_createInitialChannel(executor, localActions1, KEY_NAME1, "User 1", "Description 1", userPic1);
+		_createInitialChannel(executor, localActions1, KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
 		GlobalPinCache pinCache2 = GlobalPinCache.newCache();
@@ -66,31 +63,14 @@ public class TestFollowUpdates
 		FollowIndex followIndex2 = FollowIndex.emptyFollowIndex();
 		MockConnection sharedConnection2 = new MockConnection(KEY_NAME2, PUBLIC_KEY2, pinMechanism2, sharedConnection1);
 		MockLocalActions localActions2 = new MockLocalActions(null, null, sharedConnection2, pinCache2, pinMechanism2, followIndex2);
-		File userPic2 = FOLDER.newFile();
 		
 		// Create user 2.
-		stream = new FileOutputStream(userPic2);
-		stream.write("User pic 2\n".getBytes());
-		stream.close();
-		_createInitialChannel(executor, localActions2, KEY_NAME2, "User 2", "Description 2", userPic2);
+		_createInitialChannel(executor, localActions2, KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
 		
 		// User1:  Upload an element.
 		String videoFileString = "VIDEO FILE\n";
 		String imageFileString = "IMAGE\n";
-		String entryName = "entry 1";
-		File dataFile = FOLDER.newFile();
-		FileOutputStream dataStream = new FileOutputStream(dataFile);
-		dataStream.write(videoFileString.getBytes());
-		dataStream.close();
-		File imageFile = FOLDER.newFile();
-		FileOutputStream imageStream = new FileOutputStream(imageFile);
-		imageStream.write(imageFileString.getBytes());
-		imageStream.close();
-		ElementSubCommand[] elements = new ElementSubCommand[] {
-				new ElementSubCommand("video/mp4", dataFile, null, 720, 1280, false),
-				new ElementSubCommand("image/jpeg", imageFile, null, 0, 0, true),
-		};
-		PublishCommand publishCommand = new PublishCommand(entryName, null, elements);
+		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		publishCommand.scheduleActions(executor, localActions1);
 		
 		// Verify the data is only in the User1 data store and not yet in User2.
@@ -121,9 +101,77 @@ public class TestFollowUpdates
 		Assert.assertEquals(imageFileString, new String(verify));
 	}
 
-
-	private void _createInitialChannel(Executor executor, MockLocalActions localActions, String keyName, String name, String description, File userPic) throws IOException
+	@Test
+	public void testStartStopFollow() throws IOException
 	{
+		Executor executor = new Executor(System.out);
+		
+		// Node 1.
+		GlobalPinCache pinCache1 = GlobalPinCache.newCache();
+		MockPinMechanism pinMechanism1 = new MockPinMechanism(null);
+		FollowIndex followIndex1 = FollowIndex.emptyFollowIndex();
+		MockConnection sharedConnection1 = new MockConnection(KEY_NAME1, PUBLIC_KEY1, pinMechanism1, null);
+		MockLocalActions localActions1 = new MockLocalActions(null, null, sharedConnection1, pinCache1, pinMechanism1, followIndex1);
+		
+		// Create user 1.
+		_createInitialChannel(executor, localActions1, KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
+		
+		// Node 2
+		GlobalPinCache pinCache2 = GlobalPinCache.newCache();
+		MockPinMechanism pinMechanism2 = new MockPinMechanism(sharedConnection1);
+		FollowIndex followIndex2 = FollowIndex.emptyFollowIndex();
+		MockConnection sharedConnection2 = new MockConnection(KEY_NAME2, PUBLIC_KEY2, pinMechanism2, sharedConnection1);
+		MockLocalActions localActions2 = new MockLocalActions(null, null, sharedConnection2, pinCache2, pinMechanism2, followIndex2);
+		
+		// Create user 2.
+		_createInitialChannel(executor, localActions2, KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
+		
+		// User1:  Upload an element.
+		String videoFileString = "VIDEO FILE\n";
+		String imageFileString = "IMAGE\n";
+		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
+		publishCommand.scheduleActions(executor, localActions1);
+		
+		// Verify the data is only in the User1 data store and not yet in User2.
+		IpfsFile videoFileHash = MockConnection.generateHash(videoFileString.getBytes());
+		IpfsFile imageFileHash = MockConnection.generateHash(imageFileString.getBytes());
+		
+		// User2:  Follow and verify the data is loaded.
+		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
+		startFollowingCommand.scheduleActions(executor, localActions2);
+		// (capture the output to verify the element is in the list)
+		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
+		executor = new Executor(new PrintStream(captureStream));
+		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
+		listCommand.scheduleActions(executor, localActions2);
+		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
+		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.cid() + ", leaf: " + videoFileHash.cid() + ")\n"));
+		
+		// Verify that these elements are now in User2's data store.
+		byte[] verify = sharedConnection2.loadData(videoFileHash);
+		Assert.assertEquals(videoFileString, new String(verify));
+		verify = sharedConnection2.loadData(imageFileHash);
+		Assert.assertEquals(imageFileString, new String(verify));
+		
+		// Now, stop following them and verify that all of this data has been removed from the local store but is still on the remote store.
+		StopFollowingCommand stopFollowingCommand = new StopFollowingCommand(PUBLIC_KEY1);
+		stopFollowingCommand.scheduleActions(executor, localActions2);
+		verify = sharedConnection1.loadData(videoFileHash);
+		Assert.assertEquals(videoFileString, new String(verify));
+		verify = sharedConnection1.loadData(imageFileHash);
+		Assert.assertEquals(imageFileString, new String(verify));
+		Assert.assertNull(sharedConnection2.loadData(videoFileHash));
+		Assert.assertNull(sharedConnection2.loadData(imageFileHash));
+	}
+
+
+	private void _createInitialChannel(Executor executor, MockLocalActions localActions, String keyName, String name, String description, byte[] userPicData) throws IOException
+	{
+		File userPic = FOLDER.newFile();
+		FileOutputStream stream = new FileOutputStream(userPic);
+		stream.write(userPicData);
+		stream.close();
+		
 		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
 		createChannel.scheduleActions(executor, localActions);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
@@ -135,5 +183,22 @@ public class TestFollowUpdates
 		StreamIndex index = GlobalData.deserializeIndex(store.loadData(store.resolve(PUBLIC_KEY1)));
 		StreamRecords records = GlobalData.deserializeRecords(store.loadData(IpfsFile.fromIpfsCid(index.getRecords())));
 		return records.getRecord().get(0);
+	}
+
+	private static PublishCommand _createPublishCommand(String entryName, String imageFileString, String videoFileString) throws IOException
+	{
+		File dataFile = FOLDER.newFile();
+		FileOutputStream dataStream = new FileOutputStream(dataFile);
+		dataStream.write(videoFileString.getBytes());
+		dataStream.close();
+		File imageFile = FOLDER.newFile();
+		FileOutputStream imageStream = new FileOutputStream(imageFile);
+		imageStream.write(imageFileString.getBytes());
+		imageStream.close();
+		ElementSubCommand[] elements = new ElementSubCommand[] {
+				new ElementSubCommand("video/mp4", dataFile, null, 720, 1280, false),
+				new ElementSubCommand("image/jpeg", imageFile, null, 0, 0, true),
+		};
+		return new PublishCommand(entryName, null, elements);
 	}
 }

@@ -88,14 +88,15 @@ public class FollowIndex implements Iterable<FollowRecord>
 	}
 
 	/**
-	 * Removes the given public key from the list we are following.
-	 * If we aren't following them, this does nothing.
+	 * Removes the given public key from the list we are following and returns the last state of the cached data.
+	 * If we aren't following them, this does nothing and returns null.
 	 * 
 	 * @param publicKey The key to stop following.
+	 * @return The last state of the cache, null if not being followed.
 	 */
-	public void removeFollowing(IpfsKey publicKey)
+	public FollowRecord removeFollowing(IpfsKey publicKey)
 	{
-		_removeRecordFromList(publicKey);
+		return _removeRecordFromList(publicKey);
 	}
 
 	public IpfsKey nextKeyToPoll()

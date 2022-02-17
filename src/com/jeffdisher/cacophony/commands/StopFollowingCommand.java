@@ -6,6 +6,8 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
+import com.jeffdisher.cacophony.data.local.FollowRecord;
+import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
@@ -24,14 +26,26 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
-		// Verify that we are following them.
-		IpfsFile lastRoot = followIndex.getLastFetchedRoot(_publicKey);
-		Assert.assertTrue(null != lastRoot);
+		// Removed the cache record and verify that we are following them.
+		FollowRecord finalRecord = followIndex.removeFollowing(_publicKey);
+		Assert.assertTrue(null != finalRecord);
 		
-		// Remove all the cached records.
-		// TODO:  Implement.
+		// Walk all the elements in the record stream, removing the cached meta-data and associated files.
+		for (FollowingCacheElement element : finalRecord.elements())
+		{
+			if (null != element.imageHash())
+			{
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(element.imageHash()));
+			}
+			if (null != element.leafHash())
+			{
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(element.leafHash()));
+			}
+			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(element.elementHash()));
+		}
 		
 		// Remove all the root meta-data we have cached.
+		IpfsFile lastRoot = IpfsFile.fromIpfsCid(finalRecord.lastFetchedRoot());
 		StreamIndex streamIndex = GlobalData.deserializeIndex(remote.readData(lastRoot));
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
@@ -45,7 +59,5 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
-		
-		followIndex.removeFollowing(_publicKey);
 	}
 }
