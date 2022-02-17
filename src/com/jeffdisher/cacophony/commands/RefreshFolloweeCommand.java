@@ -110,21 +110,21 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			}
 		}
 		// Remove the CIDs which are no longer present and consult the follower cache to remove any associated leaf elements.
-		Map<String, FollowingCacheElement> cacheByElementCid = CacheHelpers.createCachedMap(followIndex.getFollowerRecord(_publicKey));
+		Map<IpfsFile, FollowingCacheElement> cacheByElementCid = CacheHelpers.createCachedMap(followIndex.getFollowerRecord(_publicKey));
 		for (String rawCid : removeCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// If this element was cached, remove it.
-			FollowingCacheElement inCache = cacheByElementCid.get(rawCid);
+			FollowingCacheElement inCache = cacheByElementCid.get(cid);
 			if (null != inCache)
 			{
 				if (null != inCache.imageHash())
 				{
-					cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(inCache.imageHash()));
+					cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, inCache.imageHash());
 				}
 				if (null != inCache.elementHash())
 				{
-					cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(inCache.elementHash()));
+					cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, inCache.elementHash());
 				}
 			}
 			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);

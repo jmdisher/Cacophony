@@ -29,8 +29,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		if (null != record)
 		{
 			// We know that all the meta-data reachable from this root is cached locally, but not all the leaf data elements, so we will check the FollowRecord.
-			Map<String, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
-			IpfsFile root = IpfsFile.fromIpfsCid(record.lastFetchedRoot());
+			Map<IpfsFile, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
+			IpfsFile root = record.lastFetchedRoot();
 			
 			byte[] rawIndex = remote.readData(root);
 			StreamIndex index = GlobalData.deserializeIndex(rawIndex);
@@ -39,10 +39,10 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			executor.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)
 			{
-				FollowingCacheElement element = cachedMapByElementCid.get(elementCid);
+				FollowingCacheElement element = cachedMapByElementCid.get(IpfsFile.fromIpfsCid(elementCid));
 				String suffix = (null == element)
 						? "(not cached)"
-						: "(image: " + element.imageHash() + ", leaf: " + element.leafHash() + ")"
+						: "(image: " + element.imageHash().toSafeString() + ", leaf: " + element.leafHash().toSafeString() + ")"
 				;
 				executor.logToConsole("Element CID: " + elementCid + " " + suffix);
 			}

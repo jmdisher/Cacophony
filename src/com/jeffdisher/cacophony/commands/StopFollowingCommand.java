@@ -35,17 +35,17 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		{
 			if (null != element.imageHash())
 			{
-				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(element.imageHash()));
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, element.imageHash());
 			}
 			if (null != element.leafHash())
 			{
-				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(element.leafHash()));
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, element.leafHash());
 			}
-			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(element.elementHash()));
+			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, element.elementHash());
 		}
 		
 		// Remove all the root meta-data we have cached.
-		IpfsFile lastRoot = IpfsFile.fromIpfsCid(finalRecord.lastFetchedRoot());
+		IpfsFile lastRoot = finalRecord.lastFetchedRoot();
 		StreamIndex streamIndex = GlobalData.deserializeIndex(remote.readData(lastRoot));
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());

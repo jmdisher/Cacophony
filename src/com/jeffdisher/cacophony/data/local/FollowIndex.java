@@ -82,7 +82,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 		boolean isNew = !_sortedFollowList.stream().anyMatch((r) -> publicKey.equals(r.publicKey()));
 		if (isNew)
 		{
-			FollowRecord record = new FollowRecord(publicKey.toPublicKey(), fetchRootIndex.toSafeString(), 0L, new FollowingCacheElement[0]);
+			FollowRecord record = new FollowRecord(publicKey, fetchRootIndex, 0L, new FollowingCacheElement[0]);
 			_sortedFollowList.add(0, record);
 		}
 	}
@@ -103,7 +103,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 	{
 		return (_sortedFollowList.isEmpty())
 				? null
-				: IpfsKey.fromPublicKey(_sortedFollowList.get(0).publicKey())
+				: _sortedFollowList.get(0).publicKey()
 		;
 	}
 
@@ -112,7 +112,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 		FollowRecord record = _getFollowerRecord(publicKey);
 		return (null == record)
 				? null
-				: IpfsFile.fromIpfsCid(record.lastFetchedRoot())
+				: record.lastFetchedRoot()
 		;
 	}
 
@@ -124,24 +124,20 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
-		FollowRecord newRecord = new FollowRecord(publicKey.toPublicKey(), fetchRootIndex.toSafeString(), currentTimeMillis, record.elements());
+		FollowRecord newRecord = new FollowRecord(publicKey, fetchRootIndex, currentTimeMillis, record.elements());
 		_sortedFollowList.add(newRecord);
 	}
 
 	public void addNewElementToFollower(IpfsKey publicKey, IpfsFile fetchedRoot, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long currentTimeMillis, long combinedSizeBytes)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
-		String imageHashString = (null != imageHash)
-				? imageHash.toSafeString()
-				: null
-		;
-		FollowingCacheElement element = new FollowingCacheElement(elementHash.toSafeString(), imageHashString, leafHash.toSafeString(), combinedSizeBytes);
+		FollowingCacheElement element = new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes);
 		FollowingCacheElement[] oldElements = record.elements();
 		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
 		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);
 		newElements[oldElements.length] = element;
 
-		FollowRecord newRecord = new FollowRecord(publicKey.toPublicKey(), fetchedRoot.toSafeString(), currentTimeMillis, newElements);
+		FollowRecord newRecord = new FollowRecord(publicKey, fetchedRoot, currentTimeMillis, newElements);
 		_sortedFollowList.add(newRecord);
 	}
 
@@ -154,13 +150,12 @@ public class FollowIndex implements Iterable<FollowRecord>
 
 	private FollowRecord _removeRecordFromList(IpfsKey publicKey)
 	{
-		String publicKeyString = publicKey.toPublicKey();
 		Iterator<FollowRecord> iter = _sortedFollowList.iterator();
 		FollowRecord found = null;
 		while ((null == found) && iter.hasNext())
 		{
 			FollowRecord one = iter.next();
-			if (publicKeyString.equals(one.publicKey()))
+			if (publicKey.equals(one.publicKey()))
 			{
 				iter.remove();
 				found = one;
@@ -172,8 +167,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 
 	private FollowRecord _getFollowerRecord(IpfsKey publicKey)
 	{
-		String publicKeyString = publicKey.toPublicKey();
-		List<FollowRecord> list = _sortedFollowList.stream().filter((r) -> publicKeyString.equals(r.publicKey())).collect(Collectors.toList());
+		List<FollowRecord> list = _sortedFollowList.stream().filter((r) -> publicKey.equals(r.publicKey())).collect(Collectors.toList());
 		Assert.assertTrue(list.size() <= 1);
 		return (list.isEmpty())
 				? null

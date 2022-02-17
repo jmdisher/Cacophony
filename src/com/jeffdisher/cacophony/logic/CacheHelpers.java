@@ -31,7 +31,7 @@ public class CacheHelpers
 	// We currently want to make sure the cache is at most 90% full before caching a new channel.
 	private static final double CACHE_MAX_MULTIPLIER_PRE_NEW_CHANNEL = 0.90;
 
-	public static Map<String, FollowingCacheElement> createCachedMap(FollowRecord record)
+	public static Map<IpfsFile, FollowingCacheElement> createCachedMap(FollowRecord record)
 	{
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
@@ -162,15 +162,15 @@ public class CacheHelpers
 			for (CacheAlgorithm.Candidate<FollowingCacheElement> candidate : toRemove)
 			{
 				FollowingCacheElement elt = candidate.data();
-				String imageHash = elt.imageHash();
+				IpfsFile imageHash = elt.imageHash();
 				if (null != imageHash)
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(imageHash));
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, imageHash);
 				}
-				String leafHash = elt.leafHash();
+				IpfsFile leafHash = elt.leafHash();
 				if (null != leafHash)
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, IpfsFile.fromIpfsCid(leafHash));
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, leafHash);
 				}
 			}
 		}
