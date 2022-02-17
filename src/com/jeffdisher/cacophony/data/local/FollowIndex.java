@@ -82,7 +82,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 		boolean isNew = !_sortedFollowList.stream().anyMatch((r) -> publicKey.equals(r.publicKey()));
 		if (isNew)
 		{
-			FollowRecord record = new FollowRecord(publicKey.key().toString(), fetchRootIndex.cid().toString(), 0L, new FollowingCacheElement[0]);
+			FollowRecord record = new FollowRecord(publicKey.key().toString(), fetchRootIndex.toSafeString(), 0L, new FollowingCacheElement[0]);
 			_sortedFollowList.add(0, record);
 		}
 	}
@@ -124,7 +124,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
-		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchRootIndex.cid().toString(), currentTimeMillis, record.elements());
+		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchRootIndex.toSafeString(), currentTimeMillis, record.elements());
 		_sortedFollowList.add(newRecord);
 	}
 
@@ -132,16 +132,16 @@ public class FollowIndex implements Iterable<FollowRecord>
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
 		String imageHashString = (null != imageHash)
-				? imageHash.cid().toString()
+				? imageHash.toSafeString()
 				: null
 		;
-		FollowingCacheElement element = new FollowingCacheElement(elementHash.cid().toString(), imageHashString, leafHash.cid().toString(), combinedSizeBytes);
+		FollowingCacheElement element = new FollowingCacheElement(elementHash.toSafeString(), imageHashString, leafHash.toSafeString(), combinedSizeBytes);
 		FollowingCacheElement[] oldElements = record.elements();
 		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
 		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);
 		newElements[oldElements.length] = element;
 
-		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchedRoot.cid().toString(), currentTimeMillis, newElements);
+		FollowRecord newRecord = new FollowRecord(publicKey.key().toString(), fetchedRoot.toSafeString(), currentTimeMillis, newElements);
 		_sortedFollowList.add(newRecord);
 	}
 

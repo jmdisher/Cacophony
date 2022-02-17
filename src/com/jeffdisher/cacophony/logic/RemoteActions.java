@@ -53,14 +53,14 @@ public class RemoteActions
 	{
 		System.out.println("Saving " + raw.length + " bytes...");
 		IpfsFile file = _ipfs.storeData(new ByteArrayInputStream(raw));
-		System.out.println("-saved: " + file.cid());
+		System.out.println("-saved: " + file.toSafeString());
 		return file;
 	}
 
 	public IpfsFile saveStream(InputStream stream) throws IOException
 	{
 		IpfsFile file = _ipfs.storeData(stream);
-		System.out.println("-saved: " + file.cid());
+		System.out.println("-saved: " + file.toSafeString());
 		return file;
 	}
 
@@ -93,7 +93,7 @@ public class RemoteActions
 		
 		// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
 		IpfsFile published = _ipfs.resolve(_publicKey);
-		Assert.assertTrue(published.cid().toString().equals(indexHash.cid().toString()));
+		Assert.assertTrue(published.toSafeString().equals(indexHash.toSafeString()));
 	}
 
 	public IpfsFile resolvePublicKey(IpfsKey keyToResolve) throws IOException

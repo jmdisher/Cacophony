@@ -48,15 +48,15 @@ public class IpfsConnection implements IConnection
 	@Override
 	public byte[] loadData(IpfsFile file) throws IOException
 	{
-		return _connection.cat(file.cid());
+		return _connection.cat(file.getMultihash());
 	}
 
 	@Override
 	public void publish(String keyName, IpfsFile file) throws IOException
 	{
-		Map<?,?> map = _connection.name.publish(file.cid(), Optional.of(keyName));
+		Map<?,?> map = _connection.name.publish(file.getMultihash(), Optional.of(keyName));
 		String value = (String) map.get("Value");
-		String index58 = file.cid().toString();
+		String index58 = file.toSafeString();
 		Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
 	}
 
@@ -73,7 +73,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			Map<?,?> m = _connection.block.stat(cid.cid());
+			Map<?,?> m = _connection.block.stat(cid.getMultihash());
 			return ((Number)m.get("Size")).longValue();
 		}
 		catch (IOException e)

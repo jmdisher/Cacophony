@@ -92,7 +92,7 @@ public class TestFollowUpdates
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		listCommand.scheduleActions(executor, localActions2);
 		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
-		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.cid() + ", leaf: " + videoFileHash.cid() + ")\n"));
+		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
 		
 		// Verify that these elements are now in User2's data store.
 		verify = sharedConnection2.loadData(videoFileHash);
@@ -145,7 +145,7 @@ public class TestFollowUpdates
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		listCommand.scheduleActions(executor, localActions2);
 		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
-		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.cid() + ", leaf: " + videoFileHash.cid() + ")\n"));
+		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
 		
 		// Verify that these elements are now in User2's data store.
 		byte[] verify = sharedConnection2.loadData(videoFileHash);

@@ -44,17 +44,17 @@ public class TestStartFollowingCommand
 		StreamIndex originalRootData = new StreamIndex();
 		originalRootData.setVersion(1);
 		IpfsFile originalDescription = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK1");
-		originalRootData.setDescription(originalDescription.cid().toString());
+		originalRootData.setDescription(originalDescription.toSafeString());
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK2");
-		originalRootData.setRecommendations(originalRecommendations.cid().toString());
-		originalRootData.setRecords(originalRecordsCid.cid().toString());
+		originalRootData.setRecommendations(originalRecommendations.toSafeString());
+		originalRootData.setRecords(originalRecordsCid.toSafeString());
 		remoteConnection.storeData(originalRoot, GlobalData.serializeIndex(originalRootData));
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
 		IpfsFile originalPicture = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK4");
 		originalDescriptionData.setDescription("Description");
-		originalDescriptionData.setPicture(originalPicture.cid().toString());
+		originalDescriptionData.setPicture(originalPicture.toSafeString());
 		remoteConnection.storeData(originalDescription, GlobalData.serializeDescription(originalDescriptionData));
 		
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);

@@ -102,7 +102,7 @@ public class GlobalPinCache
 	 */
 	public boolean shouldUnpinAfterRemoving(IpfsFile hash)
 	{
-		String raw = hash.cid().toString();
+		String raw = hash.toSafeString();
 		Integer original = _map.remove(raw);
 		// We currently assume that something we would want to unpin is always here.
 		Assert.assertTrue(null != original);
@@ -118,7 +118,7 @@ public class GlobalPinCache
 
 	private boolean _isNewAfterIncrement(IpfsFile hash)
 	{
-		String raw = hash.cid().toString();
+		String raw = hash.toSafeString();
 		int count = _map.getOrDefault(raw, 0);
 		boolean isNew = (0 == count);
 		count += 1;

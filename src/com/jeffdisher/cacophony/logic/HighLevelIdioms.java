@@ -39,9 +39,9 @@ public class HighLevelIdioms
 	{
 		StreamIndex streamIndex = new StreamIndex();
 		streamIndex.setVersion(1);
-		streamIndex.setDescription(description.cid().toString());
-		streamIndex.setRecommendations(recommendations.cid().toString());
-		streamIndex.setRecords(records.cid().toString());
+		streamIndex.setDescription(description.toSafeString());
+		streamIndex.setRecommendations(recommendations.toSafeString());
+		streamIndex.setRecords(records.toSafeString());
 		return _saveAndPublishIndex(executor, remote, streamIndex);
 	}
 

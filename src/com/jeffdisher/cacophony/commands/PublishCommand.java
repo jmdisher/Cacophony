@@ -54,7 +54,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 			cache.uploadedToThisCache(uploaded);
 			
 			DataElement element = new DataElement();
-			element.setCid(uploaded.cid().toString());
+			element.setCid(uploaded.toSafeString());
 			element.setMime(elt.mime());
 			element.setHeight(elt.height());
 			element.setWidth(elt.width());
@@ -73,7 +73,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		IpfsFile recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);
 		cache.uploadedToThisCache(recordHash);
 		
-		records.getRecord().add(recordHash.cid().toString());
+		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		rawRecords = GlobalData.serializeRecords(records);
@@ -81,7 +81,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		cache.uploadedToThisCache(recordsHash);
 		
 		// Update, save, and publish the new index.
-		index.setRecords(recordsHash.cid().toString());
+		index.setRecords(recordsHash.toSafeString());
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
 		cache.uploadedToThisCache(indexHash);
 	}

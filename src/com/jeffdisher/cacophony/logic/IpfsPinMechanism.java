@@ -19,12 +19,12 @@ public class IpfsPinMechanism implements IPinMechanism
 	@Override
 	public void add(IpfsFile cid) throws IOException
 	{
-		_pin.add(cid.cid());
+		_pin.add(cid.getMultihash());
 	}
 
 	@Override
 	public void rm(IpfsFile cid) throws IOException
 	{
-		_pin.rm(cid.cid());
+		_pin.rm(cid.getMultihash());
 	}
 }

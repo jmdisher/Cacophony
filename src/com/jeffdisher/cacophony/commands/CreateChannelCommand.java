@@ -43,7 +43,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
 		Assert.assertTrue(null != pictureStream);
 		IpfsFile pictureHash = remote.saveStream(pictureStream);
-		description.setPicture(pictureHash.cid().toString());
+		description.setPicture(pictureHash.toSafeString());
 		
 		StreamRecommendations recommendations = new StreamRecommendations();
 		
