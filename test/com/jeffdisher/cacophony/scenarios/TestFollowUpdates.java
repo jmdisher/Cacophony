@@ -196,8 +196,8 @@ public class TestFollowUpdates
 		imageStream.write(imageFileString.getBytes());
 		imageStream.close();
 		ElementSubCommand[] elements = new ElementSubCommand[] {
-				new ElementSubCommand("video/mp4", dataFile, null, 720, 1280, false),
-				new ElementSubCommand("image/jpeg", imageFile, null, 0, 0, true),
+				new ElementSubCommand("video/mp4", dataFile, 720, 1280, false),
+				new ElementSubCommand("image/jpeg", imageFile, 0, 0, true),
 		};
 		return new PublishCommand(entryName, null, elements);
 	}

@@ -20,7 +20,6 @@
 		<xsd:sequence>
 			<xsd:element name="cid" type="tns:IpfsCid" minOccurs="1" maxOccurs="1"/>
 			<xsd:element name="mime" type="xsd:string" minOccurs="1" maxOccurs="1"/>
-			<xsd:element name="codec" type="xsd:string" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="height" type="xsd:int" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="width" type="xsd:int" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="special" type="tns:ElementSpecialType" minOccurs="0" maxOccurs="1"/>

@@ -38,24 +38,23 @@ public class CommandParser
 	private static enum ArgPattern
 	{
 		// Sub-element side args (these are always assumed to have one or more potential instances).
-		ELEMENT(false, "--element", new String[] {"--mime", "--file"}, new String[] {"--codec", "--height", "--width", "--special"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		ELEMENT(false, "--element", new String[] {"--mime", "--file"}, new String[] {"--height", "--width", "--special"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String mime = required[0];
 			File filePath = new File(required[1]);
-			String codec = optional[0];
-			int height = (null != optional[1])
+			int height = (null != optional[0])
+					? Integer.parseInt(optional[0])
+					: 0
+			;
+			int width = (null != optional[1])
 					? Integer.parseInt(optional[1])
 					: 0
 			;
-			int width = (null != optional[2])
-					? Integer.parseInt(optional[2])
-					: 0
-			;
-			boolean isSpecialImage = (null != optional[3])
-					? "image".equals(optional[3])
+			boolean isSpecialImage = (null != optional[2])
+					? "image".equals(optional[2])
 					: false
 			;
-			return new ElementSubCommand(mime, filePath, codec, height, width, isSpecialImage);
+			return new ElementSubCommand(mime, filePath, height, width, isSpecialImage);
 		}),
 		
 		// Methods to manage this channel.

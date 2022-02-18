@@ -42,7 +42,7 @@ public class TestPublishCommand
 		stream.write(fileContents.getBytes());
 		stream.close();
 		
-		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, null, 0, 0, false) };
+		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
 		PublishCommand command = new PublishCommand(name, discussionUrl, elements);
 		Executor executor = new Executor(System.out);
 		GlobalPinCache pinCache = GlobalPinCache.newCache();

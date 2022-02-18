@@ -45,8 +45,6 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		DataArray array = new DataArray();
 		for (ElementSubCommand elt : _elements)
 		{
-			Assert.assertNull(elt.codec());
-			
 			// Upload the file.
 			// TODO:  Use a stream to upload.
 			byte[] raw = Files.readAllBytes(elt.filePath().toPath());
