@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
@@ -48,6 +49,11 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		else
 		{
 			executor.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
+			
+			// Verify that this isn't too big.
+			long indexSize = remote.getSizeInBytes(indexRoot);
+			// TODO:  Determine how we want to handle this error.
+			Assert.assertTrue(indexSize <= SizeLimits.MAX_INDEX_SIZE_BYTES);
 			
 			// Cache the new root and remove the old one.
 			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
@@ -136,8 +142,14 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		long bytesToAdd = 0L;
 		for (String rawCid : addCids)
 		{
+			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+			// Verify that this isn't too big.
+			long elementSize = remote.getSizeInBytes(cid);
+			// TODO:  Determine how we want to handle this error.
+			Assert.assertTrue(elementSize <= SizeLimits.MAX_RECORD_SIZE_BYTES);
+			
 			// Note that we need to add the element before we can dive into it to check the size of the leaves within.
-			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(rawCid));
+			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
 			// Now, find the size of the relevant leaves within.
 			bytesToAdd += CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
 		}

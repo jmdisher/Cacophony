@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
@@ -37,6 +38,11 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = remote.resolvePublicKey(_publicKey);
 		Assert.assertTrue(null != indexRoot);
+		
+		// Verify that this isn't too big.
+		long indexSize = remote.getSizeInBytes(indexRoot);
+		// TODO:  Determine how we want to handle this error.
+		Assert.assertTrue(indexSize <= SizeLimits.MAX_INDEX_SIZE_BYTES);
 		
 		// Now, cache the root meta-data structures.
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
@@ -70,8 +76,14 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		List<CacheAlgorithm.Candidate<String>> candidatesList = new ArrayList<>();
 		for (String rawCid : newRecords.getRecord())
 		{
+			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+			// Verify that this isn't too big.
+			long elementSize = remote.getSizeInBytes(cid);
+			// TODO:  Determine how we want to handle this error.
+			Assert.assertTrue(elementSize <= SizeLimits.MAX_RECORD_SIZE_BYTES);
+			
 			// Note that we need to add the element meta-data independently of caching the leaves within (since they can be pruned but the meta-data can't).
-			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(rawCid));
+			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
 			long bytesForLeaves = CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
 			// Note that the candidates are considered with weight on the earlier elements in this list so we want to make sure the more recent ones appear there.
 			candidatesList.add(0, new CacheAlgorithm.Candidate<String>(bytesForLeaves, rawCid));
