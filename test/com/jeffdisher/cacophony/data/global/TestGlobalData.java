@@ -143,11 +143,11 @@ public class TestGlobalData {
 	@Test
 	public void testRecommendations1() throws IOException {
 		StreamRecommendations data = new StreamRecommendations();
-		data.getUser().add("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
+		data.getUser().add("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 		byte[] serialized = GlobalData.serializeRecommendations(data);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<recommendations xmlns=\"http://jeffdisher.com/cacophony/recommendations.xsd\">\n"
-				+ "    <user>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</user>\n"
+				+ "    <user>z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141</user>\n"
 				+ "</recommendations>\n";
 		Assert.assertEquals(expected, new String(serialized));
 	}
@@ -155,10 +155,10 @@ public class TestGlobalData {
 	@Test
 	public void testRecommendations2() throws IOException {
 		byte[] input = ("<recommendations xmlns=\"http://jeffdisher.com/cacophony/recommendations.xsd\">\n"
-				+ "    <user>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</user>\n"
+				+ "    <user>z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141</user>\n"
 				+ "</recommendations>\n").getBytes();
 		StreamRecommendations didRead = GlobalData.deserializeRecommendations(input);
-		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", didRead.getUser().get(0));
+		Assert.assertEquals("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141", didRead.getUser().get(0));
 	}
 
 	@Test
