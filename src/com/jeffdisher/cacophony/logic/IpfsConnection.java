@@ -38,8 +38,8 @@ public class IpfsConnection implements IConnection
 		NamedStreamable.InputStreamWrapper wrapper = new NamedStreamable.InputStreamWrapper(dataStream);
 		
 		List<MerkleNode> nodes = _connection.add(wrapper);
+		// Even with larger files, this only returns a single element, so it isn't obvious why this is a list.
 		Assert.assertTrue(1 == nodes.size());
-		// TODO:  Determine if this is the root hash.
 		Multihash hash = nodes.get(0).hash;
 		
 		return new IpfsFile(hash);
@@ -73,8 +73,8 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			Map<?,?> m = _connection.block.stat(cid.getMultihash());
-			return ((Number)m.get("Size")).longValue();
+			Map<?,?> dataMap = _connection.file.ls(cid.getMultihash());
+			return ((Number)((Map<?,?>)((Map<?,?>)dataMap.get("Objects")).get(cid.toSafeString())).get("Size")).longValue();
 		}
 		catch (IOException e)
 		{

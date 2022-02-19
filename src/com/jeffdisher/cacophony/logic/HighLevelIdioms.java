@@ -50,7 +50,10 @@ public class HighLevelIdioms
 	{
 		try
 		{
-			return remote.saveData(data);
+			IpfsFile uploaded = remote.saveData(data);
+			// TODO:  Remove this check once we have confirmed that this is working as expected.
+			Assert.assertTrue(data.length == (int)remote.getSizeInBytes(uploaded));
+			return uploaded;
 		}
 		catch (IOException e)
 		{
