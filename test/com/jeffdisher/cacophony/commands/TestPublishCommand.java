@@ -36,8 +36,24 @@ public class TestPublishCommand
 		String name = "entry name";
 		String discussionUrl = null;
 		String mime = "text/plain";
-		File tempFile = FOLDER.newFile();
 		String fileContents = "Testing\n";
+		_commonTestOnePublish(name, discussionUrl, mime, fileContents);
+	}
+
+	@Test
+	public void testWithDiscussionUrl() throws IOException
+	{
+		String name = "entry name";
+		String discussionUrl = "http://example.com/discussion1";
+		String mime = "text/plain";
+		String fileContents = "Testing\n";
+		_commonTestOnePublish(name, discussionUrl, mime, fileContents);
+	}
+
+
+	private static void _commonTestOnePublish(String name, String discussionUrl, String mime, String fileContents) throws IOException
+	{
+		File tempFile = FOLDER.newFile();
 		FileOutputStream stream = new FileOutputStream(tempFile);
 		stream.write(fileContents.getBytes());
 		stream.close();
@@ -66,7 +82,7 @@ public class TestPublishCommand
 		Assert.assertEquals(1, recordCidList.size());
 		StreamRecord record = GlobalData.deserializeRecord(sharedConnection.loadData(IpfsFile.fromIpfsCid(recordCidList.get(0))));
 		Assert.assertEquals(name, record.getName());
-		Assert.assertNull(record.getDiscussion());
+		Assert.assertEquals(discussionUrl, record.getDiscussion());
 		List<DataElement> dataElements = record.getElements().getElement();
 		Assert.assertEquals(1, dataElements.size());
 		DataElement elt = dataElements.get(0);

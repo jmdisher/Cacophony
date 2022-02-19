@@ -40,7 +40,6 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Upload the elements.
-		Assert.assertNull(_discussionUrl);
 		Assert.assertTrue(_elements.length > 0);
 		DataArray array = new DataArray();
 		for (ElementSubCommand elt : _elements)
@@ -64,6 +63,10 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		}
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
+		if (null != _discussionUrl)
+		{
+			record.setDiscussion(_discussionUrl);
+		}
 		record.setElements(array);
 		record.setPublisherKey(publicKey.toPublicKey());
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
