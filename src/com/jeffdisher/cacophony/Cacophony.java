@@ -70,34 +70,11 @@ public class Cacophony {
 		{
 			errorStart();
 		}
-		/*
-		IPFS ipfs = new IPFS("/ip4/127.0.0.1/tcp/5001");
-		Map<?, ?> map = ipfs.commands();
-		for (Map.Entry<?, ?> elt : map.entrySet()) {
-			System.out.println("KEY \"" + elt.getKey() + "\" -> VALUE \"" + elt.getValue() + "\"");
-		}
-		*/
-		/*
-		byte[] bytes = "Testing data".getBytes();
-		NamedStreamable.ByteArrayWrapper wrapper = new NamedStreamable.ByteArrayWrapper(bytes);
-		MerkleNode result = ipfs.add(wrapper).get(0);
-		
-		byte[] hash = result.hash.toBytes();
-		String hexString = String.format("%0" + (hash.length * 2) + "x", new BigInteger(1, hash));
-		System.out.println("Uploaded: " + result.toString() + " - " + hexString);
-		*/
-		/*
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		XMLEncoder encoder = new XMLEncoder(stream);
-		encoder.writeObject("Testing");
-		encoder.writeObject(555L);
-		encoder.close();
-		*/
 	}
 
 	private static void errorStart()
 	{
-		System.err.println("Usage:  Cacophony /ip4/127.0.0.1/tcp/5001 <command>");
+		System.err.println("Usage:  Cacophony /path/to/data/directory <command>");
 		CommandParser.printUsage(System.err);
 		System.exit(1);
 	}

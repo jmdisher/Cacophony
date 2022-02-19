@@ -24,7 +24,7 @@ public class TestCommandParser
 	@Test
 	public void testPublish()
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name", "entry name", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", "/path"};
+		String[] foo = {"/tmp/test", "--publishToThisChannel", "--name", "entry name", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", "/path"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -35,7 +35,7 @@ public class TestCommandParser
 	@Test
 	public void testMissingCommand()
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001"};
+		String[] foo = {"/tmp/test"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -46,7 +46,7 @@ public class TestCommandParser
 	@Test
 	public void testBrokenArgs()
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name"};
+		String[] foo = {"/tmp/test", "--publishToThisChannel", "--name"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -134,7 +134,7 @@ public class TestCommandParser
 	@Test
 	public void testPublishSpecialOnly() throws IOException
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--publishToThisChannel", "--name", "name", "--mime", "image/jpeg", "--file", "/tmp/fake", "--special", "image"};
+		String[] foo = {"/tmp/test", "--publishToThisChannel", "--name", "name", "--mime", "image/jpeg", "--file", "/tmp/fake", "--special", "image"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -145,7 +145,7 @@ public class TestCommandParser
 	@Test
 	public void testStartFollowing() throws IOException
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--startFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
+		String[] foo = {"/tmp/test", "--startFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -156,7 +156,7 @@ public class TestCommandParser
 	@Test
 	public void testStopFollowing() throws IOException
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--stopFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
+		String[] foo = {"/tmp/test", "--stopFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -167,7 +167,7 @@ public class TestCommandParser
 	@Test
 	public void testListFollowees() throws IOException
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--listFollowees"};
+		String[] foo = {"/tmp/test", "--listFollowees"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
@@ -178,7 +178,7 @@ public class TestCommandParser
 	@Test
 	public void testListFollowee() throws IOException
 	{
-		String[] foo = {"/ip4/127.0.0.1/tcp/5001", "--listFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
+		String[] foo = {"/tmp/test", "--listFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);
