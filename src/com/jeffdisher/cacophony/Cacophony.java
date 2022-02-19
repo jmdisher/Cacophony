@@ -74,6 +74,7 @@ public class Cacophony {
 
 	private static void errorStart()
 	{
+		System.err.println("Cacophony release " + Version.TAG + " (build hash: " + Version.HASH + ")");
 		System.err.println("Usage:  Cacophony /path/to/data/directory <command>");
 		CommandParser.printUsage(System.err);
 		System.exit(1);

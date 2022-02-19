@@ -11,6 +11,7 @@
 	<property name="dir.global.lib" value="${dir.global.workspace}/lib"/>
 	<property name="junit.heap" value="32m"/>
 	<property name="junit.threads" value="4"/>
+	<property name="version" value="EXPERIMENTAL"/>
 
 	<!-- Set this property to run a specific test. -->
 	<property name="unit.test" value="Test*" />
@@ -30,10 +31,18 @@
 	</path>
 
 	<target name="all" >
+		<antcall target="generate_version" />
 		<antcall target="clean" />
 		<antcall target="build_main" />
 		<antcall target="build_test" />
 		<antcall target="test" />
+	</target>
+
+	<target name="generate_version" >
+		<echo>Using version ${version} for build.</echo>
+		<exec executable="${dir.global.workspace}/src/generate_version_file.sh" output="${dir.global.workspace}/src/com/jeffdisher/cacophony/Version.java">
+			<arg value="${version}" />
+		</exec>
 	</target>
 
 	<target name="clean" >
