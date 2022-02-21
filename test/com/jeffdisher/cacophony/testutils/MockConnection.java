@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.commands;
+package com.jeffdisher.cacophony.testutils;
 
 import java.io.IOException;
 import java.io.InputStream;

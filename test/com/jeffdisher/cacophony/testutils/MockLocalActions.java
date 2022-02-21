@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.commands;
+package com.jeffdisher.cacophony.testutils;
 
 import org.junit.Assert;
 

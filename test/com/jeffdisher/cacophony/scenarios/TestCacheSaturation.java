@@ -12,9 +12,6 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
-import com.jeffdisher.cacophony.commands.MockConnection;
-import com.jeffdisher.cacophony.commands.MockLocalActions;
-import com.jeffdisher.cacophony.commands.MockPinMechanism;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
@@ -24,6 +21,9 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.testutils.MockConnection;
+import com.jeffdisher.cacophony.testutils.MockLocalActions;
+import com.jeffdisher.cacophony.testutils.MockPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 

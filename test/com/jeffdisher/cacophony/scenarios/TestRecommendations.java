@@ -14,14 +14,14 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
-import com.jeffdisher.cacophony.commands.MockConnection;
-import com.jeffdisher.cacophony.commands.MockLocalActions;
-import com.jeffdisher.cacophony.commands.MockPinMechanism;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.testutils.MockConnection;
+import com.jeffdisher.cacophony.testutils.MockLocalActions;
+import com.jeffdisher.cacophony.testutils.MockPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
