@@ -16,8 +16,8 @@ function requireSubstring()
 
 
 # START.
-if [ $# -ne 4 ]; then
-	echo "Missing arguments: path_to_ipfs path_to_resources path_to_jar path_to_libs"
+if [ $# -ne 3 ]; then
+	echo "Missing arguments: path_to_ipfs path_to_resources path_to_jar"
 	exit 1
 fi
 
@@ -25,7 +25,6 @@ BASEDIR=$(dirname $0)
 PATH_TO_IPFS="$1"
 RESOURCES="$2"
 PATH_TO_JAR="$3"
-PATH_TO_LIBS="$4"
 
 REPO1=/tmp/repo1
 REPO2=/tmp/repo2
@@ -42,6 +41,9 @@ mkdir "$REPO1"
 mkdir "$REPO2"
 mkdir "$USER1"
 mkdir "$USER2"
+
+# The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
+cp "$PATH_TO_JAR" Cacophony.jar
 
 IPFS_PATH="$REPO1" $PATH_TO_IPFS init
 IPFS_PATH="$REPO2" $PATH_TO_IPFS init
@@ -65,28 +67,28 @@ echo "Creating key on node 1..."
 PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+java -jar Cacophony.jar "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
 
 echo "Creating key on node 2..."
 PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
 echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
+java -jar Cacophony.jar "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
 
 echo "Make key 2 follow key 1"
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --startFollowing --publicKey "$PUBLIC1"
+java -jar Cacophony.jar "$USER2" --startFollowing --publicKey "$PUBLIC1"
 
 echo "List followees"
-CANONICAL1=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER1" --canonicalizeKey --key "$PUBLIC1")
-LIST=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowees)
+CANONICAL1=$(java -jar Cacophony.jar "$USER1" --canonicalizeKey --key "$PUBLIC1")
+LIST=$(java -jar Cacophony.jar "$USER2" --listFollowees)
 requireSubstring "$LIST" "Following: $CANONICAL1"
 
-LIST=$(java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowee --publicKey "$CANONICAL1")
+LIST=$(java -jar Cacophony.jar "$USER2" --listFollowee --publicKey "$CANONICAL1")
 requireSubstring "$LIST" "Followee has 0 elements"
 
 echo "Stop following and verify it is no longer in the list"
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --stopFollowing --publicKey "$PUBLIC1"
-java -cp "$PATH_TO_LIBS/*:$PATH_TO_JAR" com.jeffdisher.cacophony.Cacophony "$USER2" --listFollowees
+java -jar Cacophony.jar "$USER2" --stopFollowing --publicKey "$PUBLIC1"
+java -jar Cacophony.jar "$USER2" --listFollowees
 
 kill $PID1
 kill $PID2

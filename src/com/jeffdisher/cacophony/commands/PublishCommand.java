@@ -3,8 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.junit.Assert;
-
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -19,6 +17,7 @@ import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record PublishCommand(String _name, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand

@@ -71,6 +71,7 @@
 			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
+				<attribute name="Class-Path" value="lib/cid.jar lib/ipfs.jar lib/istack-commons-runtime.jar lib/javax.activation-api.jar lib/jaxb-api.jar lib/jaxb-runtime.jar lib/multihash.jar lib/multiaddr.jar lib/multibase.jar"/>
 			</manifest>
 		</jar>
 	</target>
