@@ -93,9 +93,13 @@ public class CommandParser
 			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
 			return new RemoveRecommendationCommand(channelPublicKey);
 		}),
-		LIST_RECOMMENDATIONS(true, "--listRecommendations", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		LIST_RECOMMENDATIONS(true, "--listRecommendations", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			return new ListRecommendationsCommand();
+			IpfsKey publicKey = (null != optional[0])
+					? IpfsKey.fromPublicKey(optional[0])
+					: null;
+			;
+			return new ListRecommendationsCommand(publicKey);
 		}),
 		PUBLISH_TO_THIS_CHANNEL(true, "--publishToThisChannel", new String[] {"--name"}, new String[] {"--discussionUrl"}, ELEMENT, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

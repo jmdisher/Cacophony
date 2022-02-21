@@ -42,9 +42,9 @@ public class TestRecommendations
 		// List the recommendations - make sure we find the key.
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
 		Executor executor = new Executor(new PrintStream(captureStream));
-		ListRecommendationsCommand listCommand = new ListRecommendationsCommand();
+		ListRecommendationsCommand listCommand = new ListRecommendationsCommand(null);
 		user1.runCommand(executor, listCommand);
-		Assert.assertTrue(new String(captureStream.toByteArray()).equals("Recommending: " + PUBLIC_KEY2.toPublicKey() + "\n"));
+		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n\t" + PUBLIC_KEY2.toPublicKey() + "\n", new String(captureStream.toByteArray()));
 		executor = null;
 		
 		// Remove the recommendation.
@@ -54,8 +54,8 @@ public class TestRecommendations
 		// List the recommendations - make sure we see an empty list.
 		captureStream = new ByteArrayOutputStream();
 		executor = new Executor(new PrintStream(captureStream));
-		listCommand = new ListRecommendationsCommand();
-		user1.runCommand(null, listCommand);
-		Assert.assertTrue(new String(captureStream.toByteArray()).equals(""));
+		listCommand = new ListRecommendationsCommand(null);
+		user1.runCommand(executor, listCommand);
+		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n", new String(captureStream.toByteArray()));
 	}
 }
