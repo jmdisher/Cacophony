@@ -10,13 +10,8 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.testutils.MockConnection;
-import com.jeffdisher.cacophony.testutils.MockLocalActions;
-import com.jeffdisher.cacophony.testutils.MockPinMechanism;
+import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -30,36 +25,29 @@ public class TestCreateChannelCommand
 	@Test
 	public void testUsage() throws IOException
 	{
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
 		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
-		Executor executor = new Executor(System.out);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism = new MockPinMechanism(null);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, null);
-		MockLocalActions localActions = new MockLocalActions(null, null, sharedConnection, pinCache, pinMechanism, followIndex);
-		
-		command.scheduleActions(executor, localActions);
+		user1.runCommand(null, command);
 		
 		// Verify the states that should have changed.
-		LocalIndex storedIndex = localActions.getStoredIndex();
+		LocalIndex storedIndex = user1.getLocalStoredIndex();
 		Assert.assertEquals(IPFS_HOST, storedIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, storedIndex.keyName());
-		IpfsFile root = sharedConnection.resolve(PUBLIC_KEY);
-		StreamIndex index = GlobalData.deserializeIndex(sharedConnection.loadData(root));
+		IpfsFile root = user1.resolveKeyOnNode(PUBLIC_KEY);
+		StreamIndex index = GlobalData.deserializeIndex(user1.loadDataFromNode(root));
 		Assert.assertEquals(1, index.getVersion());
 		IpfsFile descriptionCid = IpfsFile.fromIpfsCid(index.getDescription());
-		StreamDescription description = GlobalData.deserializeDescription(sharedConnection.loadData(descriptionCid));
+		StreamDescription description = GlobalData.deserializeDescription(user1.loadDataFromNode(descriptionCid));
 		Assert.assertEquals("Unnamed", description.getName());
 		IpfsFile recommendationsCid = IpfsFile.fromIpfsCid(index.getRecommendations());
-		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(sharedConnection.loadData(recommendationsCid));
+		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(user1.loadDataFromNode(recommendationsCid));
 		Assert.assertEquals(0, recommendations.getUser().size());
 		IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
-		StreamRecords records = GlobalData.deserializeRecords(sharedConnection.loadData(recordsCid));
+		StreamRecords records = GlobalData.deserializeRecords(user1.loadDataFromNode(recordsCid));
 		Assert.assertEquals(0, records.getRecord().size());
 		
-		Assert.assertTrue(pinMechanism.isPinned(root));
-		Assert.assertTrue(pinMechanism.isPinned(descriptionCid));
-		Assert.assertTrue(pinMechanism.isPinned(recommendationsCid));
-		Assert.assertTrue(pinMechanism.isPinned(recommendationsCid));
+		Assert.assertTrue(user1.isPinnedLocally(root));
+		Assert.assertTrue(user1.isPinnedLocally(descriptionCid));
+		Assert.assertTrue(user1.isPinnedLocally(recommendationsCid));
 	}
 }

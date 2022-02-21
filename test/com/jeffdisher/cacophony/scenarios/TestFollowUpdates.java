@@ -11,22 +11,17 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
-import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockConnection;
-import com.jeffdisher.cacophony.testutils.MockLocalActions;
-import com.jeffdisher.cacophony.testutils.MockPinMechanism;
+import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -36,7 +31,6 @@ public class TestFollowUpdates
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME1 = "keyName1";
 	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 	private static final String KEY_NAME2 = "keyName2";
@@ -45,92 +39,72 @@ public class TestFollowUpdates
 	@Test
 	public void testFirstFetchOneElement() throws IOException
 	{
-		Executor executor = new Executor(System.out);
-		
 		// Node 1.
-		GlobalPinCache pinCache1 = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism1 = new MockPinMechanism(null);
-		FollowIndex followIndex1 = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection1 = new MockConnection(KEY_NAME1, PUBLIC_KEY1, pinMechanism1, null);
-		MockLocalActions localActions1 = new MockLocalActions(null, null, sharedConnection1, pinCache1, pinMechanism1, followIndex1);
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
 		
 		// Create user 1.
-		_createInitialChannel(executor, localActions1, KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
+		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		GlobalPinCache pinCache2 = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism2 = new MockPinMechanism(sharedConnection1);
-		FollowIndex followIndex2 = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection2 = new MockConnection(KEY_NAME2, PUBLIC_KEY2, pinMechanism2, sharedConnection1);
-		MockLocalActions localActions2 = new MockLocalActions(null, null, sharedConnection2, pinCache2, pinMechanism2, followIndex2);
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, user1);
 		
 		// Create user 2.
-		_createInitialChannel(executor, localActions2, KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
+		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
 		
 		// User1:  Upload an element.
 		String videoFileString = "VIDEO FILE\n";
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
-		publishCommand.scheduleActions(executor, localActions1);
+		user1.runCommand(null, publishCommand);
 		
 		// Verify the data is only in the User1 data store and not yet in User2.
 		IpfsFile videoFileHash = MockConnection.generateHash(videoFileString.getBytes());
 		IpfsFile imageFileHash = MockConnection.generateHash(imageFileString.getBytes());
-		byte[] verify = sharedConnection1.loadData(videoFileHash);
+		byte[] verify = user1.loadDataFromNode(videoFileHash);
 		Assert.assertEquals(videoFileString, new String(verify));
-		verify = sharedConnection1.loadData(imageFileHash);
+		verify = user1.loadDataFromNode(imageFileHash);
 		Assert.assertEquals(imageFileString, new String(verify));
-		Assert.assertNull(sharedConnection2.loadData(videoFileHash));
-		Assert.assertNull(sharedConnection2.loadData(imageFileHash));
+		Assert.assertNull(user2.loadDataFromNode(videoFileHash));
+		Assert.assertNull(user2.loadDataFromNode(imageFileHash));
 		
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
-		startFollowingCommand.scheduleActions(executor, localActions2);
+		user2.runCommand(null, startFollowingCommand);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		executor = new Executor(new PrintStream(captureStream));
+		Executor executor = new Executor(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
-		listCommand.scheduleActions(executor, localActions2);
-		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
+		user2.runCommand(executor, listCommand);
+		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
 		
 		// Verify that these elements are now in User2's data store.
-		verify = sharedConnection2.loadData(videoFileHash);
+		verify = user2.loadDataFromNode(videoFileHash);
 		Assert.assertEquals(videoFileString, new String(verify));
-		verify = sharedConnection2.loadData(imageFileHash);
+		verify = user2.loadDataFromNode(imageFileHash);
 		Assert.assertEquals(imageFileString, new String(verify));
 	}
 
 	@Test
 	public void testStartStopFollow() throws IOException
 	{
-		Executor executor = new Executor(System.out);
-		
 		// Node 1.
-		GlobalPinCache pinCache1 = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism1 = new MockPinMechanism(null);
-		FollowIndex followIndex1 = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection1 = new MockConnection(KEY_NAME1, PUBLIC_KEY1, pinMechanism1, null);
-		MockLocalActions localActions1 = new MockLocalActions(null, null, sharedConnection1, pinCache1, pinMechanism1, followIndex1);
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
 		
 		// Create user 1.
-		_createInitialChannel(executor, localActions1, KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
+		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		GlobalPinCache pinCache2 = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism2 = new MockPinMechanism(sharedConnection1);
-		FollowIndex followIndex2 = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection2 = new MockConnection(KEY_NAME2, PUBLIC_KEY2, pinMechanism2, sharedConnection1);
-		MockLocalActions localActions2 = new MockLocalActions(null, null, sharedConnection2, pinCache2, pinMechanism2, followIndex2);
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, user1);
 		
 		// Create user 2.
-		_createInitialChannel(executor, localActions2, KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
+		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
 		
 		// User1:  Upload an element.
 		String videoFileString = "VIDEO FILE\n";
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
-		publishCommand.scheduleActions(executor, localActions1);
+		user1.runCommand(null, publishCommand);
 		
 		// Verify the data is only in the User1 data store and not yet in User2.
 		IpfsFile videoFileHash = MockConnection.generateHash(videoFileString.getBytes());
@@ -138,50 +112,38 @@ public class TestFollowUpdates
 		
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
-		startFollowingCommand.scheduleActions(executor, localActions2);
+		user2.runCommand(null, startFollowingCommand);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		executor = new Executor(new PrintStream(captureStream));
+		Executor executor = new Executor(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
-		listCommand.scheduleActions(executor, localActions2);
-		String elementCid = _getFirstElementCid(sharedConnection1, PUBLIC_KEY1);
+		user2.runCommand(executor, listCommand);
+		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
+		executor = null;
 		
 		// Verify that these elements are now in User2's data store.
-		byte[] verify = sharedConnection2.loadData(videoFileHash);
+		byte[] verify = user2.loadDataFromNode(videoFileHash);
 		Assert.assertEquals(videoFileString, new String(verify));
-		verify = sharedConnection2.loadData(imageFileHash);
+		verify = user2.loadDataFromNode(imageFileHash);
 		Assert.assertEquals(imageFileString, new String(verify));
 		
 		// Now, stop following them and verify that all of this data has been removed from the local store but is still on the remote store.
 		StopFollowingCommand stopFollowingCommand = new StopFollowingCommand(PUBLIC_KEY1);
-		stopFollowingCommand.scheduleActions(executor, localActions2);
-		verify = sharedConnection1.loadData(videoFileHash);
+		user2.runCommand(null, stopFollowingCommand);
+		verify = user1.loadDataFromNode(videoFileHash);
 		Assert.assertEquals(videoFileString, new String(verify));
-		verify = sharedConnection1.loadData(imageFileHash);
+		verify = user1.loadDataFromNode(imageFileHash);
 		Assert.assertEquals(imageFileString, new String(verify));
-		Assert.assertNull(sharedConnection2.loadData(videoFileHash));
-		Assert.assertNull(sharedConnection2.loadData(imageFileHash));
+		Assert.assertNull(user2.loadDataFromNode(videoFileHash));
+		Assert.assertNull(user2.loadDataFromNode(imageFileHash));
 	}
 
 
-	private void _createInitialChannel(Executor executor, MockLocalActions localActions, String keyName, String name, String description, byte[] userPicData) throws IOException
+	private static String _getFirstElementCid(MockUserNode userNode, IpfsKey publicKey) throws IOException
 	{
-		File userPic = FOLDER.newFile();
-		FileOutputStream stream = new FileOutputStream(userPic);
-		stream.write(userPicData);
-		stream.close();
-		
-		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
-		createChannel.scheduleActions(executor, localActions);
-		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
-		updateDescription.scheduleActions(executor, localActions);
-	}
-
-	private static String _getFirstElementCid(MockConnection store, IpfsKey publicKey) throws IOException
-	{
-		StreamIndex index = GlobalData.deserializeIndex(store.loadData(store.resolve(PUBLIC_KEY1)));
-		StreamRecords records = GlobalData.deserializeRecords(store.loadData(IpfsFile.fromIpfsCid(index.getRecords())));
+		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(userNode.resolveKeyOnNode(PUBLIC_KEY1)));
+		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		return records.getRecord().get(0);
 	}
 

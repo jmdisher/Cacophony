@@ -15,12 +15,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
-import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.testutils.MockConnection;
-import com.jeffdisher.cacophony.testutils.MockLocalActions;
-import com.jeffdisher.cacophony.testutils.MockPinMechanism;
+import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -63,33 +58,29 @@ public class TestPublishCommand
 		
 		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
 		PublishCommand command = new PublishCommand(name, discussionUrl, elements);
-		Executor executor = new Executor(System.out);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism = new MockPinMechanism(null);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, null);
-		MockLocalActions localActions = new MockLocalActions(null, null, sharedConnection, pinCache, pinMechanism, followIndex);
+		
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
 		
 		// We need to create the channel first so we will just use the command to do that.
-		new CreateChannelCommand(IPFS_HOST, KEY_NAME).scheduleActions(executor, localActions);
+		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Now, run the publish command.
-		command.scheduleActions(executor, localActions);
+		user1.runCommand(null, command);
 		
 		// Verify the states that should have changed.
-		IpfsFile root = sharedConnection.resolve(PUBLIC_KEY);
-		StreamIndex index = GlobalData.deserializeIndex(sharedConnection.loadData(root));
+		IpfsFile root = user1.resolveKeyOnNode(PUBLIC_KEY);
+		StreamIndex index = GlobalData.deserializeIndex(user1.loadDataFromNode(root));
 		Assert.assertEquals(1, index.getVersion());
-		StreamRecords records = GlobalData.deserializeRecords(sharedConnection.loadData(IpfsFile.fromIpfsCid(index.getRecords())));
+		StreamRecords records = GlobalData.deserializeRecords(user1.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		List<String> recordCidList = records.getRecord();
 		Assert.assertEquals(1, recordCidList.size());
-		StreamRecord record = GlobalData.deserializeRecord(sharedConnection.loadData(IpfsFile.fromIpfsCid(recordCidList.get(0))));
+		StreamRecord record = GlobalData.deserializeRecord(user1.loadDataFromNode(IpfsFile.fromIpfsCid(recordCidList.get(0))));
 		Assert.assertEquals(name, record.getName());
 		Assert.assertEquals(discussionUrl, record.getDiscussion());
 		List<DataElement> dataElements = record.getElements().getElement();
 		Assert.assertEquals(1, dataElements.size());
 		DataElement elt = dataElements.get(0);
 		Assert.assertEquals(mime, elt.getMime());
-		Assert.assertEquals(fileContents, new String(sharedConnection.loadData(IpfsFile.fromIpfsCid(elt.getCid()))));
+		Assert.assertEquals(fileContents, new String(user1.loadDataFromNode(IpfsFile.fromIpfsCid(elt.getCid()))));
 	}
 }

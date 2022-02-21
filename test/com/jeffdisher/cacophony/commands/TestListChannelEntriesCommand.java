@@ -6,12 +6,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
-import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.testutils.MockConnection;
-import com.jeffdisher.cacophony.testutils.MockLocalActions;
-import com.jeffdisher.cacophony.testutils.MockPinMechanism;
+import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
@@ -26,20 +21,15 @@ public class TestListChannelEntriesCommand
 	@Test
 	public void testWithAndWithoutKey() throws IOException
 	{
-		Executor executor = new Executor(System.out);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		MockPinMechanism pinMechanism = new MockPinMechanism(null);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, null);
-		MockLocalActions localActions = new MockLocalActions(null, null, sharedConnection, pinCache, pinMechanism, followIndex);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
 		
 		// We need to create the channel first so we will just use the command to do that.
-		new CreateChannelCommand(IPFS_HOST, KEY_NAME).scheduleActions(executor, localActions);
+		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Check that we can list entries with null key.
-		new ListChannelEntriesCommand(null).scheduleActions(executor, localActions);
+		user1.runCommand(null, new ListChannelEntriesCommand(null));
 		
 		// Check that we can list entries with an explicit key.
-		new ListChannelEntriesCommand(PUBLIC_KEY).scheduleActions(executor, localActions);
+		user1.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY));
 	}
 }
