@@ -83,12 +83,12 @@ public class CommandParser
 			;
 			return new ReadDescriptionCommand(channelPublicKey);
 		}),
-		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--channelPublicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
 			return new AddRecommendationCommand(channelPublicKey);
 		}),
-		REMOVE_RECOMMENDATION(true, "--removeRecommendation", new String[] {"--channelPublicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REMOVE_RECOMMENDATION(true, "--removeRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
 			return new RemoveRecommendationCommand(channelPublicKey);
