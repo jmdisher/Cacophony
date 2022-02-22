@@ -16,8 +16,10 @@ import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -25,7 +27,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
@@ -33,7 +35,10 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// We need to first verify that we aren't already following them.
 		IpfsFile lastRoot = followIndex.getLastFetchedRoot(_publicKey);
-		Assert.assertTrue(null == lastRoot);
+		if (null != lastRoot)
+		{
+			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
+		}
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = remote.resolvePublicKey(_publicKey);

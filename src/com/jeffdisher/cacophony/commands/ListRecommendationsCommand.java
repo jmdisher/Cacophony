@@ -10,15 +10,16 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		
@@ -31,8 +32,10 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			publicKey = _publicKey;
 			FollowIndex followIndex = local.loadFollowIndex();
 			IpfsFile root = followIndex.getLastFetchedRoot(_publicKey);
-			// TODO:  Make this a real error.
-			Assert.assertTrue(null != root);
+			if (null == root)
+			{
+				throw new UsageException("Given public key (" + _publicKey.toPublicKey() + ") is not being followed");
+			}
 			index = GlobalData.deserializeIndex(remote.readData(root));
 		}
 		else

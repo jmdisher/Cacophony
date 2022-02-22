@@ -12,15 +12,17 @@ import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
@@ -28,8 +30,10 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Removed the cache record and verify that we are following them.
 		FollowRecord finalRecord = followIndex.removeFollowing(_publicKey);
-		Assert.assertTrue(null != finalRecord);
-		
+		if (null == finalRecord)
+		{
+			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
+		}
 		// Walk all the elements in the record stream, removing the cached meta-data and associated files.
 		for (FollowingCacheElement element : finalRecord.elements())
 		{

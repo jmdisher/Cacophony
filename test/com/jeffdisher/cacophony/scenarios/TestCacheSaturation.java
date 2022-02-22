@@ -40,7 +40,7 @@ public class TestCacheSaturation
 	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 	@Test
-	public void testIncrementalAddingOneFollowee() throws IOException
+	public void testIncrementalAddingOneFollowee() throws Throwable
 	{
 		Executor executor = new Executor(System.out);
 		
@@ -77,7 +77,7 @@ public class TestCacheSaturation
 	}
 
 	@Test
-	public void testIncrementalSaturationOneFollowee() throws IOException
+	public void testIncrementalSaturationOneFollowee() throws Throwable
 	{
 		Executor executor = new Executor(System.out);
 		
@@ -115,7 +115,7 @@ public class TestCacheSaturation
 	}
 
 	@Test
-	public void testInitialSaturationOneFollowee() throws IOException
+	public void testInitialSaturationOneFollowee() throws Throwable
 	{
 		Executor executor = new Executor(System.out);
 		
@@ -177,7 +177,7 @@ public class TestCacheSaturation
 			updateDescription.scheduleActions(executor, _localActions);
 		}
 		
-		public void followUser(Executor executor, User followee) throws IOException
+		public void followUser(Executor executor, User followee) throws Throwable
 		{
 			StartFollowingCommand startFollowingCommand = new StartFollowingCommand(followee._publicKey);
 			startFollowingCommand.scheduleActions(executor, _localActions);

@@ -6,6 +6,7 @@ import java.io.IOException;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.types.CacophonyException;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
@@ -55,7 +56,21 @@ public class Cacophony {
 				}
 				Executor executor = new Executor(System.out);
 				LocalActions local = new LocalActions(directory);
-				command.scheduleActions(executor, local);
+				try
+				{
+					command.scheduleActions(executor, local);
+				}
+				catch (IOException e)
+				{
+					System.err.println("Fatal IOException while running command");
+					e.printStackTrace();
+					System.exit(2);
+				}
+				catch (CacophonyException e)
+				{
+					System.err.println("Usage error in running command: " + e.getLocalizedMessage());
+					System.exit(2);
+				}
 				executor.waitForCompletion();
 				// Write-back updates.
 				local.storeGlobalPinCache();

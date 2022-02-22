@@ -53,7 +53,7 @@ public class MockUserNode
 		updateDescription.scheduleActions(_executor, _localActions);
 	}
 
-	public void runCommand(Executor specialExecutor, ICommand command) throws IOException
+	public void runCommand(Executor specialExecutor, ICommand command) throws Throwable
 	{
 		command.scheduleActions((null != specialExecutor) ? specialExecutor : _executor, _localActions);
 	}

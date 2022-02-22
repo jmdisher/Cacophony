@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -19,7 +17,7 @@ public class TestListChannelEntriesCommand
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 	@Test
-	public void testWithAndWithoutKey() throws IOException
+	public void testWithAndWithoutKey() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
 		

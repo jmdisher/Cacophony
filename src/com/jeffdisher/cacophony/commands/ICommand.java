@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.types.CacophonyException;
 
 
 /**
@@ -11,5 +12,5 @@ import com.jeffdisher.cacophony.logic.ILocalActions;
  */
 public interface ICommand
 {
-	void scheduleActions(Executor executor, ILocalActions local) throws IOException;
+	void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException;
 }

@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,7 +26,7 @@ public class TestStartFollowingCommand
 	private static final IpfsKey REMOTE_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14f");
 
 	@Test
-	public void testUsage() throws IOException
+	public void testUsage() throws Throwable
 	{
 		IpfsFile originalRecordsCid = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
 		MockPinMechanism remotePin = new MockPinMechanism(null);

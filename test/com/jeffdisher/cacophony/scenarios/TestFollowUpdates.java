@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestFollowUpdates
@@ -37,7 +38,7 @@ public class TestFollowUpdates
 	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142");
 
 	@Test
-	public void testFirstFetchOneElement() throws IOException
+	public void testFirstFetchOneElement() throws Throwable
 	{
 		// Node 1.
 		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
@@ -83,10 +84,18 @@ public class TestFollowUpdates
 		Assert.assertEquals(videoFileString, new String(verify));
 		verify = user2.loadDataFromNode(imageFileHash);
 		Assert.assertEquals(imageFileString, new String(verify));
+		
+		// Verify that we fail if we try to run this again.
+		try {
+			user2.runCommand(null, startFollowingCommand);
+			Assert.fail("Exception expected");
+		} catch (UsageException e) {
+			// Expected.
+		}
 	}
 
 	@Test
-	public void testStartStopFollow() throws IOException
+	public void testStartStopFollow() throws Throwable
 	{
 		// Node 1.
 		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
@@ -137,6 +146,14 @@ public class TestFollowUpdates
 		Assert.assertEquals(imageFileString, new String(verify));
 		Assert.assertNull(user2.loadDataFromNode(videoFileHash));
 		Assert.assertNull(user2.loadDataFromNode(imageFileHash));
+		
+		// Verify that we fail if we try to run this again.
+		try {
+			user2.runCommand(null, stopFollowingCommand);
+			Assert.fail("Exception expected");
+		} catch (UsageException e) {
+			// Expected.
+		}
 	}
 
 

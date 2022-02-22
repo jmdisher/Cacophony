@@ -124,6 +124,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
+		Assert.assertTrue(null != record);
 		FollowRecord newRecord = new FollowRecord(publicKey, fetchRootIndex, currentTimeMillis, record.elements());
 		_sortedFollowList.add(newRecord);
 	}
@@ -131,6 +132,7 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public void addNewElementToFollower(IpfsKey publicKey, IpfsFile fetchedRoot, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long currentTimeMillis, long combinedSizeBytes)
 	{
 		FollowRecord record = _removeRecordFromList(publicKey);
+		Assert.assertTrue(null != record);
 		FollowingCacheElement element = new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes);
 		FollowingCacheElement[] oldElements = record.elements();
 		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
@@ -161,7 +163,6 @@ public class FollowIndex implements Iterable<FollowRecord>
 				found = one;
 			}
 		}
-		Assert.assertTrue(null != found);
 		return found;
 	}
 

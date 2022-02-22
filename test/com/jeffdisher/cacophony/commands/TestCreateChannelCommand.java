@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,7 +21,7 @@ public class TestCreateChannelCommand
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 	@Test
-	public void testUsage() throws IOException
+	public void testUsage() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
 		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);

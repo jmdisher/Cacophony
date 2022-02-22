@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 
 import org.junit.Assert;
@@ -29,7 +28,7 @@ public class TestPublishCommand
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 	@Test
-	public void testUsage() throws IOException
+	public void testUsage() throws Throwable
 	{
 		String name = "entry name";
 		String discussionUrl = null;
@@ -39,7 +38,7 @@ public class TestPublishCommand
 	}
 
 	@Test
-	public void testWithDiscussionUrl() throws IOException
+	public void testWithDiscussionUrl() throws Throwable
 	{
 		String name = "entry name";
 		String discussionUrl = "http://example.com/discussion1";
@@ -49,7 +48,7 @@ public class TestPublishCommand
 	}
 
 
-	private static void _commonTestOnePublish(String name, String discussionUrl, String mime, String fileContents) throws IOException
+	private static void _commonTestOnePublish(String name, String discussionUrl, String mime, String fileContents) throws Throwable
 	{
 		File tempFile = FOLDER.newFile();
 		FileOutputStream stream = new FileOutputStream(tempFile);
