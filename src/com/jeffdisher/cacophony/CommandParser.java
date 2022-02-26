@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
+import com.jeffdisher.cacophony.commands.RepublishCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
@@ -146,6 +147,10 @@ public class CommandParser
 		{
 			IpfsKey followeeKey = IpfsKey.fromPublicKey(required[0]);
 			return new RefreshFolloweeCommand(followeeKey);
+		}),
+		REPUBLISH(true, "--republish", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			return new RepublishCommand();
 		}),
 		
 		// Methods to manage local state.

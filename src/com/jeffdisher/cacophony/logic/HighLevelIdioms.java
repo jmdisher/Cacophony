@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -72,6 +73,9 @@ public class HighLevelIdioms
 		Assert.assertTrue(null != hashIndex);
 		// Publish it to IPNS.
 		remote.publishIndex(hashIndex);
+		// Update the local index.
+		LocalIndex localIndex = local.readIndex();
+		local.storeIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), hashIndex));
 		// Return the final hash.
 		return hashIndex;
 	}

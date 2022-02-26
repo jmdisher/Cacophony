@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.IPinMechanism;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -20,6 +21,7 @@ public class MockLocalActions implements ILocalActions
 {
 	private final String _ipfsHost;
 	private final String _keyName;
+	private final IpfsFile _publishedHash;
 	private final MockConnection _sharedConnection;
 	private final GlobalPinCache _pinCache;
 	private final IPinMechanism _pinMechanism;
@@ -27,10 +29,11 @@ public class MockLocalActions implements ILocalActions
 
 	private LocalIndex _storedIndex;
 
-	public MockLocalActions(String ipfsHost, String keyName, MockConnection sharedConnection, GlobalPinCache pinCache, IPinMechanism pinMechanism, FollowIndex followIndex)
+	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection, GlobalPinCache pinCache, IPinMechanism pinMechanism, FollowIndex followIndex)
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
+		_publishedHash = publishedHash;
 		_sharedConnection = sharedConnection;
 		_pinCache = pinCache;
 		_pinMechanism = pinMechanism;
@@ -43,7 +46,7 @@ public class MockLocalActions implements ILocalActions
 		return (null != _storedIndex)
 				? _storedIndex
 				: ((null != _ipfsHost)
-					? new LocalIndex(_ipfsHost, _keyName)
+					? new LocalIndex(_ipfsHost, _keyName, _publishedHash)
 					: null
 				)
 		;

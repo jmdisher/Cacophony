@@ -31,7 +31,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		Assert.assertTrue(null == index);
 		
 		// Save the local config.
-		index = new LocalIndex(ipfs, keyName);
+		index = new LocalIndex(ipfs, keyName, null);
 		local.storeIndex(index);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);

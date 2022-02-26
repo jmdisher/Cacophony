@@ -81,6 +81,9 @@ echo "Make sure we see this in the list..."
 LISTING=$(java -jar "Cacophony.jar" "$USER1" --listChannel)
 requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - application/octet-stream"
 
+echo "Just run a republish to make sure nothing goes wrong..."
+java -jar "Cacophony.jar" "$USER1" --republish
+
 kill $PID1
 kill $PID2
 

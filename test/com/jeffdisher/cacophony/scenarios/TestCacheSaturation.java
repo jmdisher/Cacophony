@@ -160,7 +160,7 @@ public class TestCacheSaturation
 			_pinMechanism = new MockPinMechanism(peer);
 			_followIndex = FollowIndex.emptyFollowIndex();
 			_sharedConnection = new MockConnection(_keyName, _publicKey, _pinMechanism, peer);
-			_localActions = new MockLocalActions(null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
+			_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
 		}
 		
 		public void createChannel(Executor executor, int userNumber) throws IOException

@@ -37,7 +37,7 @@ public class MockUserNode
 		_pinMechanism = new MockPinMechanism(upstreamConnection);
 		_followIndex = FollowIndex.emptyFollowIndex();
 		_sharedConnection = new MockConnection(keyName, key, _pinMechanism, upstreamConnection);
-		_localActions = new MockLocalActions(null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
+		_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws IOException

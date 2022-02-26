@@ -40,7 +40,7 @@ public class TestStartFollowingCommand
 		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, sharedConnection, pinCache, pinMechanism, followIndex);
+		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinCache, pinMechanism, followIndex);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -73,5 +73,7 @@ public class TestStartFollowingCommand
 		LocalIndex finalIndex = localActions.readIndex();
 		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
+		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
+		Assert.assertNull(localActions.readIndex().lastPublishedIndex());
 	}
 }
