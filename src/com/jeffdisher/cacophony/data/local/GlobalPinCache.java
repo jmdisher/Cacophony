@@ -28,10 +28,10 @@ public class GlobalPinCache
 	@SuppressWarnings("unchecked")
 	public static GlobalPinCache fromStream(InputStream inputStream)
 	{
-		Map<String, Integer> map = null;
+		Map<IpfsFile, Integer> map = null;
 		try (ObjectInputStream stream = new ObjectInputStream(inputStream))
 		{
-			map = (HashMap<String, Integer>)stream.readObject();
+			map = (HashMap<IpfsFile, Integer>)stream.readObject();
 		}
 		catch (ClassNotFoundException e)
 		{
@@ -50,10 +50,9 @@ public class GlobalPinCache
 		return new GlobalPinCache(map);
 	}
 
-	// The key is the Multihash but we store it as a string to serialize it.
-	private final Map<String, Integer> _map;
+	private final Map<IpfsFile, Integer> _map;
 
-	private GlobalPinCache(Map<String, Integer> map)
+	private GlobalPinCache(Map<IpfsFile, Integer> map)
 	{
 		Assert.assertTrue(null != map);
 		_map = map;
@@ -102,15 +101,14 @@ public class GlobalPinCache
 	 */
 	public boolean shouldUnpinAfterRemoving(IpfsFile hash)
 	{
-		String raw = hash.toSafeString();
-		Integer original = _map.remove(raw);
+		Integer original = _map.remove(hash);
 		// We currently assume that something we would want to unpin is always here.
 		Assert.assertTrue(null != original);
 		int count = original - 1;
 		boolean isPresent = (count > 0);
 		if (isPresent)
 		{
-			_map.put(raw, count);
+			_map.put(hash, count);
 		}
 		return !isPresent;
 	}
@@ -118,11 +116,10 @@ public class GlobalPinCache
 
 	private boolean _isNewAfterIncrement(IpfsFile hash)
 	{
-		String raw = hash.toSafeString();
-		int count = _map.getOrDefault(raw, 0);
+		int count = _map.getOrDefault(hash, 0);
 		boolean isNew = (0 == count);
 		count += 1;
-		_map.put(raw, count);
+		_map.put(hash, count);
 		return isNew;
 	}
 }
