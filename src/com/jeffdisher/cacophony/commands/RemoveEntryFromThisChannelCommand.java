@@ -9,12 +9,13 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand
@@ -28,10 +29,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
-		IpfsKey publicKey = remote.getPublicKey();
-		IpfsFile[] previousIndexFile = new IpfsFile[1];
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
-		cache.removeFromThisCache(previousIndexFile[0]);
+		LocalIndex localIndex = local.readIndex();
+		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
+		Assert.assertTrue(null != rootToLoad);
+		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
@@ -77,5 +78,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			executor.fatalError(new Exception("CID " + _elementCid + " not found in record list"));
 		}
+		
+		// Remove the old root.
+		cache.removeFromThisCache(rootToLoad);
 	}
 }

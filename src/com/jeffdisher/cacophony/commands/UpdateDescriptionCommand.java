@@ -8,12 +8,13 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath) implements ICommand
@@ -25,10 +26,10 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.
-		IpfsKey publicKey = remote.getPublicKey();
-		IpfsFile[] previousIndexFile = new IpfsFile[1];
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
-		cache.removeFromThisCache(previousIndexFile[0]);
+		LocalIndex localIndex = local.readIndex();
+		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
+		Assert.assertTrue(null != rootToLoad);
+		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
 		
 		// Read the existing description since we might be only partially updating it.
 		byte[] rawDescription = remote.readData(IpfsFile.fromIpfsCid(index.getDescription()));
@@ -60,5 +61,8 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		index.setDescription(hashDescription.toSafeString());
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
+		
+		// Remove old root.
+		cache.removeFromThisCache(rootToLoad);
 	}
 }

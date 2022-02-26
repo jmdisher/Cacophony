@@ -6,14 +6,15 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
@@ -26,7 +27,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
 		IpfsKey publicKey = null;
-		StreamIndex index = null;
+		IpfsFile rootToLoad = null;
 		if (null != _publicKey)
 		{
 			publicKey = _publicKey;
@@ -36,15 +37,17 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			{
 				throw new UsageException("Given public key (" + _publicKey.toPublicKey() + ") is not being followed");
 			}
-			index = GlobalData.deserializeIndex(remote.readData(root));
 		}
 		else
 		{
 			// Just list our recommendations.
 			// Read the existing StreamIndex.
 			publicKey = remote.getPublicKey();
-			index = HighLevelIdioms.readIndexForKey(remote, publicKey, null);
+			LocalIndex localIndex = local.readIndex();
+			rootToLoad = localIndex.lastPublishedIndex();
+			Assert.assertTrue(null != rootToLoad);
 		}
+		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
 		
 		// Read the existing recommendations list.
 		byte[] rawRecommendations = remote.readData(IpfsFile.fromIpfsCid(index.getRecommendations()));

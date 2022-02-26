@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
@@ -30,9 +31,10 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();
-		IpfsFile[] previousIndexFile = new IpfsFile[1];
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
-		cache.removeFromThisCache(previousIndexFile[0]);
+		LocalIndex localIndex = local.readIndex();
+		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
+		Assert.assertTrue(null != rootToLoad);
+		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
@@ -84,5 +86,8 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		index.setRecords(recordsHash.toSafeString());
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
+		
+		// Remove the old root.
+		cache.removeFromThisCache(rootToLoad);
 	}
 }

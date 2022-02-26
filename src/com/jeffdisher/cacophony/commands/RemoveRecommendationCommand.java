@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
@@ -24,9 +25,10 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.
-		IpfsKey publicKey = remote.getPublicKey();
-		IpfsFile[] previousIndexFile = new IpfsFile[1];
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, previousIndexFile);
+		LocalIndex localIndex = local.readIndex();
+		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
+		Assert.assertTrue(null != rootToLoad);
+		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
@@ -51,6 +53,6 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		
 		// Remove the previous file from cache.
 		cache.removeFromThisCache(originalRecommendations);
-		cache.removeFromThisCache(previousIndexFile[0]);
+		cache.removeFromThisCache(rootToLoad);
 	}
 }

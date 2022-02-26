@@ -8,25 +8,45 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.local.FollowIndex;
+import com.jeffdisher.cacophony.data.local.FollowRecord;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
+	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
-		IpfsKey publicKey = (null != _channelPublicKey)
-				? _channelPublicKey
-				: remote.getPublicKey()
-		;
-		StreamIndex index = HighLevelIdioms.readIndexForKey(remote, publicKey, null);
+		IpfsFile rootToLoad = null;
+		if (null != _channelPublicKey)
+		{
+			// Make sure that they are a followee.
+			FollowIndex followees = local.loadFollowIndex();
+			FollowRecord record = followees.getFollowerRecord(_channelPublicKey);
+			if (null == record)
+			{
+				throw new UsageException("Given public key (" + _channelPublicKey.toPublicKey() + ") is not being followed");
+			}
+			rootToLoad = record.lastFetchedRoot();
+		}
+		else
+		{
+			// This is us.
+			LocalIndex localIndex = local.readIndex();
+			rootToLoad = localIndex.lastPublishedIndex();
+			Assert.assertTrue(null != rootToLoad);
+		}
+		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
 		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		

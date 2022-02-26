@@ -1,11 +1,13 @@
 package com.jeffdisher.cacophony.commands;
 
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestListChannelEntriesCommand
@@ -27,7 +29,12 @@ public class TestListChannelEntriesCommand
 		// Check that we can list entries with null key.
 		user1.runCommand(null, new ListChannelEntriesCommand(null));
 		
-		// Check that we can list entries with an explicit key.
-		user1.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY));
+		// Check that we can list entries with an explicit key - we expect to see this throw an exception since we aren't following this key (it is us).
+		try {
+			user1.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY));
+			Assert.fail();
+		} catch (UsageException e) {
+			// Do nothing - expected.
+		}
 	}
 }

@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -18,17 +17,6 @@ public class HighLevelIdioms
 	public static IpfsFile saveData(Executor executor, RemoteActions remote, byte[] data)
 	{
 		return _saveData(executor, remote, data);
-	}
-
-	public static StreamIndex readIndexForKey(RemoteActions remote, IpfsKey keyToResolve, IpfsFile[] outFile) throws IOException
-	{
-		IpfsFile indexHash = remote.resolvePublicKey(keyToResolve);
-		if (null != outFile)
-		{
-			outFile[0] = indexHash;
-		}
-		byte[] rawIndex = remote.readData(indexHash);
-		return GlobalData.deserializeIndex(rawIndex);
 	}
 
 	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IOException
