@@ -1,6 +1,10 @@
 package com.jeffdisher.cacophony.testutils;
 
-import org.junit.Assert;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
@@ -9,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.IPinMechanism;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class MockLocalActions implements ILocalActions
@@ -47,8 +52,23 @@ public class MockLocalActions implements ILocalActions
 	@Override
 	public void storeIndex(LocalIndex index)
 	{
-		Assert.assertTrue(null == _storedIndex);
-		_storedIndex = index;
+		// Verify that the serialization/deserialization of LocalIndex works when storing this.
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try
+		{
+			ObjectOutputStream outStream = new ObjectOutputStream(bytes);
+			outStream.writeObject(index);
+			outStream.close();
+			_storedIndex = (LocalIndex)(new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray())).readObject());
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		catch (ClassNotFoundException e)
+		{
+			throw Assert.unexpected(e);
+		}
 	}
 
 	@Override
