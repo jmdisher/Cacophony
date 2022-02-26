@@ -46,7 +46,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove the previous index and recommendations from cache.

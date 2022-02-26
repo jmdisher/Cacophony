@@ -58,7 +58,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		// Update, save, and publish the new index.
 		index.setDescription(hashDescription.toSafeString());
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 	}
 }

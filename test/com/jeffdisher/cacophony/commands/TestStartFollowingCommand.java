@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockLocalActions;
@@ -67,5 +68,10 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(pinMechanism.isPinned(originalRecommendations));
 		Assert.assertTrue(pinMechanism.isPinned(originalRecordsCid));
 		Assert.assertTrue(pinMechanism.isPinned(originalPicture));
+		
+		// Make sure that the local index is correct.
+		LocalIndex finalIndex = localActions.readIndex();
+		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
+		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 	}
 }

@@ -59,7 +59,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			IpfsFile newCid = remote.saveData(rawRecords);
 			cache.uploadedToThisCache(newCid);
 			index.setRecords(newCid.toSafeString());
-			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 			cache.uploadedToThisCache(indexHash);
 			
 			// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).

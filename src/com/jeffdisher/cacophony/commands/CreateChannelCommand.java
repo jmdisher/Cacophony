@@ -62,7 +62,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(executor, remote, hashDescription, hashRecommendations, hashRecords);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(executor, remote, local, hashDescription, hashRecommendations, hashRecords);
 		cache.uploadedToThisCache(indexHash);
 	}
 }

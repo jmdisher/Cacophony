@@ -82,7 +82,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 	}
 }

@@ -46,7 +46,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove the previous file from cache.

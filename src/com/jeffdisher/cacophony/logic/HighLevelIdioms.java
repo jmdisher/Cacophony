@@ -30,19 +30,19 @@ public class HighLevelIdioms
 		return GlobalData.deserializeIndex(rawIndex);
 	}
 
-	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, StreamIndex streamIndex) throws IOException
+	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IOException
 	{
-		return _saveAndPublishIndex(executor, remote, streamIndex);
+		return _saveAndPublishIndex(executor, remote, local, streamIndex);
 	}
 
-	public static IpfsFile saveAndPublishNewIndex(Executor executor, RemoteActions remote, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IOException
+	public static IpfsFile saveAndPublishNewIndex(Executor executor, RemoteActions remote, ILocalActions local, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IOException
 	{
 		StreamIndex streamIndex = new StreamIndex();
 		streamIndex.setVersion(1);
 		streamIndex.setDescription(description.toSafeString());
 		streamIndex.setRecommendations(recommendations.toSafeString());
 		streamIndex.setRecords(records.toSafeString());
-		return _saveAndPublishIndex(executor, remote, streamIndex);
+		return _saveAndPublishIndex(executor, remote, local, streamIndex);
 	}
 
 
@@ -63,12 +63,16 @@ public class HighLevelIdioms
 		}
 	}
 
-	private static IpfsFile _saveAndPublishIndex(Executor executor, RemoteActions remote, StreamIndex streamIndex) throws IOException
+	private static IpfsFile _saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IOException
 	{
+		// Serialize the index file.
 		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
+		// Save it to the IPFS node.
 		IpfsFile hashIndex = _saveData(executor, remote, rawIndex);
 		Assert.assertTrue(null != hashIndex);
+		// Publish it to IPNS.
 		remote.publishIndex(hashIndex);
+		// Return the final hash.
 		return hashIndex;
 	}
 }
