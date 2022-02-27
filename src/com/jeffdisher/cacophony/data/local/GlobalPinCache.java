@@ -113,6 +113,17 @@ public class GlobalPinCache
 		return !isPresent;
 	}
 
+	/**
+	 * Returns true if this hash is in the cache at all, no matter how many references it has.
+	 * 
+	 * @param hash The hash to check.
+	 * @return True if this hash is cached.
+	 */
+	public boolean isCached(IpfsFile hash)
+	{
+		return _map.containsKey(hash);
+	}
+
 
 	private boolean _isNewAfterIncrement(IpfsFile hash)
 	{

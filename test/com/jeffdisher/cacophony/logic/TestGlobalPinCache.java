@@ -20,12 +20,15 @@ public class TestGlobalPinCache
 	public void testBasicUse()
 	{
 		GlobalPinCache index = GlobalPinCache.newCache();
+		Assert.assertFalse(index.isCached(M1));
 		index.hashWasAdded(M1);
+		Assert.assertTrue(index.isCached(M1));
 		Assert.assertTrue(index.shouldPinAfterAdding(M2));
 		Assert.assertFalse(index.shouldPinAfterAdding(M1));
 		Assert.assertFalse(index.shouldPinAfterAdding(M2));
 		Assert.assertFalse(index.shouldUnpinAfterRemoving(M1));
 		Assert.assertTrue(index.shouldUnpinAfterRemoving(M1));
+		Assert.assertFalse(index.isCached(M1));
 	}
 
 	@Test
@@ -38,6 +41,7 @@ public class TestGlobalPinCache
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 		GlobalPinCache read = GlobalPinCache.fromStream(inStream);
 		Assert.assertNotNull(read);
+		Assert.assertFalse(read.isCached(M1));
 	}
 
 	@Test
