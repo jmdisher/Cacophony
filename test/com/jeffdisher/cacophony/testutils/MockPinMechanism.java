@@ -60,6 +60,14 @@ public class MockPinMechanism implements IPinMechanism
 
 	public IpfsFile remoteResolve(IpfsKey key) throws IOException
 	{
-		return _peer.resolve(key);
+		if (null != _peer)
+		{
+			return _peer.resolve(key);
+		}
+		else
+		{
+			// The real IPFS daemon seems to throw IOException when it can't resolve.
+			throw new IOException("Peer does not exist");
+		}
 	}
 }

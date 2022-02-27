@@ -26,7 +26,20 @@ public class LoadChecker
 
 	public byte[] loadCached(IpfsFile file) throws IOException
 	{
+		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));
+		return _remote.readData(file);
+	}
+
+	public byte[] loadNotCached(IpfsFile file) throws IOException
+	{
+		Assert.assertTrue(null != file);
+		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but
+		// we do want to at least log a warning here, just so we are aware of it in tests.
+		if (_cache.isCached(file))
+		{
+			System.err.println("WARNING!  Not expected in cache:  " + file);
+		}
 		return _remote.readData(file);
 	}
 }

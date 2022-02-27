@@ -14,7 +14,7 @@ import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.KeyException;
 
 
 public class TestRecommendations
@@ -73,7 +73,7 @@ public class TestRecommendations
 		try {
 			user1.runCommand(null, listCommand);
 			Assert.fail("Exception expected");
-		} catch (UsageException e) {
+		} catch (KeyException e) {
 			// Expected.
 		}
 	}

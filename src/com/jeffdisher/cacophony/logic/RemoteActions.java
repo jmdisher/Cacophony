@@ -96,9 +96,27 @@ public class RemoteActions
 		Assert.assertTrue(published.toSafeString().equals(indexHash.toSafeString()));
 	}
 
-	public IpfsFile resolvePublicKey(IpfsKey keyToResolve) throws IOException
+	/**
+	 * Returns the file published by the given key or null if the key is unknown or some other network error occurred
+	 * contacting the IPFS node.
+	 * 
+	 * @param keyToResolve The public key to resolve.
+	 * @return The published file or null, if the key isn't found.
+	 */
+	public IpfsFile resolvePublicKey(IpfsKey keyToResolve)
 	{
-		return _ipfs.resolve(keyToResolve);
+		IpfsFile found = null;
+		try
+		{
+			found = _ipfs.resolve(keyToResolve);
+		}
+		catch (IOException e)
+		{
+			// Unfortunately, this resolve will only fail with IOException for the cases of failed key resolution as
+			// well as more general network problems.
+			found = null;
+		}
+		return found;
 	}
 
 	public long getSizeInBytes(IpfsFile cid)

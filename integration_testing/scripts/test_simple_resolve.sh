@@ -75,10 +75,6 @@ echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
 java -jar Cacophony.jar "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
 
-# Note that they need to follow each other to see this, at least for now (may change with explicit caching in the future).
-java -jar Cacophony.jar "$USER1" --startFollowing --publicKey "$PUBLIC2"
-java -jar Cacophony.jar "$USER2" --startFollowing --publicKey "$PUBLIC1"
-
 echo "Verify that they can each resolve each other..."
 DESCRIPTION=$(java -jar Cacophony.jar "$USER1" --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: Unnamed"
@@ -88,11 +84,6 @@ requireSubstring "$DESCRIPTION" "name: Unnamed"
 echo "Update the names and make sure that they both see each others' updates..."
 java -jar Cacophony.jar "$USER1" --updateDescription --name "NAME1"
 java -jar Cacophony.jar "$USER2" --updateDescription --name "NAME2"
-
-# We need to refresh these to see the updates.
-java -jar Cacophony.jar "$USER1" --refreshFollowee --publicKey "$PUBLIC2"
-java -jar Cacophony.jar "$USER2" --refreshFollowee --publicKey "$PUBLIC1"
-
 DESCRIPTION=$(java -jar Cacophony.jar "$USER1" --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: NAME2"
 DESCRIPTION=$(java -jar Cacophony.jar "$USER2" --readDescription --publicKey $PUBLIC1)

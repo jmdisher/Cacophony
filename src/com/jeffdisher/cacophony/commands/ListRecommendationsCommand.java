@@ -14,7 +14,7 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -30,14 +30,27 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		// we only want to read data we already pinned).
 		IpfsKey publicKey = null;
 		IpfsFile rootToLoad = null;
+		boolean isCached = false;
 		if (null != _publicKey)
 		{
 			publicKey = _publicKey;
 			FollowIndex followIndex = local.loadFollowIndex();
 			IpfsFile root = followIndex.getLastFetchedRoot(_publicKey);
-			if (null == root)
+			if (null != root)
 			{
-				throw new UsageException("Given public key (" + _publicKey.toPublicKey() + ") is not being followed");
+				executor.logToConsole("Following " + _publicKey);
+				rootToLoad = root;
+				isCached = true;
+			}
+			else
+			{
+				executor.logToConsole("NOT following " + _publicKey);
+				rootToLoad = remote.resolvePublicKey(_publicKey);
+				// If this failed to resolve, through a key exception.
+				if (null == rootToLoad)
+				{
+					throw new KeyException("Failed to resolve key: " + _publicKey);
+				}
 			}
 		}
 		else
@@ -48,11 +61,15 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			LocalIndex localIndex = local.readIndex();
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
+			isCached = true;
 		}
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
+		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(rootToLoad));
 		
 		// Read the existing recommendations list.
-		byte[] rawRecommendations = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()));
+		byte[] rawRecommendations = isCached
+				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()))
+				: checker.loadNotCached(IpfsFile.fromIpfsCid(index.getRecommendations()))
+		;
 		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
 		
 		// Walk the recommendations and print their keys to the console.

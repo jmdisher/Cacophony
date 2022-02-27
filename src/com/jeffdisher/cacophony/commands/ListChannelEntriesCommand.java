@@ -18,7 +18,7 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -30,16 +30,29 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		IpfsFile rootToLoad = null;
+		boolean isCached = false;
 		if (null != _channelPublicKey)
 		{
 			// Make sure that they are a followee.
 			FollowIndex followees = local.loadFollowIndex();
 			FollowRecord record = followees.getFollowerRecord(_channelPublicKey);
-			if (null == record)
+			if (null != record)
 			{
-				throw new UsageException("Given public key (" + _channelPublicKey.toPublicKey() + ") is not being followed");
+				executor.logToConsole("Following " + _channelPublicKey);
+				rootToLoad = record.lastFetchedRoot();
+				isCached = true;
 			}
-			rootToLoad = record.lastFetchedRoot();
+			else
+			{
+				executor.logToConsole("NOT following " + _channelPublicKey);
+				rootToLoad = remote.resolvePublicKey(_channelPublicKey);
+				// If this failed to resolve, through a key exception.
+				if (null == rootToLoad)
+				{
+					throw new KeyException("Failed to resolve key: " + _channelPublicKey);
+				}
+				isCached = false;
+			}
 		}
 		else
 		{
@@ -47,15 +60,22 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			LocalIndex localIndex = local.readIndex();
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
+			isCached = true;
 		}
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
-		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
+		byte[] rawRecords = isCached
+				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()))
+				: checker.loadNotCached(IpfsFile.fromIpfsCid(index.getRecords()))
+		;
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Walk the elements, reading each element.
 		for (String recordCid : records.getRecord())
 		{
-			byte[] rawRecord = checker.loadCached(IpfsFile.fromIpfsCid(recordCid));
+			byte[] rawRecord = isCached
+					? checker.loadCached(IpfsFile.fromIpfsCid(recordCid))
+					: checker.loadNotCached(IpfsFile.fromIpfsCid(recordCid))
+			;
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			executor.logToConsole("element " + recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
