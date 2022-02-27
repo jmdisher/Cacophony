@@ -14,6 +14,8 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
+import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -156,6 +158,62 @@ public class TestFollowUpdates
 		}
 	}
 
+	@Test
+	public void testFetchMultipleSizes() throws Throwable
+	{
+		// Node 1.
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
+		
+		// Create user 1.
+		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
+		
+		// Node 2
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, user1);
+		
+		// Create user 2.
+		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
+		
+		// Set our preferences for requested video sizes - 640 pixel edge and make sure the data limit is high enough to capture everything.
+		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L));
+		
+		// Start following before the upload so we can refresh on each update, meaning we will get both with no eviction or change of not caching.
+		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
+		user2.runCommand(null, startFollowingCommand);
+		
+		// Upload 2 elements with multiple sizes.
+		// Note that we need to refresh after each one to make sure it actually caches both (otherwise, it will randomly skip older entries to avoid over-filling the cache).
+		PublishCommand publishCommand = _createMultiPublishCommand("entry 1", "IMAGE 1\n", new String[] {"VIDEO FILE 640\n", "VIDEO FILE 1024\n"}, new int[] { 640, 1024 } );
+		user1.runCommand(null, publishCommand);
+		user2.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY1));
+		publishCommand = _createMultiPublishCommand("entry 2", "IMAGE 2\n", new String[] {"VIDEO FILE 320\n", "VIDEO FILE next 640\n"}, new int[] { 320, 640 } );
+		user1.runCommand(null, publishCommand);
+		user2.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY1));
+		
+		// User2:  Follow and verify the data is loaded.
+		// (capture the output to verify the element is in the list)
+		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
+		Executor executor = new Executor(new PrintStream(captureStream));
+		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
+		user2.runCommand(executor, listCommand);
+		String capturedString = new String(captureStream.toByteArray());
+		
+		IpfsFile image1FileHash = MockConnection.generateHash("IMAGE 1\n".getBytes());
+		IpfsFile video1FileHash = MockConnection.generateHash("VIDEO FILE 640\n".getBytes());
+		IpfsFile image2FileHash = MockConnection.generateHash("IMAGE 2\n".getBytes());
+		IpfsFile video2FileHash = MockConnection.generateHash("VIDEO FILE next 640\n".getBytes());
+		
+		Assert.assertTrue(capturedString.contains("(image: " + image1FileHash.toSafeString() + ", leaf: " + video1FileHash.toSafeString() + ")\n"));
+		Assert.assertTrue(capturedString.contains("(image: " + image2FileHash.toSafeString() + ", leaf: " + video2FileHash.toSafeString() + ")\n"));
+		
+		// Verify that the other sizes are in user1's store but not user2's.
+		IpfsFile missingVideo1Hash = MockConnection.generateHash("VIDEO FILE 1024\n".getBytes());
+		IpfsFile missingVideo2Hash = MockConnection.generateHash("VIDEO FILE 320\n".getBytes());
+		Assert.assertNotNull(user1.loadDataFromNode(missingVideo1Hash));
+		Assert.assertNotNull(user1.loadDataFromNode(missingVideo2Hash));
+		Assert.assertNull(user2.loadDataFromNode(missingVideo1Hash));
+		Assert.assertNull(user2.loadDataFromNode(missingVideo2Hash));
+	}
+
 
 	private static String _getFirstElementCid(MockUserNode userNode, IpfsKey publicKey) throws IOException
 	{
@@ -177,6 +235,33 @@ public class TestFollowUpdates
 		ElementSubCommand[] elements = new ElementSubCommand[] {
 				new ElementSubCommand("video/mp4", dataFile, 720, 1280, false),
 				new ElementSubCommand("image/jpeg", imageFile, 0, 0, true),
+		};
+		return new PublishCommand(entryName, null, elements);
+	}
+
+	private static PublishCommand _createMultiPublishCommand(String entryName, String imageFileString, String[] videoFileStrings, int heights[]) throws IOException
+	{
+		Assert.assertEquals(videoFileStrings.length, heights.length);
+		File imageFile = FOLDER.newFile();
+		FileOutputStream imageStream = new FileOutputStream(imageFile);
+		imageStream.write(imageFileString.getBytes());
+		imageStream.close();
+		
+		File[] dataFiles = new File[videoFileStrings.length];
+		for (int i = 0; i < dataFiles.length; ++i)
+		{
+			dataFiles[i] = FOLDER.newFile();
+			FileOutputStream dataStream = new FileOutputStream(dataFiles[i]);
+			dataStream.write(videoFileStrings[i].getBytes());
+			dataStream.close();
+		}
+		
+		ElementSubCommand[] elements = new ElementSubCommand[videoFileStrings.length + 1];
+		elements[0] = new ElementSubCommand("image/jpeg", imageFile, 0, 0, true);
+		for (int i = 0; i < dataFiles.length; ++i)
+		{
+			int width = heights[i] / 2;
+			elements[i + 1] = new ElementSubCommand("video/mp4", dataFiles[i], heights[i], width, false);
 		};
 		return new PublishCommand(entryName, null, elements);
 	}
