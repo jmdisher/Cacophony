@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -23,6 +24,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
@@ -47,10 +49,10 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 		}
-		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
+		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
 		
 		// Read the existing recommendations list.
-		byte[] rawRecommendations = remote.readData(IpfsFile.fromIpfsCid(index.getRecommendations()));
+		byte[] rawRecommendations = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()));
 		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
 		
 		// Walk the recommendations and print their keys to the console.

@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -27,6 +28,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.
@@ -34,10 +36,10 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		LocalIndex localIndex = local.readIndex();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
+		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
+		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Upload the elements.

@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -30,6 +31,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
@@ -57,8 +59,8 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			
 			// Cache the new root and remove the old one.
 			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
-			StreamIndex oldIndex = GlobalData.deserializeIndex(remote.readData(lastRoot));
-			StreamIndex newIndex = GlobalData.deserializeIndex(remote.readData(indexRoot));
+			StreamIndex oldIndex = GlobalData.deserializeIndex(checker.loadCached(lastRoot));
+			StreamIndex newIndex = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
 			Assert.assertTrue(1 == oldIndex.getVersion());
 			Assert.assertTrue(1 == newIndex.getVersion());
 			if (!oldIndex.getDescription().equals(newIndex.getDescription()))
@@ -66,8 +68,8 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 				IpfsFile oldDescriptionCid = IpfsFile.fromIpfsCid(oldIndex.getDescription());
 				IpfsFile newDescriptionCid = IpfsFile.fromIpfsCid(newIndex.getDescription());
 				cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, newDescriptionCid);
-				StreamDescription oldDescription = GlobalData.deserializeDescription(remote.readData(oldDescriptionCid));
-				StreamDescription newDescription = GlobalData.deserializeDescription(remote.readData(newDescriptionCid));
+				StreamDescription oldDescription = GlobalData.deserializeDescription(checker.loadCached(oldDescriptionCid));
+				StreamDescription newDescription = GlobalData.deserializeDescription(checker.loadCached(newDescriptionCid));
 				if (!oldDescription.getPicture().equals(newDescription.getPicture()))
 				{
 					cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(newDescription.getPicture()));
@@ -87,8 +89,8 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 				IpfsFile oldRecordsCid = IpfsFile.fromIpfsCid(oldIndex.getRecords());
 				IpfsFile newRecordsCid = IpfsFile.fromIpfsCid(newIndex.getRecords());
 				cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
-				StreamRecords oldRecords = GlobalData.deserializeRecords(remote.readData(oldRecordsCid));
-				StreamRecords newRecords = GlobalData.deserializeRecords(remote.readData(newRecordsCid));
+				StreamRecords oldRecords = GlobalData.deserializeRecords(checker.loadCached(oldRecordsCid));
+				StreamRecords newRecords = GlobalData.deserializeRecords(checker.loadCached(newRecordsCid));
 				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readPrefs());
 				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}

@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,6 +26,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
@@ -50,12 +52,12 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Remove all the root meta-data we have cached.
 		IpfsFile lastRoot = finalRecord.lastFetchedRoot();
-		StreamIndex streamIndex = GlobalData.deserializeIndex(remote.readData(lastRoot));
+		StreamIndex streamIndex = GlobalData.deserializeIndex(checker.loadCached(lastRoot));
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
 		IpfsFile recommendationsHash = IpfsFile.fromIpfsCid(streamIndex.getRecommendations());
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(streamIndex.getRecords());
-		StreamDescription description = GlobalData.deserializeDescription(remote.readData(descriptionHash));
+		StreamDescription description = GlobalData.deserializeDescription(checker.loadCached(descriptionHash));
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);

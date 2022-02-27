@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -22,17 +23,18 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read our existing root key.
 		LocalIndex localIndex = local.readIndex();
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != oldRootHash);
-		StreamIndex index = GlobalData.deserializeIndex(remote.readData(oldRootHash));
+		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(oldRootHash));
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
-		byte[] rawRecommendations = remote.readData(originalRecommendations);
+		byte[] rawRecommendations = checker.loadCached(originalRecommendations);
 		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
 		
 		// Verify that we didn't already add them.

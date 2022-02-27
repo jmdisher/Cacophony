@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -30,6 +31,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
@@ -51,7 +53,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Now, cache the root meta-data structures.
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
-		StreamIndex streamIndex = GlobalData.deserializeIndex(remote.readData(indexRoot));
+		StreamIndex streamIndex = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
@@ -59,7 +61,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(streamIndex.getRecords());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recordsHash);
-		StreamDescription description = GlobalData.deserializeDescription(remote.readData(descriptionHash));
+		StreamDescription description = GlobalData.deserializeDescription(checker.loadCached(descriptionHash));
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
 		
@@ -69,7 +71,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Populate the initial cache records.
 		GlobalPrefs prefs = local.readPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		_populateCachedRecords(prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(remote.readData(recordsHash)), videoEdgePixelMax);
+		_populateCachedRecords(prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
 	}
 
 

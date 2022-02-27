@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -27,6 +28,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		IpfsFile rootToLoad = null;
 		if (null != _channelPublicKey)
 		{
@@ -46,14 +48,14 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 		}
-		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
-		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
+		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
+		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Walk the elements, reading each element.
 		for (String recordCid : records.getRecord())
 		{
-			byte[] rawRecord = remote.readData(IpfsFile.fromIpfsCid(recordCid));
+			byte[] rawRecord = checker.loadCached(IpfsFile.fromIpfsCid(recordCid));
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			executor.logToConsole("element " + recordCid + ": " + record.getName());
 			DataArray array = record.getElements();

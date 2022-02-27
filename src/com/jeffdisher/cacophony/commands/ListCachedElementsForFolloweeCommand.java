@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,6 +25,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);
 		if (null != record)
@@ -32,9 +34,9 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			Map<IpfsFile, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
 			IpfsFile root = record.lastFetchedRoot();
 			
-			byte[] rawIndex = remote.readData(root);
+			byte[] rawIndex = checker.loadCached(root);
 			StreamIndex index = GlobalData.deserializeIndex(rawIndex);
-			StreamRecords records = GlobalData.deserializeRecords(remote.readData(IpfsFile.fromIpfsCid(index.getRecords())));
+			StreamRecords records = GlobalData.deserializeRecords(checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords())));
 			List<String> recordList = records.getRecord();
 			executor.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)

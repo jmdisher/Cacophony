@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -24,6 +25,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
@@ -32,10 +34,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		LocalIndex localIndex = local.readIndex();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = GlobalData.deserializeIndex(remote.readData(rootToLoad));
+		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		byte[] rawRecords = remote.readData(IpfsFile.fromIpfsCid(index.getRecords()));
+		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Make sure that we actually have the record.
@@ -64,7 +66,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			cache.uploadedToThisCache(indexHash);
 			
 			// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).
-			byte[] rawRecord = remote.readData(_elementCid);
+			byte[] rawRecord = checker.loadCached(_elementCid);
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
