@@ -18,11 +18,11 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="cid" type="{http://jeffdisher.com/cacophony/record.xsd}IpfsCid"/>
+ *         &lt;element name="cid" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd}IpfsCid"/>
  *         &lt;element name="mime" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="height" type="{http://www.w3.org/2001/XMLSchema}int" minOccurs="0"/>
  *         &lt;element name="width" type="{http://www.w3.org/2001/XMLSchema}int" minOccurs="0"/>
- *         &lt;element name="special" type="{http://jeffdisher.com/cacophony/record.xsd}ElementSpecialType" minOccurs="0"/>
+ *         &lt;element name="special" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd}ElementSpecialType" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>

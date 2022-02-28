@@ -19,9 +19,9 @@ import javax.xml.bind.annotation.XmlType;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="version" type="{http://www.w3.org/2001/XMLSchema}int"/>
- *         &lt;element name="description" type="{http://jeffdisher.com/cacophony/index.xsd}IpfsCid"/>
- *         &lt;element name="recommendations" type="{http://jeffdisher.com/cacophony/index.xsd}IpfsCid"/>
- *         &lt;element name="records" type="{http://jeffdisher.com/cacophony/index.xsd}IpfsCid"/>
+ *         &lt;element name="description" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd}IpfsCid"/>
+ *         &lt;element name="recommendations" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd}IpfsCid"/>
+ *         &lt;element name="records" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd}IpfsCid"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>

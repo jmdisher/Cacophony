@@ -24,7 +24,7 @@ import javax.xml.namespace.QName;
 @XmlRegistry
 public class ObjectFactory {
 
-    private final static QName _Description_QNAME = new QName("http://jeffdisher.com/cacophony/description.xsd", "description");
+    private final static QName _Description_QNAME = new QName("https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd", "description");
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: com.jeffdisher.cacophony.data.global.description
@@ -45,7 +45,7 @@ public class ObjectFactory {
      * Create an instance of {@link JAXBElement }{@code <}{@link StreamDescription }{@code >}}
      * 
      */
-    @XmlElementDecl(namespace = "http://jeffdisher.com/cacophony/description.xsd", name = "description")
+    @XmlElementDecl(namespace = "https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd", name = "description")
     public JAXBElement<StreamDescription> createDescription(StreamDescription value) {
         return new JAXBElement<StreamDescription>(_Description_QNAME, StreamDescription.class, null, value);
     }

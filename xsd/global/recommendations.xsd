@@ -1,4 +1,4 @@
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://jeffdisher.com/cacophony/recommendations.xsd" targetNamespace="http://jeffdisher.com/cacophony/recommendations.xsd" elementFormDefault="qualified">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/recommendations.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/recommendations.xsd" elementFormDefault="qualified">
 	<xsd:element name="recommendations" type="tns:StreamRecommendations"/>
 	<xsd:simpleType name="IpfsPublicKey">
 		<xsd:restriction base="xsd:string">

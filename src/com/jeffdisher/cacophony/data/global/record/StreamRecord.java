@@ -22,7 +22,7 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="publishedSecondsUtc" type="{http://www.w3.org/2001/XMLSchema}int"/>
  *         &lt;element name="discussion" type="{http://www.w3.org/2001/XMLSchema}anyURI" minOccurs="0"/>
- *         &lt;element name="elements" type="{http://jeffdisher.com/cacophony/record.xsd}DataArray"/>
+ *         &lt;element name="elements" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd}DataArray"/>
  *         &lt;element name="publisherKey" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *       &lt;/sequence>
  *     &lt;/restriction>

@@ -1,4 +1,4 @@
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://jeffdisher.com/cacophony/record.xsd" targetNamespace="http://jeffdisher.com/cacophony/record.xsd" elementFormDefault="qualified">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd" elementFormDefault="qualified">
 	<xsd:element name="record" type="tns:StreamRecord"/>
 	<xsd:simpleType name="ElementId">
 		<xsd:restriction base="xsd:int">

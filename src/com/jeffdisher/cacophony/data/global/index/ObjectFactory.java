@@ -24,7 +24,7 @@ import javax.xml.namespace.QName;
 @XmlRegistry
 public class ObjectFactory {
 
-    private final static QName _Index_QNAME = new QName("http://jeffdisher.com/cacophony/index.xsd", "index");
+    private final static QName _Index_QNAME = new QName("https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd", "index");
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: com.jeffdisher.cacophony.data.global.index
@@ -45,7 +45,7 @@ public class ObjectFactory {
      * Create an instance of {@link JAXBElement }{@code <}{@link StreamIndex }{@code >}}
      * 
      */
-    @XmlElementDecl(namespace = "http://jeffdisher.com/cacophony/index.xsd", name = "index")
+    @XmlElementDecl(namespace = "https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd", name = "index")
     public JAXBElement<StreamIndex> createIndex(StreamIndex value) {
         return new JAXBElement<StreamIndex>(_Index_QNAME, StreamIndex.class, null, value);
     }

@@ -1,4 +1,4 @@
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://jeffdisher.com/cacophony/index.xsd" targetNamespace="http://jeffdisher.com/cacophony/index.xsd" elementFormDefault="qualified">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd" elementFormDefault="qualified">
 	<xsd:element name="index" type="tns:StreamIndex"/>
 	<xsd:simpleType name="IpfsCid">
 		<xsd:restriction base="xsd:string">

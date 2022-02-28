@@ -20,7 +20,7 @@ import javax.xml.bind.annotation.XmlType;
  *       &lt;sequence>
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="picture" type="{http://jeffdisher.com/cacophony/description.xsd}IpfsCid"/>
+ *         &lt;element name="picture" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd}IpfsCid"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>

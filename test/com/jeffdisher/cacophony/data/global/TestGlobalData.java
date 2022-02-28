@@ -25,7 +25,7 @@ public class TestGlobalData {
 		index.setVersion(5);
 		byte[] serialized = GlobalData.serializeIndex(index);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<index xmlns=\"http://jeffdisher.com/cacophony/index.xsd\">\n"
+				+ "<index xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd\">\n"
 				+ "    <version>5</version>\n"
 				+ "    <description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description>\n"
 				+ "    <recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations>\n"
@@ -36,7 +36,7 @@ public class TestGlobalData {
 
 	@Test
 	public void testIndex2() throws IOException {
-		byte[] input = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><index xmlns=\"http://jeffdisher.com/cacophony/index.xsd\"><version>5</version><description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description><recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations><records>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</records></index>".getBytes();
+		byte[] input = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><index xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd\"><version>5</version><description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description><recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations><records>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</records></index>".getBytes();
 		StreamIndex didRead = GlobalData.deserializeIndex(input);
 		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", didRead.getDescription());
 	}
@@ -47,7 +47,7 @@ public class TestGlobalData {
 		data.getRecord().add("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		byte[] serialized = GlobalData.serializeRecords(data);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<records xmlns=\"http://jeffdisher.com/cacophony/records.xsd\">\n"
+				+ "<records xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/records.xsd\">\n"
 				+ "    <record>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</record>\n"
 				+ "</records>\n";
 		Assert.assertEquals(expected, new String(serialized));
@@ -56,7 +56,7 @@ public class TestGlobalData {
 	@Test
 	public void testRecords2() throws IOException {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<records xmlns=\"http://jeffdisher.com/cacophony/records.xsd\">\n"
+				+ "<records xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/records.xsd\">\n"
 				+ "    <record>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</record>\n"
 				+ "</records>\n").getBytes();
 		StreamRecords readRecords = GlobalData.deserializeRecords(input);
@@ -78,7 +78,7 @@ public class TestGlobalData {
 		element.setMime("mim");
 		byte[] serialized = GlobalData.serializeRecord(record);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<record xmlns=\"http://jeffdisher.com/cacophony/record.xsd\">\n"
+				+ "<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd\">\n"
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>555</publishedSecondsUtc>\n"
 				+ "    <discussion>URL</discussion>\n"
@@ -96,7 +96,7 @@ public class TestGlobalData {
 	@Test
 	public void testRecord2() throws IOException {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<record xmlns=\"http://jeffdisher.com/cacophony/record.xsd\">\n"
+				+ "<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd\">\n"
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>555</publishedSecondsUtc>\n"
 				+ "    <discussion>URL</discussion>\n"
@@ -120,7 +120,7 @@ public class TestGlobalData {
 		data.setPicture("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		byte[] serialized = GlobalData.serializeDescription(data);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<description xmlns=\"http://jeffdisher.com/cacophony/description.xsd\">\n"
+				+ "<description xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd\">\n"
 				+ "    <name>name</name>\n"
 				+ "    <description>description</description>\n"
 				+ "    <picture>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</picture>\n"
@@ -131,7 +131,7 @@ public class TestGlobalData {
 	@Test
 	public void testDescription2() throws IOException {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<description xmlns=\"http://jeffdisher.com/cacophony/description.xsd\">\n"
+				+ "<description xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd\">\n"
 				+ "    <name>name</name>\n"
 				+ "    <description>description</description>\n"
 				+ "    <picture>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</picture>\n"
@@ -146,7 +146,7 @@ public class TestGlobalData {
 		data.getUser().add("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 		byte[] serialized = GlobalData.serializeRecommendations(data);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-				+ "<recommendations xmlns=\"http://jeffdisher.com/cacophony/recommendations.xsd\">\n"
+				+ "<recommendations xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/recommendations.xsd\">\n"
 				+ "    <user>z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141</user>\n"
 				+ "</recommendations>\n";
 		Assert.assertEquals(expected, new String(serialized));
@@ -154,7 +154,7 @@ public class TestGlobalData {
 
 	@Test
 	public void testRecommendations2() throws IOException {
-		byte[] input = ("<recommendations xmlns=\"http://jeffdisher.com/cacophony/recommendations.xsd\">\n"
+		byte[] input = ("<recommendations xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/recommendations.xsd\">\n"
 				+ "    <user>z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141</user>\n"
 				+ "</recommendations>\n").getBytes();
 		StreamRecommendations didRead = GlobalData.deserializeRecommendations(input);
