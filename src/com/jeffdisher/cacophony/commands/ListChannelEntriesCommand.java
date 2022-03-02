@@ -27,7 +27,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
-		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;

@@ -28,7 +28,7 @@ public record RepublishCommand() implements ICommand
 		Assert.assertTrue(null != indexHash);
 		
 		// Republish the index.
-		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		remote.publishIndex(indexHash);
 	}
 }

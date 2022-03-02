@@ -24,7 +24,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
-		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);

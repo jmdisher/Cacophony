@@ -33,7 +33,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Save the local config.
 		index = new LocalIndex(ipfs, keyName, null);
 		local.storeIndex(index);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Create the empty description, recommendations, record stream, and index.

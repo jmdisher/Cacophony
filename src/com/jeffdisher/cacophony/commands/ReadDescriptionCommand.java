@@ -23,7 +23,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
-		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since

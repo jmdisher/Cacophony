@@ -22,7 +22,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
 	{
-		RemoteActions remote = RemoteActions.loadIpfsConfig(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		

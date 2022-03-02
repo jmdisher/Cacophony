@@ -12,14 +12,22 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class RemoteActions
 {
-	public static RemoteActions loadIpfsConfig(ILocalActions local) throws IOException
+	/**
+	 * Loads a RemoteActions abstraction using the given executor, loaded from the given ILocalActions abstraction.
+	 * 
+	 * @param executor The executor used for reporting and execution strategy in the returned object.
+	 * @param local The ILocalActions which will be consulted to load the RemoteActions configuration.
+	 * @return The abstraction over the remote actions.
+	 * @throws IOException Something went wrong interacting with the remote server when attaching.
+	 */
+	public static RemoteActions loadIpfsConfig(Executor executor, ILocalActions local) throws IOException
 	{
 		LocalIndex index = local.readIndex();
 		Assert.assertTrue(null != index);
 		IConnection ipfs = local.getSharedConnection();
 		String keyName = index.keyName();
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(ipfs, keyName, publicKey);
+		return new RemoteActions(executor, ipfs, keyName, publicKey);
 	}
 
 	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IOException
@@ -38,12 +46,14 @@ public class RemoteActions
 	}
 
 
+	private final Executor _executor;
 	private final IConnection _ipfs;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
 
-	private RemoteActions(IConnection ipfs, String keyName, IpfsKey publicKey)
+	private RemoteActions(Executor executor, IConnection ipfs, String keyName, IpfsKey publicKey)
 	{
+		_executor = executor;
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
@@ -51,16 +61,17 @@ public class RemoteActions
 
 	public IpfsFile saveData(byte[] raw) throws IOException
 	{
-		System.out.println("Saving " + raw.length + " bytes...");
+		Executor.IOperationLog log = _executor.logOperation("Saving " + raw.length + " bytes...");
 		IpfsFile file = _ipfs.storeData(new ByteArrayInputStream(raw));
-		System.out.println("-saved: " + file.toSafeString());
+		log.finish("saved: " + file.toSafeString());
 		return file;
 	}
 
 	public IpfsFile saveStream(InputStream stream) throws IOException
 	{
+		Executor.IOperationLog log = _executor.logOperation("Saving stream...");
 		IpfsFile file = _ipfs.storeData(stream);
-		System.out.println("-saved: " + file.toSafeString());
+		log.finish("saved: " + file.toSafeString());
 		return file;
 	}
 
@@ -80,15 +91,15 @@ public class RemoteActions
 		Assert.assertTrue(null != _keyName);
 		
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
-		System.out.println("Publishing " + indexHash + " to " + _keyName);
+		Executor.IOperationLog log = _executor.logOperation("Publishing " + indexHash + " to " + _keyName);
 		try
 		{
 			_ipfs.publish(_keyName, indexHash);
-			System.out.println("-Success!");
+			log.finish("Success!");
 		}
 		catch (RuntimeException e)
 		{
-			System.out.println("-Failed: " + e.getLocalizedMessage());
+			log.finish("Failed: " + e.getLocalizedMessage());
 		}
 		
 		// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
