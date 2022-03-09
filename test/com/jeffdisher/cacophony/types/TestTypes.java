@@ -9,6 +9,9 @@ import java.io.ObjectOutputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+
 
 public class TestTypes
 {
@@ -76,5 +79,33 @@ public class TestTypes
 		IpfsKey newKey = (IpfsKey) objectInputStream.readObject();
 		objectInputStream.close();
 		Assert.assertEquals(key, newKey);
+	}
+
+	@Test
+	public void testJsonObject()
+	{
+		JsonObject object = new JsonObject();
+		object.set("bool", false);
+		object.set("double", 5.6d);
+		object.set("string", "string value\"\'");
+		JsonObject nested = new JsonObject();
+		nested.add("long", 1_000_000_000L);
+		object.set("object", nested);
+		JsonArray array = new JsonArray();
+		array.add("value");
+		object.set("array", array);
+		Assert.assertEquals("{\"bool\":false,\"double\":5.6,\"string\":\"string value\\\"'\",\"object\":{\"long\":1000000000},\"array\":[\"value\"]}", object.toString());
+	}
+
+	@Test
+	public void testJsonArray()
+	{
+		JsonArray array = new JsonArray();
+		JsonObject nested = new JsonObject();
+		nested.add("long", 1_000_000_000L);
+		array.add(nested);
+		JsonArray other = new JsonArray();
+		array.add(other);
+		Assert.assertEquals("[{\"long\":1000000000},[]]", array.toString());
 	}
 }

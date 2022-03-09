@@ -21,5 +21,6 @@
 	<classpathentry kind="lib" path="lib/istack-commons-runtime.jar"/>
 	<classpathentry kind="lib" path="lib/javax.activation-api.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/minimal-json-0.9.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
