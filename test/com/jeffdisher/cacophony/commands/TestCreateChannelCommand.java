@@ -32,15 +32,21 @@ public class TestCreateChannelCommand
 		Assert.assertEquals(IPFS_HOST, storedIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, storedIndex.keyName());
 		IpfsFile root = user1.resolveKeyOnNode(PUBLIC_KEY);
+		Assert.assertTrue(user1.isInPinCache(root));
 		StreamIndex index = GlobalData.deserializeIndex(user1.loadDataFromNode(root));
 		Assert.assertEquals(1, index.getVersion());
 		IpfsFile descriptionCid = IpfsFile.fromIpfsCid(index.getDescription());
+		Assert.assertTrue(user1.isInPinCache(descriptionCid));
 		StreamDescription description = GlobalData.deserializeDescription(user1.loadDataFromNode(descriptionCid));
 		Assert.assertEquals("Unnamed", description.getName());
+		Assert.assertEquals("Description forthcoming", description.getDescription());
+		Assert.assertTrue(user1.isInPinCache(IpfsFile.fromIpfsCid(description.getPicture())));
 		IpfsFile recommendationsCid = IpfsFile.fromIpfsCid(index.getRecommendations());
+		Assert.assertTrue(user1.isInPinCache(recommendationsCid));
 		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(user1.loadDataFromNode(recommendationsCid));
 		Assert.assertEquals(0, recommendations.getUser().size());
 		IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
+		Assert.assertTrue(user1.isInPinCache(recordsCid));
 		StreamRecords records = GlobalData.deserializeRecords(user1.loadDataFromNode(recordsCid));
 		Assert.assertEquals(0, records.getRecord().size());
 		

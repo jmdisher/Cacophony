@@ -77,4 +77,9 @@ public class MockUserNode
 	{
 		return _pinMechanism.isPinned(file);
 	}
+
+	public boolean isInPinCache(IpfsFile file)
+	{
+		return _pinCache.isCached(file);
+	}
 }
