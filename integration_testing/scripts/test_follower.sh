@@ -14,6 +14,15 @@ function requireSubstring()
 	fi
 }
 
+function checkFunctionExists()
+{
+	FILE="$1"
+	if [ ! -f "$FILE" ]; then
+		echo "File not found: \"$FILE\""
+		exit 1
+	fi
+}
+
 
 # START.
 if [ $# -ne 3 ]; then
@@ -31,6 +40,8 @@ REPO2=/tmp/repo2
 
 USER1=/tmp/user1
 USER2=/tmp/user2
+
+STATIC2=/tmp/static2
 
 rm -rf "$REPO1"
 rm -rf "$REPO2"
@@ -85,6 +96,18 @@ requireSubstring "$LIST" "Following: $CANONICAL1"
 
 LIST=$(java -jar Cacophony.jar "$USER2" --listFollowee --publicKey "$CANONICAL1")
 requireSubstring "$LIST" "Followee has 0 elements"
+
+echo "Verify that the static HTML is generated"
+rm -rf "$STATIC2"
+java -jar Cacophony.jar "$USER2" --htmlOutput --directory "$STATIC2"
+checkFunctionExists "$STATIC2/index.html"
+checkFunctionExists "$STATIC2/prefs.html"
+checkFunctionExists "$STATIC2/utils.js"
+checkFunctionExists "$STATIC2/user.html"
+checkFunctionExists "$STATIC2/play.html"
+checkFunctionExists "$STATIC2/recommending.html"
+checkFunctionExists "$STATIC2/following.html"
+checkFunctionExists "$STATIC2/generated_db.js"
 
 echo "Stop following and verify it is no longer in the list"
 java -jar Cacophony.jar "$USER2" --stopFollowing --publicKey "$PUBLIC1"

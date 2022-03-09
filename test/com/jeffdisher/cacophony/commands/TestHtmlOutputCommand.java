@@ -47,6 +47,16 @@ public class TestHtmlOutputCommand
 		HtmlOutputCommand command = new HtmlOutputCommand(new File(parentDirectory, "output"));
 		user1.runCommand(null, command);
 		
-		// TODO:  Verify the presence of on-disk structures once implemented.
+		// Verify the presence of on-disk structures once implemented.
+		File outputDirectory = new File(parentDirectory, "output");
+		Assert.assertTrue(outputDirectory.isDirectory());
+		Assert.assertTrue(new File(outputDirectory, "index.html").isFile());
+		Assert.assertTrue(new File(outputDirectory, "prefs.html").isFile());
+		Assert.assertTrue(new File(outputDirectory, "utils.js").isFile());
+		Assert.assertTrue(new File(outputDirectory, "user.html").isFile());
+		Assert.assertTrue(new File(outputDirectory, "play.html").isFile());
+		Assert.assertTrue(new File(outputDirectory, "recommending.html").isFile());
+		Assert.assertTrue(new File(outputDirectory, "following.html").isFile());
+		Assert.assertTrue(new File(outputDirectory, "generated_db.js").isFile());
 	}
 }
