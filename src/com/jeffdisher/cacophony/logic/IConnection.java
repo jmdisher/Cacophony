@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -28,4 +29,6 @@ public interface IConnection
 	IpfsFile resolve(IpfsKey key) throws IOException;
 
 	long getSizeInBytes(IpfsFile cid);
+
+	URL urlForDirectFetch(IpfsFile cid);
 }

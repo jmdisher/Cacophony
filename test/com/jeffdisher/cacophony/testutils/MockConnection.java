@@ -2,6 +2,8 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
@@ -123,5 +125,18 @@ public class MockConnection implements IConnection
 		
 		// We will tell the pin mechanism that this counts as pinned since it is stored.
 		_pinMechanism.addLocalFile(file);
+	}
+
+	@Override
+	public URL urlForDirectFetch(IpfsFile cid)
+	{
+		try
+		{
+			return new URL("http", "test", "/" + cid.toSafeString());
+		}
+		catch (MalformedURLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 }

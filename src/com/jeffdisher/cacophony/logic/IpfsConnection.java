@@ -2,6 +2,8 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,6 +79,19 @@ public class IpfsConnection implements IConnection
 			return ((Number)((Map<?,?>)((Map<?,?>)dataMap.get("Objects")).get(cid.toSafeString())).get("Size")).longValue();
 		}
 		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+	}
+
+	@Override
+	public URL urlForDirectFetch(IpfsFile cid)
+	{
+		try
+		{
+			return new URL(_connection.protocol, _connection.host, _connection.port, "/ipfs/" + cid.toSafeString());
+		}
+		catch (MalformedURLException e)
 		{
 			throw Assert.unexpected(e);
 		}

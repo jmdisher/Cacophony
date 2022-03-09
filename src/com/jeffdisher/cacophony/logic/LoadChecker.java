@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
+import java.net.URL;
 
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -16,11 +17,13 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class LoadChecker
 {
 	private final RemoteActions _remote;
+	private final ILocalActions _local;
 	private final GlobalPinCache _cache;
 
 	public LoadChecker(RemoteActions remote, ILocalActions local)
 	{
 		_remote = remote;
+		_local = local;
 		_cache = local.loadGlobalPinCache();
 	}
 
@@ -41,5 +44,17 @@ public class LoadChecker
 			System.err.println("WARNING!  Not expected in cache:  " + file);
 		}
 		return _remote.readData(file);
+	}
+
+	public URL getCachedUrl(IpfsFile file)
+	{
+		Assert.assertTrue(null != file);
+		Assert.assertTrue(_cache.isCached(file));
+		return _local.getSharedConnection().urlForDirectFetch(file);
+	}
+
+	public boolean isCached(IpfsFile file)
+	{
+		return _cache.isCached(file);
 	}
 }
