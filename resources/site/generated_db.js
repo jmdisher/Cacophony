@@ -26,13 +26,13 @@ var DATA_userInfo = {
 };
 var DATA_elements = {
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1J1": {
+		"cached": false,
 		"name": "entry 1",
 		"description": "just a test",
 		"publishedSecondsUtc": 1000,
-		"thumbnailUrl": "http://localhost:8080/ipfs/QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1Ju",
-		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JF": {
+		"cached": true,
 		"name": "entry 2",
 		"description": "just another test",
 		"publishedSecondsUtc": 2000,
@@ -40,6 +40,7 @@ var DATA_elements = {
 		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1J6": {
+		"cached": true,
 		"name": "other user",
 		"description": "just a test",
 		"publishedSecondsUtc": 10000,

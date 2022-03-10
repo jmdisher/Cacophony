@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -14,12 +17,11 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowRecord;
+import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -112,11 +114,11 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		// DATA_elements.
 		JsonObject dataElements = new JsonObject();
 		// We want to output for every element for our own channel and every entry in every followed user.
-		// TODO:  Fix how we describe non-cached elements in the front-end and here.
-		_populateAllElementsFromUserRoot(checker, dataElements, localIndex.lastPublishedIndex());
+		_populateAllElementsFromUserRoot(checker, dataElements, null, localIndex.lastPublishedIndex());
 		for(FollowRecord record : followIndex)
 		{
-			_populateAllElementsFromUserRoot(checker, dataElements, record.lastFetchedRoot());
+			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
+			_populateAllElementsFromUserRoot(checker, dataElements, elementsCachedForUser, record.lastFetchedRoot());
 		}
 		generatedStream.println("var DATA_elements = " + dataElements.toString());
 		generatedStream.println();
@@ -172,8 +174,11 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		rootData.set(publicKey.toPublicKey(), thisUser);
 	}
 
-	private static void _populateAllElementsFromUserRoot(LoadChecker checker, JsonObject rootData, IpfsFile indexRoot) throws IOException
+	private static void _populateAllElementsFromUserRoot(LoadChecker checker, JsonObject rootData, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, IpfsFile indexRoot) throws IOException
 	{
+		// We want to distinguish between records which are cached for this user and which ones aren't.
+		// (in theory, multiple users could have an identical element only cached in some of them which could be
+		//  displayed for all of them - we will currently ignore that case and only add the last entry).
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
 		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
@@ -187,31 +192,21 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			// TODO:  Add the description once it is added to the StreamRecord type.
 			thisElt.set("description", "");
 			thisElt.set("publishedSecondsUtc", record.getPublishedSecondsUtc());
-			// We want to find the thumbnail and video.
-			for (DataElement leaf : record.getElements().getElement())
+			
+			// We only add the thumbnail and video if this is cached.
+			boolean isCached = (null == elementsCachedForUser) || elementsCachedForUser.containsKey(cid);
+			thisElt.set("cached", isCached);
+			if (isCached)
 			{
-				IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-				if (ElementSpecialType.IMAGE == leaf.getSpecial())
-				{
-					// Thumbnail - these may be cached or not.
-					if (checker.isCached(leafCid))
-					{
-						thisElt.set("thumbnailUrl", checker.getCachedUrl(leafCid).toString());
-					}
-				}
-				else if (null != leaf.getSpecial())
-				{
-					// Unknown type.
-					Assert.assertTrue(false);
-				}
-				else
-				{
-					// We will return the last video we find, so check the codec - these may be cached or not.
-					if (leaf.getMime().startsWith("video/") && checker.isCached(leafCid))
-					{
-						thisElt.set("videoUrl", checker.getCachedUrl(leafCid).toString());
-					}
-				}
+				FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
+				IpfsFile thumbnailCid = cachedElement.imageHash();
+				IpfsFile videoCid = cachedElement.leafHash();
+				// We found these in follower the cache so they both need to be in the global cache.
+				Assert.assertTrue(checker.isCached(thumbnailCid));
+				Assert.assertTrue(checker.isCached(videoCid));
+				// We want to find the thumbnail and video.
+				thisElt.set("thumbnailUrl", checker.getCachedUrl(thumbnailCid).toString());
+				thisElt.set("videoUrl", checker.getCachedUrl(videoCid).toString());
 			}
 			rootData.set(cid.toSafeString(), thisElt);
 		}

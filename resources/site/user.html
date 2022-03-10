@@ -19,13 +19,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let processed = [];
 	posts.forEach(function(hash) {
 		let elt = DATA_elements[hash];
-		processed.push({
+		let object = {
+			"cached": elt["cached"],
 			"elementHash": hash,
 			"readableDate": new Date(elt["publishedSecondsUtc"] + 1000).toLocaleString(),
 			"name": elt["name"],
 			"description": elt["description"],
-			"thumbnailUrl": elt["thumbnailUrl"],
-		});
+		};
+		if (elt["cached"])
+		{
+			object["thumbnailUrl"] = elt["thumbnailUrl"];
+		}
+		processed.push(object);
 	});
 	$scope.posts = processed;
 });
@@ -54,8 +59,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 				Description: {{description.description}}<br />
 			</div>
 			<div ng-repeat="post in posts" class="row well">
-				<div class="col-md-6">
+				<div class="col-md-6" ng-show="{{post.cached}}">
 					<a href="play.html?elt={{post.elementHash}}"><img class="img-responsive" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
+				</div>
+				<div class="col-md-6" ng-hide="{{post.cached}}">
+					(not cached)
 				</div>
 				<div class="col-md-3">
 					<strong>{{post.name}}</strong><br />
