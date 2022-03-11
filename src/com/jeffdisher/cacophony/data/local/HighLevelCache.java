@@ -113,22 +113,22 @@ public class HighLevelCache
 
 	public void addToExplicitCache(Type type, IpfsFile cid)
 	{
-		// TODO: Implement
+		Assert.unimplemented(3);
 	}
 
 	public void removeFromExplicitCache(Type type, IpfsFile cid)
 	{
-		// TODO: Implement
+		Assert.unimplemented(3);
 	}
 
 	public void addToTempCache(Type type, IpfsFile cid)
 	{
-		// TODO: Implement
+		Assert.unimplemented(3);
 	}
 
 	public void removeFromTempCache(Type type, IpfsFile cid)
 	{
-		// TODO: Implement
+		Assert.unimplemented(3);
 	}
 
 
