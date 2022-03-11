@@ -75,7 +75,7 @@ rm -f "$TEST_FILE"
 dd if=/dev/zero of="$TEST_FILE" bs=1K count=512
 
 echo "Publishing test..."
-java -jar "Cacophony.jar" "$USER1" --publishToThisChannel --name "test post" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
+java -jar "Cacophony.jar" "$USER1" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
 
 echo "Make sure we see this in the list..."
 LISTING=$(java -jar "Cacophony.jar" "$USER1" --listChannel)

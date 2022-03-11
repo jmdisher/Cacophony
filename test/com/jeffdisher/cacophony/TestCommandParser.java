@@ -24,7 +24,7 @@ public class TestCommandParser
 	@Test
 	public void testPublish()
 	{
-		String[] foo = {"/tmp/test", "--publishToThisChannel", "--name", "entry name", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", "/path"};
+		String[] foo = {"/tmp/test", "--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", "/path"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, 1, capture);

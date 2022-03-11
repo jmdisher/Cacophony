@@ -22,7 +22,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record PublishCommand(String _name, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand
+public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand
 {
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException
@@ -66,8 +66,7 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		}
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
-		// TODO:  Add the description to the args.
-		record.setDescription("");
+		record.setDescription(_description);
 		if (null != _discussionUrl)
 		{
 			record.setDiscussion(_discussionUrl);

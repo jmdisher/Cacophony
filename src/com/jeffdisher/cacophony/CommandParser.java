@@ -103,13 +103,14 @@ public class CommandParser
 			;
 			return new ListRecommendationsCommand(publicKey);
 		}),
-		PUBLISH_TO_THIS_CHANNEL(true, "--publishToThisChannel", new String[] {"--name"}, new String[] {"--discussionUrl"}, ELEMENT, (String[] required, String[] optional, List<ICommand> subElements) ->
+		PUBLISH_TO_THIS_CHANNEL(true, "--publishToThisChannel", new String[] {"--name", "--description"}, new String[] {"--discussionUrl"}, ELEMENT, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String name = required[0];
+			String description = required[1];
 			String discussionUrl = optional[0];
 			ElementSubCommand elements[] = new ElementSubCommand[subElements.size()];
 			elements = subElements.toArray(elements);
-			return new PublishCommand(name, discussionUrl, elements);
+			return new PublishCommand(name, description, discussionUrl, elements);
 		}),
 		LIST_THIS_CHANNEL(true, "--listChannel", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

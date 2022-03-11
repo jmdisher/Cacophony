@@ -56,7 +56,7 @@ public class TestPublishCommand
 		stream.close();
 		
 		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
-		PublishCommand command = new PublishCommand(name, discussionUrl, elements);
+		PublishCommand command = new PublishCommand(name, "description", discussionUrl, elements);
 		
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
 		
