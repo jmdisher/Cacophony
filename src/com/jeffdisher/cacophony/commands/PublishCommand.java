@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -48,9 +48,9 @@ public record PublishCommand(String _name, String _description, String _discussi
 		for (ElementSubCommand elt : _elements)
 		{
 			// Upload the file.
-			// TODO:  Use a stream to upload.
-			byte[] raw = Files.readAllBytes(elt.filePath().toPath());
-			IpfsFile uploaded = HighLevelIdioms.saveData(executor, remote, raw);
+			FileInputStream inputStream = new FileInputStream(elt.filePath());
+			IpfsFile uploaded = HighLevelIdioms.saveStream(executor, remote, inputStream);
+			inputStream.close();
 			cache.uploadedToThisCache(uploaded);
 			
 			DataElement element = new DataElement();

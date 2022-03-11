@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -17,6 +18,20 @@ public class HighLevelIdioms
 	public static IpfsFile saveData(Executor executor, RemoteActions remote, byte[] data)
 	{
 		return _saveData(executor, remote, data);
+	}
+
+	public static IpfsFile saveStream(Executor executor, RemoteActions remote, InputStream stream)
+	{
+		try
+		{
+			return remote.saveStream(stream);
+		}
+		catch (IOException e)
+		{
+			executor.fatalError(e);
+			// TODO:  Determine how to handle this failure path - probably a runtime exception to break us out to the top.
+			throw Assert.unexpected(e);
+		}
 	}
 
 	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IOException
