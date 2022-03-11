@@ -189,8 +189,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			JsonObject thisElt = new JsonObject();
 			thisElt.set("name", record.getName());
-			// TODO:  Add the description once it is added to the StreamRecord type.
-			thisElt.set("description", "");
+			thisElt.set("description", record.getDescription());
 			thisElt.set("publishedSecondsUtc", record.getPublishedSecondsUtc());
 			
 			// We only add the thumbnail and video if this is cached.

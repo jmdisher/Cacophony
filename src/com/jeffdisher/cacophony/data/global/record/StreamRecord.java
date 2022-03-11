@@ -20,6 +20,7 @@ import javax.xml.bind.annotation.XmlType;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
+ *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="publishedSecondsUtc" type="{http://www.w3.org/2001/XMLSchema}int"/>
  *         &lt;element name="discussion" type="{http://www.w3.org/2001/XMLSchema}anyURI" minOccurs="0"/>
  *         &lt;element name="elements" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd}DataArray"/>
@@ -36,6 +37,7 @@ import javax.xml.bind.annotation.XmlType;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "StreamRecord", propOrder = {
     "name",
+    "description",
     "publishedSecondsUtc",
     "discussion",
     "elements",
@@ -45,6 +47,8 @@ public class StreamRecord {
 
     @XmlElement(required = true)
     protected String name;
+    @XmlElement(required = true)
+    protected String description;
     protected int publishedSecondsUtc;
     @XmlSchemaType(name = "anyURI")
     protected String discussion;
@@ -75,6 +79,30 @@ public class StreamRecord {
      */
     public void setName(String value) {
         this.name = value;
+    }
+
+    /**
+     * Gets the value of the description property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Sets the value of the description property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
+     */
+    public void setDescription(String value) {
+        this.description = value;
     }
 
     /**

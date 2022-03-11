@@ -66,6 +66,8 @@ public record PublishCommand(String _name, String _discussionUrl, ElementSubComm
 		}
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
+		// TODO:  Add the description to the args.
+		record.setDescription("");
 		if (null != _discussionUrl)
 		{
 			record.setDiscussion(_discussionUrl);

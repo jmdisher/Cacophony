@@ -69,6 +69,7 @@ public class TestGlobalData {
 		record.setDiscussion("URL");
 		record.setPublisherKey("public key goes here");
 		record.setName("name");
+		record.setDescription("description");
 		record.setPublishedSecondsUtc(555);
 		DataArray eltArray = new DataArray();
 		record.setElements(eltArray);
@@ -80,6 +81,7 @@ public class TestGlobalData {
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd\">\n"
 				+ "    <name>name</name>\n"
+				+ "    <description>description</description>\n"
 				+ "    <publishedSecondsUtc>555</publishedSecondsUtc>\n"
 				+ "    <discussion>URL</discussion>\n"
 				+ "    <elements>\n"
@@ -98,6 +100,7 @@ public class TestGlobalData {
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd\">\n"
 				+ "    <name>name</name>\n"
+				+ "    <description>description</description>\n"
 				+ "    <publishedSecondsUtc>555</publishedSecondsUtc>\n"
 				+ "    <discussion>URL</discussion>\n"
 				+ "    <elements>\n"
@@ -171,6 +174,7 @@ public class TestGlobalData {
 		array.getElement().add(element);
 		StreamRecord record = new StreamRecord();
 		record.setName("name");
+		record.setDescription("descriptoin");
 		record.setElements(array);
 		record.setPublisherKey("public key");
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
