@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.IOException;
-
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -10,7 +9,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public interface IPinMechanism
 {
-	void add(IpfsFile cid) throws IOException;
+	void add(IpfsFile cid) throws IpfsConnectionException;
 
-	void rm(IpfsFile cid) throws IOException;
+	void rm(IpfsFile cid) throws IpfsConnectionException;
 }

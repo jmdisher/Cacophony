@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.scenarios;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 
 import org.junit.Assert;
@@ -163,7 +162,7 @@ public class TestCacheSaturation
 			_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
 		}
 		
-		public void createChannel(Executor executor, int userNumber) throws IOException
+		public void createChannel(Executor executor, int userNumber) throws Throwable
 		{
 			File userPic = FOLDER.newFile();
 			// Create user 1.
@@ -183,7 +182,7 @@ public class TestCacheSaturation
 			startFollowingCommand.scheduleActions(executor, _localActions);
 		}
 		
-		public void publish(Executor executor, String name, byte[] thumbnail, byte[] video) throws IOException
+		public void publish(Executor executor, String name, byte[] thumbnail, byte[] video) throws Throwable
 		{
 			File thumbnailFile = FOLDER.newFile();
 			FileOutputStream dataStream = new FileOutputStream(thumbnailFile);
@@ -202,19 +201,19 @@ public class TestCacheSaturation
 			publishCommand.scheduleActions(executor, _localActions);
 		}
 		
-		public void pollForUpdates(Executor executor, User followee) throws IOException
+		public void pollForUpdates(Executor executor, User followee) throws Throwable
 		{
 			RefreshFolloweeCommand command = new RefreshFolloweeCommand(followee._publicKey);
 			command.scheduleActions(executor, _localActions);
 		}
 		
-		public List<String> loadStreamForFollowee(User followee) throws IOException
+		public List<String> loadStreamForFollowee(User followee) throws Throwable
 		{
 			StreamIndex index = GlobalData.deserializeIndex(_sharedConnection.loadData(_sharedConnection.resolve(followee._publicKey)));
 			return GlobalData.deserializeRecords(_sharedConnection.loadData(IpfsFile.fromIpfsCid(index.getRecords()))).getRecord();
 		}
 		
-		public boolean isDataPresent(byte[] data) throws IOException
+		public boolean isDataPresent(byte[] data) throws Throwable
 		{
 			IpfsFile file = MockConnection.generateHash(data);
 			byte[] stored = _sharedConnection.loadData(file);

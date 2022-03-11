@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -29,49 +30,84 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public List<Key> getKeys() throws IOException
+	public List<Key> getKeys() throws IpfsConnectionException
 	{
-		return _connection.key.list().stream().map((info) -> new IConnection.Key(info.name, new IpfsKey(info.id))).collect(Collectors.toList());
+		try
+		{
+			return _connection.key.list().stream().map((info) -> new IConnection.Key(info.name, new IpfsKey(info.id))).collect(Collectors.toList());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 
 	@Override
-	public IpfsFile storeData(InputStream dataStream) throws IOException
+	public IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException
 	{
-		NamedStreamable.InputStreamWrapper wrapper = new NamedStreamable.InputStreamWrapper(dataStream);
-		
-		List<MerkleNode> nodes = _connection.add(wrapper);
-		// Even with larger files, this only returns a single element, so it isn't obvious why this is a list.
-		Assert.assertTrue(1 == nodes.size());
-		Multihash hash = nodes.get(0).hash;
-		
-		return new IpfsFile(hash);
+		try
+		{
+			NamedStreamable.InputStreamWrapper wrapper = new NamedStreamable.InputStreamWrapper(dataStream);
+			
+			List<MerkleNode> nodes = _connection.add(wrapper);
+			// Even with larger files, this only returns a single element, so it isn't obvious why this is a list.
+			Assert.assertTrue(1 == nodes.size());
+			Multihash hash = nodes.get(0).hash;
+			
+			return new IpfsFile(hash);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 
 	@Override
-	public byte[] loadData(IpfsFile file) throws IOException
+	public byte[] loadData(IpfsFile file) throws IpfsConnectionException
 	{
-		return _connection.cat(file.getMultihash());
+		try
+		{
+			return _connection.cat(file.getMultihash());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 
 	@Override
-	public void publish(String keyName, IpfsFile file) throws IOException
+	public void publish(String keyName, IpfsFile file) throws IpfsConnectionException
 	{
-		Map<?,?> map = _connection.name.publish(file.getMultihash(), Optional.of(keyName));
-		String value = (String) map.get("Value");
-		String index58 = file.toSafeString();
-		Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
+		try
+		{
+			Map<?,?> map = _connection.name.publish(file.getMultihash(), Optional.of(keyName));
+			String value = (String) map.get("Value");
+			String index58 = file.toSafeString();
+			Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 
 	@Override
-	public IpfsFile resolve(IpfsKey key) throws IOException
+	public IpfsFile resolve(IpfsKey key) throws IpfsConnectionException
 	{
-		String publishedPath = _connection.name.resolve(key.getMultihash());
-		String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
-		return IpfsFile.fromIpfsCid(published);
+		try
+		{
+			String publishedPath = _connection.name.resolve(key.getMultihash());
+			String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
+			return IpfsFile.fromIpfsCid(published);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 
 	@Override
-	public long getSizeInBytes(IpfsFile cid)
+	public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
 	{
 		try
 		{
@@ -80,7 +116,7 @@ public class IpfsConnection implements IConnection
 		}
 		catch (IOException e)
 		{
-			throw Assert.unexpected(e);
+			throw new IpfsConnectionException(e);
 		}
 	}
 

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
 
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import io.ipfs.api.IPFS.Pin;
@@ -17,14 +18,28 @@ public class IpfsPinMechanism implements IPinMechanism
 	}
 
 	@Override
-	public void add(IpfsFile cid) throws IOException
+	public void add(IpfsFile cid) throws IpfsConnectionException
 	{
-		_pin.add(cid.getMultihash());
+		try
+		{
+			_pin.add(cid.getMultihash());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 
 	@Override
-	public void rm(IpfsFile cid) throws IOException
+	public void rm(IpfsFile cid) throws IpfsConnectionException
 	{
-		_pin.rm(cid.getMultihash());
+		try
+		{
+			_pin.rm(cid.getMultihash());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
 	}
 }

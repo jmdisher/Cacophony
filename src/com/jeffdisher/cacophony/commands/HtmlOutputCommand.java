@@ -29,6 +29,7 @@ import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -162,7 +163,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		stream.close();
 	}
 
-	private static void _populateDataForUserRoot(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, IpfsFile indexRoot) throws IOException
+	private static void _populateDataForUserRoot(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, IpfsFile indexRoot) throws IpfsConnectionException
 	{
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
 		byte[] rawDescription = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()));
@@ -174,7 +175,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		rootData.set(publicKey.toPublicKey(), thisUser);
 	}
 
-	private static void _populateAllElementsFromUserRoot(LoadChecker checker, JsonObject rootData, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, IpfsFile indexRoot) throws IOException
+	private static void _populateAllElementsFromUserRoot(LoadChecker checker, JsonObject rootData, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, IpfsFile indexRoot) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -211,7 +212,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		}
 	}
 
-	private static void _populatePostsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, IpfsFile indexRoot) throws IOException
+	private static void _populatePostsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, IpfsFile indexRoot) throws CacophonyException
 	{
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
 		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
@@ -224,7 +225,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		rootData.set(publicKey.toPublicKey(), array);
 	}
 
-	private static void _populateRecommendationsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, IpfsFile indexRoot) throws IOException
+	private static void _populateRecommendationsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, IpfsFile indexRoot) throws CacophonyException
 	{
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
 		byte[] rawRecommendations = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()));

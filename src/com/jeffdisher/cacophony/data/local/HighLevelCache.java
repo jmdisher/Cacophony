@@ -1,9 +1,8 @@
 package com.jeffdisher.cacophony.data.local;
 
-import java.io.IOException;
-
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.IPinMechanism;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -81,31 +80,24 @@ public class HighLevelCache
 	 * system.
 	 * 
 	 * @param cid The IPFS CID of the meta-data or file entry no longer reachable from this channel.
+	 * @throws IpfsConnectionException There was a problem contacting the IPFS server.
 	 */
-	public void removeFromThisCache(IpfsFile cid)
+	public void removeFromThisCache(IpfsFile cid) throws IpfsConnectionException
 	{
 		_unpinAndRemove(cid);
 	}
 
-	public void addToFollowCache(IpfsKey channel, Type type, IpfsFile cid)
+	public void addToFollowCache(IpfsKey channel, Type type, IpfsFile cid) throws IpfsConnectionException
 	{
 		// TODO: Do the accounting for the size per-follower.
 		boolean shouldPin = _globalPinCache.shouldPinAfterAdding(cid);
 		if (shouldPin)
 		{
-			try
-			{
-				_localNode.add(cid);
-			}
-			catch (IOException e)
-			{
-				// TODO: Determine how to handle this.
-				throw Assert.unexpected(e);
-			}
+			_localNode.add(cid);
 		}
 	}
 
-	public void removeFromFollowCache(IpfsKey channel, Type type, IpfsFile cid)
+	public void removeFromFollowCache(IpfsKey channel, Type type, IpfsFile cid) throws IpfsConnectionException
 	{
 		// TODO: Do the accounting for the size per-follower.
 		_unpinAndRemove(cid);
@@ -132,21 +124,13 @@ public class HighLevelCache
 	}
 
 
-	private void _unpinAndRemove(IpfsFile cid)
+	private void _unpinAndRemove(IpfsFile cid) throws IpfsConnectionException
 	{
 		boolean shouldUnpin = _globalPinCache.shouldUnpinAfterRemoving(cid);
 		if (shouldUnpin)
 		{
 			// TODO:  Add this to our list of unpins to perform later - we want these to lag.
-			try
-			{
-				_localNode.rm(cid);
-			}
-			catch (IOException e)
-			{
-				// TODO: Determine how to handle this.
-				throw Assert.unexpected(e);
-			}
+			_localNode.rm(cid);
 		}
 	}
 }

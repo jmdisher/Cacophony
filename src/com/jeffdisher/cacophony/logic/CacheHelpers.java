@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +17,7 @@ import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -36,7 +36,7 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static void addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IOException
+	public static void addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
 	{
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
@@ -72,7 +72,7 @@ public class CacheHelpers
 		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
 	}
 
-	public static long sizeInBytesToAdd(RemoteActions remote, int videoEdgePixelMax, String rawCid) throws IOException
+	public static long sizeInBytesToAdd(RemoteActions remote, int videoEdgePixelMax, String rawCid) throws IpfsConnectionException
 	{
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
@@ -153,7 +153,7 @@ public class CacheHelpers
 		return candidates;
 	}
 
-	public static void pruneCacheIfNeeded(HighLevelCache cache, FollowIndex followIndex, CacheAlgorithm algorithm, IpfsKey publicKey, long bytesToAdd)
+	public static void pruneCacheIfNeeded(HighLevelCache cache, FollowIndex followIndex, CacheAlgorithm algorithm, IpfsKey publicKey, long bytesToAdd) throws IpfsConnectionException
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{

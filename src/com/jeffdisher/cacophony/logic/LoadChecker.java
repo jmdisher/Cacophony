@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.IOException;
 import java.net.URL;
 
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -27,14 +27,14 @@ public class LoadChecker
 		_cache = local.loadGlobalPinCache();
 	}
 
-	public byte[] loadCached(IpfsFile file) throws IOException
+	public byte[] loadCached(IpfsFile file) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));
 		return _remote.readData(file);
 	}
 
-	public byte[] loadNotCached(IpfsFile file) throws IOException
+	public byte[] loadNotCached(IpfsFile file) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != file);
 		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but

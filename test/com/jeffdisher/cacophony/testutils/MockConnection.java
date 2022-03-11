@@ -11,11 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-
 import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.cid.Cid;
 
@@ -57,23 +57,32 @@ public class MockConnection implements IConnection
 	}
 
 	@Override
-	public List<Key> getKeys() throws IOException
+	public List<Key> getKeys() throws IpfsConnectionException
 	{
 		return Collections.singletonList(new IConnection.Key(_keyName, _key));
 	}
 
 	@Override
-	public IpfsFile storeData(InputStream dataStream) throws IOException
+	public IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException
 	{
 		// We will emulate this hash using a Java hashcode of the bytes.
-		byte[] data = dataStream.readAllBytes();
+		byte[] data;
+		try
+		{
+			data = dataStream.readAllBytes();
+		}
+		catch (IOException e)
+		{
+			// Not expected in tests.
+			throw Assert.unexpected(e);
+		}
 		IpfsFile newFile = generateHash(data);
 		_storeData(newFile, data);
 		return newFile;
 	}
 
 	@Override
-	public byte[] loadData(IpfsFile file) throws IOException
+	public byte[] loadData(IpfsFile file) throws IpfsConnectionException
 	{
 		// We will only load the data if it is pinned to emulate the impacts of unpinning.
 		return _pinMechanism.isPinned(file)
@@ -83,14 +92,14 @@ public class MockConnection implements IConnection
 	}
 
 	@Override
-	public void publish(String keyName, IpfsFile file) throws IOException
+	public void publish(String keyName, IpfsFile file) throws IpfsConnectionException
 	{
 		Assert.assertTrue(_keyName.equals(keyName));
 		_root = file;
 	}
 
 	@Override
-	public IpfsFile resolve(IpfsKey key) throws IOException
+	public IpfsFile resolve(IpfsKey key) throws IpfsConnectionException
 	{
 		return (_key.equals(key))
 				? _root

@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 
 import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -18,9 +18,9 @@ public class RemoteActions
 	 * @param executor The executor used for reporting and execution strategy in the returned object.
 	 * @param local The ILocalActions which will be consulted to load the RemoteActions configuration.
 	 * @return The abstraction over the remote actions.
-	 * @throws IOException Something went wrong interacting with the remote server when attaching.
+	 * @throws IpfsConnectionException Something went wrong interacting with the remote server when attaching.
 	 */
-	public static RemoteActions loadIpfsConfig(Executor executor, ILocalActions local) throws IOException
+	public static RemoteActions loadIpfsConfig(Executor executor, ILocalActions local) throws IpfsConnectionException
 	{
 		LocalIndex index = local.readIndex();
 		Assert.assertTrue(null != index);
@@ -30,7 +30,7 @@ public class RemoteActions
 		return new RemoteActions(executor, ipfs, keyName, publicKey);
 	}
 
-	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IOException
+	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
 	{
 		IpfsKey publicKey = null;
 		for (IConnection.Key info : ipfs.getKeys())
@@ -59,7 +59,7 @@ public class RemoteActions
 		_publicKey = publicKey;
 	}
 
-	public IpfsFile saveData(byte[] raw) throws IOException
+	public IpfsFile saveData(byte[] raw) throws IpfsConnectionException
 	{
 		Executor.IOperationLog log = _executor.logOperation("Saving " + raw.length + " bytes...");
 		IpfsFile file = _ipfs.storeData(new ByteArrayInputStream(raw));
@@ -67,7 +67,7 @@ public class RemoteActions
 		return file;
 	}
 
-	public IpfsFile saveStream(InputStream stream) throws IOException
+	public IpfsFile saveStream(InputStream stream) throws IpfsConnectionException
 	{
 		Executor.IOperationLog log = _executor.logOperation("Saving stream...");
 		IpfsFile file = _ipfs.storeData(stream);
@@ -75,7 +75,7 @@ public class RemoteActions
 		return file;
 	}
 
-	public byte[] readData(IpfsFile indexHash) throws IOException
+	public byte[] readData(IpfsFile indexHash) throws IpfsConnectionException
 	{
 		return _ipfs.loadData(indexHash);
 	}
@@ -85,7 +85,7 @@ public class RemoteActions
 		return _publicKey;
 	}
 
-	public void publishIndex(IpfsFile indexHash) throws IOException
+	public void publishIndex(IpfsFile indexHash) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _ipfs);
 		Assert.assertTrue(null != _keyName);
@@ -121,7 +121,7 @@ public class RemoteActions
 		{
 			found = _ipfs.resolve(keyToResolve);
 		}
-		catch (IOException e)
+		catch (IpfsConnectionException e)
 		{
 			// Unfortunately, this resolve will only fail with IOException for the cases of failed key resolution as
 			// well as more general network problems.
@@ -130,7 +130,7 @@ public class RemoteActions
 		return found;
 	}
 
-	public long getSizeInBytes(IpfsFile cid)
+	public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
 	{
 		return _ipfs.getSizeInBytes(cid);
 	}

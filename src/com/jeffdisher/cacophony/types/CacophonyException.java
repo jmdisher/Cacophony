@@ -12,4 +12,9 @@ public class CacophonyException extends Exception
 	{
 		super(message);
 	}
+
+	public CacophonyException(String message, Exception exception)
+	{
+		super(message, exception);
+	}
 }

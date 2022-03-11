@@ -8,6 +8,7 @@ import java.util.function.BiFunction;
 import org.junit.Assert;
 
 import com.jeffdisher.cacophony.logic.IPinMechanism;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -26,7 +27,7 @@ public class MockPinMechanism implements IPinMechanism
 	}
 
 	@Override
-	public void add(IpfsFile cid) throws IOException
+	public void add(IpfsFile cid) throws IpfsConnectionException
 	{
 		Assert.assertFalse(_pinned.contains(cid));
 		// This path is assumed to be for remote pins (since that is why this is called) so we must have an attached peer.
@@ -36,7 +37,7 @@ public class MockPinMechanism implements IPinMechanism
 	}
 
 	@Override
-	public void rm(IpfsFile cid) throws IOException
+	public void rm(IpfsFile cid) throws IpfsConnectionException
 	{
 		Assert.assertTrue(_pinned.contains(cid));
 		_pinned.remove(cid);
@@ -58,7 +59,7 @@ public class MockPinMechanism implements IPinMechanism
 		_pinned.add(file);
 	}
 
-	public IpfsFile remoteResolve(IpfsKey key) throws IOException
+	public IpfsFile remoteResolve(IpfsKey key) throws IpfsConnectionException
 	{
 		if (null != _peer)
 		{
@@ -67,7 +68,7 @@ public class MockPinMechanism implements IPinMechanism
 		else
 		{
 			// The real IPFS daemon seems to throw IOException when it can't resolve.
-			throw new IOException("Peer does not exist");
+			throw new IpfsConnectionException(new IOException("Peer does not exist"));
 		}
 	}
 }

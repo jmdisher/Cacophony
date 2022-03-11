@@ -1,11 +1,11 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -15,31 +15,22 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class HighLevelIdioms
 {
-	public static IpfsFile saveData(Executor executor, RemoteActions remote, byte[] data)
+	public static IpfsFile saveData(Executor executor, RemoteActions remote, byte[] data) throws IpfsConnectionException
 	{
 		return _saveData(executor, remote, data);
 	}
 
-	public static IpfsFile saveStream(Executor executor, RemoteActions remote, InputStream stream)
+	public static IpfsFile saveStream(Executor executor, RemoteActions remote, InputStream stream) throws IpfsConnectionException
 	{
-		try
-		{
-			return remote.saveStream(stream);
-		}
-		catch (IOException e)
-		{
-			executor.fatalError(e);
-			// TODO:  Determine how to handle this failure path - probably a runtime exception to break us out to the top.
-			throw Assert.unexpected(e);
-		}
+		return remote.saveStream(stream);
 	}
 
-	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IOException
+	public static IpfsFile saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		return _saveAndPublishIndex(executor, remote, local, streamIndex);
 	}
 
-	public static IpfsFile saveAndPublishNewIndex(Executor executor, RemoteActions remote, ILocalActions local, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IOException
+	public static IpfsFile saveAndPublishNewIndex(Executor executor, RemoteActions remote, ILocalActions local, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IpfsConnectionException
 	{
 		StreamIndex streamIndex = new StreamIndex();
 		streamIndex.setVersion(1);
@@ -50,24 +41,15 @@ public class HighLevelIdioms
 	}
 
 
-	private static IpfsFile _saveData(Executor executor, RemoteActions remote, byte[] data)
+	private static IpfsFile _saveData(Executor executor, RemoteActions remote, byte[] data) throws IpfsConnectionException
 	{
-		try
-		{
-			IpfsFile uploaded = remote.saveData(data);
-			// TODO:  Remove this check once we have confirmed that this is working as expected.
-			Assert.assertTrue(data.length == (int)remote.getSizeInBytes(uploaded));
-			return uploaded;
-		}
-		catch (IOException e)
-		{
-			executor.fatalError(e);
-			// TODO:  Determine how to handle this failure path - probably a runtime exception to break us out to the top.
-			throw Assert.unexpected(e);
-		}
+		IpfsFile uploaded = remote.saveData(data);
+		// TODO:  Remove this check once we have confirmed that this is working as expected.
+		Assert.assertTrue(data.length == (int)remote.getSizeInBytes(uploaded));
+		return uploaded;
 	}
 
-	private static IpfsFile _saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IOException
+	private static IpfsFile _saveAndPublishIndex(Executor executor, RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file.
 		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);

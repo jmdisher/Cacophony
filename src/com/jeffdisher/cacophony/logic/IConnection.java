@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -18,17 +18,17 @@ public interface IConnection
 	{
 	}
 
-	List<Key> getKeys() throws IOException;
+	List<Key> getKeys() throws IpfsConnectionException;
 
-	IpfsFile storeData(InputStream dataStream) throws IOException;
+	IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException;
 
-	byte[] loadData(IpfsFile file) throws IOException;
+	byte[] loadData(IpfsFile file) throws IpfsConnectionException;
 
-	void publish(String keyName, IpfsFile file) throws IOException;
+	void publish(String keyName, IpfsFile file) throws IpfsConnectionException;
 
-	IpfsFile resolve(IpfsKey key) throws IOException;
+	IpfsFile resolve(IpfsKey key) throws IpfsConnectionException;
 
-	long getSizeInBytes(IpfsFile cid);
+	long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException;
 
 	URL urlForDirectFetch(IpfsFile cid);
 }

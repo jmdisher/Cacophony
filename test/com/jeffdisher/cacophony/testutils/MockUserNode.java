@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -11,6 +10,7 @@ import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -40,7 +40,7 @@ public class MockUserNode
 		_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
 	}
 
-	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws IOException
+	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
 	{
 		File userPic = File.createTempFile("cacophony", "test");
 		FileOutputStream stream = new FileOutputStream(userPic);
@@ -58,12 +58,12 @@ public class MockUserNode
 		command.scheduleActions((null != specialExecutor) ? specialExecutor : _executor, _localActions);
 	}
 
-	public byte[] loadDataFromNode(IpfsFile cid) throws IOException
+	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException
 	{
 		return _sharedConnection.loadData(cid);
 	}
 
-	public IpfsFile resolveKeyOnNode(IpfsKey key) throws IOException
+	public IpfsFile resolveKeyOnNode(IpfsKey key) throws IpfsConnectionException
 	{
 		return _sharedConnection.resolve(key);
 	}
