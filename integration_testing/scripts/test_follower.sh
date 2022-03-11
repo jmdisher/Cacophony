@@ -1,20 +1,9 @@
 #!/bin/bash
 
-# Helper functions.
-function requireSubstring()
-{
-	HAYSTACK="$1"
-	NEEDLE="$2"
-	if [[ "$HAYSTACK" =~ "$NEEDLE" ]]; then
-		# Matched
-		true
-	else
-		echo "Failed to find \"$NEEDLE\" in \"$HAYSTACK\""
-		exit 1
-	fi
-}
+BASEDIR=$(dirname $0)
+source "$BASEDIR/utils.sh"
 
-function checkFunctionExists()
+function checkFileExists()
 {
 	FILE="$1"
 	if [ ! -f "$FILE" ]; then
@@ -57,7 +46,9 @@ mkdir "$USER2"
 cp "$PATH_TO_JAR" Cacophony.jar
 
 IPFS_PATH="$REPO1" $PATH_TO_IPFS init
+checkPreviousCommand "repo1 init"
 IPFS_PATH="$REPO2" $PATH_TO_IPFS init
+checkPreviousCommand "repo2 init"
 
 cp "$RESOURCES/swarm.key" "$REPO1/"
 cp "$RESOURCES/seed_config" "$REPO1/config"
@@ -79,15 +70,18 @@ PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
 java -jar Cacophony.jar "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+checkPreviousCommand "createNewChannel"
 
 echo "Creating key on node 2..."
 PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
 echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
 java -jar Cacophony.jar "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
+checkPreviousCommand "createNewChannel"
 
 echo "Make key 2 follow key 1"
 java -jar Cacophony.jar "$USER2" --startFollowing --publicKey "$PUBLIC1"
+checkPreviousCommand "startFollowing"
 
 echo "List followees"
 CANONICAL1=$(java -jar Cacophony.jar "$USER1" --canonicalizeKey --key "$PUBLIC1")
@@ -100,18 +94,21 @@ requireSubstring "$LIST" "Followee has 0 elements"
 echo "Verify that the static HTML is generated"
 rm -rf "$STATIC2"
 java -jar Cacophony.jar "$USER2" --htmlOutput --directory "$STATIC2"
-checkFunctionExists "$STATIC2/index.html"
-checkFunctionExists "$STATIC2/prefs.html"
-checkFunctionExists "$STATIC2/utils.js"
-checkFunctionExists "$STATIC2/user.html"
-checkFunctionExists "$STATIC2/play.html"
-checkFunctionExists "$STATIC2/recommending.html"
-checkFunctionExists "$STATIC2/following.html"
-checkFunctionExists "$STATIC2/generated_db.js"
+checkPreviousCommand "htmlOutput"
+checkFileExists "$STATIC2/index.html"
+checkFileExists "$STATIC2/prefs.html"
+checkFileExists "$STATIC2/utils.js"
+checkFileExists "$STATIC2/user.html"
+checkFileExists "$STATIC2/play.html"
+checkFileExists "$STATIC2/recommending.html"
+checkFileExists "$STATIC2/following.html"
+checkFileExists "$STATIC2/generated_db.js"
 
 echo "Stop following and verify it is no longer in the list"
 java -jar Cacophony.jar "$USER2" --stopFollowing --publicKey "$PUBLIC1"
+checkPreviousCommand "stopFollowing"
 java -jar Cacophony.jar "$USER2" --listFollowees
+checkPreviousCommand "listFollowees"
 
 kill $PID1
 kill $PID2

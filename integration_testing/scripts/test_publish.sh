@@ -1,18 +1,7 @@
 #!/bin/bash
 
-# Helper functions.
-function requireSubstring()
-{
-	HAYSTACK="$1"
-	NEEDLE="$2"
-	if [[ "$HAYSTACK" =~ "$NEEDLE" ]]; then
-		# Matched
-		true
-	else
-		echo "Failed to find \"$NEEDLE\" in \"$HAYSTACK\""
-		exit 1
-	fi
-}
+BASEDIR=$(dirname $0)
+source "$BASEDIR/utils.sh"
 
 
 # START.
@@ -46,7 +35,9 @@ mkdir "$USER2"
 cp "$PATH_TO_JAR" Cacophony.jar
 
 IPFS_PATH="$REPO1" $PATH_TO_IPFS init
+checkPreviousCommand "repo1 init"
 IPFS_PATH="$REPO2" $PATH_TO_IPFS init
+checkPreviousCommand "repo2 init"
 
 cp "$RESOURCES/swarm.key" "$REPO1/"
 cp "$RESOURCES/seed_config" "$REPO1/config"
@@ -68,14 +59,17 @@ PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
 java -jar "Cacophony.jar" "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+checkPreviousCommand "createNewChannel"
 
 echo "Create the 512 KiB file for testing..."
 TEST_FILE="/tmp/zero_file"
 rm -f "$TEST_FILE"
 dd if=/dev/zero of="$TEST_FILE" bs=1K count=512
+checkPreviousCommand "dd"
 
 echo "Publishing test..."
 java -jar "Cacophony.jar" "$USER1" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
+checkPreviousCommand "publishToThisChannel"
 
 echo "Make sure we see this in the list..."
 LISTING=$(java -jar "Cacophony.jar" "$USER1" --listChannel)
@@ -83,6 +77,7 @@ requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - ap
 
 echo "Just run a republish to make sure nothing goes wrong..."
 java -jar "Cacophony.jar" "$USER1" --republish
+checkPreviousCommand "republish"
 
 kill $PID1
 kill $PID2
