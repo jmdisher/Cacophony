@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
@@ -49,8 +50,10 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Verify that this isn't too big.
 		long indexSize = remote.getSizeInBytes(indexRoot);
-		// TODO:  Determine how we want to handle this error.
-		Assert.assertTrue(indexSize <= SizeLimits.MAX_INDEX_SIZE_BYTES);
+		if (indexSize > SizeLimits.MAX_INDEX_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("index", indexSize, SizeLimits.MAX_INDEX_SIZE_BYTES);
+		}
 		
 		// Now, cache the root meta-data structures.
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
@@ -76,7 +79,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _populateCachedRecords(GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException
+	private void _populateCachedRecords(GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		
@@ -87,8 +90,10 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Verify that this isn't too big.
 			long elementSize = remote.getSizeInBytes(cid);
-			// TODO:  Determine how we want to handle this error.
-			Assert.assertTrue(elementSize <= SizeLimits.MAX_RECORD_SIZE_BYTES);
+			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
+			{
+				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
+			}
 			
 			// Note that we need to add the element meta-data independently of caching the leaves within (since they can be pruned but the meta-data can't).
 			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);

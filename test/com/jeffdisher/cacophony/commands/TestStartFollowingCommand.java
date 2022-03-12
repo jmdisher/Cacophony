@@ -16,6 +16,8 @@ import com.jeffdisher.cacophony.testutils.MockLocalActions;
 import com.jeffdisher.cacophony.testutils.MockPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public class TestStartFollowingCommand
@@ -75,5 +77,30 @@ public class TestStartFollowingCommand
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
 		Assert.assertNull(localActions.readIndex().lastPublishedIndex());
+	}
+
+	@Test
+	public void testErrorSize() throws Throwable
+	{
+		MockPinMechanism remotePin = new MockPinMechanism(null);
+		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin, null);
+		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
+		remoteConnection.storeData(originalRoot, new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]);
+		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
+		
+		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
+		Executor executor = new Executor(System.out);
+		GlobalPinCache pinCache = GlobalPinCache.newCache();
+		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
+		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
+		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
+		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinCache, pinMechanism, followIndex);
+		
+		try {
+			command.scheduleActions(executor, localActions);
+			Assert.fail();
+		} catch (SizeConstraintException e) {
+			// Expected.
+		}
 	}
 }
