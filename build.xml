@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="all" name="Cacophony">
 
+	<property name="version" value="EXPERIMENTAL"/>
+
 	<property name="dir.global.workspace" value="."/>
 	<property name="dir.global.build" value="${dir.global.workspace}/build"/>
 	<property name="dir.global.build.main" value="${dir.global.build}/main"/>
@@ -9,9 +11,9 @@
 	<property name="dir.global.src.test" value="${dir.global.workspace}/test"/>
 	<property name="dir.global.src.main" value="${dir.global.workspace}/src"/>
 	<property name="dir.global.lib" value="${dir.global.workspace}/lib"/>
+	<property name="dir.global.dist" value="${dir.global.workspace}/dist-${version}"/>
 	<property name="junit.heap" value="32m"/>
 	<property name="junit.threads" value="4"/>
-	<property name="version" value="EXPERIMENTAL"/>
 
 	<!-- Set this property to run a specific test. -->
 	<property name="unit.test" value="Test*" />
@@ -105,6 +107,36 @@
 				<fileset dir="${dir.global.src.test}" includes="**/${unit.test}.java" />
 			</batchtest>
 		</junit>
+	</target>
+
+	<target name="dist" depends="build_main">
+		<echo message="Packaging distribution.zip for Cacophony ${version} (override with -Dversion=VERSION)..." />
+
+		<delete dir="${dir.global.dist}" failonerror="false" />
+		<mkdir dir="${dir.global.dist}" />
+		<mkdir dir="${dir.global.dist}/lib" />
+		
+		<copy todir="${dir.global.dist}">
+			<fileset dir="${dir.global.build}">
+				<include name="${ant.project.name}.jar" />
+			</fileset>
+		</copy>
+		<copy todir="${dir.global.dist}/lib">
+			<fileset dir="${dir.global.lib}">
+				<include name="cid.jar" />
+				<include name="ipfs.jar" />
+				<include name="istack-commons-runtime.jar" />
+				<include name="javax.activation-api.jar" />
+				<include name="jaxb-api.jar" />
+				<include name="jaxb-runtime.jar" />
+				<include name="minimal-json-0.9.5.jar" />
+				<include name="multiaddr.jar" />
+				<include name="multibase.jar" />
+				<include name="multihash.jar" />
+			</fileset>
+		</copy>
+		
+		<zip destfile="dist-${version}.zip" basedir="${dir.global.dist}" update="true" />
 	</target>
 
 </project>

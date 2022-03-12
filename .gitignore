@@ -2,6 +2,7 @@
 bin/
 bintest/
 build/
+dist*
 Cacophony.jar
 
 src/com/jeffdisher/cacophony/Version.java
