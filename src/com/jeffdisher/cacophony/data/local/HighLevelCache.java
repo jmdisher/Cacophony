@@ -129,7 +129,10 @@ public class HighLevelCache
 		boolean shouldUnpin = _globalPinCache.shouldUnpinAfterRemoving(cid);
 		if (shouldUnpin)
 		{
-			// TODO:  Add this to our list of unpins to perform later - we want these to lag.
+			// Note that we initially thought that these unpin operations should be deferred so that the core logic
+			// could just unpin whenever was most convenient and they would always survive in the cache until after the
+			// command.  However, the feature was delayed so all the commands were implemented using a strictly in-order
+			// cache, hence this delayed processing was never required so we always unpin, inline.
 			_localNode.rm(cid);
 		}
 	}
