@@ -7,11 +7,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.api.IPFS;
@@ -171,14 +173,14 @@ public class LocalActions implements ILocalActions
 	}
 
 	@Override
-	public IConnection getSharedConnection()
+	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
 		_verifySharedConnections();
 		return _lazyConnection;
 	}
 
 	@Override
-	public IPinMechanism getSharedPinMechanism()
+	public IPinMechanism getSharedPinMechanism() throws IpfsConnectionException
 	{
 		_verifySharedConnections();
 		return _pinMechanism;
@@ -232,7 +234,7 @@ public class LocalActions implements ILocalActions
 		}
 	}
 
-	private void _verifySharedConnections()
+	private void _verifySharedConnections() throws IpfsConnectionException
 	{
 		if (null == _lazyConnection)
 		{
@@ -241,9 +243,21 @@ public class LocalActions implements ILocalActions
 			LocalIndex index = _readFile(INDEX_FILE, LocalIndex.class);
 			// We should not be trying to open a connection if there is no existing index.
 			Assert.assertTrue(null != index);
-			IPFS ipfs = new IPFS(index.ipfsHost());
-			_lazyConnection = new IpfsConnection(ipfs);
-			_pinMechanism = new IpfsPinMechanism(ipfs.pin);
+			try {
+				IPFS ipfs = new IPFS(index.ipfsHost());
+				@SuppressWarnings("unchecked")
+				Map<String, Object> addresses = (Map<String, Object>) ipfs.config.get("Addresses");
+				String result = (String) addresses.get("Gateway");
+				// This "Gateway" is of the form:  /ip4/127.0.0.1/tcp/8080
+				int gatewayPort = Integer.parseInt(result.split("/")[4]);
+				_lazyConnection = new IpfsConnection(ipfs, gatewayPort);
+				_pinMechanism = new IpfsPinMechanism(ipfs.pin);
+			}
+			catch (IOException e)
+			{
+				// This happens if we fail to read the config, which should only happen if the node is bogus.
+				throw new IpfsConnectionException(e);
+			}
 		}
 	}
 }

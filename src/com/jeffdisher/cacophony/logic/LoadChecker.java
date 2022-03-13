@@ -46,7 +46,7 @@ public class LoadChecker
 		return _remote.readData(file);
 	}
 
-	public URL getCachedUrl(IpfsFile file)
+	public URL getCachedUrl(IpfsFile file) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));

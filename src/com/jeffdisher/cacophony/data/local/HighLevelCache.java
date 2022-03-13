@@ -40,7 +40,7 @@ public class HighLevelCache
 		FILE,
 	}
 
-	public static HighLevelCache fromLocal(ILocalActions local)
+	public static HighLevelCache fromLocal(ILocalActions local) throws IpfsConnectionException
 	{
 		// We need to know 3 primary things in this object:
 		// 1) The global pin cache - to determine when to pin/unpin.

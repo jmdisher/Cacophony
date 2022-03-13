@@ -23,10 +23,12 @@ import io.ipfs.multihash.Multihash;
 public class IpfsConnection implements IConnection
 {
 	private final IPFS _connection;
+	private final int _gatewayPort;
 
-	public IpfsConnection(IPFS connection)
+	public IpfsConnection(IPFS connection, int gatewayPort)
 	{
 		_connection = connection;
+		_gatewayPort = gatewayPort;
 	}
 
 	@Override
@@ -125,7 +127,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			return new URL(_connection.protocol, _connection.host, _connection.port, "/ipfs/" + cid.toSafeString());
+			return new URL(_connection.protocol, _connection.host, _gatewayPort, "/ipfs/" + cid.toSafeString());
 		}
 		catch (MalformedURLException e)
 		{

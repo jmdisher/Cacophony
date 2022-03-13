@@ -4,6 +4,7 @@ import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 
 
 /**
@@ -15,9 +16,9 @@ public interface ILocalActions
 
 	void storeIndex(LocalIndex index);
 
-	IConnection getSharedConnection();
+	IConnection getSharedConnection() throws IpfsConnectionException;
 
-	IPinMechanism getSharedPinMechanism();
+	IPinMechanism getSharedPinMechanism() throws IpfsConnectionException;
 
 	FollowIndex loadFollowIndex();
 
