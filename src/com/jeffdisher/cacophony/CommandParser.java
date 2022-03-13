@@ -28,6 +28,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class CommandParser
@@ -210,9 +211,10 @@ public class CommandParser
 		{
 			// We need to convert the entire input to a command, update the startIndex in/out parameter once we have processed all of our known options.
 			// We can return null if we fail at any point, and the top-level will fail.
-			int index = startIndex[0];
-			assert args[index].equals(_name);
-			index += 1;
+			int scanIndex = startIndex[0];
+			int consumedIndex = scanIndex + 1;
+			Assert.assertTrue(args[scanIndex].equals(_name));
+			scanIndex += 1;
 			
 			String[] required = new String[_params.length];
 			String[] optional = new String[_optionalParams.length];
@@ -221,11 +223,12 @@ public class CommandParser
 			
 			boolean keepRunning = true;
 			boolean fail = false;
-			while (!fail && keepRunning && ((index + 1) < args.length))
+			while (!fail && keepRunning && ((scanIndex + 1) < args.length))
 			{
+				// We will set keepRunning to true when we match something in the argument stream.
 				keepRunning = false;
-				String next = args[index];
-				String value = args[index + 1];
+				String next = args[scanIndex];
+				String value = args[scanIndex + 1];
 				// We check this against each required or optional parameter.
 				for (int i = 0; i < _params.length; ++i)
 				{
@@ -239,29 +242,35 @@ public class CommandParser
 						required[i] = value;
 						requiredCount += 1;
 						keepRunning = true;
+						consumedIndex += 2;
 						break;
 					}
 				}
-				for (int i = 0; i < _optionalParams.length; ++i)
+				if (!keepRunning)
 				{
-					String check = _optionalParams[i];
-					if (next.equals(check))
+					for (int i = 0; i < _optionalParams.length; ++i)
 					{
-						optional[i] = value;
-						keepRunning = true;
-						break;
+						String check = _optionalParams[i];
+						if (next.equals(check))
+						{
+							optional[i] = value;
+							keepRunning = true;
+							consumedIndex += 2;
+							break;
+						}
 					}
 				}
 				// See if this is a sub-element type.
 				if (!keepRunning && (null != _subType) && _subType._name.equals(next))
 				{
-					int[] sub = new int[] {index};
+					int[] sub = new int[] {scanIndex};
 					ICommand subCommand = _subType.parse(args, sub);
 					if (null != subCommand)
 					{
-						keepRunning = true;
-						index = sub[0];
+						scanIndex = sub[0];
+						consumedIndex = scanIndex;
 						subElements.add(subCommand);
+						keepRunning = true;
 					}
 					else
 					{
@@ -271,10 +280,10 @@ public class CommandParser
 				}
 				else
 				{
-					index += 2;
+					scanIndex += 2;
 				}
 			}
-			startIndex[0] = index;
+			startIndex[0] = consumedIndex;
 			
 			return (!fail && (requiredCount == required.length) && ((null == _subType) || !subElements.isEmpty()))
 					? _factory.apply(required, optional, subElements)

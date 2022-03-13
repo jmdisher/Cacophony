@@ -33,6 +33,20 @@ public class TestCommandParser
 	}
 
 	@Test
+	public void testFullPublish()
+	{
+		String[] foo = {"/tmp/test", "--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL"
+				, "--element", "--mime", "mime type", "--file", "/path", "--special", "IMAGE"
+				, "--element", "--mime", "mime type", "--file", "/path", "--width", "640", "--height", "480"
+		};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertEquals(0, outStream.size());
+	}
+
+	@Test
 	public void testMissingCommand()
 	{
 		String[] foo = {"/tmp/test"};
