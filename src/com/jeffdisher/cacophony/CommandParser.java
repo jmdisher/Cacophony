@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -54,7 +55,7 @@ public class CommandParser
 					: 0
 			;
 			boolean isSpecialImage = (null != optional[2])
-					? "image".equals(optional[2])
+					? ElementSpecialType.IMAGE.value().equals(optional[2])
 					: false
 			;
 			return new ElementSubCommand(mime, filePath, height, width, isSpecialImage);
