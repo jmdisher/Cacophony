@@ -31,6 +31,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -65,6 +66,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			throw new UsageException("Channel must be created before generating HTML output");
 		}
 		
+		IOperationLog log = executor.logOperation("Generating static HTML output in " + _directory);
 		// Write the static files in the directory.
 		_writeStaticFile(_directory, "index.html");
 		_writeStaticFile(_directory, "prefs.html");
@@ -155,6 +157,9 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		}
 		generatedStream.println("var DATA_following = " + dataFollowing.toString());
 		generatedStream.println();
+		generatedStream.close();
+		
+		log.finish("HTML interface generation complete!  Point your browser at: " + new File(_directory, "index.html").toURI());
 	}
 
 

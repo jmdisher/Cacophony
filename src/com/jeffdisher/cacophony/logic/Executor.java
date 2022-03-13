@@ -10,7 +10,7 @@ public class Executor
 	/**
 	 * This interface is just used to allow higher-level operation logging.
 	 */
-	static interface IOperationLog
+	public static interface IOperationLog
 	{
 		void finish(String finishMessage);
 	}

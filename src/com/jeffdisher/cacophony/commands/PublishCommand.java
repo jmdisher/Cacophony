@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -28,6 +29,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		IOperationLog log = executor.logOperation("Publish: " + this);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
@@ -48,6 +50,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		DataArray array = new DataArray();
 		for (ElementSubCommand elt : _elements)
 		{
+			IOperationLog eltLog = executor.logOperation("-Element: " + elt);
 			// Upload the file.
 			FileInputStream inputStream = new FileInputStream(elt.filePath());
 			IpfsFile uploaded = HighLevelIdioms.saveStream(executor, remote, inputStream);
@@ -64,6 +67,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 				element.setSpecial(ElementSpecialType.IMAGE);
 			}
 			array.getElement().add(element);
+			eltLog.finish("-Done!");
 		}
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
@@ -93,5 +97,6 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		// Remove the old root.
 		cache.removeFromThisCache(rootToLoad);
+		log.finish("Publish completed!");
 	}
 }
