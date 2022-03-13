@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,8 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.data.global.record.DataElement;
+import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
@@ -193,15 +196,33 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			thisElt.set("description", record.getDescription());
 			thisElt.set("publishedSecondsUtc", record.getPublishedSecondsUtc());
 			
-			// We only add the thumbnail and video if this is cached.
-			boolean isCached = (null == elementsCachedForUser) || elementsCachedForUser.containsKey(cid);
+			boolean isLocalUser = (null == elementsCachedForUser);
+			boolean isCachedFollowee = !isLocalUser && elementsCachedForUser.containsKey(cid);
+			// In either of these cases, we will have the data cached.
+			boolean isCached = (isLocalUser || isCachedFollowee);
 			thisElt.set("cached", isCached);
+			IpfsFile thumbnailCid = null;
+			IpfsFile videoCid = null;
+			if (isLocalUser)
+			{
+				// In the local case, we want to look at the rest of the record and figure out what makes most sense since all entries will be pinned.
+				List<DataElement> elements = record.getElements().getElement();
+				thumbnailCid = _findThumbnail(elements);
+				videoCid = _findLargestVideo(elements);
+			}
+			else if (isCachedFollowee)
+			{
+				// In this case, we want to just see what we recorded in the followee cache since that is what we pinned.
+				FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
+				thumbnailCid = cachedElement.imageHash();
+				videoCid = cachedElement.leafHash();
+			}
 			if (isCached)
 			{
-				FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
-				IpfsFile thumbnailCid = cachedElement.imageHash();
-				IpfsFile videoCid = cachedElement.leafHash();
-				// We found these in follower the cache so they both need to be in the global cache.
+				// However we found these, they are expected to be in the cache and they should be locally pinned.
+				// NOTE:  We currently REQUIRE that both the video and thumbnail are present!
+				Assert.assertTrue(null != thumbnailCid);
+				Assert.assertTrue(null != videoCid);
 				Assert.assertTrue(checker.isCached(thumbnailCid));
 				Assert.assertTrue(checker.isCached(videoCid));
 				// We want to find the thumbnail and video.
@@ -236,5 +257,39 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			array.add(rawCid);
 		}
 		rootData.set(publicKey.toPublicKey(), array);
+	}
+
+	private static IpfsFile _findThumbnail(List<DataElement> elements)
+	{
+		IpfsFile thumbnailCid = null;
+		for (DataElement leaf : elements)
+		{
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (ElementSpecialType.IMAGE == leaf.getSpecial())
+			{
+				thumbnailCid = leafCid;
+				break;
+			}
+		}
+		return thumbnailCid;
+	}
+
+	private static IpfsFile _findLargestVideo(List<DataElement> elements)
+	{
+		IpfsFile videoCid = null;
+		int largestEdge = 0;
+		for (DataElement leaf : elements)
+		{
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (leaf.getMime().startsWith("video/"))
+			{
+				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+				if (maxEdge > largestEdge)
+				{
+					videoCid = leafCid;
+				}
+			}
+		}
+		return videoCid;
 	}
 }
