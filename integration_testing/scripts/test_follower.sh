@@ -104,6 +104,38 @@ checkFileExists "$STATIC2/recommending.html"
 checkFileExists "$STATIC2/following.html"
 checkFileExists "$STATIC2/generated_db.js"
 
+# Post an update and refresh to make sure that the follower sees the update and can re-render the HTML output
+echo "Generate test files"
+IMAGE_FILE="/tmp/image_file"
+rm -f "$IMAGE_FILE"
+dd if=/dev/zero of="$IMAGE_FILE" bs=1K count=512
+checkPreviousCommand "dd image"
+VIDEO_FILE="/tmp/video_file"
+rm -f "$VIDEO_FILE"
+dd if=/dev/zero of="$VIDEO_FILE" bs=1K count=2048
+checkPreviousCommand "dd video"
+
+echo "Publishing post..."
+java -jar "Cacophony.jar" "$USER1" --publishToThisChannel --name "basic post" --description "no description" --element --mime "image/jpeg" --file "$IMAGE_FILE" --special image --element --mime "video/webm" --file "$VIDEO_FILE" --width 640 --height 480
+checkPreviousCommand "publishToThisChannel"
+
+echo "Refresh followee"
+java -jar Cacophony.jar "$USER2" --refreshFollowee --publicKey "$PUBLIC1"
+checkPreviousCommand "Follow index changed"
+
+echo "Regenerate the static HTML"
+rm -rf "$STATIC2"
+java -jar Cacophony.jar "$USER2" --htmlOutput --directory "$STATIC2"
+checkPreviousCommand "htmlOutput"
+checkFileExists "$STATIC2/index.html"
+checkFileExists "$STATIC2/prefs.html"
+checkFileExists "$STATIC2/utils.js"
+checkFileExists "$STATIC2/user.html"
+checkFileExists "$STATIC2/play.html"
+checkFileExists "$STATIC2/recommending.html"
+checkFileExists "$STATIC2/following.html"
+checkFileExists "$STATIC2/generated_db.js"
+
 echo "Stop following and verify it is no longer in the list"
 java -jar Cacophony.jar "$USER2" --stopFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "stopFollowing"

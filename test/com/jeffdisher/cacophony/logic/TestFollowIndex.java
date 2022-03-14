@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowRecord;
+import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -102,5 +103,37 @@ public class TestFollowIndex
 		Assert.assertNotNull(index.getFollowerRecord(K1));
 		index.updateFollowee(K1, F2, 1);
 		Assert.assertNotNull(index.getFollowerRecord(K1));
+	}
+
+	@Test
+	public void testIndexWithEntries()
+	{
+		IpfsFile element1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCen1");
+		IpfsFile image1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCen2");
+		IpfsFile video1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCen3");
+		IpfsFile element2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeC1");
+		IpfsFile image2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeC2");
+		IpfsFile video2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeC3");
+		long currentTimeMillis = 1_000L;
+		long combinedSizeBytes = 1_000_000L;
+		FollowIndex index = FollowIndex.emptyFollowIndex();
+		index.addFollowingWithInitialState(K1, F1);
+		index.addNewElementToFollower(K1, F2, element1, image1, video1, currentTimeMillis, combinedSizeBytes);
+		index.addNewElementToFollower(K1, F3, element2, image2, video2, currentTimeMillis, combinedSizeBytes);
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		index.writeToStream(outStream);
+		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
+		FollowIndex read = FollowIndex.fromStream(inStream);
+		// New following keys are added at the front of the list so we should see the second one.
+		Assert.assertEquals(K1, read.nextKeyToPoll());
+		Assert.assertEquals(F3, read.getLastFetchedRoot(K1));
+		FollowRecord record = read.getFollowerRecord(K1);
+		Assert.assertEquals(currentTimeMillis, record.lastPollMillis());
+		FollowingCacheElement[] elements = record.elements();
+		Assert.assertEquals(2, elements.length);
+		Assert.assertEquals(element1, elements[0].elementHash());
+		Assert.assertEquals(image1, elements[0].imageHash());
+		Assert.assertEquals(video1, elements[0].leafHash());
+		Assert.assertEquals(combinedSizeBytes, elements[0].combinedSizeBytes());
 	}
 }
