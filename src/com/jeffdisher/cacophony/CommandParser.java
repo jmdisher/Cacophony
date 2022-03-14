@@ -184,6 +184,26 @@ public class CommandParser
 			};
 		}),
 		
+		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.
+		PUBLISH_SINGLE_VIDEO(true, "--publishSingleVideo"
+				, new String[] {"--name", "--description", "--thumbnailJpeg", "--videoFile", "--videoMime", "--videoHeight", "--videoWidth"}
+				, new String[] {"--discussionUrl"}
+				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			String name = required[0];
+			String description = required[1];
+			File thumbnailJpeg = new File(required[2]);
+			File videoFile = new File(required[3]);
+			String videoMime = required[4];
+			int videoHeight = Integer.parseInt(required[5]);
+			int videoWidth = Integer.parseInt(required[6]);
+			String discussionUrl = optional[0];
+			ElementSubCommand elements[] = new ElementSubCommand[] {
+					new ElementSubCommand("image/jpeg", thumbnailJpeg, 0, 0, true),
+					new ElementSubCommand(videoMime, videoFile, videoHeight, videoWidth, false),
+			};
+			return new PublishCommand(name, description, discussionUrl, elements);
+		}),
 		;
 		
 		private final boolean _topLevel;

@@ -271,4 +271,25 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	public void testSingleVideo()
+	{
+		String[] foo = {"/tmp/test", "--publishSingleVideo", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL"
+				, "--thumbnailJpeg", "/thumbnail"
+				, "--videoFile", "/video", "--videoMime", "video/webm", "--videoHeight", "640", "--videoWidth", "480"
+		};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertEquals(0, outStream.size());
+		Assert.assertTrue(command instanceof PublishCommand);
+		PublishCommand publishCommand = (PublishCommand) command;
+		Assert.assertEquals(2, publishCommand._elements().length);
+		ElementSubCommand thumbnailCommand = publishCommand._elements()[0];
+		Assert.assertTrue(thumbnailCommand.isSpecialImage());
+		ElementSubCommand videoCommand = publishCommand._elements()[1];
+		Assert.assertEquals("video/webm", videoCommand.mime());
+	}
 }

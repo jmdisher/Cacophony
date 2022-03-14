@@ -116,8 +116,8 @@ dd if=/dev/zero of="$VIDEO_FILE" bs=1K count=2048
 checkPreviousCommand "dd video"
 
 echo "Publishing post..."
-java -jar "Cacophony.jar" "$USER1" --publishToThisChannel --name "basic post" --description "no description" --element --mime "image/jpeg" --file "$IMAGE_FILE" --special image --element --mime "video/webm" --file "$VIDEO_FILE" --width 640 --height 480
-checkPreviousCommand "publishToThisChannel"
+java -jar "Cacophony.jar" "$USER1" --publishSingleVideo --name "basic post" --description "no description" --thumbnailJpeg "$IMAGE_FILE" --videoFile "$VIDEO_FILE" --videoMime "video/webm" --videoHeight 640 --videoWidth 480
+checkPreviousCommand "publishSingleVideo"
 
 echo "Refresh followee"
 java -jar Cacophony.jar "$USER2" --refreshFollowee --publicKey "$PUBLIC1"
