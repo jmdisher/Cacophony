@@ -136,7 +136,15 @@
 			</fileset>
 		</copy>
 		
-		<zip destfile="dist-${version}.zip" basedir="${dir.global.dist}" update="true" />
+		<!-- We want the dist file to include the container directory -->
+		<zip
+			destfile="dist-${version}.zip"
+			basedir="${dir.global.dist}"
+			excludes="**"
+			update="true"
+		>
+			<zipfileset dir="${dir.global.dist}" prefix="dist-${version}"/>
+		</zip>
 	</target>
 
 </project>
