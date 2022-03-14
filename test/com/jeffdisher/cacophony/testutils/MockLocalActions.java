@@ -105,6 +105,12 @@ public class MockLocalActions implements ILocalActions
 		return _pinCache;
 	}
 
+	@Override
+	public String getConfigDirectoryFullPath()
+	{
+		return "SYNTHETIC";
+	}
+
 	public LocalIndex getStoredIndex()
 	{
 		return _storedIndex;

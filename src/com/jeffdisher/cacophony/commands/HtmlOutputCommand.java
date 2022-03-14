@@ -60,11 +60,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		}
 		
 		// We need the local index.
-		LocalIndex localIndex = local.readIndex();
-		if (null == localIndex)
-		{
-			throw new UsageException("Channel must be created before generating HTML output");
-		}
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		
 		IOperationLog log = executor.logOperation("Generating static HTML output in " + _directory);
 		// Write the static files in the directory.

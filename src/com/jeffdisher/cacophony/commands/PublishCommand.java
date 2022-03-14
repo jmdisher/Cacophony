@@ -29,6 +29,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		IOperationLog log = executor.logOperation("Publish: " + this);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
@@ -36,7 +37,6 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();
-		LocalIndex localIndex = local.readIndex();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));

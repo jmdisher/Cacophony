@@ -24,12 +24,12 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.
-		LocalIndex localIndex = local.readIndex();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));

@@ -25,6 +25,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
@@ -32,7 +33,6 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
-		LocalIndex localIndex = local.readIndex();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));

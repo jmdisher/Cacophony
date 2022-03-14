@@ -23,6 +23,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		
@@ -58,7 +59,6 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			// Just list our recommendations.
 			// Read the existing StreamIndex.
 			publicKey = remote.getPublicKey();
-			LocalIndex localIndex = local.readIndex();
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;

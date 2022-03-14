@@ -21,10 +21,8 @@ public record RepublishCommand() implements ICommand
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		// Get the previously posted index hash.
-		LocalIndex index = local.readIndex();
-		// The channel needs to exist.
-		Assert.assertTrue(null != index);
-		IpfsFile indexHash = index.lastPublishedIndex();
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		IpfsFile indexHash = localIndex.lastPublishedIndex();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);
 		

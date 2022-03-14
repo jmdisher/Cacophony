@@ -25,4 +25,11 @@ public interface ILocalActions
 	GlobalPrefs readPrefs();
 
 	GlobalPinCache loadGlobalPinCache();
+
+	/**
+	 * This is purely to improve error reporting - returns the full path to the configuration directory.
+	 * 
+	 * @return The full path to the configuration directory.
+	 */
+	String getConfigDirectoryFullPath();
 }

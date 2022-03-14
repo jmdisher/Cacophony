@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.testutils.MockPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -100,6 +101,22 @@ public class TestStartFollowingCommand
 			command.scheduleActions(executor, localActions);
 			Assert.fail();
 		} catch (SizeConstraintException e) {
+			// Expected.
+		}
+	}
+
+	@Test
+	public void testMissingConfig() throws Throwable
+	{
+		MockLocalActions localActions = new MockLocalActions(null, null, null, null, null, null, null);
+		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
+		Executor executor = new Executor(System.out);
+		
+		// We expect this to fail since there is no LocalIndex.
+		try {
+			command.scheduleActions(executor, localActions);
+			Assert.fail();
+		} catch (UsageException e) {
 			// Expected.
 		}
 	}

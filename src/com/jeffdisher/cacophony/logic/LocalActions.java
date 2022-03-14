@@ -186,6 +186,12 @@ public class LocalActions implements ILocalActions
 		return _pinMechanism;
 	}
 
+	@Override
+	public String getConfigDirectoryFullPath()
+	{
+		return _directory.getAbsolutePath();
+	}
+
 
 	private <T> T _readFile(String fileName, Class<T> clazz)
 	{

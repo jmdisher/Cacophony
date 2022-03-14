@@ -25,6 +25,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
 		FollowIndex followIndex = local.loadFollowIndex();
