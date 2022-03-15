@@ -109,7 +109,14 @@
 		</junit>
 	</target>
 
-	<target name="dist" depends="build_main">
+	<target name="dist">
+		<antcall target="generate_version" />
+		<antcall target="clean" />
+		<antcall target="build_main" />
+		<antcall target="package_dist" />
+	</target>
+
+	<target name="package_dist" depends="build_main">
 		<echo message="Packaging distribution.zip for Cacophony ${version} (override with -Dversion=VERSION)..." />
 
 		<delete dir="${dir.global.dist}" failonerror="false" />
@@ -138,12 +145,12 @@
 		
 		<!-- We want the dist file to include the container directory -->
 		<zip
-			destfile="dist-${version}.zip"
+			destfile="Cacophony-${version}.zip"
 			basedir="${dir.global.dist}"
 			excludes="**"
 			update="true"
 		>
-			<zipfileset dir="${dir.global.dist}" prefix="dist-${version}"/>
+			<zipfileset dir="${dir.global.dist}" prefix="Cacophony-${version}"/>
 		</zip>
 	</target>
 
