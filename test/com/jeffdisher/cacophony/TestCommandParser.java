@@ -292,4 +292,15 @@ public class TestCommandParser
 		ElementSubCommand videoCommand = publishCommand._elements()[1];
 		Assert.assertEquals("video/webm", videoCommand.mime());
 	}
+
+	@Test
+	public void testGetPublicKey() throws IOException
+	{
+		String[] foo = {"/tmp/test", "--getPublicKey"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, 1, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }

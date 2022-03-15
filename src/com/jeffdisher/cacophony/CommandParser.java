@@ -8,6 +8,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.GetPublicKeyCommand;
 import com.jeffdisher.cacophony.commands.HtmlOutputCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
@@ -182,6 +183,10 @@ public class CommandParser
 			return (Executor executor, ILocalActions local) -> {
 				System.out.println(IpfsKey.fromPublicKey(key).toPublicKey());
 			};
+		}),
+		GET_PUBLIC_KEY(true, "--getPublicKey", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			return new GetPublicKeyCommand();
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.

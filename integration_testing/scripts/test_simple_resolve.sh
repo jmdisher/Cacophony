@@ -68,6 +68,12 @@ echo "Attaching Cacophony instance2 to this key..."
 java -jar Cacophony.jar "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
 checkPreviousCommand "createNewChannel2"
 
+echo "Verify that the puplic key is correct..."
+PUBLIC_KEY_OUTPUT=$(java -jar Cacophony.jar "$USER1" --getPublicKey)
+# Note that the output we get from --getPublicKey is our canonicalized base58 whereas the key gen we have is base36, so canonicalize it, first.
+CANONICAL1=$(java -jar Cacophony.jar "$USER1" --canonicalizeKey --key "$PUBLIC1")
+requireSubstring "$PUBLIC_KEY_OUTPUT" "Public Key (other users can follow you with this): $CANONICAL1"
+
 echo "Verify that they can each resolve each other..."
 DESCRIPTION=$(java -jar Cacophony.jar "$USER1" --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: Unnamed"
