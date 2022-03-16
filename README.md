@@ -14,39 +14,89 @@ Building requires `ant` to be installed, as well as a Java JDK (currently target
 
 Running will require access to an [IPFS node](https://ipfs.io/) where you can generate a key for publishing (running this locally is recommended).
 
-## How to use
+## Usage
 
 Basic usage will be printed when starting the program with no arguments (`java -jar Cacophony.jar`).
 
-Common usage pattern:
+Common usage pattern is shown below.  These commands assume that any required `IPFS_PATH` variable has been set and that the `ipfs` binary is on your `PATH`.  To generalize further, we also assume that `CACOPHONY_KEY_NAME` is set to the name of the IPFS public key you want Cacophony to use.  We will also assume that `CACOPHONY_DATA` is set to the location where you want Cacophony to store its index data.
 
-Create IPFS repo (remember to use `IPFS_PATH` env var if you want to set a specific repo location):  `ipfs init`
+### Starting IPFS
 
-Start the IPFS daemon: `ipfs daemon &`
+Cacophony depends on access to an IPFS node's API gateway so start it up (this assumes default configuration):
 
-Create a key for Cacophony:  `ipfs key gen KEY_NAME` (be sure the capture the public key printed out when you do this - it is what you will give other people so they can subscribe to you).
+```
+# Initialize your IPFS repository (skip this if you already did this).
+$ ipfs init
 
-Create the data directory you will use for Cacophony meta-data:  `mkdir data_dir`
+# Start the IPFS daemon in the background.
+$ ipfs daemon &
 
-Create the channel with Cacophony (`--ipfs` arg comes from `API server listening on` line in IPFS node startup): `java -jar ./Cacophony.jar ./data_dir/ --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName KEY_NAME`
+# Generate the key you will use in Cacophony.
+$ ipfs key gen "$CACOPHONY_KEY_NAME"
+```
 
-(this will create a default channel and write it to your IPFS node)
+### Create your Cacophony channel
 
-Generate out the contents of the node as browser-readable:  `java -jar ./Cacophony.jar ./data_dir/ --htmlOutput --directory ./html`
+With the IPFS node running and your key created, you can now create a channel (channel creation is required even if you are just following others):
 
-You can now view the state of your channel by opening `./html/index.html` in your browser.
+```
+# Creates your Cacophony channel in a directory named "$CACOPHONY_DATA".
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName "$CACOPHONY_KEY_NAME"
+```
 
-Update your description:  `java -jar ./Cacophony.jar ./data_dir/ --updateDescription --name "Your name" --description "Basic description" --pictureFile "Path to a user pic"`
+### Set channel description
 
-Regenerate out the contents of the node to see the updates:  `rm -rf ./html && java -jar ./Cacophony.jar ./data_dir/ --htmlOutput --directory ./html`
+You can now set the name, description, and/or user picture using this command (you can leave out any you don't want to change):
 
-Post a video to your stream:  `java -jar ./Cacophony.jar ./data_dir/ --publishToThisChannel --name "Video name" --description "Video description" --element --mime "video/webm" --file "/path/to/video" --height 480 --width 640 --element --mime "image/jpeg" --file "/path/to/thumbnail" --special image`
+```
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --updateDescription --name "Your channel name" --description "A longer description of your channel" --pictureFile "/path/to/a/JPEG/user/pic.jpg"
+```
 
-Start following someone new:  `java -jar ./Cacophony.jar ./data_dir/ --startFollowing --publicKey "PUBLIC_KEY"`
+### Post a video
 
-Republish your data (**needs to be done at least once every 24 hours for your followers to be able to find you**):  `java -jar ./Cacophony.jar ./data_dir/ --republish`
+Posting a video will update your channel so anyone following you can refresh and see it:
 
-Detailed documentation will be added prior to 1.0 release but examples of usage can be found in the `integration_test/scripts/` directory.
+```
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --publishSingleVideo --name "Post name" --description "Longer post description" --thumbnailJpeg "/path/to/JPEG/thumbnail.jpg" --videoFile "/path/to/video/file.webm" --videoMime "video/webm" --videoHeight 480 --videoWidth 640
+```
+
+### Share your public key
+
+Other Cacophony users can follow you if you give them your public key:
+
+```
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --getPublicKey
+```
+
+You can then give them this key or post it publicly for anyone to use (the can only use this to find your videos, not impersonate you, or anything).
+
+### Follow another user
+
+You can follow another user, if given their public key:
+
+```
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --startFollowing --publicKey "public key from user"
+```
+
+### View Cacophony videos
+
+Version 1.0 of Cacophony does not provide an interactive way to view/post videos (as it is mostly just a tech demo) but you can ask it to output everything it has into a static website for you:
+
+```
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --htmlOutput --directory "/path/to/output/directory"
+```
+
+It will then give you a link you can open in your browser to view the videos posted by you or anyone you are following.
+
+### Refreshing your key on the network
+
+IPFS only stores your public key on the network for up to 24 hours.  While people can still access/cache your content without this, new users won't be able to find you.  This means **you need to run this command once every 24 hours for new followers to be able to find you** (happens automatically when you update your description or post a new video):
+
+```
+$ java -jar Cacophony.jar "$CACOPHONY_DATA" --republish
+```
+
+Further examples of usage can be found in the `integration_test/scripts/` directory.
 
 ### IPFS Breaking your Internet Connection?
 
