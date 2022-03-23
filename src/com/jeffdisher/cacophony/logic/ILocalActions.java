@@ -24,6 +24,8 @@ public interface ILocalActions
 
 	GlobalPrefs readPrefs();
 
+	void storePrefs(GlobalPrefs prefs);
+
 	GlobalPinCache loadGlobalPinCache();
 
 	/**

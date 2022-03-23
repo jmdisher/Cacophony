@@ -28,6 +28,7 @@ public class MockLocalActions implements ILocalActions
 	private final FollowIndex _followIndex;
 
 	private LocalIndex _storedIndex;
+	private GlobalPrefs _prefs;
 
 	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection, GlobalPinCache pinCache, IPinMechanism pinMechanism, FollowIndex followIndex)
 	{
@@ -38,6 +39,8 @@ public class MockLocalActions implements ILocalActions
 		_pinCache = pinCache;
 		_pinMechanism = pinMechanism;
 		_followIndex = followIndex;
+		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
+		_prefs = new GlobalPrefs(GlobalPrefs.defaultPrefs().videoEdgePixelMax(), 100L);
 	}
 
 	@Override
@@ -95,8 +98,13 @@ public class MockLocalActions implements ILocalActions
 	@Override
 	public GlobalPrefs readPrefs()
 	{
-		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
-		return new GlobalPrefs(GlobalPrefs.defaultPrefs().videoEdgePixelMax(), 100L);
+		return _prefs;
+	}
+
+	@Override
+	public void storePrefs(GlobalPrefs prefs)
+	{
+		_prefs = prefs;
 	}
 
 	@Override

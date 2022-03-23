@@ -61,6 +61,7 @@ public class LocalActions implements ILocalActions
 		return prefs;
 	}
 
+	@Override
 	public void storePrefs(GlobalPrefs prefs)
 	{
 		_storeFile(GLOBAL_PREFS_FILE, prefs);

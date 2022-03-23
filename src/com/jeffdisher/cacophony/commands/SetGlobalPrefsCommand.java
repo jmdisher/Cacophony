@@ -25,6 +25,7 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		}
 		if (original != prefs)
 		{
+			local.storePrefs(prefs);
 			executor.logToConsole("Updated prefs: " + prefs);
 		}
 		else

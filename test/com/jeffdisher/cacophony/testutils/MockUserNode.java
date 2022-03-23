@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -81,5 +82,10 @@ public class MockUserNode
 	public boolean isInPinCache(IpfsFile file)
 	{
 		return _pinCache.isCached(file);
+	}
+
+	public GlobalPrefs readPrefs()
+	{
+		return _localActions.readPrefs();
 	}
 }
