@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -45,9 +46,11 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
 		}
 		
+		IOperationLog log = executor.logOperation("Attempting to follow " + _publicKey + "...");
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = remote.resolvePublicKey(_publicKey);
 		Assert.assertTrue(null != indexRoot);
+		executor.logToConsole("Resolved as " + indexRoot);
 		
 		// Verify that this isn't too big.
 		long indexSize = remote.getSizeInBytes(indexRoot);
@@ -76,13 +79,17 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Populate the initial cache records.
 		GlobalPrefs prefs = local.readPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		_populateCachedRecords(prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
+		_populateCachedRecords(executor, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
+		log.finish("Follow successful!");
 	}
 
 
-	private void _populateCachedRecords(GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException, SizeConstraintException
+	private void _populateCachedRecords(Executor executor, GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
+		IOperationLog log = executor.logOperation("Caching initial entries...");
+		int entryCountAdded = 0;
+		int entryCountTotal = 0;
 		
 		// Now, cache all the element meta-data entries and find their sizes for consideration into the cache.
 		List<CacheAlgorithm.Candidate<String>> candidatesList = new ArrayList<>();
@@ -124,8 +131,10 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			List<CacheAlgorithm.Candidate<String>> toAdd = algorithm.toAddInNewAddition(candidatesList);
 			for (CacheAlgorithm.Candidate<String> elt : toAdd)
 			{
+				executor.logToConsole("Caching entry: " + elt.data());
 				CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
 			}
 		}
+		log.finish("Completed initial cache (" + entryCountAdded + " of " + entryCountTotal + " entries cached)");
 	}
 }

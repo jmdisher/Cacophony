@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -23,6 +24,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		IOperationLog log = executor.logOperation("Adding recommendation " + _channelPublicKey + "...");
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
@@ -51,11 +53,13 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
+		executor.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove the previous index and recommendations from cache.
 		cache.removeFromThisCache(originalRecommendations);
 		cache.removeFromThisCache(oldRootHash);
+		log.finish("Now recommending: " + _channelPublicKey);
 	}
 }

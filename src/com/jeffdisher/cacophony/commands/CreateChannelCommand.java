@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -23,6 +24,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		IOperationLog log = executor.logOperation("Creating new channel...");
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.readIndex();
 		if (null != index)
@@ -66,5 +68,6 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Create the new local index.
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(executor, remote, local, hashDescription, hashRecommendations, hashRecords);
 		cache.uploadedToThisCache(indexHash);
+		log.finish("Channel created and published to Cacophony!");
 	}
 }

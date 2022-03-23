@@ -92,6 +92,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
+		executor.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		

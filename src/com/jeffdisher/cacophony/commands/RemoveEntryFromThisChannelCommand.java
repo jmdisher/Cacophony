@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -25,6 +26,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		IOperationLog log = executor.logOperation("Removing entry " + _elementCid + " from channel...");
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
@@ -63,6 +65,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			IpfsFile newCid = remote.saveData(rawRecords);
 			cache.uploadedToThisCache(newCid);
 			index.setRecords(newCid.toSafeString());
+			executor.logToConsole("Saving and publishing new index");
 			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
 			cache.uploadedToThisCache(indexHash);
 			
@@ -84,5 +87,6 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		// Remove the old root.
 		cache.removeFromThisCache(rootToLoad);
+		log.finish("Entry removed: " + _elementCid);
 	}
 }

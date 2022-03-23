@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -37,6 +38,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		{
 			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
 		}
+		IOperationLog log = executor.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		// Walk all the elements in the record stream, removing the cached meta-data and associated files.
 		for (FollowingCacheElement element : finalRecord.elements())
 		{
@@ -66,5 +68,6 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
+		log.finish("Cleanup complete.  No longer following " + _publicKey);
 	}
 }

@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -33,6 +34,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
+		IOperationLog log = executor.logOperation("Refreshing followee " + _publicKey + "...");
 		ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
 		LoadChecker checker = new LoadChecker(remote, local);
@@ -104,6 +106,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			// Update the root in our cache.
 			followIndex.updateFollowee(_publicKey, indexRoot, System.currentTimeMillis());
 		}
+		log.finish("Refresh completed!");
 	}
 
 
