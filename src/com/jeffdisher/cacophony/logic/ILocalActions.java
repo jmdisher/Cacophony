@@ -38,8 +38,6 @@ public interface ILocalActions
 
 	IConnection getSharedConnection() throws IpfsConnectionException;
 
-	IPinMechanism getSharedPinMechanism() throws IpfsConnectionException;
-
 	FollowIndex loadFollowIndex();
 
 	GlobalPrefs readPrefs();

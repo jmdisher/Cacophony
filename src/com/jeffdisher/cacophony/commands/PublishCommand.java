@@ -33,7 +33,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IOperationLog log = executor.logOperation("Publish: " + this);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();

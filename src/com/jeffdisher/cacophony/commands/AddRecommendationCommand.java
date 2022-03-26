@@ -28,7 +28,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// Read our existing root key.
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();

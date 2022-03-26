@@ -39,7 +39,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// We need to first verify that we are already following them.

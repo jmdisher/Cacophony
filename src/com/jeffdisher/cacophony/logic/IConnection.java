@@ -31,4 +31,24 @@ public interface IConnection
 	long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException;
 
 	URL urlForDirectFetch(IpfsFile cid);
+
+	/**
+	 * Pins the given file on the node.  Note that it isn't expected to be pinned when this is called as pinning is not
+	 * a counting concept, but a boolean state.  Any higher-level pin-counting mechanism should be built on top of this,
+	 * not inside it.
+	 * Note that a new data element stored or existing element pinned is considered "pinned" on the node.
+	 * 
+	 * @param cid The file to pin.
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	void pin(IpfsFile cid) throws IpfsConnectionException;
+
+	/**
+	 * Removes the file from the node by unpinning it.  This will allow the node to reclaim the space, whether it was
+	 * cached due to being directly uploaded or previously pinned.
+	 * 
+	 * @param cid The file to unpin.
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	void rm(IpfsFile cid) throws IpfsConnectionException;
 }

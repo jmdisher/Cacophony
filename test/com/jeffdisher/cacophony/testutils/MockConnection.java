@@ -8,8 +8,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
 
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -35,25 +38,25 @@ public class MockConnection implements IConnection
 
 	private final String _keyName;
 	private final IpfsKey _key;
-	private final MockPinMechanism _pinMechanism;
 	private final MockConnection _peer;
 	private final Map<IpfsFile, byte[]> _dataStore;
+	private final Set<IpfsFile> _pinned;
+	private final BiFunction<IpfsFile, byte[], Void> _pinIngestor;
 
 	private IpfsFile _root;
 
-	public MockConnection(String keyName, IpfsKey key, MockPinMechanism pinMechanism, MockConnection peer)
+	public MockConnection(String keyName, IpfsKey key, MockConnection peer)
 	{
 		_keyName = keyName;
 		_key = key;
-		_pinMechanism = pinMechanism;
 		_peer = peer;
 		_dataStore = new HashMap<>();
-		
-		_pinMechanism.attachRemoteIngest((IpfsFile cid, byte[] data) -> {
+		_pinned = new HashSet<>();
+		_pinIngestor = (IpfsFile cid, byte[] data) -> {
 			Assert.assertTrue(!_dataStore.containsKey(cid));
 			_dataStore.put(cid, data);
 			return null;
-		});
+		};
 	}
 
 	@Override
@@ -85,7 +88,7 @@ public class MockConnection implements IConnection
 	public byte[] loadData(IpfsFile file) throws IpfsConnectionException
 	{
 		// We will only load the data if it is pinned to emulate the impacts of unpinning.
-		return _pinMechanism.isPinned(file)
+		return _pinned.contains(file)
 				? _dataStore.get(file)
 				: null
 		;
@@ -103,14 +106,14 @@ public class MockConnection implements IConnection
 	{
 		return (_key.equals(key))
 				? _root
-				: _pinMechanism.remoteResolve(key)
+				: _remoteResolve(key)
 		;
 	}
 
 	@Override
 	public long getSizeInBytes(IpfsFile cid)
 	{
-		return _pinMechanism.isPinned(cid)
+		return _pinned.contains(cid)
 				? (long) _dataStore.get(cid).length
 				: _peer.getSizeInBytes(cid)
 		;
@@ -132,8 +135,8 @@ public class MockConnection implements IConnection
 	{
 		_dataStore.put(file, data);
 		
-		// We will tell the pin mechanism that this counts as pinned since it is stored.
-		_pinMechanism.addLocalFile(file);
+		Assert.assertTrue(!_pinned.contains(file));
+		_pinned.add(file);
 	}
 
 	@Override
@@ -146,6 +149,41 @@ public class MockConnection implements IConnection
 		catch (MalformedURLException e)
 		{
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void pin(IpfsFile cid) throws IpfsConnectionException
+	{
+		Assert.assertTrue(!_pinned.contains(cid));
+		// This path is assumed to be for remote pins (since that is why this is called) so we must have an attached peer.
+		byte[] data = _peer.loadData(cid);
+		_pinIngestor.apply(cid, data);
+		_pinned.add(cid);
+	}
+
+	@Override
+	public void rm(IpfsFile cid) throws IpfsConnectionException
+	{
+		Assert.assertTrue(_pinned.contains(cid));
+		_pinned.remove(cid);
+	}
+
+	public boolean isPinned(IpfsFile cid)
+	{
+		return _pinned.contains(cid);
+	}
+
+	private IpfsFile _remoteResolve(IpfsKey key) throws IpfsConnectionException
+	{
+		if (null != _peer)
+		{
+			return _peer.resolve(key);
+		}
+		else
+		{
+			// The real IPFS daemon seems to throw IOException when it can't resolve.
+			throw new IpfsConnectionException(new IOException("Peer does not exist"));
 		}
 	}
 }

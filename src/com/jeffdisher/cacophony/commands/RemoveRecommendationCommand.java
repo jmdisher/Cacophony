@@ -28,7 +28,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();

@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockLocalActions;
-import com.jeffdisher.cacophony.testutils.MockPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -31,15 +30,13 @@ public class TestStartFollowingCommand
 	public void testUsage() throws Throwable
 	{
 		IpfsFile originalRecordsCid = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
-		MockPinMechanism remotePin = new MockPinMechanism(null);
-		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin, null);
+		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, null);
 		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor(System.out);
-		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinMechanism);
+		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
+		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -62,11 +59,11 @@ public class TestStartFollowingCommand
 		command.scheduleActions(executor, localActions);
 		
 		// Verify the states that should have changed.
-		Assert.assertTrue(pinMechanism.isPinned(originalRoot));
-		Assert.assertTrue(pinMechanism.isPinned(originalDescription));
-		Assert.assertTrue(pinMechanism.isPinned(originalRecommendations));
-		Assert.assertTrue(pinMechanism.isPinned(originalRecordsCid));
-		Assert.assertTrue(pinMechanism.isPinned(originalPicture));
+		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
+		Assert.assertTrue(sharedConnection.isPinned(originalDescription));
+		Assert.assertTrue(sharedConnection.isPinned(originalRecommendations));
+		Assert.assertTrue(sharedConnection.isPinned(originalRecordsCid));
+		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
 		LocalIndex finalIndex = localActions.readExistingSharedIndex();
@@ -79,17 +76,15 @@ public class TestStartFollowingCommand
 	@Test
 	public void testErrorSize() throws Throwable
 	{
-		MockPinMechanism remotePin = new MockPinMechanism(null);
-		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, remotePin, null);
+		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, null);
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		remoteConnection.storeData(originalRoot, new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]);
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor(System.out);
-		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinMechanism);
+		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
+		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection);
 		
 		try {
 			command.scheduleActions(executor, localActions);
@@ -102,7 +97,7 @@ public class TestStartFollowingCommand
 	@Test
 	public void testMissingConfig() throws Throwable
 	{
-		MockLocalActions localActions = new MockLocalActions(null, null, null, null, null);
+		MockLocalActions localActions = new MockLocalActions(null, null, null, null);
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor(System.out);
 		

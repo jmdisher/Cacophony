@@ -28,7 +28,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.createEmptyIndex(ipfs, keyName);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), index.keyName());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();

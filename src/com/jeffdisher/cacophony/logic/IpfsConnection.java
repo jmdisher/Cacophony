@@ -134,4 +134,30 @@ public class IpfsConnection implements IConnection
 			throw Assert.unexpected(e);
 		}
 	}
+
+	@Override
+	public void pin(IpfsFile cid) throws IpfsConnectionException
+	{
+		try
+		{
+			_connection.pin.add(cid.getMultihash());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
+	}
+
+	@Override
+	public void rm(IpfsFile cid) throws IpfsConnectionException
+	{
+		try
+		{
+			_connection.pin.rm(cid.getMultihash());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
+	}
 }

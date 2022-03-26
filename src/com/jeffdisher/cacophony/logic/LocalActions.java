@@ -30,7 +30,6 @@ public class LocalActions implements ILocalActions
 	private final File _directory;
 	private GlobalPinCache _lazyCache;
 	private IpfsConnection _lazyConnection;
-	private IpfsPinMechanism _pinMechanism;
 	private FollowIndex _lazyFollowIndex;
 	private LocalIndex _sharedLocalIndex;
 
@@ -204,13 +203,6 @@ public class LocalActions implements ILocalActions
 	}
 
 	@Override
-	public IPinMechanism getSharedPinMechanism() throws IpfsConnectionException
-	{
-		_verifySharedConnections();
-		return _pinMechanism;
-	}
-
-	@Override
 	public String getConfigDirectoryFullPath()
 	{
 		return _directory.getAbsolutePath();
@@ -268,7 +260,6 @@ public class LocalActions implements ILocalActions
 	{
 		if (null == _lazyConnection)
 		{
-			Assert.assertTrue(null == _pinMechanism);
 			// We should not be trying to open a connection if there is no existing index.
 			Assert.assertTrue(null != _sharedLocalIndex);
 			try {
@@ -279,7 +270,6 @@ public class LocalActions implements ILocalActions
 				// This "Gateway" is of the form:  /ip4/127.0.0.1/tcp/8080
 				int gatewayPort = Integer.parseInt(result.split("/")[4]);
 				_lazyConnection = new IpfsConnection(ipfs, gatewayPort);
-				_pinMechanism = new IpfsPinMechanism(ipfs.pin);
 			}
 			catch (IOException e)
 			{

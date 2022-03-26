@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.data.local;
 
-import com.jeffdisher.cacophony.logic.IPinMechanism;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -41,9 +41,9 @@ public class HighLevelCache
 
 
 	private final GlobalPinCache _globalPinCache;
-	private final IPinMechanism _localNode;
+	private final IConnection _localNode;
 
-	public HighLevelCache(GlobalPinCache globalPinCache, IPinMechanism localNode)
+	public HighLevelCache(GlobalPinCache globalPinCache, IConnection localNode)
 	{
 		_globalPinCache = globalPinCache;
 		_localNode = localNode;
@@ -83,7 +83,7 @@ public class HighLevelCache
 		boolean shouldPin = _globalPinCache.shouldPinAfterAdding(cid);
 		if (shouldPin)
 		{
-			_localNode.add(cid);
+			_localNode.pin(cid);
 		}
 	}
 

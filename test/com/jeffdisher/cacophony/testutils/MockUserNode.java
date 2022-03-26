@@ -22,7 +22,6 @@ public class MockUserNode
 	private static final String IPFS_HOST = "ipfsHost";
 
 	private final Executor _executor;
-	private final MockPinMechanism _pinMechanism;
 	private final MockConnection _sharedConnection;
 	private final MockLocalActions _localActions;
 
@@ -30,9 +29,8 @@ public class MockUserNode
 	{
 		_executor = new Executor(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
-		_pinMechanism = new MockPinMechanism(upstreamConnection);
-		_sharedConnection = new MockConnection(keyName, key, _pinMechanism, upstreamConnection);
-		_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinMechanism);
+		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
+		_localActions = new MockLocalActions(null, null, null, _sharedConnection);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -70,7 +68,7 @@ public class MockUserNode
 
 	public boolean isPinnedLocally(IpfsFile file)
 	{
-		return _pinMechanism.isPinned(file);
+		return _sharedConnection.isPinned(file);
 	}
 
 	public boolean isInPinCache(IpfsFile file)

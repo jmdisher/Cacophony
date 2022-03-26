@@ -12,7 +12,6 @@ import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILocalActions;
-import com.jeffdisher.cacophony.logic.IPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -25,20 +24,18 @@ public class MockLocalActions implements ILocalActions
 	private final IpfsFile _publishedHash;
 	private final MockConnection _sharedConnection;
 	private final GlobalPinCache _pinCache;
-	private final IPinMechanism _pinMechanism;
 	private final FollowIndex _followIndex;
 
 	private LocalIndex _storedIndex;
 	private GlobalPrefs _prefs;
 
-	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection, IPinMechanism pinMechanism)
+	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection)
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
 		_publishedHash = publishedHash;
 		_sharedConnection = sharedConnection;
 		_pinCache = GlobalPinCache.newCache();
-		_pinMechanism = pinMechanism;
 		_followIndex = FollowIndex.emptyFollowIndex();
 		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
 		_prefs = new GlobalPrefs(GlobalPrefs.defaultPrefs().videoEdgePixelMax(), 100L);
@@ -103,12 +100,6 @@ public class MockLocalActions implements ILocalActions
 	public IConnection getSharedConnection()
 	{
 		return _sharedConnection;
-	}
-
-	@Override
-	public IPinMechanism getSharedPinMechanism()
-	{
-		return _pinMechanism;
 	}
 
 	@Override
