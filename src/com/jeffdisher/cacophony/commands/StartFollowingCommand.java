@@ -37,7 +37,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = HighLevelCache.fromLocal(local);
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// We need to first verify that we aren't already following them.

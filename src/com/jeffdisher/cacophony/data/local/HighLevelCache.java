@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.data.local;
 
-import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.IPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -38,15 +37,6 @@ public class HighLevelCache
 		 * A leaf node file on IPFS.
 		 */
 		FILE,
-	}
-
-	public static HighLevelCache fromLocal(ILocalActions local) throws IpfsConnectionException
-	{
-		// We need to know 3 primary things in this object:
-		// 1) The global pin cache - to determine when to pin/unpin.
-		// 2) The IPFS connection's pin abstraction - to request pin/unpin.
-		// 3) Our other data caches - to determine when to modify the global pin cache.
-		return new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
 	}
 
 
