@@ -26,16 +26,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	{
 		IOperationLog log = executor.logOperation("Creating new channel...");
 		// Make sure that there is no local index in this location.
-		LocalIndex index = local.readIndex();
-		if (null != index)
-		{
-			executor.fatalError(new Exception("Index already exists"));
-		}
-		Assert.assertTrue(null == index);
-		
-		// Save the local config.
-		index = new LocalIndex(ipfs, keyName, null);
-		local.storeIndex(index);
+		LocalIndex index = local.createEmptyIndex(ipfs, keyName);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), index.keyName());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
 		

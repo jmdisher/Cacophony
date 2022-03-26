@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -21,12 +22,9 @@ public class ValidationHelpers
 	 */
 	public static LocalIndex requireIndex(ILocalActions local) throws UsageException
 	{
-		LocalIndex localIndex = local.readIndex();
-		if (null == localIndex)
-		{
-			String configDirectory = local.getConfigDirectoryFullPath();
-			throw new UsageException("Error:  No Cacophony configuration found in config directory:  " + configDirectory);
-		}
+		// This throws instead of returning null.
+		LocalIndex localIndex = local.readExistingSharedIndex();
+		Assert.assertTrue(null != localIndex);
 		return localIndex;
 	}
 }

@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.IPinMechanism;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -44,26 +45,47 @@ public class MockLocalActions implements ILocalActions
 	}
 
 	@Override
-	public LocalIndex readIndex()
+	public LocalIndex createEmptyIndex(String ipfsConnectionString, String keyName) throws UsageException
 	{
-		return (null != _storedIndex)
-				? _storedIndex
-				: ((null != _ipfsHost)
-					? new LocalIndex(_ipfsHost, _keyName, _publishedHash)
-					: null
-				)
-		;
+		if (null != _storedIndex)
+		{
+			throw new UsageException("");
+		}
+		else
+		{
+			// If this path is taken, we should not have received initial data.
+			Assert.assertTrue(null == _ipfsHost);
+			_storedIndex = new LocalIndex(ipfsConnectionString, keyName, null);
+		}
+		return _storedIndex;
 	}
 
 	@Override
-	public void storeIndex(LocalIndex index)
+	public LocalIndex readExistingSharedIndex() throws UsageException
+	{
+		if (null == _storedIndex)
+		{
+			if (null != _ipfsHost)
+			{
+				_storedIndex = new LocalIndex(_ipfsHost, _keyName, _publishedHash);
+			}
+			else
+			{
+				throw new UsageException("");
+			}
+		}
+		return _storedIndex;
+	}
+
+	@Override
+	public void storeSharedIndex(LocalIndex localIndex)
 	{
 		// Verify that the serialization/deserialization of LocalIndex works when storing this.
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		try
 		{
 			ObjectOutputStream outStream = new ObjectOutputStream(bytes);
-			outStream.writeObject(index);
+			outStream.writeObject(localIndex);
 			outStream.close();
 			_storedIndex = (LocalIndex)(new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray())).readObject());
 		}

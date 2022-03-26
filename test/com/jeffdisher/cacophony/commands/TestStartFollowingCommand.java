@@ -69,11 +69,11 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(pinMechanism.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
-		LocalIndex finalIndex = localActions.readIndex();
+		LocalIndex finalIndex = localActions.readExistingSharedIndex();
 		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
-		Assert.assertNull(localActions.readIndex().lastPublishedIndex());
+		Assert.assertNull(localActions.readExistingSharedIndex().lastPublishedIndex());
 	}
 
 	@Test

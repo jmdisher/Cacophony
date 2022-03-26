@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -59,8 +60,17 @@ public class HighLevelIdioms
 		// Publish it to IPNS.
 		remote.publishIndex(hashIndex);
 		// Update the local index.
-		LocalIndex localIndex = local.readIndex();
-		local.storeIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), hashIndex));
+		LocalIndex localIndex;
+		try
+		{
+			localIndex = local.readExistingSharedIndex();
+		}
+		catch (UsageException e)
+		{
+			// This MUST already have been loaded before we got here.
+			throw Assert.unexpected(e);
+		}
+		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), hashIndex));
 		// Return the final hash.
 		return hashIndex;
 	}

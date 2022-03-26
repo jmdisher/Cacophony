@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.api.IPFS;
@@ -31,6 +32,7 @@ public class LocalActions implements ILocalActions
 	private IpfsConnection _lazyConnection;
 	private IpfsPinMechanism _pinMechanism;
 	private FollowIndex _lazyFollowIndex;
+	private LocalIndex _sharedLocalIndex;
 
 	public LocalActions(File directory)
 	{
@@ -38,15 +40,36 @@ public class LocalActions implements ILocalActions
 	}
 
 	@Override
-	public LocalIndex readIndex()
+	public LocalIndex createEmptyIndex(String ipfsConnectionString, String keyName) throws UsageException
 	{
-		return _readFile(INDEX_FILE, LocalIndex.class);
+		File indexFile = new File(_directory, INDEX_FILE);
+		if ((null != _sharedLocalIndex) || indexFile.exists())
+		{
+			throw new UsageException("Index already exists");
+		}
+		_sharedLocalIndex = new LocalIndex(ipfsConnectionString, keyName, null);
+		return _sharedLocalIndex;
 	}
 
 	@Override
-	public void storeIndex(LocalIndex index)
+	public LocalIndex readExistingSharedIndex() throws UsageException
 	{
-		_storeFile(INDEX_FILE, index);
+		if (null == _sharedLocalIndex)
+		{
+			_sharedLocalIndex = _readFile(INDEX_FILE, LocalIndex.class);
+			if (null == _sharedLocalIndex)
+			{
+				throw new UsageException("Index file not found");
+			}
+		}
+		return _sharedLocalIndex;
+	}
+
+	@Override
+	public void storeSharedIndex(LocalIndex localIndex)
+	{
+		_sharedLocalIndex = localIndex;
+		_storeFile(INDEX_FILE, _sharedLocalIndex);
 	}
 
 	@Override
@@ -246,12 +269,10 @@ public class LocalActions implements ILocalActions
 		if (null == _lazyConnection)
 		{
 			Assert.assertTrue(null == _pinMechanism);
-			// We don't reuse the LocalIndex since other readers of this likely want to change it and we only want to read it.
-			LocalIndex index = _readFile(INDEX_FILE, LocalIndex.class);
 			// We should not be trying to open a connection if there is no existing index.
-			Assert.assertTrue(null != index);
+			Assert.assertTrue(null != _sharedLocalIndex);
 			try {
-				IPFS ipfs = new IPFS(index.ipfsHost());
+				IPFS ipfs = new IPFS(_sharedLocalIndex.ipfsHost());
 				@SuppressWarnings("unchecked")
 				Map<String, Object> addresses = (Map<String, Object>) ipfs.config.get("Addresses");
 				String result = (String) addresses.get("Gateway");
