@@ -60,7 +60,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		}
 		
 		// We need the local index.
-		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		LocalIndex localIndex = local.readExistingSharedIndex();
 		
 		IOperationLog log = executor.logOperation("Generating static HTML output in " + _directory);
 		// Write the static files in the directory.

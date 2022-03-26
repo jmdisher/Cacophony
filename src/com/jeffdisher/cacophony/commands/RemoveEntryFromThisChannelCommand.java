@@ -27,7 +27,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		IOperationLog log = executor.logOperation("Removing entry " + _elementCid + " from channel...");
-		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());

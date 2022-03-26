@@ -29,7 +29,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
-		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		LocalIndex localIndex = local.readExistingSharedIndex();
 		IOperationLog log = executor.logOperation("Publish: " + this);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());

@@ -23,7 +23,7 @@ public record RepublishCommand() implements ICommand
 	{
 		IOperationLog log = executor.logOperation("Republishing index...");
 		// Get the previously posted index hash.
-		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		LocalIndex localIndex = local.readExistingSharedIndex();
 		IpfsFile indexHash = localIndex.lastPublishedIndex();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);

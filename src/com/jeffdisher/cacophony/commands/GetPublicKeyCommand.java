@@ -14,7 +14,7 @@ public record GetPublicKeyCommand() implements ICommand
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
-		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		executor.logToConsole("Public Key (other users can follow you with this): " + remote.getPublicKey().toPublicKey());
 	}

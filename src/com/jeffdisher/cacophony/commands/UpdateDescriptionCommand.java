@@ -26,7 +26,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		IOperationLog log = executor.logOperation("Updating channel description...");
-		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedPinMechanism());
