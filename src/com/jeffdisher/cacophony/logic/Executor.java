@@ -1,8 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.PrintStream;
-import java.util.LinkedList;
-import java.util.Queue;
 
 
 public class Executor
@@ -17,28 +15,12 @@ public class Executor
 
 
 	private final PrintStream _stream;
-	private final Queue<Runnable> _queue;
 	private int _nextOperationCounter;
 
 	public Executor(PrintStream stream)
 	{
 		_stream = stream;
-		_queue = new LinkedList<>();
 		_nextOperationCounter = 0;
-	}
-
-	public void scheduleRunnable(Runnable r)
-	{
-		_queue.add(r);
-	}
-
-	public void waitForCompletion()
-	{
-		while (!_queue.isEmpty())
-		{
-			Runnable r = _queue.poll();
-			r.run();
-		}
 	}
 
 	public void logToConsole(String message)

@@ -71,7 +71,6 @@ public class Cacophony {
 					System.err.println("Usage error in running command: " + e.getLocalizedMessage());
 					System.exit(2);
 				}
-				executor.waitForCompletion();
 				// Write-back updates.
 				local.storeGlobalPinCache();
 				local.storeFollowIndex();
