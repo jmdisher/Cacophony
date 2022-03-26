@@ -14,16 +14,16 @@ public class RemoteActions
 	/**
 	 * Loads a RemoteActions abstraction using the given executor, loaded from the given ILocalActions abstraction.
 	 * 
-	 * @param executor The executor used for reporting and execution strategy in the returned object.
+	 * @param environment The environment in which this should run.
 	 * @param ipfs The IPFS connection.
 	 * @param keyName The name of the key to use when publishing updates.
 	 * @return The abstraction over the remote actions.
 	 * @throws IpfsConnectionException Something went wrong interacting with the remote server when attaching.
 	 */
-	public static RemoteActions loadIpfsConfig(Executor executor, IConnection ipfs, String keyName) throws IpfsConnectionException
+	public static RemoteActions loadIpfsConfig(IEnvironment environment, IConnection ipfs, String keyName) throws IpfsConnectionException
 	{
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(executor, ipfs, keyName, publicKey);
+		return new RemoteActions(environment, ipfs, keyName, publicKey);
 	}
 
 	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
@@ -42,14 +42,14 @@ public class RemoteActions
 	}
 
 
-	private final Executor _executor;
+	private final IEnvironment _environment;
 	private final IConnection _ipfs;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
 
-	private RemoteActions(Executor executor, IConnection ipfs, String keyName, IpfsKey publicKey)
+	private RemoteActions(IEnvironment environment, IConnection ipfs, String keyName, IpfsKey publicKey)
 	{
-		_executor = executor;
+		_environment = environment;
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
@@ -57,7 +57,7 @@ public class RemoteActions
 
 	public IpfsFile saveData(byte[] raw) throws IpfsConnectionException
 	{
-		Executor.IOperationLog log = _executor.logOperation("Saving " + raw.length + " bytes...");
+		StandardEnvironment.IOperationLog log = _environment.logOperation("Saving " + raw.length + " bytes...");
 		IpfsFile file = _ipfs.storeData(new ByteArrayInputStream(raw));
 		log.finish("saved: " + file.toSafeString());
 		return file;
@@ -65,7 +65,7 @@ public class RemoteActions
 
 	public IpfsFile saveStream(InputStream stream) throws IpfsConnectionException
 	{
-		Executor.IOperationLog log = _executor.logOperation("Saving stream...");
+		StandardEnvironment.IOperationLog log = _environment.logOperation("Saving stream...");
 		IpfsFile file = _ipfs.storeData(stream);
 		log.finish("saved: " + file.toSafeString());
 		return file;
@@ -87,7 +87,7 @@ public class RemoteActions
 		Assert.assertTrue(null != _keyName);
 		
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
-		Executor.IOperationLog log = _executor.logOperation("Publishing " + indexHash + " to " + _keyName);
+		StandardEnvironment.IOperationLog log = _environment.logOperation("Publishing " + indexHash + " to " + _keyName);
 		try
 		{
 			_ipfs.publish(_keyName, indexHash);

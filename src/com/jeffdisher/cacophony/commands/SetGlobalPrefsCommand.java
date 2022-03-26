@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -12,7 +12,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		GlobalPrefs original = local.readPrefs();
 		GlobalPrefs prefs = original;
@@ -28,7 +28,7 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		if (original != prefs)
 		{
 			local.storePrefs(prefs);
-			executor.logToConsole("Updated prefs: " + prefs);
+			environment.logToConsole("Updated prefs: " + prefs);
 		}
 		else
 		{

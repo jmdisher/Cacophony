@@ -11,7 +11,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -25,10 +25,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
@@ -39,13 +39,13 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			FollowRecord record = followees.getFollowerRecord(_channelPublicKey);
 			if (null != record)
 			{
-				executor.logToConsole("Following " + _channelPublicKey);
+				environment.logToConsole("Following " + _channelPublicKey);
 				rootToLoad = record.lastFetchedRoot();
 				isCached = true;
 			}
 			else
 			{
-				executor.logToConsole("NOT following " + _channelPublicKey);
+				environment.logToConsole("NOT following " + _channelPublicKey);
 				rootToLoad = remote.resolvePublicKey(_channelPublicKey);
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -77,11 +77,11 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 					: checker.loadNotCached(IpfsFile.fromIpfsCid(recordCid))
 			;
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
-			executor.logToConsole("element " + recordCid + ": " + record.getName());
+			environment.logToConsole("element " + recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{
-				executor.logToConsole("\t" + element.getCid() + " - " + element.getMime());
+				environment.logToConsole("\t" + element.getCid() + " - " + element.getMime());
 			}
 		}
 	}

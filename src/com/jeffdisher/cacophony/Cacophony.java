@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.jeffdisher.cacophony.commands.ICommand;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.LocalActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
@@ -54,11 +54,11 @@ public class Cacophony {
 					System.err.println("Failed to create directory at " + directory);
 					System.exit(2);
 				}
-				Executor executor = new Executor(System.out);
+				StandardEnvironment executor = new StandardEnvironment(System.out);
 				LocalActions local = new LocalActions(directory);
 				try
 				{
-					command.scheduleActions(executor, local);
+					command.runInEnvironment(executor, local);
 				}
 				catch (IOException e)
 				{

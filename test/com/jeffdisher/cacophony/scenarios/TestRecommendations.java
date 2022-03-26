@@ -11,7 +11,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
@@ -41,7 +41,7 @@ public class TestRecommendations
 		
 		// List the recommendations - make sure we find the key.
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		Executor executor = new Executor(new PrintStream(captureStream));
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListRecommendationsCommand listCommand = new ListRecommendationsCommand(null);
 		user1.runCommand(executor, listCommand);
 		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n\t" + PUBLIC_KEY2.toPublicKey() + "\n", new String(captureStream.toByteArray()));
@@ -53,7 +53,7 @@ public class TestRecommendations
 		
 		// List the recommendations - make sure we see an empty list.
 		captureStream = new ByteArrayOutputStream();
-		executor = new Executor(new PrintStream(captureStream));
+		executor = new StandardEnvironment(new PrintStream(captureStream));
 		listCommand = new ListRecommendationsCommand(null);
 		user1.runCommand(executor, listCommand);
 		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n", new String(captureStream.toByteArray()));

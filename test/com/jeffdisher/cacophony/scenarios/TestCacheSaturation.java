@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -35,7 +35,7 @@ public class TestCacheSaturation
 	@Test
 	public void testIncrementalAddingOneFollowee() throws Throwable
 	{
-		Executor executor = new Executor(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out);
 		
 		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
 		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
@@ -72,7 +72,7 @@ public class TestCacheSaturation
 	@Test
 	public void testIncrementalSaturationOneFollowee() throws Throwable
 	{
-		Executor executor = new Executor(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out);
 		
 		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
 		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
@@ -110,7 +110,7 @@ public class TestCacheSaturation
 	@Test
 	public void testInitialSaturationOneFollowee() throws Throwable
 	{
-		Executor executor = new Executor(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out);
 		
 		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
 		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
@@ -148,7 +148,7 @@ public class TestCacheSaturation
 			_user = new MockUserNode(keyName, publicKey, peer);
 		}
 		
-		public void createChannel(Executor executor, int userNumber) throws Throwable
+		public void createChannel(StandardEnvironment executor, int userNumber) throws Throwable
 		{
 			String name = "User " + userNumber;
 			String description = "Description " + userNumber;
@@ -157,13 +157,13 @@ public class TestCacheSaturation
 			_user.createChannel(_keyName, name, description, userPicData);
 		}
 		
-		public void followUser(Executor executor, User followee) throws Throwable
+		public void followUser(StandardEnvironment executor, User followee) throws Throwable
 		{
 			StartFollowingCommand startFollowingCommand = new StartFollowingCommand(followee._publicKey);
 			_user.runCommand(executor, startFollowingCommand);
 		}
 		
-		public void publish(Executor executor, String name, byte[] thumbnail, byte[] video) throws Throwable
+		public void publish(StandardEnvironment executor, String name, byte[] thumbnail, byte[] video) throws Throwable
 		{
 			File thumbnailFile = FOLDER.newFile();
 			FileOutputStream dataStream = new FileOutputStream(thumbnailFile);
@@ -182,7 +182,7 @@ public class TestCacheSaturation
 			_user.runCommand(executor, publishCommand);
 		}
 		
-		public void pollForUpdates(Executor executor, User followee) throws Throwable
+		public void pollForUpdates(StandardEnvironment executor, User followee) throws Throwable
 		{
 			RefreshFolloweeCommand command = new RefreshFolloweeCommand(followee._publicKey);
 			_user.runCommand(executor, command);

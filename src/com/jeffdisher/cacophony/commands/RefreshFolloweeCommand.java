@@ -16,11 +16,11 @@ import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -33,11 +33,11 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
-		IOperationLog log = executor.logOperation("Refreshing followee " + _publicKey + "...");
+		IOperationLog log = environment.logOperation("Refreshing followee " + _publicKey + "...");
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		FollowIndex followIndex = local.loadFollowIndex();
@@ -53,11 +53,11 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		// See if anything changed.
 		if (lastRoot.equals(indexRoot))
 		{
-			executor.logToConsole("Follow index unchanged (" + lastRoot + ")");
+			environment.logToConsole("Follow index unchanged (" + lastRoot + ")");
 		}
 		else
 		{
-			executor.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
+			environment.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
 			
 			// Verify that this isn't too big.
 			long indexSize = remote.getSizeInBytes(indexRoot);

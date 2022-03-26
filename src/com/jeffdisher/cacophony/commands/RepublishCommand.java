@@ -3,10 +3,10 @@ package com.jeffdisher.cacophony.commands;
 import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -19,9 +19,9 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RepublishCommand() implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
-		IOperationLog log = executor.logOperation("Republishing index...");
+		IOperationLog log = environment.logOperation("Republishing index...");
 		// Get the previously posted index hash.
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		IpfsFile indexHash = localIndex.lastPublishedIndex();
@@ -29,7 +29,7 @@ public record RepublishCommand() implements ICommand
 		Assert.assertTrue(null != indexHash);
 		
 		// Republish the index.
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		remote.publishIndex(indexHash);
 		log.finish("Republish completed!");
 	}

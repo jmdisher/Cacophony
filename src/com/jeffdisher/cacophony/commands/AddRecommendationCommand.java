@@ -7,12 +7,12 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -22,11 +22,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
-		IOperationLog log = executor.logOperation("Adding recommendation " + _channelPublicKey + "...");
+		IOperationLog log = environment.logOperation("Adding recommendation " + _channelPublicKey + "...");
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
@@ -53,7 +53,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
-		executor.logToConsole("Saving and publishing new index");
+		environment.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		

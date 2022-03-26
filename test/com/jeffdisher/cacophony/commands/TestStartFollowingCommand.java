@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockLocalActions;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -34,7 +34,7 @@ public class TestStartFollowingCommand
 		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		Executor executor = new Executor(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
 		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection);
 		
@@ -56,7 +56,7 @@ public class TestStartFollowingCommand
 		remoteConnection.storeData(originalDescription, GlobalData.serializeDescription(originalDescriptionData));
 		
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
-		command.scheduleActions(executor, localActions);
+		command.runInEnvironment(executor, localActions);
 		
 		// Verify the states that should have changed.
 		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
@@ -82,12 +82,12 @@ public class TestStartFollowingCommand
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		Executor executor = new Executor(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
 		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection);
 		
 		try {
-			command.scheduleActions(executor, localActions);
+			command.runInEnvironment(executor, localActions);
 			Assert.fail();
 		} catch (SizeConstraintException e) {
 			// Expected.
@@ -99,11 +99,11 @@ public class TestStartFollowingCommand
 	{
 		MockLocalActions localActions = new MockLocalActions(null, null, null, null);
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		Executor executor = new Executor(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out);
 		
 		// We expect this to fail since there is no LocalIndex.
 		try {
-			command.scheduleActions(executor, localActions);
+			command.runInEnvironment(executor, localActions);
 			Assert.fail();
 		} catch (UsageException e) {
 			// Expected.

@@ -2,15 +2,15 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
 
 /**
- * The interface for commands which can be scheduled to run in an Executor.
+ * An interface for commands which can be run in a generalized fashion.
  */
 public interface ICommand
 {
-	void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException;
+	void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException;
 }

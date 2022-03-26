@@ -9,11 +9,11 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -22,12 +22,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
-		IOperationLog log = executor.logOperation("Creating new channel...");
+		IOperationLog log = environment.logOperation("Creating new channel...");
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.createEmptyIndex(ipfs, keyName);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), index.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), index.keyName());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// Create the empty description, recommendations, record stream, and index.

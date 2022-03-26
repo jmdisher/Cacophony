@@ -10,12 +10,12 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -25,11 +25,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
-		IOperationLog log = executor.logOperation("Removing entry " + _elementCid + " from channel...");
+		IOperationLog log = environment.logOperation("Removing entry " + _elementCid + " from channel...");
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
@@ -66,7 +66,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			IpfsFile newCid = remote.saveData(rawRecords);
 			cache.uploadedToThisCache(newCid);
 			index.setRecords(newCid.toSafeString());
-			executor.logToConsole("Saving and publishing new index");
+			environment.logToConsole("Saving and publishing new index");
 			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
 			cache.uploadedToThisCache(indexHash);
 			

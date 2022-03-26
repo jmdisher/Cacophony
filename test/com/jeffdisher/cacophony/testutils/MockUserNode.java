@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -21,13 +21,13 @@ public class MockUserNode
 {
 	private static final String IPFS_HOST = "ipfsHost";
 
-	private final Executor _executor;
+	private final StandardEnvironment _executor;
 	private final MockConnection _sharedConnection;
 	private final MockLocalActions _localActions;
 
 	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
 	{
-		_executor = new Executor(System.out);
+		_executor = new StandardEnvironment(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
 		_localActions = new MockLocalActions(null, null, null, _sharedConnection);
@@ -41,14 +41,14 @@ public class MockUserNode
 		stream.close();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
-		createChannel.scheduleActions(_executor, _localActions);
+		createChannel.runInEnvironment(_executor, _localActions);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
-		updateDescription.scheduleActions(_executor, _localActions);
+		updateDescription.runInEnvironment(_executor, _localActions);
 	}
 
-	public void runCommand(Executor specialExecutor, ICommand command) throws Throwable
+	public void runCommand(StandardEnvironment specialExecutor, ICommand command) throws Throwable
 	{
-		command.scheduleActions((null != specialExecutor) ? specialExecutor : _executor, _localActions);
+		command.runInEnvironment((null != specialExecutor) ? specialExecutor : _executor, _localActions);
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException

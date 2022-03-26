@@ -3,21 +3,12 @@ package com.jeffdisher.cacophony.logic;
 import java.io.PrintStream;
 
 
-public class Executor
+public class StandardEnvironment implements IEnvironment
 {
-	/**
-	 * This interface is just used to allow higher-level operation logging.
-	 */
-	public static interface IOperationLog
-	{
-		void finish(String finishMessage);
-	}
-
-
 	private final PrintStream _stream;
 	private int _nextOperationCounter;
 
-	public Executor(PrintStream stream)
+	public StandardEnvironment(PrintStream stream)
 	{
 		_stream = stream;
 		_nextOperationCounter = 0;

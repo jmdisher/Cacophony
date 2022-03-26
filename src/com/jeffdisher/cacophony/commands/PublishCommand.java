@@ -12,9 +12,9 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -27,11 +27,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		IOperationLog log = executor.logOperation("Publish: " + this);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		IOperationLog log = environment.logOperation("Publish: " + this);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		
@@ -50,7 +50,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		DataArray array = new DataArray();
 		for (ElementSubCommand elt : _elements)
 		{
-			IOperationLog eltLog = executor.logOperation("-Element: " + elt);
+			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
 			// Upload the file.
 			FileInputStream inputStream = new FileInputStream(elt.filePath());
 			IpfsFile uploaded = HighLevelIdioms.saveStream(remote, inputStream);
@@ -92,7 +92,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
-		executor.logToConsole("Saving and publishing new index");
+		environment.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		

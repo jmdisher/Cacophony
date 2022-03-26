@@ -14,11 +14,11 @@ import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -32,10 +32,10 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		FollowIndex followIndex = local.loadFollowIndex();
@@ -47,11 +47,11 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
 		}
 		
-		IOperationLog log = executor.logOperation("Attempting to follow " + _publicKey + "...");
+		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = remote.resolvePublicKey(_publicKey);
 		Assert.assertTrue(null != indexRoot);
-		executor.logToConsole("Resolved as " + indexRoot);
+		environment.logToConsole("Resolved as " + indexRoot);
 		
 		// Verify that this isn't too big.
 		long indexSize = remote.getSizeInBytes(indexRoot);
@@ -80,15 +80,15 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Populate the initial cache records.
 		GlobalPrefs prefs = local.readPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		_populateCachedRecords(executor, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
+		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
 		log.finish("Follow successful!");
 	}
 
 
-	private void _populateCachedRecords(Executor executor, GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException, SizeConstraintException
+	private void _populateCachedRecords(IEnvironment environment, GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
-		IOperationLog log = executor.logOperation("Caching initial entries...");
+		IOperationLog log = environment.logOperation("Caching initial entries...");
 		int entryCountAdded = 0;
 		int entryCountTotal = 0;
 		
@@ -132,7 +132,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			List<CacheAlgorithm.Candidate<String>> toAdd = algorithm.toAddInNewAddition(candidatesList);
 			for (CacheAlgorithm.Candidate<String> elt : toAdd)
 			{
-				executor.logToConsole("Caching entry: " + elt.data());
+				environment.logToConsole("Caching entry: " + elt.data());
 				CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
 			}
 		}

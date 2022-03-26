@@ -12,7 +12,7 @@ import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -25,10 +25,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		FollowIndex followIndex = local.loadFollowIndex();
 		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);
@@ -42,7 +42,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			StreamIndex index = GlobalData.deserializeIndex(rawIndex);
 			StreamRecords records = GlobalData.deserializeRecords(checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords())));
 			List<String> recordList = records.getRecord();
-			executor.logToConsole("Followee has " + recordList.size() + " elements");
+			environment.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)
 			{
 				FollowingCacheElement element = cachedMapByElementCid.get(IpfsFile.fromIpfsCid(elementCid));
@@ -50,7 +50,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 						? "(not cached)"
 						: "(image: " + element.imageHash().toSafeString() + ", leaf: " + element.leafHash().toSafeString() + ")"
 				;
-				executor.logToConsole("Element CID: " + elementCid + " " + suffix);
+				environment.logToConsole("Element CID: " + elementCid + " " + suffix);
 			}
 		}
 		else

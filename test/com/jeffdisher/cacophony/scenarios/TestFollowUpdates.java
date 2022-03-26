@@ -21,7 +21,7 @@ import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -76,7 +76,7 @@ public class TestFollowUpdates
 		user2.runCommand(null, startFollowingCommand);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		Executor executor = new Executor(new PrintStream(captureStream));
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		user2.runCommand(executor, listCommand);
 		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
@@ -127,7 +127,7 @@ public class TestFollowUpdates
 		user2.runCommand(null, startFollowingCommand);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		Executor executor = new Executor(new PrintStream(captureStream));
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		user2.runCommand(executor, listCommand);
 		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
@@ -193,7 +193,7 @@ public class TestFollowUpdates
 		// User2:  Follow and verify the data is loaded.
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		Executor executor = new Executor(new PrintStream(captureStream));
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
 		user2.runCommand(executor, listCommand);
 		String capturedString = new String(captureStream.toByteArray());

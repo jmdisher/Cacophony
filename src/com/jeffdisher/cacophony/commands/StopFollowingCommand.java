@@ -10,11 +10,11 @@ import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
-import com.jeffdisher.cacophony.logic.Executor.IOperationLog;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -25,10 +25,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		FollowIndex followIndex = local.loadFollowIndex();
@@ -39,7 +39,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		{
 			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
 		}
-		IOperationLog log = executor.logOperation("Cleaning up to stop following " + _publicKey + "...");
+		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		// Walk all the elements in the record stream, removing the cached meta-data and associated files.
 		for (FollowingCacheElement element : finalRecord.elements())
 		{

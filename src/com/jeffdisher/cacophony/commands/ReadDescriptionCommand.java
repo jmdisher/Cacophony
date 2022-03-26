@@ -7,7 +7,7 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.Executor;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILocalActions;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -21,10 +21,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
@@ -39,12 +39,12 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			rootToLoad = followIndex.getLastFetchedRoot(_channelPublicKey);
 			if (null != rootToLoad)
 			{
-				executor.logToConsole("Following " + _channelPublicKey);
+				environment.logToConsole("Following " + _channelPublicKey);
 				isCached = true;
 			}
 			else
 			{
-				executor.logToConsole("NOT following " + _channelPublicKey);
+				environment.logToConsole("NOT following " + _channelPublicKey);
 				rootToLoad = remote.resolvePublicKey(_channelPublicKey);
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -68,9 +68,9 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 				: checker.loadNotCached(IpfsFile.fromIpfsCid(index.getDescription()))
 		;
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
-		executor.logToConsole("Channel public key: " + publicKey);
-		executor.logToConsole("-name: " + description.getName());
-		executor.logToConsole("-description: " + description.getDescription());
-		executor.logToConsole("-picture: " + description.getPicture());
+		environment.logToConsole("Channel public key: " + publicKey);
+		environment.logToConsole("-name: " + description.getName());
+		environment.logToConsole("-description: " + description.getDescription());
+		environment.logToConsole("-picture: " + description.getPicture());
 	}
 }
