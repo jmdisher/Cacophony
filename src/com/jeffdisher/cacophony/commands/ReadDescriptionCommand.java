@@ -24,7 +24,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local);
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since

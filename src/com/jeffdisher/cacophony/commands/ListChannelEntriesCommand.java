@@ -28,7 +28,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local);
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;

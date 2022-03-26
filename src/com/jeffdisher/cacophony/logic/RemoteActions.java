@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.logic;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -16,16 +15,13 @@ public class RemoteActions
 	 * Loads a RemoteActions abstraction using the given executor, loaded from the given ILocalActions abstraction.
 	 * 
 	 * @param executor The executor used for reporting and execution strategy in the returned object.
-	 * @param local The ILocalActions which will be consulted to load the RemoteActions configuration.
+	 * @param ipfs The IPFS connection.
+	 * @param keyName The name of the key to use when publishing updates.
 	 * @return The abstraction over the remote actions.
 	 * @throws IpfsConnectionException Something went wrong interacting with the remote server when attaching.
 	 */
-	public static RemoteActions loadIpfsConfig(Executor executor, ILocalActions local) throws IpfsConnectionException
+	public static RemoteActions loadIpfsConfig(Executor executor, IConnection ipfs, String keyName) throws IpfsConnectionException
 	{
-		LocalIndex index = local.readIndex();
-		Assert.assertTrue(null != index);
-		IConnection ipfs = local.getSharedConnection();
-		String keyName = index.keyName();
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
 		return new RemoteActions(executor, ipfs, keyName, publicKey);
 	}

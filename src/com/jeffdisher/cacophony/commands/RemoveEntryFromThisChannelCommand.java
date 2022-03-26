@@ -28,7 +28,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	{
 		IOperationLog log = executor.logOperation("Removing entry " + _elementCid + " from channel...");
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		

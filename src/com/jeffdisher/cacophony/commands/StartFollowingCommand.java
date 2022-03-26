@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.HighLevelCache;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -33,8 +34,8 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
-		ValidationHelpers.requireIndex(local);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local);
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		FollowIndex followIndex = local.loadFollowIndex();

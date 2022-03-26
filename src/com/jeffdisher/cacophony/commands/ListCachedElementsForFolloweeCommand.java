@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.FollowRecord;
 import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.logic.ILocalActions;
@@ -25,8 +26,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	@Override
 	public void scheduleActions(Executor executor, ILocalActions local) throws IOException, CacophonyException
 	{
-		ValidationHelpers.requireIndex(local);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local);
+		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local);
 		FollowIndex followIndex = local.loadFollowIndex();
 		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);
