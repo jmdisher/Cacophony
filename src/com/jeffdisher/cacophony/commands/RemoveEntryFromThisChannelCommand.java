@@ -29,7 +29,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		IOperationLog log = executor.logOperation("Removing entry " + _elementCid + " from channel...");
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local);
+		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).

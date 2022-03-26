@@ -28,7 +28,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		IOperationLog log = executor.logOperation("Updating channel description...");
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local);
+		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.

@@ -27,7 +27,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		IOperationLog log = executor.logOperation("Removing recommendation " + _channelPublicKey + "...");
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local);
+		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.

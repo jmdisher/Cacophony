@@ -103,7 +103,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		// DATA_userInfo.
 		JsonObject dataUserInfo = new JsonObject();
 		// We need to make this information from ourselves and everyone we are following.
-		LoadChecker checker = new LoadChecker(remote, local);
+		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		_populateDataForUserRoot(checker, dataUserInfo, ourPublicKey, localIndex.lastPublishedIndex());
 		FollowIndex followIndex = local.loadFollowIndex();
 		for(FollowRecord record : followIndex)

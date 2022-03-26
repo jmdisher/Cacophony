@@ -32,7 +32,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		IOperationLog log = executor.logOperation("Publish: " + this);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local);
+		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = HighLevelCache.fromLocal(local);
 		
 		// Read the existing StreamIndex.

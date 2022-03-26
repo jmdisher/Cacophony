@@ -17,14 +17,14 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class LoadChecker
 {
 	private final RemoteActions _remote;
-	private final ILocalActions _local;
 	private final GlobalPinCache _cache;
+	private final IConnection _ipfsConnection;
 
-	public LoadChecker(RemoteActions remote, ILocalActions local)
+	public LoadChecker(RemoteActions remote, GlobalPinCache pinCache, IConnection ipfsConnection)
 	{
 		_remote = remote;
-		_local = local;
-		_cache = local.loadGlobalPinCache();
+		_cache = pinCache;
+		_ipfsConnection = ipfsConnection;
 	}
 
 	public byte[] loadCached(IpfsFile file) throws IpfsConnectionException
@@ -50,7 +50,7 @@ public class LoadChecker
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));
-		return _local.getSharedConnection().urlForDirectFetch(file);
+		return _ipfsConnection.urlForDirectFetch(file);
 	}
 
 	public boolean isCached(IpfsFile file)

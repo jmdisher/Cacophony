@@ -29,7 +29,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	{
 		LocalIndex localIndex = ValidationHelpers.requireIndex(local);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(executor, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local);
+		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
 		if (null != _channelPublicKey)
