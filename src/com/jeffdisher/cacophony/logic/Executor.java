@@ -32,11 +32,6 @@ public class Executor
 		_queue.add(r);
 	}
 
-	public void fatalError(Exception e)
-	{
-		e.printStackTrace();
-	}
-
 	public void waitForCompletion()
 	{
 		while (!_queue.isEmpty())

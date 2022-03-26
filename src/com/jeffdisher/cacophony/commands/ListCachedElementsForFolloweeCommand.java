@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand
@@ -54,7 +55,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		}
 		else
 		{
-			executor.fatalError(new Exception("Not following " + _followeeKey.toPublicKey()));
+			throw new UsageException("Not following " + _followeeKey.toPublicKey());
 		}
 	}
 }
