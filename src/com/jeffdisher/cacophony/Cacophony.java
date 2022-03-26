@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.logic.LocalActions;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
 
@@ -55,7 +55,7 @@ public class Cacophony {
 					System.exit(2);
 				}
 				StandardEnvironment executor = new StandardEnvironment(System.out);
-				LocalActions local = new LocalActions(directory);
+				LocalConfig local = new LocalConfig(directory);
 				try
 				{
 					command.runInEnvironment(executor, local);

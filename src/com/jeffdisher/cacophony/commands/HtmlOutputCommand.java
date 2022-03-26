@@ -29,7 +29,7 @@ import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.ILocalConfig;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -48,7 +48,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record HtmlOutputCommand(File _directory) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
 	{
 		if (_directory.exists())
 		{

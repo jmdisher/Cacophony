@@ -23,14 +23,14 @@ public class MockUserNode
 
 	private final StandardEnvironment _executor;
 	private final MockConnection _sharedConnection;
-	private final MockLocalActions _localActions;
+	private final MockLocalConfig _localActions;
 
 	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
 	{
 		_executor = new StandardEnvironment(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
-		_localActions = new MockLocalActions(null, null, null, _sharedConnection);
+		_localActions = new MockLocalConfig(null, null, null, _sharedConnection);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable

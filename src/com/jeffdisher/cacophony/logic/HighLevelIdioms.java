@@ -26,12 +26,12 @@ public class HighLevelIdioms
 		return remote.saveStream(stream);
 	}
 
-	public static IpfsFile saveAndPublishIndex(RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IpfsConnectionException
+	public static IpfsFile saveAndPublishIndex(RemoteActions remote, ILocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		return _saveAndPublishIndex(remote, local, streamIndex);
 	}
 
-	public static IpfsFile saveAndPublishNewIndex(RemoteActions remote, ILocalActions local, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IpfsConnectionException
+	public static IpfsFile saveAndPublishNewIndex(RemoteActions remote, ILocalConfig local, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IpfsConnectionException
 	{
 		StreamIndex streamIndex = new StreamIndex();
 		streamIndex.setVersion(1);
@@ -50,7 +50,7 @@ public class HighLevelIdioms
 		return uploaded;
 	}
 
-	private static IpfsFile _saveAndPublishIndex(RemoteActions remote, ILocalActions local, StreamIndex streamIndex) throws IpfsConnectionException
+	private static IpfsFile _saveAndPublishIndex(RemoteActions remote, ILocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file.
 		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);

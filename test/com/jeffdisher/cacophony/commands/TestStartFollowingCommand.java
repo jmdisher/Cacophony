@@ -10,7 +10,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
-import com.jeffdisher.cacophony.testutils.MockLocalActions;
+import com.jeffdisher.cacophony.testutils.MockLocalConfig;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -36,7 +36,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection);
+		MockLocalConfig localActions = new MockLocalConfig(IPFS_HOST, KEY_NAME, null, sharedConnection);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -84,7 +84,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection);
+		MockLocalConfig localActions = new MockLocalConfig(IPFS_HOST, KEY_NAME, null, sharedConnection);
 		
 		try {
 			command.runInEnvironment(executor, localActions);
@@ -97,7 +97,7 @@ public class TestStartFollowingCommand
 	@Test
 	public void testMissingConfig() throws Throwable
 	{
-		MockLocalActions localActions = new MockLocalActions(null, null, null, null);
+		MockLocalConfig localActions = new MockLocalConfig(null, null, null, null);
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out);
 		

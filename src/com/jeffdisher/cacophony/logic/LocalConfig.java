@@ -20,7 +20,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 import io.ipfs.api.IPFS;
 
 
-public class LocalActions implements ILocalActions
+public class LocalConfig implements ILocalConfig
 {
 	private static final String INDEX_FILE = "index.dat";
 	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
@@ -34,7 +34,7 @@ public class LocalActions implements ILocalActions
 	private LocalIndex _sharedLocalIndex;
 	private GlobalPrefs _lazySharedPrefs;
 
-	public LocalActions(File directory)
+	public LocalConfig(File directory)
 	{
 		_directory = directory;
 	}

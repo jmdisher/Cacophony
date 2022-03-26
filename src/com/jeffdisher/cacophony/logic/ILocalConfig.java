@@ -9,9 +9,9 @@ import com.jeffdisher.cacophony.types.UsageException;
 
 
 /**
- * The abstract interface for LocalActions, provided to allow mocks for testing.
+ * The abstract interface for LocalConfig, provided to allow mocks for testing.
  */
-public interface ILocalActions
+public interface ILocalConfig
 {
 	/**
 	 * Creates a new index, setting it as the shared instance.  Does NOT write to disk.

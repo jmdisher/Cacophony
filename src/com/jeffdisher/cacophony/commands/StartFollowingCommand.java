@@ -16,7 +16,7 @@ import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.ILocalConfig;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -32,7 +32,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalActions local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
 	{
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());

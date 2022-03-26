@@ -11,13 +11,13 @@ import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.ILocalActions;
+import com.jeffdisher.cacophony.logic.ILocalConfig;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public class MockLocalActions implements ILocalActions
+public class MockLocalConfig implements ILocalConfig
 {
 	private final String _ipfsHost;
 	private final String _keyName;
@@ -29,7 +29,7 @@ public class MockLocalActions implements ILocalActions
 	private LocalIndex _storedIndex;
 	private GlobalPrefs _prefs;
 
-	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection)
+	public MockLocalConfig(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection)
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
