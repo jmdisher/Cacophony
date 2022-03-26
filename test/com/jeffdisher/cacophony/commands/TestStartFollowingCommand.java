@@ -7,8 +7,6 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockConnection;
@@ -39,11 +37,9 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor(System.out);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinCache, pinMechanism, followIndex);
+		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinMechanism);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -91,11 +87,9 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor(System.out);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		MockPinMechanism pinMechanism = new MockPinMechanism(remoteConnection);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, pinMechanism, remoteConnection);
-		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinCache, pinMechanism, followIndex);
+		MockLocalActions localActions = new MockLocalActions(IPFS_HOST, KEY_NAME, null, sharedConnection, pinMechanism);
 		
 		try {
 			command.scheduleActions(executor, localActions);
@@ -108,7 +102,7 @@ public class TestStartFollowingCommand
 	@Test
 	public void testMissingConfig() throws Throwable
 	{
-		MockLocalActions localActions = new MockLocalActions(null, null, null, null, null, null, null);
+		MockLocalActions localActions = new MockLocalActions(null, null, null, null, null);
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		Executor executor = new Executor(System.out);
 		

@@ -6,8 +6,6 @@ import java.io.FileOutputStream;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.Executor;
@@ -24,9 +22,7 @@ public class MockUserNode
 	private static final String IPFS_HOST = "ipfsHost";
 
 	private final Executor _executor;
-	private final GlobalPinCache _pinCache;
 	private final MockPinMechanism _pinMechanism;
-	private final FollowIndex _followIndex;
 	private final MockConnection _sharedConnection;
 	private final MockLocalActions _localActions;
 
@@ -34,11 +30,9 @@ public class MockUserNode
 	{
 		_executor = new Executor(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
-		_pinCache = GlobalPinCache.newCache();
 		_pinMechanism = new MockPinMechanism(upstreamConnection);
-		_followIndex = FollowIndex.emptyFollowIndex();
 		_sharedConnection = new MockConnection(keyName, key, _pinMechanism, upstreamConnection);
-		_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
+		_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinMechanism);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -81,7 +75,7 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file)
 	{
-		return _pinCache.isCached(file);
+		return _localActions.loadGlobalPinCache().isCached(file);
 	}
 
 	public GlobalPrefs readPrefs()

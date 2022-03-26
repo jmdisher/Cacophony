@@ -17,8 +17,6 @@ import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockLocalActions;
@@ -144,9 +142,7 @@ public class TestCacheSaturation
 	{
 		private final String _keyName;
 		private final IpfsKey _publicKey;
-		private final GlobalPinCache _pinCache;
 		private final MockPinMechanism _pinMechanism;
-		private final FollowIndex _followIndex;
 		private final MockConnection _sharedConnection;
 		private final MockLocalActions _localActions;
 		
@@ -155,11 +151,9 @@ public class TestCacheSaturation
 			MockConnection peer = (null != upstreamUser) ? upstreamUser._sharedConnection : null;
 			_keyName = keyName;
 			_publicKey = publicKey;
-			_pinCache = GlobalPinCache.newCache();
 			_pinMechanism = new MockPinMechanism(peer);
-			_followIndex = FollowIndex.emptyFollowIndex();
 			_sharedConnection = new MockConnection(_keyName, _publicKey, _pinMechanism, peer);
-			_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinCache, _pinMechanism, _followIndex);
+			_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinMechanism);
 		}
 		
 		public void createChannel(Executor executor, int userNumber) throws Throwable

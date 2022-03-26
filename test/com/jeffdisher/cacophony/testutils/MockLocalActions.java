@@ -30,15 +30,15 @@ public class MockLocalActions implements ILocalActions
 	private LocalIndex _storedIndex;
 	private GlobalPrefs _prefs;
 
-	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection, GlobalPinCache pinCache, IPinMechanism pinMechanism, FollowIndex followIndex)
+	public MockLocalActions(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection, IPinMechanism pinMechanism)
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
 		_publishedHash = publishedHash;
 		_sharedConnection = sharedConnection;
-		_pinCache = pinCache;
+		_pinCache = GlobalPinCache.newCache();
 		_pinMechanism = pinMechanism;
-		_followIndex = followIndex;
+		_followIndex = FollowIndex.emptyFollowIndex();
 		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
 		_prefs = new GlobalPrefs(GlobalPrefs.defaultPrefs().videoEdgePixelMax(), 100L);
 	}
