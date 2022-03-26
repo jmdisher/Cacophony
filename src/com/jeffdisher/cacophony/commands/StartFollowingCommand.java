@@ -78,7 +78,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		followIndex.addFollowingWithInitialState(_publicKey, indexRoot);
 		
 		// Populate the initial cache records.
-		GlobalPrefs prefs = local.readPrefs();
+		GlobalPrefs prefs = local.readSharedPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
 		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
 		log.finish("Follow successful!");

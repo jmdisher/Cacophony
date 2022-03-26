@@ -109,13 +109,13 @@ public class MockLocalActions implements ILocalActions
 	}
 
 	@Override
-	public GlobalPrefs readPrefs()
+	public GlobalPrefs readSharedPrefs()
 	{
 		return _prefs;
 	}
 
 	@Override
-	public void storePrefs(GlobalPrefs prefs)
+	public void storeSharedPrefs(GlobalPrefs prefs)
 	{
 		_prefs = prefs;
 	}

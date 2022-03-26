@@ -40,9 +40,9 @@ public interface ILocalActions
 
 	FollowIndex loadFollowIndex();
 
-	GlobalPrefs readPrefs();
+	GlobalPrefs readSharedPrefs();
 
-	void storePrefs(GlobalPrefs prefs);
+	void storeSharedPrefs(GlobalPrefs prefs);
 
 	GlobalPinCache loadGlobalPinCache();
 

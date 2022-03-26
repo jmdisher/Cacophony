@@ -93,7 +93,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		generatedStream.println();
 		
 		// DATA_prefs.
-		GlobalPrefs prefs = local.readPrefs();
+		GlobalPrefs prefs = local.readSharedPrefs();
 		JsonObject dataPrefs = new JsonObject();
 		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax());
 		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes());

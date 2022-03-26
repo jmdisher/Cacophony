@@ -32,6 +32,7 @@ public class LocalActions implements ILocalActions
 	private IpfsConnection _lazyConnection;
 	private FollowIndex _lazyFollowIndex;
 	private LocalIndex _sharedLocalIndex;
+	private GlobalPrefs _lazySharedPrefs;
 
 	public LocalActions(File directory)
 	{
@@ -72,21 +73,26 @@ public class LocalActions implements ILocalActions
 	}
 
 	@Override
-	public GlobalPrefs readPrefs()
+	public GlobalPrefs readSharedPrefs()
 	{
-		GlobalPrefs prefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
-		if (null == prefs)
+		if (null == _lazySharedPrefs)
 		{
-			// We want to default the prefs if there isn't one.
-			prefs = GlobalPrefs.defaultPrefs();
+			GlobalPrefs prefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+			if (null == prefs)
+			{
+				// We want to default the prefs if there isn't one.
+				prefs = GlobalPrefs.defaultPrefs();
+			}
+			_lazySharedPrefs = prefs;
 		}
-		return prefs;
+		return _lazySharedPrefs;
 	}
 
 	@Override
-	public void storePrefs(GlobalPrefs prefs)
+	public void storeSharedPrefs(GlobalPrefs prefs)
 	{
-		_storeFile(GLOBAL_PREFS_FILE, prefs);
+		_lazySharedPrefs = prefs;
+		_storeFile(GLOBAL_PREFS_FILE, _lazySharedPrefs);
 	}
 
 	@Override

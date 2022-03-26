@@ -100,7 +100,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 				cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
 				StreamRecords oldRecords = GlobalData.deserializeRecords(checker.loadCached(oldRecordsCid));
 				StreamRecords newRecords = GlobalData.deserializeRecords(checker.loadCached(newRecordsCid));
-				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readPrefs());
+				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs());
 				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}
 			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);

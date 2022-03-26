@@ -78,6 +78,6 @@ public class MockUserNode
 
 	public GlobalPrefs readPrefs()
 	{
-		return _localActions.readPrefs();
+		return _localActions.readSharedPrefs();
 	}
 }
