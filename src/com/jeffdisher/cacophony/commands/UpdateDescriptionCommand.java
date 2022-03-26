@@ -52,20 +52,20 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		{
 			// Upload the picture.
 			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
-			IpfsFile pictureHash = HighLevelIdioms.saveData(executor, remote, rawData);
+			IpfsFile pictureHash = HighLevelIdioms.saveData(remote, rawData);
 			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.toSafeString());
 		}
 		
 		// Serialize and upload the description.
 		rawDescription = GlobalData.serializeDescription(description);
-		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
+		IpfsFile hashDescription = HighLevelIdioms.saveData(remote, rawDescription);
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.
 		index.setDescription(hashDescription.toSafeString());
 		executor.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove old root.

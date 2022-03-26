@@ -48,13 +48,13 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		
 		// Serialize and upload the description.
 		rawRecommendations = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawRecommendations);
+		IpfsFile hashDescription = HighLevelIdioms.saveData(remote, rawRecommendations);
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		executor.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove the previous file from cache.

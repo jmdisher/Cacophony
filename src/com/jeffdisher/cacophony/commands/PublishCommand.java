@@ -53,7 +53,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			IOperationLog eltLog = executor.logOperation("-Element: " + elt);
 			// Upload the file.
 			FileInputStream inputStream = new FileInputStream(elt.filePath());
-			IpfsFile uploaded = HighLevelIdioms.saveStream(executor, remote, inputStream);
+			IpfsFile uploaded = HighLevelIdioms.saveStream(remote, inputStream);
 			inputStream.close();
 			cache.uploadedToThisCache(uploaded);
 			
@@ -80,20 +80,20 @@ public record PublishCommand(String _name, String _description, String _discussi
 		record.setPublisherKey(publicKey.toPublicKey());
 		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = HighLevelIdioms.saveData(executor, remote, rawRecord);
+		IpfsFile recordHash = HighLevelIdioms.saveData(remote, rawRecord);
 		cache.uploadedToThisCache(recordHash);
 		
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = HighLevelIdioms.saveData(executor, remote, rawRecords);
+		IpfsFile recordsHash = HighLevelIdioms.saveData(remote, rawRecords);
 		cache.uploadedToThisCache(recordsHash);
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
 		executor.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(executor, remote, local, index);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove the old root.

@@ -49,15 +49,15 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		IpfsFile hashDescription = HighLevelIdioms.saveData(executor, remote, rawDescription);
+		IpfsFile hashDescription = HighLevelIdioms.saveData(remote, rawDescription);
 		cache.uploadedToThisCache(hashDescription);
-		IpfsFile hashRecommendations = HighLevelIdioms.saveData(executor, remote, rawRecommendations);
+		IpfsFile hashRecommendations = HighLevelIdioms.saveData(remote, rawRecommendations);
 		cache.uploadedToThisCache(hashRecommendations);
-		IpfsFile hashRecords = HighLevelIdioms.saveData(executor, remote, rawRecords);
+		IpfsFile hashRecords = HighLevelIdioms.saveData(remote, rawRecords);
 		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(executor, remote, local, hashDescription, hashRecommendations, hashRecords);
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(remote, local, hashDescription, hashRecommendations, hashRecords);
 		cache.uploadedToThisCache(indexHash);
 		log.finish("Channel created and published to Cacophony!");
 	}
