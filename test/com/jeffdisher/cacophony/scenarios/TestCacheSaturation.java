@@ -9,18 +9,15 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
-import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.Executor;
 import com.jeffdisher.cacophony.testutils.MockConnection;
-import com.jeffdisher.cacophony.testutils.MockLocalActions;
-import com.jeffdisher.cacophony.testutils.MockPinMechanism;
+import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -30,7 +27,6 @@ public class TestCacheSaturation
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME0 = "keyName0";
 	private static final IpfsKey PUBLIC_KEY0 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14Y");
 	private static final String KEY_NAME1 = "keyName1";
@@ -142,38 +138,29 @@ public class TestCacheSaturation
 	{
 		private final String _keyName;
 		private final IpfsKey _publicKey;
-		private final MockPinMechanism _pinMechanism;
-		private final MockConnection _sharedConnection;
-		private final MockLocalActions _localActions;
+		private final MockUserNode _user;
 		
 		public User(String keyName, IpfsKey publicKey, User upstreamUser)
 		{
-			MockConnection peer = (null != upstreamUser) ? upstreamUser._sharedConnection : null;
+			MockUserNode peer = (null != upstreamUser) ? upstreamUser._user : null;
 			_keyName = keyName;
 			_publicKey = publicKey;
-			_pinMechanism = new MockPinMechanism(peer);
-			_sharedConnection = new MockConnection(_keyName, _publicKey, _pinMechanism, peer);
-			_localActions = new MockLocalActions(null, null, null, _sharedConnection, _pinMechanism);
+			_user = new MockUserNode(keyName, publicKey, peer);
 		}
 		
 		public void createChannel(Executor executor, int userNumber) throws Throwable
 		{
-			File userPic = FOLDER.newFile();
-			// Create user 1.
-			FileOutputStream stream = new FileOutputStream(userPic);
-			stream.write(("User pic " + userNumber + "\n").getBytes());
-			stream.close();
+			String name = "User " + userNumber;
+			String description = "Description " + userNumber;
+			byte[] userPicData = ("User pic " + userNumber + "\n").getBytes();
 			
-			CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, _keyName);
-			createChannel.scheduleActions(executor, _localActions);
-			UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand("User " + userNumber, "Description " + userNumber, userPic);
-			updateDescription.scheduleActions(executor, _localActions);
+			_user.createChannel(_keyName, name, description, userPicData);
 		}
 		
 		public void followUser(Executor executor, User followee) throws Throwable
 		{
 			StartFollowingCommand startFollowingCommand = new StartFollowingCommand(followee._publicKey);
-			startFollowingCommand.scheduleActions(executor, _localActions);
+			_user.runCommand(executor, startFollowingCommand);
 		}
 		
 		public void publish(Executor executor, String name, byte[] thumbnail, byte[] video) throws Throwable
@@ -192,25 +179,25 @@ public class TestCacheSaturation
 					new ElementSubCommand("image/jpeg", thumbnailFile, 0, 0, true),
 			};
 			PublishCommand publishCommand = new PublishCommand(name, "description", null, elements);
-			publishCommand.scheduleActions(executor, _localActions);
+			_user.runCommand(executor, publishCommand);
 		}
 		
 		public void pollForUpdates(Executor executor, User followee) throws Throwable
 		{
 			RefreshFolloweeCommand command = new RefreshFolloweeCommand(followee._publicKey);
-			command.scheduleActions(executor, _localActions);
+			_user.runCommand(executor, command);
 		}
 		
 		public List<String> loadStreamForFollowee(User followee) throws Throwable
 		{
-			StreamIndex index = GlobalData.deserializeIndex(_sharedConnection.loadData(_sharedConnection.resolve(followee._publicKey)));
-			return GlobalData.deserializeRecords(_sharedConnection.loadData(IpfsFile.fromIpfsCid(index.getRecords()))).getRecord();
+			StreamIndex index = GlobalData.deserializeIndex(_user.loadDataFromNode(_user.resolveKeyOnNode(followee._publicKey)));
+			return GlobalData.deserializeRecords(_user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords()))).getRecord();
 		}
 		
 		public boolean isDataPresent(byte[] data) throws Throwable
 		{
 			IpfsFile file = MockConnection.generateHash(data);
-			byte[] stored = _sharedConnection.loadData(file);
+			byte[] stored = _user.loadDataFromNode(file);
 			if (null != stored)
 			{
 				// Verify that these match, if found, since we shouldn't see collisions.
