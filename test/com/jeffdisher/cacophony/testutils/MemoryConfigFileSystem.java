@@ -4,14 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class MemoryConfigFileSystem implements IConfigFileSystem
@@ -26,7 +24,7 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 		{
 			_data = new HashMap<>();
 			// We want to sleeze in our reduced size default testing prefs, here.
-			_saveDefaultTestingPrefs();
+			GlobalPrefs.FOLLOWING_CACHE_TARGET_BYTES = 100L;
 		}
 		return !doesExist;
 	}
@@ -38,8 +36,6 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 		if (null == _data)
 		{
 			_data = new HashMap<>();
-			// We want to sleeze in our reduced size default testing prefs, here.
-			_saveDefaultTestingPrefs();
 		}
 		byte[] bytes = _data.get(fileName);
 		return (null != bytes)
@@ -72,21 +68,5 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	public String getDirectoryForReporting()
 	{
 		return "SYNTHETIC";
-	}
-
-
-	private void _saveDefaultTestingPrefs()
-	{
-		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
-		GlobalPrefs prefs = new GlobalPrefs(GlobalPrefs.defaultPrefs().videoEdgePixelMax(), 100L);
-		try (ObjectOutputStream stream = new ObjectOutputStream(this.writeConfigFile("global_prefs.dat")))
-		{
-			stream.writeObject(prefs);
-		}
-		catch (IOException e)
-		{
-			// We don't expect this.
-			throw Assert.unexpected(e);
-		}
 	}
 }

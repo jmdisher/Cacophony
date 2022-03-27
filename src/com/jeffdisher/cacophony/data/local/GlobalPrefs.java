@@ -8,7 +8,8 @@ public record GlobalPrefs(int videoEdgePixelMax, long followCacheTargetBytes) im
 	// We will default to 720p, which is 720/1280, so we use 1280 as the edge size.
 	private static final int VIDEO_EDGE_LIMIT = 1280;
 	// We will start with a follower cache default target size of 10 GB (probably too small but not ultra-tiny).
-	private static final long FOLLOWING_CACHE_TARGET_BYTES = 10_000_000_000L;
+	// (this is public since we override it in some tests).
+	public static long FOLLOWING_CACHE_TARGET_BYTES = 10_000_000_000L;
 
 	public static GlobalPrefs defaultPrefs()
 	{
