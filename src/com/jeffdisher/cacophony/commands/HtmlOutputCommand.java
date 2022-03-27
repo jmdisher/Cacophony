@@ -58,10 +58,10 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		{
 			throw new UsageException("Directory cannot be created: " + _directory);
 		}
-		LocalConfig local = environment.getLocalConfig();
+		LocalConfig local = environment.loadExistingConfig();
 		
 		// We need the local index.
-		LocalIndex localIndex = local.readExistingSharedIndex();
+		LocalIndex localIndex = local.readLocalIndex();
 		
 		IOperationLog log = environment.logOperation("Generating static HTML output in " + _directory);
 		// Write the static files in the directory.

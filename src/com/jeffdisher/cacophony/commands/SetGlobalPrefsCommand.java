@@ -14,7 +14,7 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.getLocalConfig();
+		LocalConfig local = environment.loadExistingConfig();
 		GlobalPrefs original = local.readSharedPrefs();
 		GlobalPrefs prefs = original;
 		

@@ -24,9 +24,9 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.getLocalConfig();
+		LocalConfig local = environment.loadExistingConfig();
 		IOperationLog log = environment.logOperation("Adding recommendation " + _channelPublicKey + "...");
-		LocalIndex localIndex = local.readExistingSharedIndex();
+		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());

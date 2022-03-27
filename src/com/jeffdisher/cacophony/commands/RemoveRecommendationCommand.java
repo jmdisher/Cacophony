@@ -25,8 +25,8 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
 		IOperationLog log = environment.logOperation("Removing recommendation " + _channelPublicKey + "...");
-		LocalConfig local = environment.getLocalConfig();
-		LocalIndex localIndex = local.readExistingSharedIndex();
+		LocalConfig local = environment.loadExistingConfig();
+		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());

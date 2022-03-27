@@ -17,25 +17,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class LocalConfig
 {
-	private static final String INDEX_FILE = "index.dat";
-	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
-	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache.dat";
-	private static final String FOLLOWING_INDEX_FILE = "following_index.dat";
-
-	private final IConfigFileSystem _fileSystem;
-	private final IConnectionFactory _factory;
-	private GlobalPinCache _lazyCache;
-	private IConnection _lazyConnection;
-	private FollowIndex _lazyFollowIndex;
-	private LocalIndex _sharedLocalIndex;
-	private GlobalPrefs _lazySharedPrefs;
-
-	public LocalConfig(IConfigFileSystem fileSystem, IConnectionFactory factory)
-	{
-		_fileSystem = fileSystem;
-		_factory = factory;
-	}
-
 	/**
 	 * Creates a new index, setting it as the shared instance.  Does NOT write to disk.
 	 * 
@@ -44,30 +25,65 @@ public class LocalConfig
 	 * @return The shared index.
 	 * @throws UsageException If there is already a loaded shared index or already one on disk.
 	 */
-	public LocalIndex createEmptyIndex(String ipfsConnectionString, String keyName) throws UsageException
+	public static LocalConfig createNewConfig(IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectionString, String keyName) throws UsageException
 	{
-		boolean didCreate = _fileSystem.createConfigDirectory();
+		boolean didCreate = fileSystem.createConfigDirectory();
 		if (!didCreate)
 		{
-			throw new UsageException("Index already exists");
+			throw new UsageException("Config already exists");
 		}
-		_sharedLocalIndex = new LocalIndex(ipfsConnectionString, keyName, null);
-		return _sharedLocalIndex;
+		// Create the instance and populate it with default files.
+		LocalConfig config = new LocalConfig(fileSystem, factory);
+		config.storeSharedIndex(new LocalIndex(ipfsConnectionString, keyName, null));
+		config.storeSharedPrefs(GlobalPrefs.defaultPrefs());
+		config._lazyCache = GlobalPinCache.newCache();
+		config._lazyFollowIndex = FollowIndex.emptyFollowIndex();
+		config.writeBackConfig();
+		return config;
 	}
 
 	/**
 	 * @return The shared LocalIndex instance, lazily loading it if needed.
 	 * @throws UsageException If there is no existing shared index on disk.
 	 */
-	public LocalIndex readExistingSharedIndex() throws UsageException
+	public static LocalConfig loadExistingConfig(IConfigFileSystem fileSystem, IConnectionFactory factory) throws UsageException
+	{
+		boolean didCreate = fileSystem.createConfigDirectory();
+		if (didCreate)
+		{
+			throw new UsageException("Config doesn't exist");
+		}
+		return new LocalConfig(fileSystem, factory);
+	}
+
+
+	private static final String INDEX_FILE = "index.dat";
+	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
+	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache.dat";
+	private static final String FOLLOWING_INDEX_FILE = "following_index.dat";
+
+	private final IConfigFileSystem _fileSystem;
+	private final IConnectionFactory _factory;
+	private LocalIndex _sharedLocalIndex;
+
+	private GlobalPinCache _lazyCache;
+	private IConnection _lazyConnection;
+	private FollowIndex _lazyFollowIndex;
+	private GlobalPrefs _lazySharedPrefs;
+
+	private LocalConfig(IConfigFileSystem fileSystem, IConnectionFactory factory)
+	{
+		_fileSystem = fileSystem;
+		_factory = factory;
+	}
+
+	public LocalIndex readLocalIndex()
 	{
 		if (null == _sharedLocalIndex)
 		{
 			_sharedLocalIndex = _readFile(INDEX_FILE, LocalIndex.class);
-			if (null == _sharedLocalIndex)
-			{
-				throw new UsageException("Index file not found");
-			}
+			// This can never be null.
+			Assert.assertTrue(null != _sharedLocalIndex);
 		}
 		return _sharedLocalIndex;
 	}
@@ -87,13 +103,9 @@ public class LocalConfig
 	{
 		if (null == _lazySharedPrefs)
 		{
-			GlobalPrefs prefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
-			if (null == prefs)
-			{
-				// We want to default the prefs if there isn't one.
-				prefs = GlobalPrefs.defaultPrefs();
-			}
-			_lazySharedPrefs = prefs;
+			_lazySharedPrefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+			// This MUST have been created during default creation.
+			Assert.assertTrue(null != _lazySharedPrefs);
 		}
 		return _lazySharedPrefs;
 	}
@@ -109,22 +121,17 @@ public class LocalConfig
 		if (null == _lazyCache)
 		{
 			InputStream stream = _fileSystem.readConfigFile(GLOBAL_PIN_CACHE_FILE);
-			if (null != stream)
+			// This MUST have been created during default creation.
+			Assert.assertTrue(null != stream);
+			_lazyCache = GlobalPinCache.fromStream(stream);
+			try
 			{
-				_lazyCache = GlobalPinCache.fromStream(stream);
-				try
-				{
-					stream.close();
-				}
-				catch (IOException e)
-				{
-					// Failure on close not expected.
-					throw Assert.unexpected(e);
-				}
+				stream.close();
 			}
-			else
+			catch (IOException e)
 			{
-				_lazyCache = GlobalPinCache.newCache();
+				// Failure on close not expected.
+				throw Assert.unexpected(e);
 			}
 		}
 		return _lazyCache;
@@ -135,22 +142,17 @@ public class LocalConfig
 		if (null == _lazyFollowIndex)
 		{
 			InputStream stream = _fileSystem.readConfigFile(FOLLOWING_INDEX_FILE);
-			if (null != stream)
+			// This MUST have been created during default creation.
+			Assert.assertTrue(null != stream);
+			_lazyFollowIndex = FollowIndex.fromStream(stream);
+			try
 			{
-				_lazyFollowIndex = FollowIndex.fromStream(stream);
-				try
-				{
-					stream.close();
-				}
-				catch (IOException e)
-				{
-					// Failure on close not expected.
-					throw Assert.unexpected(e);
-				}
+				stream.close();
 			}
-			else
+			catch (IOException e)
 			{
-				_lazyFollowIndex = FollowIndex.emptyFollowIndex();
+				// Failure on close not expected.
+				throw Assert.unexpected(e);
 			}
 		}
 		return _lazyFollowIndex;

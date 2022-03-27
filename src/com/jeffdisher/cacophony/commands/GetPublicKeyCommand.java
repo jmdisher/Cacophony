@@ -14,8 +14,8 @@ public record GetPublicKeyCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.getLocalConfig();
-		LocalIndex localIndex = local.readExistingSharedIndex();
+		LocalConfig local = environment.loadExistingConfig();
+		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		local.writeBackConfig();
 		environment.logToConsole("Public Key (other users can follow you with this): " + remote.getPublicKey().toPublicKey());

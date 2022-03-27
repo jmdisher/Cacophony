@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -56,8 +55,7 @@ public class Cacophony {
 					System.err.println("Failed to create directory at " + directory);
 					System.exit(2);
 				}
-				LocalConfig local = new LocalConfig(new RealConfigFileSystem(directory), new RealConnectionFactory());
-				StandardEnvironment executor = new StandardEnvironment(System.out, local);
+				StandardEnvironment executor = new StandardEnvironment(System.out, new RealConfigFileSystem(directory), new RealConnectionFactory());
 				try
 				{
 					command.runInEnvironment(executor);

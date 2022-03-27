@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnection;
@@ -37,10 +36,9 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		LocalConfig config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
 		// For this test, we want to just fake a default config.
-		config.createEmptyIndex(IPFS_HOST, KEY_NAME);
-		StandardEnvironment executor = new StandardEnvironment(System.out, config);
+		executor.createNewConfig(IPFS_HOST, KEY_NAME);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -70,11 +68,11 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
-		LocalIndex finalIndex = config.readExistingSharedIndex();
+		LocalIndex finalIndex = executor.loadExistingConfig().readLocalIndex();
 		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
-		Assert.assertNull(config.readExistingSharedIndex().lastPublishedIndex());
+		Assert.assertNull(finalIndex.lastPublishedIndex());
 	}
 
 	@Test
@@ -87,10 +85,9 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		LocalConfig config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
 		// For this test, we want to just fake a default config.
-		config.createEmptyIndex(IPFS_HOST, KEY_NAME);
-		StandardEnvironment executor = new StandardEnvironment(System.out, config);
+		executor.createNewConfig(IPFS_HOST, KEY_NAME);
 		
 		try {
 			command.runInEnvironment(executor);
@@ -104,8 +101,7 @@ public class TestStartFollowingCommand
 	public void testMissingConfig() throws Throwable
 	{
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		LocalConfig config = new LocalConfig(new MemoryConfigFileSystem(), null);
-		StandardEnvironment executor = new StandardEnvironment(System.out, config);
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(null));
 		
 		// We expect this to fail since there is no LocalIndex.
 		try {

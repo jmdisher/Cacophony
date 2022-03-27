@@ -24,10 +24,10 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.getLocalConfig();
+		LocalConfig local = environment.createNewConfig(ipfs, keyName);
 		IOperationLog log = environment.logOperation("Creating new channel...");
 		// Make sure that there is no local index in this location.
-		LocalIndex index = local.createEmptyIndex(ipfs, keyName);
+		LocalIndex index = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), index.keyName());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
 		

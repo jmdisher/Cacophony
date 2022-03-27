@@ -22,9 +22,9 @@ public record RepublishCommand() implements ICommand
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
 		IOperationLog log = environment.logOperation("Republishing index...");
-		LocalConfig local = environment.getLocalConfig();
+		LocalConfig local = environment.loadExistingConfig();
 		// Get the previously posted index hash.
-		LocalIndex localIndex = local.readExistingSharedIndex();
+		LocalIndex localIndex = local.readLocalIndex();
 		IpfsFile indexHash = localIndex.lastPublishedIndex();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);

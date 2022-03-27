@@ -2,17 +2,23 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.PrintStream;
 
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
+
 
 public class StandardEnvironment implements IEnvironment
 {
 	private final PrintStream _stream;
-	private final LocalConfig _config;
+	private final IConfigFileSystem _fileSystem;
+	private final IConnectionFactory _factory;
 	private int _nextOperationCounter;
+	private LocalConfig _lazyConfig;
 
-	public StandardEnvironment(PrintStream stream, LocalConfig config)
+	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory)
 	{
 		_stream = stream;
-		_config = config;
+		_fileSystem = fileSystem;
+		_factory = factory;
 		_nextOperationCounter = 0;
 	}
 
@@ -39,8 +45,25 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
-	public LocalConfig getLocalConfig()
+	public LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException
 	{
-		return _config;
+		// We cannot create a config if we already loaded one.
+		Assert.assertTrue(null == _lazyConfig);
+		_lazyConfig = LocalConfig.createNewConfig(_fileSystem, _factory, ipfsConnectionString, keyName);
+		// We expect the above to throw if it fails.
+		Assert.assertTrue(null != _lazyConfig);
+		return _lazyConfig;
+	}
+
+	@Override
+	public LocalConfig loadExistingConfig() throws UsageException
+	{
+		if (null == _lazyConfig)
+		{
+			_lazyConfig = LocalConfig.loadExistingConfig(_fileSystem, _factory);
+			// We expect the above to throw if it fails.
+			Assert.assertTrue(null != _lazyConfig);
+		}
+		return _lazyConfig;
 	}
 }

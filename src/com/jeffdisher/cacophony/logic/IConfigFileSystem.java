@@ -15,7 +15,7 @@ public interface IConfigFileSystem
 	/**
 	 * Attempts to create the config directory.
 	 * 
-	 * @return True if it was created, false if it already existed or couldn't be created.
+	 * @return True if it was created or was at least empty, false if it already contained data or couldn't be created.
 	 */
 	boolean createConfigDirectory();
 

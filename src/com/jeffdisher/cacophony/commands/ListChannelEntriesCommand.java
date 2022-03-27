@@ -27,8 +27,8 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.getLocalConfig();
-		LocalIndex localIndex = local.readExistingSharedIndex();
+		LocalConfig local = environment.loadExistingConfig();
+		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
 		IpfsFile rootToLoad = null;

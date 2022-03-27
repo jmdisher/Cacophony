@@ -14,7 +14,7 @@ public record ListFolloweesCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.getLocalConfig();
+		LocalConfig local = environment.loadExistingConfig();
 		FollowIndex followIndex = local.loadFollowIndex();
 		for(FollowRecord record : followIndex)
 		{

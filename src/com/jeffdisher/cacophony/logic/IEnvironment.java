@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
+import com.jeffdisher.cacophony.types.UsageException;
+
 
 /**
  * The interface provided when running commands, allowing them to access logging facilities and create/load
@@ -17,5 +19,20 @@ public interface IEnvironment
 
 	void logToConsole(String message);
 	IOperationLog logOperation(String openingMessage);
-	LocalConfig getLocalConfig();
+
+	/**
+	 * Called when a config needs to be created for the first time.
+	 * 
+	 * @return The config object, with initial/empty data.
+	 * @throws UsageException If the config directory already existed or couldn't be created.
+	 */
+	LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException;
+
+	/**
+	 * Called when an existing config should be loaded from disk.
+	 * 
+	 * @return The config object.
+	 * @throws UsageException If the config directory is missing or b
+	 */
+	LocalConfig loadExistingConfig() throws UsageException;
 }

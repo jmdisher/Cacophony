@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -26,15 +25,17 @@ public class MockUserNode
 	private static final String IPFS_HOST = "ipfsHost";
 
 	private final MockConnection _sharedConnection;
-	private final LocalConfig _config;
+	private final MemoryConfigFileSystem _fileSystem;
+	private final MockConnectionFactory _factory;
 	private final StandardEnvironment _executor;
 
 	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
 	{
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
-		_config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(_sharedConnection));
-		_executor = new StandardEnvironment(System.out, _config);
+		_fileSystem = new MemoryConfigFileSystem();
+		_factory = new MockConnectionFactory(_sharedConnection);
+		_executor = new StandardEnvironment(System.out, _fileSystem, _factory);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -56,7 +57,7 @@ public class MockUserNode
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream), _config);
+			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory);
 		}
 		command.runInEnvironment(executor);
 	}
@@ -73,7 +74,7 @@ public class MockUserNode
 
 	public LocalIndex getLocalStoredIndex() throws UsageException
 	{
-		return _config.readExistingSharedIndex();
+		return _executor.loadExistingConfig().readLocalIndex();
 	}
 
 	public boolean isPinnedLocally(IpfsFile file)
@@ -81,13 +82,13 @@ public class MockUserNode
 		return _sharedConnection.isPinned(file);
 	}
 
-	public boolean isInPinCache(IpfsFile file)
+	public boolean isInPinCache(IpfsFile file) throws UsageException
 	{
-		return _config.loadGlobalPinCache().isCached(file);
+		return _executor.loadExistingConfig().loadGlobalPinCache().isCached(file);
 	}
 
-	public GlobalPrefs readPrefs()
+	public GlobalPrefs readPrefs() throws UsageException
 	{
-		return _config.readSharedPrefs();
+		return _executor.loadExistingConfig().readSharedPrefs();
 	}
 }
