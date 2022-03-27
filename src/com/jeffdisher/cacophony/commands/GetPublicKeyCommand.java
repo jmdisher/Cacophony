@@ -17,6 +17,7 @@ public record GetPublicKeyCommand() implements ICommand
 		LocalConfig local = environment.getLocalConfig();
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
+		local.writeBackConfig();
 		environment.logToConsole("Public Key (other users can follow you with this): " + remote.getPublicKey().toPublicKey());
 	}
 }

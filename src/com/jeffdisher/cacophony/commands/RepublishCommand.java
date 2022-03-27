@@ -32,6 +32,7 @@ public record RepublishCommand() implements ICommand
 		// Republish the index.
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		remote.publishIndex(indexHash);
+		local.writeBackConfig();
 		log.finish("Republish completed!");
 	}
 }

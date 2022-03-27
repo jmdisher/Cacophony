@@ -108,6 +108,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			// Update the root in our cache.
 			followIndex.updateFollowee(_publicKey, indexRoot, System.currentTimeMillis());
 		}
+		local.writeBackConfig();
 		log.finish("Refresh completed!");
 	}
 

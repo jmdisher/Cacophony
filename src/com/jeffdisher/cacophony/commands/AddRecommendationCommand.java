@@ -61,6 +61,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		// Remove the previous index and recommendations from cache.
 		cache.removeFromThisCache(originalRecommendations);
 		cache.removeFromThisCache(oldRootHash);
+		local.writeBackConfig();
 		log.finish("Now recommending: " + _channelPublicKey);
 	}
 }

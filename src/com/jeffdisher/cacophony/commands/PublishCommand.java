@@ -99,6 +99,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		// Remove the old root.
 		cache.removeFromThisCache(rootToLoad);
+		local.writeBackConfig();
 		log.finish("Publish completed!");
 	}
 }

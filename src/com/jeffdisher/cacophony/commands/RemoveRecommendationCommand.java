@@ -61,6 +61,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		// Remove the previous file from cache.
 		cache.removeFromThisCache(originalRecommendations);
 		cache.removeFromThisCache(rootToLoad);
+		local.writeBackConfig();
 		log.finish("No longer recommending: " + _channelPublicKey);
 	}
 }

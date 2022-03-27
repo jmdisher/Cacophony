@@ -70,6 +70,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
+		local.writeBackConfig();
 		log.finish("Cleanup complete.  No longer following " + _publicKey);
 	}
 }

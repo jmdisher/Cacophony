@@ -130,22 +130,6 @@ public class LocalConfig
 		return _lazyCache;
 	}
 
-	public void storeGlobalPinCache()
-	{
-		if (null != _lazyCache)
-		{
-			try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
-			{
-				_lazyCache.writeToStream(stream);
-			}
-			catch (IOException e)
-			{
-				// Failure not expected.
-				throw Assert.unexpected(e);
-			}
-		}
-	}
-
 	public FollowIndex loadFollowIndex()
 	{
 		if (null == _lazyFollowIndex)
@@ -172,22 +156,6 @@ public class LocalConfig
 		return _lazyFollowIndex;
 	}
 
-	public void storeFollowIndex()
-	{
-		if (null != _lazyFollowIndex)
-		{
-			try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
-			{
-				_lazyFollowIndex.writeToStream(stream);
-			}
-			catch (IOException e)
-			{
-				// Failure not expected.
-				throw Assert.unexpected(e);
-			}
-		}
-	}
-
 	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
 		_verifySharedConnections();
@@ -202,6 +170,34 @@ public class LocalConfig
 	public String getConfigDirectoryFullPath()
 	{
 		return _fileSystem.getDirectoryForReporting();
+	}
+
+	public void writeBackConfig()
+	{
+		if (null != _lazyCache)
+		{
+			try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
+			{
+				_lazyCache.writeToStream(stream);
+			}
+			catch (IOException e)
+			{
+				// Failure not expected.
+				throw Assert.unexpected(e);
+			}
+		}
+		if (null != _lazyFollowIndex)
+		{
+			try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
+			{
+				_lazyFollowIndex.writeToStream(stream);
+			}
+			catch (IOException e)
+			{
+				// Failure not expected.
+				throw Assert.unexpected(e);
+			}
+		}
 	}
 
 

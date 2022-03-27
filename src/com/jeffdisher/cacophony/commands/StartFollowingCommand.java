@@ -82,6 +82,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPrefs prefs = local.readSharedPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
 		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
+		local.writeBackConfig();
 		log.finish("Follow successful!");
 	}
 

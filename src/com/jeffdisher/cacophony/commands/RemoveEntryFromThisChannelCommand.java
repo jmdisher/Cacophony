@@ -89,6 +89,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		// Remove the old root.
 		cache.removeFromThisCache(rootToLoad);
+		local.writeBackConfig();
 		log.finish("Entry removed: " + _elementCid);
 	}
 }

@@ -71,6 +71,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		// Remove old root.
 		cache.removeFromThisCache(rootToLoad);
+		local.writeBackConfig();
 		log.finish("Update completed!");
 	}
 }

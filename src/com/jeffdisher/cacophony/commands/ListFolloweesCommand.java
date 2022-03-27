@@ -20,5 +20,6 @@ public record ListFolloweesCommand() implements ICommand
 		{
 			environment.logToConsole("Following: " + record.publicKey().toPublicKey());
 		}
+		local.writeBackConfig();
 	}
 }

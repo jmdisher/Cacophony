@@ -156,6 +156,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		generatedStream.println();
 		generatedStream.close();
 		
+		local.writeBackConfig();
 		log.finish("HTML interface generation complete!  Point your browser at: " + new File(_directory, "index.html").toURI());
 	}
 

@@ -60,6 +60,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Create the new local index.
 		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(remote, local, hashDescription, hashRecommendations, hashRecords);
 		cache.uploadedToThisCache(indexHash);
+		local.writeBackConfig();
 		log.finish("Channel created and published to Cacophony!");
 	}
 }
