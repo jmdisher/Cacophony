@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.data.local.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;

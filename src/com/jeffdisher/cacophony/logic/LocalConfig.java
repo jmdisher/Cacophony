@@ -6,10 +6,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
-import com.jeffdisher.cacophony.data.local.FollowIndex;
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -57,10 +57,10 @@ public class LocalConfig
 	}
 
 
-	private static final String INDEX_FILE = "index.dat";
-	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
-	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache.dat";
-	private static final String FOLLOWING_INDEX_FILE = "following_index.dat";
+	private static final String INDEX_FILE = "index1.dat";
+	private static final String GLOBAL_PREFS_FILE = "global_prefs1.dat";
+	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache1.dat";
+	private static final String FOLLOWING_INDEX_FILE = "following_index1.dat";
 
 	private final IConfigFileSystem _fileSystem;
 	private final IConnectionFactory _factory;

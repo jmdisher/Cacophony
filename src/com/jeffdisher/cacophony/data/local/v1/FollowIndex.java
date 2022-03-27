@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local;
+package com.jeffdisher.cacophony.data.local.v1;
 
 import java.io.IOException;
 import java.io.InputStream;

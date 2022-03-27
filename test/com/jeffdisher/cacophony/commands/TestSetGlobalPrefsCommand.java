@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.commands;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 

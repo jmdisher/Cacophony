@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.net.URL;
 
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;

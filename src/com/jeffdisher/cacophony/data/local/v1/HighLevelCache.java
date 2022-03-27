@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local;
+package com.jeffdisher.cacophony.data.local.v1;
 
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;

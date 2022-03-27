@@ -6,7 +6,7 @@ import java.io.ByteArrayOutputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
