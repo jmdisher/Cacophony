@@ -1,12 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 
 import com.jeffdisher.cacophony.data.local.FollowIndex;
 import com.jeffdisher.cacophony.data.local.GlobalPinCache;
@@ -24,7 +22,7 @@ public class LocalConfig implements ILocalConfig
 	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache.dat";
 	private static final String FOLLOWING_INDEX_FILE = "following_index.dat";
 
-	private final File _directory;
+	private final IConfigFileSystem _fileSystem;
 	private final IConnectionFactory _factory;
 	private GlobalPinCache _lazyCache;
 	private IConnection _lazyConnection;
@@ -32,17 +30,17 @@ public class LocalConfig implements ILocalConfig
 	private LocalIndex _sharedLocalIndex;
 	private GlobalPrefs _lazySharedPrefs;
 
-	public LocalConfig(File directory, IConnectionFactory factory)
+	public LocalConfig(IConfigFileSystem fileSystem, IConnectionFactory factory)
 	{
-		_directory = directory;
+		_fileSystem = fileSystem;
 		_factory = factory;
 	}
 
 	@Override
 	public LocalIndex createEmptyIndex(String ipfsConnectionString, String keyName) throws UsageException
 	{
-		File indexFile = new File(_directory, INDEX_FILE);
-		if ((null != _sharedLocalIndex) || indexFile.exists())
+		boolean didCreate = _fileSystem.createConfigDirectory();
+		if (!didCreate)
 		{
 			throw new UsageException("Index already exists");
 		}
@@ -99,21 +97,17 @@ public class LocalConfig implements ILocalConfig
 	{
 		if (null == _lazyCache)
 		{
-			File file = new File(_directory, GLOBAL_PIN_CACHE_FILE);
-			if (file.exists())
+			InputStream stream = _fileSystem.readConfigFile(GLOBAL_PIN_CACHE_FILE);
+			if (null != stream)
 			{
-				try (FileInputStream stream = new FileInputStream(file))
+				_lazyCache = GlobalPinCache.fromStream(stream);
+				try
 				{
-					_lazyCache = GlobalPinCache.fromStream(stream);
-				}
-				catch (FileNotFoundException e)
-				{
-					// We just checked this so it can't happen.
-					throw Assert.unexpected(e);
+					stream.close();
 				}
 				catch (IOException e)
 				{
-					// We don't expect this.
+					// Failure on close not expected.
 					throw Assert.unexpected(e);
 				}
 			}
@@ -129,19 +123,13 @@ public class LocalConfig implements ILocalConfig
 	{
 		if (null != _lazyCache)
 		{
-			File indexFile = new File(_directory, GLOBAL_PIN_CACHE_FILE);
-			try (FileOutputStream stream = new FileOutputStream(indexFile))
+			try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
 			{
 				_lazyCache.writeToStream(stream);
 			}
-			catch (FileNotFoundException e)
-			{
-				// We don't expect this.
-				throw Assert.unexpected(e);
-			}
 			catch (IOException e)
 			{
-				// We don't expect this.
+				// Failure not expected.
 				throw Assert.unexpected(e);
 			}
 		}
@@ -152,21 +140,17 @@ public class LocalConfig implements ILocalConfig
 	{
 		if (null == _lazyFollowIndex)
 		{
-			File file = new File(_directory, FOLLOWING_INDEX_FILE);
-			if (file.exists())
+			InputStream stream = _fileSystem.readConfigFile(FOLLOWING_INDEX_FILE);
+			if (null != stream)
 			{
-				try (FileInputStream stream = new FileInputStream(file))
+				_lazyFollowIndex = FollowIndex.fromStream(stream);
+				try
 				{
-					_lazyFollowIndex = FollowIndex.fromStream(stream);
-				}
-				catch (FileNotFoundException e)
-				{
-					// We just checked this so it can't happen.
-					throw Assert.unexpected(e);
+					stream.close();
 				}
 				catch (IOException e)
 				{
-					// We don't expect this.
+					// Failure on close not expected.
 					throw Assert.unexpected(e);
 				}
 			}
@@ -182,19 +166,13 @@ public class LocalConfig implements ILocalConfig
 	{
 		if (null != _lazyFollowIndex)
 		{
-			File indexFile = new File(_directory, FOLLOWING_INDEX_FILE);
-			try (FileOutputStream stream = new FileOutputStream(indexFile))
+			try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
 			{
 				_lazyFollowIndex.writeToStream(stream);
 			}
-			catch (FileNotFoundException e)
-			{
-				// We don't expect this.
-				throw Assert.unexpected(e);
-			}
 			catch (IOException e)
 			{
-				// We don't expect this.
+				// Failure not expected.
 				throw Assert.unexpected(e);
 			}
 		}
@@ -210,49 +188,41 @@ public class LocalConfig implements ILocalConfig
 	@Override
 	public String getConfigDirectoryFullPath()
 	{
-		return _directory.getAbsolutePath();
+		return _fileSystem.getDirectoryForReporting();
 	}
 
 
 	private <T> T _readFile(String fileName, Class<T> clazz)
 	{
-		File indexFile = new File(_directory, fileName);
 		T object = null;
-		try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(indexFile)))
+		InputStream rawStream = _fileSystem.readConfigFile(fileName);
+		if (null != rawStream)
 		{
-			try
+			try (ObjectInputStream stream = new ObjectInputStream(rawStream))
 			{
-				object = clazz.cast(stream.readObject());
+				try
+				{
+					object = clazz.cast(stream.readObject());
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw Assert.unexpected(e);
+				}
 			}
-			catch (ClassNotFoundException e)
+			catch (IOException e)
 			{
+				// We don't expect this.
 				throw Assert.unexpected(e);
 			}
-		}
-		catch (FileNotFoundException e)
-		{
-			// This is acceptable and we just return null - means there is no data.
-			object = null;
-		}
-		catch (IOException e)
-		{
-			// We don't expect this.
-			throw Assert.unexpected(e);
 		}
 		return object;
 	}
 
 	private <T> void _storeFile(String fileName, T object)
 	{
-		File indexFile = new File(_directory, fileName);
-		try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(indexFile)))
+		try (ObjectOutputStream stream = new ObjectOutputStream(_fileSystem.writeConfigFile(fileName)))
 		{
 			stream.writeObject(object);
-		}
-		catch (FileNotFoundException e)
-		{
-			// We don't expect this.
-			throw Assert.unexpected(e);
 		}
 		catch (IOException e)
 		{

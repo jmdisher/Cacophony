@@ -10,10 +10,12 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 /**
@@ -23,16 +25,16 @@ public class MockUserNode
 {
 	private static final String IPFS_HOST = "ipfsHost";
 
-	private final StandardEnvironment _executor;
 	private final MockConnection _sharedConnection;
-	private final MockLocalConfig _localActions;
+	private final LocalConfig _config;
+	private final StandardEnvironment _executor;
 
 	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
 	{
 		_executor = new StandardEnvironment(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
-		_localActions = new MockLocalConfig(null, null, null, new MockConnectionFactory(_sharedConnection));
+		_config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(_sharedConnection));
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -43,9 +45,9 @@ public class MockUserNode
 		stream.close();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
-		createChannel.runInEnvironment(_executor, _localActions);
+		createChannel.runInEnvironment(_executor, _config);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
-		updateDescription.runInEnvironment(_executor, _localActions);
+		updateDescription.runInEnvironment(_executor, _config);
 	}
 
 	public void runCommand(OutputStream captureStream, ICommand command) throws Throwable
@@ -56,7 +58,7 @@ public class MockUserNode
 		{
 			executor = new StandardEnvironment(new PrintStream(captureStream));
 		}
-		command.runInEnvironment(executor, _localActions);
+		command.runInEnvironment(executor, _config);
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException
@@ -69,9 +71,9 @@ public class MockUserNode
 		return _sharedConnection.resolve(key);
 	}
 
-	public LocalIndex getLocalStoredIndex()
+	public LocalIndex getLocalStoredIndex() throws UsageException
 	{
-		return _localActions.getStoredIndex();
+		return _config.readExistingSharedIndex();
 	}
 
 	public boolean isPinnedLocally(IpfsFile file)
@@ -81,11 +83,11 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file)
 	{
-		return _localActions.loadGlobalPinCache().isCached(file);
+		return _config.loadGlobalPinCache().isCached(file);
 	}
 
 	public GlobalPrefs readPrefs()
 	{
-		return _localActions.readSharedPrefs();
+		return _config.readSharedPrefs();
 	}
 }

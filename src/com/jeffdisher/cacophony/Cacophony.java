@@ -6,6 +6,7 @@ import java.io.IOException;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
@@ -56,7 +57,7 @@ public class Cacophony {
 					System.exit(2);
 				}
 				StandardEnvironment executor = new StandardEnvironment(System.out);
-				LocalConfig local = new LocalConfig(directory, new RealConnectionFactory());
+				LocalConfig local = new LocalConfig(new RealConfigFileSystem(directory), new RealConnectionFactory());
 				try
 				{
 					command.runInEnvironment(executor, local);

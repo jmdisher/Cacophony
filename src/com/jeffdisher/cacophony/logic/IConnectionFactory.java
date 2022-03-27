@@ -4,7 +4,8 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 
 
 /**
- * Interface to create the IConnection objects as we unify application and testing config code.
+ * Interface to create the IConnection objects since we now use a common config object for the real system and unit
+ * tests.
  */
 public interface IConnectionFactory
 {
