@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 
 
 /**
@@ -33,6 +34,7 @@ public interface IEnvironment
 	 * 
 	 * @return The config object.
 	 * @throws UsageException If the config directory is missing or b
+	 * @throws VersionException The version file is missing or an unknown version.
 	 */
-	LocalConfig loadExistingConfig() throws UsageException;
+	LocalConfig loadExistingConfig() throws UsageException, VersionException;
 }

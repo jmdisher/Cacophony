@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -34,6 +35,15 @@ public class LocalConfig
 		}
 		// Create the instance and populate it with default files.
 		LocalConfig config = new LocalConfig(fileSystem, factory);
+		try (OutputStream versionStream = fileSystem.writeConfigFile(VERSION_FILE))
+		{
+			versionStream.write(new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
+		}
+		catch (IOException e)
+		{
+			// We don't really have a fall-back for these exceptions.
+			throw Assert.unexpected(e);
+		}
 		config.storeSharedIndex(new LocalIndex(ipfsConnectionString, keyName, null));
 		config.storeSharedPrefs(GlobalPrefs.defaultPrefs());
 		config._lazyCache = GlobalPinCache.newCache();
@@ -45,18 +55,44 @@ public class LocalConfig
 	/**
 	 * @return The shared LocalIndex instance, lazily loading it if needed.
 	 * @throws UsageException If there is no existing shared index on disk.
+	 * @throws VersionException The version file is missing or an unknown version.
 	 */
-	public static LocalConfig loadExistingConfig(IConfigFileSystem fileSystem, IConnectionFactory factory) throws UsageException
+	public static LocalConfig loadExistingConfig(IConfigFileSystem fileSystem, IConnectionFactory factory) throws UsageException, VersionException
 	{
 		boolean didCreate = fileSystem.createConfigDirectory();
 		if (didCreate)
 		{
 			throw new UsageException("Config doesn't exist");
 		}
+		InputStream versionStream = fileSystem.readConfigFile(VERSION_FILE);
+		if (null == versionStream)
+		{
+			throw new VersionException("Local config version file missing");
+		}
+		try (versionStream)
+		{
+			byte[] data = versionStream.readAllBytes();
+			if ((1 == data.length) && (LOCAL_CONFIG_VERSION_NUMBER == data[0]))
+			{
+				// This is a version we can understand.
+			}
+			else
+			{
+				throw new VersionException("Local config is unknown version");
+			}
+		}
+		catch (IOException e)
+		{
+			// We don't really have a fall-back for these exceptions.
+			throw Assert.unexpected(e);
+		}
+		
 		return new LocalConfig(fileSystem, factory);
 	}
 
 
+	private static final String VERSION_FILE = "version";
+	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 1;
 	private static final String INDEX_FILE = "index1.dat";
 	private static final String GLOBAL_PREFS_FILE = "global_prefs1.dat";
 	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache1.dat";

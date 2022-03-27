@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 
 
 /**
@@ -72,7 +73,7 @@ public class MockUserNode
 		return _sharedConnection.resolve(key);
 	}
 
-	public LocalIndex getLocalStoredIndex() throws UsageException
+	public LocalIndex getLocalStoredIndex() throws UsageException, VersionException
 	{
 		return _executor.loadExistingConfig().readLocalIndex();
 	}
@@ -82,12 +83,12 @@ public class MockUserNode
 		return _sharedConnection.isPinned(file);
 	}
 
-	public boolean isInPinCache(IpfsFile file) throws UsageException
+	public boolean isInPinCache(IpfsFile file) throws UsageException, VersionException
 	{
 		return _executor.loadExistingConfig().loadGlobalPinCache().isCached(file);
 	}
 
-	public GlobalPrefs readPrefs() throws UsageException
+	public GlobalPrefs readPrefs() throws UsageException, VersionException
 	{
 		return _executor.loadExistingConfig().readSharedPrefs();
 	}
