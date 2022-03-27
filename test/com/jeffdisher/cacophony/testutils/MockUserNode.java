@@ -30,7 +30,7 @@ public class MockUserNode
 		_executor = new StandardEnvironment(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
-		_localActions = new MockLocalConfig(null, null, null, _sharedConnection);
+		_localActions = new MockLocalConfig(null, null, null, new MockConnectionFactory(_sharedConnection));
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable

@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
+import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockLocalConfig;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -36,7 +37,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		MockLocalConfig localActions = new MockLocalConfig(IPFS_HOST, KEY_NAME, null, sharedConnection);
+		MockLocalConfig localActions = new MockLocalConfig(IPFS_HOST, KEY_NAME, null, new MockConnectionFactory(sharedConnection));
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -84,7 +85,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		MockLocalConfig localActions = new MockLocalConfig(IPFS_HOST, KEY_NAME, null, sharedConnection);
+		MockLocalConfig localActions = new MockLocalConfig(IPFS_HOST, KEY_NAME, null, new MockConnectionFactory(sharedConnection));
 		
 		try {
 			command.runInEnvironment(executor, localActions);

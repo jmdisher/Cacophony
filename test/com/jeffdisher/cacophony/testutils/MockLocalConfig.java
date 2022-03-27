@@ -11,7 +11,9 @@ import com.jeffdisher.cacophony.data.local.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.logic.ILocalConfig;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -22,19 +24,20 @@ public class MockLocalConfig implements ILocalConfig
 	private final String _ipfsHost;
 	private final String _keyName;
 	private final IpfsFile _publishedHash;
-	private final MockConnection _sharedConnection;
+	private final IConnectionFactory _factory;
 	private final GlobalPinCache _pinCache;
 	private final FollowIndex _followIndex;
 
+	private IConnection _sharedConnection;
 	private LocalIndex _storedIndex;
 	private GlobalPrefs _prefs;
 
-	public MockLocalConfig(String ipfsHost, String keyName, IpfsFile publishedHash, MockConnection sharedConnection)
+	public MockLocalConfig(String ipfsHost, String keyName, IpfsFile publishedHash, IConnectionFactory factory)
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
 		_publishedHash = publishedHash;
-		_sharedConnection = sharedConnection;
+		_factory = factory;
 		_pinCache = GlobalPinCache.newCache();
 		_followIndex = FollowIndex.emptyFollowIndex();
 		// For our tests, we specify a smaller maximum cache size (100 bytes) so that we can test it being constrained.
@@ -97,8 +100,12 @@ public class MockLocalConfig implements ILocalConfig
 	}
 
 	@Override
-	public IConnection getSharedConnection()
+	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
+		if (null == _sharedConnection)
+		{
+			_sharedConnection = _factory.buildConnection(_ipfsHost);
+		}
 		return _sharedConnection;
 	}
 
