@@ -15,7 +15,6 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -35,34 +34,32 @@ public class TestCacheSaturation
 	@Test
 	public void testIncrementalAddingOneFollowee() throws Throwable
 	{
-		StandardEnvironment executor = new StandardEnvironment(System.out);
-		
 		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
 		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
 		
-		user0.createChannel(executor, 0);
-		user1.createChannel(executor, 1);
+		user0.createChannel(0);
+		user1.createChannel(1);
 		
 		byte[] video0 = "video 0".getBytes();
 		byte[] video1 = "video 1".getBytes();
 		byte[] video2 = "video 2".getBytes();
 		
 		// Create one entry before the follow.
-		user0.publish(executor, "entry 0", "thumb 0".getBytes(), video0);
-		user1.followUser(executor, user0);
+		user0.publish("entry 0", "thumb 0".getBytes(), video0);
+		user1.followUser(user0);
 		Assert.assertEquals(1, user1.loadStreamForFollowee(user0).size());
 		Assert.assertTrue(user1.isDataPresent(video0));
 		
 		// Now, add another element, poll, and make sure it is present.
-		user0.publish(executor, "entry 1", "thumb 1".getBytes(), video1);
-		user1.pollForUpdates(executor, user0);
+		user0.publish("entry 1", "thumb 1".getBytes(), video1);
+		user1.pollForUpdates(user0);
 		Assert.assertEquals(2, user1.loadStreamForFollowee(user0).size());
 		Assert.assertTrue(user1.isDataPresent(video0));
 		Assert.assertTrue(user1.isDataPresent(video1));
 		
 		// Do this one more time, since now this will be forced to evict something.
-		user0.publish(executor, "entry 2", "thumb 2".getBytes(), video2);
-		user1.pollForUpdates(executor, user0);
+		user0.publish("entry 2", "thumb 2".getBytes(), video2);
+		user1.pollForUpdates(user0);
 		Assert.assertEquals(3, user1.loadStreamForFollowee(user0).size());
 		Assert.assertTrue(user1.isDataPresent(video0));
 		Assert.assertTrue(user1.isDataPresent(video1));
@@ -72,13 +69,11 @@ public class TestCacheSaturation
 	@Test
 	public void testIncrementalSaturationOneFollowee() throws Throwable
 	{
-		StandardEnvironment executor = new StandardEnvironment(System.out);
-		
 		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
 		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
 		
-		user0.createChannel(executor, 0);
-		user1.createChannel(executor, 1);
+		user0.createChannel(0);
+		user1.createChannel(1);
 		
 		byte[] video0 = new byte[40];
 		byte[] video1 = new byte[40];
@@ -86,21 +81,21 @@ public class TestCacheSaturation
 		byte[] video2 = new byte[40];
 		video2[0] = 2;
 		// Create one entry before the follow.
-		user0.publish(executor, "entry 0", "thumb 0".getBytes(), video0);
-		user1.followUser(executor, user0);
+		user0.publish("entry 0", "thumb 0".getBytes(), video0);
+		user1.followUser(user0);
 		Assert.assertEquals(1, user1.loadStreamForFollowee(user0).size());
 		Assert.assertTrue(user1.isDataPresent(video0));
 		
 		// Now, add another element, poll, and make sure it is present.
-		user0.publish(executor, "entry 1", "thumb 1".getBytes(), video1);
-		user1.pollForUpdates(executor, user0);
+		user0.publish("entry 1", "thumb 1".getBytes(), video1);
+		user1.pollForUpdates(user0);
 		Assert.assertEquals(2, user1.loadStreamForFollowee(user0).size());
 		Assert.assertTrue(user1.isDataPresent(video0));
 		Assert.assertTrue(user1.isDataPresent(video1));
 		
 		// Do this one more time, since now this will be forced to evict something.
-		user0.publish(executor, "entry 2", "thumb 2".getBytes(), video2);
-		user1.pollForUpdates(executor, user0);
+		user0.publish("entry 2", "thumb 2".getBytes(), video2);
+		user1.pollForUpdates(user0);
 		Assert.assertEquals(3, user1.loadStreamForFollowee(user0).size());
 		// We know that the most recent video will be kept so one of the others must be gone.
 		Assert.assertNotEquals(user1.isDataPresent(video0), user1.isDataPresent(video1));
@@ -110,13 +105,11 @@ public class TestCacheSaturation
 	@Test
 	public void testInitialSaturationOneFollowee() throws Throwable
 	{
-		StandardEnvironment executor = new StandardEnvironment(System.out);
-		
 		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
 		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
 		
-		user0.createChannel(executor, 0);
-		user1.createChannel(executor, 1);
+		user0.createChannel(0);
+		user1.createChannel(1);
 		
 		byte[] video0 = new byte[40];
 		byte[] video1 = new byte[40];
@@ -124,10 +117,10 @@ public class TestCacheSaturation
 		byte[] video2 = new byte[40];
 		video2[0] = 2;
 		// Create one entry before the follow.
-		user0.publish(executor, "entry 0", "thumb 0".getBytes(), video0);
-		user0.publish(executor, "entry 1", "thumb 1".getBytes(), video1);
-		user0.publish(executor, "entry 2", "thumb 2".getBytes(), video2);
-		user1.followUser(executor, user0);
+		user0.publish("entry 0", "thumb 0".getBytes(), video0);
+		user0.publish("entry 1", "thumb 1".getBytes(), video1);
+		user0.publish("entry 2", "thumb 2".getBytes(), video2);
+		user1.followUser(user0);
 		// We know that the most recent video will always be fetched and at most one of the others.
 		Assert.assertFalse(user1.isDataPresent(video0) && user1.isDataPresent(video1));
 		Assert.assertTrue(user1.isDataPresent(video2));
@@ -148,7 +141,7 @@ public class TestCacheSaturation
 			_user = new MockUserNode(keyName, publicKey, peer);
 		}
 		
-		public void createChannel(StandardEnvironment executor, int userNumber) throws Throwable
+		public void createChannel(int userNumber) throws Throwable
 		{
 			String name = "User " + userNumber;
 			String description = "Description " + userNumber;
@@ -157,13 +150,13 @@ public class TestCacheSaturation
 			_user.createChannel(_keyName, name, description, userPicData);
 		}
 		
-		public void followUser(StandardEnvironment executor, User followee) throws Throwable
+		public void followUser(User followee) throws Throwable
 		{
 			StartFollowingCommand startFollowingCommand = new StartFollowingCommand(followee._publicKey);
-			_user.runCommand(executor, startFollowingCommand);
+			_user.runCommand(null, startFollowingCommand);
 		}
 		
-		public void publish(StandardEnvironment executor, String name, byte[] thumbnail, byte[] video) throws Throwable
+		public void publish(String name, byte[] thumbnail, byte[] video) throws Throwable
 		{
 			File thumbnailFile = FOLDER.newFile();
 			FileOutputStream dataStream = new FileOutputStream(thumbnailFile);
@@ -179,13 +172,13 @@ public class TestCacheSaturation
 					new ElementSubCommand("image/jpeg", thumbnailFile, 0, 0, true),
 			};
 			PublishCommand publishCommand = new PublishCommand(name, "description", null, elements);
-			_user.runCommand(executor, publishCommand);
+			_user.runCommand(null, publishCommand);
 		}
 		
-		public void pollForUpdates(StandardEnvironment executor, User followee) throws Throwable
+		public void pollForUpdates(User followee) throws Throwable
 		{
 			RefreshFolloweeCommand command = new RefreshFolloweeCommand(followee._publicKey);
-			_user.runCommand(executor, command);
+			_user.runCommand(null, command);
 		}
 		
 		public List<String> loadStreamForFollowee(User followee) throws Throwable

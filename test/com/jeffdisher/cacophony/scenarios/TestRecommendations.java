@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.scenarios;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -11,7 +10,6 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
@@ -41,11 +39,9 @@ public class TestRecommendations
 		
 		// List the recommendations - make sure we find the key.
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListRecommendationsCommand listCommand = new ListRecommendationsCommand(null);
-		user1.runCommand(executor, listCommand);
+		user1.runCommand(captureStream, listCommand);
 		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n\t" + PUBLIC_KEY2.toPublicKey() + "\n", new String(captureStream.toByteArray()));
-		executor = null;
 		
 		// Remove the recommendation.
 		RemoveRecommendationCommand removeCommand = new RemoveRecommendationCommand(PUBLIC_KEY2);
@@ -53,9 +49,8 @@ public class TestRecommendations
 		
 		// List the recommendations - make sure we see an empty list.
 		captureStream = new ByteArrayOutputStream();
-		executor = new StandardEnvironment(new PrintStream(captureStream));
 		listCommand = new ListRecommendationsCommand(null);
-		user1.runCommand(executor, listCommand);
+		user1.runCommand(captureStream, listCommand);
 		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n", new String(captureStream.toByteArray()));
 	}
 

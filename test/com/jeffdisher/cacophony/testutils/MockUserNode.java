@@ -2,6 +2,8 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -46,9 +48,15 @@ public class MockUserNode
 		updateDescription.runInEnvironment(_executor, _localActions);
 	}
 
-	public void runCommand(StandardEnvironment specialExecutor, ICommand command) throws Throwable
+	public void runCommand(OutputStream captureStream, ICommand command) throws Throwable
 	{
-		command.runInEnvironment((null != specialExecutor) ? specialExecutor : _executor, _localActions);
+		StandardEnvironment executor = _executor;
+		// See if we want to override the output capture.
+		if (null != captureStream)
+		{
+			executor = new StandardEnvironment(new PrintStream(captureStream));
+		}
+		command.runInEnvironment(executor, _localActions);
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException

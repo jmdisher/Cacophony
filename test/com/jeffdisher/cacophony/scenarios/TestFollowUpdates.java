@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -21,7 +20,6 @@ import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -76,9 +74,8 @@ public class TestFollowUpdates
 		user2.runCommand(null, startFollowingCommand);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
-		user2.runCommand(executor, listCommand);
+		user2.runCommand(captureStream, listCommand);
 		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
 		
@@ -127,12 +124,10 @@ public class TestFollowUpdates
 		user2.runCommand(null, startFollowingCommand);
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
-		user2.runCommand(executor, listCommand);
+		user2.runCommand(captureStream, listCommand);
 		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
-		executor = null;
 		
 		// Verify that these elements are now in User2's data store.
 		byte[] verify = user2.loadDataFromNode(videoFileHash);
@@ -193,9 +188,8 @@ public class TestFollowUpdates
 		// User2:  Follow and verify the data is loaded.
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(captureStream));
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
-		user2.runCommand(executor, listCommand);
+		user2.runCommand(captureStream, listCommand);
 		String capturedString = new String(captureStream.toByteArray());
 		
 		IpfsFile image1FileHash = MockConnection.generateHash("IMAGE 1\n".getBytes());
