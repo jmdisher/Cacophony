@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public class LocalConfig implements ILocalConfig
+public class LocalConfig
 {
 	private static final String INDEX_FILE = "index.dat";
 	private static final String GLOBAL_PREFS_FILE = "global_prefs.dat";
@@ -36,7 +36,14 @@ public class LocalConfig implements ILocalConfig
 		_factory = factory;
 	}
 
-	@Override
+	/**
+	 * Creates a new index, setting it as the shared instance.  Does NOT write to disk.
+	 * 
+	 * @param ipfsConnectionString The IPFS connection string we will use for our connections.
+	 * @param keyName The name of the IPFS key to use when publishing root elements.
+	 * @return The shared index.
+	 * @throws UsageException If there is already a loaded shared index or already one on disk.
+	 */
 	public LocalIndex createEmptyIndex(String ipfsConnectionString, String keyName) throws UsageException
 	{
 		boolean didCreate = _fileSystem.createConfigDirectory();
@@ -48,7 +55,10 @@ public class LocalConfig implements ILocalConfig
 		return _sharedLocalIndex;
 	}
 
-	@Override
+	/**
+	 * @return The shared LocalIndex instance, lazily loading it if needed.
+	 * @throws UsageException If there is no existing shared index on disk.
+	 */
 	public LocalIndex readExistingSharedIndex() throws UsageException
 	{
 		if (null == _sharedLocalIndex)
@@ -62,14 +72,17 @@ public class LocalConfig implements ILocalConfig
 		return _sharedLocalIndex;
 	}
 
-	@Override
+	/**
+	 * Sets the given localIndex as the new shared index and writes it to disk.
+	 * 
+	 * @param localIndex The new local index.
+	 */
 	public void storeSharedIndex(LocalIndex localIndex)
 	{
 		_sharedLocalIndex = localIndex;
 		_storeFile(INDEX_FILE, _sharedLocalIndex);
 	}
 
-	@Override
 	public GlobalPrefs readSharedPrefs()
 	{
 		if (null == _lazySharedPrefs)
@@ -85,14 +98,12 @@ public class LocalConfig implements ILocalConfig
 		return _lazySharedPrefs;
 	}
 
-	@Override
 	public void storeSharedPrefs(GlobalPrefs prefs)
 	{
 		_lazySharedPrefs = prefs;
 		_storeFile(GLOBAL_PREFS_FILE, _lazySharedPrefs);
 	}
 
-	@Override
 	public GlobalPinCache loadGlobalPinCache()
 	{
 		if (null == _lazyCache)
@@ -135,7 +146,6 @@ public class LocalConfig implements ILocalConfig
 		}
 	}
 
-	@Override
 	public FollowIndex loadFollowIndex()
 	{
 		if (null == _lazyFollowIndex)
@@ -178,14 +188,17 @@ public class LocalConfig implements ILocalConfig
 		}
 	}
 
-	@Override
 	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
 		_verifySharedConnections();
 		return _lazyConnection;
 	}
 
-	@Override
+	/**
+	 * This is purely to improve error reporting - returns the full path to the configuration directory.
+	 * 
+	 * @return The full path to the configuration directory.
+	 */
 	public String getConfigDirectoryFullPath()
 	{
 		return _fileSystem.getDirectoryForReporting();

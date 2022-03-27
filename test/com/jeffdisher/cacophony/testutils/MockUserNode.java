@@ -31,10 +31,10 @@ public class MockUserNode
 
 	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
 	{
-		_executor = new StandardEnvironment(System.out);
 		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
 		_config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(_sharedConnection));
+		_executor = new StandardEnvironment(System.out, _config);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -45,9 +45,9 @@ public class MockUserNode
 		stream.close();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
-		createChannel.runInEnvironment(_executor, _config);
+		createChannel.runInEnvironment(_executor);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
-		updateDescription.runInEnvironment(_executor, _config);
+		updateDescription.runInEnvironment(_executor);
 	}
 
 	public void runCommand(OutputStream captureStream, ICommand command) throws Throwable
@@ -56,9 +56,9 @@ public class MockUserNode
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream));
+			executor = new StandardEnvironment(new PrintStream(captureStream), _config);
 		}
-		command.runInEnvironment(executor, _config);
+		command.runInEnvironment(executor);
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException

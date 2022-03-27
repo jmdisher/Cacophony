@@ -29,8 +29,8 @@ import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.ILocalConfig;
 import com.jeffdisher.cacophony.logic.LoadChecker;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -48,7 +48,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record HtmlOutputCommand(File _directory) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
 		if (_directory.exists())
 		{
@@ -58,6 +58,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		{
 			throw new UsageException("Directory cannot be created: " + _directory);
 		}
+		LocalConfig local = environment.getLocalConfig();
 		
 		// We need the local index.
 		LocalIndex localIndex = local.readExistingSharedIndex();

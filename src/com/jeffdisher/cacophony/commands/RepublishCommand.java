@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.ILocalConfig;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -19,9 +19,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RepublishCommand() implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
 		IOperationLog log = environment.logOperation("Republishing index...");
+		LocalConfig local = environment.getLocalConfig();
 		// Get the previously posted index hash.
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		IpfsFile indexHash = localIndex.lastPublishedIndex();

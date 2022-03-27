@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.data.local.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILocalConfig;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.UsageException;
 
@@ -12,8 +12,9 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		LocalConfig local = environment.getLocalConfig();
 		GlobalPrefs original = local.readSharedPrefs();
 		GlobalPrefs prefs = original;
 		

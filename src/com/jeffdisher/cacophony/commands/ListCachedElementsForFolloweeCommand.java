@@ -13,8 +13,8 @@ import com.jeffdisher.cacophony.data.local.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILocalConfig;
 import com.jeffdisher.cacophony.logic.LoadChecker;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,8 +25,9 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		LocalConfig local = environment.getLocalConfig();
 		LocalIndex localIndex = local.readExistingSharedIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());

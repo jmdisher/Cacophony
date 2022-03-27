@@ -27,7 +27,6 @@ import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILocalConfig;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -180,7 +179,7 @@ public class CommandParser
 		{
 			// This is just a utility function to make detecting keys in integration scripts more reliable.
 			String key = required[0];
-			return (IEnvironment environment, ILocalConfig local) -> {
+			return (IEnvironment environment) -> {
 				System.out.println(IpfsKey.fromPublicKey(key).toPublicKey());
 			};
 		}),

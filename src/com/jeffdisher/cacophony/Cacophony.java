@@ -56,11 +56,11 @@ public class Cacophony {
 					System.err.println("Failed to create directory at " + directory);
 					System.exit(2);
 				}
-				StandardEnvironment executor = new StandardEnvironment(System.out);
 				LocalConfig local = new LocalConfig(new RealConfigFileSystem(directory), new RealConnectionFactory());
+				StandardEnvironment executor = new StandardEnvironment(System.out, local);
 				try
 				{
-					command.runInEnvironment(executor, local);
+					command.runInEnvironment(executor);
 				}
 				catch (IOException e)
 				{

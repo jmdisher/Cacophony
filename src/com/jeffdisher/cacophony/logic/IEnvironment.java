@@ -2,7 +2,8 @@ package com.jeffdisher.cacophony.logic;
 
 
 /**
- * The interface provided when running commands, allowing them to access logging facilities.
+ * The interface provided when running commands, allowing them to access logging facilities and create/load
+ * configurations to actually interact with the system.
  */
 public interface IEnvironment
 {
@@ -16,4 +17,5 @@ public interface IEnvironment
 
 	void logToConsole(String message);
 	IOperationLog logOperation(String openingMessage);
+	LocalConfig getLocalConfig();
 }

@@ -36,11 +36,11 @@ public class TestStartFollowingCommand
 		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
 		LocalConfig config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
 		// For this test, we want to just fake a default config.
 		config.createEmptyIndex(IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(System.out, config);
 		
 		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		StreamIndex originalRootData = new StreamIndex();
@@ -60,7 +60,7 @@ public class TestStartFollowingCommand
 		remoteConnection.storeData(originalDescription, GlobalData.serializeDescription(originalDescriptionData));
 		
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
-		command.runInEnvironment(executor, config);
+		command.runInEnvironment(executor);
 		
 		// Verify the states that should have changed.
 		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
@@ -86,14 +86,14 @@ public class TestStartFollowingCommand
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
 		LocalConfig config = new LocalConfig(new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
 		// For this test, we want to just fake a default config.
 		config.createEmptyIndex(IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(System.out, config);
 		
 		try {
-			command.runInEnvironment(executor, config);
+			command.runInEnvironment(executor);
 			Assert.fail();
 		} catch (SizeConstraintException e) {
 			// Expected.
@@ -105,11 +105,11 @@ public class TestStartFollowingCommand
 	{
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		LocalConfig config = new LocalConfig(new MemoryConfigFileSystem(), null);
-		StandardEnvironment executor = new StandardEnvironment(System.out);
+		StandardEnvironment executor = new StandardEnvironment(System.out, config);
 		
 		// We expect this to fail since there is no LocalIndex.
 		try {
-			command.runInEnvironment(executor, config);
+			command.runInEnvironment(executor);
 			Assert.fail();
 		} catch (UsageException e) {
 			// Expected.

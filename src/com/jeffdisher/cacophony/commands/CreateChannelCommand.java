@@ -12,7 +12,7 @@ import com.jeffdisher.cacophony.data.local.LocalIndex;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.ILocalConfig;
+import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -22,8 +22,9 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment, ILocalConfig local) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		LocalConfig local = environment.getLocalConfig();
 		IOperationLog log = environment.logOperation("Creating new channel...");
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.createEmptyIndex(ipfs, keyName);
