@@ -8,10 +8,14 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
 public class Cacophony {
+	public static final String ENV_VAR_CACOPHONY_STORAGE = "CACOPHONY_STORAGE";
+	public static final String DEFAULT_STORAGE_DIRECTORY_NAME = ".cacophony";
+
 	/**
 	 * Argument modes:
 	 * "--createNewChannel" Used to create a new empty channel for this local key.
@@ -46,10 +50,10 @@ public class Cacophony {
 	public static void main(String[] args) throws IOException {
 		if (args.length > 0)
 		{
-			ICommand command = CommandParser.parseArgs(args, 1, System.err);
+			ICommand command = CommandParser.parseArgs(args, System.err);
 			if (null != command)
 			{
-				File directory = new File(args[0]);
+				File directory = _readCacophonyStorageDirectory();
 				if (!directory.exists() && !directory.mkdirs())
 				{
 					System.err.println("Failed to create directory at " + directory);
@@ -86,8 +90,27 @@ public class Cacophony {
 	private static void errorStart()
 	{
 		System.err.println("Cacophony release " + Version.TAG + " (build hash: " + Version.HASH + ")");
-		System.err.println("Usage:  Cacophony /path/to/data/directory <command>");
+		System.err.println("Usage:  Cacophony <command>");
+		System.err.println("\tStorage directory defaults to ~/.cacophony unless overridden with CACOPHONY_STORAGE env var");
 		CommandParser.printUsage(System.err);
 		System.exit(1);
+	}
+
+	private static File _readCacophonyStorageDirectory()
+	{
+		// Note that we default to "~/.cacophony" unless they provide the CACOPHONY_STORAGE environment variable.
+		File storageDirectory = null;
+		String envVarStorage = System.getenv(ENV_VAR_CACOPHONY_STORAGE);
+		if (null != envVarStorage)
+		{
+			storageDirectory = new File(envVarStorage);
+		}
+		else
+		{
+			File homeDirectory = new File(System.getProperty("user.home"));
+			Assert.assertTrue(homeDirectory.exists());
+			storageDirectory = new File(homeDirectory, DEFAULT_STORAGE_DIRECTORY_NAME);
+		}
+		return storageDirectory;
 	}
 }

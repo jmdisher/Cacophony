@@ -58,7 +58,7 @@ echo "Creating key on node 1..."
 PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
-java -jar "Cacophony.jar" "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
 checkPreviousCommand "createNewChannel"
 
 echo "Create the 512 KiB file for testing..."
@@ -68,15 +68,15 @@ dd if=/dev/zero of="$TEST_FILE" bs=1K count=512
 checkPreviousCommand "dd"
 
 echo "Publishing test..."
-java -jar "Cacophony.jar" "$USER1" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
 checkPreviousCommand "publishToThisChannel"
 
 echo "Make sure we see this in the list..."
-LISTING=$(java -jar "Cacophony.jar" "$USER1" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - application/octet-stream"
 
 echo "Just run a republish to make sure nothing goes wrong..."
-java -jar "Cacophony.jar" "$USER1" --republish
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --republish
 checkPreviousCommand "republish"
 
 kill $PID1

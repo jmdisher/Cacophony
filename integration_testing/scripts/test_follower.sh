@@ -69,31 +69,31 @@ echo "Creating key on node 1..."
 PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
-java -jar Cacophony.jar "$USER1" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
 checkPreviousCommand "createNewChannel"
 
 echo "Creating key on node 2..."
 PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
 echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
-java -jar Cacophony.jar "$USER2" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
 checkPreviousCommand "createNewChannel"
 
 echo "Make key 2 follow key 1"
-java -jar Cacophony.jar "$USER2" --startFollowing --publicKey "$PUBLIC1"
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "startFollowing"
 
 echo "List followees"
-CANONICAL1=$(java -jar Cacophony.jar "$USER1" --canonicalizeKey --key "$PUBLIC1")
-LIST=$(java -jar Cacophony.jar "$USER2" --listFollowees)
+CANONICAL1=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")
+LIST=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --listFollowees)
 requireSubstring "$LIST" "Following: $CANONICAL1"
 
-LIST=$(java -jar Cacophony.jar "$USER2" --listFollowee --publicKey "$CANONICAL1")
+LIST=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --listFollowee --publicKey "$CANONICAL1")
 requireSubstring "$LIST" "Followee has 0 elements"
 
 echo "Verify that the static HTML is generated"
 rm -rf "$STATIC2"
-java -jar Cacophony.jar "$USER2" --htmlOutput --directory "$STATIC2"
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --htmlOutput --directory "$STATIC2"
 checkPreviousCommand "htmlOutput"
 checkFileExists "$STATIC2/index.html"
 checkFileExists "$STATIC2/prefs.html"
@@ -116,16 +116,16 @@ dd if=/dev/zero of="$VIDEO_FILE" bs=1K count=2048
 checkPreviousCommand "dd video"
 
 echo "Publishing post..."
-java -jar "Cacophony.jar" "$USER1" --publishSingleVideo --name "basic post" --description "no description" --thumbnailJpeg "$IMAGE_FILE" --videoFile "$VIDEO_FILE" --videoMime "video/webm" --videoHeight 640 --videoWidth 480
+CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --publishSingleVideo --name "basic post" --description "no description" --thumbnailJpeg "$IMAGE_FILE" --videoFile "$VIDEO_FILE" --videoMime "video/webm" --videoHeight 640 --videoWidth 480
 checkPreviousCommand "publishSingleVideo"
 
 echo "Refresh followee"
-java -jar Cacophony.jar "$USER2" --refreshFollowee --publicKey "$PUBLIC1"
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1"
 checkPreviousCommand "Follow index changed"
 
 echo "Regenerate the static HTML"
 rm -rf "$STATIC2"
-java -jar Cacophony.jar "$USER2" --htmlOutput --directory "$STATIC2"
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --htmlOutput --directory "$STATIC2"
 checkPreviousCommand "htmlOutput"
 checkFileExists "$STATIC2/index.html"
 checkFileExists "$STATIC2/prefs.html"
@@ -137,9 +137,9 @@ checkFileExists "$STATIC2/following.html"
 checkFileExists "$STATIC2/generated_db.js"
 
 echo "Stop following and verify it is no longer in the list"
-java -jar Cacophony.jar "$USER2" --stopFollowing --publicKey "$PUBLIC1"
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --stopFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "stopFollowing"
-java -jar Cacophony.jar "$USER2" --listFollowees
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --listFollowees
 checkPreviousCommand "listFollowees"
 
 kill $PID1

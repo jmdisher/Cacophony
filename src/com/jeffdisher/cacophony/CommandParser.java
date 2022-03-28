@@ -336,23 +336,18 @@ public class CommandParser
 		}
 	}
 
-	public static ICommand parseArgs(String[] args, int startIndex, PrintStream errorStream)
+	public static ICommand parseArgs(String[] args, PrintStream errorStream)
 	{
 		// We assume that we only get this far is we have args.
-		assert args.length > 0;
+		Assert.assertTrue(args.length > 0);
 		
 		ICommand matched = null;
 		for (ArgPattern pattern : ArgPattern.values())
 		{
-			if (startIndex >= args.length)
-			{
-				errorStream.println("Missing command.");
-				break;
-			}
-			else if (pattern.isValid(args[startIndex]))
+			if (pattern.isValid(args[0]))
 			{
 				// We use index as in/out parameter here, hence the array.
-				int[] index = {startIndex};
+				int[] index = {0};
 				matched = pattern.parse(args, index);
 				if (null != matched)
 				{
