@@ -18,7 +18,9 @@ Running will require access to an [IPFS node](https://ipfs.io/) where you can ge
 
 Basic usage will be printed when starting the program with no arguments (`java -jar Cacophony.jar`).
 
-Common usage pattern is shown below.  These commands assume that any required `IPFS_PATH` variable has been set and that the `ipfs` binary is on your `PATH`.  To generalize further, we also assume that `CACOPHONY_KEY_NAME` is set to the name of the IPFS public key you want Cacophony to use.
+Common usage pattern is shown below.  These commands assume that any required `IPFS_PATH` variable has been set and that the `ipfs` binary is on your `PATH`.
+
+Cacophony needs an IPFS key so it can publish your updates.  By default, it will use a key named `Cacophony` (attempting to create it, if not found).  If you wish to override this so it will use a different key name, pass that in via the `CACOPHONY_KEY_NAME` environment variable when running the `--createNewChannel` command.
 
 Note that, by default, Cacophony will store its own index data in the directory `~/.cacophony`, but this can be overridden by setting the `CACOPHONY_STORAGE` environment variable to point to the desired location.
 
@@ -32,9 +34,6 @@ $ ipfs init
 
 # Start the IPFS daemon in the background.
 $ ipfs daemon &
-
-# Generate the key you will use in Cacophony.
-$ ipfs key gen "$CACOPHONY_KEY_NAME"
 ```
 
 ### Create your Cacophony channel
@@ -42,8 +41,8 @@ $ ipfs key gen "$CACOPHONY_KEY_NAME"
 With the IPFS node running and your key created, you can now create a channel (channel creation is required even if you are just following others):
 
 ```
-# Creates your Cacophony channel in the default storage directory (~/.cacophony)
-$ java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName "$CACOPHONY_KEY_NAME"
+# Creates your Cacophony channel in the default storage directory (~/.cacophony) using the default "Cacophony" key name.
+$ java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001"
 ```
 
 ### Set channel description

@@ -169,6 +169,13 @@ public class MockConnection implements IConnection
 		_pinned.remove(cid);
 	}
 
+	@Override
+	public IConnection.Key generateKey(String keyName) throws IpfsConnectionException
+	{
+		// We don't expect this in the test.
+		throw Assert.unreachable();
+	}
+
 	public boolean isPinned(IpfsFile cid)
 	{
 		return _pinned.contains(cid);

@@ -54,11 +54,8 @@ echo "Daemon 2: $PID2"
 echo "Pausing for startup..."
 sleep 5
 
-echo "Creating key on node 1..."
-PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
-echo "Key is $PUBLIC1"
-echo "Attaching Cacophony instance1 to this key..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+echo "Creating Cacophony instance..."
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
 echo "Create the 512 KiB file for testing..."

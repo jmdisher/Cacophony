@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.api.IPFS;
+import io.ipfs.api.KeyInfo;
 import io.ipfs.api.MerkleNode;
 import io.ipfs.api.NamedStreamable;
 import io.ipfs.multihash.Multihash;
@@ -154,6 +155,20 @@ public class IpfsConnection implements IConnection
 		try
 		{
 			_connection.pin.rm(cid.getMultihash());
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException(e);
+		}
+	}
+
+	@Override
+	public Key generateKey(String keyName) throws IpfsConnectionException
+	{
+		try
+		{
+			KeyInfo info = _connection.key.gen(keyName, Optional.empty(), Optional.empty());
+			return new IConnection.Key(info.name, new IpfsKey(info.id));
 		}
 		catch (IOException e)
 		{

@@ -65,19 +65,27 @@ echo "Daemon 2: $PID2"
 echo "Pausing for startup..."
 sleep 5
 
-echo "Creating key on node 1..."
-PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
-echo "Key is $PUBLIC1"
-echo "Attaching Cacophony instance1 to this key..."
-CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001 --keyName test1
+echo "Creating Cacophony instance1..."
+CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
-echo "Creating key on node 2..."
-PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
-echo "Key is $PUBLIC2"
-echo "Attaching Cacophony instance2 to this key..."
-CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002 --keyName test2
+echo "Creating Cacophony instance2..."
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 checkPreviousCommand "createNewChannel"
+
+echo "Reading public key for instance1..."
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --getPublicKey)
+checkPreviousCommand "getPublicKey"
+# Parse this from the human-readable string.
+PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
+echo "Key is \"$PUBLIC1\""
+
+echo "Reading public key for instance2..."
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --getPublicKey)
+checkPreviousCommand "getPublicKey"
+# Parse this from the human-readable string.
+PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
+echo "Key is \"$PUBLIC2\""
 
 echo "Make key 2 follow key 1"
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC1"

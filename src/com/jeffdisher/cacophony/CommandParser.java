@@ -34,6 +34,9 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class CommandParser
 {
+	public static final String ENV_VAR_CACOPHONY_KEY_NAME = "CACOPHONY_KEY_NAME";
+	public static final String DEFAULT_KEY_NAME = "Cacophony";
+
 	@java.lang.FunctionalInterface
 	private static interface TriFunction<A, B, C, R>
 	{
@@ -62,10 +65,14 @@ public class CommandParser
 		}),
 		
 		// Methods to manage this channel.
-		CREATE_NEW_CHANNEL(true, "--createNewChannel", new String[] {"--ipfs", "--keyName"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		CREATE_NEW_CHANNEL(true, "--createNewChannel", new String[] {"--ipfs"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String ipfs = required[0];
-			String keyName = required[1];
+			String keyName = System.getenv(ENV_VAR_CACOPHONY_KEY_NAME);
+			if (null == keyName)
+			{
+				keyName = DEFAULT_KEY_NAME;
+			}
 			return new CreateChannelCommand(ipfs, keyName);
 		}),
 		UPDATE_DESCRIPTION(true, "--updateDescription", new String[0], new String[] {"--name", "--description", "--pictureFile"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->

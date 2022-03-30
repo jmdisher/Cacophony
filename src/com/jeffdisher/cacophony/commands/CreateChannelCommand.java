@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -10,6 +11,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -24,12 +26,26 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
-		LocalConfig local = environment.createNewConfig(ipfs, keyName);
 		IOperationLog log = environment.logOperation("Creating new channel...");
+		LocalConfig local = environment.createNewConfig(ipfs, keyName);
+		IConnection connection = local.getSharedConnection();
+		// Check to see if this key exists.
+		List<IConnection.Key> keys = connection.getKeys();
+		boolean keyExists = keys.stream().anyMatch((k) -> k.name().equals(keyName));
+		if (keyExists)
+		{
+			environment.logToConsole("Using existing key: \"" + keyName + "\"");
+		}
+		else
+		{
+			IOperationLog keyLog = environment.logOperation("Key \"" + keyName + "\" not found.  Generating...");
+			IConnection.Key key = connection.generateKey(keyName);
+			keyLog.finish("Public key \"" + key.key() + "\" generated with name: \"" + key.name() + "\"");
+		}
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.readLocalIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), index.keyName());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, index.keyName());
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), connection);
 		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();

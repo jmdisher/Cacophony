@@ -51,4 +51,13 @@ public interface IConnection
 	 * @throws IpfsConnectionException If there is some problem contacting the server.
 	 */
 	void rm(IpfsFile cid) throws IpfsConnectionException;
+
+	/**
+	 * Generates the given key on the IPFS node.
+	 * 
+	 * @param keyName The name of the key.
+	 * @return The generated key (never null).
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	Key generateKey(String keyName) throws IpfsConnectionException;
 }
