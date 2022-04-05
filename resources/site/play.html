@@ -23,10 +23,16 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		$scope.thumbnailUrl = elt["thumbnailUrl"];
 		$scope.videoUrl = elt["videoUrl"];
-		// The version of Angular we are using doesn't support the video tag so do this, ourselves.
-		let v = document.getElementById("video");
-		v.poster = $scope.thumbnailUrl;
-		v.src = $scope.videoUrl;
+		if (null != $scope.videoUrl)
+		{
+			// The version of Angular we are using doesn't support the video tag so do this, ourselves.
+			let v = document.getElementById("video");
+			v.src = $scope.videoUrl;
+			if (null != $scope.thumbnailUrl)
+			{
+				v.poster = $scope.thumbnailUrl;
+			}
+		}
 	}
 });
 </script>
@@ -47,8 +53,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<div class="row"><a class="btn" href="following.html">Users you Follow</a></div>
 		</div>
 		<div class="col-md-9">
-			<div class="row well" ng-show="{{cached}}">
+			<div class="row well" ng-show="{{cached && videoUrl}}">
 				<video id="video" controls />
+			</div>
+			<div class="row well" ng-show="{{cached && thumbnailUrl && !videoUrl}}">
+				<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
 			</div>
 			<div class="row well" ng-hide="{{cached}}">
 				<strong>NOTE:  This entry is not cached locally so it can't be viewed.</strong>

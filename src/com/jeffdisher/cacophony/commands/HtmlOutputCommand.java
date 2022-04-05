@@ -223,14 +223,22 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			if (isCached)
 			{
 				// However we found these, they are expected to be in the cache and they should be locally pinned.
-				// NOTE:  We currently REQUIRE that both the video and thumbnail are present!
-				Assert.assertTrue(null != thumbnailCid);
-				Assert.assertTrue(null != videoCid);
-				Assert.assertTrue(checker.isCached(thumbnailCid));
-				Assert.assertTrue(checker.isCached(videoCid));
-				// We want to find the thumbnail and video.
-				thisElt.set("thumbnailUrl", checker.getCachedUrl(thumbnailCid).toString());
-				thisElt.set("videoUrl", checker.getCachedUrl(videoCid).toString());
+				// Note that we can have at most one thumbnail and one video but both are optional and there could be an entry with neither.
+				String thumbnailUrl = null;
+				if (null != thumbnailCid)
+				{
+					Assert.assertTrue(checker.isCached(thumbnailCid));
+					thumbnailUrl = checker.getCachedUrl(thumbnailCid).toString();
+				}
+				String videoUrl = null;
+				if (null != videoCid)
+				{
+					Assert.assertTrue(checker.isCached(videoCid));
+					videoUrl = checker.getCachedUrl(videoCid).toString();
+				}
+				
+				thisElt.set("thumbnailUrl", thumbnailUrl);
+				thisElt.set("videoUrl", videoUrl);
 			}
 			rootData.set(cid.toSafeString(), thisElt);
 		}

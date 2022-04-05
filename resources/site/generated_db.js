@@ -47,6 +47,30 @@ var DATA_elements = {
 		"thumbnailUrl": "http://localhost:8080/ipfs/QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1Ju",
 		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
 	},
+	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JD": {
+		"cached": true,
+		"name": "other user no thumbnail",
+		"description": "no thumbnail",
+		"publishedSecondsUtc": 10001,
+		"thumbnailUrl": null,
+		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
+	},
+	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JJ": {
+		"cached": true,
+		"name": "other user no video",
+		"description": "no video",
+		"publishedSecondsUtc": 10002,
+		"thumbnailUrl": "http://localhost:8080/ipfs/QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1Ju",
+		"videoUrl": null,
+	},
+	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JA": {
+		"cached": true,
+		"name": "other user no data",
+		"description": "no thumbnail or video",
+		"publishedSecondsUtc": 10003,
+		"thumbnailUrl": null,
+		"videoUrl": null,
+	},
 };
 var DATA_userPosts = {
 	"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F": [
@@ -55,6 +79,9 @@ var DATA_userPosts = {
 	],
 	"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141": [
 		"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1J6",
+		"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JD",
+		"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JJ",
+		"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JA",
 	],
 };
 var DATA_recommended = {

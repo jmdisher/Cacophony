@@ -47,7 +47,6 @@ public record PublishCommand(String _name, String _description, String _discussi
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
 		// Upload the elements.
-		Assert.assertTrue(_elements.length > 0);
 		DataArray array = new DataArray();
 		for (ElementSubCommand elt : _elements)
 		{
