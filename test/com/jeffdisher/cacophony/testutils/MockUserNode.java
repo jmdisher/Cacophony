@@ -48,7 +48,7 @@ public class MockUserNode
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
 		createChannel.runInEnvironment(_executor);
-		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic);
+		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic, null, null);
 		updateDescription.runInEnvironment(_executor);
 	}
 

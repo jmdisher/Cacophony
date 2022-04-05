@@ -178,6 +178,8 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		thisUser.set("name", description.getName());
 		thisUser.set("description", description.getDescription());
 		thisUser.set("userPicUrl", checker.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
+		thisUser.set("email", description.getEmail());
+		thisUser.set("website", description.getWebsite());
 		rootData.set(publicKey.toPublicKey(), thisUser);
 	}
 

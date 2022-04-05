@@ -21,6 +21,8 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="picture" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd}IpfsCid"/>
+ *         &lt;element name="email" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
+ *         &lt;element name="website" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -34,7 +36,9 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(name = "StreamDescription", propOrder = {
     "name",
     "description",
-    "picture"
+    "picture",
+    "email",
+    "website"
 })
 public class StreamDescription {
 
@@ -44,6 +48,8 @@ public class StreamDescription {
     protected String description;
     @XmlElement(required = true)
     protected String picture;
+    protected String email;
+    protected String website;
 
     /**
      * Gets the value of the name property.
@@ -115,6 +121,54 @@ public class StreamDescription {
      */
     public void setPicture(String value) {
         this.picture = value;
+    }
+
+    /**
+     * Gets the value of the email property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
+     */
+    public String getEmail() {
+        return email;
+    }
+
+    /**
+     * Sets the value of the email property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
+     */
+    public void setEmail(String value) {
+        this.email = value;
+    }
+
+    /**
+     * Gets the value of the website property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
+     */
+    public String getWebsite() {
+        return website;
+    }
+
+    /**
+     * Sets the value of the website property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
+     */
+    public void setWebsite(String value) {
+        this.website = value;
     }
 
 }

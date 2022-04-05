@@ -17,11 +17,15 @@ var DATA_userInfo = {
 		"name": "Local user",
 		"description": "Description for local user",
 		"userPicUrl": "../unknown_user.png",
+		"email": "email@example.com",
+		"website": "http://example.com",
 	},
 	"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141": {
 		"name": "User 2",
 		"description": "Description for user 2",
 		"userPicUrl": "../unknown_user.png",
+		"email": null,
+		"website": null,
 	},
 };
 var DATA_elements = {

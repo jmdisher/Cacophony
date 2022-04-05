@@ -20,7 +20,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record UpdateDescriptionCommand(String _name, String _description, File _picturePath) implements ICommand
+public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
 {
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
@@ -56,6 +56,30 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			IpfsFile pictureHash = HighLevelIdioms.saveData(remote, rawData);
 			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.toSafeString());
+		}
+		if (null != _email)
+		{
+			// Since email is optional, we will treat an empty string as "remove".
+			if (0 == _email.length())
+			{
+				description.setEmail(null);
+			}
+			else
+			{
+				description.setEmail(_email);
+			}
+		}
+		if (null != _website)
+		{
+			// Since website is optional, we will treat an empty string as "remove".
+			if (0 == _website.length())
+			{
+				description.setWebsite(null);
+			}
+			else
+			{
+				description.setWebsite(_website);
+			}
 		}
 		
 		// Serialize and upload the description.
