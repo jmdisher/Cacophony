@@ -43,28 +43,34 @@ GLOBAL_Application.controller('AppController', function($scope)
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"></link>
 </head>
 <body ng-controller="AppController">
+<nav class="navbar navbar-inverse">
+	<ul class="nav navbar-nav">
+		<li><a class="navbar-link" href="index.html">Index</a></li>
+		<li><a class="navbar-link" href="prefs.html">Preferences</a></li>
+		<li><a class="navbar-link" href="user.html">This User</a></li>
+		<li><a class="navbar-link" href="recommending.html">Recommended Users</a></li>
+		<li><a class="navbar-link" href="following.html">Users you Follow</a></li>
+	</ul>
+</nav>
 <div class="container">
-	<div class="row">
-		<div class="well col-md-3">
-			<div class="row"><a class="btn" href="index.html">Index</a></div>
-			<div class="row"><a class="btn" href="prefs.html">Preferences</a></div>
-			<div class="row"><a class="btn" href="user.html">This User</a></div>
-			<div class="row"><a class="btn" href="recommending.html">Recommended Users</a></div>
-			<div class="row"><a class="btn" href="following.html">Users you Follow</a></div>
+	<div class="jumbotron">
+		<div class="row well" ng-show="{{cached && videoUrl}}">
+			<video id="video" controls />
 		</div>
-		<div class="col-md-9">
-			<div class="row well" ng-show="{{cached && videoUrl}}">
-				<video id="video" controls />
-			</div>
-			<div class="row well" ng-show="{{cached && thumbnailUrl && !videoUrl}}">
-				<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
-			</div>
-			<div class="row well" ng-hide="{{cached}}">
-				<strong>NOTE:  This entry is not cached locally so it can't be viewed.</strong>
-			</div>
+		<div class="row well" ng-show="{{cached && thumbnailUrl && !videoUrl}}">
+			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
+		</div>
+		<div class="row well" ng-hide="{{cached}}">
+			<strong>NOTE:  This entry is not cached locally so it can't be viewed.</strong>
+		</div>
+		<div class="row well">
+			<strong>{{name}}</strong><br />
+			<em>(posted: {{readableDate}})</em><br />
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-6 col-md-offset-3">
 			<div class="row well">
-				<strong>{{name}}</strong><br />
-				<em>(posted: {{readableDate}})</em><br />
 				{{description}}
 			</div>
 		</div>
