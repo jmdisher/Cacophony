@@ -16,10 +16,24 @@ import io.ipfs.multihash.Multihash;
 public class IpfsFile implements Serializable
 {
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * @param base58Cid The base-58 encoding of the IPFS hash.
+	 * @return The IpfsFile or null if the encoding was invalid.
+	 */
 	public static IpfsFile fromIpfsCid(String base58Cid)
 	{
 		Assert.assertTrue(null != base58Cid);
-		return new IpfsFile(Multihash.fromBase58(base58Cid));
+		IpfsFile file = null;
+		try
+		{
+			file = new IpfsFile(Multihash.fromBase58(base58Cid));
+		}
+		catch (IllegalStateException e)
+		{
+			file = null;
+		}
+		return file;
 	}
 
 

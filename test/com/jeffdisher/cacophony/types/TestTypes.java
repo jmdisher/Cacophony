@@ -108,4 +108,16 @@ public class TestTypes
 		array.add(other);
 		Assert.assertEquals("[{\"long\":1000000000},[]]", array.toString());
 	}
+
+	@Test
+	public void testInvalidKey()
+	{
+		Assert.assertNull(IpfsKey.fromPublicKey("BOGUS"));
+	}
+
+	@Test
+	public void testInvalidFile()
+	{
+		Assert.assertNull(IpfsFile.fromIpfsCid("BOGUS"));
+	}
 }

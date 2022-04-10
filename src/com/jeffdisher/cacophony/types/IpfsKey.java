@@ -26,10 +26,24 @@ import io.ipfs.multihash.Multihash;
 public class IpfsKey implements Serializable
 {
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * @param keyAsString The base-36 or base-58 encoding of a public key.
+	 * @return The IpfsKey or null if the encoding was invalid.
+	 */
 	public static IpfsKey fromPublicKey(String keyAsString)
 	{
 		Assert.assertTrue(null != keyAsString);
-		return new IpfsKey(Cid.decode(keyAsString));
+		IpfsKey key = null;
+		try
+		{
+			key = new IpfsKey(Cid.decode(keyAsString));
+		}
+		catch (Cid.CidEncodingException e)
+		{
+			key = null;
+		}
+		return key;
 	}
 
 
