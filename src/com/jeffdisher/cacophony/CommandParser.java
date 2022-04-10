@@ -29,6 +29,7 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -38,9 +39,9 @@ public class CommandParser
 	public static final String DEFAULT_KEY_NAME = "Cacophony";
 
 	@java.lang.FunctionalInterface
-	private static interface TriFunction<A, B, C, R>
+	private static interface IParseFunction
 	{
-		public R apply(A a, B b, C c);
+		public ICommand apply(String[] required, String[] optional, List<ICommand> subElements) throws UsageException;
 	}
 	private static enum ArgPattern
 	{
@@ -49,18 +50,24 @@ public class CommandParser
 		{
 			String mime = required[0];
 			File filePath = new File(required[1]);
-			int height = (null != optional[0])
-					? Integer.parseInt(optional[0])
-					: 0
-			;
-			int width = (null != optional[1])
-					? Integer.parseInt(optional[1])
-					: 0
-			;
-			boolean isSpecialImage = (null != optional[2])
-					? ElementSpecialType.IMAGE.value().equals(optional[2])
-					: false
-			;
+			if (!filePath.isFile())
+			{
+				throw new UsageException("File not found: " + filePath);
+			}
+			int height = _parseAsInt(optional[0], 0);
+			int width = _parseAsInt(optional[1], 0);
+			boolean isSpecialImage = false;
+			if (null != optional[2])
+			{
+				if (ElementSpecialType.IMAGE.value().equals(optional[2]))
+				{
+					isSpecialImage = true;
+				}
+				else
+				{
+					throw new UsageException("Unknown special file type: \"" + optional[2] + "\"");
+				}
+			}
 			return new ElementSubCommand(mime, filePath, height, width, isSpecialImage);
 		}),
 		
@@ -85,31 +92,39 @@ public class CommandParser
 			;
 			String email = optional[3];
 			String website = optional[4];
+			if ((null == name) && (null == description) && (null == picturePath) && (null == email) && (null == website))
+			{
+				throw new UsageException("--updateDescription requires at least a single subargument");
+			}
+			if ((null != picturePath) && !picturePath.isFile())
+			{
+				throw new UsageException("File not found: " + picturePath);
+			}
 			return new UpdateDescriptionCommand(name, description, picturePath, email, website);
 		}),
 		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String rawKey = optional[0];
 			IpfsKey channelPublicKey = (null != rawKey)
-					? IpfsKey.fromPublicKey(rawKey)
+					? _parseAsKey(rawKey)
 					: null
 			;
 			return new ReadDescriptionCommand(channelPublicKey);
 		}),
 		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
+			IpfsKey channelPublicKey = _parseAsKey(required[0]);
 			return new AddRecommendationCommand(channelPublicKey);
 		}),
 		REMOVE_RECOMMENDATION(true, "--removeRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsKey channelPublicKey = IpfsKey.fromPublicKey(required[0]);
+			IpfsKey channelPublicKey = _parseAsKey(required[0]);
 			return new RemoveRecommendationCommand(channelPublicKey);
 		}),
 		LIST_RECOMMENDATIONS(true, "--listRecommendations", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			IpfsKey publicKey = (null != optional[0])
-					? IpfsKey.fromPublicKey(optional[0])
+					? _parseAsKey(optional[0])
 					: null;
 			;
 			return new ListRecommendationsCommand(publicKey);
@@ -127,24 +142,24 @@ public class CommandParser
 		{
 			String rawKey = optional[0];
 			IpfsKey channelPublicKey = (null != rawKey)
-					? IpfsKey.fromPublicKey(rawKey)
+					? _parseAsKey(rawKey)
 					: null
 			;
 			return new ListChannelEntriesCommand(channelPublicKey);
 		}),
 		REMOVE_FROM_THIS_CHANNEL(true, "--removeFromThisChannel", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsFile elementCid = IpfsFile.fromIpfsCid(required[0]);
+			IpfsFile elementCid = _parseAsFile(required[0]);
 			return new RemoveEntryFromThisChannelCommand(elementCid);
 		}),
 		START_FOLLOWING(true, "--startFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsKey publicKey = IpfsKey.fromPublicKey(required[0]);
+			IpfsKey publicKey = _parseAsKey(required[0]);
 			return new StartFollowingCommand(publicKey);
 		}),
 		STOP_FOLLOWING(true, "--stopFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsKey publicKey = IpfsKey.fromPublicKey(required[0]);
+			IpfsKey publicKey = _parseAsKey(required[0]);
 			return new StopFollowingCommand(publicKey);
 		}),
 		LIST_FOLLOWEES(true, "--listFollowees", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
@@ -153,12 +168,12 @@ public class CommandParser
 		}),
 		LIST_CACHED_ELEMENTS_FOR_FOLLOWEE(true, "--listFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsKey followeeKey = IpfsKey.fromPublicKey(required[0]);
+			IpfsKey followeeKey = _parseAsKey(required[0]);
 			return new ListCachedElementsForFolloweeCommand(followeeKey);
 		}),
 		REFRESH_FOLLOWEE(true, "--refreshFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			IpfsKey followeeKey = IpfsKey.fromPublicKey(required[0]);
+			IpfsKey followeeKey = _parseAsKey(required[0]);
 			return new RefreshFolloweeCommand(followeeKey);
 		}),
 		REPUBLISH(true, "--republish", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
@@ -174,22 +189,16 @@ public class CommandParser
 		// Methods to manage local state.
 		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[] {"--edgeMaxPixels", "--followCacheTargetBytes"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			int edgeMaxPixels = (null != optional[0])
-					? Integer.parseInt(optional[0])
-					: 0
-			;
-			long followCacheTargetBytes = (null != optional[1])
-					? Long.parseLong(optional[1])
-					: 0L
-			;
+			int edgeMaxPixels = _parseAsInt(optional[0], 0);
+			long followCacheTargetBytes = _parseAsLong(optional[1], 0L);
 			return new SetGlobalPrefsCommand(edgeMaxPixels, followCacheTargetBytes);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			// This is just a utility function to make detecting keys in integration scripts more reliable.
-			String key = required[0];
+			IpfsKey channelPublicKey = _parseAsKey(required[0]);
 			return (IEnvironment environment) -> {
-				System.out.println(IpfsKey.fromPublicKey(key).toPublicKey());
+				System.out.println(channelPublicKey.toPublicKey());
 			};
 		}),
 		GET_PUBLIC_KEY(true, "--getPublicKey", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
@@ -206,10 +215,18 @@ public class CommandParser
 			String name = required[0];
 			String description = required[1];
 			File thumbnailJpeg = new File(required[2]);
+			if (!thumbnailJpeg.isFile())
+			{
+				throw new UsageException("File not found: " + thumbnailJpeg);
+			}
 			File videoFile = new File(required[3]);
+			if (!videoFile.isFile())
+			{
+				throw new UsageException("File not found: " + videoFile);
+			}
 			String videoMime = required[4];
-			int videoHeight = Integer.parseInt(required[5]);
-			int videoWidth = Integer.parseInt(required[6]);
+			int videoHeight = _parseAsInt(required[5], -1);
+			int videoWidth = _parseAsInt(required[6], -1);
 			String discussionUrl = optional[0];
 			ElementSubCommand elements[] = new ElementSubCommand[] {
 					new ElementSubCommand("image/jpeg", thumbnailJpeg, 0, 0, true),
@@ -219,14 +236,65 @@ public class CommandParser
 		}),
 		;
 		
+		private static int _parseAsInt(String num, int ifNull) throws UsageException
+		{
+			try
+			{
+				return (null != num)
+						? Integer.parseInt(num)
+						: ifNull
+				;
+			}
+			catch (NumberFormatException e)
+			{
+				throw new UsageException("Not a number: \"" + num + "\"");
+			}
+		}
+		
+		private static long _parseAsLong(String num, long ifNull) throws UsageException
+		{
+			try
+			{
+				return (null != num)
+						? Long.parseLong(num)
+						: ifNull
+				;
+			}
+			catch (NumberFormatException e)
+			{
+				throw new UsageException("Not a number: \"" + num + "\"");
+			}
+		}
+		
+		private static IpfsKey _parseAsKey(String rawKey) throws UsageException
+		{
+			IpfsKey key = IpfsKey.fromPublicKey(rawKey);
+			if (null == key)
+			{
+				throw new UsageException("Not a valid IPFS public key: \"" + rawKey + "\"");
+			}
+			return key;
+		}
+		
+		private static IpfsFile _parseAsFile(String base58) throws UsageException
+		{
+			IpfsFile file = IpfsFile.fromIpfsCid(base58);
+			if (null == file)
+			{
+				throw new UsageException("Not a valid IPFS base-58 CID: \"" + base58 + "\"");
+			}
+			return file;
+		}
+		
+		
 		private final boolean _topLevel;
 		private final String _name;
 		private final String _params[];
 		private final String _optionalParams[];
 		private final ArgPattern _subType;
-		private final TriFunction<String[], String[], List<ICommand>, ICommand> _factory;
+		private final IParseFunction _factory;
 		
-		private ArgPattern(boolean topLevel, String name, String params[], String optionalParams[], ArgPattern subType, TriFunction<String[], String[], List<ICommand>, ICommand> factory)
+		private ArgPattern(boolean topLevel, String name, String params[], String optionalParams[], ArgPattern subType, IParseFunction factory)
 		{
 			_topLevel = topLevel;
 			_name = name;
@@ -241,7 +309,7 @@ public class CommandParser
 			return _topLevel && (arg.equals(_name));
 		}
 		
-		private ICommand parse(String[] args, int[] startIndex)
+		private ICommand parse(String[] args, int[] startIndex) throws UsageException
 		{
 			// We need to convert the entire input to a command, update the startIndex in/out parameter once we have processed all of our known options.
 			// We can return null if we fail at any point, and the top-level will fail.
@@ -345,7 +413,7 @@ public class CommandParser
 		}
 	}
 
-	public static ICommand parseArgs(String[] args, PrintStream errorStream)
+	public static ICommand parseArgs(String[] args, PrintStream errorStream) throws UsageException
 	{
 		// We assume that we only get this far is we have args.
 		Assert.assertTrue(args.length > 0);

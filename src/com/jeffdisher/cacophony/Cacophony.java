@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -50,7 +51,16 @@ public class Cacophony {
 	public static void main(String[] args) throws IOException {
 		if (args.length > 0)
 		{
-			ICommand command = CommandParser.parseArgs(args, System.err);
+			ICommand command = null;
+			try
+			{
+				command = CommandParser.parseArgs(args, System.err);
+			}
+			catch (UsageException e)
+			{
+				System.err.println("Usage error in parsing command: " + e.getLocalizedMessage());
+				System.exit(2);
+			}
 			if (null != command)
 			{
 				File directory = _readCacophonyStorageDirectory();

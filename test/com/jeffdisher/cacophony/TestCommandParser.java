@@ -1,11 +1,13 @@
 package com.jeffdisher.cacophony;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.io.PrintStream;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -14,6 +16,9 @@ import com.jeffdisher.cacophony.commands.PublishCommand;
 
 public class TestCommandParser
 {
+	@ClassRule
+	public static TemporaryFolder FOLDER = new TemporaryFolder();
+
 	@Test
 	public void testUsage()
 	{
@@ -24,9 +29,10 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testPublish()
+	public void testPublish() throws Throwable
 	{
-		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", "/path"};
+		File tempFile = FOLDER.newFile();
+		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath()};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, capture);
@@ -35,11 +41,12 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testFullPublish()
+	public void testFullPublish() throws Throwable
 	{
+		File tempFile = FOLDER.newFile();
 		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL"
-				, "--element", "--mime", "mime type", "--file", "/path", "--special", "image"
-				, "--element", "--mime", "mime type", "--file", "/path", "--width", "640", "--height", "480"
+				, "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath(), "--special", "image"
+				, "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath(), "--width", "640", "--height", "480"
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
@@ -53,7 +60,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testBrokenArgs()
+	public void testBrokenArgs() throws Throwable
 	{
 		String[] foo = {"--publishToThisChannel", "--name"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -64,7 +71,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testCreateNewChannel()
+	public void testCreateNewChannel() throws Throwable
 	{
 		String[] foo = {"--createNewChannel", "--ipfs", "/ip4/127.0.0.1/tcp/5001"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -75,7 +82,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testReadDescriptionLocal()
+	public void testReadDescriptionLocal() throws Throwable
 	{
 		String[] foo = {"--readDescription"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -86,7 +93,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testReadDescriptionArg()
+	public void testReadDescriptionArg() throws Throwable
 	{
 		String[] foo = {"--readDescription", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -97,9 +104,10 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testUpdateDescription()
+	public void testUpdateDescription() throws Throwable
 	{
-		String[] foo = {"--updateDescription", "--name", "name", "--description", "description", "--pictureFile", "/tmp/fake"};
+		File tempFile = FOLDER.newFile();
+		String[] foo = {"--updateDescription", "--name", "name", "--description", "description", "--pictureFile", tempFile.getAbsolutePath()};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, capture);
@@ -108,7 +116,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testListChannel()
+	public void testListChannel() throws Throwable
 	{
 		String[] foo = {"--listChannel", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -119,7 +127,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testRemoveFromThisChannel()
+	public void testRemoveFromThisChannel() throws Throwable
 	{
 		String[] foo = {"--removeFromThisChannel", "--elementCid", "QmRntQodp7qHb3PwS8GkcaKXfeELJymB4H5D8rBfoEwq8J"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -130,7 +138,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testSetGlobalPrefs()
+	public void testSetGlobalPrefs() throws Throwable
 	{
 		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5000000000"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -141,7 +149,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testPublishSpecialOnly() throws IOException
+	public void testPublishSpecialOnly() throws Throwable
 	{
 		String[] foo = {"--publishToThisChannel", "--name", "name", "--mime", "image/jpeg", "--file", "/tmp/fake", "--special", "image"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -152,7 +160,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testStartFollowing() throws IOException
+	public void testStartFollowing() throws Throwable
 	{
 		String[] foo = {"--startFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -163,7 +171,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testStopFollowing() throws IOException
+	public void testStopFollowing() throws Throwable
 	{
 		String[] foo = {"--stopFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -174,7 +182,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testListFollowees() throws IOException
+	public void testListFollowees() throws Throwable
 	{
 		String[] foo = {"--listFollowees"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -185,7 +193,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testListFollowee() throws IOException
+	public void testListFollowee() throws Throwable
 	{
 		String[] foo = {"--listFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -196,7 +204,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testListRecommendationsLocal() throws IOException
+	public void testListRecommendationsLocal() throws Throwable
 	{
 		String[] foo = {"--listRecommendations"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -207,7 +215,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testListRecommendationsRemove() throws IOException
+	public void testListRecommendationsRemove() throws Throwable
 	{
 		String[] foo = {"--listRecommendations", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -218,7 +226,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testAddRecommendation() throws IOException
+	public void testAddRecommendation() throws Throwable
 	{
 		String[] foo = {"--addRecommendation", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -229,7 +237,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testRemoveRecommendation() throws IOException
+	public void testRemoveRecommendation() throws Throwable
 	{
 		String[] foo = {"--removeRecommendation", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -240,7 +248,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testRepublish() throws IOException
+	public void testRepublish() throws Throwable
 	{
 		String[] foo = {"--republish"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -251,7 +259,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testHtmlOutput() throws IOException
+	public void testHtmlOutput() throws Throwable
 	{
 		String[] foo = {"--htmlOutput", "--directory", "/tmp"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -262,11 +270,12 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testSingleVideo()
+	public void testSingleVideo() throws Throwable
 	{
+		File tempFile = FOLDER.newFile();
 		String[] foo = {"--publishSingleVideo", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL"
-				, "--thumbnailJpeg", "/thumbnail"
-				, "--videoFile", "/video", "--videoMime", "video/webm", "--videoHeight", "640", "--videoWidth", "480"
+				, "--thumbnailJpeg", tempFile.getAbsolutePath()
+				, "--videoFile", tempFile.getAbsolutePath(), "--videoMime", "video/webm", "--videoHeight", "640", "--videoWidth", "480"
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
@@ -283,7 +292,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testGetPublicKey() throws IOException
+	public void testGetPublicKey() throws Throwable
 	{
 		String[] foo = {"--getPublicKey"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -294,7 +303,7 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testNonsenseArgs()
+	public void testNonsenseArgs() throws Throwable
 	{
 		String[] foo = {"no-command", "no-arg"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
