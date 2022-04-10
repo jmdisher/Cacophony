@@ -26,6 +26,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		Assert.assertTrue(null != ipfs);
+		Assert.assertTrue(null != keyName);
+		
 		IOperationLog log = environment.logOperation("Creating new channel...");
 		LocalConfig local = environment.createNewConfig(ipfs, keyName);
 		IConnection connection = local.getSharedConnection();

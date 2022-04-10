@@ -25,6 +25,12 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));
+		if (null != _picturePath)
+		{
+			Assert.assertTrue(_picturePath.isFile());
+		}
+		
 		IOperationLog log = environment.logOperation("Updating channel description...");
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();

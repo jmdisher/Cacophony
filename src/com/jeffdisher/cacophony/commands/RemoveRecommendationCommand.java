@@ -24,6 +24,8 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		Assert.assertTrue(null != _channelPublicKey);
+		
 		IOperationLog log = environment.logOperation("Removing recommendation " + _channelPublicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();

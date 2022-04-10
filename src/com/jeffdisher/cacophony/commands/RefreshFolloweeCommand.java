@@ -35,6 +35,8 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		Assert.assertTrue(null != _publicKey);
+		
 		IOperationLog log = environment.logOperation("Refreshing followee " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();

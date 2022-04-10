@@ -29,6 +29,9 @@ public record PublishCommand(String _name, String _description, String _discussi
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
 	{
+		Assert.assertTrue(null != _name);
+		Assert.assertTrue(null != _description);
+		
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
 		IOperationLog log = environment.logOperation("Publish: " + this);
