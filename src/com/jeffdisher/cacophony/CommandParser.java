@@ -190,7 +190,7 @@ public class CommandParser
 		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[] {"--edgeMaxPixels", "--followCacheTargetBytes"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			int edgeMaxPixels = _parseAsInt(optional[0], 0);
-			long followCacheTargetBytes = _parseAsLong(optional[1], 0L);
+			long followCacheTargetBytes = _parseAsStorageNumber(optional[1], 0L);
 			return new SetGlobalPrefsCommand(edgeMaxPixels, followCacheTargetBytes);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
@@ -251,19 +251,57 @@ public class CommandParser
 			}
 		}
 		
-		private static long _parseAsLong(String num, long ifNull) throws UsageException
+		/**
+		 * Parses the given number as a long, but also allows for suffix of "k"/"K" (thousands), "m"/"M" (millions),
+		 * "g"/"G" (billions).
+		 * 
+		 * @param num The string to parse.
+		 * @param ifNull The number to return if the num is null.
+		 * @return The parsed number.
+		 * @throws UsageException If the number was not null but could not be parsed.
+		 */
+		private static long _parseAsStorageNumber(String num, long ifNull) throws UsageException
 		{
-			try
+			long result;
+			if (null != num)
 			{
-				return (null != num)
-						? Long.parseLong(num)
-						: ifNull
+				// First, see if there is trailing magnitude suffix.
+				long magnitude = 1L;
+				char lastChar = num.charAt(num.length() - 1);
+				switch (lastChar)
+				{
+					case 'k':
+					case 'K':
+						magnitude = 1_000L;
+						break;
+					case 'm':
+					case 'M':
+						magnitude = 1_000_000L;
+						break;
+					case 'g':
+					case 'G':
+						magnitude = 1_000_000_000L;
+						break;
+				}
+				String toParse = (1L == magnitude)
+						? num
+						: num.substring(0, num.length() - 1)
 				;
+				try
+				{
+					long value = Long.parseLong(toParse);
+					result = value * magnitude;
+				}
+				catch (NumberFormatException e)
+				{
+					throw new UsageException("Not a number: \"" + num + "\"");
+				}
 			}
-			catch (NumberFormatException e)
+			else
 			{
-				throw new UsageException("Not a number: \"" + num + "\"");
+				result = ifNull;
 			}
+			return result;
 		}
 		
 		private static IpfsKey _parseAsKey(String rawKey) throws UsageException

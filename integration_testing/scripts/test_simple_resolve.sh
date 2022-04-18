@@ -68,6 +68,10 @@ echo "Attaching Cacophony instance2 to this key..."
 CACOPHONY_STORAGE="$USER2" CACOPHONY_KEY_NAME=test2 java -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 checkPreviousCommand "createNewChannel2"
 
+echo "Verify that we can set the prefs..."
+PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --setGlobalPrefs --edgeMaxPixels 1280 --followCacheTargetBytes 50M)
+requireSubstring "$PREFS_OUTPUT" "Updated prefs: GlobalPrefs[videoEdgePixelMax=1280, followCacheTargetBytes=50000000]"
+
 echo "Verify that the puplic key is correct..."
 PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --getPublicKey)
 # Note that the output we get from --getPublicKey is our canonicalized base58 whereas the key gen we have is base36, so canonicalize it, first.

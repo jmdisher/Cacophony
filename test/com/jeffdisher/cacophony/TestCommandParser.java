@@ -12,6 +12,8 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestCommandParser
@@ -146,6 +148,29 @@ public class TestCommandParser
 		ICommand command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
+	}
+
+	@Test(expected = UsageException.class)
+	public void testSetGlobalPrefsInvalid() throws Throwable
+	{
+		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5000000000h"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		// We expect this to throw the UsageException.
+		CommandParser.parseArgs(foo, capture);
+	}
+
+	@Test
+	public void testSetGlobalPrefsGigs() throws Throwable
+	{
+		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5g"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+		SetGlobalPrefsCommand safe = (SetGlobalPrefsCommand) command;
+		Assert.assertEquals(5_000_000_000L, safe._followCacheTargetBytes());
 	}
 
 	@Test
