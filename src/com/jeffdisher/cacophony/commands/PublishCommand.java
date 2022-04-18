@@ -2,6 +2,8 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -81,7 +83,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 		}
 		record.setElements(array);
 		record.setPublisherKey(publicKey.toPublicKey());
-		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
+		// The published time is in seconds since the Epoch, in UTC.
+		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		IpfsFile recordHash = HighLevelIdioms.saveData(remote, rawRecord);
 		cache.uploadedToThisCache(recordHash);
@@ -103,5 +106,12 @@ public record PublishCommand(String _name, String _description, String _discussi
 		cache.removeFromThisCache(rootToLoad);
 		local.writeBackConfig();
 		log.finish("Publish completed!");
+	}
+
+
+	private static long _currentUtcEpochSeconds()
+	{
+		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+		return now.toEpochSecond();
 	}
 }

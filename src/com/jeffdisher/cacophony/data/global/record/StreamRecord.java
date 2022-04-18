@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlType;
  *       &lt;sequence>
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="publishedSecondsUtc" type="{http://www.w3.org/2001/XMLSchema}int"/>
+ *         &lt;element name="publishedSecondsUtc" type="{http://www.w3.org/2001/XMLSchema}long"/>
  *         &lt;element name="discussion" type="{http://www.w3.org/2001/XMLSchema}anyURI" minOccurs="0"/>
  *         &lt;element name="elements" type="{https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd}DataArray"/>
  *         &lt;element name="publisherKey" type="{http://www.w3.org/2001/XMLSchema}string"/>
@@ -49,7 +49,7 @@ public class StreamRecord {
     protected String name;
     @XmlElement(required = true)
     protected String description;
-    protected int publishedSecondsUtc;
+    protected long publishedSecondsUtc;
     @XmlSchemaType(name = "anyURI")
     protected String discussion;
     @XmlElement(required = true)
@@ -109,7 +109,7 @@ public class StreamRecord {
      * Gets the value of the publishedSecondsUtc property.
      * 
      */
-    public int getPublishedSecondsUtc() {
+    public long getPublishedSecondsUtc() {
         return publishedSecondsUtc;
     }
 
@@ -117,7 +117,7 @@ public class StreamRecord {
      * Sets the value of the publishedSecondsUtc property.
      * 
      */
-    public void setPublishedSecondsUtc(int value) {
+    public void setPublishedSecondsUtc(long value) {
         this.publishedSecondsUtc = value;
     }
 
