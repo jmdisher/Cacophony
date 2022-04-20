@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -11,11 +10,13 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -33,16 +34,18 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
 		IOperationLog log = environment.logOperation("Refreshing followee " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
+		IConnection sharedConnection = local.getSharedConnection();
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, sharedConnection, localIndex.keyName());
+		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		LoadChecker checker = new LoadChecker(remote, pinCache, sharedConnection);
+		HighLevelCache cache = new HighLevelCache(pinCache, sharedConnection);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// We need to first verify that we are already following them.
@@ -115,7 +118,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs) throws IOException, IpfsConnectionException, SizeConstraintException
+	private void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		Set<String> removeCids = new HashSet<String>();
