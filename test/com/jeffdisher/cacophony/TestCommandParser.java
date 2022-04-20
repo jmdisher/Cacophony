@@ -337,4 +337,15 @@ public class TestCommandParser
 		Assert.assertNull(command);
 		Assert.assertEquals(0, outStream.size());
 	}
+
+	@Test
+	public void testRefreshOne() throws Throwable
+	{
+		String[] foo = {"--refreshFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }
