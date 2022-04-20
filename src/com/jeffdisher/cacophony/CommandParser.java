@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
+import com.jeffdisher.cacophony.commands.RefreshNextFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.RepublishCommand;
@@ -175,6 +176,10 @@ public class CommandParser
 		{
 			IpfsKey followeeKey = _parseAsKey(required[0]);
 			return new RefreshFolloweeCommand(followeeKey);
+		}),
+		REFRESH_NEXT_FOLLOWEE(true, "--refreshNextFollowee", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			return new RefreshNextFolloweeCommand();
 		}),
 		REPUBLISH(true, "--republish", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

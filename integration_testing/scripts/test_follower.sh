@@ -144,6 +144,12 @@ checkFileExists "$STATIC2/recommending.html"
 checkFileExists "$STATIC2/following.html"
 checkFileExists "$STATIC2/generated_db.js"
 
+echo "Verify that we can refresh the \"next\" followee, and that we do correctly try this only user..."
+REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshNextFollowee)
+requireSubstring "$REFRESH_NEXT_OUTPUT" "Refreshing followee IpfsKey($PUBLIC1)"
+REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --refreshNextFollowee 2>&1)
+requireSubstring "$REFRESH_NEXT_OUTPUT" "Usage error in running command: Not following any users"
+
 echo "Stop following and verify it is no longer in the list"
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --stopFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "stopFollowing"
