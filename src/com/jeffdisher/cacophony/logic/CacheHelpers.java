@@ -36,7 +36,7 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static void addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
+	public static long addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
 	{
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
@@ -70,6 +70,7 @@ public class CacheHelpers
 			combinedSizeBytes += remote.getSizeInBytes(leafHash);
 		}
 		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
+		return combinedSizeBytes;
 	}
 
 	public static long sizeInBytesToAdd(RemoteActions remote, int videoEdgePixelMax, String rawCid) throws IpfsConnectionException

@@ -94,7 +94,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		IOperationLog log = environment.logOperation("Caching initial entries...");
 		int entryCountAdded = 0;
-		int entryCountTotal = 0;
+		int entryCountTotal = newRecords.getRecord().size();
 		
 		// Now, cache all the element meta-data entries and find their sizes for consideration into the cache.
 		List<CacheAlgorithm.Candidate<String>> candidatesList = new ArrayList<>();
@@ -129,7 +129,10 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			CacheHelpers.pruneCacheIfNeeded(cache, followIndex, pruningAlgorithm, _publicKey, 0L);
 			
 			// We always want to cache the most recent, since it is likely most watched, so remove that from the list and add it before running the general algorithm.
-			CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, firstElement.data());
+			environment.logToConsole("Caching most recent entry: " + firstElement.data());
+			entryCountAdded += 1;
+			long leafBytes = CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, firstElement.data());
+			environment.logToConsole("\t" + leafBytes + " bytes for leaf elements");
 			
 			// Finally, run the cache algorithm for bulk adding and then cache whatever we are told to add.
 			CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes(), CacheHelpers.getCurrentCacheSizeBytes(followIndex));
@@ -137,7 +140,9 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			for (CacheAlgorithm.Candidate<String> elt : toAdd)
 			{
 				environment.logToConsole("Caching entry: " + elt.data());
-				CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
+				entryCountAdded += 1;
+				leafBytes = CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
+				environment.logToConsole("\t" + leafBytes + " bytes for leaf elements");
 			}
 		}
 		log.finish("Completed initial cache (" + entryCountAdded + " of " + entryCountTotal + " entries cached)");
