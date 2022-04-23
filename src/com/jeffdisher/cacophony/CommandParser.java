@@ -8,6 +8,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.GetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.GetPublicKeyCommand;
 import com.jeffdisher.cacophony.commands.HtmlOutputCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -209,6 +210,10 @@ public class CommandParser
 		GET_PUBLIC_KEY(true, "--getPublicKey", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			return new GetPublicKeyCommand();
+		}),
+		GET_GLOBAL_PREFS(true, "--getGlobalPrefs", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			return new GetGlobalPrefsCommand();
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.

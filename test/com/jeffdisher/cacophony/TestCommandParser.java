@@ -359,4 +359,15 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	public void testGetPrefs() throws Throwable
+	{
+		String[] foo = {"--getGlobalPrefs"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }
