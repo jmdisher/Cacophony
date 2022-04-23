@@ -13,7 +13,7 @@ public class Assert
 	 * @param e The unexpected exception.
 	 * @return Does not return - this is only here so the caller can throw this to satisfy the compiler.
 	 */
-	public static AssertionError unexpected(Exception e)
+	public static AssertionError unexpected(Throwable e)
 	{
 		throw new AssertionError("Unexpected exception", e);
 	}

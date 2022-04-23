@@ -80,9 +80,15 @@ public class Cacophony {
 					e.printStackTrace();
 					System.exit(2);
 				}
-				catch (CacophonyException e)
+				catch (UsageException e)
 				{
 					System.err.println("Usage error in running command: " + e.getLocalizedMessage());
+					System.exit(2);
+				}
+				catch (CacophonyException e)
+				{
+					System.err.println("Exception encountered while running command: " + e.getLocalizedMessage());
+					e.printStackTrace();
 					System.exit(2);
 				}
 			}

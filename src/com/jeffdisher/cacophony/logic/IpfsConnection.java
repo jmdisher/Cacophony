@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.logic;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,10 @@ public class IpfsConnection implements IConnection
 		{
 			return _connection.key.list().stream().map((info) -> new IConnection.Key(info.name, new IpfsKey(info.id))).collect(Collectors.toList());
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException(e);
@@ -59,6 +64,10 @@ public class IpfsConnection implements IConnection
 			
 			return new IpfsFile(hash);
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException(e);
@@ -71,6 +80,10 @@ public class IpfsConnection implements IConnection
 		try
 		{
 			return _connection.cat(file.getMultihash());
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
 		}
 		catch (IOException e)
 		{
@@ -88,6 +101,10 @@ public class IpfsConnection implements IConnection
 			String index58 = file.toSafeString();
 			Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException(e);
@@ -103,6 +120,10 @@ public class IpfsConnection implements IConnection
 			String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 			return IpfsFile.fromIpfsCid(published);
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException(e);
@@ -116,6 +137,10 @@ public class IpfsConnection implements IConnection
 		{
 			Map<?,?> dataMap = _connection.file.ls(cid.getMultihash());
 			return ((Number)((Map<?,?>)((Map<?,?>)dataMap.get("Objects")).get(cid.toSafeString())).get("Size")).longValue();
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
 		}
 		catch (IOException e)
 		{
@@ -143,6 +168,10 @@ public class IpfsConnection implements IConnection
 		{
 			_connection.pin.add(cid.getMultihash());
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException(e);
@@ -155,6 +184,10 @@ public class IpfsConnection implements IConnection
 		try
 		{
 			_connection.pin.rm(cid.getMultihash());
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
 		}
 		catch (IOException e)
 		{
@@ -170,9 +203,32 @@ public class IpfsConnection implements IConnection
 			KeyInfo info = _connection.key.gen(keyName, Optional.empty(), Optional.empty());
 			return new IConnection.Key(info.name, new IpfsKey(info.id));
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException(e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException(e);
+		}
+	}
+
+
+	private IpfsConnectionException _handleIpfsRuntimeException(RuntimeException e) throws IpfsConnectionException, AssertionError
+	{
+		// For some reason, IPFS wraps java.net.SocketTimeoutException in RuntimeException, but we want to expose that here.
+		try
+		{
+			throw e.getCause();
+		}
+		catch (SocketTimeoutException timeout)
+		{
+			throw new IpfsConnectionException(timeout);
+		}
+		catch (Throwable t)
+		{
+			// Unknown.
+			throw Assert.unexpected(t);
 		}
 	}
 }
