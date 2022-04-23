@@ -27,6 +27,7 @@ import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
@@ -132,7 +133,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			environment.logToConsole("Caching most recent entry: " + firstElement.data());
 			entryCountAdded += 1;
 			long leafBytes = CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, firstElement.data());
-			environment.logToConsole("\t" + leafBytes + " bytes for leaf elements");
+			environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 			
 			// Finally, run the cache algorithm for bulk adding and then cache whatever we are told to add.
 			CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes(), CacheHelpers.getCurrentCacheSizeBytes(followIndex));
@@ -142,7 +143,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 				environment.logToConsole("Caching entry: " + elt.data());
 				entryCountAdded += 1;
 				leafBytes = CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
-				environment.logToConsole("\t" + leafBytes + " bytes for leaf elements");
+				environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 			}
 		}
 		log.finish("Completed initial cache (" + entryCountAdded + " of " + entryCountTotal + " entries cached)");
