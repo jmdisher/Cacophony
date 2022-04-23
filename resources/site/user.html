@@ -30,7 +30,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 		{
 			object["thumbnailUrl"] = elt["thumbnailUrl"];
 		}
-		processed.push(object);
+		// We want to build this backward so that the most recent additions are at the top of the screen.
+		processed.unshift(object);
 	});
 	$scope.posts = processed;
 });
