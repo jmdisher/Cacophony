@@ -14,8 +14,8 @@ public class IpfsConnectionException extends CacophonyException
 {
 	private static final long serialVersionUID = 1L;
 
-	public IpfsConnectionException(IOException underlyingException)
+	public IpfsConnectionException(String action, Object context, IOException underlyingException)
 	{
-		super("IPFS connection malfunctioning", underlyingException);
+		super("IPFS Connection error while performing \"" + action + "\" with: " + context, underlyingException);
 	}
 }

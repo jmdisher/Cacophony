@@ -190,7 +190,7 @@ public class MockConnection implements IConnection
 		else
 		{
 			// The real IPFS daemon seems to throw IOException when it can't resolve.
-			throw new IpfsConnectionException(new IOException("Peer does not exist"));
+			throw new IpfsConnectionException("resolve", key, new IOException("Peer does not exist"));
 		}
 	}
 }

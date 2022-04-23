@@ -25,7 +25,7 @@ public class RealConnectionFactory implements IConnectionFactory
 		catch (IOException e)
 		{
 			// This happens if we fail to read the config, which should only happen if the node is bogus.
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("connect", ipfsHost, e);
 		}
 	}
 }

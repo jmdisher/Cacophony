@@ -42,11 +42,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("getKeys", "", e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("getKeys", "", e);
 		}
 	}
 
@@ -66,11 +66,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("store", "stream", e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("store", "stream", e);
 		}
 	}
 
@@ -83,11 +83,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("load", file, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("load", file, e);
 		}
 	}
 
@@ -103,11 +103,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("publish", file, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("publish", file, e);
 		}
 	}
 
@@ -122,11 +122,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("resolve", key, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("resolve", key, e);
 		}
 	}
 
@@ -140,11 +140,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("getSize", cid, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("getSize", cid, e);
 		}
 	}
 
@@ -170,11 +170,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("pin", cid, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("pin", cid, e);
 		}
 	}
 
@@ -187,11 +187,11 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("rm", cid, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("rm", cid, e);
 		}
 	}
 
@@ -205,16 +205,16 @@ public class IpfsConnection implements IConnection
 		}
 		catch (RuntimeException e)
 		{
-			throw _handleIpfsRuntimeException(e);
+			throw _handleIpfsRuntimeException("gen", keyName, e);
 		}
 		catch (IOException e)
 		{
-			throw new IpfsConnectionException(e);
+			throw new IpfsConnectionException("gen", keyName, e);
 		}
 	}
 
 
-	private IpfsConnectionException _handleIpfsRuntimeException(RuntimeException e) throws IpfsConnectionException, AssertionError
+	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException, AssertionError
 	{
 		// For some reason, IPFS wraps java.net.SocketTimeoutException in RuntimeException, but we want to expose that here.
 		try
@@ -223,7 +223,7 @@ public class IpfsConnection implements IConnection
 		}
 		catch (SocketTimeoutException timeout)
 		{
-			throw new IpfsConnectionException(timeout);
+			throw new IpfsConnectionException(action, context, timeout);
 		}
 		catch (Throwable t)
 		{
