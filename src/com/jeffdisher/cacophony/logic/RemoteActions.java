@@ -60,6 +60,10 @@ public class RemoteActions
 		StandardEnvironment.IOperationLog log = _environment.logOperation("Saving " + raw.length + " bytes...");
 		IpfsFile file = _ipfs.storeData(new ByteArrayInputStream(raw));
 		log.finish("saved: " + file.toSafeString());
+		if (_environment.shouldEnableVerifications())
+		{
+			Assert.assertTrue(raw.length == (int)_getSizeInBytes(file));
+		}
 		return file;
 	}
 
@@ -93,14 +97,17 @@ public class RemoteActions
 			_ipfs.publish(_keyName, indexHash);
 			log.finish("Success!");
 		}
-		catch (RuntimeException e)
+		catch (IpfsConnectionException e)
 		{
 			log.finish("Failed: " + e.getLocalizedMessage());
 		}
 		
-		// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
-		IpfsFile published = _ipfs.resolve(_publicKey);
-		Assert.assertTrue(published.toSafeString().equals(indexHash.toSafeString()));
+		if (_environment.shouldEnableVerifications())
+		{
+			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
+			IpfsFile published = _ipfs.resolve(_publicKey);
+			Assert.assertTrue(published.toSafeString().equals(indexHash.toSafeString()));
+		}
 	}
 
 	/**
@@ -127,6 +134,12 @@ public class RemoteActions
 	}
 
 	public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
+	{
+		return _getSizeInBytes(cid);
+	}
+
+
+	private long _getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
 	{
 		return _ipfs.getSizeInBytes(cid);
 	}

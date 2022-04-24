@@ -17,7 +17,7 @@ public class HighLevelIdioms
 {
 	public static IpfsFile saveData(RemoteActions remote, byte[] data) throws IpfsConnectionException
 	{
-		return _saveData(remote, data);
+		return remote.saveData(data);
 	}
 
 	public static IpfsFile saveStream(RemoteActions remote, InputStream stream) throws IpfsConnectionException
@@ -41,20 +41,12 @@ public class HighLevelIdioms
 	}
 
 
-	private static IpfsFile _saveData(RemoteActions remote, byte[] data) throws IpfsConnectionException
-	{
-		IpfsFile uploaded = remote.saveData(data);
-		// TODO:  Remove this check once we have confirmed that this is working as expected.
-		Assert.assertTrue(data.length == (int)remote.getSizeInBytes(uploaded));
-		return uploaded;
-	}
-
 	private static IpfsFile _saveAndPublishIndex(RemoteActions remote, LocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file.
 		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
 		// Save it to the IPFS node.
-		IpfsFile hashIndex = _saveData(remote, rawIndex);
+		IpfsFile hashIndex = remote.saveData(rawIndex);
 		Assert.assertTrue(null != hashIndex);
 		// Publish it to IPNS.
 		remote.publishIndex(hashIndex);

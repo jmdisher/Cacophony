@@ -36,7 +36,7 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
 		executor.createNewConfig(IPFS_HOST, KEY_NAME);
 		
@@ -85,7 +85,7 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection));
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
 		executor.createNewConfig(IPFS_HOST, KEY_NAME);
 		
@@ -101,7 +101,7 @@ public class TestStartFollowingCommand
 	public void testMissingConfig() throws Throwable
 	{
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(null));
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(null), true);
 		
 		// We expect this to fail since there is no LocalIndex.
 		try {

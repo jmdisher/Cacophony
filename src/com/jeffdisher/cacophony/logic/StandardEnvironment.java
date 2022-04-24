@@ -12,14 +12,16 @@ public class StandardEnvironment implements IEnvironment
 	private final PrintStream _stream;
 	private final IConfigFileSystem _fileSystem;
 	private final IConnectionFactory _factory;
+	private final boolean _shouldEnableVerifications;
 	private int _nextOperationCounter;
 	private LocalConfig _lazyConfig;
 
-	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory)
+	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, boolean shouldEnableVerifications)
 	{
 		_stream = stream;
 		_fileSystem = fileSystem;
 		_factory = factory;
+		_shouldEnableVerifications = shouldEnableVerifications;
 		_nextOperationCounter = 0;
 	}
 
@@ -66,5 +68,11 @@ public class StandardEnvironment implements IEnvironment
 			Assert.assertTrue(null != _lazyConfig);
 		}
 		return _lazyConfig;
+	}
+
+	@Override
+	public boolean shouldEnableVerifications()
+	{
+		return _shouldEnableVerifications;
 	}
 }

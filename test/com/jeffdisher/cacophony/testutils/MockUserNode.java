@@ -36,7 +36,7 @@ public class MockUserNode
 		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
 		_fileSystem = new MemoryConfigFileSystem();
 		_factory = new MockConnectionFactory(_sharedConnection);
-		_executor = new StandardEnvironment(System.out, _fileSystem, _factory);
+		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, true);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -58,7 +58,7 @@ public class MockUserNode
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory);
+			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory, true);
 		}
 		command.runInEnvironment(executor);
 	}

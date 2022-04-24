@@ -37,4 +37,12 @@ public interface IEnvironment
 	 * @throws VersionException The version file is missing or an unknown version.
 	 */
 	LocalConfig loadExistingConfig() throws UsageException, VersionException;
+
+	/**
+	 * Used in some testing modes to enable additional verifications that sizes/publications/etc are consistent.  Should
+	 * not normally be used as it adds some additional network reads into the critical path.
+	 * 
+	 * @return True if additional checks should be applied.
+	 */
+	boolean shouldEnableVerifications();
 }

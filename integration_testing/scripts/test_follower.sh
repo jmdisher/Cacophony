@@ -19,6 +19,9 @@ if [ $# -ne 3 ]; then
 	exit 1
 fi
 
+# We always want to run our tests with extra verifications.
+export CACOPHONY_ENABLE_VERIFICATIONS=1
+
 BASEDIR=$(dirname $0)
 PATH_TO_IPFS="$1"
 RESOURCES="$2"
