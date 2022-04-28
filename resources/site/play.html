@@ -15,9 +15,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let hashArg = readGetVar("elt");
 	let elt = DATA_elements[hashArg];
 	$scope.name = elt["name"];
-	$scope.description = elt["description"];
 	$scope.readableDate = new Date(elt["publishedSecondsUtc"] + 1000).toLocaleString();
 	$scope.cached = elt["cached"];
+	
+	// We don't use Angular for the description since we may need to process it.
+	let descriptionElement = document.getElementById("description");
+	descriptionElement.innerText = elt["description"];
+	descriptionElement.innerHTML = descriptionElement.innerHTML.replace(/\/n/g, "<br />");
 	
 	if ($scope.cached)
 	{
@@ -70,8 +74,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	</div>
 	<div class="row">
 		<div class="col-md-6 col-md-offset-3">
-			<div class="row well">
-				{{description}}
+			<div class="row well" id="description">
 			</div>
 		</div>
 	</div>

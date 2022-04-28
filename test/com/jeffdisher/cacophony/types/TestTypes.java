@@ -120,4 +120,12 @@ public class TestTypes
 	{
 		Assert.assertNull(IpfsFile.fromIpfsCid("BOGUS"));
 	}
+
+	@Test
+	public void testJsonNewLine()
+	{
+		JsonObject object = new JsonObject();
+		object.add("newlines", "This is a new\nline.");
+		Assert.assertEquals("{\"newlines\":\"This is a new\\nline.\"}", object.toString());
+	}
 }

@@ -19,12 +19,19 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let processed = [];
 	posts.forEach(function(hash) {
 		let elt = DATA_elements[hash];
+		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
+		let description = elt["description"];
+		if (description.length > 135)
+		{
+			// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
+			description = description.slice(0, 130) + "...";
+		}
 		let object = {
 			"cached": elt["cached"],
 			"elementHash": hash,
 			"readableDate": new Date(elt["publishedSecondsUtc"] + 1000).toLocaleString(),
 			"name": elt["name"],
-			"description": elt["description"],
+			"description": description,
 		};
 		if (elt["cached"])
 		{
