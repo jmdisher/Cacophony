@@ -29,7 +29,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 		let object = {
 			"cached": elt["cached"],
 			"elementHash": hash,
-			"readableDate": new Date(elt["publishedSecondsUtc"] + 1000).toLocaleString(),
+			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
 			"name": elt["name"],
 			"description": description,
 		};

@@ -15,7 +15,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let hashArg = readGetVar("elt");
 	let elt = DATA_elements[hashArg];
 	$scope.name = elt["name"];
-	$scope.readableDate = new Date(elt["publishedSecondsUtc"] + 1000).toLocaleString();
+	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
 	$scope.cached = elt["cached"];
 	
 	// We don't use Angular for the description since we may need to process it.
