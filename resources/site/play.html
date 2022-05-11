@@ -16,6 +16,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let elt = DATA_elements[hashArg];
 	$scope.name = elt["name"];
 	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
+	$scope.discussionUrl = elt["discussionUrl"];
 	$scope.cached = elt["cached"];
 	
 	// We don't use Angular for the description since we may need to process it.
@@ -75,6 +76,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 	<div class="row">
 		<div class="col-md-6 col-md-offset-3">
 			<div class="row well" id="description">
+			</div>
+			<div class="row well">
+				<a ng-href="{{discussionUrl}}" ng-show="{{discussionUrl}}">Reply in the discussion</a>
 			</div>
 		</div>
 	</div>

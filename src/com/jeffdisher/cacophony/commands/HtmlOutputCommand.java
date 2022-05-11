@@ -200,6 +200,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			thisElt.set("name", record.getName());
 			thisElt.set("description", record.getDescription());
 			thisElt.set("publishedSecondsUtc", record.getPublishedSecondsUtc());
+			thisElt.set("discussionUrl", record.getDiscussion());
 			
 			boolean isLocalUser = (null == elementsCachedForUser);
 			boolean isCachedFollowee = !isLocalUser && elementsCachedForUser.containsKey(cid);
