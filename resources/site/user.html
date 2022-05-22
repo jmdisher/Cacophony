@@ -82,7 +82,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<a href="play.html?elt={{post.elementHash}}"><img class="img-responsive" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
 				</div>
 				<div class="col-md-6" ng-hide="{{post.cached}}">
-					(not cached)
+					<a href="play.html?elt={{post.elementHash}}">(not cached)</a>
 				</div>
 				<div class="col-md-3">
 					<strong>{{post.name}}</strong><br />

@@ -66,7 +66,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
 		</div>
 		<div class="row well" ng-hide="{{cached}}">
-			<strong>NOTE:  This entry is not cached locally so it can't be viewed.</strong>
+			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong>
 		</div>
 		<div class="row well">
 			<strong>{{name}}</strong><br />
@@ -77,8 +77,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 		<div class="col-md-6 col-md-offset-3">
 			<div class="row well" id="description">
 			</div>
-			<div class="row well">
-				<a ng-href="{{discussionUrl}}" ng-show="{{discussionUrl}}">Reply in the discussion</a>
+			<div class="row well" ng-show="{{discussionUrl}}">
+				<a ng-href="{{discussionUrl}}">Reply in the discussion</a>
 			</div>
 		</div>
 	</div>
