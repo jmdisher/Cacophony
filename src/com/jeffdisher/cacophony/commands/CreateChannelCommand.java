@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -25,7 +24,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);

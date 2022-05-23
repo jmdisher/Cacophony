@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -19,7 +17,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RepublishCommand() implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		IOperationLog log = environment.logOperation("Republishing index...");
 		LocalConfig local = environment.loadExistingConfig();

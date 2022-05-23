@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +25,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		Assert.assertTrue(null != _followeeKey);
 		

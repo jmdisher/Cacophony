@@ -26,13 +26,14 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);
@@ -62,9 +63,17 @@ public record PublishCommand(String _name, String _description, String _discussi
 		{
 			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
 			// Upload the file.
-			FileInputStream inputStream = new FileInputStream(elt.filePath());
-			IpfsFile uploaded = remote.saveStream(inputStream);
-			inputStream.close();
+			IpfsFile uploaded;
+			try {
+				FileInputStream inputStream = new FileInputStream(elt.filePath());
+				uploaded = remote.saveStream(inputStream);
+				inputStream.close();
+			}
+			catch (IOException e)
+			{
+				// Failure to read this file is a static usage error.
+				throw new UsageException("Unable to read file: " + elt.filePath());
+			}
 			cache.uploadedToThisCache(uploaded);
 			
 			DataElement element = new DataElement();

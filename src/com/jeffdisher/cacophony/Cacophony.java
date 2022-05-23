@@ -78,12 +78,6 @@ public class Cacophony {
 				{
 					command.runInEnvironment(executor);
 				}
-				catch (IOException e)
-				{
-					System.err.println("Fatal IOException while running command");
-					e.printStackTrace();
-					System.exit(2);
-				}
 				catch (UsageException e)
 				{
 					System.err.println("Usage error in running command: " + e.getLocalizedMessage());

@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -28,7 +26,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue(null != _publicKey);
 		

@@ -20,13 +20,14 @@ import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));
 		if (null != _picturePath)
@@ -63,7 +64,15 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		if (null != _picturePath)
 		{
 			// Upload the picture.
-			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
+			byte[] rawData;
+			try
+			{
+				rawData = Files.readAllBytes(_picturePath.toPath());
+			}
+			catch (IOException e)
+			{
+				throw new UsageException("Unable to load picture: " + _picturePath.toPath());
+			}
 			IpfsFile pictureHash = remote.saveData(rawData);
 			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.toSafeString());

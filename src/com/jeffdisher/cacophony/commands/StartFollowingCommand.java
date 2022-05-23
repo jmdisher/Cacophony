@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +34,7 @@ import com.jeffdisher.cacophony.utils.StringHelpers;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
@@ -95,7 +94,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _populateCachedRecords(IEnvironment environment, GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IOException, IpfsConnectionException, SizeConstraintException
+	private void _populateCachedRecords(IEnvironment environment, GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		IOperationLog log = environment.logOperation("Caching initial entries...");

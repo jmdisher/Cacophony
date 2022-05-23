@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -12,7 +10,7 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 public record ListFolloweesCommand() implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
 		FollowIndex followIndex = local.loadFollowIndex();

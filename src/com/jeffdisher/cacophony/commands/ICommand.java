@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.IOException;
-
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
@@ -11,5 +9,5 @@ import com.jeffdisher.cacophony.types.CacophonyException;
  */
 public interface ICommand
 {
-	void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException;
+	void runInEnvironment(IEnvironment environment) throws CacophonyException;
 }
