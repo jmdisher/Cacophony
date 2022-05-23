@@ -69,11 +69,11 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		IpfsFile hashDescription = HighLevelIdioms.saveData(remote, rawDescription);
+		IpfsFile hashDescription = remote.saveData(rawDescription);
 		cache.uploadedToThisCache(hashDescription);
-		IpfsFile hashRecommendations = HighLevelIdioms.saveData(remote, rawRecommendations);
+		IpfsFile hashRecommendations = remote.saveData(rawRecommendations);
 		cache.uploadedToThisCache(hashRecommendations);
-		IpfsFile hashRecords = HighLevelIdioms.saveData(remote, rawRecords);
+		IpfsFile hashRecords = remote.saveData(rawRecords);
 		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.

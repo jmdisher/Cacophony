@@ -51,7 +51,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		// Serialize and upload the description.
 		rawRecommendations = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile hashDescription = HighLevelIdioms.saveData(remote, rawRecommendations);
+		IpfsFile hashDescription = remote.saveData(rawRecommendations);
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.

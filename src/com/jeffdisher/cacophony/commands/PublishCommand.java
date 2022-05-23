@@ -58,7 +58,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
 			// Upload the file.
 			FileInputStream inputStream = new FileInputStream(elt.filePath());
-			IpfsFile uploaded = HighLevelIdioms.saveStream(remote, inputStream);
+			IpfsFile uploaded = remote.saveStream(inputStream);
 			inputStream.close();
 			cache.uploadedToThisCache(uploaded);
 			
@@ -86,14 +86,14 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = HighLevelIdioms.saveData(remote, rawRecord);
+		IpfsFile recordHash = remote.saveData(rawRecord);
 		cache.uploadedToThisCache(recordHash);
 		
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = HighLevelIdioms.saveData(remote, rawRecords);
+		IpfsFile recordsHash = remote.saveData(rawRecords);
 		cache.uploadedToThisCache(recordsHash);
 		
 		// Update, save, and publish the new index.

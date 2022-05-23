@@ -59,7 +59,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		{
 			// Upload the picture.
 			byte[] rawData = Files.readAllBytes(_picturePath.toPath());
-			IpfsFile pictureHash = HighLevelIdioms.saveData(remote, rawData);
+			IpfsFile pictureHash = remote.saveData(rawData);
 			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.toSafeString());
 		}
@@ -90,7 +90,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		// Serialize and upload the description.
 		rawDescription = GlobalData.serializeDescription(description);
-		IpfsFile hashDescription = HighLevelIdioms.saveData(remote, rawDescription);
+		IpfsFile hashDescription = remote.saveData(rawDescription);
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.

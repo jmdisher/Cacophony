@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.InputStream;
-
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
@@ -15,16 +13,6 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class HighLevelIdioms
 {
-	public static IpfsFile saveData(RemoteActions remote, byte[] data) throws IpfsConnectionException
-	{
-		return remote.saveData(data);
-	}
-
-	public static IpfsFile saveStream(RemoteActions remote, InputStream stream) throws IpfsConnectionException
-	{
-		return remote.saveStream(stream);
-	}
-
 	public static IpfsFile saveAndPublishIndex(RemoteActions remote, LocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		return _saveAndPublishIndex(remote, local, streamIndex);
