@@ -126,11 +126,6 @@ public class RemoteActions
 				didPublish = false;
 			}
 		}
-		// If we failed to publish, we always want to log this.
-		if (!didPublish)
-		{
-			System.err.println("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + indexHash);
-		}
 		return didPublish;
 	}
 

@@ -116,6 +116,32 @@ public class CommandHelpers
 		log.finish("Refresh completed!");
 	}
 
+	/**
+	 * The common idiom of serializing, saving to IPFS, and republishing the index to IPNS.
+	 * Failures in saving will throw an exception while a failure in publication is merely logged (as this is
+	 * considered a degradation, but not a failure).
+	 * 
+	 * @param remote The remote helpers.
+	 * @param streamIndex The index to use as the updated root of the data structure.
+	 * @return The hash of the saved index file.
+	 * @throws IpfsConnectionException An error occurred while saving the file to IPFS.
+	 */
+	public static IpfsFile serializeSaveAndPublishIndex(RemoteActions remote, StreamIndex streamIndex) throws IpfsConnectionException
+	{
+		// Serialize the index file and save it to the IPFS node.
+		IpfsFile hashIndex = remote.saveData(GlobalData.serializeIndex(streamIndex));
+		// This never returns null.
+		Assert.assertTrue(null != hashIndex);
+		// Publish it to IPNS (returns false on failure).
+		boolean didPublish = remote.publishIndex(hashIndex);
+		// If we failed to publish, we always want to log this.
+		if (!didPublish)
+		{
+			System.err.println("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + hashIndex);
+		}
+		return hashIndex;
+	}
+
 
 	private static void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs, IpfsKey publicKey) throws IpfsConnectionException, SizeConstraintException
 	{

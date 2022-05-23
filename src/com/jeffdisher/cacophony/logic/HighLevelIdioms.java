@@ -1,11 +1,9 @@
 package com.jeffdisher.cacophony.logic;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -15,15 +13,7 @@ public class HighLevelIdioms
 {
 	public static IpfsFile saveAndPublishIndex(RemoteActions remote, LocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
-		// Serialize the index file.
-		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
-		// Save it to the IPFS node.
-		IpfsFile hashIndex = remote.saveData(rawIndex);
-		Assert.assertTrue(null != hashIndex);
-		// Publish it to IPNS.
-		boolean didPublish = remote.publishIndex(hashIndex);
-		// TODO:  Remove this assertion once we can handle the error.
-		Assert.assertTrue(didPublish);
+		IpfsFile hashIndex = CommandHelpers.serializeSaveAndPublishIndex(remote, streamIndex);
 		// Update the local index.
 		LocalIndex localIndex = local.readLocalIndex();
 		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), hashIndex));
