@@ -15,22 +15,6 @@ public class HighLevelIdioms
 {
 	public static IpfsFile saveAndPublishIndex(RemoteActions remote, LocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
 	{
-		return _saveAndPublishIndex(remote, local, streamIndex);
-	}
-
-	public static IpfsFile saveAndPublishNewIndex(RemoteActions remote, LocalConfig local, IpfsFile description, IpfsFile recommendations, IpfsFile records) throws IpfsConnectionException
-	{
-		StreamIndex streamIndex = new StreamIndex();
-		streamIndex.setVersion(1);
-		streamIndex.setDescription(description.toSafeString());
-		streamIndex.setRecommendations(recommendations.toSafeString());
-		streamIndex.setRecords(records.toSafeString());
-		return _saveAndPublishIndex(remote, local, streamIndex);
-	}
-
-
-	private static IpfsFile _saveAndPublishIndex(RemoteActions remote, LocalConfig local, StreamIndex streamIndex) throws IpfsConnectionException
-	{
 		// Serialize the index file.
 		byte[] rawIndex = GlobalData.serializeIndex(streamIndex);
 		// Save it to the IPFS node.

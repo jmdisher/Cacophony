@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
@@ -77,7 +78,12 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishNewIndex(remote, local, hashDescription, hashRecommendations, hashRecords);
+		StreamIndex streamIndex = new StreamIndex();
+		streamIndex.setVersion(1);
+		streamIndex.setDescription(hashDescription.toSafeString());
+		streamIndex.setRecommendations(hashRecommendations.toSafeString());
+		streamIndex.setRecords(hashRecords.toSafeString());
+		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, streamIndex);
 		cache.uploadedToThisCache(indexHash);
 		local.writeBackConfig();
 		log.finish("Channel created and published to Cacophony!");
