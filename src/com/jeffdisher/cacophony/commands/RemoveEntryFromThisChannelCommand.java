@@ -10,7 +10,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
-import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -70,7 +70,9 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			cache.uploadedToThisCache(newCid);
 			index.setRecords(newCid.toSafeString());
 			environment.logToConsole("Saving and publishing new index");
-			IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
+			IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
+			// Update the local index.
+			local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
 			cache.uploadedToThisCache(indexHash);
 			
 			// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).

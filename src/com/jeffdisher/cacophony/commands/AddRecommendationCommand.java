@@ -7,7 +7,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
-import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -57,7 +57,9 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, index);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
+		// Update the local index.
+		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
 		cache.uploadedToThisCache(indexHash);
 		
 		// Remove the previous index and recommendations from cache.

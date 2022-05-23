@@ -11,7 +11,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
-import com.jeffdisher.cacophony.logic.HighLevelIdioms;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -83,7 +83,10 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setDescription(hashDescription.toSafeString());
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
-		IpfsFile indexHash = HighLevelIdioms.saveAndPublishIndex(remote, local, streamIndex);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, streamIndex);
+		// Update the local index.
+		LocalIndex localIndex = local.readLocalIndex();
+		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
 		cache.uploadedToThisCache(indexHash);
 		local.writeBackConfig();
 		log.finish("Channel created and published to Cacophony!");
