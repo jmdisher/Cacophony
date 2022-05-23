@@ -75,6 +75,33 @@ echo "Make sure we see this in the list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - application/octet-stream"
 
+echo "Create the second file..."
+TEST_FILE2="/tmp/zero_file2"
+rm -f "$TEST_FILE2"
+dd if=/dev/zero of="$TEST_FILE2" bs=1K count=1024
+checkPreviousCommand "dd"
+
+echo "Publishing second test..."
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --publishToThisChannel --name "test post 2" --description "this is a short-term entry" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE2"
+checkPreviousCommand "publishToThisChannel"
+
+echo "Make sure this new entry shows up in the list..."
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+requireSubstring "$LISTING" "QmVkbauSDEaMP4Tkq6Epm9uW75mWm136n81YH8fGtfwdHU - application/octet-stream"
+
+# Get the element CID.
+NEW_CID=$(echo "$LISTING" | grep "test post 2" | cut -d ":" -f 1 | cut -d " " -f 2)
+
+echo "Make sure that we can remove this entry from the stream..."
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --removeFromThisChannel --elementCid "$NEW_CID"
+
+echo "Make sure this new entry is no longer in the list..."
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+if [[ "$LISTING" =~ "$NEW_CID" ]]; then
+	echo -e "\033[31;40m$NEW_CID was not expected in $LISTING\033[00m"
+	exit 1
+fi
+
 echo "Just run a republish to make sure nothing goes wrong..."
 CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --republish
 checkPreviousCommand "republish"
