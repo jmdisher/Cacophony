@@ -41,11 +41,11 @@ public class CommandHelpers
 		
 		IOperationLog log = environment.logOperation("Refreshing followee " + publicKey + "...");
 		LocalIndex localIndex = local.readLocalIndex();
-		IConnection sharedConnection = local.getSharedConnection();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, sharedConnection, localIndex.keyName());
+		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
-		LoadChecker checker = new LoadChecker(remote, pinCache, sharedConnection);
-		HighLevelCache cache = new HighLevelCache(pinCache, sharedConnection);
+		HighLevelCache cache = new HighLevelCache(pinCache, connection);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
+		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
 		
 		// We need to first verify that we are already following them.
 		IpfsFile lastRoot = followIndex.getLastFetchedRoot(publicKey);
@@ -62,6 +62,7 @@ public class CommandHelpers
 		}
 		else
 		{
+			// TODO: Re-orient this code to make additive operations first so that the unpin operations are allowed to fail.
 			environment.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
 			
 			// Verify that this isn't too big.

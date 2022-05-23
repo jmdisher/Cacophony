@@ -8,14 +8,17 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -25,15 +28,18 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
+		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
+		IConnection connection = local.getSharedConnection();
+		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		HighLevelCache cache = new HighLevelCache(pinCache, connection);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
+		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// Removed the cache record and verify that we are following them.
@@ -42,7 +48,6 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		{
 			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
 		}
-		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		// Walk all the elements in the record stream, removing the cached meta-data and associated files.
 		for (FollowingCacheElement element : finalRecord.elements())
 		{
@@ -72,6 +77,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
+		// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 		local.writeBackConfig();
 		log.finish("Cleanup complete.  No longer following " + _publicKey);
 	}

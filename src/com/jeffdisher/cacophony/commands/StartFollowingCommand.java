@@ -9,11 +9,13 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -33,15 +35,18 @@ import com.jeffdisher.cacophony.utils.StringHelpers;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IOException, CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
+		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), local.getSharedConnection());
+		IConnection connection = local.getSharedConnection();
+		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		HighLevelCache cache = new HighLevelCache(pinCache, connection);
+		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
+		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// We need to first verify that we aren't already following them.
@@ -51,7 +56,6 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
 		}
 		
-		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = remote.resolvePublicKey(_publicKey);
 		Assert.assertTrue(null != indexRoot);
@@ -85,6 +89,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPrefs prefs = local.readSharedPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
 		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
+		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.
 		local.writeBackConfig();
 		log.finish("Follow successful!");
 	}

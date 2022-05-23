@@ -61,6 +61,5 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		{
 			throw new UsageException("Not following " + _followeeKey.toPublicKey());
 		}
-		local.writeBackConfig();
 	}
 }

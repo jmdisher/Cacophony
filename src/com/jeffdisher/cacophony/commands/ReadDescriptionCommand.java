@@ -73,6 +73,5 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		environment.logToConsole("-name: " + description.getName());
 		environment.logToConsole("-description: " + description.getDescription());
 		environment.logToConsole("-picture: " + description.getPicture());
-		local.writeBackConfig();
 	}
 }

@@ -79,6 +79,5 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		{
 			environment.logToConsole("\t" + rawKey);
 		}
-		local.writeBackConfig();
 	}
 }

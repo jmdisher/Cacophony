@@ -85,6 +85,5 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 				environment.logToConsole("\t" + element.getCid() + " - " + element.getMime());
 			}
 		}
-		local.writeBackConfig();
 	}
 }

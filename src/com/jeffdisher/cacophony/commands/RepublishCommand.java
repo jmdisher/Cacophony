@@ -34,7 +34,6 @@ public record RepublishCommand() implements ICommand
 		boolean didPublish = remote.publishIndex(indexHash);
 		// TODO:  Remove this assertion once we can handle the error.
 		Assert.assertTrue(didPublish);
-		local.writeBackConfig();
 		log.finish("Republish completed!");
 	}
 }

@@ -35,6 +35,5 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		{
 			throw new UsageException("Must specify a postive value for at least one of edge size or cache");
 		}
-		local.writeBackConfig();
 	}
 }
