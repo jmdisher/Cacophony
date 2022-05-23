@@ -33,6 +33,16 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
+		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache);
+		
+		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+		_runFinish(environment, local, localIndex, cache, cleanup);
+		log.finish("No longer recommending: " + _channelPublicKey);
+	}
+
+
+	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws IpfsConnectionException
+	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
 		
@@ -61,16 +71,33 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
-		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+		return new CleanupData(indexHash, rootToLoad, originalRecommendations);
+	}
+
+	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data)
+	{
 		// Update the local index.
-		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
-		cache.uploadedToThisCache(indexHash);
+		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
+		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the previous file from cache.
-		cache.removeFromThisCache(originalRecommendations);
-		cache.removeFromThisCache(rootToLoad);
+		_safeRemove(cache, data.originalRecommendations);
+		_safeRemove(cache, data.oldRootHash);
 		local.writeBackConfig();
-		log.finish("No longer recommending: " + _channelPublicKey);
 	}
+
+	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	{
+		try
+		{
+			cache.removeFromThisCache(file);
+		}
+		catch (IpfsConnectionException e)
+		{
+			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+		}
+	}
+
+
+	private static record CleanupData(IpfsFile indexHash, IpfsFile oldRootHash, IpfsFile originalRecommendations) {}
 }

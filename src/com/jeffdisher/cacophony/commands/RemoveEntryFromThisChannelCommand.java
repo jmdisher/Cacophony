@@ -38,7 +38,16 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache, remote, checker);
 		
+		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+		_runFinish(environment, local, localIndex, cache, checker, cleanup);
+		log.finish("Entry removed: " + _elementCid);
+	}
+
+
+	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache, RemoteActions remote, LoadChecker checker) throws UsageException, IpfsConnectionException
+	{
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
@@ -77,26 +86,54 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
-		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+		return new CleanupData(indexHash, rootToLoad);
+	}
+
+	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, LoadChecker checker, CleanupData data)
+	{
 		// Update the local index.
-		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
-		cache.uploadedToThisCache(indexHash);
+		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
+		cache.uploadedToThisCache(data.indexHash);
 		
 		// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).
-		byte[] rawRecord = checker.loadCached(_elementCid);
-		StreamRecord record = GlobalData.deserializeRecord(rawRecord);
-		DataArray array = record.getElements();
-		for (DataElement element : array.getElement())
+		byte[] rawRecord = null;
+		try
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
-			cache.removeFromThisCache(cid);
+			rawRecord = checker.loadCached(_elementCid);
 		}
-		cache.removeFromThisCache(_elementCid);
+		catch (IpfsConnectionException e)
+		{
+			System.err.println("WARNING: Failed to load element being removed: " +  _elementCid + ".  Any referenced elements will need to be manually unpinned.");
+		}
+		if (null != rawRecord)
+		{
+			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
+			DataArray array = record.getElements();
+			for (DataElement element : array.getElement())
+			{
+				IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
+				_safeRemove(cache, cid);
+			}
+			_safeRemove(cache, _elementCid);
+		}
 		
 		// Remove the old root.
-		cache.removeFromThisCache(rootToLoad);
+		_safeRemove(cache, data.oldRootHash);
 		local.writeBackConfig();
-		log.finish("Entry removed: " + _elementCid);
 	}
+
+	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	{
+		try
+		{
+			cache.removeFromThisCache(file);
+		}
+		catch (IpfsConnectionException e)
+		{
+			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+		}
+	}
+
+
+	private static record CleanupData(IpfsFile indexHash, IpfsFile oldRootHash) {}
 }

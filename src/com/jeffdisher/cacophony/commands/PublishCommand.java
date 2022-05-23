@@ -44,6 +44,15 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
+		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache);
+		
+		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+		_runFinish(environment, local, localIndex, cache, cleanup);
+		log.finish("Publish completed!");
+	}
+
+	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
+	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
 		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
 		
@@ -114,22 +123,38 @@ public record PublishCommand(String _name, String _description, String _discussi
 		index.setRecords(recordsHash.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
 		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
-		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		// Update the local index.
-		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
-		cache.uploadedToThisCache(indexHash);
-		
-		// Remove the old root.
-		cache.removeFromThisCache(rootToLoad);
-		local.writeBackConfig();
-		log.finish("Publish completed!");
+		return new CleanupData(indexHash, rootToLoad);
 	}
 
+	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data)
+	{
+		// Update the local index.
+		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
+		cache.uploadedToThisCache(data.indexHash);
+		
+		// Remove the old root.
+		_safeRemove(cache, data.oldRootHash);
+		local.writeBackConfig();
+	}
+
+	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	{
+		try
+		{
+			cache.removeFromThisCache(file);
+		}
+		catch (IpfsConnectionException e)
+		{
+			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+		}
+	}
 
 	private static long _currentUtcEpochSeconds()
 	{
 		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 		return now.toEpochSecond();
 	}
+
+
+	private static record CleanupData(IpfsFile indexHash, IpfsFile oldRootHash) {}
 }
