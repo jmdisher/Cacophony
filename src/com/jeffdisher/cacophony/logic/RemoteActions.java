@@ -85,17 +85,28 @@ public class RemoteActions
 		return _publicKey;
 	}
 
-	public void publishIndex(IpfsFile indexHash) throws IpfsConnectionException
+	/**
+	 * Publishes the given indexHash for this channel's public key.
+	 * Note that this can easily fail since IPNS publication is often is very slow.  The failure is considered "safe"
+	 * and is only logged, instead of throwing an exception.  The caller can check if it did work based on the return
+	 * value.
+	 * 
+	 * @param indexHash The index to publish for this channel's public key.
+	 * @return True if the publication succeeded or could at least be confirmed, even if it timed out.
+	 */
+	public boolean publishIndex(IpfsFile indexHash)
 	{
 		Assert.assertTrue(null != _ipfs);
 		Assert.assertTrue(null != _keyName);
 		
+		boolean didPublish = false;
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
 		StandardEnvironment.IOperationLog log = _environment.logOperation("Publishing " + indexHash + " to " + _keyName);
 		try
 		{
 			_ipfs.publish(_keyName, indexHash);
 			log.finish("Success!");
+			didPublish = true;
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -105,9 +116,22 @@ public class RemoteActions
 		if (_environment.shouldEnableVerifications())
 		{
 			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
-			IpfsFile published = _ipfs.resolve(_publicKey);
-			Assert.assertTrue(published.toSafeString().equals(indexHash.toSafeString()));
+			try
+			{
+				IpfsFile published = _ipfs.resolve(_publicKey);
+				didPublish = published.toSafeString().equals(indexHash.toSafeString());
+			}
+			catch (IpfsConnectionException e)
+			{
+				didPublish = false;
+			}
 		}
+		// If we failed to publish, we always want to log this.
+		if (!didPublish)
+		{
+			System.err.println("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + indexHash);
+		}
+		return didPublish;
 	}
 
 	/**

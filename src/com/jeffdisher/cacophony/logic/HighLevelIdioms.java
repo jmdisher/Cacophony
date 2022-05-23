@@ -37,17 +37,9 @@ public class HighLevelIdioms
 		IpfsFile hashIndex = remote.saveData(rawIndex);
 		Assert.assertTrue(null != hashIndex);
 		// Publish it to IPNS.
-		try
-		{
-			remote.publishIndex(hashIndex);
-		}
-		catch (IpfsConnectionException e)
-		{
-			// Publishing can take a very long time, meaning timeouts can occur.
-			// The publish is ultimately allowed to fail, though, as it doesn't impact the local or remote data models.
-			// The publication is short-lived, either way, so --republish can be used to address this.
-			System.err.println("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + hashIndex);
-		}
+		boolean didPublish = remote.publishIndex(hashIndex);
+		// TODO:  Remove this assertion once we can handle the error.
+		Assert.assertTrue(didPublish);
 		// Update the local index.
 		LocalIndex localIndex = local.readLocalIndex();
 		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), hashIndex));
