@@ -15,6 +15,7 @@ public class StandardEnvironment implements IEnvironment
 	private final boolean _shouldEnableVerifications;
 	private int _nextOperationCounter;
 	private LocalConfig _lazyConfig;
+	private boolean _errorOccurred;
 
 	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, boolean shouldEnableVerifications)
 	{
@@ -51,6 +52,7 @@ public class StandardEnvironment implements IEnvironment
 	public void logError(String message)
 	{
 		System.err.println(message);
+		_errorOccurred = true;
 	}
 
 	@Override
@@ -80,5 +82,10 @@ public class StandardEnvironment implements IEnvironment
 	public boolean shouldEnableVerifications()
 	{
 		return _shouldEnableVerifications;
+	}
+
+	public boolean didErrorOccur()
+	{
+		return _errorOccurred;
 	}
 }
