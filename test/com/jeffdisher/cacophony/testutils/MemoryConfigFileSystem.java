@@ -30,6 +30,12 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
+	public boolean doesConfigDirectoryExist()
+	{
+		return (null != _data);
+	}
+
+	@Override
 	public InputStream readConfigFile(String fileName)
 	{
 		// Note that the cases where we are using an existing config directory aren't explicitly called out yet so they may originate here.

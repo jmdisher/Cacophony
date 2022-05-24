@@ -79,11 +79,6 @@ public class Cacophony {
 			if (null != command)
 			{
 				File directory = _readCacophonyStorageDirectory();
-				if (!directory.exists() && !directory.mkdirs())
-				{
-					System.err.println("Failed to create directory at " + directory);
-					System.exit(EXIT_STATIC_ERROR);
-				}
 				// Enable verifications if the env var is set, at all.
 				boolean shouldEnableVerifications = (null != System.getenv(ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
 				StandardEnvironment executor = new StandardEnvironment(System.out, new RealConfigFileSystem(directory), new RealConnectionFactory(), shouldEnableVerifications);

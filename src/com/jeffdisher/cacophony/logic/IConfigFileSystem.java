@@ -20,6 +20,13 @@ public interface IConfigFileSystem
 	boolean createConfigDirectory();
 
 	/**
+	 * Used to check if the config directory exists.  Does not check anything else about the contents of the directory.
+	 * 
+	 * @return If the config directory exists.
+	 */
+	boolean doesConfigDirectoryExist();
+
+	/**
 	 * Opens a config file for reading, if it exists.  The caller takes ownership of the stream.
 	 * 
 	 * @param fileName The name of the config file.

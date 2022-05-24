@@ -28,6 +28,12 @@ public class RealConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
+	public boolean doesConfigDirectoryExist()
+	{
+		return _directory.isDirectory();
+	}
+
+	@Override
 	public InputStream readConfigFile(String fileName)
 	{
 		File file = new File(_directory, fileName);

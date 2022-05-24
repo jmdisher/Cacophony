@@ -42,8 +42,6 @@ rm -rf "$USER2"
 
 mkdir "$REPO1"
 mkdir "$REPO2"
-mkdir "$USER1"
-mkdir "$USER2"
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
 cp "$PATH_TO_JAR" Cacophony.jar

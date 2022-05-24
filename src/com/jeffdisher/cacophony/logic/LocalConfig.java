@@ -28,10 +28,15 @@ public class LocalConfig
 	 */
 	public static LocalConfig createNewConfig(IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectionString, String keyName) throws UsageException
 	{
+		boolean doesExist = fileSystem.doesConfigDirectoryExist();
+		if (doesExist)
+		{
+			throw new UsageException("Config already exists");
+		}
 		boolean didCreate = fileSystem.createConfigDirectory();
 		if (!didCreate)
 		{
-			throw new UsageException("Config already exists");
+			throw new UsageException("Failed to create config directory");
 		}
 		// Create the instance and populate it with default files.
 		LocalConfig config = new LocalConfig(fileSystem, factory);
@@ -59,8 +64,8 @@ public class LocalConfig
 	 */
 	public static LocalConfig loadExistingConfig(IConfigFileSystem fileSystem, IConnectionFactory factory) throws UsageException, VersionException
 	{
-		boolean didCreate = fileSystem.createConfigDirectory();
-		if (didCreate)
+		boolean doesExist = fileSystem.doesConfigDirectoryExist();
+		if (!doesExist)
 		{
 			throw new UsageException("Config doesn't exist");
 		}
