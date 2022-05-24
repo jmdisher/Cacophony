@@ -62,12 +62,12 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}
-		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(rootToLoad));
+		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(environment, rootToLoad));
 		
 		// Read the existing recommendations list.
 		byte[] rawRecommendations = isCached
 				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()))
-				: checker.loadNotCached(IpfsFile.fromIpfsCid(index.getRecommendations()))
+				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecommendations()))
 		;
 		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
 		

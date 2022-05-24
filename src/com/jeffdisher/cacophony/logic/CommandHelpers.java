@@ -127,7 +127,7 @@ public class CommandHelpers
 	 * @return The hash of the saved index file.
 	 * @throws IpfsConnectionException An error occurred while saving the file to IPFS.
 	 */
-	public static IpfsFile serializeSaveAndPublishIndex(RemoteActions remote, StreamIndex streamIndex) throws IpfsConnectionException
+	public static IpfsFile serializeSaveAndPublishIndex(IEnvironment environment, RemoteActions remote, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file and save it to the IPFS node.
 		IpfsFile hashIndex = remote.saveData(GlobalData.serializeIndex(streamIndex));
@@ -138,7 +138,7 @@ public class CommandHelpers
 		// If we failed to publish, we always want to log this.
 		if (!didPublish)
 		{
-			System.err.println("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + hashIndex);
+			environment.logError("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + hashIndex);
 		}
 		return hashIndex;
 	}

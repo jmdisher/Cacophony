@@ -70,7 +70,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, index);
 		return new CleanupData(indexHash, rootToLoad, originalRecommendations);
 	}
 
@@ -81,12 +81,12 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the previous file from cache.
-		_safeRemove(cache, data.originalRecommendations);
-		_safeRemove(cache, data.oldRootHash);
+		_safeRemove(environment, cache, data.originalRecommendations);
+		_safeRemove(environment, cache, data.oldRootHash);
 		local.writeBackConfig();
 	}
 
-	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
 	{
 		try
 		{
@@ -94,7 +94,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		}
 		catch (IpfsConnectionException e)
 		{
-			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
 		}
 	}
 

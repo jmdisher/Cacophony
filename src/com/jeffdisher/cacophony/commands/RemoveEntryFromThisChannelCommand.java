@@ -85,7 +85,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		cache.uploadedToThisCache(newCid);
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, index);
 		return new CleanupData(indexHash, rootToLoad);
 	}
 
@@ -103,7 +103,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		}
 		catch (IpfsConnectionException e)
 		{
-			System.err.println("WARNING: Failed to load element being removed: " +  _elementCid + ".  Any referenced elements will need to be manually unpinned.");
+			environment.logError("WARNING: Failed to load element being removed: " +  _elementCid + ".  Any referenced elements will need to be manually unpinned.");
 		}
 		if (null != rawRecord)
 		{
@@ -112,17 +112,17 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			for (DataElement element : array.getElement())
 			{
 				IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
-				_safeRemove(cache, cid);
+				_safeRemove(environment, cache, cid);
 			}
-			_safeRemove(cache, _elementCid);
+			_safeRemove(environment, cache, _elementCid);
 		}
 		
 		// Remove the old root.
-		_safeRemove(cache, data.oldRootHash);
+		_safeRemove(environment, cache, data.oldRootHash);
 		local.writeBackConfig();
 	}
 
-	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
 	{
 		try
 		{
@@ -130,7 +130,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		}
 		catch (IpfsConnectionException e)
 		{
-			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
 		}
 	}
 

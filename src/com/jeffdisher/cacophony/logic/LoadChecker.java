@@ -34,14 +34,14 @@ public class LoadChecker
 		return _remote.readData(file);
 	}
 
-	public byte[] loadNotCached(IpfsFile file) throws IpfsConnectionException
+	public byte[] loadNotCached(IEnvironment environment, IpfsFile file) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != file);
 		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but
 		// we do want to at least log a warning here, just so we are aware of it in tests.
 		if (_cache.isCached(file))
 		{
-			System.err.println("WARNING!  Not expected in cache:  " + file);
+			environment.logError("WARNING!  Not expected in cache:  " + file);
 		}
 		return _remote.readData(file);
 	}

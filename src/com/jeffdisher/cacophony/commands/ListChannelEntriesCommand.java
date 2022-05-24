@@ -64,7 +64,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
 		byte[] rawRecords = isCached
 				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()))
-				: checker.loadNotCached(IpfsFile.fromIpfsCid(index.getRecords()))
+				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecords()))
 		;
 		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
 		
@@ -73,7 +73,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		{
 			byte[] rawRecord = isCached
 					? checker.loadCached(IpfsFile.fromIpfsCid(recordCid))
-					: checker.loadNotCached(IpfsFile.fromIpfsCid(recordCid))
+					: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(recordCid))
 			;
 			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			environment.logToConsole("element " + recordCid + ": " + record.getName());

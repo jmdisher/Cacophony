@@ -22,6 +22,13 @@ public interface IEnvironment
 	IOperationLog logOperation(String openingMessage);
 
 	/**
+	 * Logs an error message and sets that an error has occurred, in the environment state.
+	 * 
+	 * @param message The message to log.
+	 */
+	void logError(String message);
+
+	/**
 	 * Called when a config needs to be created for the first time.
 	 * 
 	 * @return The config object, with initial/empty data.

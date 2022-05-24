@@ -61,10 +61,10 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 		}
-		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(rootToLoad));
+		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(environment, rootToLoad));
 		byte[] rawDescription = isCached
 				? checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()))
-				: checker.loadNotCached(IpfsFile.fromIpfsCid(index.getDescription()))
+				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getDescription()))
 		;
 		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
 		environment.logToConsole("Channel public key: " + publicKey);

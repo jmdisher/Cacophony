@@ -122,7 +122,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, index);
 		return new CleanupData(indexHash, rootToLoad);
 	}
 
@@ -133,11 +133,11 @@ public record PublishCommand(String _name, String _description, String _discussi
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the old root.
-		_safeRemove(cache, data.oldRootHash);
+		_safeRemove(environment, cache, data.oldRootHash);
 		local.writeBackConfig();
 	}
 
-	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
 	{
 		try
 		{
@@ -145,7 +145,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		}
 		catch (IpfsConnectionException e)
 		{
-			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
 		}
 	}
 

@@ -82,7 +82,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setDescription(hashDescription.toSafeString());
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, streamIndex);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, streamIndex);
 		// Update the local index.
 		LocalIndex localIndex = local.readLocalIndex();
 		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));

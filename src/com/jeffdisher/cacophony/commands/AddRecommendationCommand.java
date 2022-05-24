@@ -69,7 +69,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(remote, index);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, index);
 		return new CleanupData(indexHash, oldRootHash, originalRecommendations);
 	}
 
@@ -80,12 +80,12 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the previous index and recommendations from cache.
-		_safeRemove(cache, data.originalRecommendations);
-		_safeRemove(cache, data.oldRootHash);
+		_safeRemove(environment, cache, data.originalRecommendations);
+		_safeRemove(environment, cache, data.oldRootHash);
 		local.writeBackConfig();
 	}
 
-	private static void _safeRemove(HighLevelCache cache, IpfsFile file)
+	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
 	{
 		try
 		{
@@ -93,7 +93,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		}
 		catch (IpfsConnectionException e)
 		{
-			System.err.println("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
 		}
 	}
 

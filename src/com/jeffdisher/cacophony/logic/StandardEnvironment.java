@@ -48,6 +48,12 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
+	public void logError(String message)
+	{
+		System.err.println(message);
+	}
+
+	@Override
 	public LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException
 	{
 		// We cannot create a config if we already loaded one.
