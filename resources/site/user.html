@@ -76,6 +76,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 				Description: {{description.description}}<br />
 				Email: <span ng-show="{{null == description.email}}">(not provided)</span><span ng-show="{{null != description.email}}"><a ng-href="mailto:{{description.email}}">{{description.email}}</a></span><br />
 				Website: <span ng-show="{{null == description.website}}">(not provided)</span><span ng-show="{{null != description.website}}"><a ng-href="{{description.website}}">{{description.website}}</a></span><br />
+				<a ng-href="recommending.html?publicKey={{publicKey}}">Recommended Users</a><br />
 			</div>
 			<div ng-repeat="post in posts" class="row well">
 				<div class="col-md-6" ng-show="{{post.cached}}">

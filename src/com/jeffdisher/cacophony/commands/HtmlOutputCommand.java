@@ -149,7 +149,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		_populateRecommendationsForUser(checker, dataRecommended, ourPublicKey, localIndex.lastPublishedIndex());
 		for(FollowRecord record : followIndex)
 		{
-			_populateRecommendationsForUser(checker, dataElements, record.publicKey(), record.lastFetchedRoot());
+			_populateRecommendationsForUser(checker, dataRecommended, record.publicKey(), record.lastFetchedRoot());
 		}
 		generatedStream.println("var DATA_recommended = " + dataRecommended.toString());
 		generatedStream.println();

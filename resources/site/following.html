@@ -58,7 +58,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<a href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
 				</div>
 				<div class="col-md-6">
-					<strong>{{user.name}}</strong><br />
+					<strong><a ng-href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></strong><br />
 					{{user.description}}
 				</div>
 			</div>

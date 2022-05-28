@@ -14,6 +14,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 {
 	let keyArg = readGetVar("publicKey");
 	$scope.publicKey = (keyArg !== undefined) ? keyArg : DATA_common["publicKey"];
+	$scope.thisUserName = "Unknown User";
+	if (undefined !== DATA_userInfo[$scope.publicKey])
+	{
+		$scope.thisUserName = DATA_userInfo[$scope.publicKey]["name"];
+	}
 	$scope.description = DATA_userInfo[$scope.publicKey];
 	let recommended = DATA_recommended[$scope.publicKey];
 	let processed = [];
@@ -66,13 +71,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<div class="row"><a class="btn" href="following.html">Users you Follow</a></div>
 		</div>
 		<div class="col-md-9">
-			<h3>Recommmended Users</h3>
+			<h3>Users Recommmended by <a ng-href="user.html?publicKey={{publicKey}}">{{thisUserName}}</a></h3>
 			<div ng-repeat="user in recommended" class="row well">
 				<div class="col-md-3" ng-show="{{user.known}}">
-					<a href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
+					<a ng-href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
 				</div>
 				<div class="col-md-6" ng-show="{{user.known}}">
-					<strong>{{user.name}}</strong><br />
+					<strong><a ng-href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></strong><br />
 					{{user.description}}
 				</div>
 				<div class="col-md-9" ng-hide="{{user.known}}">
