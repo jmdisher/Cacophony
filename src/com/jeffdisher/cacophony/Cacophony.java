@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -90,6 +91,11 @@ public class Cacophony {
 				{
 					System.err.println("Usage error in running command: " + e.getLocalizedMessage());
 					System.exit(EXIT_STATIC_ERROR);
+				}
+				catch (IpfsConnectionException e)
+				{
+					System.err.println("Unexpected exception while contacting IPFS daemon (" + e.getLocalizedMessage() + ").  The command did not complete.");
+					System.exit(EXIT_COMPLETE_ERROR);
 				}
 				catch (CacophonyException e)
 				{

@@ -27,5 +27,10 @@ public class RealConnectionFactory implements IConnectionFactory
 			// This happens if we fail to read the config, which should only happen if the node is bogus.
 			throw new IpfsConnectionException("connect", ipfsHost, e);
 		}
+		catch (RuntimeException e)
+		{
+			// For some reason, "new IPFS" throws a RuntimeException, instead of IOException, if the connection fails.
+			throw new IpfsConnectionException("connect", ipfsHost, new IOException(e));
+		}
 	}
 }
