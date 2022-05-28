@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.PrintStream;
 
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -56,7 +57,7 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
-	public LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException
+	public LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
 	{
 		// We cannot create a config if we already loaded one.
 		Assert.assertTrue(null == _lazyConfig);

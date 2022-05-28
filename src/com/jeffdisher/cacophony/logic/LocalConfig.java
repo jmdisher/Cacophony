@@ -25,14 +25,18 @@ public class LocalConfig
 	 * @param keyName The name of the IPFS key to use when publishing root elements.
 	 * @return The shared index.
 	 * @throws UsageException If there is already a loaded shared index or already one on disk.
+	 * @throws IpfsConnectionException If there is an error connecting to the IPFS daemon.
 	 */
-	public static LocalConfig createNewConfig(IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectionString, String keyName) throws UsageException
+	public static LocalConfig createNewConfig(IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
 	{
 		boolean doesExist = fileSystem.doesConfigDirectoryExist();
 		if (doesExist)
 		{
 			throw new UsageException("Config already exists");
 		}
+		// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
+		IConnection connection = factory.buildConnection(ipfsConnectionString);
+		
 		boolean didCreate = fileSystem.createConfigDirectory();
 		if (!didCreate)
 		{
@@ -53,6 +57,7 @@ public class LocalConfig
 		config.storeSharedPrefs(GlobalPrefs.defaultPrefs());
 		config._lazyCache = GlobalPinCache.newCache();
 		config._lazyFollowIndex = FollowIndex.emptyFollowIndex();
+		config._lazyConnection = connection;
 		config.writeBackConfig();
 		return config;
 	}

@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 
@@ -30,11 +31,14 @@ public interface IEnvironment
 
 	/**
 	 * Called when a config needs to be created for the first time.
+	 * Note that this will verify that the config directory doesn't already exist and that the IPFS daemon can work
+	 * before creating the config directory.
 	 * 
 	 * @return The config object, with initial/empty data.
 	 * @throws UsageException If the config directory already existed or couldn't be created.
+	 * @throws IpfsConnectionException If there was an error verifying the IPFS connection.
 	 */
-	LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException;
+	LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException;
 
 	/**
 	 * Called when an existing config should be loaded from disk.
