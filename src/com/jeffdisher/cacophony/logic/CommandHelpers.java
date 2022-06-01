@@ -59,6 +59,9 @@ public class CommandHelpers
 		if (lastRoot.equals(indexRoot))
 		{
 			environment.logToConsole("Follow index unchanged (" + lastRoot + ")");
+			
+			// Even if nothing changed, update this in our list so that we move it to the back of the sorted list.
+			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
 		}
 		else
 		{

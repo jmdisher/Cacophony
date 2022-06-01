@@ -8,6 +8,7 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -91,5 +92,10 @@ public class MockUserNode
 	public GlobalPrefs readPrefs() throws UsageException, VersionException
 	{
 		return _executor.loadExistingConfig().readSharedPrefs();
+	}
+
+	public FollowIndex readFollowIndex() throws UsageException, VersionException
+	{
+		return _executor.loadExistingConfig().loadFollowIndex();
 	}
 }
