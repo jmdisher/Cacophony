@@ -82,7 +82,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
 		
 		// Create the initial following state.
-		followIndex.addFollowingWithInitialState(_publicKey, indexRoot);
+		followIndex.addFollowingWithInitialState(_publicKey, indexRoot, System.currentTimeMillis());
 		
 		// Populate the initial cache records.
 		GlobalPrefs prefs = local.readSharedPrefs();

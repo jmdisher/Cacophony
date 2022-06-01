@@ -40,15 +40,14 @@ public class TestFollowIndex
 	public void testTwoEntryLoadStore()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1);
-		index.addFollowingWithInitialState(K2, F2);
+		index.addFollowingWithInitialState(K1, F1, 1);
+		index.addFollowingWithInitialState(K2, F2, 2);
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		index.writeToStream(outStream);
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 		FollowIndex read = FollowIndex.fromStream(inStream);
-		// New following keys are added at the front of the list so we should see the second one.
-		Assert.assertEquals(K2, read.nextKeyToPoll());
-		Assert.assertEquals(K2, read.nextKeyToPoll());
+		Assert.assertEquals(K1, read.nextKeyToPoll());
+		Assert.assertEquals(K1, read.nextKeyToPoll());
 		Assert.assertEquals(F1, read.getLastFetchedRoot(K1));
 	}
 
@@ -56,37 +55,37 @@ public class TestFollowIndex
 	public void testUpdateToElement()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1);
-		index.addFollowingWithInitialState(K2, F2);
-		Assert.assertEquals(K2, index.nextKeyToPoll());
-		index.addNewElementToFollower(K2, F3, F3, null, F3, 1000, 100);
+		index.addFollowingWithInitialState(K1, F1, 1);
+		index.addFollowingWithInitialState(K2, F2, 2);
 		Assert.assertEquals(K1, index.nextKeyToPoll());
-		Assert.assertEquals(F3, index.getLastFetchedRoot(K2));
+		index.addNewElementToFollower(K1, F3, F3, null, F3, 1000, 100);
+		Assert.assertEquals(K2, index.nextKeyToPoll());
+		Assert.assertEquals(F3, index.getLastFetchedRoot(K1));
 	}
 
 	@Test
 	public void testRemove()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1);
-		index.addFollowingWithInitialState(K2, F2);
+		index.addFollowingWithInitialState(K1, F1, 1);
+		index.addFollowingWithInitialState(K2, F2, 2);
+		Assert.assertEquals(K1, index.nextKeyToPoll());
+		index.removeFollowing(K1);
 		Assert.assertEquals(K2, index.nextKeyToPoll());
-		index.removeFollowing(K2);
-		Assert.assertEquals(K1, index.nextKeyToPoll());
-		Assert.assertEquals(K1, index.nextKeyToPoll());
-		Assert.assertEquals(F1, index.getLastFetchedRoot(K1));
-		Assert.assertEquals(null, index.getLastFetchedRoot(K2));
+		Assert.assertEquals(K2, index.nextKeyToPoll());
+		Assert.assertEquals(null, index.getLastFetchedRoot(K1));
+		Assert.assertEquals(F2, index.getLastFetchedRoot(K2));
 	}
 
 	@Test
 	public void testIteration()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1);
-		index.addFollowingWithInitialState(K2, F2);
+		index.addFollowingWithInitialState(K1, F1, 1);
+		index.addFollowingWithInitialState(K2, F2, 2);
 		Iterator<FollowRecord> iter = index.iterator();
-		Assert.assertEquals(K2, iter.next().publicKey());
 		Assert.assertEquals(K1, iter.next().publicKey());
+		Assert.assertEquals(K2, iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 		
 		index.removeFollowing(K2);
@@ -99,7 +98,7 @@ public class TestFollowIndex
 	public void testUpdateAndRemove()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1);
+		index.addFollowingWithInitialState(K1, F1, 1);
 		Assert.assertNotNull(index.getFollowerRecord(K1));
 		index.updateFollowee(K1, F2, 1);
 		Assert.assertNotNull(index.getFollowerRecord(K1));
@@ -117,7 +116,7 @@ public class TestFollowIndex
 		long currentTimeMillis = 1_000L;
 		long combinedSizeBytes = 1_000_000L;
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1);
+		index.addFollowingWithInitialState(K1, F1, 1);
 		index.addNewElementToFollower(K1, F2, element1, image1, video1, currentTimeMillis, combinedSizeBytes);
 		index.addNewElementToFollower(K1, F3, element2, image2, video2, currentTimeMillis, combinedSizeBytes);
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();

@@ -71,20 +71,19 @@ public class FollowIndex implements Iterable<FollowRecord>
 	}
 
 	/**
-	 * Adds the given follower to the front of the list of following keys to be fetched.
-	 * If the key is already being followed, this method does nothing.
+	 * Adds the given follower to the end of the list of following keys to be fetched.
+	 * Asserts that the followee is not already being followed.
 	 * 
 	 * @param publicKey The key to follow.
 	 * @param fetchRootIndex The initial root index.
+	 * @param currentTimeMillis The time when this add was done.
 	 */
-	public void addFollowingWithInitialState(IpfsKey publicKey, IpfsFile fetchRootIndex)
+	public void addFollowingWithInitialState(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
 	{
 		boolean isNew = !_sortedFollowList.stream().anyMatch((r) -> publicKey.equals(r.publicKey()));
-		if (isNew)
-		{
-			FollowRecord record = new FollowRecord(publicKey, fetchRootIndex, 0L, new FollowingCacheElement[0]);
-			_sortedFollowList.add(0, record);
-		}
+		Assert.assertTrue(isNew);
+		FollowRecord record = new FollowRecord(publicKey, fetchRootIndex, currentTimeMillis, new FollowingCacheElement[0]);
+		_sortedFollowList.add(record);
 	}
 
 	/**
@@ -99,6 +98,11 @@ public class FollowIndex implements Iterable<FollowRecord>
 		return _removeRecordFromList(publicKey);
 	}
 
+	/**
+	 * Peeks at the next followee which needs to be polled for updates (has no side-effects).
+	 * 
+	 * @return The next followee to poll, null if there aren't any.
+	 */
 	public IpfsKey nextKeyToPoll()
 	{
 		return (_sortedFollowList.isEmpty())
