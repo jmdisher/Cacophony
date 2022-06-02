@@ -1,11 +1,14 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.ByteArrayInputStream;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -30,9 +33,8 @@ public class TestStartFollowingCommand
 	@Test
 	public void testUsage() throws Throwable
 	{
-		IpfsFile originalRecordsCid = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK3");
 		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, null);
-		remoteConnection.storeData(originalRecordsCid, GlobalData.serializeRecords(new StreamRecords()));
+		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
@@ -40,22 +42,21 @@ public class TestStartFollowingCommand
 		// For this test, we want to just fake a default config.
 		executor.createNewConfig(IPFS_HOST, KEY_NAME);
 		
-		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-		StreamIndex originalRootData = new StreamIndex();
-		originalRootData.setVersion(1);
-		IpfsFile originalDescription = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK1");
-		originalRootData.setDescription(originalDescription.toSafeString());
-		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK2");
-		originalRootData.setRecommendations(originalRecommendations.toSafeString());
-		originalRootData.setRecords(originalRecordsCid.toSafeString());
-		remoteConnection.storeData(originalRoot, GlobalData.serializeIndex(originalRootData));
-		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
-		IpfsFile originalPicture = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeK4");
+		IpfsFile originalPicture = remoteConnection.storeData(new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 }));
 		originalDescriptionData.setDescription("Description");
 		originalDescriptionData.setPicture(originalPicture.toSafeString());
-		remoteConnection.storeData(originalDescription, GlobalData.serializeDescription(originalDescriptionData));
+		IpfsFile originalDescription = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeDescription(originalDescriptionData)));
+		
+		StreamRecommendations recommendations = new StreamRecommendations();
+		IpfsFile originalRecommendations = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecommendations(recommendations)));
+		StreamIndex originalRootData = new StreamIndex();
+		originalRootData.setVersion(1);
+		originalRootData.setDescription(originalDescription.toSafeString());
+		originalRootData.setRecommendations(originalRecommendations.toSafeString());
+		originalRootData.setRecords(originalRecordsCid.toSafeString());
+		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
 		command.runInEnvironment(executor);
@@ -79,8 +80,7 @@ public class TestStartFollowingCommand
 	public void testErrorSize() throws Throwable
 	{
 		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, null);
-		IpfsFile originalRoot = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-		remoteConnection.storeData(originalRoot, new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]);
+		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]));
 		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);

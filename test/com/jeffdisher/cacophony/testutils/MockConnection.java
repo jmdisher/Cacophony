@@ -125,11 +125,6 @@ public class MockConnection implements IConnection
 		_root = root;
 	}
 
-	public void storeData(IpfsFile file, byte[] data)
-	{
-		_storeData(file, data);
-	}
-
 
 	private void _storeData(IpfsFile file, byte[] data)
 	{
