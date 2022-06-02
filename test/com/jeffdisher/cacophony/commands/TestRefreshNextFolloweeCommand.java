@@ -10,6 +10,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
@@ -227,5 +228,61 @@ public class TestRefreshNextFolloweeCommand
 		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(0, elements.length);
+	}
+
+	@Test
+	public void testTwoFolloweesWithBrokenLeaf() throws Throwable
+	{
+		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
+		
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
+		
+		// We need to create the channel first so we will just use the command to do that.
+		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		
+		// We need to add the followees.
+		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user3.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
+		
+		// We should be able to run this multiple times, without it causing problems.
+		FollowIndex followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.nextKeyToPoll();
+		// We expect to do the initial check on the first one we added (since it was populated when first read).
+		Assert.assertEquals(PUBLIC_KEY2, nextKey);
+		user.runCommand(null, command);
+		nextKey = user.readFollowIndex().nextKeyToPoll();
+		// The key should have rotated, even though nothing changed.
+		Assert.assertEquals(PUBLIC_KEY3, nextKey);
+		
+		// Update 2 data elements and remove one of them from the node before refreshing this user.
+		File tempFile = FOLDER.newFile();
+		FileOutputStream stream = new FileOutputStream(tempFile);
+		stream.write("file".getBytes());
+		stream.close();
+		user3.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
+				new ElementSubCommand("text/plain", tempFile, 0, 0, false) ,
+		}));
+		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {}));
+		StreamIndex index = GlobalData.deserializeIndex(user3.loadDataFromNode(user3.resolveKeyOnNode(PUBLIC_KEY3)));
+		StreamRecords records = GlobalData.deserializeRecords(user3.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
+		StreamRecord firstRecord = GlobalData.deserializeRecord(user3.loadDataFromNode(IpfsFile.fromIpfsCid(records.getRecord().get(0))));
+		IpfsFile leafToDelete = IpfsFile.fromIpfsCid(firstRecord.getElements().getElement().get(0).getCid());
+		user3.deleteFile(leafToDelete);
+		IpfsFile recordToKeep = IpfsFile.fromIpfsCid(records.getRecord().get(1));
+		
+		user.runCommand(null, command);
+		nextKey = followees.nextKeyToPoll();
+		Assert.assertEquals(PUBLIC_KEY2, nextKey);
+		
+		// Check that we see just the one entry in the cache.
+		FollowIndex followIndex = user.readFollowIndex();
+		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
+		FollowingCacheElement[] elements = record.elements();
+		Assert.assertEquals(1, elements.length);
+		Assert.assertEquals(recordToKeep, elements[0].elementHash());
 	}
 }

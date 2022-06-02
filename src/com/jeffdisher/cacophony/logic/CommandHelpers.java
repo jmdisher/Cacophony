@@ -137,6 +137,7 @@ public class CommandHelpers
 		// NOTE:  We currently always add all new elements but we may restrict this in the future to be more like the "start following" case.
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
 		long bytesToAdd = 0L;
+		Set<String> verifiedCids = new HashSet<>();
 		for (String rawCid : addCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
@@ -149,15 +150,31 @@ public class CommandHelpers
 			
 			// Note that we need to add the element before we can dive into it to check the size of the leaves within.
 			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, cid);
-			// Now, find the size of the relevant leaves within.
-			bytesToAdd += CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
+			boolean isVerified = false;
+			try
+			{
+				// Now, find the size of the relevant leaves within.
+				bytesToAdd += CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
+				isVerified = true;
+			}
+			catch (IpfsConnectionException e)
+			{
+				// We failed to load some of the leaves so we will skip this.
+				isVerified = false;
+			}
+			
+			if (isVerified)
+			{
+				// We didn't hit an exception so we will add it to the set.
+				verifiedCids.add(rawCid);
+			}
 		}
 		long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(prefs.followCacheTargetBytes(), currentCacheSizeBytes), publicKey, bytesToAdd);
 		
 		// Now, populate the cache with the new elements.
 		long currentTimeMillis = System.currentTimeMillis();
-		for (String rawCid : addCids)
+		for (String rawCid : verifiedCids)
 		{
 			CacheHelpers.addElementToCache(remote, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
 		}

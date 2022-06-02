@@ -83,7 +83,16 @@ public class HighLevelCache
 		boolean shouldPin = _globalPinCache.shouldPinAfterAdding(cid);
 		if (shouldPin)
 		{
-			_localNode.pin(cid);
+			try
+			{
+				_localNode.pin(cid);
+			}
+			catch (IpfsConnectionException e)
+			{
+				// If we failed to pin, we should revert the change to the pin cache.
+				Assert.assertTrue(_globalPinCache.shouldUnpinAfterRemoving(cid));
+				throw e;
+			}
 		}
 	}
 
