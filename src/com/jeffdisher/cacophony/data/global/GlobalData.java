@@ -49,6 +49,7 @@ public class GlobalData {
 
 	public static byte[] serializeIndex(StreamIndex index)
 	{
+		Assert.assertTrue(null != index);
 		byte[] result = null;
 		try {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -83,6 +84,7 @@ public class GlobalData {
 
 	public static byte[] serializeRecords(StreamRecords records)
 	{
+		Assert.assertTrue(null != records);
 		byte[] result = null;
 		try {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -101,6 +103,7 @@ public class GlobalData {
 
 	public static StreamRecords deserializeRecords(byte[] data)
 	{
+		Assert.assertTrue(null != data);
 		StreamRecords result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecords.class);
@@ -116,6 +119,7 @@ public class GlobalData {
 
 	public static byte[] serializeRecord(StreamRecord record)
 	{
+		Assert.assertTrue(null != record);
 		byte[] result = null;
 		try {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -134,6 +138,7 @@ public class GlobalData {
 
 	public static StreamRecord deserializeRecord(byte[] data)
 	{
+		Assert.assertTrue(null != data);
 		StreamRecord result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecord.class);
@@ -149,6 +154,7 @@ public class GlobalData {
 
 	public static byte[] serializeDescription(StreamDescription record)
 	{
+		Assert.assertTrue(null != record);
 		byte[] result = null;
 		try {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -167,6 +173,7 @@ public class GlobalData {
 
 	public static StreamDescription deserializeDescription(byte[] data)
 	{
+		Assert.assertTrue(null != data);
 		StreamDescription result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamDescription.class);
@@ -182,6 +189,7 @@ public class GlobalData {
 
 	public static byte[] serializeRecommendations(StreamRecommendations record)
 	{
+		Assert.assertTrue(null != record);
 		byte[] result = null;
 		try {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -200,6 +208,7 @@ public class GlobalData {
 
 	public static StreamRecommendations deserializeRecommendations(byte[] data)
 	{
+		Assert.assertTrue(null != data);
 		StreamRecommendations result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecommendations.class);
