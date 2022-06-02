@@ -55,67 +55,7 @@ public class CommandHelpers
 		IpfsFile indexRoot = remote.resolvePublicKey(publicKey);
 		Assert.assertTrue(null != indexRoot);
 		
-		// See if anything changed.
-		if (lastRoot.equals(indexRoot))
-		{
-			environment.logToConsole("Follow index unchanged (" + lastRoot + ")");
-			
-			// Even if nothing changed, update this in our list so that we move it to the back of the sorted list.
-			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
-		}
-		else
-		{
-			// TODO: Re-orient this code to make additive operations first so that the unpin operations are allowed to fail.
-			environment.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
-			
-			// Verify that this isn't too big.
-			long indexSize = remote.getSizeInBytes(indexRoot);
-			if (indexSize > SizeLimits.MAX_INDEX_SIZE_BYTES)
-			{
-				throw new SizeConstraintException("index", indexSize, SizeLimits.MAX_INDEX_SIZE_BYTES);
-			}
-			
-			// Cache the new root and remove the old one.
-			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, indexRoot);
-			StreamIndex oldIndex = GlobalData.deserializeIndex(checker.loadCached(lastRoot));
-			StreamIndex newIndex = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
-			Assert.assertTrue(1 == oldIndex.getVersion());
-			Assert.assertTrue(1 == newIndex.getVersion());
-			if (!oldIndex.getDescription().equals(newIndex.getDescription()))
-			{
-				IpfsFile oldDescriptionCid = IpfsFile.fromIpfsCid(oldIndex.getDescription());
-				IpfsFile newDescriptionCid = IpfsFile.fromIpfsCid(newIndex.getDescription());
-				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newDescriptionCid);
-				StreamDescription oldDescription = GlobalData.deserializeDescription(checker.loadCached(oldDescriptionCid));
-				StreamDescription newDescription = GlobalData.deserializeDescription(checker.loadCached(newDescriptionCid));
-				if (!oldDescription.getPicture().equals(newDescription.getPicture()))
-				{
-					cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(newDescription.getPicture()));
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(oldDescription.getPicture()));
-				}
-				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldDescriptionCid);
-			}
-			if (!oldIndex.getRecommendations().equals(newIndex.getRecommendations()))
-			{
-				IpfsFile oldRecommendationsCid = IpfsFile.fromIpfsCid(oldIndex.getRecommendations());
-				IpfsFile newRecommendationsCid = IpfsFile.fromIpfsCid(newIndex.getRecommendations());
-				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecommendationsCid);
-				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecommendationsCid);
-			}
-			if (!oldIndex.getRecords().equals(newIndex.getRecords()))
-			{
-				IpfsFile oldRecordsCid = IpfsFile.fromIpfsCid(oldIndex.getRecords());
-				IpfsFile newRecordsCid = IpfsFile.fromIpfsCid(newIndex.getRecords());
-				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
-				StreamRecords oldRecords = GlobalData.deserializeRecords(checker.loadCached(oldRecordsCid));
-				StreamRecords newRecords = GlobalData.deserializeRecords(checker.loadCached(newRecordsCid));
-				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
-				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
-			}
-			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot);
-			// Update the root in our cache.
-			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
-		}
+		_safeReadIndex(environment, local, followIndex, publicKey, cache, remote, checker, lastRoot, indexRoot);
 		local.writeBackConfig();
 		log.finish("Refresh completed!");
 	}
@@ -211,6 +151,71 @@ public class CommandHelpers
 		for (String rawCid : addCids)
 		{
 			CacheHelpers.addElementToCache(remote, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
+		}
+	}
+
+	private static void _safeReadIndex(IEnvironment environment, LocalConfig local, FollowIndex followIndex, IpfsKey publicKey, HighLevelCache cache, RemoteActions remote, LoadChecker checker, IpfsFile lastRoot, IpfsFile indexRoot) throws IpfsConnectionException, SizeConstraintException
+	{
+		// See if anything changed.
+		if (lastRoot.equals(indexRoot))
+		{
+			environment.logToConsole("Follow index unchanged (" + lastRoot + ")");
+			
+			// Even if nothing changed, update this in our list so that we move it to the back of the sorted list.
+			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
+		}
+		else
+		{
+			// TODO: Re-orient this code to make additive operations first so that the unpin operations are allowed to fail.
+			environment.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
+			
+			// Verify that this isn't too big.
+			long indexSize = remote.getSizeInBytes(indexRoot);
+			if (indexSize > SizeLimits.MAX_INDEX_SIZE_BYTES)
+			{
+				throw new SizeConstraintException("index", indexSize, SizeLimits.MAX_INDEX_SIZE_BYTES);
+			}
+			
+			// Cache the new root and remove the old one.
+			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, indexRoot);
+			StreamIndex oldIndex = GlobalData.deserializeIndex(checker.loadCached(lastRoot));
+			StreamIndex newIndex = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
+			Assert.assertTrue(1 == oldIndex.getVersion());
+			Assert.assertTrue(1 == newIndex.getVersion());
+			if (!oldIndex.getDescription().equals(newIndex.getDescription()))
+			{
+				IpfsFile oldDescriptionCid = IpfsFile.fromIpfsCid(oldIndex.getDescription());
+				IpfsFile newDescriptionCid = IpfsFile.fromIpfsCid(newIndex.getDescription());
+				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newDescriptionCid);
+				StreamDescription oldDescription = GlobalData.deserializeDescription(checker.loadCached(oldDescriptionCid));
+				StreamDescription newDescription = GlobalData.deserializeDescription(checker.loadCached(newDescriptionCid));
+				if (!oldDescription.getPicture().equals(newDescription.getPicture()))
+				{
+					cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(newDescription.getPicture()));
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(oldDescription.getPicture()));
+				}
+				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldDescriptionCid);
+			}
+			if (!oldIndex.getRecommendations().equals(newIndex.getRecommendations()))
+			{
+				IpfsFile oldRecommendationsCid = IpfsFile.fromIpfsCid(oldIndex.getRecommendations());
+				IpfsFile newRecommendationsCid = IpfsFile.fromIpfsCid(newIndex.getRecommendations());
+				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecommendationsCid);
+				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecommendationsCid);
+			}
+			if (!oldIndex.getRecords().equals(newIndex.getRecords()))
+			{
+				IpfsFile oldRecordsCid = IpfsFile.fromIpfsCid(oldIndex.getRecords());
+				IpfsFile newRecordsCid = IpfsFile.fromIpfsCid(newIndex.getRecords());
+				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
+				StreamRecords oldRecords = GlobalData.deserializeRecords(checker.loadCached(oldRecordsCid));
+				StreamRecords newRecords = GlobalData.deserializeRecords(checker.loadCached(newRecordsCid));
+				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
+				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
+			}
+			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot);
+			// Update the root in our cache.
+			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
 		}
 	}
 }
