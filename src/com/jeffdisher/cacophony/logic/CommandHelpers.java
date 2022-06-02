@@ -55,8 +55,17 @@ public class CommandHelpers
 		IpfsFile indexRoot = remote.resolvePublicKey(publicKey);
 		Assert.assertTrue(null != indexRoot);
 		
-		_safeReadIndex(environment, local, followIndex, publicKey, cache, remote, checker, lastRoot, indexRoot);
-		local.writeBackConfig();
+		try
+		{
+			_safeReadIndex(environment, local, followIndex, publicKey, cache, remote, checker, lastRoot, indexRoot);
+		}
+		finally
+		{
+			// Even if we threw an exception, we still want to update the followee index and write-back the config.
+			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
+			// TODO:  Make sure that nothing else in the state is left broken.
+			local.writeBackConfig();
+		}
 		log.finish("Refresh completed!");
 	}
 
@@ -160,9 +169,6 @@ public class CommandHelpers
 		if (lastRoot.equals(indexRoot))
 		{
 			environment.logToConsole("Follow index unchanged (" + lastRoot + ")");
-			
-			// Even if nothing changed, update this in our list so that we move it to the back of the sorted list.
-			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
 		}
 		else
 		{
@@ -214,8 +220,6 @@ public class CommandHelpers
 				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}
 			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot);
-			// Update the root in our cache.
-			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
 		}
 	}
 }

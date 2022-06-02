@@ -98,4 +98,9 @@ public class MockUserNode
 	{
 		return _executor.loadExistingConfig().loadFollowIndex();
 	}
+
+	public void deleteFile(IpfsFile cid)
+	{
+		_sharedConnection.deleteAndUnpinFile(cid);
+	}
 }

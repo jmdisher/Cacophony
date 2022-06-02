@@ -111,12 +111,23 @@ public class MockConnection implements IConnection
 	}
 
 	@Override
-	public long getSizeInBytes(IpfsFile cid)
+	public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
 	{
-		return _pinned.contains(cid)
-				? (long) _dataStore.get(cid).length
-				: _peer.getSizeInBytes(cid)
-		;
+		long size = -1l;
+		if (_pinned.contains(cid))
+		{
+			size = (long) _dataStore.get(cid).length;
+		}
+		else if (null != _peer)
+		{
+			size = _peer.getSizeInBytes(cid);
+		}
+		else
+		{
+			// This is effectively a network timeout.
+			throw new IpfsConnectionException("size", cid, new IOException("File not found"));
+		}
+		return size;
 	}
 
 	public void setRootForKey(IpfsKey key, IpfsFile root)
@@ -153,6 +164,11 @@ public class MockConnection implements IConnection
 		Assert.assertTrue(!_pinned.contains(cid));
 		// This path is assumed to be for remote pins (since that is why this is called) so we must have an attached peer.
 		byte[] data = _peer.loadData(cid);
+		// We will fail if we can't find this somewhere in the network.
+		if (null == data)
+		{
+			throw new IpfsConnectionException("pin", cid, new IOException("File not found"));
+		}
 		_pinIngestor.apply(cid, data);
 		_pinned.add(cid);
 	}
@@ -175,6 +191,13 @@ public class MockConnection implements IConnection
 	{
 		return _pinned.contains(cid);
 	}
+
+	public void deleteAndUnpinFile(IpfsFile cid)
+	{
+		Assert.assertTrue(_pinned.remove(cid));
+		Assert.assertTrue(null != _dataStore.remove(cid));
+	}
+
 
 	private IpfsFile _remoteResolve(IpfsKey key) throws IpfsConnectionException
 	{
