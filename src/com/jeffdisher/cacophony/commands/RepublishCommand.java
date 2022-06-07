@@ -30,8 +30,11 @@ public record RepublishCommand() implements ICommand
 		// Republish the index.
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
 		boolean didPublish = remote.publishIndex(indexHash);
-		// TODO:  Remove this assertion once we can handle the error.
-		Assert.assertTrue(didPublish);
+		// If we failed to publish, that should be considered an error for this command, since this is all it does.
+		if (!didPublish)
+		{
+			throw new CacophonyException("Failed to publish new entry to IPNS");
+		}
 		log.finish("Republish completed!");
 	}
 }
