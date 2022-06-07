@@ -92,25 +92,22 @@ public class RemoteActions
 	 * value.
 	 * 
 	 * @param indexHash The index to publish for this channel's public key.
-	 * @return True if the publication succeeded or could at least be confirmed, even if it timed out.
+	 * @return The exception encountered when attempting to publish, null if the publish was a success.
 	 */
-	public boolean publishIndex(IpfsFile indexHash)
+	public IpfsConnectionException publishIndex(IpfsFile indexHash)
 	{
 		Assert.assertTrue(null != _ipfs);
 		Assert.assertTrue(null != _keyName);
 		
-		boolean didPublish = false;
-		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
-		StandardEnvironment.IOperationLog log = _environment.logOperation("Publishing " + indexHash + " to " + _keyName);
+		IpfsConnectionException error = null;
 		try
 		{
 			_ipfs.publish(_keyName, indexHash);
-			log.finish("Success!");
-			didPublish = true;
+			error = null;
 		}
 		catch (IpfsConnectionException e)
 		{
-			log.finish("Failed: " + e.getLocalizedMessage());
+			error = e;
 		}
 		
 		if (_environment.shouldEnableVerifications())
@@ -119,14 +116,21 @@ public class RemoteActions
 			try
 			{
 				IpfsFile published = _ipfs.resolve(_publicKey);
-				didPublish = published.toSafeString().equals(indexHash.toSafeString());
+				if (published.toSafeString().equals(indexHash.toSafeString()))
+				{
+					// Even if there was a timeout error, the correct answer is there so it may have completed asynchronously.
+					error = null;
+				}
 			}
 			catch (IpfsConnectionException e)
 			{
-				didPublish = false;
+				if (null == error)
+				{
+					error = e;
+				}
 			}
 		}
-		return didPublish;
+		return error;
 	}
 
 	/**

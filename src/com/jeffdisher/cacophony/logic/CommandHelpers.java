@@ -85,11 +85,17 @@ public class CommandHelpers
 		IpfsFile hashIndex = remote.saveData(GlobalData.serializeIndex(streamIndex));
 		// This never returns null.
 		Assert.assertTrue(null != hashIndex);
-		// Publish it to IPNS (returns false on failure).
-		boolean didPublish = remote.publishIndex(hashIndex);
-		// If we failed to publish, we always want to log this.
-		if (!didPublish)
+		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
+		StandardEnvironment.IOperationLog log = environment.logOperation("Publishing " + hashIndex);
+		// Publish it to IPNS (returns error on failure).
+		IpfsConnectionException error = remote.publishIndex(hashIndex);
+		if (null == error)
 		{
+			log.finish("Success!");
+		}
+		else
+		{
+			log.finish("Failed: " + error.getLocalizedMessage());
 			environment.logError("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + hashIndex);
 		}
 		return hashIndex;

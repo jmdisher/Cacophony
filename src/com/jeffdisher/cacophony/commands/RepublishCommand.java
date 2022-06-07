@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -29,11 +30,11 @@ public record RepublishCommand() implements ICommand
 		
 		// Republish the index.
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		boolean didPublish = remote.publishIndex(indexHash);
+		IpfsConnectionException error = remote.publishIndex(indexHash);
 		// If we failed to publish, that should be considered an error for this command, since this is all it does.
-		if (!didPublish)
+		if (null != error)
 		{
-			throw new CacophonyException("Failed to publish new entry to IPNS");
+			throw error;
 		}
 		log.finish("Republish completed!");
 	}
