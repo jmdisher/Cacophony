@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.function.Function;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -40,4 +41,12 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FuturePublish publishIndex(IpfsFile indexHash);
+
+	/**
+	 * Resolves the given keyToResolve as a public key to see the file it has published.
+	 * 
+	 * @param keyToResolve The key to resolve.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureResolve resolvePublicKey(IpfsKey keyToResolve);
 }

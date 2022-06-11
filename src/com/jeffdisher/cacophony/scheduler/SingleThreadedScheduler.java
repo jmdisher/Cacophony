@@ -7,6 +7,7 @@ import java.util.function.Function;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -82,6 +83,22 @@ public class SingleThreadedScheduler implements INetworkScheduler
 		else
 		{
 			future.failure(error);
+		}
+		return future;
+	}
+
+	@Override
+	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
+	{
+		FutureResolve future = new FutureResolve();
+		IpfsFile resolved = _remote.resolvePublicKey(keyToResolve);
+		if (null != resolved)
+		{
+			future.success(resolved);
+		}
+		else
+		{
+			future.failure();
 		}
 		return future;
 	}

@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -46,7 +47,8 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// We need to first verify that we aren't already following them.
@@ -57,7 +59,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		}
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
-		IpfsFile indexRoot = remote.resolvePublicKey(_publicKey);
+		IpfsFile indexRoot = scheduler.resolvePublicKey(_publicKey).get();
 		Assert.assertTrue(null != indexRoot);
 		environment.logToConsole("Resolved as " + indexRoot);
 		

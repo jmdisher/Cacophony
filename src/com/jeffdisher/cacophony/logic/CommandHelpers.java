@@ -48,14 +48,15 @@ public class CommandHelpers
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// We need to first verify that we are already following them.
 		IpfsFile lastRoot = followIndex.getLastFetchedRoot(publicKey);
 		Assert.assertTrue(null != lastRoot);
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
-		IpfsFile indexRoot = remote.resolvePublicKey(publicKey);
+		IpfsFile indexRoot = scheduler.resolvePublicKey(publicKey).get();
 		Assert.assertTrue(null != indexRoot);
 		
 		try
