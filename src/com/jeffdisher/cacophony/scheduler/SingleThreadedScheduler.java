@@ -70,4 +70,19 @@ public class SingleThreadedScheduler implements INetworkScheduler
 		return future;
 	}
 
+	@Override
+	public FuturePublish publishIndex(IpfsFile indexHash)
+	{
+		FuturePublish future = new FuturePublish();
+		IpfsConnectionException error = _remote.publishIndex(indexHash);
+		if (null == error)
+		{
+			future.success();
+		}
+		else
+		{
+			future.failure(error);
+		}
+		return future;
+	}
 }

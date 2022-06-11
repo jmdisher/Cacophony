@@ -92,7 +92,7 @@ public class CommandHelpers
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
 		StandardEnvironment.IOperationLog log = environment.logOperation("Publishing " + hashIndex);
 		// Publish it to IPNS (returns error on failure).
-		IpfsConnectionException error = remote.publishIndex(hashIndex);
+		IpfsConnectionException error = scheduler.publishIndex(hashIndex).get();
 		if (null == error)
 		{
 			log.finish("Success!");

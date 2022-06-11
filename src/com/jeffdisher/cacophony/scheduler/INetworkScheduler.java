@@ -32,4 +32,12 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureSave saveStream(InputStream stream, boolean shouldCloseStream);
+
+	/**
+	 * Publishes the given indexHash for this channel's key.
+	 * 
+	 * @param indexHash The file to publish.
+	 * @return The asynchronously-completed future.
+	 */
+	FuturePublish publishIndex(IpfsFile indexHash);
 }
