@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -83,7 +84,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			{
 				throw new UsageException("Unable to load picture: " + _picturePath.toPath());
 			}
-			IpfsFile pictureHash = remote.saveData(rawData);
+			IpfsFile pictureHash = remote.saveStream(new ByteArrayInputStream(rawData));
 			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.toSafeString());
 		}
@@ -114,7 +115,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		// Serialize and upload the description.
 		byte[] rawDescription = GlobalData.serializeDescription(description);
-		IpfsFile hashDescription = remote.saveData(rawDescription);
+		IpfsFile hashDescription = remote.saveStream(new ByteArrayInputStream(rawDescription));
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.

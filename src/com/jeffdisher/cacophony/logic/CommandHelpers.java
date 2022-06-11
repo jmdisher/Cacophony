@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -83,7 +84,7 @@ public class CommandHelpers
 	public static IpfsFile serializeSaveAndPublishIndex(IEnvironment environment, RemoteActions remote, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file and save it to the IPFS node.
-		IpfsFile hashIndex = remote.saveData(GlobalData.serializeIndex(streamIndex));
+		IpfsFile hashIndex = remote.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)));
 		// This never returns null.
 		Assert.assertTrue(null != hashIndex);
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.

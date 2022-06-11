@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
@@ -69,11 +70,11 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		IpfsFile hashDescription = remote.saveData(rawDescription);
+		IpfsFile hashDescription = remote.saveStream(new ByteArrayInputStream(rawDescription));
 		cache.uploadedToThisCache(hashDescription);
-		IpfsFile hashRecommendations = remote.saveData(rawRecommendations);
+		IpfsFile hashRecommendations = remote.saveStream(new ByteArrayInputStream(rawRecommendations));
 		cache.uploadedToThisCache(hashRecommendations);
-		IpfsFile hashRecords = remote.saveData(rawRecords);
+		IpfsFile hashRecords = remote.saveStream(new ByteArrayInputStream(rawRecords));
 		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.

@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.ByteArrayInputStream;
+
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -81,7 +83,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile newCid = remote.saveData(rawRecords);
+		IpfsFile newCid = remote.saveStream(new ByteArrayInputStream(rawRecords));
 		cache.uploadedToThisCache(newCid);
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");

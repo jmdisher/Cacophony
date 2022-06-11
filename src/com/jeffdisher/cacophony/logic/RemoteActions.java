@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -53,18 +52,6 @@ public class RemoteActions
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
-	}
-
-	public IpfsFile saveData(byte[] raw) throws IpfsConnectionException
-	{
-		StandardEnvironment.IOperationLog log = _environment.logOperation("Saving " + raw.length + " bytes...");
-		IpfsFile file = _ipfs.storeData(new ByteArrayInputStream(raw));
-		log.finish("saved: " + file.toSafeString());
-		if (_environment.shouldEnableVerifications())
-		{
-			Assert.assertTrue(raw.length == (int)_getSizeInBytes(file));
-		}
-		return file;
 	}
 
 	public IpfsFile saveStream(InputStream stream) throws IpfsConnectionException

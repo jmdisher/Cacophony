@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.ByteArrayInputStream;
+
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
@@ -64,7 +66,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		
 		// Serialize and upload the description.
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile hashDescription = remote.saveData(rawRecommendations);
+		IpfsFile hashDescription = remote.saveStream(new ByteArrayInputStream(rawRecommendations));
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.

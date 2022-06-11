@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -109,14 +110,14 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = remote.saveData(rawRecord);
+		IpfsFile recordHash = remote.saveStream(new ByteArrayInputStream(rawRecord));
 		cache.uploadedToThisCache(recordHash);
 		
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = remote.saveData(rawRecords);
+		IpfsFile recordsHash = remote.saveStream(new ByteArrayInputStream(rawRecords));
 		cache.uploadedToThisCache(recordsHash);
 		
 		// Update, save, and publish the new index.
