@@ -6,7 +6,6 @@ import java.util.function.Function;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -30,14 +29,14 @@ public class LoadChecker
 		_ipfsConnection = ipfsConnection;
 	}
 
-	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder) throws IpfsConnectionException
+	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));
 		return _remote.readData(file, decoder);
 	}
 
-	public <R> FutureRead<R> loadNotCached(IEnvironment environment, IpfsFile file, Function<byte[], R> decoder) throws IpfsConnectionException
+	public <R> FutureRead<R> loadNotCached(IEnvironment environment, IpfsFile file, Function<byte[], R> decoder)
 	{
 		Assert.assertTrue(null != file);
 		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but
@@ -49,7 +48,7 @@ public class LoadChecker
 		return _remote.readData(file, decoder);
 	}
 
-	public URL getCachedUrl(IpfsFile file) throws IpfsConnectionException
+	public URL getCachedUrl(IpfsFile file)
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));
