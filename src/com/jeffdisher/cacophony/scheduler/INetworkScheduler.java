@@ -49,4 +49,12 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureResolve resolvePublicKey(IpfsKey keyToResolve);
+
+	/**
+	 * Reads the size of a file from the network.
+	 * 
+	 * @param cid The file to look up.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureSize getSizeInBytes(IpfsFile cid);
 }

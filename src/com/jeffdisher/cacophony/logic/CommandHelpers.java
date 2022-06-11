@@ -61,7 +61,7 @@ public class CommandHelpers
 		
 		try
 		{
-			_safeReadIndex(environment, local, followIndex, publicKey, cache, remote, checker, lastRoot, indexRoot);
+			_safeReadIndex(environment, local, followIndex, publicKey, cache, scheduler, checker, lastRoot, indexRoot);
 		}
 		finally
 		{
@@ -107,7 +107,7 @@ public class CommandHelpers
 	}
 
 
-	private static void _updateCachedRecords(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs, IpfsKey publicKey) throws IpfsConnectionException, SizeConstraintException
+	private static void _updateCachedRecords(INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs, IpfsKey publicKey) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		Set<String> removeCids = new HashSet<String>();
@@ -153,7 +153,7 @@ public class CommandHelpers
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Verify that this isn't too big.
-			long elementSize = remote.getSizeInBytes(cid);
+			long elementSize = scheduler.getSizeInBytes(cid).get();
 			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
 			{
 				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
@@ -165,7 +165,7 @@ public class CommandHelpers
 			try
 			{
 				// Now, find the size of the relevant leaves within.
-				bytesToAdd += CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
+				bytesToAdd += CacheHelpers.sizeInBytesToAdd(scheduler, videoEdgePixelMax, rawCid);
 				isVerified = true;
 			}
 			catch (IpfsConnectionException e)
@@ -187,11 +187,11 @@ public class CommandHelpers
 		long currentTimeMillis = System.currentTimeMillis();
 		for (String rawCid : verifiedCids)
 		{
-			CacheHelpers.addElementToCache(remote, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
+			CacheHelpers.addElementToCache(scheduler, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
 		}
 	}
 
-	private static void _safeReadIndex(IEnvironment environment, LocalConfig local, FollowIndex followIndex, IpfsKey publicKey, HighLevelCache cache, RemoteActions remote, LoadChecker checker, IpfsFile lastRoot, IpfsFile indexRoot) throws IpfsConnectionException, SizeConstraintException
+	private static void _safeReadIndex(IEnvironment environment, LocalConfig local, FollowIndex followIndex, IpfsKey publicKey, HighLevelCache cache, INetworkScheduler scheduler, LoadChecker checker, IpfsFile lastRoot, IpfsFile indexRoot) throws IpfsConnectionException, SizeConstraintException
 	{
 		// See if anything changed.
 		if (lastRoot.equals(indexRoot))
@@ -204,7 +204,7 @@ public class CommandHelpers
 			environment.logToConsole("Follow index changed (" + lastRoot + ") -> (" + indexRoot + ")");
 			
 			// Verify that this isn't too big.
-			long indexSize = remote.getSizeInBytes(indexRoot);
+			long indexSize = scheduler.getSizeInBytes(indexRoot).get();
 			if (indexSize > SizeLimits.MAX_INDEX_SIZE_BYTES)
 			{
 				throw new SizeConstraintException("index", indexSize, SizeLimits.MAX_INDEX_SIZE_BYTES);
@@ -244,7 +244,7 @@ public class CommandHelpers
 				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
 				StreamRecords oldRecords = checker.loadCached(oldRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 				StreamRecords newRecords = checker.loadCached(newRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
-				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
+				_updateCachedRecords(scheduler, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
 				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}
 			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot);

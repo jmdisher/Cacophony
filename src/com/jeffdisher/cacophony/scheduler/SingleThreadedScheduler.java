@@ -102,4 +102,20 @@ public class SingleThreadedScheduler implements INetworkScheduler
 		}
 		return future;
 	}
+
+	@Override
+	public FutureSize getSizeInBytes(IpfsFile cid)
+	{
+		FutureSize future = new FutureSize();
+		try
+		{
+			long sizeInBytes = _remote.getSizeInBytes(cid);
+			future.success(sizeInBytes);
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.failure(e);
+		}
+		return future;
+	}
 }

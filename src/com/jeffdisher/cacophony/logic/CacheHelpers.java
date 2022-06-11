@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -38,9 +37,8 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static long addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
+	public static long addElementToCache(INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
 	{
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
@@ -65,20 +63,19 @@ public class CacheHelpers
 		if (null != imageHash)
 		{
 			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash);
-			combinedSizeBytes += remote.getSizeInBytes(imageHash);
+			combinedSizeBytes += scheduler.getSizeInBytes(imageHash).get();
 		}
 		if (null != leafHash)
 		{
 			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash);
-			combinedSizeBytes += remote.getSizeInBytes(leafHash);
+			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
 		}
 		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
 		return combinedSizeBytes;
 	}
 
-	public static long sizeInBytesToAdd(RemoteActions remote, int videoEdgePixelMax, String rawCid) throws IpfsConnectionException
+	public static long sizeInBytesToAdd(INetworkScheduler scheduler, int videoEdgePixelMax, String rawCid) throws IpfsConnectionException
 	{
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
@@ -102,11 +99,11 @@ public class CacheHelpers
 		long combinedSizeBytes = 0L;
 		if (null != imageHash)
 		{
-			combinedSizeBytes += remote.getSizeInBytes(imageHash);
+			combinedSizeBytes += scheduler.getSizeInBytes(imageHash).get();
 		}
 		if (null != leafHash)
 		{
-			combinedSizeBytes += remote.getSizeInBytes(leafHash);
+			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
 		}
 		return combinedSizeBytes;
 	}

@@ -64,7 +64,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		environment.logToConsole("Resolved as " + indexRoot);
 		
 		// Verify that this isn't too big.
-		long indexSize = remote.getSizeInBytes(indexRoot);
+		long indexSize = scheduler.getSizeInBytes(indexRoot).get();
 		if (indexSize > SizeLimits.MAX_INDEX_SIZE_BYTES)
 		{
 			throw new SizeConstraintException("index", indexSize, SizeLimits.MAX_INDEX_SIZE_BYTES);
@@ -90,14 +90,14 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Populate the initial cache records.
 		GlobalPrefs prefs = local.readSharedPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, checker.loadCached(recordsHash, (byte[] data) -> GlobalData.deserializeRecords(data)).get(), videoEdgePixelMax);
+		_populateCachedRecords(environment, prefs, scheduler, cache, followIndex, indexRoot, checker.loadCached(recordsHash, (byte[] data) -> GlobalData.deserializeRecords(data)).get(), videoEdgePixelMax);
 		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.
 		local.writeBackConfig();
 		log.finish("Follow successful!");
 	}
 
 
-	private void _populateCachedRecords(IEnvironment environment, GlobalPrefs prefs, RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IpfsConnectionException, SizeConstraintException
+	private void _populateCachedRecords(IEnvironment environment, GlobalPrefs prefs, INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords newRecords, int videoEdgePixelMax) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		IOperationLog log = environment.logOperation("Caching initial entries...");
@@ -110,7 +110,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Verify that this isn't too big.
-			long elementSize = remote.getSizeInBytes(cid);
+			long elementSize = scheduler.getSizeInBytes(cid).get();
 			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
 			{
 				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
@@ -118,7 +118,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			
 			// Note that we need to add the element meta-data independently of caching the leaves within (since they can be pruned but the meta-data can't).
 			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
-			long bytesForLeaves = CacheHelpers.sizeInBytesToAdd(remote, videoEdgePixelMax, rawCid);
+			long bytesForLeaves = CacheHelpers.sizeInBytesToAdd(scheduler, videoEdgePixelMax, rawCid);
 			// Note that the candidates are considered with weight on the earlier elements in this list so we want to make sure the more recent ones appear there.
 			candidatesList.add(0, new CacheAlgorithm.Candidate<String>(bytesForLeaves, rawCid));
 		}
@@ -139,7 +139,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			// We always want to cache the most recent, since it is likely most watched, so remove that from the list and add it before running the general algorithm.
 			environment.logToConsole("Caching most recent entry: " + firstElement.data());
 			entryCountAdded += 1;
-			long leafBytes = CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, firstElement.data());
+			long leafBytes = CacheHelpers.addElementToCache(scheduler, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, firstElement.data());
 			environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 			
 			// Finally, run the cache algorithm for bulk adding and then cache whatever we are told to add.
@@ -149,7 +149,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			{
 				environment.logToConsole("Caching entry: " + elt.data());
 				entryCountAdded += 1;
-				leafBytes = CacheHelpers.addElementToCache(remote, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
+				leafBytes = CacheHelpers.addElementToCache(scheduler, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data());
 				environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 			}
 		}
