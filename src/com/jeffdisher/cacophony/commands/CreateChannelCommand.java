@@ -16,9 +16,7 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LocalConfig;
-import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -50,8 +48,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		}
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.readLocalIndex();
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, index.keyName());
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, index.keyName());
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), connection);
 		
 		// Create the empty description, recommendations, record stream, and index.
@@ -86,7 +83,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setDescription(hashDescription.toSafeString());
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, streamIndex);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, streamIndex);
 		// Update the local index.
 		LocalIndex localIndex = local.readLocalIndex();
 		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));

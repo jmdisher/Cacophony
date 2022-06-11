@@ -4,9 +4,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LocalConfig;
-import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -31,8 +29,7 @@ public record RepublishCommand() implements ICommand
 		Assert.assertTrue(null != indexHash);
 		
 		// Republish the index.
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
 		IpfsConnectionException error = scheduler.publishIndex(indexHash).get();
 		// If we failed to publish, that should be considered an error for this command, since this is all it does.
 		if (null != error)

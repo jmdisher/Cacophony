@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
@@ -56,4 +57,16 @@ public interface IEnvironment
 	 * @return True if additional checks should be applied.
 	 */
 	boolean shouldEnableVerifications();
+
+	/**
+	 * Returns the shared scheduler for network operations, lazily creating it if it doesn't yet exist.
+	 * Note that the scheduler is lazily created but long-lived and shared by potentially multiple threads and
+	 * concurrent commands.
+	 * 
+	 * @param ipfs The IPFS connection to use if the scheduler is being lazily constructed.
+	 * @param keyName The channel's key name to use if the scheduler is being lazily constructed.
+	 * @return The shared network scheduler instance.
+	 * @throws IpfsConnectionException If there was an error creating the scheduler.
+	 */
+	INetworkScheduler getSharedScheduler(IConnection ipfs, String keyName) throws IpfsConnectionException;
 }

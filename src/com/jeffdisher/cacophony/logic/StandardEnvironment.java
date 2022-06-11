@@ -1,7 +1,11 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.PrintStream;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
@@ -10,6 +14,9 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class StandardEnvironment implements IEnvironment
 {
+	// This lock is used to protect internal variables which may be changed by multiple threads.
+	private final Lock _internalLock;
+
 	private final PrintStream _stream;
 	private final IConfigFileSystem _fileSystem;
 	private final IConnectionFactory _factory;
@@ -17,9 +24,11 @@ public class StandardEnvironment implements IEnvironment
 	private int _nextOperationCounter;
 	private LocalConfig _lazyConfig;
 	private boolean _errorOccurred;
+	private INetworkScheduler _lazySharedScheduler;
 
 	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, boolean shouldEnableVerifications)
 	{
+		_internalLock = new ReentrantLock();
 		_stream = stream;
 		_fileSystem = fileSystem;
 		_factory = factory;
@@ -88,5 +97,25 @@ public class StandardEnvironment implements IEnvironment
 	public boolean didErrorOccur()
 	{
 		return _errorOccurred;
+	}
+
+	@Override
+	public INetworkScheduler getSharedScheduler(IConnection ipfs, String keyName) throws IpfsConnectionException
+	{
+		INetworkScheduler scheduler = null;
+		_internalLock.lock();
+		try
+		{
+			if (null == _lazySharedScheduler)
+			{
+				_lazySharedScheduler = new SingleThreadedScheduler(RemoteActions.loadIpfsConfig(this, ipfs, keyName));
+			}
+			scheduler = _lazySharedScheduler;
+		}
+		finally
+		{
+			_internalLock.unlock();
+		}
+		return scheduler;
 	}
 }

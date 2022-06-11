@@ -17,7 +17,6 @@ import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -47,8 +46,7 @@ public class CommandHelpers
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// We need to first verify that we are already following them.
@@ -83,10 +81,9 @@ public class CommandHelpers
 	 * @return The hash of the saved index file.
 	 * @throws IpfsConnectionException An error occurred while saving the file to IPFS.
 	 */
-	public static IpfsFile serializeSaveAndPublishIndex(IEnvironment environment, RemoteActions remote, StreamIndex streamIndex) throws IpfsConnectionException
+	public static IpfsFile serializeSaveAndPublishIndex(IEnvironment environment, INetworkScheduler scheduler, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file and save it to the IPFS node.
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		IpfsFile hashIndex = scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true).get();
 		// This never returns null.
 		Assert.assertTrue(null != hashIndex);

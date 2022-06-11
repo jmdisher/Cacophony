@@ -16,10 +16,8 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
-import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -40,9 +38,9 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
-		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
-		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache, remote, checker);
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
+		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache, scheduler, checker);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
 		_runFinish(environment, local, localIndex, cache, checker, cleanup);
@@ -50,7 +48,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache, RemoteActions remote, LoadChecker checker) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache, INetworkScheduler scheduler, LoadChecker checker) throws UsageException, IpfsConnectionException
 	{
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
@@ -84,12 +82,11 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		IpfsFile newCid = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
 		cache.uploadedToThisCache(newCid);
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, remote, index);
+		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
 		return new CleanupData(indexHash, rootToLoad);
 	}
 
