@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -43,17 +44,16 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		
 		// Read our existing root key.
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != oldRootHash);
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(oldRootHash));
+		StreamIndex index = checker.loadCached(oldRootHash, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
-		byte[] rawRecommendations = checker.loadCached(originalRecommendations);
-		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
+		StreamRecommendations recommendations = checker.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		
 		// Verify that we didn't already add them.
 		Assert.assertTrue(!recommendations.getUser().contains(_channelPublicKey.toPublicKey()));
@@ -62,7 +62,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		recommendations.getUser().add(_channelPublicKey.toPublicKey());
 		
 		// Serialize and upload the description.
-		rawRecommendations = GlobalData.serializeRecommendations(recommendations);
+		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		IpfsFile hashDescription = remote.saveData(rawRecommendations);
 		cache.uploadedToThisCache(hashDescription);
 		

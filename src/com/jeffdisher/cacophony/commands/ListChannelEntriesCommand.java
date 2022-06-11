@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -28,7 +29,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), local.loadGlobalPinCache(), local.getSharedConnection());
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
 		if (null != _channelPublicKey)
@@ -61,21 +62,19 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
-		byte[] rawRecords = isCached
-				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()))
-				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecords()))
-		;
-		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
+		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamRecords records = (isCached
+				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
+				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
+		).get();
 		
 		// Walk the elements, reading each element.
 		for (String recordCid : records.getRecord())
 		{
-			byte[] rawRecord = isCached
-					? checker.loadCached(IpfsFile.fromIpfsCid(recordCid))
-					: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(recordCid))
-			;
-			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
+			StreamRecord record = (isCached
+					? checker.loadCached(IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
+					: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
+			).get();
 			environment.logToConsole("element " + recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())

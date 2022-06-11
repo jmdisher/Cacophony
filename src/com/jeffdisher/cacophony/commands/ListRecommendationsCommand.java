@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,7 +25,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
@@ -62,14 +63,16 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}
-		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(environment, rootToLoad));
+		StreamIndex index = (isCached
+				? checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+				: checker.loadNotCached(environment, rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+		).get();
 		
 		// Read the existing recommendations list.
-		byte[] rawRecommendations = isCached
-				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()))
-				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecommendations()))
-		;
-		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
+		StreamRecommendations recommendations = (isCached
+				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
+				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
+		).get();
 		
 		// Walk the recommendations and print their keys to the console.
 		environment.logToConsole("Recommendations of " + publicKey.toPublicKey());

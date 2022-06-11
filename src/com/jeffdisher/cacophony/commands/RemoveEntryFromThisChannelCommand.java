@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -37,7 +38,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache, remote, checker);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
@@ -53,11 +54,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
+		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
-		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
+		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Make sure that we actually have the record.
 		boolean didFind = false;
@@ -80,7 +80,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
-		rawRecords = GlobalData.serializeRecords(records);
+		byte[] rawRecords = GlobalData.serializeRecords(records);
 		IpfsFile newCid = remote.saveData(rawRecords);
 		cache.uploadedToThisCache(newCid);
 		index.setRecords(newCid.toSafeString());
@@ -96,18 +96,17 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).
-		byte[] rawRecord = null;
+		StreamRecord record = null;
 		try
 		{
-			rawRecord = checker.loadCached(_elementCid);
+			record = checker.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 		}
 		catch (IpfsConnectionException e)
 		{
 			environment.logError("WARNING: Failed to load element being removed: " +  _elementCid + ".  Any referenced elements will need to be manually unpinned.");
 		}
-		if (null != rawRecord)
+		if (null != record)
 		{
-			StreamRecord record = GlobalData.deserializeRecord(rawRecord);
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{

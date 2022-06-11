@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,7 +25,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), local.loadGlobalPinCache(), local.getSharedConnection());
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
@@ -61,12 +62,14 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 		}
-		StreamIndex index = GlobalData.deserializeIndex(isCached ? checker.loadCached(rootToLoad) : checker.loadNotCached(environment, rootToLoad));
-		byte[] rawDescription = isCached
-				? checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()))
-				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getDescription()))
-		;
-		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
+		StreamIndex index = (isCached
+				? checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+				: checker.loadNotCached(environment, rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+		).get();
+		StreamDescription description = (isCached
+				? checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
+				:checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
+		).get();
 		environment.logToConsole("Channel public key: " + publicKey);
 		environment.logToConsole("-name: " + description.getName());
 		environment.logToConsole("-description: " + description.getDescription());

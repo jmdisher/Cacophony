@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -54,17 +55,16 @@ public record PublishCommand(String _name, String _description, String _discussi
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
+		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		byte[] rawRecords = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()));
-		StreamRecords records = GlobalData.deserializeRecords(rawRecords);
+		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Upload the elements.
 		DataArray array = new DataArray();
@@ -115,7 +115,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
-		rawRecords = GlobalData.serializeRecords(records);
+		byte[] rawRecords = GlobalData.serializeRecords(records);
 		IpfsFile recordsHash = remote.saveData(rawRecords);
 		cache.uploadedToThisCache(recordsHash);
 		

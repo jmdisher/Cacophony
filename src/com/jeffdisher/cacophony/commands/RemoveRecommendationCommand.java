@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -44,17 +45,16 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
+		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
-		byte[] rawRecommendations = checker.loadCached(originalRecommendations);
-		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(rawRecommendations);
+		StreamRecommendations recommendations = checker.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		
 		// Verify that they are already in the list.
 		Assert.assertTrue(recommendations.getUser().contains(_channelPublicKey.toPublicKey()));
@@ -63,7 +63,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		recommendations.getUser().remove(_channelPublicKey.toPublicKey());
 		
 		// Serialize and upload the description.
-		rawRecommendations = GlobalData.serializeRecommendations(recommendations);
+		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		IpfsFile hashDescription = remote.saveData(rawRecommendations);
 		cache.uploadedToThisCache(hashDescription);
 		

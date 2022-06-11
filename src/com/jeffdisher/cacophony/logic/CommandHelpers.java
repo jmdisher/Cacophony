@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -45,7 +46,7 @@ public class CommandHelpers
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		
 		// We need to first verify that we are already following them.
 		IpfsFile lastRoot = followIndex.getLastFetchedRoot(publicKey);
@@ -207,8 +208,8 @@ public class CommandHelpers
 			
 			// Cache the new root and remove the old one.
 			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, indexRoot);
-			StreamIndex oldIndex = GlobalData.deserializeIndex(checker.loadCached(lastRoot));
-			StreamIndex newIndex = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
+			StreamIndex oldIndex = checker.loadCached(lastRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamIndex newIndex = checker.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 			Assert.assertTrue(1 == oldIndex.getVersion());
 			Assert.assertTrue(1 == newIndex.getVersion());
 			if (!oldIndex.getDescription().equals(newIndex.getDescription()))
@@ -216,8 +217,8 @@ public class CommandHelpers
 				IpfsFile oldDescriptionCid = IpfsFile.fromIpfsCid(oldIndex.getDescription());
 				IpfsFile newDescriptionCid = IpfsFile.fromIpfsCid(newIndex.getDescription());
 				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newDescriptionCid);
-				StreamDescription oldDescription = GlobalData.deserializeDescription(checker.loadCached(oldDescriptionCid));
-				StreamDescription newDescription = GlobalData.deserializeDescription(checker.loadCached(newDescriptionCid));
+				StreamDescription oldDescription = checker.loadCached(oldDescriptionCid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+				StreamDescription newDescription = checker.loadCached(newDescriptionCid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 				if (!oldDescription.getPicture().equals(newDescription.getPicture()))
 				{
 					cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(newDescription.getPicture()));
@@ -237,8 +238,8 @@ public class CommandHelpers
 				IpfsFile oldRecordsCid = IpfsFile.fromIpfsCid(oldIndex.getRecords());
 				IpfsFile newRecordsCid = IpfsFile.fromIpfsCid(newIndex.getRecords());
 				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid);
-				StreamRecords oldRecords = GlobalData.deserializeRecords(checker.loadCached(oldRecordsCid));
-				StreamRecords newRecords = GlobalData.deserializeRecords(checker.loadCached(newRecordsCid));
+				StreamRecords oldRecords = checker.loadCached(oldRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+				StreamRecords newRecords = checker.loadCached(newRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 				_updateCachedRecords(remote, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
 				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid);
 			}

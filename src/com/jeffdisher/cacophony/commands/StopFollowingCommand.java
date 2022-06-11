@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -37,7 +38,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// Removed the cache record and verify that we are following them.
@@ -62,12 +63,12 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Remove all the root meta-data we have cached.
 		IpfsFile lastRoot = finalRecord.lastFetchedRoot();
-		StreamIndex streamIndex = GlobalData.deserializeIndex(checker.loadCached(lastRoot));
+		StreamIndex streamIndex = checker.loadCached(lastRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
 		IpfsFile recommendationsHash = IpfsFile.fromIpfsCid(streamIndex.getRecommendations());
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(streamIndex.getRecords());
-		StreamDescription description = GlobalData.deserializeDescription(checker.loadCached(descriptionHash));
+		StreamDescription description = checker.loadCached(descriptionHash, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);

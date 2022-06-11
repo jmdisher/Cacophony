@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -45,7 +46,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		FollowIndex followIndex = local.loadFollowIndex();
 		
 		// We need to first verify that we aren't already following them.
@@ -69,7 +70,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Now, cache the root meta-data structures.
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
-		StreamIndex streamIndex = GlobalData.deserializeIndex(checker.loadCached(indexRoot));
+		StreamIndex streamIndex = checker.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
@@ -77,7 +78,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(streamIndex.getRecords());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recordsHash);
-		StreamDescription description = GlobalData.deserializeDescription(checker.loadCached(descriptionHash));
+		StreamDescription description = checker.loadCached(descriptionHash, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
 		
@@ -87,7 +88,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// Populate the initial cache records.
 		GlobalPrefs prefs = local.readSharedPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, GlobalData.deserializeRecords(checker.loadCached(recordsHash)), videoEdgePixelMax);
+		_populateCachedRecords(environment, prefs, remote, cache, followIndex, indexRoot, checker.loadCached(recordsHash, (byte[] data) -> GlobalData.deserializeRecords(data)).get(), videoEdgePixelMax);
 		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.
 		local.writeBackConfig();
 		log.finish("Follow successful!");

@@ -1,8 +1,11 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.net.URL;
+import java.util.function.Function;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -16,25 +19,25 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class LoadChecker
 {
-	private final RemoteActions _remote;
+	private final INetworkScheduler _remote;
 	private final GlobalPinCache _cache;
 	private final IConnection _ipfsConnection;
 
-	public LoadChecker(RemoteActions remote, GlobalPinCache pinCache, IConnection ipfsConnection)
+	public LoadChecker(INetworkScheduler remote, GlobalPinCache pinCache, IConnection ipfsConnection)
 	{
 		_remote = remote;
 		_cache = pinCache;
 		_ipfsConnection = ipfsConnection;
 	}
 
-	public byte[] loadCached(IpfsFile file) throws IpfsConnectionException
+	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_cache.isCached(file));
-		return _remote.readData(file);
+		return _remote.readData(file, decoder);
 	}
 
-	public byte[] loadNotCached(IEnvironment environment, IpfsFile file) throws IpfsConnectionException
+	public <R> FutureRead<R> loadNotCached(IEnvironment environment, IpfsFile file, Function<byte[], R> decoder) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != file);
 		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but
@@ -43,7 +46,7 @@ public class LoadChecker
 		{
 			environment.logError("WARNING!  Not expected in cache:  " + file);
 		}
-		return _remote.readData(file);
+		return _remote.readData(file, decoder);
 	}
 
 	public URL getCachedUrl(IpfsFile file) throws IpfsConnectionException

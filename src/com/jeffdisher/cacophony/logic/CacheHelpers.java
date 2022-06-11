@@ -17,6 +17,8 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -38,12 +40,13 @@ public class CacheHelpers
 
 	public static long addElementToCache(RemoteActions remote, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
 	{
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
 		int biggestEdge = 0;
-		StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
+		StreamRecord record = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 		for (DataElement elt : record.getElements().getElement())
 		{
 			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
@@ -75,12 +78,13 @@ public class CacheHelpers
 
 	public static long sizeInBytesToAdd(RemoteActions remote, int videoEdgePixelMax, String rawCid) throws IpfsConnectionException
 	{
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
 		int biggestEdge = 0;
-		StreamRecord record = GlobalData.deserializeRecord(remote.readData(cid));
+		StreamRecord record = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 		for (DataElement elt : record.getElements().getElement())
 		{
 			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());

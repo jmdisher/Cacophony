@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -32,7 +33,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		LocalConfig local = environment.loadExistingConfig();
 		LocalIndex localIndex = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, local.loadGlobalPinCache(), local.getSharedConnection());
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), local.loadGlobalPinCache(), local.getSharedConnection());
 		FollowIndex followIndex = local.loadFollowIndex();
 		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);
 		if (null != record)
@@ -41,9 +42,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			Map<IpfsFile, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
 			IpfsFile root = record.lastFetchedRoot();
 			
-			byte[] rawIndex = checker.loadCached(root);
-			StreamIndex index = GlobalData.deserializeIndex(rawIndex);
-			StreamRecords records = GlobalData.deserializeRecords(checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords())));
+			StreamIndex index = checker.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			List<String> recordList = records.getRecord();
 			environment.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)

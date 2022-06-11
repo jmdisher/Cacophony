@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
@@ -52,16 +53,15 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(remote, pinCache, connection);
+		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = GlobalData.deserializeIndex(checker.loadCached(rootToLoad));
+		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing description since we might be only partially updating it.
-		byte[] rawDescription = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()));
-		StreamDescription description = GlobalData.deserializeDescription(rawDescription);
+		StreamDescription description = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		
 		if (null != _name)
 		{
@@ -113,7 +113,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		}
 		
 		// Serialize and upload the description.
-		rawDescription = GlobalData.serializeDescription(description);
+		byte[] rawDescription = GlobalData.serializeDescription(description);
 		IpfsFile hashDescription = remote.saveData(rawDescription);
 		cache.uploadedToThisCache(hashDescription);
 		
