@@ -1,13 +1,16 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
@@ -16,6 +19,8 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -142,27 +147,48 @@ public class CommandHelpers
 		}
 		
 		// First, see how much data we want to add and pre-prune our cache.
-		// NOTE:  We currently always add all new elements but we may restrict this in the future to be more like the "start following" case.
-		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		long bytesToAdd = 0L;
-		Set<String> verifiedCids = new HashSet<>();
+		// Verify the sizes.
+		List<FutureSize> sizes = new ArrayList<>();
 		for (String rawCid : addCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+			sizes.add(scheduler.getSizeInBytes(cid));
+		}
+		for (FutureSize size : sizes)
+		{
+			long elementSize = size.get();
 			// Verify that this isn't too big.
-			long elementSize = scheduler.getSizeInBytes(cid).get();
 			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
 			{
 				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
 			}
+		}
+		
+		// Fetch all the leaf records.
+		List<AsyncRecord> asyncRecords = new ArrayList<>();
+		for (String rawCid : addCids)
+		{
+			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			
 			// Note that we need to add the element before we can dive into it to check the size of the leaves within.
 			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, cid);
+			FutureRead<StreamRecord> future = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+			asyncRecords.add(new AsyncRecord(rawCid, future));
+		}
+		
+		// NOTE:  We currently always add all new elements but we may restrict this in the future to be more like the "start following" case.
+		int videoEdgePixelMax = prefs.videoEdgePixelMax();
+		long bytesToAdd = 0L;
+		Set<String> verifiedCids = new HashSet<>();
+		for (AsyncRecord async : asyncRecords)
+		{
+			String rawCid = async.rawCid;
+			
 			boolean isVerified = false;
 			try
 			{
 				// Now, find the size of the relevant leaves within.
-				bytesToAdd += CacheHelpers.sizeInBytesToAdd(scheduler, videoEdgePixelMax, rawCid);
+				bytesToAdd += CacheHelpers.sizeInBytesToAdd(scheduler, videoEdgePixelMax, async.future.get());
 				isVerified = true;
 			}
 			catch (IpfsConnectionException e)
@@ -182,9 +208,12 @@ public class CommandHelpers
 		
 		// Now, populate the cache with the new elements.
 		long currentTimeMillis = System.currentTimeMillis();
-		for (String rawCid : verifiedCids)
+		for (AsyncRecord async : asyncRecords)
 		{
-			CacheHelpers.addElementToCache(scheduler, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, rawCid);
+			if (verifiedCids.contains(async.rawCid))
+			{
+				CacheHelpers.addElementToCache(scheduler, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, async.rawCid, async.future.get());
+			}
 		}
 	}
 
@@ -246,5 +275,10 @@ public class CommandHelpers
 			}
 			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot);
 		}
+	}
+
+
+	private static record AsyncRecord(String rawCid, FutureRead<StreamRecord> future)
+	{
 	}
 }

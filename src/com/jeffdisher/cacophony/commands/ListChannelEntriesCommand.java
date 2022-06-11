@@ -1,5 +1,8 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -12,6 +15,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -67,19 +71,32 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
 		).get();
 		
-		// Walk the elements, reading each element.
+		// Start the async StreamRecord loads.
+		List<AsyncRecord> asyncRecords = new ArrayList<>();
 		for (String recordCid : records.getRecord())
 		{
-			StreamRecord record = (isCached
+			FutureRead<StreamRecord> future = (isCached
 					? checker.loadCached(IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
 					: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
-			).get();
-			environment.logToConsole("element " + recordCid + ": " + record.getName());
+			);
+			asyncRecords.add(new AsyncRecord(recordCid, future));
+		}
+		
+		// Walk the elements, reading each element.
+		for (AsyncRecord asyncRecord : asyncRecords)
+		{
+			StreamRecord record = asyncRecord.future.get();
+			environment.logToConsole("element " + asyncRecord.recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{
 				environment.logToConsole("\t" + element.getCid() + " - " + element.getMime());
 			}
 		}
+	}
+
+
+	private static record AsyncRecord(String recordCid, FutureRead<StreamRecord> future)
+	{
 	}
 }

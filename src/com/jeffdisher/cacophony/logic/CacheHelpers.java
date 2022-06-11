@@ -8,7 +8,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
@@ -37,14 +36,13 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static long addElementToCache(INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid) throws IpfsConnectionException
+	public static long addElementToCache(INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid, StreamRecord record) throws IpfsConnectionException
 	{
 		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
 		int biggestEdge = 0;
-		StreamRecord record = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 		for (DataElement elt : record.getElements().getElement())
 		{
 			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
@@ -74,14 +72,12 @@ public class CacheHelpers
 		return combinedSizeBytes;
 	}
 
-	public static long sizeInBytesToAdd(INetworkScheduler scheduler, int videoEdgePixelMax, String rawCid) throws IpfsConnectionException
+	public static long sizeInBytesToAdd(INetworkScheduler scheduler, int videoEdgePixelMax, StreamRecord record) throws IpfsConnectionException
 	{
-		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
 		int biggestEdge = 0;
-		StreamRecord record = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 		for (DataElement elt : record.getElements().getElement())
 		{
 			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());

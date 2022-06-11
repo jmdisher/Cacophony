@@ -5,6 +5,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -20,6 +23,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -67,21 +71,32 @@ public record PublishCommand(String _name, String _description, String _discussi
 		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Upload the elements.
-		DataArray array = new DataArray();
+		List<FutureSave> futureSaves = new ArrayList<>();
 		for (ElementSubCommand elt : _elements)
 		{
 			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
 			// Upload the file.
-			IpfsFile uploaded;
 			try {
 				FileInputStream inputStream = new FileInputStream(elt.filePath());
-				uploaded = scheduler.saveStream(inputStream, true).get();
+				FutureSave save = scheduler.saveStream(inputStream, true);
+				futureSaves.add(save);
 			}
 			catch (IOException e)
 			{
 				// Failure to read this file is a static usage error.
 				throw new UsageException("Unable to read file: " + elt.filePath());
 			}
+			eltLog.finish("-in progress...");
+		}
+		
+		DataArray array = new DataArray();
+		Iterator<FutureSave> futureIterator = futureSaves.iterator();
+		for (ElementSubCommand elt : _elements)
+		{
+			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
+			// Wait for file upload.
+			FutureSave save = futureIterator.next();
+			IpfsFile uploaded = save.get();
 			cache.uploadedToThisCache(uploaded);
 			
 			DataElement element = new DataElement();
@@ -96,6 +111,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			array.getElement().add(element);
 			eltLog.finish("-Done!");
 		}
+		Assert.assertTrue(!futureIterator.hasNext());
 		StreamRecord record = new StreamRecord();
 		record.setName(_name);
 		record.setDescription(_description);
