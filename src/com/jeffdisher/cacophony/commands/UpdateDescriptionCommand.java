@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -54,7 +55,8 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
@@ -84,7 +86,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			{
 				throw new UsageException("Unable to load picture: " + _picturePath.toPath());
 			}
-			IpfsFile pictureHash = remote.saveStream(new ByteArrayInputStream(rawData));
+			IpfsFile pictureHash = scheduler.saveStream(new ByteArrayInputStream(rawData), true).get();
 			cache.uploadedToThisCache(pictureHash);
 			description.setPicture(pictureHash.toSafeString());
 		}
@@ -115,7 +117,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		// Serialize and upload the description.
 		byte[] rawDescription = GlobalData.serializeDescription(description);
-		IpfsFile hashDescription = remote.saveStream(new ByteArrayInputStream(rawDescription));
+		IpfsFile hashDescription = scheduler.saveStream(new ByteArrayInputStream(rawDescription), true).get();
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.

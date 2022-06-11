@@ -15,6 +15,8 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -49,6 +51,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.readLocalIndex();
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, index.keyName());
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
 		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), connection);
 		
 		// Create the empty description, recommendations, record stream, and index.
@@ -57,7 +60,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		description.setDescription("Description forthcoming");
 		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
 		Assert.assertTrue(null != pictureStream);
-		IpfsFile pictureHash = remote.saveStream(pictureStream);
+		IpfsFile pictureHash = scheduler.saveStream(pictureStream, true).get();
 		cache.uploadedToThisCache(pictureHash);
 		description.setPicture(pictureHash.toSafeString());
 		
@@ -70,11 +73,11 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		IpfsFile hashDescription = remote.saveStream(new ByteArrayInputStream(rawDescription));
+		IpfsFile hashDescription = scheduler.saveStream(new ByteArrayInputStream(rawDescription), true).get();
 		cache.uploadedToThisCache(hashDescription);
-		IpfsFile hashRecommendations = remote.saveStream(new ByteArrayInputStream(rawRecommendations));
+		IpfsFile hashRecommendations = scheduler.saveStream(new ByteArrayInputStream(rawRecommendations), true).get();
 		cache.uploadedToThisCache(hashRecommendations);
-		IpfsFile hashRecords = remote.saveStream(new ByteArrayInputStream(rawRecords));
+		IpfsFile hashRecords = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
 		cache.uploadedToThisCache(hashRecords);
 		
 		// Create the new local index.

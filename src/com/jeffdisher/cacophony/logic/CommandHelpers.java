@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -84,7 +85,8 @@ public class CommandHelpers
 	public static IpfsFile serializeSaveAndPublishIndex(IEnvironment environment, RemoteActions remote, StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		// Serialize the index file and save it to the IPFS node.
-		IpfsFile hashIndex = remote.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)));
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		IpfsFile hashIndex = scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true).get();
 		// This never returns null.
 		Assert.assertTrue(null != hashIndex);
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.

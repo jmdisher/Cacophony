@@ -1,10 +1,13 @@
 package com.jeffdisher.cacophony.scheduler;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.function.Function;
 
 import com.jeffdisher.cacophony.logic.RemoteActions;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -32,6 +35,37 @@ public class SingleThreadedScheduler implements INetworkScheduler
 		catch (IpfsConnectionException e)
 		{
 			future.failure(e);
+		}
+		return future;
+	}
+
+	@Override
+	public FutureSave saveStream(InputStream stream, boolean shouldCloseStream)
+	{
+		FutureSave future = new FutureSave();
+		try
+		{
+			IpfsFile file = _remote.saveStream(stream);
+			future.success(file);
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.failure(e);
+		}
+		finally
+		{
+			if (shouldCloseStream)
+			{
+				try
+				{
+					stream.close();
+				}
+				catch (IOException e)
+				{
+					// We don't expect our streams to fail to close.
+					throw Assert.unexpected(e);
+				}
+			}
 		}
 		return future;
 	}

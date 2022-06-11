@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -83,7 +84,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile newCid = remote.saveStream(new ByteArrayInputStream(rawRecords));
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		IpfsFile newCid = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
 		cache.uploadedToThisCache(newCid);
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");

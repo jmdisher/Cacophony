@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -56,7 +57,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = remote.getPublicKey();
@@ -76,8 +78,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			IpfsFile uploaded;
 			try {
 				FileInputStream inputStream = new FileInputStream(elt.filePath());
-				uploaded = remote.saveStream(inputStream);
-				inputStream.close();
+				uploaded = scheduler.saveStream(inputStream, true).get();
 			}
 			catch (IOException e)
 			{
@@ -110,14 +111,14 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = remote.saveStream(new ByteArrayInputStream(rawRecord));
+		IpfsFile recordHash = scheduler.saveStream(new ByteArrayInputStream(rawRecord), true).get();
 		cache.uploadedToThisCache(recordHash);
 		
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = remote.saveStream(new ByteArrayInputStream(rawRecords));
+		IpfsFile recordsHash = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
 		cache.uploadedToThisCache(recordsHash);
 		
 		// Update, save, and publish the new index.

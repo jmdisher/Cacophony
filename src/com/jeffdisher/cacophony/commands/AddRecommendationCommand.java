@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -46,7 +47,8 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws IpfsConnectionException
 	{
 		RemoteActions remote = RemoteActions.loadIpfsConfig(environment, connection, localIndex.keyName());
-		LoadChecker checker = new LoadChecker(new SingleThreadedScheduler(remote), pinCache, connection);
+		INetworkScheduler scheduler = new SingleThreadedScheduler(remote);
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// Read our existing root key.
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
@@ -65,7 +67,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		// Serialize and upload the description.
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile hashDescription = remote.saveStream(new ByteArrayInputStream(rawRecommendations));
+		IpfsFile hashDescription = scheduler.saveStream(new ByteArrayInputStream(rawRecommendations), true).get();
 		cache.uploadedToThisCache(hashDescription);
 		
 		// Update, save, and publish the new index.
