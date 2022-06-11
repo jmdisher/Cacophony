@@ -225,6 +225,12 @@ public class IpfsConnection implements IConnection
 		{
 			throw new IpfsConnectionException(action, context, timeout);
 		}
+		catch (IOException ioe)
+		{
+			// If the IPFS node experiences something like an internal server error, we will see that as IOException here.
+			// From our perspective, that is still just a network error.
+			throw new IpfsConnectionException(action, context, ioe);
+		}
 		catch (Throwable t)
 		{
 			// Unknown.
