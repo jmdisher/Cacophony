@@ -60,7 +60,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		{
 			// Just list our recommendations.
 			// Read the existing StreamIndex.
-			publicKey = remote.getPublicKey();
+			publicKey = scheduler.getPublicKey();
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 		}

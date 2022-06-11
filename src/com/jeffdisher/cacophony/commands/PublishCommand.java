@@ -61,7 +61,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// Read the existing StreamIndex.
-		IpfsKey publicKey = remote.getPublicKey();
+		IpfsKey publicKey = scheduler.getPublicKey();
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
 		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();

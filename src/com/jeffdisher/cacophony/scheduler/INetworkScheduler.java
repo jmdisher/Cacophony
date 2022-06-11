@@ -57,4 +57,11 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureSize getSizeInBytes(IpfsFile cid);
+
+	/**
+	 * This method returns immediately as the underlying network connection eagerly resolves this at startup.
+	 * 
+	 * @return The public key for this channel.
+	 */
+	IpfsKey getPublicKey();
 }

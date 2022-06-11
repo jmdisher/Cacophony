@@ -60,7 +60,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		{
 			// Just list our recommendations.
 			// Read the existing StreamIndex.
-			publicKey = remote.getPublicKey();
+			publicKey = scheduler.getPublicKey();
 			rootToLoad = localIndex.lastPublishedIndex();
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;

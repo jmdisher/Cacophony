@@ -118,4 +118,11 @@ public class SingleThreadedScheduler implements INetworkScheduler
 		}
 		return future;
 	}
+
+	@Override
+	public IpfsKey getPublicKey()
+	{
+		// This is just a wrapper since we don't want RemoteActions exposed.
+		return _remote.getPublicKey();
+	}
 }
