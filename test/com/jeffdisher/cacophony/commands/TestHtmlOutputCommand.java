@@ -35,6 +35,7 @@ public class TestHtmlOutputCommand
 		} catch (UsageException e) {
 			// Expected.
 		}
+		user1.shutdown();
 	}
 
 	@Test
@@ -59,6 +60,7 @@ public class TestHtmlOutputCommand
 		Assert.assertTrue(new File(outputDirectory, "recommending.html").isFile());
 		Assert.assertTrue(new File(outputDirectory, "following.html").isFile());
 		Assert.assertTrue(new File(outputDirectory, "generated_db.js").isFile());
+		user1.shutdown();
 	}
 
 	@Test
@@ -99,6 +101,7 @@ public class TestHtmlOutputCommand
 		Assert.assertTrue(new File(outputDirectory, "recommending.html").isFile());
 		Assert.assertTrue(new File(outputDirectory, "following.html").isFile());
 		Assert.assertTrue(new File(outputDirectory, "generated_db.js").isFile());
+		user1.shutdown();
 	}
 
 	@Test
@@ -144,5 +147,6 @@ public class TestHtmlOutputCommand
 		Assert.assertTrue(new File(outputDirectory, "recommending.html").isFile());
 		Assert.assertTrue(new File(outputDirectory, "following.html").isFile());
 		Assert.assertTrue(new File(outputDirectory, "generated_db.js").isFile());
+		user1.shutdown();
 	}
 }

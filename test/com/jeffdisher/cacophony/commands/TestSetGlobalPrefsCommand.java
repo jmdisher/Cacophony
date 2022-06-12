@@ -39,5 +39,6 @@ public class TestSetGlobalPrefsCommand
 		GlobalPrefs updated = user.readPrefs();
 		Assert.assertEquals(original.videoEdgePixelMax() + 1, updated.videoEdgePixelMax());
 		Assert.assertEquals(original.followCacheTargetBytes() + 1, updated.followCacheTargetBytes());
+		user.shutdown();
 	}
 }

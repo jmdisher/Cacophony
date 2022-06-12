@@ -125,4 +125,10 @@ public class SingleThreadedScheduler implements INetworkScheduler
 		// This is just a wrapper since we don't want RemoteActions exposed.
 		return _remote.getPublicKey();
 	}
+
+	@Override
+	public void shutdown()
+	{
+		// Do nothing.
+	}
 }

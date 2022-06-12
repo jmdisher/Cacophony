@@ -81,5 +81,6 @@ public class TestPublishCommand
 		DataElement elt = dataElements.get(0);
 		Assert.assertEquals(mime, elt.getMime());
 		Assert.assertEquals(fileContents, new String(user1.loadDataFromNode(IpfsFile.fromIpfsCid(elt.getCid()))));
+		user1.shutdown();
 	}
 }

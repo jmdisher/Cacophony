@@ -57,11 +57,17 @@ public class MockUserNode
 	{
 		StandardEnvironment executor = _executor;
 		// See if we want to override the output capture.
+		boolean isNew = false;
 		if (null != captureStream)
 		{
 			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory, true);
+			isNew = true;
 		}
 		command.runInEnvironment(executor);
+		if (isNew)
+		{
+			executor.shutdown();
+		}
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException
@@ -102,5 +108,10 @@ public class MockUserNode
 	public void deleteFile(IpfsFile cid)
 	{
 		_sharedConnection.deleteAndUnpinFile(cid);
+	}
+
+	public void shutdown()
+	{
+		_executor.shutdown();
 	}
 }

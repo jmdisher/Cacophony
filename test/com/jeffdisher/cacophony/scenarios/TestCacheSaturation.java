@@ -64,6 +64,8 @@ public class TestCacheSaturation
 		Assert.assertTrue(user1.isDataPresent(video0));
 		Assert.assertTrue(user1.isDataPresent(video1));
 		Assert.assertTrue(user1.isDataPresent(video2));
+		user0.shutdown();
+		user1.shutdown();
 	}
 
 	@Test
@@ -100,6 +102,8 @@ public class TestCacheSaturation
 		// We know that the most recent video will be kept so one of the others must be gone.
 		Assert.assertNotEquals(user1.isDataPresent(video0), user1.isDataPresent(video1));
 		Assert.assertTrue(user1.isDataPresent(video2));
+		user0.shutdown();
+		user1.shutdown();
 	}
 
 	@Test
@@ -124,6 +128,8 @@ public class TestCacheSaturation
 		// We know that the most recent video will always be fetched and at most one of the others.
 		Assert.assertFalse(user1.isDataPresent(video0) && user1.isDataPresent(video1));
 		Assert.assertTrue(user1.isDataPresent(video2));
+		user0.shutdown();
+		user1.shutdown();
 	}
 
 
@@ -197,6 +203,11 @@ public class TestCacheSaturation
 				Assert.assertArrayEquals(data, stored);
 			}
 			return (null != stored);
+		}
+		
+		public void shutdown()
+		{
+			_user.shutdown();
 		}
 	}
 }

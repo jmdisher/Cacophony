@@ -64,4 +64,9 @@ public interface INetworkScheduler
 	 * @return The public key for this channel.
 	 */
 	IpfsKey getPublicKey();
+
+	/**
+	 * Requests that the scheduler shut down and dispose of any resources before the system goes down.
+	 */
+	void shutdown();
 }

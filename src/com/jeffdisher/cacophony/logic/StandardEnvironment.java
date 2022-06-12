@@ -118,4 +118,12 @@ public class StandardEnvironment implements IEnvironment
 		}
 		return scheduler;
 	}
+
+	public void shutdown()
+	{
+		if (null != _lazySharedScheduler)
+		{
+			_lazySharedScheduler.shutdown();
+		}
+	}
 }

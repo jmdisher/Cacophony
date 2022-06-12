@@ -52,6 +52,7 @@ public class TestRecommendations
 		listCommand = new ListRecommendationsCommand(null);
 		user1.runCommand(captureStream, listCommand);
 		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n", new String(captureStream.toByteArray()));
+		user1.shutdown();
 	}
 
 	@Test
@@ -71,5 +72,6 @@ public class TestRecommendations
 		} catch (KeyException e) {
 			// Expected.
 		}
+		user1.shutdown();
 	}
 }

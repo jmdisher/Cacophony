@@ -36,5 +36,6 @@ public class TestRepublishCommand
 		// Verify nothing changed.
 		LocalIndex index2 = user.getLocalStoredIndex();
 		Assert.assertEquals(index1, index2);
+		user.shutdown();
 	}
 }

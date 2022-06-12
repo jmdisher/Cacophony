@@ -53,6 +53,7 @@ public class TestRefreshNextFolloweeCommand
 			didThrow = true;
 		}
 		Assert.assertTrue(didThrow);
+		user.shutdown();
 	}
 
 	@Test
@@ -73,6 +74,8 @@ public class TestRefreshNextFolloweeCommand
 		// We should be able to run this multiple times, without it causing problems.
 		user.runCommand(null, command);
 		user.runCommand(null, command);
+		user1.shutdown();
+		user.shutdown();
 	}
 
 	@Test
@@ -105,6 +108,9 @@ public class TestRefreshNextFolloweeCommand
 		user.runCommand(null, command);
 		nextKey = followees.nextKeyToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
+		user2.shutdown();
+		user3.shutdown();
+		user.shutdown();
 	}
 
 	@Test
@@ -166,6 +172,9 @@ public class TestRefreshNextFolloweeCommand
 		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(0, elements.length);
+		user2.shutdown();
+		user3.shutdown();
+		user.shutdown();
 	}
 
 	@Test
@@ -228,6 +237,9 @@ public class TestRefreshNextFolloweeCommand
 		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(0, elements.length);
+		user2.shutdown();
+		user3.shutdown();
+		user.shutdown();
 	}
 
 	@Test
@@ -284,5 +296,8 @@ public class TestRefreshNextFolloweeCommand
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(1, elements.length);
 		Assert.assertEquals(recordToKeep, elements[0].elementHash());
+		user2.shutdown();
+		user3.shutdown();
+		user.shutdown();
 	}
 }

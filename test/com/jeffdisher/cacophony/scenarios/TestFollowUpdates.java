@@ -92,6 +92,8 @@ public class TestFollowUpdates
 		} catch (UsageException e) {
 			// Expected.
 		}
+		user1.shutdown();
+		user2.shutdown();
 	}
 
 	@Test
@@ -152,6 +154,8 @@ public class TestFollowUpdates
 		} catch (UsageException e) {
 			// Expected.
 		}
+		user1.shutdown();
+		user2.shutdown();
 	}
 
 	@Test
@@ -207,6 +211,8 @@ public class TestFollowUpdates
 		Assert.assertNotNull(user1.loadDataFromNode(missingVideo2Hash));
 		Assert.assertNull(user2.loadDataFromNode(missingVideo1Hash));
 		Assert.assertNull(user2.loadDataFromNode(missingVideo2Hash));
+		user1.shutdown();
+		user2.shutdown();
 	}
 
 

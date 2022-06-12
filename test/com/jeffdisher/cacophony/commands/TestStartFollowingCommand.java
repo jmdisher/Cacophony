@@ -74,6 +74,7 @@ public class TestStartFollowingCommand
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
 		Assert.assertNull(finalIndex.lastPublishedIndex());
+		executor.shutdown();
 	}
 
 	@Test
@@ -95,6 +96,7 @@ public class TestStartFollowingCommand
 		} catch (SizeConstraintException e) {
 			// Expected.
 		}
+		executor.shutdown();
 	}
 
 	@Test
@@ -110,5 +112,6 @@ public class TestStartFollowingCommand
 		} catch (UsageException e) {
 			// Expected.
 		}
+		executor.shutdown();
 	}
 }

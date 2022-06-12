@@ -108,6 +108,7 @@ public class Cacophony {
 					// This is a "safe" error, meaning that the command completed successfully but some kind of clean-up may have failed, resulting in manual intervention steps being logged.
 					System.exit(EXIT_SAFE_ERROR);
 				}
+				executor.shutdown();
 			}
 			else
 			{

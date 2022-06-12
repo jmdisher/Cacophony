@@ -53,5 +53,6 @@ public class TestCreateChannelCommand
 		Assert.assertTrue(user1.isPinnedLocally(root));
 		Assert.assertTrue(user1.isPinnedLocally(descriptionCid));
 		Assert.assertTrue(user1.isPinnedLocally(recommendationsCid));
+		user1.shutdown();
 	}
 }

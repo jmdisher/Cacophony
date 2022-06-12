@@ -40,6 +40,7 @@ public class TestListChannelEntriesCommand
 		{
 			// Expected.
 		}
+		user1.shutdown();
 	}
 
 	@Test
@@ -54,5 +55,7 @@ public class TestListChannelEntriesCommand
 		
 		// Check that we can ask about someone we aren't following who does exist.
 		user2.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY1));
+		user1.shutdown();
+		user2.shutdown();
 	}
 }
