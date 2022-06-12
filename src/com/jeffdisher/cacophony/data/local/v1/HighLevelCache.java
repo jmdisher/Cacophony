@@ -1,5 +1,9 @@
 package com.jeffdisher.cacophony.data.local.v1;
 
+import java.util.HashMap;
+
+import com.jeffdisher.cacophony.scheduler.FuturePin;
+import com.jeffdisher.cacophony.scheduler.FutureUnpin;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -43,10 +47,19 @@ public class HighLevelCache
 	private final GlobalPinCache _globalPinCache;
 	private final INetworkScheduler _scheduler;
 
+	// We track the currently in-flight pin and unpin operations.
+	// This is to force in-order mutation of the _globalPinCache by blocking on any pending pin/unpin operations for the
+	// associated IpfsFile before attempting to modify it, again.
+	// The entries are added inline and cleared in the onFinished callback.
+	private final HashMap<IpfsFile, FuturePin> _inFlightPins;
+	private final HashMap<IpfsFile, FutureUnpin> _inFlightUnpins;
+
 	public HighLevelCache(GlobalPinCache globalPinCache, INetworkScheduler scheduler)
 	{
 		_globalPinCache = globalPinCache;
 		_scheduler = scheduler;
+		_inFlightPins = new HashMap<>();
+		_inFlightUnpins = new HashMap<>();
 	}
 
 	/**
@@ -72,34 +85,46 @@ public class HighLevelCache
 	 * @param cid The IPFS CID of the meta-data or file entry no longer reachable from this channel.
 	 * @throws IpfsConnectionException There was a problem contacting the IPFS server.
 	 */
-	public void removeFromThisCache(IpfsFile cid) throws IpfsConnectionException
+	public FutureUnpin removeFromThisCache(IpfsFile cid)
 	{
-		_unpinAndRemove(cid);
+		return _unpinAndRemove(cid);
 	}
 
-	public void addToFollowCache(IpfsKey channel, Type type, IpfsFile cid) throws IpfsConnectionException
+	public FuturePin addToFollowCache(IpfsKey channel, Type type, IpfsFile cid)
 	{
+		// Make sure we don't need to block to keep us in-order.
+		_forceInOrder(cid);
+		
+		FuturePin future = null;
 		// TODO: Do the accounting for the size per-follower.
 		boolean shouldPin = _globalPinCache.shouldPinAfterAdding(cid);
 		if (shouldPin)
 		{
-			try
-			{
-				_scheduler.pin(cid).get();
-			}
-			catch (IpfsConnectionException e)
-			{
-				// If we failed to pin, we should revert the change to the pin cache.
-				Assert.assertTrue(_globalPinCache.shouldUnpinAfterRemoving(cid));
-				throw e;
-			}
+			future = _scheduler.pin(cid);
+			_inFlightPins.put(cid, future);
+			final FuturePin finalFuture = future;
+			future.registerOnObserve((isSuccess) -> {
+				Assert.assertTrue(finalFuture == _inFlightPins.remove(cid));
+				if (!isSuccess)
+				{
+					// If we failed to pin, we should revert the change to the pin cache.
+					Assert.assertTrue(_globalPinCache.shouldUnpinAfterRemoving(cid));
+				}
+			});
 		}
+		else
+		{
+			// Just create a satisfied future.
+			future = new FuturePin();
+			future.success();
+		}
+		return future;
 	}
 
-	public void removeFromFollowCache(IpfsKey channel, Type type, IpfsFile cid) throws IpfsConnectionException
+	public FutureUnpin removeFromFollowCache(IpfsKey channel, Type type, IpfsFile cid)
 	{
 		// TODO: Do the accounting for the size per-follower.
-		_unpinAndRemove(cid);
+		return _unpinAndRemove(cid);
 	}
 
 	public void addToExplicitCache(Type type, IpfsFile cid)
@@ -123,8 +148,12 @@ public class HighLevelCache
 	}
 
 
-	private void _unpinAndRemove(IpfsFile cid) throws IpfsConnectionException
+	private FutureUnpin _unpinAndRemove(IpfsFile cid)
 	{
+		// Make sure we don't need to block to keep us in-order.
+		_forceInOrder(cid);
+		
+		FutureUnpin future = null;
 		boolean shouldUnpin = _globalPinCache.shouldUnpinAfterRemoving(cid);
 		if (shouldUnpin)
 		{
@@ -132,7 +161,50 @@ public class HighLevelCache
 			// could just unpin whenever was most convenient and they would always survive in the cache until after the
 			// command.  However, the feature was delayed so all the commands were implemented using a strictly in-order
 			// cache, hence this delayed processing was never required so we always unpin, inline.
-			_scheduler.unpin(cid).get();
+			future = _scheduler.unpin(cid);
+			_inFlightUnpins.put(cid, future);
+			final FutureUnpin finalFuture = future;
+			future.registerOnObserve(() -> {
+				Assert.assertTrue(finalFuture == _inFlightUnpins.remove(cid));
+			});
+		}
+		else
+		{
+			// Just create a satisfied future.
+			future = new FutureUnpin();
+			future.success();
+		}
+		return future;
+	}
+
+	private void _forceInOrder(IpfsFile cid)
+	{
+		// Make sure we don't need to block to keep us in-order.
+		if (_inFlightPins.containsKey(cid))
+		{
+			try
+			{
+				_inFlightPins.get(cid).get();
+			}
+			catch (IpfsConnectionException e)
+			{
+				// We ignore this here since it is up to whomever requested this pin to decide if this mattered.
+			}
+			// After this, we know it has been removed.
+			Assert.assertTrue(!_inFlightPins.containsKey(cid));
+		}
+		if (_inFlightUnpins.containsKey(cid))
+		{
+			try
+			{
+				_inFlightUnpins.get(cid).get();
+			}
+			catch (IpfsConnectionException e)
+			{
+				// We ignore this here since it is up to whomever requested this pin to decide if this mattered.
+			}
+			// After this, we know it has been removed.
+			Assert.assertTrue(!_inFlightUnpins.containsKey(cid));
 		}
 	}
 }

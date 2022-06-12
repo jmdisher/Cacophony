@@ -90,7 +90,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	{
 		try
 		{
-			cache.removeFromThisCache(file);
+			cache.removeFromThisCache(file).get();
 		}
 		catch (IpfsConnectionException e)
 		{

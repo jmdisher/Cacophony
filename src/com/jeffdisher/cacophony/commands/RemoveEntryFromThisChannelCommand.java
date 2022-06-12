@@ -126,7 +126,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	{
 		try
 		{
-			cache.removeFromThisCache(file);
+			cache.removeFromThisCache(file).get();
 		}
 		catch (IpfsConnectionException e)
 		{

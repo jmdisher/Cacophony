@@ -139,7 +139,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	{
 		try
 		{
-			cache.removeFromThisCache(file);
+			cache.removeFromThisCache(file).get();
 		}
 		catch (IpfsConnectionException e)
 		{

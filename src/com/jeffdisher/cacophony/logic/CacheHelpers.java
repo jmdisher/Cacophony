@@ -60,12 +60,12 @@ public class CacheHelpers
 		long combinedSizeBytes = 0L;
 		if (null != imageHash)
 		{
-			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash);
+			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash).get();
 			combinedSizeBytes += scheduler.getSizeInBytes(imageHash).get();
 		}
 		if (null != leafHash)
 		{
-			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash);
+			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash).get();
 			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
 		}
 		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
@@ -163,12 +163,12 @@ public class CacheHelpers
 				IpfsFile imageHash = elt.imageHash();
 				if (null != imageHash)
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, imageHash);
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, imageHash).get();
 				}
 				IpfsFile leafHash = elt.leafHash();
 				if (null != leafHash)
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, leafHash);
+					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, leafHash).get();
 				}
 			}
 		}

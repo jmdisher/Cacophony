@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.scheduler;
 
+import java.util.function.Consumer;
+
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -13,6 +15,11 @@ public class FuturePin
 {
 	private boolean _didSucceed;
 	private IpfsConnectionException _exception;
+
+	// Note that the _onObserve callback is only run once and can only be set before being observed.
+	private boolean _didObserve;
+	private Consumer<Boolean> _onObserve;
+
 
 	/**
 	 * Blocks for the asynchronous operation to complete.
@@ -33,6 +40,16 @@ public class FuturePin
 				throw Assert.unexpected(e);
 			}
 		}
+		if (!_didObserve)
+		{
+			_didObserve = true;
+			if (null != _onObserve)
+			{
+				boolean isSuccess = (null == _exception);
+				_onObserve.accept(isSuccess);
+				_onObserve = null;
+			}
+		}
 		if (null != _exception)
 		{
 			throw _exception;
@@ -45,7 +62,7 @@ public class FuturePin
 	public synchronized void success()
 	{
 		_didSucceed = true;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -56,6 +73,21 @@ public class FuturePin
 	public synchronized void failure(IpfsConnectionException exception)
 	{
 		_exception = exception;
-		this.notify();
+		this.notifyAll();
+	}
+
+	/**
+	 * Registers a callback which will be called by the first successful thread to observe the result in get().
+	 * This means that the callback will be sent on the thread making that call.
+	 * Note that this callback will only be called once and can only be installed before a get() call has returned.
+	 * 
+	 * @param onObserve The callback to run before returning from the first get() call.
+	 */
+	public synchronized void registerOnObserve(Consumer<Boolean> onObserve)
+	{
+		Assert.assertTrue(!_didObserve);
+		Assert.assertTrue(null == _onObserve);
+		Assert.assertTrue(null != onObserve);
+		_onObserve = onObserve;
 	}
 }

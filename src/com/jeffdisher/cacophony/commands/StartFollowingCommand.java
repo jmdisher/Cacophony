@@ -71,18 +71,18 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		}
 		
 		// Now, cache the root meta-data structures.
-		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot);
+		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, indexRoot).get();
 		StreamIndex streamIndex = checker.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		Assert.assertTrue(1 == streamIndex.getVersion());
 		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
-		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
+		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash).get();
 		IpfsFile recommendationsHash = IpfsFile.fromIpfsCid(streamIndex.getRecommendations());
-		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
+		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash).get();
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(streamIndex.getRecords());
-		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recordsHash);
+		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, recordsHash).get();
 		StreamDescription description = checker.loadCached(descriptionHash, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
-		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
+		cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash).get();
 		
 		// Create the initial following state.
 		followIndex.addFollowingWithInitialState(_publicKey, indexRoot, System.currentTimeMillis());
@@ -129,7 +129,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			
 			// Note that we need to add the element meta-data independently of caching the leaves within (since they can be pruned but the meta-data can't).
-			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid);
+			cache.addToFollowCache(_publicKey, HighLevelCache.Type.METADATA, cid).get();
 			FutureRead<StreamRecord> future = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
 			asyncRecordList.add(new AsyncRecord(rawCid, future));
 		}

@@ -91,7 +91,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	{
 		try
 		{
-			cache.removeFromThisCache(file);
+			cache.removeFromThisCache(file).get();
 		}
 		catch (IpfsConnectionException e)
 		{

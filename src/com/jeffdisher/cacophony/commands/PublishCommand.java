@@ -156,7 +156,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	{
 		try
 		{
-			cache.removeFromThisCache(file);
+			cache.removeFromThisCache(file).get();
 		}
 		catch (IpfsConnectionException e)
 		{

@@ -51,13 +51,13 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		{
 			if (null != element.imageHash())
 			{
-				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, element.imageHash());
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, element.imageHash()).get();
 			}
 			if (null != element.leafHash())
 			{
-				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, element.leafHash());
+				cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.FILE, element.leafHash()).get();
 			}
-			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, element.elementHash());
+			cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, element.elementHash()).get();
 		}
 		
 		// Remove all the root meta-data we have cached.
@@ -70,11 +70,11 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		StreamDescription description = checker.loadCached(descriptionHash, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
 		
-		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash);
-		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recordsHash);
-		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash);
-		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash);
-		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot);
+		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, pictureHash).get();
+		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recordsHash).get();
+		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, recommendationsHash).get();
+		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash).get();
+		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot).get();
 		// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 		local.writeBackConfig();
 		log.finish("Cleanup complete.  No longer following " + _publicKey);
