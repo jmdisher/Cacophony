@@ -5,7 +5,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
@@ -14,6 +14,9 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class StandardEnvironment implements IEnvironment
 {
+	// No hard science was used to derive this.  We are just using 4 background threads as a starting-point.
+	private static final int THREAD_COUNT = 4;
+
 	// This lock is used to protect internal variables which may be changed by multiple threads.
 	private final Lock _internalLock;
 
@@ -108,7 +111,7 @@ public class StandardEnvironment implements IEnvironment
 		{
 			if (null == _lazySharedScheduler)
 			{
-				_lazySharedScheduler = new SingleThreadedScheduler(RemoteActions.loadIpfsConfig(this, ipfs, keyName));
+				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(this, ipfs, keyName), THREAD_COUNT);
 			}
 			scheduler = _lazySharedScheduler;
 		}
