@@ -37,8 +37,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		LocalIndex localIndex = local.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
-		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache, scheduler, checker);
 		

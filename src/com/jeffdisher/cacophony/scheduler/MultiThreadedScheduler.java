@@ -166,6 +166,44 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
+	public FuturePin pin(IpfsFile cid)
+	{
+		FuturePin future = new FuturePin();
+		Runnable r = () -> {
+			try
+			{
+				_remote.pin(cid);
+				future.success();
+			}
+			catch (IpfsConnectionException e)
+			{
+				future.failure(e);
+			}
+		};
+		_queue.enqueue(r);
+		return future;
+	}
+
+	@Override
+	public FutureUnpin unpin(IpfsFile cid)
+	{
+		FutureUnpin future = new FutureUnpin();
+		Runnable r = () -> {
+			try
+			{
+				_remote.unpin(cid);
+				future.success();
+			}
+			catch (IpfsConnectionException e)
+			{
+				future.failure(e);
+			}
+		};
+		_queue.enqueue(r);
+		return future;
+	}
+
+	@Override
 	public void shutdown()
 	{
 		_queue.shutdown();

@@ -50,8 +50,8 @@ public class CommandHelpers
 		LocalIndex localIndex = local.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
-		HighLevelCache cache = new HighLevelCache(pinCache, connection);
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// We need to first verify that we are already following them.

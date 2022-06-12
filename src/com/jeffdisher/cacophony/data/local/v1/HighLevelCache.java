@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.data.local.v1;
 
-import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -41,12 +41,12 @@ public class HighLevelCache
 
 
 	private final GlobalPinCache _globalPinCache;
-	private final IConnection _localNode;
+	private final INetworkScheduler _scheduler;
 
-	public HighLevelCache(GlobalPinCache globalPinCache, IConnection localNode)
+	public HighLevelCache(GlobalPinCache globalPinCache, INetworkScheduler scheduler)
 	{
 		_globalPinCache = globalPinCache;
-		_localNode = localNode;
+		_scheduler = scheduler;
 	}
 
 	/**
@@ -85,7 +85,7 @@ public class HighLevelCache
 		{
 			try
 			{
-				_localNode.pin(cid);
+				_scheduler.pin(cid).get();
 			}
 			catch (IpfsConnectionException e)
 			{
@@ -132,7 +132,7 @@ public class HighLevelCache
 			// could just unpin whenever was most convenient and they would always survive in the cache until after the
 			// command.  However, the feature was delayed so all the commands were implemented using a strictly in-order
 			// cache, hence this delayed processing was never required so we always unpin, inline.
-			_localNode.rm(cid);
+			_scheduler.unpin(cid).get();
 		}
 	}
 }

@@ -127,6 +127,38 @@ public class SingleThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
+	public FuturePin pin(IpfsFile cid)
+	{
+		FuturePin future = new FuturePin();
+		try
+		{
+			_remote.pin(cid);
+			future.success();
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.failure(e);
+		}
+		return future;
+	}
+
+	@Override
+	public FutureUnpin unpin(IpfsFile cid)
+	{
+		FutureUnpin future = new FutureUnpin();
+		try
+		{
+			_remote.unpin(cid);
+			future.success();
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.failure(e);
+		}
+		return future;
+	}
+
+	@Override
 	public void shutdown()
 	{
 		// Do nothing.

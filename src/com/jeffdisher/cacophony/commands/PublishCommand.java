@@ -48,17 +48,17 @@ public record PublishCommand(String _name, String _description, String _discussi
 		LocalIndex localIndex = local.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
-		HighLevelCache cache = new HighLevelCache(pinCache, connection);
-		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache);
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
+		CleanupData cleanup = _runCore(environment, scheduler, connection, localIndex, pinCache, cache);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
 		_runFinish(environment, local, localIndex, cache, cleanup);
 		log.finish("Publish completed!");
 	}
 
-	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
 	{
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// Read the existing StreamIndex.

@@ -66,6 +66,22 @@ public interface INetworkScheduler
 	IpfsKey getPublicKey();
 
 	/**
+	 * Pins the given cid on the node.
+	 * 
+	 * @param cid The file to pin.
+	 * @return The asynchronously-completed future.
+	 */
+	FuturePin pin(IpfsFile cid);
+
+	/**
+	 * Unpins the given cid on the node.
+	 * 
+	 * @param cid The file to unpin.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureUnpin unpin(IpfsFile cid);
+
+	/**
 	 * Requests that the scheduler shut down and dispose of any resources before the system goes down.
 	 */
 	void shutdown();

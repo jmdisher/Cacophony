@@ -49,7 +49,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Make sure that there is no local index in this location.
 		LocalIndex index = local.readLocalIndex();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, index.keyName());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), connection);
+		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), scheduler);
 		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();

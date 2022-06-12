@@ -148,6 +148,16 @@ public class RemoteActions
 		return _getSizeInBytes(cid);
 	}
 
+	public void pin(IpfsFile cid) throws IpfsConnectionException
+	{
+		_ipfs.pin(cid);
+	}
+
+	public void unpin(IpfsFile cid) throws IpfsConnectionException
+	{
+		_ipfs.rm(cid);
+	}
+
 
 	private long _getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
 	{
