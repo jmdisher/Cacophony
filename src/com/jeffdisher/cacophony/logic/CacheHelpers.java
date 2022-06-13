@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
+import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -36,9 +37,8 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static long addElementToCache(INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, int videoEdgePixelMax, long currentTimeMillis, String rawCid, StreamRecord record) throws IpfsConnectionException
+	public static LeafTuple findAndPinLeaves(HighLevelCache cache, IpfsKey followeeKey, String elementRawCid, int videoEdgePixelMax, StreamRecord record)
 	{
-		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
@@ -57,17 +57,29 @@ public class CacheHelpers
 				leafHash = eltCid;
 			}
 		}
+		FuturePin imageFuture = (null != imageHash)
+				? cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash)
+				: null
+		;
+		FuturePin leafFuture = (null != leafHash)
+				? cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash)
+				: null
+		;
+		return new LeafTuple(elementRawCid, imageHash, imageFuture, leafHash, leafFuture);
+	}
+
+	public static long addPinnedLeavesToFollowCache(INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, long currentTimeMillis, String rawCid, IpfsFile imageHash, IpfsFile leafHash) throws IpfsConnectionException
+	{
 		long combinedSizeBytes = 0L;
 		if (null != imageHash)
 		{
-			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash).get();
 			combinedSizeBytes += scheduler.getSizeInBytes(imageHash).get();
 		}
 		if (null != leafHash)
 		{
-			cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash).get();
 			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
 		}
+		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
 		return combinedSizeBytes;
 	}
@@ -172,5 +184,10 @@ public class CacheHelpers
 				}
 			}
 		}
+	}
+
+
+	public static record LeafTuple(String elementRawCid, IpfsFile imageHash, FuturePin imagePin, IpfsFile leafHash, FuturePin leafPin)
+	{
 	}
 }

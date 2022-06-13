@@ -208,12 +208,30 @@ public class CommandHelpers
 		
 		// Now, populate the cache with the new elements.
 		long currentTimeMillis = System.currentTimeMillis();
+		List<CacheHelpers.LeafTuple> asyncLeaves = new ArrayList<>();
 		for (AsyncRecord async : asyncRecords)
 		{
 			if (verifiedCids.contains(async.rawCid))
 			{
-				CacheHelpers.addElementToCache(scheduler, cache, followIndex, publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, async.rawCid, async.future.get());
+				CacheHelpers.LeafTuple tuple = CacheHelpers.findAndPinLeaves(cache, publicKey, async.rawCid, videoEdgePixelMax, async.future.get());
+				asyncLeaves.add(tuple);
 			}
+		}
+		
+		// Account for the cache elements we just pinned.
+		for (CacheHelpers.LeafTuple leaves : asyncLeaves)
+		{
+			// Make sure that we have pinned the elements before we proceed.
+			if (null != leaves.imagePin())
+			{
+				leaves.imagePin().get();
+			}
+			if (null != leaves.leafPin())
+			{
+				leaves.leafPin().get();
+			}
+			CacheHelpers.addPinnedLeavesToFollowCache(scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, leaves.elementRawCid(), leaves.imageHash(), leaves.leafHash());
+			
 		}
 	}
 

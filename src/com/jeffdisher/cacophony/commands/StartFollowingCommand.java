@@ -156,24 +156,47 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			CacheAlgorithm pruningAlgorithm = new CacheAlgorithm(reducedCacheSizeBytes, currentCacheSizeBytes);
 			CacheHelpers.pruneCacheIfNeeded(cache, followIndex, pruningAlgorithm, _publicKey, 0L);
 			
-			// We always want to cache the most recent, since it is likely most watched, so remove that from the list and add it before running the general algorithm.
-			environment.logToConsole("Caching most recent entry: " + firstElement.data());
+			// Start the pin operations before updating the cache accounting (since we don't want to lock-step the load).
+			// Note that we need to resolve the first entry, before the others, in order to correct the cache size.
+			// This could be handled in a different way, if we assume that the pin of the first element will succeed, since we already checked its size.
+			CacheHelpers.LeafTuple firstLeaf = CacheHelpers.findAndPinLeaves(cache, _publicKey, firstElement.data().rawCid, videoEdgePixelMax, firstElement.data().future.get());
+			_processAsyncLeaf(environment, scheduler, followIndex, fetchedRoot, currentTimeMillis, firstLeaf);
 			entryCountAdded += 1;
-			long leafBytes = CacheHelpers.addElementToCache(scheduler, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, firstElement.data().rawCid, firstElement.data().future.get());
-			environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 			
 			// Finally, run the cache algorithm for bulk adding and then cache whatever we are told to add.
 			CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes(), CacheHelpers.getCurrentCacheSizeBytes(followIndex));
 			List<CacheAlgorithm.Candidate<AsyncRecord>> toAdd = algorithm.toAddInNewAddition(candidatesList);
+			List<CacheHelpers.LeafTuple> asyncLeaves = new ArrayList<>();
 			for (CacheAlgorithm.Candidate<AsyncRecord> elt : toAdd)
 			{
-				environment.logToConsole("Caching entry: " + elt.data());
-				entryCountAdded += 1;
-				leafBytes = CacheHelpers.addElementToCache(scheduler, cache, followIndex, _publicKey, fetchedRoot, videoEdgePixelMax, currentTimeMillis, elt.data().rawCid, elt.data().future.get());
-				environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
+				asyncLeaves.add(CacheHelpers.findAndPinLeaves(cache, _publicKey, elt.data().rawCid, videoEdgePixelMax, elt.data().future.get()));
+			}
+			entryCountAdded = asyncLeaves.size();
+			
+			// Now that all the requests are in-flight, we can start accounting for them as they arrive.
+			for (CacheHelpers.LeafTuple tuple : asyncLeaves)
+			{
+				_processAsyncLeaf(environment, scheduler, followIndex, fetchedRoot, currentTimeMillis, tuple);
 			}
 		}
 		log.finish("Completed initial cache (" + entryCountAdded + " of " + entryCountTotal + " entries cached)");
+	}
+
+
+	private void _processAsyncLeaf(IEnvironment environment, INetworkScheduler scheduler, FollowIndex followIndex, IpfsFile fetchedRoot, long currentTimeMillis, CacheHelpers.LeafTuple tuple) throws IpfsConnectionException
+	{
+		environment.logToConsole("Caching entry: " + tuple.elementRawCid());
+		// Make sure that we have pinned the elements before we proceed.
+		if (null != tuple.imagePin())
+		{
+			tuple.imagePin().get();
+		}
+		if (null != tuple.leafPin())
+		{
+			tuple.leafPin().get();
+		}
+		long leafBytes = CacheHelpers.addPinnedLeavesToFollowCache(scheduler, followIndex, _publicKey, fetchedRoot, currentTimeMillis, tuple.elementRawCid(), tuple.imageHash(), tuple.leafHash());
+		environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 	}
 
 
