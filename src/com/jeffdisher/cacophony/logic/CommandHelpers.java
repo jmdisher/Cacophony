@@ -10,7 +10,6 @@ import java.util.Set;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
@@ -19,8 +18,6 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -29,6 +26,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
 public class CommandHelpers
@@ -108,12 +106,38 @@ public class CommandHelpers
 		return hashIndex;
 	}
 
-
-	private static void _updateCachedRecords(INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs, IpfsKey publicKey) throws IpfsConnectionException, SizeConstraintException
+	public static void queueAndProcessElementRecordSize(INetworkScheduler scheduler, List<RawElementData> workingRecordList) throws IpfsConnectionException, SizeConstraintException
 	{
+		_queueAndProcessElementRecordSize(scheduler, workingRecordList);
+	}
+
+	public static void pinAndLoadElementRecords(INetworkScheduler scheduler, HighLevelCache cache, IpfsKey publicKey, List<RawElementData> recordList) throws IpfsConnectionException
+	{
+		_pinAndLoadElementRecords(scheduler, cache, publicKey, recordList);
+	}
+
+	public static List<CacheAlgorithm.Candidate<RawElementData>> fetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, List<RawElementData> workingRecordList) throws IpfsConnectionException
+	{
+		return _fetchLeafSizes(scheduler, videoEdgePixelMax, workingRecordList);
+	}
+
+	public static void pinLeaves(HighLevelCache cache, IpfsKey publicKey, RawElementData data)
+	{
+		_pinLeaves(cache, publicKey, data);
+	}
+
+	public static void processLeaves(IEnvironment environment, INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey publicKey, IpfsFile fetchedRoot, long currentTimeMillis, RawElementData data) throws IpfsConnectionException
+	{
+		_processLeaves(environment, scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, data);
+	}
+
+
+	private static void _updateCachedRecords(IEnvironment environment, INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs, IpfsKey publicKey) throws IpfsConnectionException, SizeConstraintException
+	{
+		long currentTimeMillis = System.currentTimeMillis();
 		// Note that we always cache the CIDs of the records, whether or not we cache the leaf data files within (since these record elements are tiny).
 		Set<String> removeCids = new HashSet<String>();
-		Set<String> addCids = new HashSet<String>();
+		List<RawElementData> additiveRecordList = new ArrayList<>();
 		removeCids.addAll(oldRecords.getRecord());
 		for (String cid : newRecords.getRecord())
 		{
@@ -122,7 +146,11 @@ public class CommandHelpers
 			if (!didRemove)
 			{
 				// If we didn't remove it, that means it is something new.
-				addCids.add(cid);
+				IpfsFile file = IpfsFile.fromIpfsCid(cid);
+				RawElementData data = new RawElementData();
+				data.elementRawCid = cid;
+				data.elementCid = file;
+				additiveRecordList.add(data);
 			}
 		}
 		// Remove the CIDs which are no longer present and consult the follower cache to remove any associated leaf elements.
@@ -146,92 +174,29 @@ public class CommandHelpers
 			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, cid).get();
 		}
 		
-		// First, see how much data we want to add and pre-prune our cache.
-		// Verify the sizes.
-		List<FutureSize> sizes = new ArrayList<>();
-		for (String rawCid : addCids)
-		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-			sizes.add(scheduler.getSizeInBytes(cid));
-		}
-		for (FutureSize size : sizes)
-		{
-			long elementSize = size.get();
-			// Verify that this isn't too big.
-			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
-			{
-				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
-			}
-		}
+		// Queue up the async size checks and make sure that they are ok before we proceed.
+		_queueAndProcessElementRecordSize(scheduler, additiveRecordList);
 		
-		// Fetch all the leaf records.
-		List<AsyncRecord> asyncRecords = new ArrayList<>();
-		for (String rawCid : addCids)
-		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-			
-			// Note that we need to add the element before we can dive into it to check the size of the leaves within.
-			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, cid).get();
-			FutureRead<StreamRecord> future = scheduler.readData(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
-			asyncRecords.add(new AsyncRecord(rawCid, future));
-		}
+		// Fetch the StreamRecord instances so we can check the sizes of the elements inside.
+		_pinAndLoadElementRecords(scheduler, cache, publicKey, additiveRecordList);
 		
-		// NOTE:  We currently always add all new elements but we may restrict this in the future to be more like the "start following" case.
+		// Now, cache all the element meta-data entries and find their sizes for consideration into the cache.
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
-		long bytesToAdd = 0L;
-		Set<String> verifiedCids = new HashSet<>();
-		for (AsyncRecord async : asyncRecords)
-		{
-			String rawCid = async.rawCid;
-			
-			boolean isVerified = false;
-			try
-			{
-				// Now, find the size of the relevant leaves within.
-				bytesToAdd += CacheHelpers.sizeInBytesToAdd(scheduler, videoEdgePixelMax, async.future.get());
-				isVerified = true;
-			}
-			catch (IpfsConnectionException e)
-			{
-				// We failed to load some of the leaves so we will skip this.
-				isVerified = false;
-			}
-			
-			if (isVerified)
-			{
-				// We didn't hit an exception so we will add it to the set.
-				verifiedCids.add(rawCid);
-			}
-		}
+		List<CacheAlgorithm.Candidate<RawElementData>> candidatesList = _fetchLeafSizes(scheduler, videoEdgePixelMax, additiveRecordList);
+		
+		// Get the total size of all candidates.
+		long bytesToAdd = candidatesList.stream().mapToLong((CacheAlgorithm.Candidate<RawElementData> candidate) -> candidate.byteSize()).sum();
+		
 		long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(prefs.followCacheTargetBytes(), currentCacheSizeBytes), publicKey, bytesToAdd);
 		
-		// Now, populate the cache with the new elements.
-		long currentTimeMillis = System.currentTimeMillis();
-		List<CacheHelpers.LeafTuple> asyncLeaves = new ArrayList<>();
-		for (AsyncRecord async : asyncRecords)
-		{
-			if (verifiedCids.contains(async.rawCid))
-			{
-				CacheHelpers.LeafTuple tuple = CacheHelpers.findAndPinLeaves(cache, publicKey, async.rawCid, videoEdgePixelMax, async.future.get());
-				asyncLeaves.add(tuple);
-			}
-		}
+		// Since this path will fetch all the new elements (for now, at least), just pin all the leaves.
+		candidatesList.forEach((CacheAlgorithm.Candidate<RawElementData> candidate) -> CommandHelpers.pinLeaves(cache, publicKey, candidate.data()));
 		
-		// Account for the cache elements we just pinned.
-		for (CacheHelpers.LeafTuple leaves : asyncLeaves)
+		// Now that all the requests are in-flight, we can start accounting for them as they arrive.
+		for (CacheAlgorithm.Candidate<RawElementData> candidate : candidatesList)
 		{
-			// Make sure that we have pinned the elements before we proceed.
-			if (null != leaves.imagePin())
-			{
-				leaves.imagePin().get();
-			}
-			if (null != leaves.leafPin())
-			{
-				leaves.leafPin().get();
-			}
-			CacheHelpers.addPinnedLeavesToFollowCache(scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, leaves.elementRawCid(), leaves.imageHash(), leaves.leafHash());
-			
+			CommandHelpers.processLeaves(environment, scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, candidate.data());
 		}
 	}
 
@@ -288,15 +253,122 @@ public class CommandHelpers
 				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid).get();
 				StreamRecords oldRecords = checker.loadCached(oldRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 				StreamRecords newRecords = checker.loadCached(newRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
-				_updateCachedRecords(scheduler, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
+				_updateCachedRecords(environment, scheduler, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
 				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid).get();
 			}
 			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot).get();
 		}
 	}
 
-
-	private static record AsyncRecord(String rawCid, FutureRead<StreamRecord> future)
+	private static void _queueAndProcessElementRecordSize(INetworkScheduler scheduler, List<RawElementData> workingRecordList) throws IpfsConnectionException, SizeConstraintException
 	{
+		// Queue up the async size checks and make sure that they are ok before we proceed.
+		workingRecordList.forEach((RawElementData data) -> {
+			data.futureSize = scheduler.getSizeInBytes(data.elementCid);
+		});
+		for (RawElementData data : workingRecordList)
+		{
+			long elementSize = data.futureSize.get();
+			// Verify that this isn't too big.
+			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
+			{
+				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
+			}
+			data.size = elementSize;
+			data.futureSize = null;
+		}
+	}
+
+	private static void _pinAndLoadElementRecords(INetworkScheduler scheduler, HighLevelCache cache, IpfsKey publicKey, List<RawElementData> recordList) throws IpfsConnectionException
+	{
+		// We first pin the element.
+		recordList.forEach((RawElementData data) -> {
+			data.futureElementPin = cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, data.elementCid);
+		});
+		// Then, we load the element.
+		for (RawElementData data : recordList)
+		{
+			data.futureElementPin.get();
+			data.futureElementPin = null;
+			data.futureRecord = scheduler.readData(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw));
+		}
+	}
+
+	private static List<CacheAlgorithm.Candidate<RawElementData>> _fetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, List<RawElementData> workingRecordList) throws IpfsConnectionException
+	{
+		for (RawElementData data : workingRecordList)
+		{
+			data.record = data.futureRecord.get();
+			data.futureRecord = null;
+			CacheHelpers.chooseAndFetchLeafSizes(scheduler, videoEdgePixelMax, data);
+		}
+		// Resolve all sizes;
+		List<CacheAlgorithm.Candidate<RawElementData>> candidatesList = new ArrayList<>();
+		for (RawElementData data : workingRecordList)
+		{
+			// We will drop entries if we fail to look them up.
+			boolean isVerified = false;
+			long bytesForLeaves = 0L;
+			try
+			{
+				// Now, find the size of the relevant leaves within.
+				if (null != data.thumbnailSizeFuture)
+				{
+					data.thumbnailSize = data.thumbnailSizeFuture.get();
+					data.thumbnailSizeFuture = null;
+					bytesForLeaves += data.thumbnailSize;
+				}
+				if (null != data.videoSizeFuture)
+				{
+					data.videoSize = data.videoSizeFuture.get();
+					data.videoSizeFuture = null;
+					bytesForLeaves += data.videoSize;
+				}
+				isVerified = true;
+			}
+			catch (IpfsConnectionException e)
+			{
+				// We failed to load some of the leaves so we will skip this.
+				isVerified = false;
+			}
+			
+			if (isVerified)
+			{
+				// We didn't hit an exception so we will add it to the set.
+				// Note that the candidates are considered with weight on the earlier elements in this list so we want to make sure the more recent ones appear there.
+				candidatesList.add(0, new CacheAlgorithm.Candidate<RawElementData>(bytesForLeaves, data));
+			}
+		}
+		return candidatesList;
+	}
+
+	private static void _pinLeaves(HighLevelCache cache, IpfsKey publicKey, RawElementData data)
+	{
+		data.futureThumbnailPin = (null != data.thumbnailHash)
+				? cache.addToFollowCache(publicKey, HighLevelCache.Type.FILE, data.thumbnailHash)
+				: null
+		;
+		data.futureVideoPin = (null != data.videoHash)
+				? cache.addToFollowCache(publicKey, HighLevelCache.Type.FILE, data.videoHash)
+				: null
+		;
+	}
+
+	private static void _processLeaves(IEnvironment environment, INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey publicKey, IpfsFile fetchedRoot, long currentTimeMillis, RawElementData data) throws IpfsConnectionException
+	{
+		environment.logToConsole("Caching entry: " + data.elementRawCid);
+		// Make sure that we have pinned the elements before we proceed.
+		if (null != data.futureThumbnailPin)
+		{
+			data.futureThumbnailPin.get();
+			data.futureThumbnailPin = null;
+		}
+		if (null != data.futureVideoPin)
+		{
+			data.futureVideoPin.get();
+			data.futureVideoPin = null;
+		}
+		long leafBytes = CacheHelpers.addPinnedLeavesToFollowCache(scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, data.elementRawCid, data.thumbnailHash, data.videoHash);
+		environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 	}
 }

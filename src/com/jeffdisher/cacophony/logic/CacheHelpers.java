@@ -9,14 +9,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
-import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -37,37 +35,6 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static LeafTuple findAndPinLeaves(HighLevelCache cache, IpfsKey followeeKey, String elementRawCid, int videoEdgePixelMax, StreamRecord record)
-	{
-		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
-		IpfsFile imageHash = null;
-		IpfsFile leafHash = null;
-		int biggestEdge = 0;
-		for (DataElement elt : record.getElements().getElement())
-		{
-			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-			if (null != elt.getSpecial())
-			{
-				Assert.assertTrue(null == imageHash);
-				imageHash = eltCid;
-			}
-			else if ((elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
-			{
-				biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
-				leafHash = eltCid;
-			}
-		}
-		FuturePin imageFuture = (null != imageHash)
-				? cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, imageHash)
-				: null
-		;
-		FuturePin leafFuture = (null != leafHash)
-				? cache.addToFollowCache(followeeKey, HighLevelCache.Type.FILE, leafHash)
-				: null
-		;
-		return new LeafTuple(elementRawCid, imageHash, imageFuture, leafHash, leafFuture);
-	}
-
 	public static long addPinnedLeavesToFollowCache(INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, long currentTimeMillis, String rawCid, IpfsFile imageHash, IpfsFile leafHash) throws IpfsConnectionException
 	{
 		long combinedSizeBytes = 0L;
@@ -84,13 +51,13 @@ public class CacheHelpers
 		return combinedSizeBytes;
 	}
 
-	public static long sizeInBytesToAdd(INetworkScheduler scheduler, int videoEdgePixelMax, StreamRecord record) throws IpfsConnectionException
+	public static void chooseAndFetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, RawElementData element) throws IpfsConnectionException
 	{
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
 		IpfsFile imageHash = null;
 		IpfsFile leafHash = null;
 		int biggestEdge = 0;
-		for (DataElement elt : record.getElements().getElement())
+		for (DataElement elt : element.record.getElements().getElement())
 		{
 			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
 			if (null != elt.getSpecial())
@@ -104,16 +71,16 @@ public class CacheHelpers
 				leafHash = eltCid;
 			}
 		}
-		long combinedSizeBytes = 0L;
 		if (null != imageHash)
 		{
-			combinedSizeBytes += scheduler.getSizeInBytes(imageHash).get();
+			element.thumbnailHash = imageHash;
+			element.thumbnailSizeFuture = scheduler.getSizeInBytes(imageHash);
 		}
 		if (null != leafHash)
 		{
-			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
+			element.videoHash = leafHash;
+			element.videoSizeFuture = scheduler.getSizeInBytes(leafHash);
 		}
-		return combinedSizeBytes;
 	}
 
 	/**
@@ -184,10 +151,5 @@ public class CacheHelpers
 				}
 			}
 		}
-	}
-
-
-	public static record LeafTuple(String elementRawCid, IpfsFile imageHash, FuturePin imagePin, IpfsFile leafHash, FuturePin leafPin)
-	{
 	}
 }
