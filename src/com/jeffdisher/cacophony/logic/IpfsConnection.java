@@ -24,12 +24,23 @@ import io.ipfs.multihash.Multihash;
 
 public class IpfsConnection implements IConnection
 {
-	private final IPFS _connection;
+	private final IPFS _defaultConnection;
+	private final IPFS _longWaitConnection;
 	private final int _gatewayPort;
 
-	public IpfsConnection(IPFS connection, int gatewayPort)
+	/**
+	 * Creates the IPFS connection abstraction.
+	 * Note that the underlying connections appear to be stateless, and so is this object, so concurrent connections are
+	 * safe and will function independently.
+	 * 
+	 * @param defaultConnection The connection to use for most calls.
+	 * @param longWaitConnection The connection to use for slow calls (pin).
+	 * @param gatewayPort The port to use when building URLs to directly fetch a file from the IPFS daemon.
+	 */
+	public IpfsConnection(IPFS defaultConnection, IPFS longWaitConnection, int gatewayPort)
 	{
-		_connection = connection;
+		_defaultConnection = defaultConnection;
+		_longWaitConnection = longWaitConnection;
 		_gatewayPort = gatewayPort;
 	}
 
@@ -38,7 +49,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			return _connection.key.list().stream().map((info) -> new IConnection.Key(info.name, new IpfsKey(info.id))).collect(Collectors.toList());
+			return _defaultConnection.key.list().stream().map((info) -> new IConnection.Key(info.name, new IpfsKey(info.id))).collect(Collectors.toList());
 		}
 		catch (RuntimeException e)
 		{
@@ -57,7 +68,7 @@ public class IpfsConnection implements IConnection
 		{
 			NamedStreamable.InputStreamWrapper wrapper = new NamedStreamable.InputStreamWrapper(dataStream);
 			
-			List<MerkleNode> nodes = _connection.add(wrapper);
+			List<MerkleNode> nodes = _defaultConnection.add(wrapper);
 			// Even with larger files, this only returns a single element, so it isn't obvious why this is a list.
 			Assert.assertTrue(1 == nodes.size());
 			Multihash hash = nodes.get(0).hash;
@@ -79,7 +90,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			return _connection.cat(file.getMultihash());
+			return _defaultConnection.cat(file.getMultihash());
 		}
 		catch (RuntimeException e)
 		{
@@ -96,7 +107,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			Map<?,?> map = _connection.name.publish(file.getMultihash(), Optional.of(keyName));
+			Map<?,?> map = _defaultConnection.name.publish(file.getMultihash(), Optional.of(keyName));
 			String value = (String) map.get("Value");
 			String index58 = file.toSafeString();
 			Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
@@ -116,7 +127,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			String publishedPath = _connection.name.resolve(key.getMultihash());
+			String publishedPath = _defaultConnection.name.resolve(key.getMultihash());
 			String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 			return IpfsFile.fromIpfsCid(published);
 		}
@@ -135,7 +146,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			Map<?,?> dataMap = _connection.file.ls(cid.getMultihash());
+			Map<?,?> dataMap = _defaultConnection.file.ls(cid.getMultihash());
 			return ((Number)((Map<?,?>)((Map<?,?>)dataMap.get("Objects")).get(cid.toSafeString())).get("Size")).longValue();
 		}
 		catch (RuntimeException e)
@@ -153,7 +164,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			return new URL(_connection.protocol, _connection.host, _gatewayPort, "/ipfs/" + cid.toSafeString());
+			return new URL(_defaultConnection.protocol, _defaultConnection.host, _gatewayPort, "/ipfs/" + cid.toSafeString());
 		}
 		catch (MalformedURLException e)
 		{
@@ -166,7 +177,8 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			_connection.pin.add(cid.getMultihash());
+			// Pin will cause the daemon to pull the entire file locally before it returns so we need to use the long wait.
+			_longWaitConnection.pin.add(cid.getMultihash());
 		}
 		catch (RuntimeException e)
 		{
@@ -183,7 +195,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			_connection.pin.rm(cid.getMultihash());
+			_defaultConnection.pin.rm(cid.getMultihash());
 		}
 		catch (RuntimeException e)
 		{
@@ -200,7 +212,7 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			KeyInfo info = _connection.key.gen(keyName, Optional.empty(), Optional.empty());
+			KeyInfo info = _defaultConnection.key.gen(keyName, Optional.empty(), Optional.empty());
 			return new IConnection.Key(info.name, new IpfsKey(info.id));
 		}
 		catch (RuntimeException e)
