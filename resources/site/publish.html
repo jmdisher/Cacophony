@@ -21,6 +21,15 @@ function POST(path)
 	});
 }
 
+function POST_withBinary(path, data)
+{
+	return fetch("http://127.0.0.1:8000" + path, {
+		method: "POST",
+		headers: { "Content-Type": "application/octet-stream" },
+		body: data,
+	});
+}
+
 function POST_asForm(path, variables)
 {
 	let formParts = [];
@@ -95,11 +104,23 @@ function stopRecording(videoConfig)
 	videoConfig.recorder = null;
 }
 
-function selectDraft(original_review, processed_review, scope, draft)
+function selectDraft(canvas, original_review, processed_review, scope, draft)
 {
 	scope.selectedDraft = draft;
 	if (null !== draft)
 	{
+		if (null !== draft.thumbnail)
+		{
+			let image = new Image();
+			image.onload = function () {
+				canvas.getContext('2d').drawImage(image, 0, 0);
+			};
+			image.src = "http://127.0.0.1:8000/draft/thumb/" + draft.id + "?uniq=" + (new Date()).getTime();
+		}
+		else
+		{
+			canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+		}
 		if (null !== draft.originalVideo)
 		{
 			scope.videoConfig.height = draft.originalVideo.height;
@@ -129,6 +150,19 @@ function selectDraft(original_review, processed_review, scope, draft)
 	}
 }
 
+function postUpdatedThumbnail(canvas, captureVideo, selectedDraft, width, height, applyCallback)
+{
+	canvas.getContext('2d').drawImage(captureVideo, 0, 0, width, height);
+	canvas.toBlob((blob) => {
+		POST_withBinary("/draft/thumb/" + selectedDraft.id + "/" + height + "/" + width, blob);
+			selectedDraft.thumbnail = {
+				height: height,
+				width: width,
+				byteSize: blob.size,
+			};
+	}, "image/jpeg");
+}
+
 function saveDraft(selectedDraft)
 {
 	let variables = {
@@ -147,6 +181,7 @@ function saveDraft(selectedDraft)
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	let canvas = document.getElementById('canvas');
 	let video_preview = document.getElementById('video_preview');
 	let original_review = document.getElementById('original_review');
 	let processed_review = document.getElementById('processed_review');
@@ -174,7 +209,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	
 	$scope.selectDraft = function(draft)
 	{
-		selectDraft(original_review, processed_review, $scope, draft);
+		selectDraft(canvas, original_review, processed_review, $scope, draft);
 	}
 	$scope.createNewDraft = function()
 	{
@@ -192,7 +227,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			.then(data => {
 				if ((null !== $scope.selectedDraft) && ($scope.selectedDraft.id === draft.id))
 				{
-					selectDraft(original_review, processed_review, $scope, null);
+					selectDraft(canvas, original_review, processed_review, $scope, null);
 				}
 				$scope.drafts = $scope.drafts.filter((element, index, array) => {
 					return (element.id !== draft.id);
@@ -279,6 +314,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.stopProcessing = function()
 	{
 		$scope.videoConfig.processingSocket.close();
+	}
+	$scope.captureFromPreview = function()
+	{
+		postUpdatedThumbnail(canvas, video_preview, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() {});
+	}
+	$scope.captureOriginal = function()
+	{
+		postUpdatedThumbnail(canvas, original_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() { $scope.$apply(); });
+	}
+	$scope.captureProcessed = function()
+	{
+		postUpdatedThumbnail(canvas, processed_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() { $scope.$apply(); });
 	}
 	$scope.saveDraft = function()
 	{
@@ -397,6 +444,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 						<video id="processed_review" controls></video><br />
 						Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
 					</div>
+				</div>
+				<div class="well">
+					Thumbnail: <br />
+					<canvas id="canvas" width="{{videoConfig.width}}" height="{{videoConfig.height}}"></canvas>
+					<button class="btn btn-success" ng-click="captureFromPreview()" ng-disabled="null == videoConfig.stream">Capture from preview</button>
+					<button class="btn btn-success" ng-click="captureOriginal()" ng-disabled="(null == selectedDraft.originalVideo) || (0 == selectedDraft.originalVideo.byteSize)">Capture from original video</button>
+					<button class="btn btn-success" ng-click="captureProcessed()" ng-disabled="(null == selectedDraft.processedVideo) || (0 == selectedDraft.processedVideo.byteSize)">Capture from processed video</button>
 				</div>
 				<div class="well">
 					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -45,6 +46,9 @@ public class InteractiveServer
 		server.addPostFormHandler("/draft", 1, new UpdateDraftTextHandler(manager));
 		server.addDeleteHandler("/draft", 1, new DeleteDraftHandler(manager));
 		server.addPostRawHandler("/draft/publish", 1, new PublishDraftHandler(environment, manager));
+		
+		server.addGetHandler("/draft/thumb", 1, new GetThumbnailImageHandler(manager));
+		server.addPostRawHandler("/draft/thumb", 3, new PostThumbnailImageHandler(manager));
 		
 		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(manager));
 		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(manager));
@@ -274,6 +278,68 @@ public class InteractiveServer
 				InteractiveHelpers.publishExistingDraft(_environment, _draftManager, draftId);
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				response.setStatus(HttpServletResponse.SC_OK);
+			}
+			catch (FileNotFoundException e)
+			{
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+	}
+
+	/**
+	 * Returns the thumbnail for this draft as a JPEG.
+	 */
+	private static class GetThumbnailImageHandler implements IGetHandler
+	{
+		private final DraftManager _draftManager;
+		
+		public GetThumbnailImageHandler(DraftManager draftManager)
+		{
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		{
+			_verifySafeRequest(request);
+			int draftId = Integer.parseInt(variables[0]);
+			try
+			{
+				ServletOutputStream output = response.getOutputStream();
+				InteractiveHelpers.loadThumbnailToStream(_draftManager, draftId, (String mime) -> {
+					// This is called only on success.
+					response.setContentType(mime);
+					response.setStatus(HttpServletResponse.SC_OK);
+				}, output);
+			}
+			catch (FileNotFoundException e)
+			{
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+	}
+
+	private static class PostThumbnailImageHandler implements IPostRawHandler
+	{
+		private final DraftManager _draftManager;
+		
+		public PostThumbnailImageHandler(DraftManager draftManager)
+		{
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+		{
+			_verifySafeRequest(request);
+			int draftId = Integer.parseInt(pathVariables[0]);
+			int height = Integer.parseInt(pathVariables[1]);
+			int width = Integer.parseInt(pathVariables[2]);
+			
+			try
+			{
+				InputStream input = request.getInputStream();
+				InteractiveHelpers.saveThumbnailFromStream(_draftManager, draftId, height, width, input);
 			}
 			catch (FileNotFoundException e)
 			{
