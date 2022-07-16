@@ -300,4 +300,42 @@ public class TestRefreshNextFolloweeCommand
 		user3.shutdown();
 		user.shutdown();
 	}
+
+	@Test
+	public void testOneMissingFollowee() throws Throwable
+	{
+		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
+		
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user2);
+		
+		// We need to create the channel first so we will just use the command to do that.
+		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		
+		// We need to add a followee.
+		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		
+		// Run the command once and make sure that the followee key exists.
+		user.runCommand(null, command);
+		FollowIndex followIndex = user.readFollowIndex();
+		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY2);
+		IpfsFile lastRoot = record.lastFetchedRoot();
+		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
+		long firstMillis = record.lastPollMillis();
+		
+		// Now, break the key reference and run it again to make sure the time is updated but not the root (we sleep for a few millis to make sure the clock advances).
+		Thread.sleep(2);
+		user2.timeoutKey(PUBLIC_KEY2);
+		user.runCommand(null, command);
+		record = followIndex.getFollowerRecord(PUBLIC_KEY2);
+		IpfsFile lastRoot2 = record.lastFetchedRoot();
+		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
+		Assert.assertEquals(lastRoot, lastRoot2);
+		long secondMillis = record.lastPollMillis();
+		Assert.assertTrue(secondMillis > firstMillis);
+		
+		user2.shutdown();
+		user.shutdown();
+	}
 }

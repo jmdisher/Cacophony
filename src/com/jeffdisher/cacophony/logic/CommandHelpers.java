@@ -58,20 +58,32 @@ public class CommandHelpers
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = scheduler.resolvePublicKey(publicKey).get();
-		Assert.assertTrue(null != indexRoot);
+		// (we only want to update the last successful root if we can resolve it).
+		IpfsFile lastSuccessfulRoot = lastRoot;
 		
 		try
 		{
-			_safeReadIndex(environment, local, followIndex, publicKey, cache, scheduler, checker, lastRoot, indexRoot);
+			// We only try to read the index if it was there (it is very likely that the IPNS key has been purged if the user hasn't refreshed in the last 24 hours).
+			if (null != indexRoot)
+			{
+				_safeReadIndex(environment, local, followIndex, publicKey, cache, scheduler, checker, lastRoot, indexRoot);
+				// We will save this as the new root.
+				lastSuccessfulRoot = indexRoot;
+				log.finish("Refresh success!");
+			}
+			else
+			{
+				log.finish("Refresh skipped since key missing (probably not refreshed): " + publicKey);
+				// We don't advance the root in this case.
+			}
 		}
 		finally
 		{
-			// Even if we threw an exception, we still want to update the followee index and write-back the config.
-			followIndex.updateFollowee(publicKey, indexRoot, System.currentTimeMillis());
+			// Even if we threw an exception or skipped the update, we still want to update the followee index and write-back the config.
+			followIndex.updateFollowee(publicKey, lastSuccessfulRoot, System.currentTimeMillis());
 			// TODO:  Make sure that nothing else in the state is left broken.
 			local.writeBackConfig();
 		}
-		log.finish("Refresh completed!");
 	}
 
 	/**

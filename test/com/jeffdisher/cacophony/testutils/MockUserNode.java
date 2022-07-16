@@ -114,4 +114,10 @@ public class MockUserNode
 	{
 		_executor.shutdown();
 	}
+
+	public void timeoutKey(IpfsKey publicKey)
+	{
+		// We just null out the key.
+		_sharedConnection.setRootForKey(publicKey, null);
+	}
 }
