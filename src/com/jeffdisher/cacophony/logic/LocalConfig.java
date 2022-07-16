@@ -204,6 +204,12 @@ public class LocalConfig
 		return _lazyFollowIndex;
 	}
 
+	public DraftManager buildDraftManager()
+	{
+		// We just use this helper to create the DraftManager so that we can continue to encapsulate the _fileSystem.
+		return new DraftManager(_fileSystem);
+	}
+
 	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
 		_verifySharedConnections();

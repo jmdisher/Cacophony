@@ -1,7 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 
 /**
@@ -47,4 +50,9 @@ public interface IConfigFileSystem
 	 * @return The config directory, only used for error reporting.
 	 */
 	String getDirectoryForReporting();
+
+	BasicDirectory createDirectoryWithName(String directoryName) throws IOException;
+	BasicDirectory openDirectoryWithName(String directoryName) throws FileNotFoundException;
+	List<BasicDirectory> listDirectoriesWithPrefix(String directoryPrefix);
+	void recursiveDeleteDirectoryWithName(String directoryName) throws FileNotFoundException;
 }

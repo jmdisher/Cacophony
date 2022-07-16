@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="App">
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.3/angular.min.js" type="text/javascript"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js" type="text/javascript"></script>
+
+<script src="./generated_db.js" type="text/javascript"></script>
+<script type="text/javascript">
+var recorder;
+var ws;
+var g_stream = null;
+
+function GET(path)
+{
+	return fetch("http://localhost:8000" + path, {
+		method: "GET",
+	});
+}
+
+function POST(path)
+{
+	return fetch("http://localhost:8000" + path, {
+		method: "POST",
+	});
+}
+
+function DELETE(path)
+{
+	return fetch("http://localhost:8000" + path, {
+		method: "DELETE",
+	});
+}
+
+function stopServer()
+{
+}
+
+function start()
+{
+	console.log("START VIDEO");
+	let constraints = //{video: {width:640, height:480, frameRate: { ideal: 15, max: 15 }}
+//		, audio: true
+//		, channelCount: 1
+//	};
+// We seem to be able to get 1280x720 @15 (or @30) but 640x480 only @30
+//		{ video: { width: {exact: 640}, height: {exact: 480}, frameRate: {exact: 30}}, audio: {channelCount: {exact: 1}}}
+		{ video: { width: {exact: 1280}, height: {exact: 720}, frameRate: {exact: 16}}, audio: {channelCount: {exact: 1}}}
+	;
+	navigator.mediaDevices.enumerateDevices().then(function(devices) {
+		console.log(devices);
+	});
+	navigator.mediaDevices.getUserMedia(constraints).then(function(stream) { 
+	stream.onaddtrack = function (track)
+	{
+		console.log(track);
+	}
+		g_stream = stream;
+		console.log(stream);
+		document.getElementById('video_preview').srcObject = stream;
+		recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: 64000,  videoBitsPerSecond: 256000 });
+		console.log("MIME: " + recorder.mimeType);
+		console.log("VBPS: " + recorder.videoBitsPerSecond);
+		console.log("ABPS: " + recorder.audioBitsPerSecond);
+//		ws = new WebSocket("ws://127.0.0.1:8080/ws", "binary");
+//		ws.onopen = function()
+		{
+//			console.log("OPEN");
+			recorder.addEventListener('dataavailable', function(e) {
+				console.log("DATA: " + e.data.size);
+//				ws.send(e.data);
+			});
+			recorder.addEventListener('stop', function() {
+				console.log("STOP");
+//				ws.close();
+			});
+			recorder.start(500);
+		}
+	//	ws.onclose = function(e)
+//		{
+//			console.log("WEB SOCKET CLOSED: " + e);
+//			stream.getVideoTracks()[0].stop();
+//		}
+	});
+}
+function snap()
+{
+	console.log("STOP VIDEO");
+	document.getElementById('canvas').getContext('2d').drawImage(video, 0, 0, 1280, 720);
+}
+function stop()
+{
+console.log("STOP VIDEO");
+recorder.stop();
+		document.getElementById('video').srcObject = null;
+	g_stream.getTracks().forEach(function(track) { track.stop(); });
+	g_stream = null;
+}
+
+function stopServer()
+{
+	POST("/stop")
+		.then(data => data.text())
+		.then(text => console.log(text));
+}
+
+function startCamera(height, width, fps)
+{
+	return new Promise((resolve, reject) => {
+		console.log("START VIDEO");
+		let constraints = { video: { width: {exact: width}, height: {exact: height}, frameRate: {exact: fps}}, audio: {channelCount: {exact: 1}}};
+		navigator.mediaDevices.getUserMedia(constraints).then(resolve, reject);
+	});
+}
+
+function stopCamera(previewElement, stream)
+{
+	previewElement.srcObject = null;
+	stream.getTracks().forEach(function(track) { track.stop(); });
+}
+
+function startRecording(stream, videoKilobits, audioKilobits, draftId, height, width, finalSizeCallback)
+{
+	recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: (audioKilobits * 1000),  videoBitsPerSecond: (videoKilobits * 1000) });
+	console.log("MIME: " + recorder.mimeType);
+	console.log("VBPS: " + recorder.videoBitsPerSecond);
+	console.log("ABPS: " + recorder.audioBitsPerSecond);
+	let bytes = 0;
+	ws = new WebSocket("ws://127.0.0.1:8000/draft/saveVideo/" + draftId + "/" + height + "/" + width, "webm");
+	ws.onopen = function()
+	{
+		console.log("Socket open");
+		recorder.addEventListener('dataavailable', function(e) {
+//			console.log("DATA: " + e.data.size);
+			bytes += e.data.size;
+			ws.send(e.data);
+		});
+		recorder.addEventListener('stop', function() {
+			console.log("STOP");
+			ws.close();
+		});
+		recorder.start(100);
+	}
+	ws.onclose = function(e)
+	{
+		console.log("WEB SOCKET CLOSED: " + e.reason);
+		finalSizeCallback(bytes);
+	}
+	return recorder;
+}
+
+function stopRecording(recorder)
+{
+	recorder.stop();
+}
+
+function selectDraft(original_review, processed_review, $scope, draft)
+{
+	$scope.selectedDraft = draft;
+	if (null !== draft)
+	{
+		if (null !== draft.originalVideo)
+		{
+			$scope.videoConfig.height = draft.originalVideo.height;
+			$scope.videoConfig.width = draft.originalVideo.width;
+			$scope.videoConfig.originalSize = draft.originalVideo.byteSize;
+			original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + draft.id;
+		}
+		else
+		{
+			$scope.videoConfig.height =  720;
+			$scope.videoConfig.width = 1280;
+			$scope.videoConfig.originalSize = 0;
+			original_review.src = "";
+		}
+		
+		if (null !== draft.processedVideo)
+		{
+			$scope.videoConfig.processedSize = draft.processedVideo.byteSize;
+			processed_review.src = "http://127.0.0.1:8000/draft/processedVideo/" + draft.id;
+		}
+		else
+		{
+			$scope.videoConfig.processedSize = 0;
+			processed_review.src = "";
+		}
+	}
+	else
+	{
+		$scope.videoConfig.originalSize = 0;
+		original_review.src = "";
+		$scope.videoConfig.processedSize = 0;
+		processed_review.src = "";
+	}
+}
+
+// We will create an Angular controller and populate it with data from generated_db.js.
+var GLOBAL_Application = angular.module('App', []);
+GLOBAL_Application.controller('AppController', function($scope)
+{
+	let video_preview = document.getElementById('video_preview');
+	let original_review = document.getElementById('original_review');
+	let processed_review = document.getElementById('processed_review');
+	
+	$scope.drafts = null;
+	$scope.selectedDraft = null;
+	$scope.inProgress = false;
+	
+	$scope.videoConfig = {
+		height: 720,
+		width: 1280,
+		fps: 15,
+		stream: null,
+		
+		videoKilobits: 256,
+		audioKilobits: 64,
+		recorder: null,
+		
+		recompressionCommand: "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -",
+		originalSize: 0,
+		processedSize: 0,
+		processingSocket: null,
+	};
+	
+	$scope.selectDraft = function(draft)
+	{
+		selectDraft(original_review, processed_review, $scope, draft);
+	}
+	$scope.createNewDraft = function()
+	{
+		console.log("NEW");
+		POST("/createDraft")
+			.then(data => data.json())
+			.then(draftObject => {
+				$scope.drafts.push(draftObject);
+				$scope.selectedDraft = draftObject;
+				$scope.$apply();
+			});
+	}
+	$scope.deleteDraft = function(draft)
+	{
+		DELETE("/draft/" + draft.id)
+			.then(data => {
+				if ((null !== $scope.selectedDraft) && ($scope.selectedDraft.id === draft.id))
+				{
+					selectDraft(original_review, processed_review, $scope, null);
+				}
+				$scope.drafts = $scope.drafts.filter((element, index, array) => {
+					return (element.id !== draft.id);
+				});
+				$scope.$apply();
+			});
+	}
+	$scope.startCamera = function()
+	{
+		startCamera($scope.videoConfig.height, $scope.videoConfig.width, $scope.videoConfig.fps)
+			.then(result => {
+				$scope.videoConfig.stream = result;
+				video_preview.srcObject = result;
+				$scope.$apply();
+			}, error => {
+				alert(error);
+				$scope.$apply();
+			});
+	}
+	$scope.stopCamera = function()
+	{
+		stopCamera(video_preview, $scope.videoConfig.stream);
+		$scope.videoConfig.stream = null;
+	}
+	$scope.startRecording = function()
+	{
+		$scope.videoConfig.recorder = startRecording($scope.videoConfig.stream
+			, $scope.videoConfig.videoKilobits
+			, $scope.videoConfig.audioKilobits
+			, $scope.selectedDraft.id
+			, $scope.videoConfig.height
+			, $scope.videoConfig.width
+			, function(finalByteSize)
+			{
+				$scope.videoConfig.originalSize = finalByteSize;
+				$scope.selectedDraft.originalVideo = {
+					height: $scope.videoConfig.height,
+					width: $scope.videoConfig.width,
+					byteSize: finalByteSize,
+				};
+				$scope.$apply();
+				original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + $scope.selectedDraft.id;
+			}
+		);
+	}
+	$scope.stopRecording = function()
+	{
+		stopRecording($scope.videoConfig.recorder);
+		$scope.videoConfig.recorder = null;
+	}
+	$scope.startProcessing = function()
+	{
+	}
+	$scope.stopProcessing = function()
+	{
+	}
+	$scope.captureOriginal = function()
+	{
+	}
+	$scope.captureProcessed = function()
+	{
+	}
+	$scope.publish = function()
+	{
+	}
+	
+	GET("/drafts")
+		.then(data => data.json())
+		.then(json => {
+			$scope.drafts = json;
+			$scope.$apply();
+		});
+});
+
+</script>
+
+	<title>Cacophony - Static Index</title>
+	<meta charset="utf-8"></meta>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"></link>
+</head>
+<body ng-controller="AppController">
+<nav class="navbar navbar-inverse">
+	<ul class="nav navbar-nav">
+		<li><a class="navbar-link" href="index.html">Index</a></li>
+		<li><a class="navbar-link" href="prefs.html">Preferences</a></li>
+		<li><a class="navbar-link" href="user.html">This User</a></li>
+		<li><a class="navbar-link" href="recommending.html">Recommended Users</a></li>
+		<li><a class="navbar-link" href="following.html">Users you Follow</a></li>
+	</ul>
+</nav>
+<div class="container">
+	<div class="row">
+		<div class="well col-md-3">
+			<div class="row"><a class="btn" href="index.html">Index</a></div>
+			<div class="row"><a class="btn" href="prefs.html">Preferences</a></div>
+			<div class="row"><a class="btn" href="user.html">This User</a></div>
+			<div class="row"><a class="btn" href="recommending.html">Recommended Users</a></div>
+			<div class="row"><a class="btn" href="following.html">Users you Follow</a></div>
+			<div class="row" ng-show="null != drafts">Drafts ({{drafts.length}}):<br />
+				<ul>
+					<li ng-repeat="draft in drafts"><button class="btn btn-sm btn-danger" ng-click="deleteDraft(draft)">Delete</button> <a ng-click="selectDraft(draft)">{{draft.title}}</a></li>
+				</ul>
+				<button class="btn btn-small btn-success" ng-click="createNewDraft()" ng-disabled="inProgress">New Draft</button>
+			</div>
+			<em ng-show="null == drafts">Loading drafts...</em>
+			<button class="btn btn-success" onClick="stopServer()">STOP SERVER</button><br/>
+		</div>
+		<div class="col-md-9">
+		selectedDraft
+			<div class="well" ng-show="null == selectedDraft">
+				Select a draft to see details.
+			</div>
+			<div class="well" ng-show="null != selectedDraft">
+				Draft:  <strong>{{selectedDraft.title}}</strong>.<br />
+				<div class="well">
+					Video preview: <br />
+					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoConfig.stream"></input><br />
+					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoConfig.stream"></input><br />
+					Framerate: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoConfig.stream"></input><br />
+					<video id="video_preview" playsinline autoplay muted></video><br />
+					<button class="btn btn-success" ng-click="startCamera()" ng-disabled="null != videoConfig.stream">Start Camera</button>
+					<button class="btn btn-danger" ng-click="stopCamera()" ng-disabled="null == videoConfig.stream">Stop Camera</button>
+				</div>
+				<div class="well" ng-show="null != videoConfig.stream">
+					Recording: <br />
+					Video kBits/s: <input type="text" class="form-control" ng-model="videoConfig.videoKilobits" ng-disabled="null != videoConfig.recorder"></input><br />
+					Audio kBits/s: <input type="text" class="form-control" ng-model="videoConfig.audioKilobits" ng-disabled="null != videoConfig.recorder"></input><br />
+					<button class="btn btn-success" ng-click="startRecording()" ng-disabled="null != videoConfig.recorder">Start Recording</button>
+					<button class="btn btn-danger" ng-click="stopRecording()" ng-disabled="null == videoConfig.recorder">Stop Recording</button>
+				</div>
+				<div class="well" ng-show="videoConfig.originalSize > 0">
+					<video id="original_review" controls></video><br />
+					Original video:  {{videoConfig.originalSize}} bytes.
+				</div>
+				<div class="well"  ng-show="videoConfig.originalSize > 0">
+					Post-processing: <br />
+					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
+					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed.<br />
+					Recompression command: <input type="text" class="form-control" ng-model="videoConfig.recompressionCommand" ng-disabled="null != videoConfig.processingSocket"></input><br />
+					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="null != videoConfig.processingSocket">Start Processing</button>
+					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="null == videoConfig.processingSocket">Stop Processing</button>
+					<div class="well" ng-show="videoConfig.processedSize > 0">
+						<video id="processed_review" controls></video><br />
+						Processed video:  {{videoConfig.processedSize}} bytes.
+					</div>
+				</div>
+				<div class="well">
+					Thumbnail: <br />
+					<canvas id="canvas" width="{{videoConfig.width}}" height="{{videoConfig.height}}"></canvas>
+					<button class="btn btn-success" ng-click="captureOriginal()" ng-disabled="videoConfig.originalSize > 0">Capture from original video</button>
+					<button class="btn btn-danger" ng-click="captureProcessed()" ng-disabled="videoConfig.processedSize > 0">Capture from processed video</button>
+				</div>
+				<div class="well">
+					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
+					<textarea class="form-control" ng-model="selectedDraft.description" rows="4" maxlength="2000"></textarea><br />
+					<button class="btn btn-danger" ng-click="publish()">Publish</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>
+

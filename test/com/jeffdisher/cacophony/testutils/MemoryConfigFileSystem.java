@@ -2,14 +2,18 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.logic.BasicDirectory;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class MemoryConfigFileSystem implements IConfigFileSystem
@@ -74,5 +78,29 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	public String getDirectoryForReporting()
 	{
 		return "SYNTHETIC";
+	}
+
+	@Override
+	public BasicDirectory createDirectoryWithName(String directoryName) throws IOException
+	{
+		throw Assert.unimplemented(2);
+	}
+
+	@Override
+	public BasicDirectory openDirectoryWithName(String directoryName) throws FileNotFoundException
+	{
+		throw Assert.unimplemented(2);
+	}
+
+	@Override
+	public List<BasicDirectory> listDirectoriesWithPrefix(String directoryPrefix)
+	{
+		throw Assert.unimplemented(2);
+	}
+
+	@Override
+	public void recursiveDeleteDirectoryWithName(String directoryName) throws FileNotFoundException
+	{
+		throw Assert.unimplemented(2);
 	}
 }

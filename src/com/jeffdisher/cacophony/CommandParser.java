@@ -23,6 +23,7 @@ import com.jeffdisher.cacophony.commands.RefreshNextFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.RepublishCommand;
+import com.jeffdisher.cacophony.commands.RunCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
@@ -214,6 +215,10 @@ public class CommandParser
 		GET_GLOBAL_PREFS(true, "--getGlobalPrefs", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			return new GetGlobalPrefsCommand();
+		}),
+		RUN(true, "--run", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			return new RunCommand();
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.
