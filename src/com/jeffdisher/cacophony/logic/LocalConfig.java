@@ -204,6 +204,25 @@ public class LocalConfig
 		return _lazyFollowIndex;
 	}
 
+	/**
+	 * Builds a new DraftManager instance on top of the config's filesystem's draft directory.
+	 * 
+	 * @return The new DraftManager instance.
+	 */
+	public DraftManager buildDraftManager()
+	{
+		// We just use this helper to create the DraftManager so that we can continue to encapsulate the _fileSystem.
+		try
+		{
+			return new DraftManager(_fileSystem.getDraftsTopLevelDirectory());
+		}
+		catch (IOException e)
+		{
+			// We don't currently know how/if we should best handle this error.
+			throw Assert.unexpected(e);
+		}
+	}
+
 	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
 		_verifySharedConnections();
