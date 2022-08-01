@@ -15,5 +15,7 @@ checkPreviousCommand "test_simple_resolve.sh"
 checkPreviousCommand "test_follower.sh"
 ./integration_testing/scripts/test_publish.sh /mnt/data/ipfs/go-ipfs/ipfs integration_testing/resources/ ./build/Cacophony.jar
 checkPreviousCommand "test_publish.sh"
+./integration_testing/scripts/test_interactive.sh /mnt/data/ipfs/go-ipfs/ipfs integration_testing/resources/ ./build/Cacophony.jar
+checkPreviousCommand "test_interactive.sh"
 
 echo -e "\033[32;40mCOMPLETE SUCCESS!\033[0m"
