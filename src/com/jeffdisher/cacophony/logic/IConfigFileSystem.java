@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -47,4 +49,14 @@ public interface IConfigFileSystem
 	 * @return The config directory, only used for error reporting.
 	 */
 	String getDirectoryForReporting();
+
+	/**
+	 * This is a pretty low-level call since the drafts can meaningful use a storage abstraction as they are just a few
+	 * large files.  The DraftManager is responsible for owning and managing the contents of this directory.
+	 * This directory will exist as a directory on-disk or IOException will be thrown.
+	 * 
+	 * @return The directory where drafts should be stored.
+	 * @throws IOException The directory doesn't exist and couldn't be created.
+	 */
+	File getDraftsTopLevelDirectory() throws IOException;
 }

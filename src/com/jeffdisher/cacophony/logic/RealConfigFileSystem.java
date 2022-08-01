@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -12,6 +13,8 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class RealConfigFileSystem implements IConfigFileSystem
 {
+	private static final String DRAFTS_DIRECTORY_NAME = "drafts";
+
 	private final File _directory;
 
 	public RealConfigFileSystem(File directory)
@@ -69,5 +72,23 @@ public class RealConfigFileSystem implements IConfigFileSystem
 	public String getDirectoryForReporting()
 	{
 		return _directory.getAbsolutePath();
+	}
+
+	@Override
+	public File getDraftsTopLevelDirectory() throws IOException
+	{
+		File draftsDirectory = new File(_directory, DRAFTS_DIRECTORY_NAME);
+		// Make sure that the directory exists.
+		if (!draftsDirectory.isDirectory())
+		{
+			boolean didMake = draftsDirectory.mkdirs();
+			if (!didMake)
+			{
+				throw new IOException("Failed to create directory: " + draftsDirectory);
+			}
+		}
+		// We are going to assume that the wrong file type is just a corrupt config.
+		Assert.assertTrue(draftsDirectory.isDirectory());
+		return draftsDirectory;
 	}
 }

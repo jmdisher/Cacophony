@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class MemoryConfigFileSystem implements IConfigFileSystem
@@ -74,5 +76,12 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	public String getDirectoryForReporting()
 	{
 		return "SYNTHETIC";
+	}
+
+	@Override
+	public File getDraftsTopLevelDirectory() throws IOException
+	{
+		// We don't call this in these tests.
+		throw Assert.unreachable();
 	}
 }
