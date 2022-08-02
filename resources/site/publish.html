@@ -7,10 +7,24 @@
 
 <script src="./generated_db.js" type="text/javascript"></script>
 <script type="text/javascript">
+function GET(path)
+{
+	return fetch("http://127.0.0.1:8000" + path, {
+		method: "GET",
+	});
+}
+
 function POST(path)
 {
 	return fetch("http://127.0.0.1:8000" + path, {
 		method: "POST",
+	});
+}
+
+function DELETE(path)
+{
+	return fetch("http://127.0.0.1:8000" + path, {
+		method: "DELETE",
 	});
 }
 
@@ -26,6 +40,45 @@ function stopServer()
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	$scope.drafts = null;
+	$scope.selectedDraft = null;
+	$scope.inProgress = false;
+	
+	$scope.selectDraft = function(draft)
+	{
+		$scope.selectedDraft = draft;
+	}
+	$scope.createNewDraft = function()
+	{
+		POST("/createDraft")
+			.then(data => data.json())
+			.then(draftObject => {
+				$scope.drafts.push(draftObject);
+				$scope.selectedDraft = draftObject;
+				$scope.$apply();
+			});
+	}
+	$scope.deleteDraft = function(draft)
+	{
+		DELETE("/draft/" + draft.id)
+			.then(data => {
+				if ((null !== $scope.selectedDraft) && ($scope.selectedDraft.id === draft.id))
+				{
+					$scope.selectedDraft = null;
+				}
+				$scope.drafts = $scope.drafts.filter((element, index, array) => {
+					return (element.id !== draft.id);
+				});
+				$scope.$apply();
+			});
+	}
+	
+	GET("/drafts")
+		.then(data => data.json())
+		.then(json => {
+			$scope.drafts = json;
+			$scope.$apply();
+		});
 });
 
 </script>
@@ -55,13 +108,26 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<div class="row"><a class="btn" href="following.html">Users you Follow</a></div>
 		</div>
 		<div class="well col-md-6">
-			<div class="row">Drafts (0):<br />
+			<em ng-show="null == drafts">Loading drafts...</em>
+			<div class="row" ng-show="null != drafts">Drafts ({{drafts.length}}):<br />
 				<ul>
+					<li ng-repeat="draft in drafts"><button class="btn btn-sm btn-danger" ng-click="deleteDraft(draft)">Delete</button> <a ng-click="selectDraft(draft)">{{draft.title}}</a></li>
 				</ul>
 			</div>
 		</div>
 		<div class="well col-md-3">
 			<button class="btn btn-danger" onClick="stopServer()">STOP SERVER</button><br/>
+			<button class="btn btn-small btn-success" ng-click="createNewDraft()" ng-disabled="inProgress">New Draft</button><br />
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-12">
+			<div class="well" ng-show="null == selectedDraft">
+				Select a draft to see details.
+			</div>
+			<div class="well" ng-show="null != selectedDraft">
+				Draft:  <strong>{{selectedDraft.title}}</strong>.<br />
+			</div>
 		</div>
 	</div>
 </div>

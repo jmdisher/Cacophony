@@ -64,6 +64,30 @@ CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --run &
 SERVER_PID=$!
 sleep 5
 
+echo "Get the empty list of drafts..."
+DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+requireSubstring "$DRAFTS" "[]"
+
+echo "Create a new draft..."
+CREATED=$(curl --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
+# We need to parse out the ID (look for '{"id":2107961294,')
+ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
+ID=$(echo $ID_PARSE)
+echo "...working with draft $ID"
+
+echo "Verify that we can read the draft..."
+DRAFT=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
+requireSubstring "$DRAFT" "\"title\":\"New Draft - $ID\""
+
+echo "Verify that we can see the draft in the list..."
+DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+requireSubstring "$DRAFTS" "\"title\":\"New Draft - $ID\""
+
+echo "Verify that we can delete the draft and see an empty list..."
+curl -XDELETE http://127.0.0.1:8000/draft/$ID
+DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+requireSubstring "$DRAFTS" "[]"
+
 echo "Stop the server and wait for it to exit..."
 curl -XPOST http://127.0.0.1:8000/stop
 wait $SERVER_PID
