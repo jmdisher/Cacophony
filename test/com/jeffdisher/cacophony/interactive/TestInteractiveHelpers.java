@@ -41,6 +41,24 @@ public class TestInteractiveHelpers
 	}
 
 	@Test
+	public void testSetTitle() throws Throwable
+	{
+		IConfigFileSystem files = _getTestingDraftFiles();
+		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
+		int id = 1;
+		String title = "new title";
+		String description = "long description";
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.updateDraftText(draftManager, id, title, description, null);
+		List<Draft> drafts = InteractiveHelpers.listDrafts(draftManager);
+		Assert.assertEquals(1, drafts.size());
+		Draft draft = drafts.get(0);
+		Assert.assertEquals(id, draft.id());
+		Assert.assertEquals(title, draft.title());
+		Assert.assertEquals(description, draft.description());
+	}
+
+	@Test
 	public void testDefaultAndDelete() throws Throwable
 	{
 		IConfigFileSystem files = _getTestingDraftFiles();

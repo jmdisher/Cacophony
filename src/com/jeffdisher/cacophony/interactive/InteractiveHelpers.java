@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.DraftWrapper;
 
 
 /**
@@ -26,6 +27,14 @@ public class InteractiveHelpers
 	public static Draft readExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		return draftManager.openExistingDraft(draftId).loadDraft();
+	}
+	public static Draft updateDraftText(DraftManager draftManager, int draftId, String title, String description, String discussionUrl) throws FileNotFoundException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		Draft oldDraft = wrapper.loadDraft();
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo());
+		wrapper.saveDraft(newDraft);
+		return newDraft;
 	}
 	public static void deleteExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{

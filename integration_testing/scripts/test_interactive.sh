@@ -83,6 +83,11 @@ echo "Verify that we can see the draft in the list..."
 DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "\"title\":\"New Draft - $ID\""
 
+echo "Update the title and description..."
+curl --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "title=Updated%20Title&description=" http://127.0.0.1:8000/draft/$ID
+DRAFT=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
+requireSubstring "$DRAFT" "\"title\":\"Updated Title\""
+
 echo "Verify that we can delete the draft and see an empty list..."
 curl -XDELETE http://127.0.0.1:8000/draft/$ID
 DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)

@@ -10,8 +10,10 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.breakwater.IDeleteHandler;
 import com.jeffdisher.breakwater.IGetHandler;
+import com.jeffdisher.breakwater.IPostFormHandler;
 import com.jeffdisher.breakwater.IPostRawHandler;
 import com.jeffdisher.breakwater.RestServer;
+import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -35,6 +37,7 @@ public class InteractiveServer
 		server.addGetHandler("/drafts", 0, new GetDraftsListHandler(manager));
 		server.addPostRawHandler("/createDraft", 0, new CreateDraftHandler(manager));
 		server.addGetHandler("/draft", 1, new GetDraftHandler(manager));
+		server.addPostFormHandler("/draft", 1, new UpdateDraftTextHandler(manager));
 		server.addDeleteHandler("/draft", 1, new DeleteDraftHandler(manager));
 		
 		server.start();
@@ -157,6 +160,50 @@ public class InteractiveServer
 			catch (FileNotFoundException e)
 			{
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+	}
+
+	/**
+	 * Updates the given draft with the included data and returns 200 on success or 404 if not found.
+	 */
+	private static class UpdateDraftTextHandler implements IPostFormHandler
+	{
+		private final DraftManager _draftManager;
+		
+		public UpdateDraftTextHandler(DraftManager draftManager)
+		{
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
+		{
+			_verifySafeRequest(request);
+			int draftId = Integer.parseInt(pathVariables[0]);
+			String title = formVariables.getIfSingle("title");
+			String description = formVariables.getIfSingle("description");
+			// Note that the discussion URL can be null - empty strings should be made null.
+			String discussionUrl = formVariables.getIfSingle("discussionUrl");
+			if ((null != discussionUrl) && discussionUrl.isEmpty())
+			{
+				discussionUrl = null;
+			}
+			if ((null != title) && !title.isEmpty() && (null != description))
+			{
+				try
+				{
+					InteractiveHelpers.updateDraftText(_draftManager, draftId, title, description, discussionUrl);
+					response.setStatus(HttpServletResponse.SC_OK);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
+			}
+			else
+			{
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			}
 		}
 	}

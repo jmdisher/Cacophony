@@ -21,6 +21,22 @@ function POST(path)
 	});
 }
 
+function POST_asForm(path, variables)
+{
+	let formParts = [];
+	for (let property in variables) {
+		let encodedKey = encodeURIComponent(property);
+		let encodedValue = encodeURIComponent(variables[property]);
+		formParts.push(encodedKey + "=" + encodedValue);
+	}
+	let formBody = formParts.join("&");
+	return fetch("http://127.0.0.1:8000" + path, {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+		body: formBody,
+	});
+}
+
 function DELETE(path)
 {
 	return fetch("http://127.0.0.1:8000" + path, {
@@ -35,6 +51,19 @@ function stopServer()
 		.then(text => console.log(text));
 }
 
+function saveDraft(selectedDraft)
+{
+	let variables = {
+		"title": selectedDraft.title,
+		"description": selectedDraft.description,
+	};
+	if (null != selectedDraft.discussionUrl)
+	{
+		variables["discussionUrl"] = selectedDraft.discussionUrl;
+	}
+	return POST_asForm("/draft/" + selectedDraft.id, variables);
+}
+
 
 // We will create an Angular controller and populate it with data from generated_db.js.
 var GLOBAL_Application = angular.module('App', []);
@@ -43,6 +72,22 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
 	$scope.inProgress = false;
+	
+	$scope.videoConfig = {
+		height: 720,
+		width: 1280,
+		fps: 15,
+		stream: null,
+		
+		videoKilobits: 256,
+		audioKilobits: 64,
+		recorder: null,
+		
+		recompressionCommand: "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -",
+		processingSocket: null,
+		finalProcessed: 0,
+		publishInProgress: false,
+	};
 	
 	$scope.selectDraft = function(draft)
 	{
@@ -69,6 +114,15 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.drafts = $scope.drafts.filter((element, index, array) => {
 					return (element.id !== draft.id);
 				});
+				$scope.$apply();
+			});
+	}
+	$scope.saveDraft = function()
+	{
+		$scope.inProgress = true;
+		saveDraft($scope.selectedDraft)
+			.then(data => {
+				$scope.inProgress = false;
 				$scope.$apply();
 			});
 	}
@@ -127,6 +181,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 			</div>
 			<div class="well" ng-show="null != selectedDraft">
 				Draft:  <strong>{{selectedDraft.title}}</strong>.<br />
+				<div class="well">
+					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
+					<textarea class="form-control" ng-model="selectedDraft.description" rows="4" maxlength="2000"></textarea><br />
+					Discussion URL: <button class="btn btn-small" ng-click="selectedDraft.discussionUrl = ''" ng-show="null == selectedDraft.discussionUrl">Add Discussion URL</button>
+					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
+					<button class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
+				</div>
 			</div>
 		</div>
 	</div>
