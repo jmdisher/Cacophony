@@ -93,9 +93,25 @@ curl -XDELETE http://127.0.0.1:8000/draft/$ID
 DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"
 
+echo "Create a new draft and publish it..."
+CREATED=$(curl --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
+# We need to parse out the ID (look for '{"id":2107961294,')
+ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
+PUBLISH_ID=$(echo $ID_PARSE)
+echo "...working with draft $PUBLISH_ID"
+curl --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID
+
+echo "Verify that it is not in the list..."
+DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+requireSubstring "$DRAFTS" "[]"
+
 echo "Stop the server and wait for it to exit..."
 curl -XPOST http://127.0.0.1:8000/stop
 wait $SERVER_PID
+
+echo "Verify that we can see the published post in out list..."
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+requireSubstring "$LISTING" "New Draft - $PUBLISH_ID"
 
 
 kill $PID1

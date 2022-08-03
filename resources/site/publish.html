@@ -72,6 +72,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
 	$scope.inProgress = false;
+	$scope.publishInProgress = false;
 	
 	$scope.videoConfig = {
 		height: 720,
@@ -86,7 +87,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 		recompressionCommand: "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -",
 		processingSocket: null,
 		finalProcessed: 0,
-		publishInProgress: false,
 	};
 	
 	$scope.selectDraft = function(draft)
@@ -125,6 +125,23 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.inProgress = false;
 				$scope.$apply();
 			});
+	}
+	$scope.publish = function()
+	{
+		$scope.inProgress = true;
+		$scope.publishInProgress = true;
+		// We need to save-back the draft before publishing since the server publishes from the saved state.
+		saveDraft($scope.selectedDraft).then(function(data) {
+			// Now, begin the publish.
+			POST("/draft/publish/" + $scope.selectedDraft.id)
+				.then(function(data) {
+					$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
+					$scope.selectedDraft = null;
+					$scope.inProgress = false;
+					$scope.publishInProgress = false;
+					$scope.$apply();
+				});
+		});
 	}
 	
 	GET("/drafts")
@@ -187,6 +204,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					Discussion URL: <button class="btn btn-small" ng-click="selectedDraft.discussionUrl = ''" ng-show="null == selectedDraft.discussionUrl">Add Discussion URL</button>
 					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
 					<button class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
+					<button class="btn btn-danger" ng-click="publish()" ng-disabled="publishInProgress">Publish</button>
 				</div>
 			</div>
 		</div>

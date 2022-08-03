@@ -39,6 +39,7 @@ public class InteractiveServer
 		server.addGetHandler("/draft", 1, new GetDraftHandler(manager));
 		server.addPostFormHandler("/draft", 1, new UpdateDraftTextHandler(manager));
 		server.addDeleteHandler("/draft", 1, new DeleteDraftHandler(manager));
+		server.addPostRawHandler("/draft/publish", 1, new PublishDraftHandler(environment, manager));
 		
 		server.start();
 		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
@@ -228,6 +229,38 @@ public class InteractiveServer
 			
 			try
 			{
+				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
+				response.setStatus(HttpServletResponse.SC_OK);
+			}
+			catch (FileNotFoundException e)
+			{
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+	}
+
+	/**
+	 * Publishes the given draft and returns 200 on success, 404 if not found, or 500 if something went wrong.
+	 */
+	private static class PublishDraftHandler implements IPostRawHandler
+	{
+		private final IEnvironment _environment;
+		private final DraftManager _draftManager;
+		
+		public PublishDraftHandler(IEnvironment environment, DraftManager draftManager)
+		{
+			_environment = environment;
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+		{
+			_verifySafeRequest(request);
+			int draftId = Integer.parseInt(pathVariables[0]);
+			try
+			{
+				InteractiveHelpers.publishExistingDraft(_environment, _draftManager, draftId);
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				response.setStatus(HttpServletResponse.SC_OK);
 			}
