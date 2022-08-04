@@ -47,8 +47,10 @@ public class InteractiveServer
 		server.addPostRawHandler("/draft/publish", 1, new PublishDraftHandler(environment, manager));
 		
 		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(manager));
+		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(manager));
 		
 		server.addWebSocketFactory("/draft/saveVideo", 3, "webm", new SaveOriginalVideoSocketFactory(manager));
+		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(manager));
 		
 		server.start();
 		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
@@ -314,6 +316,39 @@ public class InteractiveServer
 	}
 
 	/**
+	 * Returns the processed video for this draft as a WEBM stream.
+	 */
+	private static class GetProcessedVideoHandler implements IGetHandler
+	{
+		private final DraftManager _draftManager;
+		
+		public GetProcessedVideoHandler(DraftManager draftManager)
+		{
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		{
+			_verifySafeRequest(request);
+			int draftId = Integer.parseInt(variables[0]);
+			try
+			{
+				ServletOutputStream output = response.getOutputStream();
+				InteractiveHelpers.writeProcessedVideoToStream(_draftManager, draftId, (String mime) -> {
+					// Called only when the video is found.
+					response.setContentType(mime);
+					response.setStatus(HttpServletResponse.SC_OK);
+				}, output);
+			}
+			catch (FileNotFoundException e)
+			{
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+	}
+
+	/**
 	 * Opens a video save web socket for the given draft ID.
 	 */
 	private static class SaveOriginalVideoSocketFactory implements IWebSocketFactory
@@ -362,6 +397,109 @@ public class InteractiveServer
 				{
 					Assert.assertTrue(null != _saver);
 					InteractiveHelpers.appendToNewVideo(_saver, payload, offset, len);
+				}
+			};
+			return ws;
+		}
+	}
+
+	/**
+	 * Opens a video processing web socket for the given draft ID and command.
+	 */
+	private static class ProcessVideoSocketFactory implements IWebSocketFactory
+	{
+		private final DraftManager _draftManager;
+		
+		public ProcessVideoSocketFactory(DraftManager draftManager)
+		{
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public WebSocketListener create(String[] variables)
+		{
+			int draftId = Integer.parseInt(variables[0]);
+			String processCommand = variables[1];
+			WebSocketListener ws = new WebSocketListener()
+			{
+				private VideoProcessor _processor;
+				@Override
+				public void onWebSocketClose(int statusCode, String reason)
+				{
+					InteractiveHelpers.closeVideoProcessor(_processor);
+					_processor = null;
+				}
+				@Override
+				public void onWebSocketConnect(Session session)
+				{
+					_verifySafeWebSocket(session);
+					Assert.assertTrue(null == _processor);
+					try
+					{
+						_processor = InteractiveHelpers.openVideoProcessor(new VideoProcessor.ProcessWriter()
+						{
+							@Override
+							public void totalBytesProcessed(long bytesProcessed)
+							{
+								JsonObject object = new JsonObject();
+								object.add("type", "progress");
+								object.add("bytes", bytesProcessed);
+								try
+								{
+									session.getRemote().sendString(object.toString());
+								}
+								catch (IOException e)
+								{
+									// Not yet sure why this may happen (race on close?).
+									throw Assert.unexpected(e);
+								}
+							}
+							@Override
+							public void processingError(String error)
+							{
+								JsonObject object = new JsonObject();
+								object.add("type", "error");
+								object.add("string", error);
+								try
+								{
+									session.getRemote().sendString(object.toString());
+								}
+								catch (IOException e)
+								{
+									// Not yet sure why this may happen (race on close?).
+									throw Assert.unexpected(e);
+								}
+							}
+							@Override
+							public void processingDone(long outputSizeBytes)
+							{
+								JsonObject object = new JsonObject();
+								object.add("type", "done");
+								object.add("bytes", outputSizeBytes);
+								try
+								{
+									session.getRemote().sendString(object.toString());
+								}
+								catch (IOException e)
+								{
+									// Not yet sure why this may happen (race on close?).
+									throw Assert.unexpected(e);
+								}
+								session.close();
+								System.out.println("PROCESSING DONE");
+							}
+						}, _draftManager, draftId, processCommand);
+					}
+					catch (FileNotFoundException e)
+					{
+						// This happens in the case where the draft doesn't exist.
+						session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+					}
+					catch (IOException e)
+					{
+						// This happened if we failed to run the processor.
+						session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + processCommand + "\"");
+					}
 				}
 			};
 			return ws;

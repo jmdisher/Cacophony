@@ -95,7 +95,7 @@ function stopRecording(videoConfig)
 	videoConfig.recorder = null;
 }
 
-function selectDraft(original_review, scope, draft)
+function selectDraft(original_review, processed_review, scope, draft)
 {
 	scope.selectedDraft = draft;
 	if (null !== draft)
@@ -112,10 +112,20 @@ function selectDraft(original_review, scope, draft)
 			scope.videoConfig.width = 1280;
 			original_review.src = "";
 		}
+		
+		if (null !== draft.processedVideo)
+		{
+			processed_review.src = "http://127.0.0.1:8000/draft/processedVideo/" + draft.id + "?uniq=" + (new Date()).getTime();
+		}
+		else
+		{
+			processed_review.src = "";
+		}
 	}
 	else
 	{
 		original_review.src = "";
+		processed_review.src = "";
 	}
 }
 
@@ -139,6 +149,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 {
 	let video_preview = document.getElementById('video_preview');
 	let original_review = document.getElementById('original_review');
+	let processed_review = document.getElementById('processed_review');
+	let progress_bar = document.getElementById('progress_bar');
 	
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
@@ -162,7 +174,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	
 	$scope.selectDraft = function(draft)
 	{
-		selectDraft(original_review, $scope, draft);
+		selectDraft(original_review, processed_review, $scope, draft);
 	}
 	$scope.createNewDraft = function()
 	{
@@ -180,7 +192,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			.then(data => {
 				if ((null !== $scope.selectedDraft) && ($scope.selectedDraft.id === draft.id))
 				{
-					selectDraft(original_review, $scope, null);
+					selectDraft(original_review, processed_review, $scope, null);
 				}
 				$scope.drafts = $scope.drafts.filter((element, index, array) => {
 					return (element.id !== draft.id);
@@ -227,6 +239,46 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.stopRecording = function()
 	{
 		stopRecording($scope.videoConfig);
+	}
+	$scope.startProcessing = function()
+	{
+		$scope.videoConfig.processingSocket = new WebSocket("ws://127.0.0.1:8000/draft/processVideo/" + $scope.selectedDraft.id + "/" + encodeURIComponent($scope.videoConfig.recompressionCommand), "process");
+		$scope.videoConfig.processingSocket.onopen = function()
+		{
+			console.log("Process start");
+		}
+		$scope.videoConfig.processingSocket.addEventListener('message', (event) => {
+			let object = JSON.parse(event.data);
+			if ("progress" == object.type)
+			{
+				let percentage = Math.round(100 * object.bytes / $scope.selectedDraft.originalVideo.byteSize);
+				console.log("Processing " + percentage + "%");
+				progress_bar.ariaValueNow = percentage;
+				progress_bar["style"] = "width: " + percentage + "%;";
+				progress_bar.textContent = percentage + "%";
+			}
+			else if ("done" == object.type)
+			{
+				$scope.videoConfig.finalProcessed = object.bytes;
+			}
+		});
+		$scope.videoConfig.processingSocket.onclose = function(e)
+		{
+			$scope.selectedDraft.processedVideo = {
+				height: $scope.videoConfig.height,
+				width: $scope.videoConfig.width,
+				byteSize: $scope.videoConfig.finalProcessed,
+			};
+			$scope.videoConfig.processingSocket = null;
+			$scope.videoConfig.finalProcessed = 0;
+			$scope.$apply();
+			processed_review.src = "http://127.0.0.1:8000/draft/processedVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+			console.log("Process DONE");
+		}
+	}
+	$scope.stopProcessing = function()
+	{
+		$scope.videoConfig.processingSocket.close();
 	}
 	$scope.saveDraft = function()
 	{
@@ -328,6 +380,23 @@ GLOBAL_Application.controller('AppController', function($scope)
 				<div class="well" ng-show="selectedDraft.originalVideo.byteSize > 0">
 					<video id="original_review" controls></video><br />
 					Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
+				</div>
+				<div class="well"  ng-show="selectedDraft.originalVideo.byteSize > 0">
+					Post-processing: <br />
+					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
+					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed.<br />
+					Recompression command: <input type="text" class="form-control" ng-model="videoConfig.recompressionCommand" ng-disabled="null != videoConfig.processingSocket"></input><br />
+					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="null != videoConfig.processingSocket">Start Processing</button>
+					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="null == videoConfig.processingSocket">Stop Processing</button>
+					<div class="progress" ng-show="null != videoConfig.processingSocket">
+						<div class="progress-bar" id="progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+							0%
+						</div>
+					</div>
+					<div class="well" ng-show="selectedDraft.processedVideo.byteSize > 0">
+						<video id="processed_review" controls></video><br />
+						Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
+					</div>
 				</div>
 				<div class="well">
 					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />

@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,6 +46,16 @@ public class InteractiveHelpers
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
 		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo());
 		saver.draftWrapper.saveDraft(newDraft);
+	}
+
+	// --- Methods related to processing the video (this is small since it mostly just invokes callbacks to the session on a different thread).
+	public static VideoProcessor openVideoProcessor(VideoProcessor.ProcessWriter session, DraftManager draftManager, int draftId, String processCommand) throws FileNotFoundException, IOException
+	{
+		return new VideoProcessor(session, draftManager, draftId, processCommand);
+	}
+	public static void closeVideoProcessor(VideoProcessor processor)
+	{
+		processor.sockedDidClose();
 	}
 
 	// --- Methods related to draft management.
@@ -125,6 +136,31 @@ public class InteractiveHelpers
 		}
 	}
 
+	// --- Methods related to thumbnails.
+	public static void loadThumbnailToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		try (FileInputStream input = new FileInputStream(wrapper.thumbnail()))
+		{
+			mimeConsumer.accept("image/jpeg");
+			_copyToEndOfFile(input, outStream);
+		}
+	}
+	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, InputStream inStream) throws FileNotFoundException, IOException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		long bytesCopied = 0L;
+		try (FileOutputStream output = new FileOutputStream(wrapper.thumbnail()))
+		{
+			bytesCopied = _copyToEndOfFile(inStream, output);
+		}
+		Assert.assertTrue(bytesCopied > 0L);
+		Draft oldDraft = wrapper.loadDraft();
+		SizedElement thumbnail = new SizedElement("image/jpeg", height, width, bytesCopied);
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo());
+		wrapper.saveDraft(newDraft);
+	}
+
 	// --- Methods related to video streaming.
 	public static void writeOriginalVideoToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
 	{
@@ -132,6 +168,15 @@ public class InteractiveHelpers
 		try (FileInputStream input = new FileInputStream(wrapper.originalVideo()))
 		{
 			mimeConsumer.accept(wrapper.loadDraft().originalVideo().mime());
+			_copyToEndOfFile(input, outStream);
+		}
+	}
+	public static void writeProcessedVideoToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		try (FileInputStream input = new FileInputStream(wrapper.processedVideo()))
+		{
+			mimeConsumer.accept("video/webm");
 			_copyToEndOfFile(input, outStream);
 		}
 	}
