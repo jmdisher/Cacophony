@@ -51,6 +51,74 @@ function stopServer()
 		.then(text => console.log(text));
 }
 
+function startCamera(height, width, fps)
+{
+	return new Promise((resolve, reject) => {
+		let constraints = { video: { width: {exact: width}, height: {exact: height}, frameRate: {exact: fps}}, audio: {channelCount: {exact: 1}}};
+		navigator.mediaDevices.getUserMedia(constraints).then(resolve, reject);
+	});
+}
+
+function stopCamera(previewElement, videoConfig)
+{
+	previewElement.srcObject = null;
+	videoConfig.stream.getTracks().forEach(function(track) { track.stop(); });
+	videoConfig.stream = null;
+}
+
+function startRecording(stream, videoKilobits, audioKilobits, draftId, height, width, finalSizeCallback)
+{
+	let recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: (audioKilobits * 1000),  videoBitsPerSecond: (videoKilobits * 1000) });
+	let bytes = 0;
+	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveVideo/" + draftId + "/" + height + "/" + width, "webm");
+	ws.onopen = function()
+	{
+		recorder.addEventListener('dataavailable', function(e) {
+			bytes += e.data.size;
+			ws.send(e.data);
+		});
+		recorder.addEventListener('stop', function() {
+			ws.close();
+		});
+		recorder.start(100);
+	}
+	ws.onclose = function(e)
+	{
+		finalSizeCallback(bytes);
+	}
+	return recorder;
+}
+
+function stopRecording(videoConfig)
+{
+	videoConfig.recorder.stop();
+	videoConfig.recorder = null;
+}
+
+function selectDraft(original_review, scope, draft)
+{
+	scope.selectedDraft = draft;
+	if (null !== draft)
+	{
+		if (null !== draft.originalVideo)
+		{
+			scope.videoConfig.height = draft.originalVideo.height;
+			scope.videoConfig.width = draft.originalVideo.width;
+			original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + draft.id + "?uniq=" + (new Date()).getTime();
+		}
+		else
+		{
+			scope.videoConfig.height =  720;
+			scope.videoConfig.width = 1280;
+			original_review.src = "";
+		}
+	}
+	else
+	{
+		original_review.src = "";
+	}
+}
+
 function saveDraft(selectedDraft)
 {
 	let variables = {
@@ -69,6 +137,9 @@ function saveDraft(selectedDraft)
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	let video_preview = document.getElementById('video_preview');
+	let original_review = document.getElementById('original_review');
+	
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
 	$scope.inProgress = false;
@@ -91,7 +162,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	
 	$scope.selectDraft = function(draft)
 	{
-		$scope.selectedDraft = draft;
+		selectDraft(original_review, $scope, draft);
 	}
 	$scope.createNewDraft = function()
 	{
@@ -109,13 +180,53 @@ GLOBAL_Application.controller('AppController', function($scope)
 			.then(data => {
 				if ((null !== $scope.selectedDraft) && ($scope.selectedDraft.id === draft.id))
 				{
-					$scope.selectedDraft = null;
+					selectDraft(original_review, $scope, null);
 				}
 				$scope.drafts = $scope.drafts.filter((element, index, array) => {
 					return (element.id !== draft.id);
 				});
 				$scope.$apply();
 			});
+	}
+	$scope.startCamera = function()
+	{
+		startCamera($scope.videoConfig.height, $scope.videoConfig.width, $scope.videoConfig.fps)
+			.then(result => {
+				$scope.videoConfig.stream = result;
+				video_preview.srcObject = result;
+				$scope.$apply();
+			}, error => {
+				alert(error);
+				$scope.$apply();
+			});
+	}
+	$scope.stopCamera = function()
+	{
+		stopCamera(video_preview, $scope.videoConfig);
+	}
+	$scope.startRecording = function()
+	{
+		$scope.videoConfig.recorder = startRecording($scope.videoConfig.stream
+			, $scope.videoConfig.videoKilobits
+			, $scope.videoConfig.audioKilobits
+			, $scope.selectedDraft.id
+			, $scope.videoConfig.height
+			, $scope.videoConfig.width
+			, function(finalByteSize)
+			{
+				$scope.selectedDraft.originalVideo = {
+					height: $scope.videoConfig.height,
+					width: $scope.videoConfig.width,
+					byteSize: finalByteSize,
+				};
+				$scope.$apply();
+				original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+			}
+		);
+	}
+	$scope.stopRecording = function()
+	{
+		stopRecording($scope.videoConfig);
 	}
 	$scope.saveDraft = function()
 	{
@@ -198,6 +309,26 @@ GLOBAL_Application.controller('AppController', function($scope)
 			</div>
 			<div class="well" ng-show="null != selectedDraft">
 				Draft:  <strong>{{selectedDraft.title}}</strong>.<br />
+				<div class="well">
+					Video preview: <br />
+					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoConfig.stream"></input><br />
+					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoConfig.stream"></input><br />
+					Framerate: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoConfig.stream"></input><br />
+					<video id="video_preview" playsinline autoplay muted></video><br />
+					<button class="btn btn-success" ng-click="startCamera()" ng-disabled="null != videoConfig.stream">Start Camera</button>
+					<button class="btn btn-danger" ng-click="stopCamera()" ng-disabled="null == videoConfig.stream">Stop Camera</button>
+				</div>
+				<div class="well" ng-show="null != videoConfig.stream">
+					Recording: <br />
+					Video kBits/s: <input type="text" class="form-control" ng-model="videoConfig.videoKilobits" ng-disabled="null != videoConfig.recorder"></input><br />
+					Audio kBits/s: <input type="text" class="form-control" ng-model="videoConfig.audioKilobits" ng-disabled="null != videoConfig.recorder"></input><br />
+					<button class="btn btn-success" ng-click="startRecording()" ng-disabled="null != videoConfig.recorder">Start Recording</button>
+					<button class="btn btn-danger" ng-click="stopRecording()" ng-disabled="null == videoConfig.recorder">Stop Recording</button>
+				</div>
+				<div class="well" ng-show="selectedDraft.originalVideo.byteSize > 0">
+					<video id="original_review" controls></video><br />
+					Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
+				</div>
 				<div class="well">
 					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
 					<textarea class="form-control" ng-model="selectedDraft.description" rows="4" maxlength="2000"></textarea><br />

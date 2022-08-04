@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -77,6 +78,29 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.deleteExistingDraft(draftManager, id);
 		List<Draft> drafts = InteractiveHelpers.listDrafts(draftManager);
 		Assert.assertEquals(0, drafts.size());
+	}
+
+	@Test
+	public void testSaveVideo() throws Throwable
+	{
+		IConfigFileSystem files = _getTestingDraftFiles();
+		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
+		int id = 1;
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		
+		// Save the video content.
+		byte[] data = "Testing video".getBytes();
+		VideoSaver saver = InteractiveHelpers.openNewVideo(draftManager, id);
+		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
+		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		
+		// Re-read it.
+		String[] outMime = new String[1];
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		InteractiveHelpers.writeOriginalVideoToStream(draftManager, id, (String mime) -> outMime[0] = mime, outStream);
+		byte[] output = outStream.toByteArray();
+		Assert.assertEquals("video/webm", outMime[0]);
+		Assert.assertArrayEquals(data, output);
 	}
 
 

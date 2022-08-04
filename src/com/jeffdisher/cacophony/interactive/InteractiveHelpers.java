@@ -1,9 +1,13 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
@@ -23,6 +27,26 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class InteractiveHelpers
 {
+	// --- Methods related to saving the new video.
+	public static VideoSaver openNewVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
+	{
+		return new VideoSaver(draftManager, draftId);
+	}
+	public static void appendToNewVideo(VideoSaver saver, byte[] payload, int offset, int len)
+	{
+		saver.append(payload, offset, len);
+	}
+	public static void closeNewVideo(VideoSaver saver, String mime, int height, int width)
+	{
+		long savedFileSizeBytes = saver.sockedDidClose();
+		
+		// We now update the final state.
+		Draft oldDraft = saver.draftWrapper.loadDraft();
+		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo());
+		saver.draftWrapper.saveDraft(newDraft);
+	}
+
 	// --- Methods related to draft management.
 	public static List<Draft> listDrafts(DraftManager draftManager)
 	{
@@ -99,5 +123,38 @@ public class InteractiveHelpers
 			e.printStackTrace();
 			throw Assert.unexpected(e);
 		}
+	}
+
+	// --- Methods related to video streaming.
+	public static void writeOriginalVideoToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		try (FileInputStream input = new FileInputStream(wrapper.originalVideo()))
+		{
+			mimeConsumer.accept(wrapper.loadDraft().originalVideo().mime());
+			_copyToEndOfFile(input, outStream);
+		}
+	}
+
+
+	private static long _copyToEndOfFile(InputStream input, OutputStream output) throws IOException
+	{
+		long totalCopied = 0L;
+		boolean reading = true;
+		byte[] data = new byte[4096];
+		while (reading)
+		{
+			int read = input.read(data);
+			if (read > 0)
+			{
+				output.write(data, 0, read);
+				totalCopied += (long)read;
+			}
+			else
+			{
+				reading = false;
+			}
+		}
+		return totalCopied;
 	}
 }
