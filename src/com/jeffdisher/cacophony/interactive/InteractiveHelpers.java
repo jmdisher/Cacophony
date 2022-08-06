@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
@@ -162,21 +163,23 @@ public class InteractiveHelpers
 	}
 
 	// --- Methods related to video streaming.
-	public static void writeOriginalVideoToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
+	public static void writeOriginalVideoToStream(DraftManager draftManager, int draftId, BiConsumer<String, Long> mimeSizeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		try (FileInputStream input = new FileInputStream(wrapper.originalVideo()))
+		File originalFile = wrapper.originalVideo();
+		try (FileInputStream input = new FileInputStream(originalFile))
 		{
-			mimeConsumer.accept(wrapper.loadDraft().originalVideo().mime());
+			mimeSizeConsumer.accept(wrapper.loadDraft().originalVideo().mime(), originalFile.length());
 			_copyToEndOfFile(input, outStream);
 		}
 	}
-	public static void writeProcessedVideoToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
+	public static void writeProcessedVideoToStream(DraftManager draftManager, int draftId, BiConsumer<String, Long> mimeSizeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		try (FileInputStream input = new FileInputStream(wrapper.processedVideo()))
+		File processedFile = wrapper.processedVideo();
+		try (FileInputStream input = new FileInputStream(processedFile))
 		{
-			mimeConsumer.accept("video/webm");
+			mimeSizeConsumer.accept("video/webm", processedFile.length());
 			_copyToEndOfFile(input, outStream);
 		}
 	}

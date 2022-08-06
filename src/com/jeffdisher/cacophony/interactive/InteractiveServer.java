@@ -368,9 +368,10 @@ public class InteractiveServer
 			try
 			{
 				ServletOutputStream output = response.getOutputStream();
-				InteractiveHelpers.writeOriginalVideoToStream(_draftManager, draftId, (String mime) -> {
+				InteractiveHelpers.writeOriginalVideoToStream(_draftManager, draftId, (String mime, Long byteSize) -> {
 					// Called only when the video is found.
 					response.setContentType(mime);
+					response.setContentLengthLong(byteSize);
 					response.setStatus(HttpServletResponse.SC_OK);
 				}, output);
 			}
@@ -401,9 +402,10 @@ public class InteractiveServer
 			try
 			{
 				ServletOutputStream output = response.getOutputStream();
-				InteractiveHelpers.writeProcessedVideoToStream(_draftManager, draftId, (String mime) -> {
+				InteractiveHelpers.writeProcessedVideoToStream(_draftManager, draftId, (String mime, Long byteSize) -> {
 					// Called only when the video is found.
 					response.setContentType(mime);
+					response.setContentLengthLong(byteSize);
 					response.setStatus(HttpServletResponse.SC_OK);
 				}, output);
 			}

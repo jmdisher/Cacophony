@@ -118,10 +118,15 @@ public class TestInteractiveHelpers
 		
 		// Re-read it.
 		String[] outMime = new String[1];
+		long[] outByteSize = new long[1];
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		InteractiveHelpers.writeOriginalVideoToStream(draftManager, id, (String mime) -> outMime[0] = mime, outStream);
+		InteractiveHelpers.writeOriginalVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
+			outMime[0] = mime;
+			outByteSize[0] = byteSize;
+		}, outStream);
 		byte[] output = outStream.toByteArray();
 		Assert.assertEquals("video/webm", outMime[0]);
+		Assert.assertEquals(data.length, (int)outByteSize[0]);
 		Assert.assertArrayEquals(data, output);
 	}
 
@@ -170,9 +175,14 @@ public class TestInteractiveHelpers
 		
 		// Re-read it.
 		String[] outMime = new String[1];
+		long[] outByteSize = new long[1];
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		InteractiveHelpers.writeProcessedVideoToStream(draftManager, id, (String mime) -> outMime[0] = mime, outStream);
+		InteractiveHelpers.writeProcessedVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
+			outMime[0] = mime;
+			outByteSize[0] = byteSize;
+		}, outStream);
 		Assert.assertEquals("video/webm", outMime[0]);
+		Assert.assertEquals(data.length, (int)outByteSize[0]);
 		byte[] expected = "TXstYng vYdXZ".getBytes();
 		byte[] output = outStream.toByteArray();
 		Assert.assertArrayEquals(expected, output);
