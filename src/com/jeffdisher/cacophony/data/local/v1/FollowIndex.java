@@ -7,8 +7,10 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -142,7 +144,14 @@ public class FollowIndex implements Iterable<FollowRecord>
 		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
 		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);
 		newElements[oldElements.length] = element;
-
+		
+		// Verify that there are no duplicated elements in the record list (since that wouldn't make sense and would imply an error exists elsewhere).
+		Set<IpfsFile> cachedElementHashes = new HashSet<>();
+		for (FollowingCacheElement elt : newElements)
+		{
+			Assert.assertTrue(cachedElementHashes.add(elt.elementHash()));
+		}
+		
 		FollowRecord newRecord = new FollowRecord(publicKey, fetchedRoot, currentTimeMillis, newElements);
 		_sortedFollowList.add(newRecord);
 	}
