@@ -64,6 +64,10 @@ CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --run &
 SERVER_PID=$!
 sleep 5
 
+echo "Make sure that we can access static files..."
+INDEX=$(curl --no-progress-meter -XGET -L "http://127.0.0.1:8000/")
+requireSubstring "$INDEX" "Cacophony - Static Index"
+
 echo "Get the empty list of drafts..."
 DRAFTS=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"

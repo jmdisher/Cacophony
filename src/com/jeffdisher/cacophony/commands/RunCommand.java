@@ -1,8 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.File;
-
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.jeffdisher.cacophony.interactive.InteractiveServer;
@@ -23,7 +20,7 @@ public record RunCommand() implements ICommand
 		LocalConfig local = environment.loadExistingConfig();
 		DraftManager manager = local.buildDraftManager();
 		
-		Resource staticResource = new PathResource(new File("resources/site/"));
+		Resource staticResource = Resource.newClassPathResource("resources/site/");
 		int port = 8000;
 		InteractiveServer.runServerUntilStop(environment, manager, staticResource, port);
 	}
