@@ -434,40 +434,7 @@ public class InteractiveServer
 			int draftId = Integer.parseInt(variables[0]);
 			int height = Integer.parseInt(variables[1]);
 			int width = Integer.parseInt(variables[2]);
-			WebSocketListener ws = new WebSocketListener()
-			{
-				private VideoSaver _saver;
-				@Override
-				public void onWebSocketClose(int statusCode, String reason)
-				{
-					InteractiveHelpers.closeNewVideo(_saver, "video/webm", height, width);
-					_saver = null;
-				}
-				@Override
-				public void onWebSocketConnect(Session session)
-				{
-					_verifySafeWebSocket(session);
-					// 256 KiB should be reasonable.
-					session.setMaxBinaryMessageSize(256 * 1024);
-					Assert.assertTrue(null == _saver);
-					try
-					{
-						_saver = InteractiveHelpers.openNewVideo(_draftManager, draftId);
-					}
-					catch (FileNotFoundException e)
-					{
-						// This happens in the case where the draft doesn't exist.
-						session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
-					}
-				}
-				@Override
-				public void onWebSocketBinary(byte[] payload, int offset, int len)
-				{
-					Assert.assertTrue(null != _saver);
-					InteractiveHelpers.appendToNewVideo(_saver, payload, offset, len);
-				}
-			};
-			return ws;
+			return new SaveVideoWebSocketListener(_draftManager, draftId, height, width);
 		}
 	}
 
@@ -488,89 +455,162 @@ public class InteractiveServer
 		{
 			int draftId = Integer.parseInt(variables[0]);
 			String processCommand = variables[1];
-			WebSocketListener ws = new WebSocketListener()
+			return new ProcessVideoWebSocketListener(_draftManager, draftId, processCommand);
+		}
+	}
+
+	private static class SaveVideoWebSocketListener implements WebSocketListener
+	{
+		private final DraftManager _draftManager;
+		private final int _draftId;
+		private final int _height;
+		private final int _width;
+		private VideoSaver _saver;
+		
+		public SaveVideoWebSocketListener(DraftManager draftManager, int draftId, int height, int width)
+		{
+			_draftManager = draftManager;
+			_draftId = draftId;
+			_height = height;
+			_width = width;
+		}
+		
+		@Override
+		public void onWebSocketClose(int statusCode, String reason)
+		{
+			InteractiveHelpers.closeNewVideo(_saver, "video/webm", _height, _width);
+			_saver = null;
+		}
+		
+		@Override
+		public void onWebSocketConnect(Session session)
+		{
+			_verifySafeWebSocket(session);
+			// 256 KiB should be reasonable.
+			session.setMaxBinaryMessageSize(256 * 1024);
+			Assert.assertTrue(null == _saver);
+			try
 			{
-				private VideoProcessor _processor;
-				@Override
-				public void onWebSocketClose(int statusCode, String reason)
-				{
-					InteractiveHelpers.closeVideoProcessor(_processor);
-					_processor = null;
-				}
-				@Override
-				public void onWebSocketConnect(Session session)
-				{
-					_verifySafeWebSocket(session);
-					Assert.assertTrue(null == _processor);
-					try
-					{
-						_processor = InteractiveHelpers.openVideoProcessor(new VideoProcessor.ProcessWriter()
-						{
-							@Override
-							public void totalBytesProcessed(long bytesProcessed)
-							{
-								JsonObject object = new JsonObject();
-								object.add("type", "progress");
-								object.add("bytes", bytesProcessed);
-								try
-								{
-									session.getRemote().sendString(object.toString());
-								}
-								catch (IOException e)
-								{
-									// Not yet sure why this may happen (race on close?).
-									throw Assert.unexpected(e);
-								}
-							}
-							@Override
-							public void processingError(String error)
-							{
-								JsonObject object = new JsonObject();
-								object.add("type", "error");
-								object.add("string", error);
-								try
-								{
-									session.getRemote().sendString(object.toString());
-								}
-								catch (IOException e)
-								{
-									// Not yet sure why this may happen (race on close?).
-									throw Assert.unexpected(e);
-								}
-							}
-							@Override
-							public void processingDone(long outputSizeBytes)
-							{
-								JsonObject object = new JsonObject();
-								object.add("type", "done");
-								object.add("bytes", outputSizeBytes);
-								try
-								{
-									session.getRemote().sendString(object.toString());
-								}
-								catch (IOException e)
-								{
-									// Not yet sure why this may happen (race on close?).
-									throw Assert.unexpected(e);
-								}
-								session.close();
-								System.out.println("PROCESSING DONE");
-							}
-						}, _draftManager, draftId, processCommand);
-					}
-					catch (FileNotFoundException e)
-					{
-						// This happens in the case where the draft doesn't exist.
-						session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
-					}
-					catch (IOException e)
-					{
-						// This happened if we failed to run the processor.
-						session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + processCommand + "\"");
-					}
-				}
-			};
-			return ws;
+				_saver = InteractiveHelpers.openNewVideo(_draftManager, _draftId);
+			}
+			catch (FileNotFoundException e)
+			{
+				// This happens in the case where the draft doesn't exist.
+				session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+			}
+		}
+		
+		@Override
+		public void onWebSocketBinary(byte[] payload, int offset, int len)
+		{
+			Assert.assertTrue(null != _saver);
+			InteractiveHelpers.appendToNewVideo(_saver, payload, offset, len);
+		}
+	}
+
+	private static class ProcessVideoWebSocketListener implements WebSocketListener
+	{
+		private final DraftManager _draftManager;
+		private final int _draftId;
+		private final String _processCommand;
+		private VideoProcessor _processor;
+		
+		public ProcessVideoWebSocketListener(DraftManager draftManager, int draftId, String processCommand)
+		{
+			_draftManager = draftManager;
+			_draftId = draftId;
+			_processCommand = processCommand;
+		}
+		
+		@Override
+		public void onWebSocketClose(int statusCode, String reason)
+		{
+			InteractiveHelpers.closeVideoProcessor(_processor);
+			_processor = null;
+		}
+		
+		@Override
+		public void onWebSocketConnect(Session session)
+		{
+			_verifySafeWebSocket(session);
+			Assert.assertTrue(null == _processor);
+			try
+			{
+				_processor = InteractiveHelpers.openVideoProcessor(new ProcessorCallbackHandler(session), _draftManager, _draftId, _processCommand);
+			}
+			catch (FileNotFoundException e)
+			{
+				// This happens in the case where the draft doesn't exist.
+				session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+			}
+			catch (IOException e)
+			{
+				// This happened if we failed to run the processor.
+				session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + _processCommand + "\"");
+			}
+		}
+	}
+
+	private static class ProcessorCallbackHandler implements VideoProcessor.ProcessWriter
+	{
+		private final Session _session;
+		
+		public ProcessorCallbackHandler(Session session)
+		{
+			_session = session;
+		}
+		
+		@Override
+		public void totalBytesProcessed(long bytesProcessed)
+		{
+			JsonObject object = new JsonObject();
+			object.add("type", "progress");
+			object.add("bytes", bytesProcessed);
+			try
+			{
+				_session.getRemote().sendString(object.toString());
+			}
+			catch (IOException e)
+			{
+				// Not yet sure why this may happen (race on close?).
+				throw Assert.unexpected(e);
+			}
+		}
+		
+		@Override
+		public void processingError(String error)
+		{
+			JsonObject object = new JsonObject();
+			object.add("type", "error");
+			object.add("string", error);
+			try
+			{
+				_session.getRemote().sendString(object.toString());
+			}
+			catch (IOException e)
+			{
+				// Not yet sure why this may happen (race on close?).
+				throw Assert.unexpected(e);
+			}
+		}
+		
+		@Override
+		public void processingDone(long outputSizeBytes)
+		{
+			JsonObject object = new JsonObject();
+			object.add("type", "done");
+			object.add("bytes", outputSizeBytes);
+			try
+			{
+				_session.getRemote().sendString(object.toString());
+			}
+			catch (IOException e)
+			{
+				// Not yet sure why this may happen (race on close?).
+				throw Assert.unexpected(e);
+			}
+			_session.close();
+			System.out.println("PROCESSING DONE");
 		}
 	}
 
