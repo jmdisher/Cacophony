@@ -84,11 +84,13 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			_verifySafeRequest(request);
-			response.setContentType("text/plain;charset=utf-8");
-			response.setStatus(HttpServletResponse.SC_OK);
-			response.getWriter().print("Shutting down...");
-			_stopLatch.countDown();
+			if (_verifySafeRequest(request, response))
+			{
+				response.setContentType("text/plain;charset=utf-8");
+				response.setStatus(HttpServletResponse.SC_OK);
+				response.getWriter().print("Shutting down...");
+				_stopLatch.countDown();
+			}
 		}
 	}
 
@@ -107,18 +109,20 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			_verifySafeRequest(request);
-			response.setContentType("application/json");
-			response.setStatus(HttpServletResponse.SC_OK);
-			
-			// We need to list all the drafts we have.  This is an array of draft types.
-			JsonArray draftArray = new JsonArray();
-			for (Draft draft : InteractiveHelpers.listDrafts(_draftManager))
+			if (_verifySafeRequest(request, response))
 			{
-				JsonObject serialized = draft.toJson();
-				draftArray.add(serialized);
+				response.setContentType("application/json");
+				response.setStatus(HttpServletResponse.SC_OK);
+				
+				// We need to list all the drafts we have.  This is an array of draft types.
+				JsonArray draftArray = new JsonArray();
+				for (Draft draft : InteractiveHelpers.listDrafts(_draftManager))
+				{
+					JsonObject serialized = draft.toJson();
+					draftArray.add(serialized);
+				}
+				response.getWriter().print(draftArray.toString());
 			}
-			response.getWriter().print(draftArray.toString());
 		}
 	}
 
@@ -137,14 +141,16 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			_verifySafeRequest(request);
-			response.setContentType("application/json");
-			response.setStatus(HttpServletResponse.SC_OK);
-			
-			// Generate an ID - should be random so just get some bits from the time.
-			int id = Math.abs((int)(System.currentTimeMillis() >> 8L));
-			Draft draft = InteractiveHelpers.createNewDraft(_draftManager, id);
-			response.getWriter().print(draft.toJson().toString());
+			if (_verifySafeRequest(request, response))
+			{
+				response.setContentType("application/json");
+				response.setStatus(HttpServletResponse.SC_OK);
+				
+				// Generate an ID - should be random so just get some bits from the time.
+				int id = Math.abs((int)(System.currentTimeMillis() >> 8L));
+				Draft draft = InteractiveHelpers.createNewDraft(_draftManager, id);
+				response.getWriter().print(draft.toJson().toString());
+			}
 		}
 	}
 
@@ -163,19 +169,21 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(variables[0]);
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				Draft draft = InteractiveHelpers.readExistingDraft(_draftManager, draftId);
-				
-				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(draft.toJson().toString());
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(variables[0]);
+				try
+				{
+					Draft draft = InteractiveHelpers.readExistingDraft(_draftManager, draftId);
+					
+					response.setContentType("application/json");
+					response.setStatus(HttpServletResponse.SC_OK);
+					response.getWriter().print(draft.toJson().toString());
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -195,31 +203,33 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(pathVariables[0]);
-			String title = formVariables.getIfSingle("title");
-			String description = formVariables.getIfSingle("description");
-			// Note that the discussion URL can be null - empty strings should be made null.
-			String discussionUrl = formVariables.getIfSingle("discussionUrl");
-			if ((null != discussionUrl) && discussionUrl.isEmpty())
+			if (_verifySafeRequest(request, response))
 			{
-				discussionUrl = null;
-			}
-			if ((null != title) && !title.isEmpty() && (null != description))
-			{
-				try
+				int draftId = Integer.parseInt(pathVariables[0]);
+				String title = formVariables.getIfSingle("title");
+				String description = formVariables.getIfSingle("description");
+				// Note that the discussion URL can be null - empty strings should be made null.
+				String discussionUrl = formVariables.getIfSingle("discussionUrl");
+				if ((null != discussionUrl) && discussionUrl.isEmpty())
 				{
-					InteractiveHelpers.updateDraftText(_draftManager, draftId, title, description, discussionUrl);
-					response.setStatus(HttpServletResponse.SC_OK);
+					discussionUrl = null;
 				}
-				catch (FileNotFoundException e)
+				if ((null != title) && !title.isEmpty() && (null != description))
 				{
-					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+					try
+					{
+						InteractiveHelpers.updateDraftText(_draftManager, draftId, title, description, discussionUrl);
+						response.setStatus(HttpServletResponse.SC_OK);
+					}
+					catch (FileNotFoundException e)
+					{
+						response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+					}
 				}
-			}
-			else
-			{
-				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+				else
+				{
+					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+				}
 			}
 		}
 	}
@@ -239,17 +249,19 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(pathVariables[0]);
-			
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
-				response.setStatus(HttpServletResponse.SC_OK);
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(pathVariables[0]);
+				
+				try
+				{
+					InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
+					response.setStatus(HttpServletResponse.SC_OK);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -271,17 +283,19 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(pathVariables[0]);
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				InteractiveHelpers.publishExistingDraft(_environment, _draftManager, draftId);
-				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
-				response.setStatus(HttpServletResponse.SC_OK);
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(pathVariables[0]);
+				try
+				{
+					InteractiveHelpers.publishExistingDraft(_environment, _draftManager, draftId);
+					InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
+					response.setStatus(HttpServletResponse.SC_OK);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -301,20 +315,22 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(variables[0]);
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				ServletOutputStream output = response.getOutputStream();
-				InteractiveHelpers.loadThumbnailToStream(_draftManager, draftId, (String mime) -> {
-					// This is called only on success.
-					response.setContentType(mime);
-					response.setStatus(HttpServletResponse.SC_OK);
-				}, output);
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(variables[0]);
+				try
+				{
+					ServletOutputStream output = response.getOutputStream();
+					InteractiveHelpers.loadThumbnailToStream(_draftManager, draftId, (String mime) -> {
+						// This is called only on success.
+						response.setContentType(mime);
+						response.setStatus(HttpServletResponse.SC_OK);
+					}, output);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -331,19 +347,21 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(pathVariables[0]);
-			int height = Integer.parseInt(pathVariables[1]);
-			int width = Integer.parseInt(pathVariables[2]);
-			
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				InputStream input = request.getInputStream();
-				InteractiveHelpers.saveThumbnailFromStream(_draftManager, draftId, height, width, input);
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(pathVariables[0]);
+				int height = Integer.parseInt(pathVariables[1]);
+				int width = Integer.parseInt(pathVariables[2]);
+				
+				try
+				{
+					InputStream input = request.getInputStream();
+					InteractiveHelpers.saveThumbnailFromStream(_draftManager, draftId, height, width, input);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -363,21 +381,23 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(variables[0]);
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				ServletOutputStream output = response.getOutputStream();
-				InteractiveHelpers.writeOriginalVideoToStream(_draftManager, draftId, (String mime, Long byteSize) -> {
-					// Called only when the video is found.
-					response.setContentType(mime);
-					response.setContentLengthLong(byteSize);
-					response.setStatus(HttpServletResponse.SC_OK);
-				}, output);
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(variables[0]);
+				try
+				{
+					ServletOutputStream output = response.getOutputStream();
+					InteractiveHelpers.writeOriginalVideoToStream(_draftManager, draftId, (String mime, Long byteSize) -> {
+						// Called only when the video is found.
+						response.setContentType(mime);
+						response.setContentLengthLong(byteSize);
+						response.setStatus(HttpServletResponse.SC_OK);
+					}, output);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -397,21 +417,23 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			_verifySafeRequest(request);
-			int draftId = Integer.parseInt(variables[0]);
-			try
+			if (_verifySafeRequest(request, response))
 			{
-				ServletOutputStream output = response.getOutputStream();
-				InteractiveHelpers.writeProcessedVideoToStream(_draftManager, draftId, (String mime, Long byteSize) -> {
-					// Called only when the video is found.
-					response.setContentType(mime);
-					response.setContentLengthLong(byteSize);
-					response.setStatus(HttpServletResponse.SC_OK);
-				}, output);
-			}
-			catch (FileNotFoundException e)
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				int draftId = Integer.parseInt(variables[0]);
+				try
+				{
+					ServletOutputStream output = response.getOutputStream();
+					InteractiveHelpers.writeProcessedVideoToStream(_draftManager, draftId, (String mime, Long byteSize) -> {
+						// Called only when the video is found.
+						response.setContentType(mime);
+						response.setContentLengthLong(byteSize);
+						response.setStatus(HttpServletResponse.SC_OK);
+					}, output);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
 		}
 	}
@@ -485,18 +507,20 @@ public class InteractiveServer
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			_verifySafeWebSocket(session);
-			// 256 KiB should be reasonable.
-			session.setMaxBinaryMessageSize(256 * 1024);
-			Assert.assertTrue(null == _saver);
-			try
+			if (_verifySafeWebSocket(session))
 			{
-				_saver = InteractiveHelpers.openNewVideo(_draftManager, _draftId);
-			}
-			catch (FileNotFoundException e)
-			{
-				// This happens in the case where the draft doesn't exist.
-				session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+				// 256 KiB should be reasonable.
+				session.setMaxBinaryMessageSize(256 * 1024);
+				Assert.assertTrue(null == _saver);
+				try
+				{
+					_saver = InteractiveHelpers.openNewVideo(_draftManager, _draftId);
+				}
+				catch (FileNotFoundException e)
+				{
+					// This happens in the case where the draft doesn't exist.
+					session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+				}
 			}
 		}
 		
@@ -532,21 +556,23 @@ public class InteractiveServer
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			_verifySafeWebSocket(session);
-			Assert.assertTrue(null == _processor);
-			try
+			if (_verifySafeWebSocket(session))
 			{
-				_processor = InteractiveHelpers.openVideoProcessor(new ProcessorCallbackHandler(session), _draftManager, _draftId, _processCommand);
-			}
-			catch (FileNotFoundException e)
-			{
-				// This happens in the case where the draft doesn't exist.
-				session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
-			}
-			catch (IOException e)
-			{
-				// This happened if we failed to run the processor.
-				session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + _processCommand + "\"");
+				Assert.assertTrue(null == _processor);
+				try
+				{
+					_processor = InteractiveHelpers.openVideoProcessor(new ProcessorCallbackHandler(session), _draftManager, _draftId, _processCommand);
+				}
+				catch (FileNotFoundException e)
+				{
+					// This happens in the case where the draft doesn't exist.
+					session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+				}
+				catch (IOException e)
+				{
+					// This happened if we failed to run the processor.
+					session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + _processCommand + "\"");
+				}
 			}
 		}
 	}
@@ -615,18 +641,42 @@ public class InteractiveServer
 	}
 
 
-	private static void _verifySafeRequest(HttpServletRequest request)
+	private static boolean _verifySafeRequest(HttpServletRequest request, HttpServletResponse response)
 	{
+		boolean isSafe = false;
 		// CORS should stop remote connection attempts since the front-end hard-codes 127.0.0.1 but assert since it is a security concern.
-		Assert.assertTrue("127.0.0.1".equals(request.getRemoteAddr()));
+		if ("127.0.0.1".equals(request.getRemoteAddr()))
+		{
+			// This means all checks passed.
+			isSafe = true;
+		}
+		else
+		{
+			isSafe = false;
+			System.err.println("Invalid IP: " + request.getRemoteAddr());
+			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		}
+		return isSafe;
 	}
 
-	private static void _verifySafeWebSocket(Session session)
+	private static boolean _verifySafeWebSocket(Session session)
 	{
+		boolean isSafe = false;
 		// CORS should stop remote connection attempts since the front-end hard-codes 127.0.0.1 but assert since it is a security concern.
 		String rawDescription = session.getRemoteAddress().toString();
 		// This rawDescription looks like "/127.0.0.1:65657" so we need to parse it.
 		String ip = rawDescription.substring(1).split(":")[0];
-		Assert.assertTrue("127.0.0.1".equals(ip));
+		if ("127.0.0.1".equals(ip))
+		{
+			// This means all checks passed.
+			isSafe = true;
+		}
+		else
+		{
+			isSafe = false;
+			System.err.println("Invalid IP: " + ip);
+			session.close(CloseStatus.SERVER_ERROR, "Invalid IP");
+		}
+		return isSafe;
 	}
 }
