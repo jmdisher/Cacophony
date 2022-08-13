@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -25,6 +26,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -34,27 +36,31 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class InteractiveServer
 {
+	private static final String XSRF = "XSRF";
+
 	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port)
 	{
+		String xsrf = "XSRF_TOKEN_" + Math.random();
 		CountDownLatch stopLatch = new CountDownLatch(1);
 		RestServer server = new RestServer(port, staticResource);
-		server.addPostRawHandler("/stop", 0, new StopHandler(stopLatch));
+		server.addPostRawHandler("/cookie", 0, new PostSetCookieHandler(xsrf));
+		server.addPostRawHandler("/stop", 0, new StopHandler(xsrf, stopLatch));
 		
-		server.addGetHandler("/drafts", 0, new GetDraftsListHandler(manager));
-		server.addPostRawHandler("/createDraft", 0, new CreateDraftHandler(manager));
-		server.addGetHandler("/draft", 1, new GetDraftHandler(manager));
-		server.addPostFormHandler("/draft", 1, new UpdateDraftTextHandler(manager));
-		server.addDeleteHandler("/draft", 1, new DeleteDraftHandler(manager));
-		server.addPostRawHandler("/draft/publish", 1, new PublishDraftHandler(environment, manager));
+		server.addGetHandler("/drafts", 0, new GetDraftsListHandler(xsrf, manager));
+		server.addPostRawHandler("/createDraft", 0, new CreateDraftHandler(xsrf, manager));
+		server.addGetHandler("/draft", 1, new GetDraftHandler(xsrf, manager));
+		server.addPostFormHandler("/draft", 1, new UpdateDraftTextHandler(xsrf, manager));
+		server.addDeleteHandler("/draft", 1, new DeleteDraftHandler(xsrf, manager));
+		server.addPostRawHandler("/draft/publish", 1, new PublishDraftHandler(environment, xsrf, manager));
 		
-		server.addGetHandler("/draft/thumb", 1, new GetThumbnailImageHandler(manager));
-		server.addPostRawHandler("/draft/thumb", 3, new PostThumbnailImageHandler(manager));
+		server.addGetHandler("/draft/thumb", 1, new GetThumbnailImageHandler(xsrf, manager));
+		server.addPostRawHandler("/draft/thumb", 3, new PostThumbnailImageHandler(xsrf, manager));
 		
-		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(manager));
-		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(manager));
+		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(xsrf, manager));
+		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(xsrf, manager));
 		
-		server.addWebSocketFactory("/draft/saveVideo", 3, "webm", new SaveOriginalVideoSocketFactory(manager));
-		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(manager));
+		server.addWebSocketFactory("/draft/saveVideo", 3, "webm", new SaveOriginalVideoSocketFactory(xsrf, manager));
+		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(xsrf, manager));
 		
 		server.start();
 		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
@@ -74,17 +80,19 @@ public class InteractiveServer
 
 	private static class StopHandler implements IPostRawHandler
 	{
+		private final String _xsrf;
 		private final CountDownLatch _stopLatch;
 		
-		public StopHandler(CountDownLatch stopLatch)
+		public StopHandler(String xsrf, CountDownLatch stopLatch)
 		{
+			_xsrf = xsrf;
 			_stopLatch = stopLatch;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("text/plain;charset=utf-8");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -99,17 +107,19 @@ public class InteractiveServer
 	 */
 	private static class GetDraftsListHandler implements IGetHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public GetDraftsListHandler(DraftManager draftManager)
+		public GetDraftsListHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("application/json");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -126,22 +136,52 @@ public class InteractiveServer
 		}
 	}
 
+	private static class PostSetCookieHandler implements IPostRawHandler
+	{
+		private final String _xsrf;
+		
+		public PostSetCookieHandler(String xsrf)
+		{
+			_xsrf = xsrf;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		{
+			if ("127.0.0.1".equals(request.getRemoteAddr()))
+			{
+				Cookie cookie = new Cookie("XSRF", _xsrf);
+				cookie.setHttpOnly(true);
+				cookie.setComment(HttpCookie.SAME_SITE_STRICT_COMMENT);
+				response.addCookie(cookie);
+				response.setStatus(HttpServletResponse.SC_OK);
+			}
+			else
+			{
+				System.err.println("Invalid IP requesting XSRF token: " + request.getRemoteAddr());
+				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			}
+		}
+	}
+
 	/**
 	 * Creates a new draft with default storage state and returns its default state as a Draft type.
 	 */
 	private static class CreateDraftHandler implements IPostRawHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public CreateDraftHandler(DraftManager draftManager)
+		public CreateDraftHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("application/json");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -159,17 +199,19 @@ public class InteractiveServer
 	 */
 	private static class GetDraftHandler implements IGetHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public GetDraftHandler(DraftManager draftManager)
+		public GetDraftHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -193,17 +235,19 @@ public class InteractiveServer
 	 */
 	private static class UpdateDraftTextHandler implements IPostFormHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public UpdateDraftTextHandler(DraftManager draftManager)
+		public UpdateDraftTextHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				String title = formVariables.getIfSingle("title");
@@ -239,17 +283,19 @@ public class InteractiveServer
 	 */
 	private static class DeleteDraftHandler implements IDeleteHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public DeleteDraftHandler(DraftManager draftManager)
+		public DeleteDraftHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				
@@ -272,18 +318,20 @@ public class InteractiveServer
 	private static class PublishDraftHandler implements IPostRawHandler
 	{
 		private final IEnvironment _environment;
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public PublishDraftHandler(IEnvironment environment, DraftManager draftManager)
+		public PublishDraftHandler(IEnvironment environment, String xsrf, DraftManager draftManager)
 		{
 			_environment = environment;
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				try
@@ -305,17 +353,19 @@ public class InteractiveServer
 	 */
 	private static class GetThumbnailImageHandler implements IGetHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public GetThumbnailImageHandler(DraftManager draftManager)
+		public GetThumbnailImageHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -337,17 +387,19 @@ public class InteractiveServer
 
 	private static class PostThumbnailImageHandler implements IPostRawHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public PostThumbnailImageHandler(DraftManager draftManager)
+		public PostThumbnailImageHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				int height = Integer.parseInt(pathVariables[1]);
@@ -371,17 +423,19 @@ public class InteractiveServer
 	 */
 	private static class GetOriginalVideoHandler implements IGetHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public GetOriginalVideoHandler(DraftManager draftManager)
+		public GetOriginalVideoHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -407,17 +461,19 @@ public class InteractiveServer
 	 */
 	private static class GetProcessedVideoHandler implements IGetHandler
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public GetProcessedVideoHandler(DraftManager draftManager)
+		public GetProcessedVideoHandler(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(request, response))
+			if (_verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -443,10 +499,12 @@ public class InteractiveServer
 	 */
 	private static class SaveOriginalVideoSocketFactory implements IWebSocketFactory
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public SaveOriginalVideoSocketFactory(DraftManager draftManager)
+		public SaveOriginalVideoSocketFactory(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
@@ -456,7 +514,7 @@ public class InteractiveServer
 			int draftId = Integer.parseInt(variables[0]);
 			int height = Integer.parseInt(variables[1]);
 			int width = Integer.parseInt(variables[2]);
-			return new SaveVideoWebSocketListener(_draftManager, draftId, height, width);
+			return new SaveVideoWebSocketListener(_xsrf, _draftManager, draftId, height, width);
 		}
 	}
 
@@ -465,10 +523,12 @@ public class InteractiveServer
 	 */
 	private static class ProcessVideoSocketFactory implements IWebSocketFactory
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		
-		public ProcessVideoSocketFactory(DraftManager draftManager)
+		public ProcessVideoSocketFactory(String xsrf, DraftManager draftManager)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 		}
 		
@@ -477,20 +537,22 @@ public class InteractiveServer
 		{
 			int draftId = Integer.parseInt(variables[0]);
 			String processCommand = variables[1];
-			return new ProcessVideoWebSocketListener(_draftManager, draftId, processCommand);
+			return new ProcessVideoWebSocketListener(_xsrf, _draftManager, draftId, processCommand);
 		}
 	}
 
 	private static class SaveVideoWebSocketListener implements WebSocketListener
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		private final int _draftId;
 		private final int _height;
 		private final int _width;
 		private VideoSaver _saver;
 		
-		public SaveVideoWebSocketListener(DraftManager draftManager, int draftId, int height, int width)
+		public SaveVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, int height, int width)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 			_draftId = draftId;
 			_height = height;
@@ -507,7 +569,7 @@ public class InteractiveServer
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (_verifySafeWebSocket(session))
+			if (_verifySafeWebSocket(_xsrf, session))
 			{
 				// 256 KiB should be reasonable.
 				session.setMaxBinaryMessageSize(256 * 1024);
@@ -534,13 +596,15 @@ public class InteractiveServer
 
 	private static class ProcessVideoWebSocketListener implements WebSocketListener
 	{
+		private final String _xsrf;
 		private final DraftManager _draftManager;
 		private final int _draftId;
 		private final String _processCommand;
 		private VideoProcessor _processor;
 		
-		public ProcessVideoWebSocketListener(DraftManager draftManager, int draftId, String processCommand)
+		public ProcessVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, String processCommand)
 		{
+			_xsrf = xsrf;
 			_draftManager = draftManager;
 			_draftId = draftId;
 			_processCommand = processCommand;
@@ -556,7 +620,7 @@ public class InteractiveServer
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (_verifySafeWebSocket(session))
+			if (_verifySafeWebSocket(_xsrf, session))
 			{
 				Assert.assertTrue(null == _processor);
 				try
@@ -641,14 +705,34 @@ public class InteractiveServer
 	}
 
 
-	private static boolean _verifySafeRequest(HttpServletRequest request, HttpServletResponse response)
+	private static boolean _verifySafeRequest(String xsrf, HttpServletRequest request, HttpServletResponse response)
 	{
 		boolean isSafe = false;
-		// CORS should stop remote connection attempts since the front-end hard-codes 127.0.0.1 but assert since it is a security concern.
 		if ("127.0.0.1".equals(request.getRemoteAddr()))
 		{
-			// This means all checks passed.
-			isSafe = true;
+			String value = null;
+			Cookie[] cookies = request.getCookies();
+			if (null != cookies)
+			{
+				for (Cookie cookie : cookies)
+				{
+					if (XSRF.equals(cookie.getName()))
+					{
+						value = cookie.getValue();
+					}
+				}
+			}
+			if (xsrf.equals(value))
+			{
+				// This means all checks passed.
+				isSafe = true;
+			}
+			else
+			{
+				isSafe = false;
+				System.err.println("Invalid XSRF: \"" + value + "\"");
+				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			}
 		}
 		else
 		{
@@ -659,17 +743,26 @@ public class InteractiveServer
 		return isSafe;
 	}
 
-	private static boolean _verifySafeWebSocket(Session session)
+	private static boolean _verifySafeWebSocket(String xsrf, Session session)
 	{
 		boolean isSafe = false;
-		// CORS should stop remote connection attempts since the front-end hard-codes 127.0.0.1 but assert since it is a security concern.
 		String rawDescription = session.getRemoteAddress().toString();
 		// This rawDescription looks like "/127.0.0.1:65657" so we need to parse it.
 		String ip = rawDescription.substring(1).split(":")[0];
 		if ("127.0.0.1".equals(ip))
 		{
-			// This means all checks passed.
-			isSafe = true;
+			String value = session.getUpgradeRequest().getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
+			if (xsrf.equals(value))
+			{
+				// This means all checks passed.
+				isSafe = true;
+			}
+			else
+			{
+				isSafe = false;
+				System.err.println("Invalid XSRF: \"" + value + "\"");
+				session.close(CloseStatus.SERVER_ERROR, "Invalid XSRF");
+			}
 		}
 		else
 		{

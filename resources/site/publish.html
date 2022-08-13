@@ -354,12 +354,15 @@ GLOBAL_Application.controller('AppController', function($scope)
 		});
 	}
 	
-	GET("/drafts")
-		.then(data => data.json())
-		.then(json => {
-			$scope.drafts = json;
-			$scope.$apply();
-		});
+	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
+	POST("/cookie").then(function() {
+		GET("/drafts")
+			.then(data => data.json())
+			.then(json => {
+				$scope.drafts = json;
+				$scope.$apply();
+			});
+	});
 });
 
 </script>
