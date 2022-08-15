@@ -2,6 +2,9 @@ package com.jeffdisher.cacophony;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.file.StandardOpenOption;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -19,6 +22,9 @@ public class Cacophony {
 	public static final String ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS = "CACOPHONY_ENABLE_VERIFICATIONS";
 
 	public static final String DEFAULT_STORAGE_DIRECTORY_NAME = ".cacophony";
+	// We use a lockfile with a name based on the config directory name.  Note that it can't be inside the directory
+	// since it may not exist yet at this level.  This has the side-effect of protecting against concurrent creation.
+	public static final String CONFIG_LOCK_SUFFIX = "_lock";
 
 	/**
 	 * Exit code when there was a problem due to a static usage error.
@@ -83,7 +89,7 @@ public class Cacophony {
 				// Enable verifications if the env var is set, at all.
 				boolean shouldEnableVerifications = (null != System.getenv(ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
 				StandardEnvironment executor = new StandardEnvironment(System.out, new RealConfigFileSystem(directory), new RealConnectionFactory(), shouldEnableVerifications);
-				try
+				try (FileChannel lockFile = _lockFile(directory))
 				{
 					command.runInEnvironment(executor);
 				}
@@ -146,5 +152,36 @@ public class Cacophony {
 			storageDirectory = new File(homeDirectory, DEFAULT_STORAGE_DIRECTORY_NAME);
 		}
 		return storageDirectory;
+	}
+
+	private static FileChannel _lockFile(File storageDirectory) throws UsageException
+	{
+		File lockFile = new File(storageDirectory.getParentFile(), storageDirectory.getName() + CONFIG_LOCK_SUFFIX);
+		FileChannel channel;
+		try
+		{
+			// We will open the lock file with write permission to get the exclusive lock.
+			channel = FileChannel.open(lockFile.toPath(), StandardOpenOption.WRITE, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+		}
+		catch (IOException e)
+		{
+			// This is a usage problem.
+			throw new UsageException("Failure opening lock file: " + e.getLocalizedMessage());
+		}
+		try
+		{
+			// Create the lock - we rely on just closing the channel to release the lock since we otherwise need to return both.
+			FileLock lock = channel.tryLock();
+			if (null == lock)
+			{
+				throw new UsageException("Failed to acquire file lock (is Cacophony already running?): " + lockFile.getAbsolutePath());
+			}
+		}
+		catch (IOException e)
+		{
+			// Not sure what would cause this here.
+			Assert.unexpected(e);
+		}
+		return channel;
 	}
 }
