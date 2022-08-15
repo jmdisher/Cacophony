@@ -370,4 +370,28 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	public void testRun() throws Throwable
+	{
+		String[] args1 = {"--run"};
+		String[] args2 = {"--run", "--overrideCommand", "command", "--commandSelection", "STRICT"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command1 = CommandParser.parseArgs(args1, capture);
+		Assert.assertNotNull(command1);
+		ICommand command2 = CommandParser.parseArgs(args2, capture);
+		Assert.assertNotNull(command2);
+		Assert.assertTrue(0 == outStream.size());
+	}
+
+	@Test(expected = UsageException.class)
+	public void testRunFailure() throws Throwable
+	{
+		String[] args = {"--run", "--overrideCommand", "command", "--commandSelection", "BOGUS"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		// We expect this to throw the UsageException.
+		CommandParser.parseArgs(args, capture);
+	}
 }

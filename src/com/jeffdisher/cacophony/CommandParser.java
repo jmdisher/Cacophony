@@ -216,9 +216,25 @@ public class CommandParser
 		{
 			return new GetGlobalPrefsCommand();
 		}),
-		RUN(true, "--run", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		RUN(true, "--run", new String[0], new String[] {"--overrideCommand", "--commandSelection"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			return new RunCommand();
+			String overrideCommand = optional[0];
+			String commandSelection = optional[1];
+			RunCommand.CommandSelectionMode mode = RunCommand.CommandSelectionMode.STRICT;
+			if (null != commandSelection)
+			{
+				try
+				{
+					mode = RunCommand.CommandSelectionMode.valueOf(commandSelection.toUpperCase());
+					Assert.assertTrue(null != mode);
+				}
+				catch (IllegalArgumentException e)
+				{
+					// Happens if this isn't a valid name.
+					throw new UsageException("--commandSelecton must be STRICT (default) or DANGEROUS");
+				}
+			}
+			return new RunCommand(overrideCommand, mode);
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.

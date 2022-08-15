@@ -38,7 +38,7 @@ public class InteractiveServer
 {
 	private static final String XSRF = "XSRF";
 
-	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port)
+	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port, String forcedCommand)
 	{
 		String xsrf = "XSRF_TOKEN_" + Math.random();
 		CountDownLatch stopLatch = new CountDownLatch(1);
@@ -60,10 +60,18 @@ public class InteractiveServer
 		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(xsrf, manager));
 		
 		server.addWebSocketFactory("/draft/saveVideo", 3, "webm", new SaveOriginalVideoSocketFactory(xsrf, manager));
-		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(xsrf, manager));
+		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(xsrf, manager, forcedCommand));
 		
 		server.start();
 		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
+		if (null != forcedCommand)
+		{
+			System.out.println("Forced processing command: \"" + forcedCommand + "\"");
+		}
+		else
+		{
+			System.out.println("WARNING:  Dangerous processing mode enabled!  User will be able to control server-side command from front-end.");
+		}
 		
 		try
 		{
@@ -525,11 +533,13 @@ public class InteractiveServer
 	{
 		private final String _xsrf;
 		private final DraftManager _draftManager;
+		private final String _forcedCommand;
 		
-		public ProcessVideoSocketFactory(String xsrf, DraftManager draftManager)
+		public ProcessVideoSocketFactory(String xsrf, DraftManager draftManager, String forcedCommand)
 		{
 			_xsrf = xsrf;
 			_draftManager = draftManager;
+			_forcedCommand = forcedCommand;
 		}
 		
 		@Override
@@ -537,6 +547,12 @@ public class InteractiveServer
 		{
 			int draftId = Integer.parseInt(variables[0]);
 			String processCommand = variables[1];
+			// See if we are supposed to override this connection.
+			if (null != _forcedCommand)
+			{
+				processCommand = _forcedCommand;
+			}
+			System.out.println("Opening processing socket with local command: \"" + processCommand + "\"");
 			return new ProcessVideoWebSocketListener(_xsrf, _draftManager, draftId, processCommand);
 		}
 	}

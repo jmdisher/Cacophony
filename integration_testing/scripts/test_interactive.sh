@@ -62,7 +62,7 @@ CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /
 checkPreviousCommand "createNewChannel"
 
 echo "Start the interactive server and wait 5 seconds for it to bind the port..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --run &
+CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
 SERVER_PID=$!
 sleep 5
 
