@@ -139,6 +139,11 @@ echo "Verify that it is not in the list..."
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"
 
+echo "Verify that we see it in the generated_db.js (since we are generating that as a stop-gap before transitioning to the dynamic mode)..."
+GENERATED_DB=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/generated_db.js)
+requireSubstring "$GENERATED_DB" "File is generated for the interactive --run method."
+requireSubstring "$GENERATED_DB" "$PUBLISH_ID"
+
 echo "Stop the server and wait for it to exit..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST http://127.0.0.1:8000/stop
 wait $SERVER_PID

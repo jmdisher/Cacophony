@@ -1,4 +1,5 @@
 // NOTE:  This file is intended to be replaced with a generated data store.  This data is provided only for static page layout testing as it is in the same shape as the generated code.
+// In order to use this to test UI changes, rename/copy it to "generated_db.js" (this "fake" name is used to differentiate it and because we can't override static files in Breakwater).
 // Note that most of the data here is fake, just to have the right shape, so don't infer too much meaning from it.
 
 var DATA_common = {
