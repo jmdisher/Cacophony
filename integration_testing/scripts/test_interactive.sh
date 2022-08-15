@@ -105,6 +105,23 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" "\"title\":\"Updated Title\""
 
+echo "Upload and process data as the video for the draft..."
+XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
+echo "aXbXcXdXe" | java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2" webm
+java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" process
+ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
+if [ "aXbXcXdXe" != "$ORIGINAL_VIDEO" ];
+then
+	echo "Original video not expected: $ORIGINAL_VIDEO"
+	exit 1
+fi
+PROCESSED_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/processedVideo/$ID")
+if [ "c" != "$PROCESSED_VIDEO" ];
+then
+	echo "Processed video not expected: $PROCESSED_VIDEO"
+	exit 1
+fi
+
 echo "Verify that we can delete the draft and see an empty list..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XDELETE http://127.0.0.1:8000/draft/$ID
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
