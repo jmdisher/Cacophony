@@ -68,16 +68,16 @@ function startCamera(height, width, fps)
 	});
 }
 
-function stopCamera(previewElement, videoConfig)
+function stopCamera(previewElement, videoState)
 {
 	previewElement.srcObject = null;
-	videoConfig.stream.getTracks().forEach(function(track) { track.stop(); });
-	videoConfig.stream = null;
+	videoState.stream.getTracks().forEach(function(track) { track.stop(); });
+	videoState.stream = null;
 }
 
-function startRecording(stream, videoKilobits, audioKilobits, draftId, height, width, finalSizeCallback)
+function startRecording(stream, videoBitrate, audioBitrate, draftId, height, width, finalSizeCallback)
 {
-	let recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: (audioKilobits * 1000),  videoBitsPerSecond: (videoKilobits * 1000) });
+	let recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: audioBitrate,  videoBitsPerSecond: videoBitrate });
 	let bytes = 0;
 	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveVideo/" + draftId + "/" + height + "/" + width, "webm");
 	ws.onopen = function()
@@ -98,10 +98,10 @@ function startRecording(stream, videoKilobits, audioKilobits, draftId, height, w
 	return recorder;
 }
 
-function stopRecording(videoConfig)
+function stopRecording(videoState)
 {
-	videoConfig.recorder.stop();
-	videoConfig.recorder = null;
+	videoState.recorder.stop();
+	videoState.recorder = null;
 }
 
 function selectDraft(canvas, original_review, processed_review, scope, draft)
@@ -192,17 +192,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.inProgress = false;
 	$scope.publishInProgress = false;
 	
-	$scope.videoConfig = {
-		height: 720,
-		width: 1280,
-		fps: 15,
+	// This is set after we get the cookie - call to "GET /videoConfig".
+	$scope.videoConfig = null;
+	$scope.videoState = {
 		stream: null,
-		
-		videoKilobits: 256,
-		audioKilobits: 64,
 		recorder: null,
-		
-		recompressionCommand: "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -",
 		processingSocket: null,
 		finalProcessed: 0,
 	};
@@ -239,7 +233,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		startCamera($scope.videoConfig.height, $scope.videoConfig.width, $scope.videoConfig.fps)
 			.then(result => {
-				$scope.videoConfig.stream = result;
+				$scope.videoState.stream = result;
 				video_preview.srcObject = result;
 				$scope.$apply();
 			}, error => {
@@ -249,13 +243,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.stopCamera = function()
 	{
-		stopCamera(video_preview, $scope.videoConfig);
+		stopCamera(video_preview, $scope.videoState);
 	}
 	$scope.startRecording = function()
 	{
-		$scope.videoConfig.recorder = startRecording($scope.videoConfig.stream
-			, $scope.videoConfig.videoKilobits
-			, $scope.videoConfig.audioKilobits
+		$scope.videoState.recorder = startRecording($scope.videoState.stream
+			, $scope.videoConfig.videoBitrate
+			, $scope.videoConfig.audioBitrate
 			, $scope.selectedDraft.id
 			, $scope.videoConfig.height
 			, $scope.videoConfig.width
@@ -273,16 +267,16 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.stopRecording = function()
 	{
-		stopRecording($scope.videoConfig);
+		stopRecording($scope.videoState);
 	}
 	$scope.startProcessing = function()
 	{
-		$scope.videoConfig.processingSocket = new WebSocket("ws://127.0.0.1:8000/draft/processVideo/" + $scope.selectedDraft.id + "/" + encodeURIComponent($scope.videoConfig.recompressionCommand), "process");
-		$scope.videoConfig.processingSocket.onopen = function()
+		$scope.videoState.processingSocket = new WebSocket("ws://127.0.0.1:8000/draft/processVideo/" + $scope.selectedDraft.id + "/" + encodeURIComponent($scope.videoConfig.processingCommand), "process");
+		$scope.videoState.processingSocket.onopen = function()
 		{
 			console.log("Process start");
 		}
-		$scope.videoConfig.processingSocket.addEventListener('message', (event) => {
+		$scope.videoState.processingSocket.addEventListener('message', (event) => {
 			let object = JSON.parse(event.data);
 			if ("progress" == object.type)
 			{
@@ -294,18 +288,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 			}
 			else if ("done" == object.type)
 			{
-				$scope.videoConfig.finalProcessed = object.bytes;
+				$scope.videoState.finalProcessed = object.bytes;
 			}
 		});
-		$scope.videoConfig.processingSocket.onclose = function(e)
+		$scope.videoState.processingSocket.onclose = function(e)
 		{
 			$scope.selectedDraft.processedVideo = {
 				height: $scope.videoConfig.height,
 				width: $scope.videoConfig.width,
-				byteSize: $scope.videoConfig.finalProcessed,
+				byteSize: $scope.videoState.finalProcessed,
 			};
-			$scope.videoConfig.processingSocket = null;
-			$scope.videoConfig.finalProcessed = 0;
+			$scope.videoState.processingSocket = null;
+			$scope.videoState.finalProcessed = 0;
 			$scope.$apply();
 			processed_review.src = "http://127.0.0.1:8000/draft/processedVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
 			console.log("Process DONE");
@@ -313,7 +307,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.stopProcessing = function()
 	{
-		$scope.videoConfig.processingSocket.close();
+		$scope.videoState.processingSocket.close();
 	}
 	$scope.captureFromPreview = function()
 	{
@@ -360,6 +354,12 @@ GLOBAL_Application.controller('AppController', function($scope)
 			.then(data => data.json())
 			.then(json => {
 				$scope.drafts = json;
+				$scope.$apply();
+			});
+		GET("/videoConfig")
+			.then(data => data.json())
+			.then(json => {
+				$scope.videoConfig = json;
 				$scope.$apply();
 			});
 	});
@@ -415,19 +415,19 @@ GLOBAL_Application.controller('AppController', function($scope)
 				Draft:  <strong>{{selectedDraft.title}}</strong>.<br />
 				<div class="well">
 					Video preview: <br />
-					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoConfig.stream"></input><br />
-					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoConfig.stream"></input><br />
-					Framerate: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoConfig.stream"></input><br />
+					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoState.stream"></input><br />
+					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoState.stream"></input><br />
+					Framerate: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoState.stream"></input><br />
 					<video id="video_preview" playsinline autoplay muted></video><br />
-					<button class="btn btn-success" ng-click="startCamera()" ng-disabled="null != videoConfig.stream">Start Camera</button>
-					<button class="btn btn-danger" ng-click="stopCamera()" ng-disabled="null == videoConfig.stream">Stop Camera</button>
+					<button class="btn btn-success" ng-click="startCamera()" ng-disabled="null != videoState.stream">Start Camera</button>
+					<button class="btn btn-danger" ng-click="stopCamera()" ng-disabled="null == videoState.stream">Stop Camera</button>
 				</div>
-				<div class="well" ng-show="null != videoConfig.stream">
+				<div class="well" ng-show="null != videoState.stream">
 					Recording: <br />
-					Video kBits/s: <input type="text" class="form-control" ng-model="videoConfig.videoKilobits" ng-disabled="null != videoConfig.recorder"></input><br />
-					Audio kBits/s: <input type="text" class="form-control" ng-model="videoConfig.audioKilobits" ng-disabled="null != videoConfig.recorder"></input><br />
-					<button class="btn btn-success" ng-click="startRecording()" ng-disabled="null != videoConfig.recorder">Start Recording</button>
-					<button class="btn btn-danger" ng-click="stopRecording()" ng-disabled="null == videoConfig.recorder">Stop Recording</button>
+					Video bits/s: <input type="text" class="form-control" ng-model="videoConfig.videoBitrate" ng-disabled="null != videoState.recorder"></input><br />
+					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != videoState.recorder"></input><br />
+					<button class="btn btn-success" ng-click="startRecording()" ng-disabled="null != videoState.recorder">Start Recording</button>
+					<button class="btn btn-danger" ng-click="stopRecording()" ng-disabled="null == videoState.recorder">Stop Recording</button>
 				</div>
 				<div class="well" ng-show="selectedDraft.originalVideo.byteSize > 0">
 					<video id="original_review" controls></video><br />
@@ -437,10 +437,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 					Post-processing: <br />
 					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
 					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed.<br />
-					Recompression command: <input type="text" class="form-control" ng-model="videoConfig.recompressionCommand" ng-disabled="null != videoConfig.processingSocket"></input><br />
-					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="null != videoConfig.processingSocket">Start Processing</button>
-					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="null == videoConfig.processingSocket">Stop Processing</button>
-					<div class="progress" ng-show="null != videoConfig.processingSocket">
+					Recompression command: <input type="text" class="form-control" ng-model="videoConfig.processingCommand" ng-disabled="!videoConfig.canChangeCommand || (null != videoState.processingSocket)"></input><br />
+					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="null != videoState.processingSocket">Start Processing</button>
+					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="null == videoState.processingSocket">Stop Processing</button>
+					<div class="progress" ng-show="null != videoState.processingSocket">
 						<div class="progress-bar" id="progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
 							0%
 						</div>
@@ -453,7 +453,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 				<div class="well">
 					Thumbnail: <br />
 					<canvas id="canvas" width="{{videoConfig.width}}" height="{{videoConfig.height}}"></canvas>
-					<button class="btn btn-success" ng-click="captureFromPreview()" ng-disabled="null == videoConfig.stream">Capture from preview</button>
+					<button class="btn btn-success" ng-click="captureFromPreview()" ng-disabled="null == videoState.stream">Capture from preview</button>
 					<button class="btn btn-success" ng-click="captureOriginal()" ng-disabled="(null == selectedDraft.originalVideo) || (0 == selectedDraft.originalVideo.byteSize)">Capture from original video</button>
 					<button class="btn btn-success" ng-click="captureProcessed()" ng-disabled="(null == selectedDraft.processedVideo) || (0 == selectedDraft.processedVideo.byteSize)">Capture from processed video</button>
 				</div>

@@ -33,13 +33,11 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 		
 		Resource staticResource = Resource.newClassPathResource("resources/site/");
 		int port = 8000;
-		// If we are in dangerous mode, we ignore the override command.
-		String forcedCommand = (CommandSelectionMode.DANGEROUS == _commandSelectionMode)
-				? null
-				: (null != _overrideCommand)
-					? _overrideCommand
-					: DEFAULT_COMMAND
+		boolean canChangeCommand = (CommandSelectionMode.DANGEROUS == _commandSelectionMode);
+		String processingCommand = (null != _overrideCommand)
+			? _overrideCommand
+			: DEFAULT_COMMAND
 		;
-		InteractiveServer.runServerUntilStop(environment, manager, staticResource, port, forcedCommand);
+		InteractiveServer.runServerUntilStop(environment, manager, staticResource, port, processingCommand, canChangeCommand);
 	}
 }

@@ -73,6 +73,10 @@ requireSubstring "$INDEX" "Cacophony - Static Index"
 echo "Requesting creation of XSRF token..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/cookie
 
+echo "Get the default video config..."
+VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/videoConfig)
+requireSubstring "$VIDEO_CONFIG" "ffmpeg"
+
 echo "Get the empty list of drafts..."
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"

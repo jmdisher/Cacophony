@@ -52,13 +52,18 @@ public class InteractiveServer
 {
 	private static final String XSRF = "XSRF";
 
-	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port, String forcedCommand)
+	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port, String processingCommand, boolean canChangeCommand)
 	{
+		String forcedCommand = canChangeCommand
+				? null
+				: processingCommand
+		;
 		String xsrf = "XSRF_TOKEN_" + Math.random();
 		CountDownLatch stopLatch = new CountDownLatch(1);
 		RestServer server = new RestServer(port, staticResource);
 		server.addPostRawHandler("/cookie", 0, new PostSetCookieHandler(xsrf));
 		server.addPostRawHandler("/stop", 0, new StopHandler(xsrf, stopLatch));
+		server.addGetHandler("/videoConfig", 0, new GetVideoConfigHandler(xsrf, processingCommand, canChangeCommand));
 		
 		server.addGetHandler("/drafts", 0, new GetDraftsListHandler(xsrf, manager));
 		server.addPostRawHandler("/createDraft", 0, new CreateDraftHandler(xsrf, manager));
@@ -81,7 +86,6 @@ public class InteractiveServer
 		
 		
 		server.start();
-		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
 		if (null != forcedCommand)
 		{
 			System.out.println("Forced processing command: \"" + forcedCommand + "\"");
@@ -90,6 +94,7 @@ public class InteractiveServer
 		{
 			System.out.println("WARNING:  Dangerous processing mode enabled!  User will be able to control server-side command from front-end.");
 		}
+		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
 		
 		try
 		{
@@ -124,6 +129,51 @@ public class InteractiveServer
 				response.setStatus(HttpServletResponse.SC_OK);
 				response.getWriter().print("Shutting down...");
 				_stopLatch.countDown();
+			}
+		}
+	}
+
+	/**
+	 * Returns a JSON struct of the video config options:
+	 * -height
+	 * -width
+	 * -fps
+	 * -videoBitrate
+	 * -audioBitrate
+	 * -processingCommand
+	 * -canChangeCommand
+	 */
+	private static class GetVideoConfigHandler implements IGetHandler
+	{
+		private final String _xsrf;
+		private final String _processingCommand;
+		private final boolean _canChangeCommand;
+		
+		public GetVideoConfigHandler(String xsrf, String processingCommand, boolean canChangeCommand)
+		{
+			_xsrf = xsrf;
+			_processingCommand = processingCommand;
+			_canChangeCommand = canChangeCommand;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		{
+			if (_verifySafeRequest(_xsrf, request, response))
+			{
+				response.setContentType("application/json");
+				response.setStatus(HttpServletResponse.SC_OK);
+				
+				JsonObject object = new JsonObject();
+				object.set("height", 720);
+				object.set("width", 1280);
+				object.set("fps", 15);
+				// The browser tends to default to something like 2.5 Mbps for video and 128 kbps for audio but we will use a smaller number in case the user can't post-process (they can change this in the UI, themselves).
+				object.set("videoBitrate", 256000);
+				object.set("audioBitrate", 64000);
+				object.set("processingCommand", _processingCommand);
+				object.set("canChangeCommand", _canChangeCommand);
+				response.getWriter().print(object.toString());
 			}
 		}
 	}
