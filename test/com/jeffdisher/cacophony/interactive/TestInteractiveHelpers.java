@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -186,6 +187,34 @@ public class TestInteractiveHelpers
 		byte[] expected = "TXstYng vYdXZ".getBytes();
 		byte[] output = outStream.toByteArray();
 		Assert.assertArrayEquals(expected, output);
+		
+		// Verify that we can delete these videos.
+		Assert.assertTrue(InteractiveHelpers.deleteOriginalVideo(draftManager, id));
+		try
+		{
+			InteractiveHelpers.writeOriginalVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
+				// This shouldn't be called.
+				Assert.fail();
+			}, outStream);
+			Assert.fail();
+		}
+		catch (FileNotFoundException e)
+		{
+			// Expected.
+		}
+		Assert.assertTrue(InteractiveHelpers.deleteProcessedVideo(draftManager, id));
+		try
+		{
+			InteractiveHelpers.writeProcessedVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
+				// This shouldn't be called.
+				Assert.fail();
+			}, outStream);
+			Assert.fail();
+		}
+		catch (FileNotFoundException e)
+		{
+			// Expected.
+		}
 	}
 
 

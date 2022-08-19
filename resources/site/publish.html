@@ -321,6 +321,26 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		postUpdatedThumbnail(canvas, processed_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() { $scope.$apply(); });
 	}
+	$scope.deleteOriginalVideo = function(draft)
+	{
+		$scope.inProgress = true;
+		DELETE("/draft/originalVideo/" + draft.id)
+			.then(data => {
+				draft.originalVideo = null;
+				$scope.inProgress = false;
+				$scope.$apply();
+			});
+	}
+	$scope.deleteProcessedVideo = function(draft)
+	{
+		$scope.inProgress = true;
+		DELETE("/draft/processedVideo/" + draft.id)
+			.then(data => {
+				draft.processedVideo = null;
+				$scope.inProgress = false;
+				$scope.$apply();
+			});
+	}
 	$scope.saveDraft = function()
 	{
 		$scope.inProgress = true;
@@ -431,24 +451,24 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="well" ng-show="selectedDraft.originalVideo.byteSize > 0">
 					<video id="original_review" controls></video><br />
-					Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
+					<button class="btn btn-danger" ng-click="deleteOriginalVideo(selectedDraft)" ng-disabled="inProgress || publishInProgress">Delete</button> Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
 				</div>
 				<div class="well"  ng-show="selectedDraft.originalVideo.byteSize > 0">
 					Post-processing: <br />
 					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
 					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed.<br />
 					Recompression command: <input type="text" class="form-control" ng-model="videoConfig.processingCommand" ng-disabled="!videoConfig.canChangeCommand || (null != videoState.processingSocket)"></input><br />
-					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="null != videoState.processingSocket">Start Processing</button>
-					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="null == videoState.processingSocket">Stop Processing</button>
+					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="inProgress || (null != videoState.processingSocket)">Start Processing</button>
+					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="inProgress || (null == videoState.processingSocket)">Stop Processing</button>
 					<div class="progress" ng-show="null != videoState.processingSocket">
 						<div class="progress-bar" id="progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
 							0%
 						</div>
 					</div>
-					<div class="well" ng-show="selectedDraft.processedVideo.byteSize > 0">
-						<video id="processed_review" controls></video><br />
-						Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
-					</div>
+				</div>
+				<div class="well" ng-show="selectedDraft.processedVideo.byteSize > 0">
+					<video id="processed_review" controls></video><br />
+					<button class="btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress || publishInProgress">Delete</button> Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
 				</div>
 				<div class="well">
 					Thumbnail: <br />

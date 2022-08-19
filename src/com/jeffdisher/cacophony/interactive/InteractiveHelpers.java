@@ -184,6 +184,52 @@ public class InteractiveHelpers
 		}
 	}
 
+	// --- Methods related to deleting videos.
+	// Note that we don't build any special interlock around the delete relative to other operations like processing.
+	// This is because that would be heavy-weight and complicated for something which we can prevent in the front-end
+	//  and it would only corrupt the draft in progress.
+	// More complex protection could be added in the future if this turns out to be a problem but this keeps it simple.
+	/**
+	 * Deletes the original video from the draft.
+	 * @param draftManager The DraftManager.
+	 * @param draftId The draft to open when searching for the video.
+	 * @return True if this was deleted or false if it couldn't be or there was no video file.
+	 * @throws FileNotFoundException The draft doesn't exist.
+	 */
+	public static boolean deleteOriginalVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		File originalFile = wrapper.originalVideo();
+		boolean didDelete = originalFile.delete();
+		if (didDelete)
+		{
+			Draft oldDraft = wrapper.loadDraft();
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), null, oldDraft.processedVideo());
+			wrapper.saveDraft(newDraft);
+		}
+		return didDelete;
+	}
+	/**
+	 * Deletes the processed video from the draft.
+	 * @param draftManager The DraftManager.
+	 * @param draftId The draft to open when searching for the video.
+	 * @return True if this was deleted or false if it couldn't be or there was no video file.
+	 * @throws FileNotFoundException The draft doesn't exist.
+	 */
+	public static boolean deleteProcessedVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		File processedFile = wrapper.processedVideo();
+		boolean didDelete = processedFile.delete();
+		if (didDelete)
+		{
+			Draft oldDraft = wrapper.loadDraft();
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null);
+			wrapper.saveDraft(newDraft);
+		}
+		return didDelete;
+	}
+
 
 	private static long _copyToEndOfFile(InputStream input, OutputStream output) throws IOException
 	{

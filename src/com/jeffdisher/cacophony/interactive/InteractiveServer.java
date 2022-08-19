@@ -78,6 +78,9 @@ public class InteractiveServer
 		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(xsrf, manager));
 		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(xsrf, manager));
 		
+		server.addDeleteHandler("/draft/originalVideo", 1, new DeleteOriginalVideoHandler(xsrf, manager));
+		server.addDeleteHandler("/draft/processedVideo", 1, new DeleteProcessedVideoHandler(xsrf, manager));
+		
 		server.addWebSocketFactory("/draft/saveVideo", 3, "webm", new SaveOriginalVideoSocketFactory(xsrf, manager));
 		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(xsrf, manager, forcedCommand));
 		
@@ -561,6 +564,84 @@ public class InteractiveServer
 						response.setContentLengthLong(byteSize);
 						response.setStatus(HttpServletResponse.SC_OK);
 					}, output);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
+			}
+		}
+	}
+
+	private static class DeleteOriginalVideoHandler implements IDeleteHandler
+	{
+		private final String _xsrf;
+		private final DraftManager _draftManager;
+		
+		public DeleteOriginalVideoHandler(String xsrf, DraftManager draftManager)
+		{
+			_xsrf = xsrf;
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		{
+			if (_verifySafeRequest(_xsrf, request, response))
+			{
+				int draftId = Integer.parseInt(variables[0]);
+				try
+				{
+					boolean didDelete = InteractiveHelpers.deleteOriginalVideo(_draftManager, draftId);
+					if (didDelete)
+					{
+						response.setStatus(HttpServletResponse.SC_OK);
+					}
+					else
+					{
+						// If we couldn't delete this, it probably means it didn't exist or something racy is happening
+						//  (we don't protect against that case, just report it, since the UI should usually prevent this).
+						response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					}
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
+			}
+		}
+	}
+
+	private static class DeleteProcessedVideoHandler implements IDeleteHandler
+	{
+		private final String _xsrf;
+		private final DraftManager _draftManager;
+		
+		public DeleteProcessedVideoHandler(String xsrf, DraftManager draftManager)
+		{
+			_xsrf = xsrf;
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		{
+			if (_verifySafeRequest(_xsrf, request, response))
+			{
+				int draftId = Integer.parseInt(variables[0]);
+				try
+				{
+					boolean didDelete = InteractiveHelpers.deleteProcessedVideo(_draftManager, draftId);
+					if (didDelete)
+					{
+						response.setStatus(HttpServletResponse.SC_OK);
+					}
+					else
+					{
+						// If we couldn't delete this, it probably means it didn't exist or something racy is happening
+						//  (we don't protect against that case, just report it, since the UI should usually prevent this).
+						response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					}
 				}
 				catch (FileNotFoundException e)
 				{
