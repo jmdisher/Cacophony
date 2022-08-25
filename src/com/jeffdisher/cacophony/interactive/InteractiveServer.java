@@ -74,6 +74,7 @@ public class InteractiveServer
 		
 		server.addGetHandler("/draft/thumb", 1, new GetThumbnailImageHandler(xsrf, manager));
 		server.addPostRawHandler("/draft/thumb", 3, new PostThumbnailImageHandler(xsrf, manager));
+		server.addDeleteHandler("/draft/thumb", 1, new DeleteThumbnailHandler(xsrf, manager));
 		
 		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(xsrf, manager));
 		server.addGetHandler("/draft/processedVideo", 1, new GetProcessedVideoHandler(xsrf, manager));
@@ -488,6 +489,45 @@ public class InteractiveServer
 				{
 					InputStream input = request.getInputStream();
 					InteractiveHelpers.saveThumbnailFromStream(_draftManager, draftId, height, width, input);
+				}
+				catch (FileNotFoundException e)
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
+			}
+		}
+	}
+
+	private static class DeleteThumbnailHandler implements IDeleteHandler
+	{
+		private final String _xsrf;
+		private final DraftManager _draftManager;
+		
+		public DeleteThumbnailHandler(String xsrf, DraftManager draftManager)
+		{
+			_xsrf = xsrf;
+			_draftManager = draftManager;
+		}
+		
+		@Override
+		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+		{
+			if (_verifySafeRequest(_xsrf, request, response))
+			{
+				int draftId = Integer.parseInt(pathVariables[0]);
+				try
+				{
+					boolean didDelete = InteractiveHelpers.deleteThumbnail(_draftManager, draftId);
+					if (didDelete)
+					{
+						response.setStatus(HttpServletResponse.SC_OK);
+					}
+					else
+					{
+						// If we couldn't delete this, it probably means it didn't exist or something racy is happening
+						//  (we don't protect against that case, just report it, since the UI should usually prevent this).
+						response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					}
 				}
 				catch (FileNotFoundException e)
 				{

@@ -229,6 +229,26 @@ public class InteractiveHelpers
 		}
 		return didDelete;
 	}
+	/**
+	 * Deletes the thumbnail image from the draft.
+	 * @param draftManager The DraftManager.
+	 * @param draftId The draft to open when searching for the video.
+	 * @return True if this was deleted or false if it couldn't be or there was no thumbnail file.
+	 * @throws FileNotFoundException The draft doesn't exist.
+	 */
+	public static boolean deleteThumbnail(DraftManager draftManager, int draftId) throws FileNotFoundException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		File originalFile = wrapper.thumbnail();
+		boolean didDelete = originalFile.delete();
+		if (didDelete)
+		{
+			Draft oldDraft = wrapper.loadDraft();
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), null, oldDraft.originalVideo(), oldDraft.processedVideo());
+			wrapper.saveDraft(newDraft);
+		}
+		return didDelete;
+	}
 
 
 	private static long _copyToEndOfFile(InputStream input, OutputStream output) throws IOException

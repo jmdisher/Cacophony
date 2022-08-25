@@ -150,17 +150,22 @@ function selectDraft(canvas, original_review, processed_review, scope, draft)
 	}
 }
 
-function postUpdatedThumbnail(canvas, captureVideo, selectedDraft, width, height, applyCallback)
+function postUpdatedThumbnail(canvas, captureVideo, selectedDraft, width, height)
 {
-	canvas.getContext('2d').drawImage(captureVideo, 0, 0, width, height);
-	canvas.toBlob((blob) => {
-		POST_withBinary("/draft/thumb/" + selectedDraft.id + "/" + height + "/" + width, blob);
-			selectedDraft.thumbnail = {
-				height: height,
-				width: width,
-				byteSize: blob.size,
-			};
-	}, "image/jpeg");
+	return new Promise((resolve, reject) => {
+		canvas.getContext('2d').drawImage(captureVideo, 0, 0, width, height);
+		canvas.toBlob((blob) => {
+			POST_withBinary("/draft/thumb/" + selectedDraft.id + "/" + height + "/" + width, blob)
+				.then((response) => {
+					selectedDraft.thumbnail = {
+						height: height,
+						width: width,
+						byteSize: blob.size,
+					};
+					resolve();
+				});
+		}, "image/jpeg");
+	});
 }
 
 function saveDraft(selectedDraft)
@@ -311,15 +316,24 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.captureFromPreview = function()
 	{
-		postUpdatedThumbnail(canvas, video_preview, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() {});
+		postUpdatedThumbnail(canvas, video_preview, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height)
+			.then((response) => {
+				$scope.$apply();
+			});
 	}
 	$scope.captureOriginal = function()
 	{
-		postUpdatedThumbnail(canvas, original_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() { $scope.$apply(); });
+		postUpdatedThumbnail(canvas, original_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height)
+			.then((response) => {
+				$scope.$apply();
+			});
 	}
 	$scope.captureProcessed = function()
 	{
-		postUpdatedThumbnail(canvas, processed_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height, function() { $scope.$apply(); });
+		postUpdatedThumbnail(canvas, processed_review, $scope.selectedDraft, $scope.videoConfig.width, $scope.videoConfig.height)
+			.then((response) => {
+				$scope.$apply();
+			});
 	}
 	$scope.deleteOriginalVideo = function(draft)
 	{
@@ -337,6 +351,20 @@ GLOBAL_Application.controller('AppController', function($scope)
 		DELETE("/draft/processedVideo/" + draft.id)
 			.then(data => {
 				draft.processedVideo = null;
+				$scope.inProgress = false;
+				$scope.$apply();
+			});
+	}
+	$scope.deletethumbnail = function(draft)
+	{
+		$scope.inProgress = true;
+		DELETE("/draft/thumb/" + draft.id)
+			.then(data => {
+				// Update UI.
+				canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+				
+				// Update data model.
+				draft.thumbnail = null;
 				$scope.inProgress = false;
 				$scope.$apply();
 			});
@@ -472,7 +500,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="well">
 					Thumbnail: <br />
-					<canvas id="canvas" width="{{videoConfig.width}}" height="{{videoConfig.height}}"></canvas>
+					<div class="well" ng-show="selectedDraft.thumbnail.byteSize > 0">
+						<canvas id="canvas" width="{{videoConfig.width}}" height="{{videoConfig.height}}"></canvas><br />
+						<button class="btn btn-danger" ng-click="deletethumbnail(selectedDraft)" ng-disabled="(null == selectedDraft.thumbnail) || (0 == selectedDraft.thumbnail.byteSize) || inProgress || publishInProgress">Delete</button> Thumbnail:  {{selectedDraft.thumbnail.byteSize}} bytes.
+					</div>
 					<button class="btn btn-success" ng-click="captureFromPreview()" ng-disabled="null == videoState.stream">Capture from preview</button>
 					<button class="btn btn-success" ng-click="captureOriginal()" ng-disabled="(null == selectedDraft.originalVideo) || (0 == selectedDraft.originalVideo.byteSize)">Capture from original video</button>
 					<button class="btn btn-success" ng-click="captureProcessed()" ng-disabled="(null == selectedDraft.processedVideo) || (0 == selectedDraft.processedVideo.byteSize)">Capture from processed video</button>

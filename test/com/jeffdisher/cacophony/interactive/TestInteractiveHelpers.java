@@ -101,6 +101,22 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.loadThumbnailToStream(draftManager, id, (String mime) -> outString[0] = mime, outStream);
 		Assert.assertEquals("image/jpeg", outString[0]);
 		Assert.assertArrayEquals(string.getBytes(), outStream.toByteArray());
+		
+		// Make sure that we can delete this without issue.
+		Assert.assertTrue(InteractiveHelpers.deleteThumbnail(draftManager, id));
+		String[] outString2 = new String[1];
+		outStream = new ByteArrayOutputStream();
+		try
+		{
+			InteractiveHelpers.loadThumbnailToStream(draftManager, id, (String mime) -> outString2[0] = mime, outStream);
+			Assert.fail();
+		}
+		catch (FileNotFoundException e)
+		{
+			// Expected.
+		}
+		Assert.assertNull(outString2[0]);
+		Assert.assertEquals(0, outStream.size());
 	}
 
 	@Test

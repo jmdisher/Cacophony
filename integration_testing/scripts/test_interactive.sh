@@ -104,10 +104,14 @@ echo "Verify that we can see the draft in the list..."
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "\"title\":\"New Draft - $ID\""
 
-echo "Update the title and description..."
+echo "Update the title, description, then thumbnail..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "title=Updated%20Title&description=" http://127.0.0.1:8000/draft/$ID
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" "\"title\":\"Updated Title\""
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" http://127.0.0.1:8000/draft/thumb/$ID/5/6
+checkPreviousCommand "POST /draft/thumb"
+DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
+requireSubstring "$DRAFT" "\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15}"
 
 echo "Upload and process data as the video for the draft..."
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
@@ -135,6 +139,10 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE 
 checkPreviousCommand "DELETE processedVideo"
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" "\"processedVideo\":null"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/draft/thumb/$ID"
+checkPreviousCommand "DELETE thumbnail"
+DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
+requireSubstring "$DRAFT" "\"thumbnail\":null"
 
 echo "Verify that we can delete the draft and see an empty list..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XDELETE http://127.0.0.1:8000/draft/$ID
