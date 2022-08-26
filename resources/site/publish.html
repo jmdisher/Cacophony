@@ -79,7 +79,7 @@ function startRecording(stream, videoBitrate, audioBitrate, draftId, height, wid
 {
 	let recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: audioBitrate,  videoBitsPerSecond: videoBitrate });
 	let bytes = 0;
-	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveVideo/" + draftId + "/" + height + "/" + width, "webm");
+	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveVideo/" + draftId + "/" + height + "/" + width + "/webm", "video");
 	ws.onopen = function()
 	{
 		recorder.addEventListener('dataavailable', function(e) {
@@ -155,7 +155,7 @@ function postUpdatedThumbnail(canvas, captureVideo, selectedDraft, width, height
 	return new Promise((resolve, reject) => {
 		canvas.getContext('2d').drawImage(captureVideo, 0, 0, width, height);
 		canvas.toBlob((blob) => {
-			POST_withBinary("/draft/thumb/" + selectedDraft.id + "/" + height + "/" + width, blob)
+			POST_withBinary("/draft/thumb/" + selectedDraft.id + "/" + height + "/" + width + "/jpeg", blob)
 				.then((response) => {
 					selectedDraft.thumbnail = {
 						height: height,

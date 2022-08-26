@@ -91,15 +91,16 @@ public class TestInteractiveHelpers
 		int id = 1;
 		int height = 720;
 		int width = 1280;
+		String mimeArg = "namelessMime";
 		String string = "test data";
 		InteractiveHelpers.createNewDraft(draftManager, id);
 		ByteArrayInputStream input = new ByteArrayInputStream(string.getBytes());
-		InteractiveHelpers.saveThumbnailFromStream(draftManager, id, height, width, input);
+		InteractiveHelpers.saveThumbnailFromStream(draftManager, id, height, width, mimeArg, input);
 		
 		String[] outString = new String[1];
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		InteractiveHelpers.loadThumbnailToStream(draftManager, id, (String mime) -> outString[0] = mime, outStream);
-		Assert.assertEquals("image/jpeg", outString[0]);
+		Assert.assertEquals(mimeArg, outString[0]);
 		Assert.assertArrayEquals(string.getBytes(), outStream.toByteArray());
 		
 		// Make sure that we can delete this without issue.

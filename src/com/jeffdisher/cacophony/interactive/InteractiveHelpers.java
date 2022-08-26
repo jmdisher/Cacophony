@@ -143,11 +143,11 @@ public class InteractiveHelpers
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		try (FileInputStream input = new FileInputStream(wrapper.thumbnail()))
 		{
-			mimeConsumer.accept("image/jpeg");
+			mimeConsumer.accept(wrapper.loadDraft().thumbnail().mime());
 			_copyToEndOfFile(input, outStream);
 		}
 	}
-	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, InputStream inStream) throws FileNotFoundException, IOException
+	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, String mime, InputStream inStream) throws FileNotFoundException, IOException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		long bytesCopied = 0L;
@@ -157,7 +157,7 @@ public class InteractiveHelpers
 		}
 		Assert.assertTrue(bytesCopied > 0L);
 		Draft oldDraft = wrapper.loadDraft();
-		SizedElement thumbnail = new SizedElement("image/jpeg", height, width, bytesCopied);
+		SizedElement thumbnail = new SizedElement(mime, height, width, bytesCopied);
 		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo());
 		wrapper.saveDraft(newDraft);
 	}
@@ -179,7 +179,7 @@ public class InteractiveHelpers
 		File processedFile = wrapper.processedVideo();
 		try (FileInputStream input = new FileInputStream(processedFile))
 		{
-			mimeSizeConsumer.accept("video/webm", processedFile.length());
+			mimeSizeConsumer.accept(wrapper.loadDraft().processedVideo().mime(), processedFile.length());
 			_copyToEndOfFile(input, outStream);
 		}
 	}

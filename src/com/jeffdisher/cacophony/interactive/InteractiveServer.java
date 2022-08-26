@@ -73,7 +73,7 @@ public class InteractiveServer
 		server.addPostRawHandler("/draft/publish", 1, new PublishDraftHandler(environment, xsrf, manager));
 		
 		server.addGetHandler("/draft/thumb", 1, new GetThumbnailImageHandler(xsrf, manager));
-		server.addPostRawHandler("/draft/thumb", 3, new PostThumbnailImageHandler(xsrf, manager));
+		server.addPostRawHandler("/draft/thumb", 4, new PostThumbnailImageHandler(xsrf, manager));
 		server.addDeleteHandler("/draft/thumb", 1, new DeleteThumbnailHandler(xsrf, manager));
 		
 		server.addGetHandler("/draft/originalVideo", 1, new GetOriginalVideoHandler(xsrf, manager));
@@ -82,7 +82,7 @@ public class InteractiveServer
 		server.addDeleteHandler("/draft/originalVideo", 1, new DeleteOriginalVideoHandler(xsrf, manager));
 		server.addDeleteHandler("/draft/processedVideo", 1, new DeleteProcessedVideoHandler(xsrf, manager));
 		
-		server.addWebSocketFactory("/draft/saveVideo", 3, "webm", new SaveOriginalVideoSocketFactory(xsrf, manager));
+		server.addWebSocketFactory("/draft/saveVideo", 4, "video", new SaveOriginalVideoSocketFactory(xsrf, manager));
 		server.addWebSocketFactory("/draft/processVideo", 2, "process", new ProcessVideoSocketFactory(xsrf, manager, forcedCommand));
 		
 		// Temporarily, we will just inject generation for the generated_db.js here.
@@ -484,11 +484,14 @@ public class InteractiveServer
 				int draftId = Integer.parseInt(pathVariables[0]);
 				int height = Integer.parseInt(pathVariables[1]);
 				int width = Integer.parseInt(pathVariables[2]);
+				// Since we know everything coming through this path is an "image/" mime type, we just pass the second part in the path to avoid having to reencode it.
+				String codec = pathVariables[3];
+				String mime = "image/" + codec;
 				
 				try
 				{
 					InputStream input = request.getInputStream();
-					InteractiveHelpers.saveThumbnailFromStream(_draftManager, draftId, height, width, input);
+					InteractiveHelpers.saveThumbnailFromStream(_draftManager, draftId, height, width, mime, input);
 				}
 				catch (FileNotFoundException e)
 				{
@@ -711,7 +714,10 @@ public class InteractiveServer
 			int draftId = Integer.parseInt(variables[0]);
 			int height = Integer.parseInt(variables[1]);
 			int width = Integer.parseInt(variables[2]);
-			return new SaveVideoWebSocketListener(_xsrf, _draftManager, draftId, height, width);
+			// Since we know everything coming through this path is an "video/" mime type, we just pass the second part in the path to avoid having to reencode it.
+			String codec = variables[3];
+			String mime = "video/" + codec;
+			return new SaveVideoWebSocketListener(_xsrf, _draftManager, draftId, height, width, mime);
 		}
 	}
 
@@ -753,21 +759,23 @@ public class InteractiveServer
 		private final int _draftId;
 		private final int _height;
 		private final int _width;
+		private final String _mime;
 		private VideoSaver _saver;
 		
-		public SaveVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, int height, int width)
+		public SaveVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, int height, int width, String mime)
 		{
 			_xsrf = xsrf;
 			_draftManager = draftManager;
 			_draftId = draftId;
 			_height = height;
 			_width = width;
+			_mime = mime;
 		}
 		
 		@Override
 		public void onWebSocketClose(int statusCode, String reason)
 		{
-			InteractiveHelpers.closeNewVideo(_saver, "video/webm", _height, _width);
+			InteractiveHelpers.closeNewVideo(_saver, _mime, _height, _width);
 			_saver = null;
 		}
 		
