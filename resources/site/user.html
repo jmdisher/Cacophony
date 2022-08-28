@@ -17,35 +17,76 @@ var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
 	let keyArg = readGetVar("publicKey");
-	$scope.publicKey = (keyArg !== undefined) ? keyArg : DATA_common["publicKey"];
-	$scope.description = DATA_userInfo[$scope.publicKey];
-	let posts = DATA_userPosts[$scope.publicKey];
+	if (keyArg !== undefined)
+	{
+		publicKeyLoaded($scope, keyArg, false);
+	}
+	else
+	{
+		API_loadPublicKey().then(key => {
+			publicKeyLoaded($scope, key, true);
+		});
+	}
+});
+function publicKeyLoaded($scope, publicKey, shouldApply)
+{
+	$scope.publicKey = publicKey;
+	if (shouldApply)
+	{
+		$scope.$apply();
+	}
+	API_getInfoForUser(publicKey).then(userInfo => {
+		userInfoForUserLoaded($scope, userInfo);
+	});
+	API_getAllPostsForUser(publicKey).then(posts => {
+		postsForUserLoaded($scope, posts);
+	});
+}
+function userInfoForUserLoaded($scope, userInfo)
+{
+	$scope.description = userInfo;
+	$scope.$apply();
+}
+function postsForUserLoaded($scope, posts)
+{
 	let processed = [];
-	posts.forEach(function(hash) {
-		let elt = DATA_elements[hash];
-		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
-		let description = elt["description"];
-		if (description.length > 135)
-		{
-			// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
-			description = description.slice(0, 130) + "...";
-		}
-		let object = {
-			"cached": elt["cached"],
+	let totalLength = posts.length;
+	posts.forEach(function(hash, index) {
+		// Add empty objects to the array since we will replace them asynchronously.
+		let placeholder = {
+			"cached": false,
 			"elementHash": hash,
-			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
-			"name": elt["name"],
-			"description": description,
+			"name": "Loading...",
 		};
-		if (elt["cached"])
-		{
-			object["thumbnailUrl"] = elt["thumbnailUrl"];
-		}
 		// We want to build this backward so that the most recent additions are at the top of the screen.
-		processed.unshift(object);
+		processed[totalLength - index - 1] = placeholder;
+		API_getPost(hash).then(elt => {
+			// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
+			let description = elt["description"];
+			if (description.length > 135)
+			{
+				// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
+				description = description.slice(0, 130) + "...";
+			}
+			// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+			let object = {
+				"cached": elt["cached"],
+				"elementHash": hash,
+				"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
+				"name": elt["name"],
+				"description": description,
+			}
+			if (elt["cached"])
+			{
+				object["thumbnailUrl"] = elt["thumbnailUrl"];
+			}
+		processed[totalLength - index - 1] = object;
+			$scope.$apply();
+		});
 	});
 	$scope.posts = processed;
-});
+	$scope.$apply();
+}
 </script>
 
 	<title>Cacophony - User View</title>

@@ -17,37 +17,70 @@ var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
 	let keyArg = readGetVar("publicKey");
-	$scope.publicKey = (keyArg !== undefined) ? keyArg : DATA_common["publicKey"];
-	$scope.thisUserName = "Unknown User";
-	if (undefined !== DATA_userInfo[$scope.publicKey])
+	if (keyArg !== undefined)
 	{
-		$scope.thisUserName = DATA_userInfo[$scope.publicKey]["name"];
+		publicKeyLoaded($scope, keyArg, false);
 	}
-	$scope.description = DATA_userInfo[$scope.publicKey];
-	let recommended = DATA_recommended[$scope.publicKey];
+	else
+	{
+		API_loadPublicKey().then(key => {
+			publicKeyLoaded($scope, key, true);
+		});
+	}
+});
+function publicKeyLoaded($scope, publicKey, shouldApply)
+{
+	$scope.publicKey = publicKey;
+	$scope.thisUserName = "Unknown User";
+	if (shouldApply)
+	{
+		$scope.$apply();
+	}
+	API_getInfoForUser(publicKey).then(userInfo => {
+		userInfoForUserLoaded($scope, userInfo);
+	});
+	API_getRecommendedUsers(publicKey).then(recommendedKeys => {
+		recommendedUsersLoaded($scope, recommendedKeys);
+	});
+}
+function userInfoForUserLoaded($scope, userInfo)
+{
+	if (undefined !== userInfo)
+	{
+		$scope.thisUserName = userInfo["name"];
+	}
+	$scope.description = userInfo;
+	$scope.$apply();
+}
+function recommendedUsersLoaded($scope, recommended)
+{
 	let processed = [];
 	recommended.forEach(function(key) {
-		let elt = DATA_userInfo[key];
-		if (undefined !== elt)
-		{
-			processed.push({
-				"known": true,
-				"publicKey": key,
-				"name": elt["name"],
-				"description": elt["description"],
-				"userPicUrl": elt["userPicUrl"],
-			});
-		}
-		else
-		{
-			processed.push({
-				"known": false,
-				"publicKey": key,
-			});
-		}
+		// Add empty objects to the array since we will replace them asynchronously.
+		let placeholder = {
+			"known": false,
+			"publicKey": key,
+		};
+		let nextIndex = processed.push(placeholder);
+		API_getInfoForUser(key).then(elt => {
+			if (undefined !== elt)
+			{
+				// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+				let object = {
+					"known": true,
+					"publicKey": key,
+					"name": elt["name"],
+					"description": elt["description"],
+					"userPicUrl": elt["userPicUrl"],
+				};
+				processed[nextIndex - 1] = object;
+				$scope.$apply();
+			}
+		});
 	});
 	$scope.recommended = processed;
-});
+	$scope.$apply();
+}
 </script>
 
 	<title>Cacophony - Recommended Users</title>

@@ -17,7 +17,12 @@ var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
 	let hashArg = readGetVar("elt");
-	let elt = DATA_elements[hashArg];
+	API_getPost(hashArg).then(elt => {
+		postWasLoaded($scope, elt);
+	});
+});
+function postWasLoaded($scope, elt)
+{
 	$scope.name = elt["name"];
 	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
 	$scope.discussionUrl = elt["discussionUrl"];
@@ -43,7 +48,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 			}
 		}
 	}
-});
+	$scope.$apply();
+}
 </script>
 
 	<title>Cacophony - Play Video</title>

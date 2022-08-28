@@ -15,8 +15,11 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
-	$scope.edgePixels = DATA_prefs["edgeSize"];
-	$scope.followCacheGB = DATA_prefs["followerCacheBytes"] / 1000000000;
+	API_getPrefs().then(prefs => {
+		$scope.edgePixels = prefs["edgeSize"];
+		$scope.followCacheGB = prefs["followerCacheBytes"] / 1000000000;
+		$scope.$apply();
+	});
 });
 </script>
 

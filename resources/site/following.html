@@ -16,19 +16,29 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
-	let following = DATA_following;
+	API_getFollowedKeys().then(following => {
+		followingLoaded($scope, following);
+	});
+});
+function followingLoaded($scope, following)
+{
 	let processed = [];
 	following.forEach(function(key) {
-		let elt = DATA_userInfo[key];
-		processed.push({
-			"publicKey": key,
-			"name": elt["name"],
-			"description": elt["description"],
-			"userPicUrl": elt["userPicUrl"],
+		// We will just add these to the list in whatever order they are returned since order isn't important and we have no meaningful placeholder.
+		API_getInfoForUser(key).then(elt => {
+			let object = {
+				"publicKey": key,
+				"name": elt["name"],
+				"description": elt["description"],
+				"userPicUrl": elt["userPicUrl"],
+			};
+			processed.push(object);
+			$scope.$apply();
 		});
 	});
 	$scope.following = processed;
-});
+	$scope.$apply();
+}
 </script>
 
 	<title>Cacophony - Users you Follow</title>

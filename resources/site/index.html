@@ -15,8 +15,11 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
-	$scope.hash = DATA_version["hash"];
-	$scope.version = DATA_version["version"];
+	API_getVersion().then(version => {
+		$scope.hash = version["hash"];
+		$scope.version = version["version"];
+		$scope.$apply();
+	});
 });
 </script>
 

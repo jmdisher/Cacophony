@@ -119,3 +119,77 @@ var DATA_following = [
 	"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141",
 ];
 
+
+// Note that we will temporarily just pass this data back, asynchronously, to get the rest of the code into the async shape required for the interactive mode to eventually fetch this from REST, not the generated file.
+function API_loadPublicKey()
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_common["publicKey"]);
+		});
+	});
+}
+
+function API_getInfoForUser(publicKey)
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_userInfo[publicKey]);
+		});
+	});
+}
+
+function API_getAllPostsForUser(publicKey)
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_userPosts[publicKey]);
+		});
+	});
+}
+
+function API_getRecommendedUsers(publicKey)
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_recommended[publicKey]);
+		});
+	});
+}
+
+function API_getPost(hash)
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_elements[hash]);
+		});
+	});
+}
+
+function API_getFollowedKeys()
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_following);
+		});
+	});
+}
+
+function API_getPrefs()
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_prefs);
+		});
+	});
+}
+
+function API_getVersion()
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(DATA_version);
+		});
+	});
+}
+
