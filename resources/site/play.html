@@ -64,13 +64,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 </nav>
 <div class="container">
 	<div class="jumbotron">
-		<div class="row card card-body" ng-show="{{cached && videoUrl}}">
+		<div class="row card card-body" ng-show="cached && videoUrl">
 			<center><video id="video" controls /></center>
 		</div>
-		<div class="row card card-body" ng-show="{{cached && thumbnailUrl && !videoUrl}}">
-			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
+		<div class="row card card-body" ng-show="cached && thumbnailUrl && !videoUrl">
+			<img class="img-responsive" ng-src="thumbnailUrl" alt="{{name}}"/>
 		</div>
-		<div class="row card card-body" ng-hide="{{cached}}">
+		<div class="row card card-body" ng-hide="cached">
 			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong>
 		</div>
 		<div class="row card card-body">
@@ -82,7 +82,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 		<div class="col-md-6">
 			<div class="row card card-body" id="description">
 			</div>
-			<div class="row card card-body" ng-show="{{discussionUrl}}">
+			<div class="row card card-body" ng-show="discussionUrl">
 				<a ng-href="{{discussionUrl}}">Reply in the discussion</a>
 			</div>
 		</div>
