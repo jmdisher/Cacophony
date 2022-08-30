@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
@@ -22,6 +25,10 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 
 /**
  * These are very simple helpers used by the InteractiveServer, only pulled out that they can be understood and tested
@@ -29,6 +36,9 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class InteractiveHelpers
 {
+	private static final String XSRF = "XSRF";
+	private static final String LOCAL_IP = "127.0.0.1";
+
 	// --- Methods related to saving the new video.
 	public static VideoSaver openNewVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
@@ -248,6 +258,90 @@ public class InteractiveHelpers
 			wrapper.saveDraft(newDraft);
 		}
 		return didDelete;
+	}
+
+	/**
+	 * Checks that the request is from the local IP and has the expected XSRF cookie.  Sets the error in the response if
+	 * not.
+	 * 
+	 * @param xsrf The XSRF cookie value we expect to see.
+	 * @param request The HTTP request.
+	 * @param response The response object.
+	 * @return True if this request should proceed or false if it should be rejected.
+	 */
+	public static boolean verifySafeRequest(String xsrf, HttpServletRequest request, HttpServletResponse response)
+	{
+		boolean isSafe = false;
+		if (LOCAL_IP.equals(request.getRemoteAddr()))
+		{
+			String value = null;
+			Cookie[] cookies = request.getCookies();
+			if (null != cookies)
+			{
+				for (Cookie cookie : cookies)
+				{
+					if (XSRF.equals(cookie.getName()))
+					{
+						value = cookie.getValue();
+					}
+				}
+			}
+			if (xsrf.equals(value))
+			{
+				// This means all checks passed.
+				isSafe = true;
+			}
+			else
+			{
+				isSafe = false;
+				System.err.println("Invalid XSRF: \"" + value + "\"");
+				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			}
+		}
+		else
+		{
+			isSafe = false;
+			System.err.println("Invalid IP: " + request.getRemoteAddr());
+			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		}
+		return isSafe;
+	}
+	/**
+	 * Checks that the request is from the local IP and the upgrade request has the expected XSRF cookie.  Closes the
+	 * session with an error if not.
+	 * 
+	 * @param xsrf The XSRF cookie value we expect to see.
+	 * @param session The WebSocket session.
+	 * @return True if this request should proceed or false if it should be rejected.
+	 */
+	public static boolean verifySafeWebSocket(String xsrf, Session session)
+	{
+		boolean isSafe = false;
+		String rawDescription = session.getRemoteAddress().toString();
+		// This rawDescription looks like "/127.0.0.1:65657" so we need to parse it.
+		String ip = rawDescription.substring(1).split(":")[0];
+		if (LOCAL_IP.equals(ip))
+		{
+			String value = session.getUpgradeRequest().getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
+			if (xsrf.equals(value))
+			{
+				// This means all checks passed.
+				isSafe = true;
+			}
+			else
+			{
+				isSafe = false;
+				System.err.println("Invalid XSRF: \"" + value + "\"");
+				session.close(CloseStatus.SERVER_ERROR, "Invalid XSRF");
+			}
+		}
+		else
+		{
+			isSafe = false;
+			System.err.println("Invalid IP: " + ip);
+			session.close(CloseStatus.SERVER_ERROR, "Invalid IP");
+		}
+		return isSafe;
 	}
 
 

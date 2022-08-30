@@ -50,8 +50,6 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class InteractiveServer
 {
-	private static final String XSRF = "XSRF";
-
 	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port, String processingCommand, boolean canChangeCommand)
 	{
 		String forcedCommand = canChangeCommand
@@ -127,7 +125,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("text/plain;charset=utf-8");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -163,7 +161,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("application/json");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -199,7 +197,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("application/json");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -261,7 +259,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				response.setContentType("application/json");
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -291,7 +289,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -327,7 +325,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				String title = formVariables.getIfSingle("title");
@@ -375,7 +373,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				
@@ -411,7 +409,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				try
@@ -445,7 +443,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -479,7 +477,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				int height = Integer.parseInt(pathVariables[1]);
@@ -515,7 +513,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);
 				try
@@ -557,7 +555,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -595,7 +593,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -630,7 +628,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -669,7 +667,7 @@ public class InteractiveServer
 		@Override
 		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
 		{
-			if (_verifySafeRequest(_xsrf, request, response))
+			if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 			{
 				int draftId = Integer.parseInt(variables[0]);
 				try
@@ -782,7 +780,7 @@ public class InteractiveServer
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (_verifySafeWebSocket(_xsrf, session))
+			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
 			{
 				// 256 KiB should be reasonable.
 				session.setMaxBinaryMessageSize(256 * 1024);
@@ -833,7 +831,7 @@ public class InteractiveServer
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (_verifySafeWebSocket(_xsrf, session))
+			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
 			{
 				Assert.assertTrue(null == _processor);
 				try
@@ -971,71 +969,4 @@ public class InteractiveServer
 	}
 
 
-	private static boolean _verifySafeRequest(String xsrf, HttpServletRequest request, HttpServletResponse response)
-	{
-		boolean isSafe = false;
-		if ("127.0.0.1".equals(request.getRemoteAddr()))
-		{
-			String value = null;
-			Cookie[] cookies = request.getCookies();
-			if (null != cookies)
-			{
-				for (Cookie cookie : cookies)
-				{
-					if (XSRF.equals(cookie.getName()))
-					{
-						value = cookie.getValue();
-					}
-				}
-			}
-			if (xsrf.equals(value))
-			{
-				// This means all checks passed.
-				isSafe = true;
-			}
-			else
-			{
-				isSafe = false;
-				System.err.println("Invalid XSRF: \"" + value + "\"");
-				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-			}
-		}
-		else
-		{
-			isSafe = false;
-			System.err.println("Invalid IP: " + request.getRemoteAddr());
-			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-		}
-		return isSafe;
-	}
-
-	private static boolean _verifySafeWebSocket(String xsrf, Session session)
-	{
-		boolean isSafe = false;
-		String rawDescription = session.getRemoteAddress().toString();
-		// This rawDescription looks like "/127.0.0.1:65657" so we need to parse it.
-		String ip = rawDescription.substring(1).split(":")[0];
-		if ("127.0.0.1".equals(ip))
-		{
-			String value = session.getUpgradeRequest().getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
-			if (xsrf.equals(value))
-			{
-				// This means all checks passed.
-				isSafe = true;
-			}
-			else
-			{
-				isSafe = false;
-				System.err.println("Invalid XSRF: \"" + value + "\"");
-				session.close(CloseStatus.SERVER_ERROR, "Invalid XSRF");
-			}
-		}
-		else
-		{
-			isSafe = false;
-			System.err.println("Invalid IP: " + ip);
-			session.close(CloseStatus.SERVER_ERROR, "Invalid IP");
-		}
-		return isSafe;
-	}
 }
