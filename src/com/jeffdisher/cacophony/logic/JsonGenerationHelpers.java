@@ -61,21 +61,10 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// Load all the index objects since we walk it for a few operations.
-		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
-		_startLoad(indices, checker, ourPublicKey, lastPublishedIndex);
-		for(FollowRecord record : followIndex)
-		{
-			_startLoad(indices, checker, record.publicKey(), record.lastFetchedRoot());
-		}
+		List<FutureKey<StreamIndex>> indices = _loadStreamIndices(checker, ourPublicKey, lastPublishedIndex, followIndex);
 		
 		// DATA_userInfo.
-		JsonObject dataUserInfo = new JsonObject();
-		List<FutureKey<StreamDescription>> descriptions = _loadDescriptions(checker, indices);
-		for (FutureKey<StreamDescription> future : descriptions)
-		{
-			JsonObject json = _populateJsonForDescription(checker, future.future.get());
-			dataUserInfo.set(future.publicKey.toPublicKey(), json);
-		}
+		JsonObject dataUserInfo = _dataUserInfo(checker, indices);
 		generatedStream.println("var DATA_userInfo = " + dataUserInfo.toString());
 		generatedStream.println();
 		
@@ -210,6 +199,20 @@ public class JsonGenerationHelpers
 		);
 		
 		generatedStream.close();
+	}
+
+	public static JsonObject userInfo(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	{
+		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
+		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+		JsonObject foundObject = null;
+		if (null != indexToLoad)
+		{
+			StreamIndex index = checker.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamDescription description = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			foundObject = _populateJsonForDescription(checker, description);
+		}
+		return foundObject;
 	}
 
 
@@ -387,6 +390,50 @@ public class JsonGenerationHelpers
 			}
 		}
 		return videoCid;
+	}
+
+	private static List<FutureKey<StreamIndex>> _loadStreamIndices(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex)
+	{
+		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
+		_startLoad(indices, checker, ourPublicKey, lastPublishedIndex);
+		for(FollowRecord record : followIndex)
+		{
+			_startLoad(indices, checker, record.publicKey(), record.lastFetchedRoot());
+		}
+		return indices;
+	}
+
+	private static JsonObject _dataUserInfo(LoadChecker checker, List<FutureKey<StreamIndex>> indices) throws IpfsConnectionException
+	{
+		JsonObject dataUserInfo = new JsonObject();
+		List<FutureKey<StreamDescription>> descriptions = _loadDescriptions(checker, indices);
+		for (FutureKey<StreamDescription> future : descriptions)
+		{
+			JsonObject json = _populateJsonForDescription(checker, future.future.get());
+			dataUserInfo.set(future.publicKey.toPublicKey(), json);
+		}
+		return dataUserInfo;
+	}
+
+	private static IpfsFile _getLastKnownIndexForKey(IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve)
+	{
+		IpfsFile indexToLoad = null;
+		if (userToResolve.equals(ourPublicKey))
+		{
+			indexToLoad = lastPublishedIndex;
+		}
+		else
+		{
+			for(FollowRecord record : followIndex)
+			{
+				if (userToResolve.equals(record.publicKey()))
+				{
+					indexToLoad = record.lastFetchedRoot();
+					break;
+				}
+			}
+		}
+		return indexToLoad;
 	}
 
 
