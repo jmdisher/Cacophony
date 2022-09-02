@@ -7,6 +7,10 @@ import org.eclipse.jetty.util.resource.Resource;
 import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -15,8 +19,11 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class InteractiveServer
 {
-	public static void runServerUntilStop(IEnvironment environment, DraftManager manager, Resource staticResource, int port, String processingCommand, boolean canChangeCommand)
+	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
+		LocalConfig local = environment.loadExistingConfig();
+		DraftManager manager = local.buildDraftManager();
+		
 		String forcedCommand = canChangeCommand
 				? null
 				: processingCommand
