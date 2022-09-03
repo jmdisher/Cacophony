@@ -170,6 +170,10 @@ echo "Check the user data for this user"
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC_KEY")
 requireSubstring "$USER_INFO" "\"description\":\"Description forthcoming\""
 
+echo "Check the list of posts for this user"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+# (make sure we at least see an entry in the list - we just don't know what it will be)
+requireSubstring "$POST_LIST" "[\"Qm"
 
 echo "Verify that we see it in the generated_db.js (since we are generating that as a stop-gap before transitioning to the dynamic mode)..."
 GENERATED_DB=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/generated_db.js)

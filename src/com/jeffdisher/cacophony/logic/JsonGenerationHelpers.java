@@ -215,6 +215,24 @@ public class JsonGenerationHelpers
 		return foundObject;
 	}
 
+	public static JsonArray postHashes(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	{
+		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
+		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+		JsonArray array = null;
+		if (null != indexToLoad)
+		{
+			StreamIndex index = checker.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			array = new JsonArray();
+			for (String rawCid : records.getRecord())
+			{
+				array.add(rawCid);
+			}
+		}
+		return array;
+	}
+
 
 	private static void _startLoad(List<FutureKey<StreamIndex>> list, LoadChecker checker, IpfsKey publicKey, IpfsFile indexRoot)
 	{
