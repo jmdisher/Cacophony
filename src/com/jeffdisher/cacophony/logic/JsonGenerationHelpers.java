@@ -251,6 +251,60 @@ public class JsonGenerationHelpers
 		return array;
 	}
 
+	/**
+	 * Returns a JSON struct for the given postToResolve or null if it is unknown.
+	 * NOTE:  This will only resolve stream elements this user posted or which was posted by a followee.
+	 * 
+	 * @param checker
+	 * @param lastPublishedIndex
+	 * @param followIndex
+	 * @param postToResolve
+	 * @return
+	 * @throws IpfsConnectionException
+	 */
+	public static JsonObject postStruct(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsFile postToResolve) throws IpfsConnectionException
+	{
+		JsonObject foundObject = null;
+		// TODO:  Currently, we don't store any information around what we have cached locally in any way which can be
+		// indexed for one-off lookups.  This MUST be fixed (even with a basic in-memory cache) as our current approach
+		// walks all the data to find this, including loading some data from the node in order to find the element and
+		// know how to interpret it.
+		
+		// First, scan our own data.
+		foundObject = _findElementFromRoot(checker, lastPublishedIndex, null, postToResolve);
+		if (null == foundObject)
+		{
+			// We didn't find it so take a look at the users we are following.
+			for(FollowRecord record : followIndex)
+			{
+				Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
+				foundObject = _findElementFromRoot(checker, lastPublishedIndex, elementsCachedForUser, postToResolve);
+				if (null != foundObject)
+				{
+					break;
+				}
+			}
+		}
+		return foundObject;
+	}
+
+
+	private static JsonObject _findElementFromRoot(LoadChecker checker, IpfsFile lastPublishedIndex, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, IpfsFile postToResolve) throws IpfsConnectionException
+	{
+		JsonObject foundObject = null;
+		StreamIndex index = checker.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		for (String rawCid : records.getRecord())
+		{
+			if (postToResolve.equals(IpfsFile.fromIpfsCid(rawCid)))
+			{
+				FutureRead<StreamRecord> futureRecord = checker.loadCached(postToResolve, (byte[] data) -> GlobalData.deserializeRecord(data));
+				foundObject = _loadSinglePostStruct(checker, elementsCachedForUser, futureRecord, postToResolve);
+				break;
+			}
+		}
+		return foundObject;
+	}
 
 	private static void _startLoad(List<FutureKey<StreamIndex>> list, LoadChecker checker, IpfsKey publicKey, IpfsFile indexRoot)
 	{
@@ -310,56 +364,55 @@ public class JsonGenerationHelpers
 		for (FutureRead<StreamRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
-			StreamRecord record = future.get();
-			JsonObject thisElt = new JsonObject();
-			thisElt.set("name", record.getName());
-			thisElt.set("description", record.getDescription());
-			thisElt.set("publishedSecondsUtc", record.getPublishedSecondsUtc());
-			thisElt.set("discussionUrl", record.getDiscussion());
-			
-			boolean isLocalUser = (null == elementsCachedForUser);
-			boolean isCachedFollowee = !isLocalUser && elementsCachedForUser.containsKey(cid);
-			// In either of these cases, we will have the data cached.
-			boolean isCached = (isLocalUser || isCachedFollowee);
-			thisElt.set("cached", isCached);
-			IpfsFile thumbnailCid = null;
-			IpfsFile videoCid = null;
-			if (isLocalUser)
-			{
-				// In the local case, we want to look at the rest of the record and figure out what makes most sense since all entries will be pinned.
-				List<DataElement> elements = record.getElements().getElement();
-				thumbnailCid = _findThumbnail(elements);
-				videoCid = _findLargestVideo(elements);
-			}
-			else if (isCachedFollowee)
-			{
-				// In this case, we want to just see what we recorded in the followee cache since that is what we pinned.
-				FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
-				thumbnailCid = cachedElement.imageHash();
-				videoCid = cachedElement.leafHash();
-			}
-			if (isCached)
-			{
-				// However we found these, they are expected to be in the cache and they should be locally pinned.
-				// Note that we can have at most one thumbnail and one video but both are optional and there could be an entry with neither.
-				String thumbnailUrl = null;
-				if (null != thumbnailCid)
-				{
-					Assert.assertTrue(checker.isCached(thumbnailCid));
-					thumbnailUrl = checker.getCachedUrl(thumbnailCid).toString();
-				}
-				String videoUrl = null;
-				if (null != videoCid)
-				{
-					Assert.assertTrue(checker.isCached(videoCid));
-					videoUrl = checker.getCachedUrl(videoCid).toString();
-				}
-				
-				thisElt.set("thumbnailUrl", thumbnailUrl);
-				thisElt.set("videoUrl", videoUrl);
-			}
+			JsonObject thisElt = _loadSinglePostStruct(checker, elementsCachedForUser, future, cid);
 			rootData.set(cid.toSafeString(), thisElt);
 		}
+	}
+
+	private static JsonObject _loadSinglePostStruct(LoadChecker checker, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
+	{
+		StreamRecord record = future.get();
+		
+		boolean isLocalUser = (null == elementsCachedForUser);
+		boolean isCachedFollowee = !isLocalUser && elementsCachedForUser.containsKey(cid);
+		// In either of these cases, we will have the data cached.
+		boolean isCached = (isLocalUser || isCachedFollowee);
+		
+		IpfsFile thumbnailCid = null;
+		IpfsFile videoCid = null;
+		if (isLocalUser)
+		{
+			// In the local case, we want to look at the rest of the record and figure out what makes most sense since all entries will be pinned.
+			List<DataElement> elements = record.getElements().getElement();
+			thumbnailCid = _findThumbnail(elements);
+			videoCid = _findLargestVideo(elements);
+		}
+		else if (isCachedFollowee)
+		{
+			// In this case, we want to just see what we recorded in the followee cache since that is what we pinned.
+			FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
+			thumbnailCid = cachedElement.imageHash();
+			videoCid = cachedElement.leafHash();
+		}
+		
+		String thumbnailUrl = null;
+		String videoUrl = null;
+		if (isCached)
+		{
+			// However we found these, they are expected to be in the cache and they should be locally pinned.
+			// Note that we can have at most one thumbnail and one video but both are optional and there could be an entry with neither.
+			if (null != thumbnailCid)
+			{
+				Assert.assertTrue(checker.isCached(thumbnailCid));
+				thumbnailUrl = checker.getCachedUrl(thumbnailCid).toString();
+			}
+			if (null != videoCid)
+			{
+				Assert.assertTrue(checker.isCached(videoCid));
+				videoUrl = checker.getCachedUrl(videoCid).toString();
+			}
+		}
+		return _formatAsPostStruct(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl);
 	}
 
 	private static void _populatePostsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, StreamRecords records)
@@ -470,6 +523,22 @@ public class JsonGenerationHelpers
 			}
 		}
 		return indexToLoad;
+	}
+
+	private static JsonObject _formatAsPostStruct(String name, String description, long publishedSecondsUtc, String discussionUrl, boolean isCached, String thumbnailUrl, String videoUrl)
+	{
+		JsonObject thisElt = new JsonObject();
+		thisElt.set("name", name);
+		thisElt.set("description", description);
+		thisElt.set("publishedSecondsUtc", publishedSecondsUtc);
+		thisElt.set("discussionUrl", discussionUrl);
+		thisElt.set("cached", isCached);
+		if (isCached)
+		{
+			thisElt.set("thumbnailUrl", thumbnailUrl);
+			thisElt.set("videoUrl", videoUrl);
+		}
+		return thisElt;
 	}
 
 
