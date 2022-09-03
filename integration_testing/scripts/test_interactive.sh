@@ -175,6 +175,10 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 # (make sure we at least see an entry in the list - we just don't know what it will be)
 requireSubstring "$POST_LIST" "[\"Qm"
 
+echo "Check the list of recommended keys for this user"
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC_KEY")
+requireSubstring "$RECOMMENDED_KEYS" "[]"
+
 echo "Verify that we see it in the generated_db.js (since we are generating that as a stop-gap before transitioning to the dynamic mode)..."
 GENERATED_DB=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/generated_db.js)
 requireSubstring "$GENERATED_DB" "File is generated for the interactive --run method."
