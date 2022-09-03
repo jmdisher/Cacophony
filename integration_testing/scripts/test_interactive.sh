@@ -192,6 +192,10 @@ echo "Check that we can read the preferences"
 PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/prefs")
 requireSubstring "$PREFS" "{\"edgeSize\":1280,\"followerCacheBytes\":10000000000}"
 
+echo "Check that we can read the version"
+VERSION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/version")
+requireSubstring "$VERSION" "\"version\""
+
 echo "Verify that we see it in the generated_db.js (since we are generating that as a stop-gap before transitioning to the dynamic mode)..."
 GENERATED_DB=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/generated_db.js)
 requireSubstring "$GENERATED_DB" "File is generated for the interactive --run method."

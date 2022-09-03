@@ -47,9 +47,7 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// DATA_version.
-		JsonObject dataVersion = new JsonObject();
-		dataVersion.set("hash", Version.HASH);
-		dataVersion.set("version", Version.TAG);
+		JsonObject dataVersion = _dataVersion();
 		generatedStream.println("var DATA_version = " + dataVersion.toString());
 		generatedStream.println();
 		
@@ -193,6 +191,11 @@ public class JsonGenerationHelpers
 		);
 		
 		generatedStream.close();
+	}
+
+	public static JsonObject dataVersion()
+	{
+		return _dataVersion();
 	}
 
 	public static JsonObject userInfo(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
@@ -494,6 +497,14 @@ public class JsonGenerationHelpers
 			_startLoad(indices, checker, record.publicKey(), record.lastFetchedRoot());
 		}
 		return indices;
+	}
+
+	private static JsonObject _dataVersion()
+	{
+		JsonObject dataVersion = new JsonObject();
+		dataVersion.set("hash", Version.HASH);
+		dataVersion.set("version", Version.TAG);
+		return dataVersion;
 	}
 
 	private static JsonObject _dataPrefs(GlobalPrefs prefs)
