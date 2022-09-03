@@ -54,9 +54,7 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// DATA_prefs.
-		JsonObject dataPrefs = new JsonObject();
-		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax());
-		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes());
+		JsonObject dataPrefs = _dataPrefs(prefs);
 		generatedStream.println("var DATA_prefs = " + dataPrefs.toString());
 		generatedStream.println();
 		
@@ -289,6 +287,11 @@ public class JsonGenerationHelpers
 		return _dataFollowing(followIndex);
 	}
 
+	public static JsonObject prefs(GlobalPrefs prefs)
+	{
+		return _dataPrefs(prefs);
+	}
+
 
 	private static JsonObject _findElementFromRoot(LoadChecker checker, IpfsFile lastPublishedIndex, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, IpfsFile postToResolve) throws IpfsConnectionException
 	{
@@ -491,6 +494,14 @@ public class JsonGenerationHelpers
 			_startLoad(indices, checker, record.publicKey(), record.lastFetchedRoot());
 		}
 		return indices;
+	}
+
+	private static JsonObject _dataPrefs(GlobalPrefs prefs)
+	{
+		JsonObject dataPrefs = new JsonObject();
+		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax());
+		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes());
+		return dataPrefs;
 	}
 
 	private static JsonObject _dataUserInfo(LoadChecker checker, List<FutureKey<StreamIndex>> indices) throws IpfsConnectionException
