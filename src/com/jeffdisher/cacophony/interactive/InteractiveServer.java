@@ -71,6 +71,7 @@ public class InteractiveServer
 		server.addGetHandler("/postHashes", 1, new GET_PostHashes(xsrf, checker, ourPublicKey, local));
 		server.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(xsrf, checker, ourPublicKey, local));
 		server.addGetHandler("/postStruct", 1, new GET_PostStruct(xsrf, checker, local));
+		server.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(xsrf, local));
 		
 		// Temporarily, we will just inject generation for the generated_db.js here.
 		server.addGetHandler("/generated_db.js", 0, new GET_GeneratedDb(environment));

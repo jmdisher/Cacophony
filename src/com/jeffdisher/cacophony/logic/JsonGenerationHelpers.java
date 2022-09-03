@@ -115,11 +115,7 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// DATA_following.
-		JsonArray dataFollowing = new JsonArray();
-		for(FollowRecord record : followIndex)
-		{
-			dataFollowing.add(record.publicKey().toPublicKey());
-		}
+		JsonArray dataFollowing = _dataFollowing(followIndex);
 		generatedStream.println("var DATA_following = " + dataFollowing.toString());
 		generatedStream.println();
 		
@@ -286,6 +282,11 @@ public class JsonGenerationHelpers
 			}
 		}
 		return foundObject;
+	}
+
+	public static JsonArray followeeKeys(FollowIndex followIndex)
+	{
+		return _dataFollowing(followIndex);
 	}
 
 
@@ -502,6 +503,16 @@ public class JsonGenerationHelpers
 			dataUserInfo.set(future.publicKey.toPublicKey(), json);
 		}
 		return dataUserInfo;
+	}
+
+	private static JsonArray _dataFollowing(FollowIndex followIndex)
+	{
+		JsonArray dataFollowing = new JsonArray();
+		for(FollowRecord record : followIndex)
+		{
+			dataFollowing.add(record.publicKey().toPublicKey());
+		}
+		return dataFollowing;
 	}
 
 	private static IpfsFile _getLastKnownIndexForKey(IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve)

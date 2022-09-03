@@ -184,6 +184,10 @@ POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 2)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" "\"cached\":true"
 
+echo "Check the list of followee keys for this user"
+FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followeeKeys")
+requireSubstring "$FOLLOWEE_KEYS" "[]"
+
 echo "Verify that we see it in the generated_db.js (since we are generating that as a stop-gap before transitioning to the dynamic mode)..."
 GENERATED_DB=$(curl --no-progress-meter -XGET http://127.0.0.1:8000/generated_db.js)
 requireSubstring "$GENERATED_DB" "File is generated for the interactive --run method."
