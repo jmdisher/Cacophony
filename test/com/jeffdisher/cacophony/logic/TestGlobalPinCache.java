@@ -72,4 +72,17 @@ public class TestGlobalPinCache
 		read = GlobalPinCache.fromStream(inStream);
 		Assert.assertNotNull(read);
 	}
+
+	@Test
+	public void testMutableClone()
+	{
+		GlobalPinCache index = GlobalPinCache.newCache();
+		index.hashWasAdded(M1);
+		Assert.assertTrue(index.isCached(M1));
+		
+		GlobalPinCache copy = index.mutableClone();
+		Assert.assertTrue(copy.shouldUnpinAfterRemoving(M1));
+		Assert.assertFalse(copy.isCached(M1));
+		Assert.assertTrue(index.isCached(M1));
+	}
 }

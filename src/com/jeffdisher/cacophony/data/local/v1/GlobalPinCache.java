@@ -124,6 +124,16 @@ public class GlobalPinCache
 		return _map.containsKey(hash);
 	}
 
+	/**
+	 * Creates a clone of the receiver, starting with the same state but allowing independent divergence of the state
+	 * of the 2 objects.
+	 * @return The new cloned instance.
+	 */
+	public GlobalPinCache mutableClone()
+	{
+		return new GlobalPinCache(new HashMap<>(_map));
+	}
+
 
 	private boolean _isNewAfterIncrement(IpfsFile hash)
 	{

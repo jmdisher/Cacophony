@@ -135,4 +135,18 @@ public class TestFollowIndex
 		Assert.assertEquals(video1, elements[0].leafHash());
 		Assert.assertEquals(combinedSizeBytes, elements[0].combinedSizeBytes());
 	}
+
+	@Test
+	public void testMutableClone()
+	{
+		FollowIndex index = FollowIndex.emptyFollowIndex();
+		index.addFollowingWithInitialState(K1, F1, 1);
+		Assert.assertNotNull(index.getFollowerRecord(K1));
+		
+		FollowIndex copy = index.mutableClone();
+		copy.updateFollowee(K1, F2, 1);
+		
+		Assert.assertEquals(F2, copy.getLastFetchedRoot(K1));
+		Assert.assertEquals(F1, index.getLastFetchedRoot(K1));
+	}
 }

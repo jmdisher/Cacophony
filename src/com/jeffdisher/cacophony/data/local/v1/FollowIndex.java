@@ -162,6 +162,16 @@ public class FollowIndex implements Iterable<FollowRecord>
 		return Collections.unmodifiableList(_sortedFollowList).iterator();
 	}
 
+	/**
+	 * Creates a clone of the receiver, starting with the same state but allowing independent divergence of the state
+	 * of the 2 objects.
+	 * @return The new cloned instance.
+	 */
+	public FollowIndex mutableClone()
+	{
+		return new FollowIndex(new ArrayList<>(_sortedFollowList));
+	}
+
 
 	private FollowRecord _removeRecordFromList(IpfsKey publicKey)
 	{
