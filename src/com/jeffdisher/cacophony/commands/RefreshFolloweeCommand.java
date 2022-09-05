@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -17,7 +16,6 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		Assert.assertTrue(null != _publicKey);
 		
 		LocalConfig local = environment.loadExistingConfig();
-		FollowIndex followIndex = local.loadFollowIndex();
-		CommandHelpers.refreshFollowee(environment, local, followIndex, _publicKey);
+		CommandHelpers.refreshFollowee(environment, local, _publicKey);
 	}
 }

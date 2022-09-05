@@ -318,8 +318,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Run the command once and make sure that the followee key exists.
 		user.runCommand(null, command);
-		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY2);
+		FollowRecord record = user.readFollowIndex().getFollowerRecord(PUBLIC_KEY2);
 		IpfsFile lastRoot = record.lastFetchedRoot();
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
 		long firstMillis = record.lastPollMillis();
@@ -328,7 +327,7 @@ public class TestRefreshNextFolloweeCommand
 		Thread.sleep(2);
 		user2.timeoutKey(PUBLIC_KEY2);
 		user.runCommand(null, command);
-		record = followIndex.getFollowerRecord(PUBLIC_KEY2);
+		record = user.readFollowIndex().getFollowerRecord(PUBLIC_KEY2);
 		IpfsFile lastRoot2 = record.lastFetchedRoot();
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
 		Assert.assertEquals(lastRoot, lastRoot2);

@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -15,12 +14,11 @@ public record RefreshNextFolloweeCommand() implements ICommand
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
-		FollowIndex followIndex = local.loadFollowIndex();
-		IpfsKey publicKey = followIndex.nextKeyToPoll();
+		IpfsKey publicKey = local.loadFollowIndex().nextKeyToPoll();
 		if (null == publicKey)
 		{
 			throw new UsageException("Not following any users");
 		}
-		CommandHelpers.refreshFollowee(environment, local, followIndex, publicKey);
+		CommandHelpers.refreshFollowee(environment, local, publicKey);
 	}
 }

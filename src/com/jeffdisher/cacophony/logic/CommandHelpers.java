@@ -36,18 +36,19 @@ public class CommandHelpers
 	 * 
 	 * @param environment The environment of the execution.
 	 * @param local The local config.
-	 * @param followIndex The follower index.
 	 * @param publicKey The public key of the followee to refresh.
 	 * @throws CacophonyException There was some problem connecting to the IPFS node or the data discovered was malformed.
 	 */
-	public static void refreshFollowee(IEnvironment environment, LocalConfig local, FollowIndex followIndex, IpfsKey publicKey) throws CacophonyException
+	public static void refreshFollowee(IEnvironment environment, LocalConfig local, IpfsKey publicKey) throws CacophonyException
 	{
 		Assert.assertTrue(null != publicKey);
 		
 		IOperationLog log = environment.logOperation("Refreshing followee " + publicKey + "...");
+		FollowIndex followIndex = local.loadFollowIndex();
 		LocalIndex localIndex = local.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		GlobalPrefs globalPrefs = local.readSharedPrefs();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
@@ -66,7 +67,7 @@ public class CommandHelpers
 			// We only try to read the index if it was there (it is very likely that the IPNS key has been purged if the user hasn't refreshed in the last 24 hours).
 			if (null != indexRoot)
 			{
-				_safeReadIndex(environment, local, followIndex, publicKey, cache, scheduler, checker, lastRoot, indexRoot);
+				_safeReadIndex(environment, local, followIndex, globalPrefs, publicKey, cache, scheduler, checker, lastRoot, indexRoot);
 				// We will save this as the new root.
 				lastSuccessfulRoot = indexRoot;
 				log.finish("Refresh success!");
@@ -212,7 +213,7 @@ public class CommandHelpers
 		}
 	}
 
-	private static void _safeReadIndex(IEnvironment environment, LocalConfig local, FollowIndex followIndex, IpfsKey publicKey, HighLevelCache cache, INetworkScheduler scheduler, LoadChecker checker, IpfsFile lastRoot, IpfsFile indexRoot) throws IpfsConnectionException, SizeConstraintException
+	private static void _safeReadIndex(IEnvironment environment, LocalConfig local, FollowIndex followIndex, GlobalPrefs globalPrefs, IpfsKey publicKey, HighLevelCache cache, INetworkScheduler scheduler, LoadChecker checker, IpfsFile lastRoot, IpfsFile indexRoot) throws IpfsConnectionException, SizeConstraintException
 	{
 		// See if anything changed.
 		if (lastRoot.equals(indexRoot))
@@ -265,7 +266,7 @@ public class CommandHelpers
 				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid).get();
 				StreamRecords oldRecords = checker.loadCached(oldRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 				StreamRecords newRecords = checker.loadCached(newRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
-				_updateCachedRecords(environment, scheduler, cache, followIndex, lastRoot, oldRecords, newRecords, local.readSharedPrefs(), publicKey);
+				_updateCachedRecords(environment, scheduler, cache, followIndex, lastRoot, oldRecords, newRecords, globalPrefs, publicKey);
 				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid).get();
 			}
 			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot).get();
