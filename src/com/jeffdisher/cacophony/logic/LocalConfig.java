@@ -36,6 +36,7 @@ public class LocalConfig
 		}
 		// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
 		IConnection connection = factory.buildConnection(ipfsConnectionString);
+		Assert.assertTrue(null != connection);
 		
 		boolean didCreate = fileSystem.createConfigDirectory();
 		if (!didCreate)

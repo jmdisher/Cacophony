@@ -1,7 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -11,6 +14,8 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.VersionException;
 
 
@@ -102,6 +107,67 @@ public class TestLocalConfig
 			{
 				throw new IpfsConnectionException(null, null, null);
 			}
+			return new MockConnection();
+		}
+	}
+
+	private static class MockConnection implements IConnection
+	{
+		@Override
+		public List<Key> getKeys() throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+			return null;
+		}
+		@Override
+		public IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+			return null;
+		}
+		@Override
+		public byte[] loadData(IpfsFile file) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+			return null;
+		}
+		@Override
+		public void publish(String keyName, IpfsFile file) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+		}
+		@Override
+		public IpfsFile resolve(IpfsKey key) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+			return null;
+		}
+		@Override
+		public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+			return 0L;
+		}
+		@Override
+		public URL urlForDirectFetch(IpfsFile cid)
+		{
+			Assert.fail("Not expected in test");
+			return null;
+		}
+		@Override
+		public void pin(IpfsFile cid) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+		}
+		@Override
+		public void rm(IpfsFile cid) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+		}
+		@Override
+		public Key generateKey(String keyName) throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
 			return null;
 		}
 	}
