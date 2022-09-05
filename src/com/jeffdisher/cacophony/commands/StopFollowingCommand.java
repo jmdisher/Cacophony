@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -32,13 +33,14 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		IReadWriteLocalData localData = local.getSharedLocalData().openForWrite();
+		LocalIndex localIndex = localData.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		GlobalPinCache pinCache = localData.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
-		FollowIndex followIndex = local.loadFollowIndex();
+		FollowIndex followIndex = localData.readFollowIndex();
 		
 		// Removed the cache record and verify that we are following them.
 		FollowRecord finalRecord = followIndex.removeFollowing(_publicKey);
@@ -76,7 +78,10 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, descriptionHash).get();
 		cache.removeFromFollowCache(_publicKey, HighLevelCache.Type.METADATA, lastRoot).get();
 		// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
-		local.writeBackConfig();
+		localData.writeFollowIndex(followIndex);
+		localData.writeGlobalPinCache(pinCache);
+		localData.writeLocalIndex(localIndex);
+		localData.close();
 		log.finish("Cleanup complete.  No longer following " + _publicKey);
 	}
 }

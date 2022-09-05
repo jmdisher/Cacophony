@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -14,7 +15,9 @@ public record RefreshNextFolloweeCommand() implements ICommand
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
-		IpfsKey publicKey = local.loadFollowIndex().nextKeyToPoll();
+		IReadOnlyLocalData data = local.getSharedLocalData().openForRead();
+		IpfsKey publicKey = data.readFollowIndex().nextKeyToPoll();
+		data.close();
 		if (null == publicKey)
 		{
 			throw new UsageException("Not following any users");

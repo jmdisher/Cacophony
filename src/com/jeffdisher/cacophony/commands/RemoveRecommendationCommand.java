@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
 
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
@@ -31,15 +32,18 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		
 		IOperationLog log = environment.logOperation("Removing recommendation " + _channelPublicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		LocalIndex localIndex = data.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		GlobalPinCache pinCache = data.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		CleanupData cleanup = _runCore(environment, scheduler, connection, localIndex, pinCache, cache);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		_runFinish(environment, local, localIndex, cache, cleanup);
+		_runFinish(environment, local, localIndex, cache, cleanup, data);
+		data.writeGlobalPinCache(pinCache);
+		data.close();
 		log.finish("No longer recommending: " + _channelPublicKey);
 	}
 
@@ -75,16 +79,15 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		return new CleanupData(indexHash, rootToLoad, originalRecommendations);
 	}
 
-	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data)
+	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
 	{
 		// Update the local index.
-		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
+		localData.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the previous file from cache.
 		_safeRemove(environment, cache, data.originalRecommendations);
 		_safeRemove(environment, cache, data.oldRootHash);
-		local.writeBackConfig();
 	}
 
 	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)

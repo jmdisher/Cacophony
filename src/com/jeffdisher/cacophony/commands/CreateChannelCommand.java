@@ -4,11 +4,13 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
@@ -47,9 +49,11 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 			keyLog.finish("Public key \"" + key.key() + "\" generated with name: \"" + key.name() + "\"");
 		}
 		// Make sure that there is no local index in this location.
-		LocalIndex index = local.readLocalIndex();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, index.keyName());
-		HighLevelCache cache = new HighLevelCache(local.loadGlobalPinCache(), scheduler);
+		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		LocalIndex localIndex = data.readLocalIndex();
+		GlobalPinCache pinCache = data.readGlobalPinCache();
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
@@ -85,10 +89,10 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setRecords(hashRecords.toSafeString());
 		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, streamIndex);
 		// Update the local index.
-		LocalIndex localIndex = local.readLocalIndex();
-		local.storeSharedIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
+		data.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
 		cache.uploadedToThisCache(indexHash);
-		local.writeBackConfig();
+		data.writeGlobalPinCache(pinCache);
+		data.close();
 		log.finish("Channel created and published to Cacophony!");
 	}
 }

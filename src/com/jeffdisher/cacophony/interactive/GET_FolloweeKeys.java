@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.breakwater.IGetHandler;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -31,7 +32,9 @@ public class GET_FolloweeKeys implements IGetHandler
 	{
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
-			FollowIndex followIndex = _localConfig.loadFollowIndex();
+			IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
+			FollowIndex followIndex = data.readFollowIndex();
+			data.close();
 			JsonArray keys = JsonGenerationHelpers.followeeKeys(followIndex);
 			if (null != keys)
 			{

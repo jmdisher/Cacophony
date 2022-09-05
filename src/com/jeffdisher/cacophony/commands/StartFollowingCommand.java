@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -41,13 +42,14 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		IReadWriteLocalData localData = local.getSharedLocalData().openForWrite();
+		LocalIndex localIndex = localData.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = local.loadGlobalPinCache();
+		GlobalPinCache pinCache = localData.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
-		FollowIndex followIndex = local.loadFollowIndex();
+		FollowIndex followIndex = localData.readFollowIndex();
 		
 		// We need to first verify that we aren't already following them.
 		IpfsFile lastRoot = followIndex.getLastFetchedRoot(_publicKey);
@@ -86,11 +88,14 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		followIndex.addFollowingWithInitialState(_publicKey, indexRoot, System.currentTimeMillis());
 		
 		// Populate the initial cache records.
-		GlobalPrefs prefs = local.readSharedPrefs();
+		GlobalPrefs prefs = localData.readGlobalPrefs();
 		int videoEdgePixelMax = prefs.videoEdgePixelMax();
 		_populateCachedRecords(environment, prefs, scheduler, cache, followIndex, indexRoot, checker.loadCached(recordsHash, (byte[] data) -> GlobalData.deserializeRecords(data)).get(), videoEdgePixelMax);
 		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.
-		local.writeBackConfig();
+		localData.writeFollowIndex(followIndex);
+		localData.writeGlobalPinCache(pinCache);
+		localData.writeLocalIndex(localIndex);
+		localData.close();
 		log.finish("Follow successful!");
 	}
 

@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -22,8 +23,14 @@ public record RepublishCommand() implements ICommand
 	{
 		IOperationLog log = environment.logOperation("Republishing index...");
 		LocalConfig local = environment.loadExistingConfig();
+		
+		// Read the data elements.
+		LocalIndex localIndex = null;
+		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		{
+			localIndex = localData.readLocalIndex();
+		}
 		// Get the previously posted index hash.
-		LocalIndex localIndex = local.readLocalIndex();
 		IpfsFile indexHash = localIndex.lastPublishedIndex();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);

@@ -8,7 +8,9 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -82,7 +84,10 @@ public class MockUserNode
 
 	public LocalIndex getLocalStoredIndex() throws UsageException, VersionException
 	{
-		return _executor.loadExistingConfig().readLocalIndex();
+		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
+		LocalIndex finalIndex = localData.readLocalIndex();
+		localData.close();
+		return finalIndex;
 	}
 
 	public boolean isPinnedLocally(IpfsFile file)
@@ -92,17 +97,26 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws UsageException, VersionException
 	{
-		return _executor.loadExistingConfig().loadGlobalPinCache().isCached(file);
+		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
+		GlobalPinCache pinCache = localData.readGlobalPinCache();
+		localData.close();
+		return pinCache.isCached(file);
 	}
 
 	public GlobalPrefs readPrefs() throws UsageException, VersionException
 	{
-		return _executor.loadExistingConfig().readSharedPrefs();
+		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
+		GlobalPrefs prefs = localData.readGlobalPrefs();
+		localData.close();
+		return prefs;
 	}
 
 	public FollowIndex readFollowIndex() throws UsageException, VersionException
 	{
-		return _executor.loadExistingConfig().loadFollowIndex();
+		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
+		FollowIndex followIndex = localData.readFollowIndex();
+		localData.close();
+		return followIndex;
 	}
 
 	public void deleteFile(IpfsFile cid)

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -44,11 +45,12 @@ public class CommandHelpers
 		Assert.assertTrue(null != publicKey);
 		
 		IOperationLog log = environment.logOperation("Refreshing followee " + publicKey + "...");
-		FollowIndex followIndex = local.loadFollowIndex();
-		LocalIndex localIndex = local.readLocalIndex();
+		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		FollowIndex followIndex = data.readFollowIndex();
+		LocalIndex localIndex = data.readLocalIndex();
 		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = local.loadGlobalPinCache();
-		GlobalPrefs globalPrefs = local.readSharedPrefs();
+		GlobalPinCache pinCache = data.readGlobalPinCache();
+		GlobalPrefs globalPrefs = data.readGlobalPrefs();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
@@ -83,7 +85,9 @@ public class CommandHelpers
 			// Even if we threw an exception or skipped the update, we still want to update the followee index and write-back the config.
 			followIndex.updateFollowee(publicKey, lastSuccessfulRoot, System.currentTimeMillis());
 			// TODO:  Make sure that nothing else in the state is left broken.
-			local.writeBackConfig();
+			data.writeFollowIndex(followIndex);
+			data.writeGlobalPinCache(pinCache);
+			data.close();
 		}
 	}
 

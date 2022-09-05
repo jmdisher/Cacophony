@@ -3,12 +3,14 @@ package com.jeffdisher.cacophony.commands;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -30,10 +32,19 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		Assert.assertTrue(null != _followeeKey);
 		
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		
+		// Read the data elements.
+		LocalIndex localIndex = null;
+		FollowIndex followIndex = null;
+		GlobalPinCache pinCache = null;
+		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		{
+			localIndex = localData.readLocalIndex();
+			followIndex = localData.readFollowIndex();
+			pinCache = localData.readGlobalPinCache();
+		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(scheduler, local.loadGlobalPinCache(), local.getSharedConnection());
-		FollowIndex followIndex = local.loadFollowIndex();
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, local.getSharedConnection());
 		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);
 		if (null != record)
 		{

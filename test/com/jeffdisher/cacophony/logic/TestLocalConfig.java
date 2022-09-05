@@ -29,17 +29,18 @@ public class TestLocalConfig
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
 		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
-		config.writeBackConfig();
+		Assert.assertNotNull(config);
 	}
 
 	@Test
 	public void testLoad() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
-		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
-		config.writeBackConfig();
-		config = LocalConfig.loadExistingConfig(fileSystem, null);
-		config.writeBackConfig();
+		MockFactory factory = new MockFactory(true);
+		LocalConfig config = LocalConfig.createNewConfig(fileSystem, factory, "ipfs connect", "key name");
+		Assert.assertNotNull(config);
+		config = LocalConfig.loadExistingConfig(fileSystem, factory);
+		Assert.assertNotNull(config);
 	}
 
 	@Test
@@ -47,7 +48,7 @@ public class TestLocalConfig
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
 		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
-		config.writeBackConfig();
+		Assert.assertNotNull(config);
 		try (OutputStream stream = fileSystem.writeConfigFile("version"))
 		{
 			stream.write(new byte[] { 2 });
@@ -70,7 +71,7 @@ public class TestLocalConfig
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
 		try {
 			LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(false), "ipfs connect", "key name");
-			config.writeBackConfig();
+			Assert.assertNotNull(config);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -85,7 +86,7 @@ public class TestLocalConfig
 	{
 		RealConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "config"));
 		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
-		config.writeBackConfig();
+		Assert.assertNotNull(config);
 		DraftManager draftManager = config.buildDraftManager();
 		DraftWrapper wrapper = draftManager.createNewDraft(1);
 		Draft draft = wrapper.loadDraft();

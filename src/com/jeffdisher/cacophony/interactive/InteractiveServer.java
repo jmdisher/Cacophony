@@ -5,7 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.jeffdisher.breakwater.RestServer;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -26,9 +26,14 @@ public class InteractiveServer
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		
+		// We need to load the key name for the scheduler.
+		IReadOnlyLocalData localData = local.getSharedLocalData().openForRead();
+		String keyName = localData.readLocalIndex().keyName();
+		localData.close();
+		
 		IConnection connection =  local.getSharedConnection();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, keyName);
 		DraftManager manager = local.buildDraftManager();
 		IpfsKey ourPublicKey = scheduler.getPublicKey();
 		

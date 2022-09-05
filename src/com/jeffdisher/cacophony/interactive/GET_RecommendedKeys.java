@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.breakwater.IGetHandler;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
@@ -44,9 +45,11 @@ public class GET_RecommendedKeys implements IGetHandler
 			IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
 			try
 			{
-				LoadChecker checker = new LoadChecker(_scheduler, _localConfig.loadGlobalPinCache(), _localConfig.getSharedConnection());
-				LocalIndex localIndex = _localConfig.readLocalIndex();
-				FollowIndex followIndex = _localConfig.loadFollowIndex();
+				IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
+				LoadChecker checker = new LoadChecker(_scheduler, data.readGlobalPinCache(), _localConfig.getSharedConnection());
+				LocalIndex localIndex = data.readLocalIndex();
+				FollowIndex followIndex = data.readFollowIndex();
+				data.close();
 				
 				IpfsFile lastPublishedIndex = localIndex.lastPublishedIndex();
 				JsonArray keys = JsonGenerationHelpers.recommendedKeys(checker, _ourPublicKey, lastPublishedIndex, followIndex, userToResolve);

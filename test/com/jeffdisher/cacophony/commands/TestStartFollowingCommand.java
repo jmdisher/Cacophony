@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -69,7 +70,9 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
-		LocalIndex finalIndex = executor.loadExistingConfig().readLocalIndex();
+		IReadOnlyLocalData localData = executor.loadExistingConfig().getSharedLocalData().openForRead();
+		LocalIndex finalIndex = localData.readLocalIndex();
+		localData.close();
 		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).

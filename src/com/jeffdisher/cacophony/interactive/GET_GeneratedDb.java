@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import com.jeffdisher.breakwater.IGetHandler;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -43,15 +45,19 @@ public class GET_GeneratedDb implements IGetHandler
 		try
 		{
 			LocalConfig local = _environment.loadExistingConfig();
-			LocalIndex localIndex = local.readLocalIndex();
+			IReadOnlyLocalData data = local.getSharedLocalData().openForRead();
+			LocalIndex localIndex = data.readLocalIndex();
+			GlobalPinCache pinCache = data.readGlobalPinCache();
+			FollowIndex followIndex = data.readFollowIndex();
+			GlobalPrefs prefs = data.readGlobalPrefs();
+			data.close();
+			
 			IConnection connection =  local.getSharedConnection();
 			PrintWriter generatedStream = response.getWriter();
 			INetworkScheduler scheduler = _environment.getSharedScheduler(connection, localIndex.keyName());
-			LoadChecker checker = new LoadChecker(scheduler, local.loadGlobalPinCache(), connection);
+			LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 			IpfsKey ourPublicKey = scheduler.getPublicKey();
 			IpfsFile lastPublishedIndex = localIndex.lastPublishedIndex();
-			GlobalPrefs prefs = local.readSharedPrefs();
-			FollowIndex followIndex = local.loadFollowIndex();
 			
 			response.setContentType("text/javascript");
 			response.setStatus(HttpServletResponse.SC_OK);

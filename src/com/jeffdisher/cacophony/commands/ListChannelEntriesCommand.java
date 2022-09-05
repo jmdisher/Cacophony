@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -11,6 +12,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -30,16 +32,25 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		
+		// Read the data elements.
+		LocalIndex localIndex = null;
+		FollowIndex followIndex = null;
+		GlobalPinCache pinCache = null;
+		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		{
+			localIndex = localData.readLocalIndex();
+			followIndex = localData.readFollowIndex();
+			pinCache = localData.readGlobalPinCache();
+		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(scheduler, local.loadGlobalPinCache(), local.getSharedConnection());
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, local.getSharedConnection());
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
 		if (null != _channelPublicKey)
 		{
 			// Make sure that they are a followee.
-			FollowIndex followees = local.loadFollowIndex();
-			FollowRecord record = followees.getFollowerRecord(_channelPublicKey);
+			FollowRecord record = followIndex.getFollowerRecord(_channelPublicKey);
 			if (null != record)
 			{
 				environment.logToConsole("Following " + _channelPublicKey);

@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -13,7 +14,8 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
-		GlobalPrefs original = local.readSharedPrefs();
+		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		GlobalPrefs original = data.readGlobalPrefs();
 		GlobalPrefs prefs = original;
 		
 		if (_edgeMax > 0)
@@ -26,11 +28,13 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		}
 		if (original != prefs)
 		{
-			local.storeSharedPrefs(prefs);
+			data.writeGlobalPrefs(prefs);
 			environment.logToConsole("Updated prefs: " + prefs);
+			data.close();
 		}
 		else
 		{
+			data.close();
 			throw new UsageException("Must specify a postive value for at least one of edge size or cache");
 		}
 	}

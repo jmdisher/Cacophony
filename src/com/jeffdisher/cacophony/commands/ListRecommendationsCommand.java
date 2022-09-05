@@ -1,9 +1,11 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LoadChecker;
@@ -22,9 +24,19 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
-		LocalIndex localIndex = local.readLocalIndex();
+		
+		// Read the data elements.
+		LocalIndex localIndex = null;
+		FollowIndex followIndex = null;
+		GlobalPinCache pinCache = null;
+		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		{
+			localIndex = localData.readLocalIndex();
+			followIndex = localData.readFollowIndex();
+			pinCache = localData.readGlobalPinCache();
+		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(scheduler, local.loadGlobalPinCache(), local.getSharedConnection());
+		LoadChecker checker = new LoadChecker(scheduler, pinCache, local.getSharedConnection());
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
@@ -34,7 +46,6 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		if (null != _publicKey)
 		{
 			publicKey = _publicKey;
-			FollowIndex followIndex = local.loadFollowIndex();
 			IpfsFile root = followIndex.getLastFetchedRoot(_publicKey);
 			if (null != root)
 			{

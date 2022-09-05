@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.breakwater.IGetHandler;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -33,7 +34,10 @@ public class GET_Prefs implements IGetHandler
 	{
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
-			GlobalPrefs prefs = _localConfig.readSharedPrefs();
+			IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
+			GlobalPrefs prefs = data.readGlobalPrefs();
+			data.close();
+			
 			JsonObject userInfo = JsonGenerationHelpers.prefs(prefs);
 			if (null != userInfo)
 			{

@@ -1,11 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
@@ -44,23 +43,24 @@ public class LocalConfig
 			throw new UsageException("Failed to create config directory");
 		}
 		// Create the instance and populate it with default files.
-		LocalConfig config = new LocalConfig(fileSystem, factory);
-		try (OutputStream versionStream = fileSystem.writeConfigFile(VERSION_FILE))
+		LocalDataModel dataModel;
+		try
 		{
-			versionStream.write(new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
+			dataModel = new LocalDataModel(fileSystem);
 		}
-		catch (IOException e)
+		catch (VersionException e)
 		{
-			// We don't really have a fall-back for these exceptions.
+			// This won't happen when we are created a new data model.
 			throw Assert.unexpected(e);
 		}
-		config.storeSharedIndex(new LocalIndex(ipfsConnectionString, keyName, null));
-		config.storeSharedPrefs(GlobalPrefs.defaultPrefs());
-		config._lazyCache = GlobalPinCache.newCache();
-		config._lazyFollowIndex = FollowIndex.emptyFollowIndex();
-		config._lazyConnection = connection;
-		config.writeBackConfig();
-		return config;
+		try (IReadWriteLocalData writing = dataModel.openForWrite())
+		{
+			writing.writeLocalIndex(new LocalIndex(ipfsConnectionString, keyName, null));
+			writing.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
+			writing.writeGlobalPinCache(GlobalPinCache.newCache());
+			writing.writeFollowIndex(FollowIndex.emptyFollowIndex());
+		}
+		return new LocalConfig(fileSystem, factory, ipfsConnectionString, dataModel);
 	}
 
 	/**
@@ -75,134 +75,33 @@ public class LocalConfig
 		{
 			throw new UsageException("Config doesn't exist");
 		}
-		InputStream versionStream = fileSystem.readConfigFile(VERSION_FILE);
-		if (null == versionStream)
+		LocalDataModel dataModel = new LocalDataModel(fileSystem);
+		String ipfsConnectionString = null;
+		try (IReadOnlyLocalData reading = dataModel.openForRead())
 		{
-			throw new VersionException("Local config version file missing");
+			ipfsConnectionString = reading.readLocalIndex().ipfsHost();
 		}
-		try (versionStream)
-		{
-			byte[] data = versionStream.readAllBytes();
-			if ((1 == data.length) && (LOCAL_CONFIG_VERSION_NUMBER == data[0]))
-			{
-				// This is a version we can understand.
-			}
-			else
-			{
-				throw new VersionException("Local config is unknown version");
-			}
-		}
-		catch (IOException e)
-		{
-			// We don't really have a fall-back for these exceptions.
-			throw Assert.unexpected(e);
-		}
-		
-		return new LocalConfig(fileSystem, factory);
+		return new LocalConfig(fileSystem, factory, ipfsConnectionString, dataModel);
 	}
 
-
-	private static final String VERSION_FILE = "version";
-	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 1;
-	private static final String INDEX_FILE = "index1.dat";
-	private static final String GLOBAL_PREFS_FILE = "global_prefs1.dat";
-	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache1.dat";
-	private static final String FOLLOWING_INDEX_FILE = "following_index1.dat";
 
 	private final IConfigFileSystem _fileSystem;
+	private final LocalDataModel _localData;
 	private final IConnectionFactory _factory;
-	private LocalIndex _sharedLocalIndex;
-
-	private GlobalPinCache _lazyCache;
+	private final String _ipfsConnectionString;
 	private IConnection _lazyConnection;
-	private FollowIndex _lazyFollowIndex;
-	private GlobalPrefs _lazySharedPrefs;
 
-	private LocalConfig(IConfigFileSystem fileSystem, IConnectionFactory factory)
+	private LocalConfig(IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectionString, LocalDataModel localData)
 	{
+		Assert.assertTrue(null != fileSystem);
+		Assert.assertTrue(null != factory);
+		Assert.assertTrue(null != ipfsConnectionString);
+		Assert.assertTrue(null != localData);
+		
 		_fileSystem = fileSystem;
+		_localData = localData;
 		_factory = factory;
-	}
-
-	public LocalIndex readLocalIndex()
-	{
-		if (null == _sharedLocalIndex)
-		{
-			_sharedLocalIndex = _readFile(INDEX_FILE, LocalIndex.class);
-			// This can never be null.
-			Assert.assertTrue(null != _sharedLocalIndex);
-		}
-		return _sharedLocalIndex;
-	}
-
-	/**
-	 * Sets the given localIndex as the new shared index and writes it to disk.
-	 * 
-	 * @param localIndex The new local index.
-	 */
-	public void storeSharedIndex(LocalIndex localIndex)
-	{
-		_sharedLocalIndex = localIndex;
-		_storeFile(INDEX_FILE, _sharedLocalIndex);
-	}
-
-	public GlobalPrefs readSharedPrefs()
-	{
-		if (null == _lazySharedPrefs)
-		{
-			_lazySharedPrefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
-			// This MUST have been created during default creation.
-			Assert.assertTrue(null != _lazySharedPrefs);
-		}
-		return _lazySharedPrefs;
-	}
-
-	public void storeSharedPrefs(GlobalPrefs prefs)
-	{
-		_lazySharedPrefs = prefs;
-		_storeFile(GLOBAL_PREFS_FILE, _lazySharedPrefs);
-	}
-
-	public GlobalPinCache loadGlobalPinCache()
-	{
-		if (null == _lazyCache)
-		{
-			InputStream stream = _fileSystem.readConfigFile(GLOBAL_PIN_CACHE_FILE);
-			// This MUST have been created during default creation.
-			Assert.assertTrue(null != stream);
-			_lazyCache = GlobalPinCache.fromStream(stream);
-			try
-			{
-				stream.close();
-			}
-			catch (IOException e)
-			{
-				// Failure on close not expected.
-				throw Assert.unexpected(e);
-			}
-		}
-		return _lazyCache;
-	}
-
-	public FollowIndex loadFollowIndex()
-	{
-		if (null == _lazyFollowIndex)
-		{
-			InputStream stream = _fileSystem.readConfigFile(FOLLOWING_INDEX_FILE);
-			// This MUST have been created during default creation.
-			Assert.assertTrue(null != stream);
-			_lazyFollowIndex = FollowIndex.fromStream(stream);
-			try
-			{
-				stream.close();
-			}
-			catch (IOException e)
-			{
-				// Failure on close not expected.
-				throw Assert.unexpected(e);
-			}
-		}
-		return _lazyFollowIndex;
+		_ipfsConnectionString = ipfsConnectionString;
 	}
 
 	/**
@@ -224,6 +123,11 @@ public class LocalConfig
 		}
 	}
 
+	public LocalDataModel getSharedLocalData()
+	{
+		return _localData;
+	}
+
 	public IConnection getSharedConnection() throws IpfsConnectionException
 	{
 		_verifySharedConnections();
@@ -240,81 +144,11 @@ public class LocalConfig
 		return _fileSystem.getDirectoryForReporting();
 	}
 
-	public void writeBackConfig()
-	{
-		if (null != _lazyCache)
-		{
-			try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
-			{
-				_lazyCache.writeToStream(stream);
-			}
-			catch (IOException e)
-			{
-				// Failure not expected.
-				throw Assert.unexpected(e);
-			}
-		}
-		if (null != _lazyFollowIndex)
-		{
-			try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
-			{
-				_lazyFollowIndex.writeToStream(stream);
-			}
-			catch (IOException e)
-			{
-				// Failure not expected.
-				throw Assert.unexpected(e);
-			}
-		}
-	}
-
-
-	private <T> T _readFile(String fileName, Class<T> clazz)
-	{
-		T object = null;
-		InputStream rawStream = _fileSystem.readConfigFile(fileName);
-		if (null != rawStream)
-		{
-			try (ObjectInputStream stream = new ObjectInputStream(rawStream))
-			{
-				try
-				{
-					object = clazz.cast(stream.readObject());
-				}
-				catch (ClassNotFoundException e)
-				{
-					throw Assert.unexpected(e);
-				}
-			}
-			catch (IOException e)
-			{
-				// We don't expect this.
-				throw Assert.unexpected(e);
-			}
-		}
-		return object;
-	}
-
-	private <T> void _storeFile(String fileName, T object)
-	{
-		try (ObjectOutputStream stream = new ObjectOutputStream(_fileSystem.writeConfigFile(fileName)))
-		{
-			stream.writeObject(object);
-		}
-		catch (IOException e)
-		{
-			// We don't expect this.
-			throw Assert.unexpected(e);
-		}
-	}
-
 	private void _verifySharedConnections() throws IpfsConnectionException
 	{
 		if (null == _lazyConnection)
 		{
-			// We should not be trying to open a connection if there is no existing index.
-			Assert.assertTrue(null != _sharedLocalIndex);
-			_lazyConnection = _factory.buildConnection(_sharedLocalIndex.ipfsHost());
+			_lazyConnection = _factory.buildConnection(_ipfsConnectionString);
 		}
 	}
 }
