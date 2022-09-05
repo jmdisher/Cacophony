@@ -5,9 +5,11 @@ import java.io.IOException;
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -22,14 +24,14 @@ import jakarta.servlet.http.HttpServletResponse;
 public class GET_PostHashes implements IGetHandler
 {
 	private final String _xsrf;
-	private final LoadChecker _checker;
+	private final INetworkScheduler _scheduler;
 	private final IpfsKey _ourPublicKey;
 	private final LocalConfig _localConfig;
 	
-	public GET_PostHashes(String xsrf, LoadChecker checker, IpfsKey ourPublicKey, LocalConfig localConfig)
+	public GET_PostHashes(String xsrf, INetworkScheduler scheduler, IpfsKey ourPublicKey, LocalConfig localConfig)
 	{
 		_xsrf = xsrf;
-		_checker = checker;
+		_scheduler = scheduler;
 		_ourPublicKey = ourPublicKey;
 		_localConfig = localConfig;
 	}
@@ -42,9 +44,12 @@ public class GET_PostHashes implements IGetHandler
 			IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
 			try
 			{
-				IpfsFile lastPublishedIndex = _localConfig.readLocalIndex().lastPublishedIndex();
+				LoadChecker checker = new LoadChecker(_scheduler, _localConfig.loadGlobalPinCache(), _localConfig.getSharedConnection());
+				LocalIndex localIndex = _localConfig.readLocalIndex();
 				FollowIndex followIndex = _localConfig.loadFollowIndex();
-				JsonArray hashes = JsonGenerationHelpers.postHashes(_checker, _ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+				
+				IpfsFile lastPublishedIndex = localIndex.lastPublishedIndex();
+				JsonArray hashes = JsonGenerationHelpers.postHashes(checker, _ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
 				if (null != hashes)
 				{
 					response.setContentType("application/json");
