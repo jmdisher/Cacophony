@@ -46,5 +46,12 @@ function DELETE(path)
 	});
 }
 
-export { GET, POST, POST_withBinary, POST_asForm, DELETE };
+// To namespace these, since we can't use _actual_ module semantics (since we export this for http and file - file can't use modules for some bogus reason), we will attach these methods to an object for export.
+var REST = {
+	"GET": GET,
+	"POST": POST,
+	"POST_withBinary": POST_withBinary,
+	"POST_asForm": POST_asForm,
+	"DELETE": DELETE,
+};
 
