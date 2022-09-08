@@ -73,6 +73,8 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			_writeStaticFile(_directory, "play.html");
 			_writeStaticFile(_directory, "recommending.html");
 			_writeStaticFile(_directory, "following.html");
+			// We can't use REST in the offline mode but we don't want to complain about failing to load the file.
+			_writeStaticFile(_directory, "rest.js");
 			
 			generatedStream = new PrintWriter(new FileOutputStream(new File(_directory, "generated_db.js")));
 		}
