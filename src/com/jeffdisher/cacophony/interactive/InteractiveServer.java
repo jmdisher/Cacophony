@@ -78,10 +78,6 @@ public class InteractiveServer
 		server.addGetHandler("/prefs", 0, new GET_Prefs(xsrf, local));
 		server.addGetHandler("/version", 0, new GET_Version(xsrf));
 		
-		// Temporarily, we will just inject generation for the generated_db.js here.
-		server.addGetHandler("/generated_db.js", 0, new GET_GeneratedDb(environment));
-		
-		
 		server.start();
 		if (null != forcedCommand)
 		{
