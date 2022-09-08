@@ -275,7 +275,7 @@ public class JsonGenerationHelpers
 			for(FollowRecord record : followIndex)
 			{
 				Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
-				foundObject = _findElementFromRoot(checker, lastPublishedIndex, elementsCachedForUser, postToResolve);
+				foundObject = _findElementFromRoot(checker, record.lastFetchedRoot(), elementsCachedForUser, postToResolve);
 				if (null != foundObject)
 				{
 					break;
