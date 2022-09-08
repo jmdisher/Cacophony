@@ -74,7 +74,7 @@ function postWasLoaded($scope, elt)
 			<center><video id="video" controls /></center>
 		</div>
 		<div class="row card card-body" ng-show="cached && thumbnailUrl && !videoUrl">
-			<img class="img-responsive" ng-src="thumbnailUrl" alt="{{name}}"/>
+			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
 		</div>
 		<div class="row card card-body" ng-hide="cached">
 			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong>
