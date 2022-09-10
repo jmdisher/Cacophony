@@ -193,3 +193,12 @@ function API_getVersion()
 	});
 }
 
+function API_getXsrf()
+{
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve();
+		});
+	});
+}
+

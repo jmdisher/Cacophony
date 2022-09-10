@@ -73,3 +73,12 @@ function API_getVersion()
 	});
 }
 
+// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
+function API_getXsrf()
+{
+	return new Promise(resolve => {
+		REST.POST("/cookie")
+			.then(resolve);
+	});
+}
+

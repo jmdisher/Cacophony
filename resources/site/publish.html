@@ -361,7 +361,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
-	REST.POST("/cookie").then(function() {
+	API_getXsrf().then(function() {
 		REST.GET("/drafts")
 			.then(data => data.json())
 			.then(json => {

@@ -188,6 +188,15 @@ public class JsonGenerationHelpers
 			+ "		});\n"
 			+ "	});\n"
 			+ "}\n"
+			+ "\n"
+			+ "function API_getXsrf()\n"
+			+ "{\n"
+			+ "	return new Promise(resolve => {\n"
+			+ "		setTimeout(() => {\n"
+			+ "			resolve();\n"
+			+ "		});\n"
+			+ "	});\n"
+			+ "}\n"
 		);
 		
 		generatedStream.close();

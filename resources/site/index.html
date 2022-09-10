@@ -16,12 +16,18 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	API_getXsrf().then(function() {
+		xsrfLoaded($scope)
+	});
+});
+function xsrfLoaded($scope)
+{
 	API_getVersion().then(version => {
 		$scope.hash = version["hash"];
 		$scope.version = version["version"];
 		$scope.$apply();
 	});
-});
+}
 </script>
 
 	<title>Cacophony - Static Index</title>

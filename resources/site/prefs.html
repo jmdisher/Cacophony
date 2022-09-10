@@ -16,12 +16,18 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	API_getXsrf().then(function() {
+		xsrfLoaded($scope)
+	});
+});
+function xsrfLoaded($scope)
+{
 	API_getPrefs().then(prefs => {
 		$scope.edgePixels = prefs["edgeSize"];
 		$scope.followCacheGB = prefs["followerCacheBytes"] / 1000000000;
 		$scope.$apply();
 	});
-});
+}
 </script>
 
 	<title>Cacophony - Preferences</title>
