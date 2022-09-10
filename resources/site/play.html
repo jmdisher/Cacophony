@@ -33,6 +33,11 @@ function postWasLoaded($scope, elt)
 	$scope.name = elt["name"];
 	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
 	$scope.discussionUrl = elt["discussionUrl"];
+	$scope.discussionHost = null;
+	if (null !== $scope.discussionUrl)
+	{
+		$scope.discussionHost = new URL($scope.discussionUrl).hostname;
+	}
 	$scope.cached = elt["cached"];
 	
 	// We don't use Angular for the description since we may need to process it.
@@ -96,7 +101,7 @@ function postWasLoaded($scope, elt)
 			<div class="row card card-body" id="description">
 			</div>
 			<div class="row card card-body" ng-show="discussionUrl">
-				<a ng-href="{{discussionUrl}}">Reply in the discussion</a>
+				<a ng-href="{{discussionUrl}}">View discussion on {{discussionHost}}</a>
 			</div>
 		</div>
 	</div>
