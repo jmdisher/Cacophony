@@ -111,7 +111,6 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		List<RawElementData> workingRecordList = newRecords.getRecord().stream().map((elementRawCid) -> {
 			IpfsFile cid = IpfsFile.fromIpfsCid(elementRawCid);
 			RawElementData data = new RawElementData();
-			data.elementRawCid = elementRawCid;
 			data.elementCid = cid;
 			return data;
 		}).collect(Collectors.toList());

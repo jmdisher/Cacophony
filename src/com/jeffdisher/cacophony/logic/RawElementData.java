@@ -15,7 +15,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public class RawElementData
 {
-	public String elementRawCid;
 	public IpfsFile elementCid;
 	public FutureSize futureSize;
 	public long size;

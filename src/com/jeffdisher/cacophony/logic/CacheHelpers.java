@@ -35,7 +35,7 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static long addPinnedLeavesToFollowCache(INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, long currentTimeMillis, String rawCid, IpfsFile imageHash, IpfsFile leafHash) throws IpfsConnectionException
+	public static long addPinnedLeavesToFollowCache(INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, long currentTimeMillis, IpfsFile elementCid, IpfsFile imageHash, IpfsFile leafHash) throws IpfsConnectionException
 	{
 		long combinedSizeBytes = 0L;
 		if (null != imageHash)
@@ -46,8 +46,7 @@ public class CacheHelpers
 		{
 			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
 		}
-		IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, cid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
+		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, elementCid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
 		return combinedSizeBytes;
 	}
 

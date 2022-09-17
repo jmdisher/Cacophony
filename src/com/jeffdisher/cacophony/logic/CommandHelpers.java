@@ -165,7 +165,6 @@ public class CommandHelpers
 				// If we didn't remove it, that means it is something new.
 				IpfsFile file = IpfsFile.fromIpfsCid(cid);
 				RawElementData data = new RawElementData();
-				data.elementRawCid = cid;
 				data.elementCid = file;
 				additiveRecordList.add(data);
 			}
@@ -373,7 +372,7 @@ public class CommandHelpers
 
 	private static void _processLeaves(IEnvironment environment, INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey publicKey, IpfsFile fetchedRoot, long currentTimeMillis, RawElementData data) throws IpfsConnectionException
 	{
-		environment.logToConsole("Caching entry: " + data.elementRawCid);
+		environment.logToConsole("Caching entry: " + data.elementCid);
 		// Make sure that we have pinned the elements before we proceed.
 		if (null != data.futureThumbnailPin)
 		{
@@ -385,7 +384,7 @@ public class CommandHelpers
 			data.futureVideoPin.get();
 			data.futureVideoPin = null;
 		}
-		long leafBytes = CacheHelpers.addPinnedLeavesToFollowCache(scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, data.elementRawCid, data.thumbnailHash, data.videoHash);
+		long leafBytes = CacheHelpers.addPinnedLeavesToFollowCache(scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, data.elementCid, data.thumbnailHash, data.videoHash);
 		environment.logToConsole("\tleaf elements: " + StringHelpers.humanReadableBytes(leafBytes));
 	}
 }
