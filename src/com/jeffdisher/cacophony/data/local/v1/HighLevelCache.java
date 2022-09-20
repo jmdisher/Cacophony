@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.scheduler.FutureUnpin;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -90,7 +89,7 @@ public class HighLevelCache
 		return _unpinAndRemove(cid);
 	}
 
-	public FuturePin addToFollowCache(IpfsKey channel, Type type, IpfsFile cid)
+	public FuturePin addToFollowCache(Type type, IpfsFile cid)
 	{
 		// Make sure we don't need to block to keep us in-order.
 		_forceInOrder(cid);
@@ -121,9 +120,8 @@ public class HighLevelCache
 		return future;
 	}
 
-	public FutureUnpin removeFromFollowCache(IpfsKey channel, Type type, IpfsFile cid)
+	public FutureUnpin removeFromFollowCache(Type type, IpfsFile cid)
 	{
-		// TODO: Do the accounting for the size per-follower.
 		return _unpinAndRemove(cid);
 	}
 

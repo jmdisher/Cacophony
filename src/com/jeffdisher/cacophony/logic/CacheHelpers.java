@@ -129,7 +129,7 @@ public class CacheHelpers
 		return candidates;
 	}
 
-	public static void pruneCacheIfNeeded(HighLevelCache cache, FollowIndex followIndex, CacheAlgorithm algorithm, IpfsKey publicKey, long bytesToAdd) throws IpfsConnectionException
+	public static void pruneCacheIfNeeded(HighLevelCache cache, FollowIndex followIndex, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{
@@ -141,12 +141,12 @@ public class CacheHelpers
 				IpfsFile imageHash = elt.imageHash();
 				if (null != imageHash)
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, imageHash).get();
+					cache.removeFromFollowCache(HighLevelCache.Type.FILE, imageHash).get();
 				}
 				IpfsFile leafHash = elt.leafHash();
 				if (null != leafHash)
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, leafHash).get();
+					cache.removeFromFollowCache(HighLevelCache.Type.FILE, leafHash).get();
 				}
 			}
 		}

@@ -180,14 +180,14 @@ public class CommandHelpers
 			{
 				if (null != inCache.imageHash())
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, inCache.imageHash()).get();
+					cache.removeFromFollowCache(HighLevelCache.Type.FILE, inCache.imageHash()).get();
 				}
 				if (null != inCache.elementHash())
 				{
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.FILE, inCache.elementHash()).get();
+					cache.removeFromFollowCache(HighLevelCache.Type.FILE, inCache.elementHash()).get();
 				}
 			}
-			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, cid).get();
+			cache.removeFromFollowCache(HighLevelCache.Type.METADATA, cid).get();
 		}
 		
 		// Queue up the async size checks and make sure that they are ok before we proceed.
@@ -204,7 +204,7 @@ public class CommandHelpers
 		long bytesToAdd = candidatesList.stream().mapToLong((CacheAlgorithm.Candidate<RawElementData> candidate) -> candidate.byteSize()).sum();
 		
 		long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
-		CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(prefs.followCacheTargetBytes(), currentCacheSizeBytes), publicKey, bytesToAdd);
+		CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(prefs.followCacheTargetBytes(), currentCacheSizeBytes), bytesToAdd);
 		
 		// Since this path will fetch all the new elements (for now, at least), just pin all the leaves.
 		candidatesList.forEach((CacheAlgorithm.Candidate<RawElementData> candidate) -> CommandHelpers.pinLeaves(cache, publicKey, candidate.data()));
@@ -236,7 +236,7 @@ public class CommandHelpers
 			}
 			
 			// Cache the new root and remove the old one.
-			cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, indexRoot).get();
+			cache.addToFollowCache(HighLevelCache.Type.METADATA, indexRoot).get();
 			StreamIndex oldIndex = checker.loadCached(lastRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 			StreamIndex newIndex = checker.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 			Assert.assertTrue(1 == oldIndex.getVersion());
@@ -245,34 +245,34 @@ public class CommandHelpers
 			{
 				IpfsFile oldDescriptionCid = IpfsFile.fromIpfsCid(oldIndex.getDescription());
 				IpfsFile newDescriptionCid = IpfsFile.fromIpfsCid(newIndex.getDescription());
-				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newDescriptionCid).get();
+				cache.addToFollowCache(HighLevelCache.Type.METADATA, newDescriptionCid).get();
 				StreamDescription oldDescription = checker.loadCached(oldDescriptionCid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 				StreamDescription newDescription = checker.loadCached(newDescriptionCid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 				if (!oldDescription.getPicture().equals(newDescription.getPicture()))
 				{
-					cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(newDescription.getPicture())).get();
-					cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(oldDescription.getPicture())).get();
+					cache.addToFollowCache(HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(newDescription.getPicture())).get();
+					cache.removeFromFollowCache(HighLevelCache.Type.METADATA, IpfsFile.fromIpfsCid(oldDescription.getPicture())).get();
 				}
-				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldDescriptionCid).get();
+				cache.removeFromFollowCache(HighLevelCache.Type.METADATA, oldDescriptionCid).get();
 			}
 			if (!oldIndex.getRecommendations().equals(newIndex.getRecommendations()))
 			{
 				IpfsFile oldRecommendationsCid = IpfsFile.fromIpfsCid(oldIndex.getRecommendations());
 				IpfsFile newRecommendationsCid = IpfsFile.fromIpfsCid(newIndex.getRecommendations());
-				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecommendationsCid).get();
-				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecommendationsCid).get();
+				cache.addToFollowCache(HighLevelCache.Type.METADATA, newRecommendationsCid).get();
+				cache.removeFromFollowCache(HighLevelCache.Type.METADATA, oldRecommendationsCid).get();
 			}
 			if (!oldIndex.getRecords().equals(newIndex.getRecords()))
 			{
 				IpfsFile oldRecordsCid = IpfsFile.fromIpfsCid(oldIndex.getRecords());
 				IpfsFile newRecordsCid = IpfsFile.fromIpfsCid(newIndex.getRecords());
-				cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, newRecordsCid).get();
+				cache.addToFollowCache(HighLevelCache.Type.METADATA, newRecordsCid).get();
 				StreamRecords oldRecords = checker.loadCached(oldRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 				StreamRecords newRecords = checker.loadCached(newRecordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 				_updateCachedRecords(environment, scheduler, cache, followIndex, lastRoot, oldRecords, newRecords, globalPrefs, publicKey);
-				cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, oldRecordsCid).get();
+				cache.removeFromFollowCache(HighLevelCache.Type.METADATA, oldRecordsCid).get();
 			}
-			cache.removeFromFollowCache(publicKey, HighLevelCache.Type.METADATA, lastRoot).get();
+			cache.removeFromFollowCache(HighLevelCache.Type.METADATA, lastRoot).get();
 		}
 	}
 
@@ -299,7 +299,7 @@ public class CommandHelpers
 	{
 		// We first pin the element.
 		recordList.forEach((RawElementData data) -> {
-			data.futureElementPin = cache.addToFollowCache(publicKey, HighLevelCache.Type.METADATA, data.elementCid);
+			data.futureElementPin = cache.addToFollowCache(HighLevelCache.Type.METADATA, data.elementCid);
 		});
 		// Then, we load the element.
 		for (RawElementData data : recordList)
@@ -361,11 +361,11 @@ public class CommandHelpers
 	private static void _pinLeaves(HighLevelCache cache, IpfsKey publicKey, RawElementData data)
 	{
 		data.futureThumbnailPin = (null != data.thumbnailHash)
-				? cache.addToFollowCache(publicKey, HighLevelCache.Type.FILE, data.thumbnailHash)
+				? cache.addToFollowCache(HighLevelCache.Type.FILE, data.thumbnailHash)
 				: null
 		;
 		data.futureVideoPin = (null != data.videoHash)
-				? cache.addToFollowCache(publicKey, HighLevelCache.Type.FILE, data.videoHash)
+				? cache.addToFollowCache(HighLevelCache.Type.FILE, data.videoHash)
 				: null
 		;
 	}
