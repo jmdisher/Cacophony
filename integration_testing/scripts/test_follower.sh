@@ -132,6 +132,10 @@ echo "Refresh followee"
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1"
 checkPreviousCommand "Follow index changed"
 
+echo "Make sure that cleaning cache won't do anything..."
+CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
+requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 2.62 MB (2621440 bytes) is below target of 1.00 GB (10000000000 bytes)"
+
 echo "Regenerate the static HTML"
 rm -rf "$STATIC2"
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --htmlOutput --directory "$STATIC2"

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
+import com.jeffdisher.cacophony.commands.CleanCacheCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.GetGlobalPrefsCommand;
@@ -235,6 +236,10 @@ public class CommandParser
 				}
 			}
 			return new RunCommand(overrideCommand, mode);
+		}),
+		CLEAN_CACHE(true, "--cleanCache", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			return new CleanCacheCommand();
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.

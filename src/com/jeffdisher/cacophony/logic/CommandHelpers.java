@@ -148,6 +148,51 @@ public class CommandHelpers
 		_processLeaves(environment, scheduler, followIndex, publicKey, fetchedRoot, currentTimeMillis, data);
 	}
 
+	/**
+	 * Walks the local data to determine the current cache size.  If the size is greater than the target size in the
+	 * prefs, it will unpin elements until it fits.
+	 * 
+	 * @param environment The execution environment.
+	 * @param local The local storage abstraction.
+	 * @throws IpfsConnectionException If something goes wrong interacting with the IPFS node.
+	 */
+	public static void shrinkCacheToFitInPrefs(IEnvironment environment, LocalConfig local) throws IpfsConnectionException
+	{
+		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
+		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		FollowIndex followIndex = data.readFollowIndex();
+		LocalIndex localIndex = data.readLocalIndex();
+		IConnection connection = local.getSharedConnection();
+		GlobalPinCache pinCache = data.readGlobalPinCache();
+		GlobalPrefs globalPrefs = data.readGlobalPrefs();
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
+		
+		try
+		{
+			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
+			long targetSizeBytes = globalPrefs.followCacheTargetBytes();
+			if (currentCacheSizeBytes > targetSizeBytes)
+			{
+				environment.logToConsole("Pruning cache to " + StringHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
+				long bytesToAdd = 0L;
+				CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
+			}
+			else
+			{
+				environment.logToConsole("Not pruning cache since " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + StringHelpers.humanReadableBytes(targetSizeBytes));
+			}
+		}
+		finally
+		{
+			// TODO:  Make sure that nothing else in the state is left broken.
+			data.writeFollowIndex(followIndex);
+			data.writeGlobalPinCache(pinCache);
+			data.close();
+		}
+		log.finish("Cache clean finished without issue");
+	}
+
 
 	private static void _updateCachedRecords(IEnvironment environment, INetworkScheduler scheduler, HighLevelCache cache, FollowIndex followIndex, IpfsFile fetchedRoot, StreamRecords oldRecords, StreamRecords newRecords, GlobalPrefs prefs, IpfsKey publicKey) throws IpfsConnectionException, SizeConstraintException
 	{

@@ -394,4 +394,15 @@ public class TestCommandParser
 		// We expect this to throw the UsageException.
 		CommandParser.parseArgs(args, capture);
 	}
+
+	@Test
+	public void testCleanCache() throws Throwable
+	{
+		String[] args = {"--cleanCache"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(args, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }

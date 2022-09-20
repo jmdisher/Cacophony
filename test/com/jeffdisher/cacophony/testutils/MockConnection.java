@@ -187,6 +187,12 @@ public class MockConnection implements IConnection
 		throw Assert.unreachable();
 	}
 
+	@Override
+	public void requestStorageGc() throws IpfsConnectionException
+	{
+		// Does nothing in test.
+	}
+
 	public boolean isPinned(IpfsFile cid)
 	{
 		return _pinned.contains(cid);

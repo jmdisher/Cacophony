@@ -171,5 +171,10 @@ public class TestLocalConfig
 			Assert.fail("Not expected in test");
 			return null;
 		}
+		@Override
+		public void requestStorageGc() throws IpfsConnectionException
+		{
+			Assert.fail("Not expected in test");
+		}
 	}
 }

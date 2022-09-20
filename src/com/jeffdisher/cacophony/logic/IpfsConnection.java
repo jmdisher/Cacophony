@@ -225,6 +225,19 @@ public class IpfsConnection implements IConnection
 		}
 	}
 
+	@Override
+	public void requestStorageGc() throws IpfsConnectionException
+	{
+		try
+		{
+			_defaultConnection.repo.gc();
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException("gc", null, e);
+		}
+	}
+
 
 	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException, AssertionError
 	{

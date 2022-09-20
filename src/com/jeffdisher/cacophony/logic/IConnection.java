@@ -60,4 +60,11 @@ public interface IConnection
 	 * @throws IpfsConnectionException If there is some problem contacting the server.
 	 */
 	Key generateKey(String keyName) throws IpfsConnectionException;
+
+	/**
+	 * Requests that the remote node reclaim any storage it can.
+	 * 
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	void requestStorageGc() throws IpfsConnectionException;
 }
