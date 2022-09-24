@@ -40,8 +40,13 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		LocalConfig local = environment.loadExistingConfig();
+		
+		// We need to prune the cache before adding someone and write this back before we proceed - hence, this needs to happen before we open storage.
+		// We want to prune the cache to 75% for new followee so make space.
+		CommandHelpers.shrinkCacheToFitInPrefs(environment, local, 0.75);
+		
+		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		IReadWriteLocalData localData = local.getSharedLocalData().openForWrite();
 		LocalIndex localIndex = localData.readLocalIndex();
 		IConnection connection = local.getSharedConnection();

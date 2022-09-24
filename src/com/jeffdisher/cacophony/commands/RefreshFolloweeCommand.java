@@ -16,6 +16,11 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		Assert.assertTrue(null != _publicKey);
 		
 		LocalConfig local = environment.loadExistingConfig();
+		
+		// We need to prune the cache before refreshing someone - hence, this needs to happen before we open storage.
+		// We want to prune the cache to 90% for update so make space.
+		CommandHelpers.shrinkCacheToFitInPrefs(environment, local, 0.90);
+		
 		CommandHelpers.refreshFollowee(environment, local, _publicKey);
 	}
 }

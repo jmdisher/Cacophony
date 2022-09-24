@@ -15,6 +15,11 @@ public record RefreshNextFolloweeCommand() implements ICommand
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		LocalConfig local = environment.loadExistingConfig();
+		
+		// We need to prune the cache before refreshing someone - hence, this needs to happen before we open storage.
+		// We want to prune the cache to 90% for update so make space.
+		CommandHelpers.shrinkCacheToFitInPrefs(environment, local, 0.90);
+		
 		IReadOnlyLocalData data = local.getSharedLocalData().openForRead();
 		IpfsKey publicKey = data.readFollowIndex().nextKeyToPoll();
 		data.close();
