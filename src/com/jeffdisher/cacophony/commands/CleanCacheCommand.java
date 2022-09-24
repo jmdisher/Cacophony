@@ -19,7 +19,7 @@ public record CleanCacheCommand() implements ICommand
 	{
 		// First, we want to shrink the local cache.
 		LocalConfig local = environment.loadExistingConfig();
-		CommandHelpers.shrinkCacheToFitInPrefs(environment, local);
+		CommandHelpers.shrinkCacheToFitInPrefs(environment, local, 1.0);
 		
 		// Even if that didn't do anything, we still want to request that the IPFS node GC.
 		IConnection connection = local.getSharedConnection();

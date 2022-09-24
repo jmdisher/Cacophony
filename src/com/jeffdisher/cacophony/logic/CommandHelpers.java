@@ -154,9 +154,10 @@ public class CommandHelpers
 	 * 
 	 * @param environment The execution environment.
 	 * @param local The local storage abstraction.
+	 * @param fullnessFraction The fraction of the target we should consider our target (1.0 means full cache).
 	 * @throws IpfsConnectionException If something goes wrong interacting with the IPFS node.
 	 */
-	public static void shrinkCacheToFitInPrefs(IEnvironment environment, LocalConfig local) throws IpfsConnectionException
+	public static void shrinkCacheToFitInPrefs(IEnvironment environment, LocalConfig local, double fullnessFraction) throws IpfsConnectionException
 	{
 		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
 		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
@@ -171,7 +172,7 @@ public class CommandHelpers
 		try
 		{
 			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
-			long targetSizeBytes = globalPrefs.followCacheTargetBytes();
+			long targetSizeBytes = (long)(globalPrefs.followCacheTargetBytes() * fullnessFraction);
 			if (currentCacheSizeBytes > targetSizeBytes)
 			{
 				environment.logToConsole("Pruning cache to " + StringHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
