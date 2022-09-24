@@ -172,6 +172,23 @@ public class FollowIndex implements Iterable<FollowRecord>
 		return new FollowIndex(new ArrayList<>(_sortedFollowList));
 	}
 
+	public void replaceCached(IpfsKey publicKey, FollowingCacheElement[] newElements)
+	{
+		int index = -1;
+		for (int i = 0; i < _sortedFollowList.size(); ++i)
+		{
+			if (publicKey.equals(_sortedFollowList.get(i).publicKey()))
+			{
+				index = i;
+				break;
+			}
+		}
+		Assert.assertTrue(-1 != index);
+		FollowRecord oldRecord = _sortedFollowList.remove(index);
+		FollowRecord newRecord = new FollowRecord(publicKey, oldRecord.lastFetchedRoot(), oldRecord.lastPollMillis(), newElements);
+		_sortedFollowList.add(index, newRecord);
+	}
+
 
 	private FollowRecord _removeRecordFromList(IpfsKey publicKey)
 	{

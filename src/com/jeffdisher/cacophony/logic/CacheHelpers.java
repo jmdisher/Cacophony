@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -133,21 +134,41 @@ public class CacheHelpers
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{
-			List<CacheAlgorithm.Candidate<FollowingCacheElement>> evictionCandidates = CacheHelpers.getEvictionCandidateList(followIndex);
-			List<CacheAlgorithm.Candidate<FollowingCacheElement>> toRemove = algorithm.toRemoveInResize(evictionCandidates);
-			for (CacheAlgorithm.Candidate<FollowingCacheElement> candidate : toRemove)
+			Map<IpfsKey, FollowingCacheElement[]> toReplace = new HashMap<>();
+			for (FollowRecord record : followIndex)
 			{
-				FollowingCacheElement elt = candidate.data();
-				IpfsFile imageHash = elt.imageHash();
-				if (null != imageHash)
+				// TODO:  This algorithm needs to be replaced since it is reaching into the FollowIndex.
+				List<FollowingCacheElement> retained = new ArrayList<>();
+				for (FollowingCacheElement elt : record.elements())
 				{
-					cache.removeFromFollowCache(HighLevelCache.Type.FILE, imageHash).get();
+					if (algorithm.toRemoveInResize(List.of(new CacheAlgorithm.Candidate<FollowingCacheElement>(elt.combinedSizeBytes(), elt))).isEmpty())
+					{
+						// We are NOT removing this element so keep it in the list.
+						retained.add(elt);
+					}
+					else
+					{
+						IpfsFile imageHash = elt.imageHash();
+						if (null != imageHash)
+						{
+							cache.removeFromFollowCache(HighLevelCache.Type.FILE, imageHash).get();
+						}
+						IpfsFile leafHash = elt.leafHash();
+						if (null != leafHash)
+						{
+							cache.removeFromFollowCache(HighLevelCache.Type.FILE, leafHash).get();
+						}
+					}
 				}
-				IpfsFile leafHash = elt.leafHash();
-				if (null != leafHash)
+				if (record.elements().length != retained.size())
 				{
-					cache.removeFromFollowCache(HighLevelCache.Type.FILE, leafHash).get();
+					toReplace.put(record.publicKey(), retained.toArray((int size) -> new FollowingCacheElement[size]));
 				}
+			}
+			for (IpfsKey key : toReplace.keySet())
+			{
+				FollowingCacheElement[] value = toReplace.get(key);
+				followIndex.replaceCached(key, value);
 			}
 		}
 	}

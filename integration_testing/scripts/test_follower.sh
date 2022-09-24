@@ -155,6 +155,13 @@ requireSubstring "$REFRESH_NEXT_OUTPUT" "Refreshing followee IpfsKey($PUBLIC1)"
 REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --refreshNextFollowee 2>&1)
 requireSubstring "$REFRESH_NEXT_OUTPUT" "Usage error in running command: Not following any users"
 
+echo "Shrink the cache and force a cache cleaning to verify it doesn't break anything..."
+CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --setGlobalPrefs --followCacheTargetBytes 2000000
+CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
+requireSubstring "$CLEAN_OUTPUT" "Pruning cache to 2.00 MB (2000000 bytes) from current size of 2.62 MB (2621440 bytes)"
+CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
+requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 0 bytes is below target of 2.00 MB (2000000 bytes)"
+
 echo "Stop following and verify it is no longer in the list"
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --stopFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "stopFollowing"
