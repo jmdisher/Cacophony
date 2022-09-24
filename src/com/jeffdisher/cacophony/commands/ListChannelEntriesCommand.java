@@ -50,7 +50,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		if (null != _channelPublicKey)
 		{
 			// Make sure that they are a followee.
-			FollowRecord record = followIndex.getFollowerRecord(_channelPublicKey);
+			FollowRecord record = followIndex.peekRecord(_channelPublicKey);
 			if (null != record)
 			{
 				environment.logToConsole("Following " + _channelPublicKey);

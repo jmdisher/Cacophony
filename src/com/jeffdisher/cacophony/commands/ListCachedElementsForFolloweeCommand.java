@@ -45,7 +45,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, local.getSharedConnection());
-		FollowRecord record = followIndex.getFollowerRecord(_followeeKey);
+		FollowRecord record = followIndex.peekRecord(_followeeKey);
 		if (null != record)
 		{
 			// We know that all the meta-data reachable from this root is cached locally, but not all the leaf data elements, so we will check the FollowRecord.

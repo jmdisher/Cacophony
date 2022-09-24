@@ -57,8 +57,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		FollowIndex followIndex = localData.readFollowIndex();
 		
 		// We need to first verify that we aren't already following them.
-		IpfsFile lastRoot = followIndex.getLastFetchedRoot(_publicKey);
-		if (null != lastRoot)
+		if (null != followIndex.peekRecord(_publicKey))
 		{
 			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
 		}

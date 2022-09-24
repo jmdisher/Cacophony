@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -46,11 +47,11 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		if (null != _publicKey)
 		{
 			publicKey = _publicKey;
-			IpfsFile root = followIndex.getLastFetchedRoot(_publicKey);
-			if (null != root)
+			FollowRecord existingRecord = followIndex.peekRecord(_publicKey);
+			if (null != existingRecord)
 			{
 				environment.logToConsole("Following " + _publicKey);
-				rootToLoad = root;
+				rootToLoad = existingRecord.lastFetchedRoot();
 				isCached = true;
 			}
 			else

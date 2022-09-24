@@ -27,13 +27,13 @@ public class TestFollowIndex
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
 		Assert.assertEquals(null, index.nextKeyToPoll());
-		Assert.assertEquals(null, index.getLastFetchedRoot(K1));
+		Assert.assertEquals(null, index.peekRecord(K1));
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		index.writeToStream(outStream);
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 		FollowIndex read = FollowIndex.fromStream(inStream);
 		Assert.assertEquals(null, read.nextKeyToPoll());
-		Assert.assertEquals(null, read.getLastFetchedRoot(K1));
+		Assert.assertEquals(null, read.peekRecord(K1));
 	}
 
 	@Test
@@ -48,7 +48,7 @@ public class TestFollowIndex
 		FollowIndex read = FollowIndex.fromStream(inStream);
 		Assert.assertEquals(K1, read.nextKeyToPoll());
 		Assert.assertEquals(K1, read.nextKeyToPoll());
-		Assert.assertEquals(F1, read.getLastFetchedRoot(K1));
+		Assert.assertEquals(F1, read.peekRecord(K1).lastFetchedRoot());
 	}
 
 	@Test
@@ -60,7 +60,7 @@ public class TestFollowIndex
 		Assert.assertEquals(K1, index.nextKeyToPoll());
 		index.addNewElementToFollower(K1, F3, F3, null, F3, 1000, 100);
 		Assert.assertEquals(K2, index.nextKeyToPoll());
-		Assert.assertEquals(F3, index.getLastFetchedRoot(K1));
+		Assert.assertEquals(F3, index.peekRecord(K1).lastFetchedRoot());
 	}
 
 	@Test
@@ -73,8 +73,8 @@ public class TestFollowIndex
 		index.removeFollowing(K1);
 		Assert.assertEquals(K2, index.nextKeyToPoll());
 		Assert.assertEquals(K2, index.nextKeyToPoll());
-		Assert.assertEquals(null, index.getLastFetchedRoot(K1));
-		Assert.assertEquals(F2, index.getLastFetchedRoot(K2));
+		Assert.assertEquals(null, index.peekRecord(K1));
+		Assert.assertEquals(F2, index.peekRecord(K2).lastFetchedRoot());
 	}
 
 	@Test
@@ -99,9 +99,9 @@ public class TestFollowIndex
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
 		index.addFollowingWithInitialState(K1, F1, 1);
-		Assert.assertNotNull(index.getFollowerRecord(K1));
+		Assert.assertNotNull(index.peekRecord(K1).lastFetchedRoot());
 		index.updateFollowee(K1, F2, 1);
-		Assert.assertNotNull(index.getFollowerRecord(K1));
+		Assert.assertNotNull(index.peekRecord(K1).lastFetchedRoot());
 	}
 
 	@Test
@@ -125,8 +125,8 @@ public class TestFollowIndex
 		FollowIndex read = FollowIndex.fromStream(inStream);
 		// New following keys are added at the front of the list so we should see the second one.
 		Assert.assertEquals(K1, read.nextKeyToPoll());
-		Assert.assertEquals(F3, read.getLastFetchedRoot(K1));
-		FollowRecord record = read.getFollowerRecord(K1);
+		Assert.assertEquals(F3, read.peekRecord(K1).lastFetchedRoot());
+		FollowRecord record = read.peekRecord(K1);
 		Assert.assertEquals(currentTimeMillis, record.lastPollMillis());
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(2, elements.length);
@@ -141,12 +141,12 @@ public class TestFollowIndex
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
 		index.addFollowingWithInitialState(K1, F1, 1);
-		Assert.assertNotNull(index.getFollowerRecord(K1));
+		Assert.assertNotNull(index.peekRecord(K1));
 		
 		FollowIndex copy = index.mutableClone();
 		copy.updateFollowee(K1, F2, 1);
 		
-		Assert.assertEquals(F2, copy.getLastFetchedRoot(K1));
-		Assert.assertEquals(F1, index.getLastFetchedRoot(K1));
+		Assert.assertEquals(F2, copy.peekRecord(K1).lastFetchedRoot());
+		Assert.assertEquals(F1, index.peekRecord(K1).lastFetchedRoot());
 	}
 }

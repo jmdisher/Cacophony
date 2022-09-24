@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -46,8 +47,8 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		if (null != _channelPublicKey)
 		{
 			publicKey = _channelPublicKey;
-			rootToLoad = followIndex.getLastFetchedRoot(_channelPublicKey);
-			if (null != rootToLoad)
+			FollowRecord record = followIndex.peekRecord(_channelPublicKey);
+			if (null != record)
 			{
 				environment.logToConsole("Following " + _channelPublicKey);
 				isCached = true;

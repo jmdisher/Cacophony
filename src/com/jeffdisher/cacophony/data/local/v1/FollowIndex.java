@@ -101,6 +101,18 @@ public class FollowIndex implements Iterable<FollowRecord>
 	}
 
 	/**
+	 * Looks up the FollowRecord for the given public key and returns a reference to it WITHOUT removing it from the index.
+	 * If we aren't following them, this returns null.
+	 * 
+	 * @param publicKey The key to stop following.
+	 * @return The last state of the cache, null if not being followed.
+	 */
+	public FollowRecord peekRecord(IpfsKey publicKey)
+	{
+		return _getFollowerRecord(publicKey);
+	}
+
+	/**
 	 * Peeks at the next followee which needs to be polled for updates (has no side-effects).
 	 * 
 	 * @return The next followee to poll, null if there aren't any.
@@ -111,20 +123,6 @@ public class FollowIndex implements Iterable<FollowRecord>
 				? null
 				: _sortedFollowList.get(0).publicKey()
 		;
-	}
-
-	public IpfsFile getLastFetchedRoot(IpfsKey publicKey)
-	{
-		FollowRecord record = _getFollowerRecord(publicKey);
-		return (null == record)
-				? null
-				: record.lastFetchedRoot()
-		;
-	}
-
-	public FollowRecord getFollowerRecord(IpfsKey publicKey)
-	{
-		return _getFollowerRecord(publicKey);
 	}
 
 	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)

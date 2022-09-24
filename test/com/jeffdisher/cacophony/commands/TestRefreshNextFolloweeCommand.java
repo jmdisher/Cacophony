@@ -169,7 +169,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see that we failed to update the cache.
 		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
+		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(0, elements.length);
 		user2.shutdown();
@@ -234,7 +234,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see that we failed to update the cache.
 		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
+		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(0, elements.length);
 		user2.shutdown();
@@ -292,7 +292,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see just the one entry in the cache.
 		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.getFollowerRecord(PUBLIC_KEY3);
+		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();
 		Assert.assertEquals(1, elements.length);
 		Assert.assertEquals(recordToKeep, elements[0].elementHash());
@@ -318,7 +318,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Run the command once and make sure that the followee key exists.
 		user.runCommand(null, command);
-		FollowRecord record = user.readFollowIndex().getFollowerRecord(PUBLIC_KEY2);
+		FollowRecord record = user.readFollowIndex().peekRecord(PUBLIC_KEY2);
 		IpfsFile lastRoot = record.lastFetchedRoot();
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
 		long firstMillis = record.lastPollMillis();
@@ -327,7 +327,7 @@ public class TestRefreshNextFolloweeCommand
 		Thread.sleep(2);
 		user2.timeoutKey(PUBLIC_KEY2);
 		user.runCommand(null, command);
-		record = user.readFollowIndex().getFollowerRecord(PUBLIC_KEY2);
+		record = user.readFollowIndex().peekRecord(PUBLIC_KEY2);
 		IpfsFile lastRoot2 = record.lastFetchedRoot();
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
 		Assert.assertEquals(lastRoot, lastRoot2);

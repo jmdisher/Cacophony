@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
@@ -56,8 +57,9 @@ public class CommandHelpers
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		
 		// We need to first verify that we are already following them.
-		IpfsFile lastRoot = followIndex.getLastFetchedRoot(publicKey);
-		Assert.assertTrue(null != lastRoot);
+		FollowRecord record = followIndex.peekRecord(publicKey);
+		Assert.assertTrue(null != record);
+		IpfsFile lastRoot = record.lastFetchedRoot();
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = scheduler.resolvePublicKey(publicKey).get();
@@ -216,7 +218,7 @@ public class CommandHelpers
 			}
 		}
 		// Remove the CIDs which are no longer present and consult the follower cache to remove any associated leaf elements.
-		Map<IpfsFile, FollowingCacheElement> cacheByElementCid = CacheHelpers.createCachedMap(followIndex.getFollowerRecord(publicKey));
+		Map<IpfsFile, FollowingCacheElement> cacheByElementCid = CacheHelpers.createCachedMap(followIndex.peekRecord(publicKey));
 		for (String rawCid : removeCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
