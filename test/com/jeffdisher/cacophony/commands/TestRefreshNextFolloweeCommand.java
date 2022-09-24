@@ -16,7 +16,6 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -154,18 +153,18 @@ public class TestRefreshNextFolloweeCommand
 		IpfsFile metaDataToDelete = IpfsFile.fromIpfsCid(index.getRecords());
 		user3.deleteFile(metaDataToDelete);
 		
-		boolean didFail = false;
-		try
-		{
-			user.runCommand(null, command);
-		}
-		catch (IpfsConnectionException e)
-		{
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
-		nextKey = followees.nextKeyToPoll();
-		Assert.assertEquals(PUBLIC_KEY2, nextKey);
+		// Note that we expect this to fail, but the command will handle any exceptions internally.
+		// The only way we can observe this failure is by scraping the output or observing the root didn't change but the next to poll advanced.
+		followees = user.readFollowIndex();
+		IpfsKey beforeToPoll = followees.nextKeyToPoll();
+		Assert.assertEquals(PUBLIC_KEY3, beforeToPoll);
+		IpfsFile beforeRoot = followees.peekRecord(beforeToPoll).lastFetchedRoot();
+		user.runCommand(null, command);
+		followees = user.readFollowIndex();
+		IpfsKey afterToPoll = followees.nextKeyToPoll();
+		IpfsFile afterRoot = followees.peekRecord(beforeToPoll).lastFetchedRoot();
+		Assert.assertEquals(PUBLIC_KEY2, afterToPoll);
+		Assert.assertEquals(beforeRoot, afterRoot);
 		
 		// Check that we see that we failed to update the cache.
 		FollowIndex followIndex = user.readFollowIndex();
@@ -219,20 +218,12 @@ public class TestRefreshNextFolloweeCommand
 		IpfsFile recordToDelete = IpfsFile.fromIpfsCid(records.getRecord().get(0));
 		user3.deleteFile(recordToDelete);
 		
-		boolean didFail = false;
-		try
-		{
-			user.runCommand(null, command);
-		}
-		catch (IpfsConnectionException e)
-		{
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
+		// This should abort, just advancing the next to poll.
+		user.runCommand(null, command);
 		nextKey = followees.nextKeyToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		
-		// Check that we see that we failed to update the cache.
+		// Check that we see that we did update the cache with the valid entry.
 		FollowIndex followIndex = user.readFollowIndex();
 		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
 		FollowingCacheElement[] elements = record.elements();

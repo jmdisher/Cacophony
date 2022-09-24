@@ -7,19 +7,21 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
  * Stores and manages basic access to the keys we are following, what data we have from each, and our polling schedule.
+ * While some basic helpers exist for reading the index in more complicated ways, individual FollowRecord instances
+ * are modified via a checkout-checking system.
+ * This allows for a narrow interface while also allowing new/update special-cases to be checked by callers.
+ * It does, however, mean that care must be taken to either entirely drop the index or re-checkin an element, on
+ * failure.
  */
 public class FollowIndex implements Iterable<FollowRecord>
 {
@@ -73,29 +75,13 @@ public class FollowIndex implements Iterable<FollowRecord>
 	}
 
 	/**
-	 * Adds the given follower to the end of the list of following keys to be fetched.
-	 * Asserts that the followee is not already being followed.
-	 * 
-	 * @param publicKey The key to follow.
-	 * @param fetchRootIndex The initial root index.
-	 * @param currentTimeMillis The time when this add was done.
-	 */
-	public void addFollowingWithInitialState(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
-	{
-		boolean isNew = !_sortedFollowList.stream().anyMatch((r) -> publicKey.equals(r.publicKey()));
-		Assert.assertTrue(isNew);
-		FollowRecord record = new FollowRecord(publicKey, fetchRootIndex, currentTimeMillis, new FollowingCacheElement[0]);
-		_sortedFollowList.add(record);
-	}
-
-	/**
 	 * Removes the given public key from the list we are following and returns the last state of the cached data.
 	 * If we aren't following them, this does nothing and returns null.
 	 * 
 	 * @param publicKey The key to stop following.
 	 * @return The last state of the cache, null if not being followed.
 	 */
-	public FollowRecord removeFollowing(IpfsKey publicKey)
+	public FollowRecord checkoutRecord(IpfsKey publicKey)
 	{
 		return _removeRecordFromList(publicKey);
 	}
@@ -125,33 +111,24 @@ public class FollowIndex implements Iterable<FollowRecord>
 		;
 	}
 
-	public void updateFollowee(IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
+	/**
+	 * Checks the given record back into the index, at the END of the list (meaning it will be the last to poll, next).
+	 * 
+	 * @param record The record to check in.
+	 */
+	public void checkinRecord(FollowRecord record)
 	{
-		FollowRecord record = _removeRecordFromList(publicKey);
+		// The record must exist.
 		Assert.assertTrue(null != record);
-		FollowRecord newRecord = new FollowRecord(publicKey, fetchRootIndex, currentTimeMillis, record.elements());
-		_sortedFollowList.add(newRecord);
-	}
-
-	public void addNewElementToFollower(IpfsKey publicKey, IpfsFile fetchedRoot, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long currentTimeMillis, long combinedSizeBytes)
-	{
-		FollowRecord record = _removeRecordFromList(publicKey);
-		Assert.assertTrue(null != record);
-		FollowingCacheElement element = new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes);
-		FollowingCacheElement[] oldElements = record.elements();
-		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
-		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);
-		newElements[oldElements.length] = element;
+		Assert.assertTrue(null != record.publicKey());
+		Assert.assertTrue(null != record.lastFetchedRoot());
+		Assert.assertTrue(null != record.elements());
 		
-		// Verify that there are no duplicated elements in the record list (since that wouldn't make sense and would imply an error exists elsewhere).
-		Set<IpfsFile> cachedElementHashes = new HashSet<>();
-		for (FollowingCacheElement elt : newElements)
-		{
-			Assert.assertTrue(cachedElementHashes.add(elt.elementHash()));
-		}
+		// Make sure a record for this user isn't already here.
+		Assert.assertTrue(null == _getFollowerRecord(record.publicKey()));
 		
-		FollowRecord newRecord = new FollowRecord(publicKey, fetchedRoot, currentTimeMillis, newElements);
-		_sortedFollowList.add(newRecord);
+		// Add it to the end of the list.
+		_sortedFollowList.add(record);
 	}
 
 	@Override

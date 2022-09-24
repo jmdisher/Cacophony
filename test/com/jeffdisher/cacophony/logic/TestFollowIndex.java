@@ -40,8 +40,8 @@ public class TestFollowIndex
 	public void testTwoEntryLoadStore()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
-		index.addFollowingWithInitialState(K2, F2, 2);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
+		index.checkinRecord(new FollowRecord(K2, F2, 2, new FollowingCacheElement[0]));
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		index.writeToStream(outStream);
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
@@ -55,10 +55,11 @@ public class TestFollowIndex
 	public void testUpdateToElement()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
-		index.addFollowingWithInitialState(K2, F2, 2);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
+		index.checkinRecord(new FollowRecord(K2, F2, 2, new FollowingCacheElement[0]));
 		Assert.assertEquals(K1, index.nextKeyToPoll());
-		index.addNewElementToFollower(K1, F3, F3, null, F3, 1000, 100);
+		
+		_addElement(index, K1, F3, F3, null, F3, 1000, 100);
 		Assert.assertEquals(K2, index.nextKeyToPoll());
 		Assert.assertEquals(F3, index.peekRecord(K1).lastFetchedRoot());
 	}
@@ -67,10 +68,10 @@ public class TestFollowIndex
 	public void testRemove()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
-		index.addFollowingWithInitialState(K2, F2, 2);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
+		index.checkinRecord(new FollowRecord(K2, F2, 2, new FollowingCacheElement[0]));
 		Assert.assertEquals(K1, index.nextKeyToPoll());
-		index.removeFollowing(K1);
+		Assert.assertNotNull(index.checkoutRecord(K1));
 		Assert.assertEquals(K2, index.nextKeyToPoll());
 		Assert.assertEquals(K2, index.nextKeyToPoll());
 		Assert.assertEquals(null, index.peekRecord(K1));
@@ -81,14 +82,14 @@ public class TestFollowIndex
 	public void testIteration()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
-		index.addFollowingWithInitialState(K2, F2, 2);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
+		index.checkinRecord(new FollowRecord(K2, F2, 2, new FollowingCacheElement[0]));
 		Iterator<FollowRecord> iter = index.iterator();
 		Assert.assertEquals(K1, iter.next().publicKey());
 		Assert.assertEquals(K2, iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 		
-		index.removeFollowing(K2);
+		Assert.assertNotNull(index.checkoutRecord(K2));
 		iter = index.iterator();
 		Assert.assertEquals(K1, iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
@@ -98,9 +99,9 @@ public class TestFollowIndex
 	public void testUpdateAndRemove()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
 		Assert.assertNotNull(index.peekRecord(K1).lastFetchedRoot());
-		index.updateFollowee(K1, F2, 1);
+		_updateFollowee(index, K1, F2, 1);
 		Assert.assertNotNull(index.peekRecord(K1).lastFetchedRoot());
 	}
 
@@ -116,9 +117,9 @@ public class TestFollowIndex
 		long currentTimeMillis = 1_000L;
 		long combinedSizeBytes = 1_000_000L;
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
-		index.addNewElementToFollower(K1, F2, element1, image1, video1, currentTimeMillis, combinedSizeBytes);
-		index.addNewElementToFollower(K1, F3, element2, image2, video2, currentTimeMillis, combinedSizeBytes);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
+		_addElement(index, K1, F2, element1, image1, video1, currentTimeMillis, combinedSizeBytes);
+		_addElement(index, K1, F3, element2, image2, video2, currentTimeMillis, combinedSizeBytes);
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		index.writeToStream(outStream);
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
@@ -140,13 +141,37 @@ public class TestFollowIndex
 	public void testMutableClone()
 	{
 		FollowIndex index = FollowIndex.emptyFollowIndex();
-		index.addFollowingWithInitialState(K1, F1, 1);
+		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
 		Assert.assertNotNull(index.peekRecord(K1));
 		
 		FollowIndex copy = index.mutableClone();
-		copy.updateFollowee(K1, F2, 1);
+		_updateFollowee(copy, K1, F2, 1);
 		
 		Assert.assertEquals(F2, copy.peekRecord(K1).lastFetchedRoot());
 		Assert.assertEquals(F1, index.peekRecord(K1).lastFetchedRoot());
 	}
-}
+
+
+	private static void _updateFollowee(FollowIndex index, IpfsKey publicKey, IpfsFile fetchRootIndex, long currentTimeMillis)
+	{
+		FollowRecord record = index.checkoutRecord(publicKey);
+		Assert.assertTrue(null != record);
+		
+		FollowRecord newRecord = new FollowRecord(publicKey, fetchRootIndex, currentTimeMillis, record.elements());
+		index.checkinRecord(newRecord);
+	}
+
+	private static void _addElement(FollowIndex index, IpfsKey publicKey, IpfsFile fetchedRoot, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long currentTimeMillis, long combinedSizeBytes)
+	{
+		FollowRecord record = index.checkoutRecord(publicKey);
+		Assert.assertTrue(null != record);
+		
+		FollowingCacheElement element = new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes);
+		FollowingCacheElement[] oldElements = record.elements();
+		FollowingCacheElement[] newElements = new FollowingCacheElement[oldElements.length + 1];
+		System.arraycopy(oldElements, 0, newElements, 0, oldElements.length);
+		newElements[oldElements.length] = element;
+		
+		FollowRecord newRecord = new FollowRecord(publicKey, fetchedRoot, currentTimeMillis, newElements);
+		index.checkinRecord(newRecord);
+	}}

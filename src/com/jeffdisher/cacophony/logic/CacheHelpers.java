@@ -36,21 +36,6 @@ public class CacheHelpers
 		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
 	}
 
-	public static long addPinnedLeavesToFollowCache(INetworkScheduler scheduler, FollowIndex followIndex, IpfsKey followeeKey, IpfsFile fetchedRoot, long currentTimeMillis, IpfsFile elementCid, IpfsFile imageHash, IpfsFile leafHash) throws IpfsConnectionException
-	{
-		long combinedSizeBytes = 0L;
-		if (null != imageHash)
-		{
-			combinedSizeBytes += scheduler.getSizeInBytes(imageHash).get();
-		}
-		if (null != leafHash)
-		{
-			combinedSizeBytes += scheduler.getSizeInBytes(leafHash).get();
-		}
-		followIndex.addNewElementToFollower(followeeKey, fetchedRoot, elementCid, imageHash, leafHash, currentTimeMillis, combinedSizeBytes);
-		return combinedSizeBytes;
-	}
-
 	public static void chooseAndFetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, RawElementData element) throws IpfsConnectionException
 	{
 		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.

@@ -1,24 +1,24 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.logic.CacheHelpers;
+import com.jeffdisher.cacophony.logic.FolloweeRefreshLogic;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.logic.StandardRefreshSupport;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -41,42 +41,28 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
 		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
 		FollowIndex followIndex = localData.readFollowIndex();
+		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		
 		// Removed the cache record and verify that we are following them.
-		FollowRecord finalRecord = followIndex.removeFollowing(_publicKey);
+		FollowRecord finalRecord = followIndex.checkoutRecord(_publicKey);
 		if (null == finalRecord)
 		{
 			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
 		}
-		// Walk all the elements in the record stream, removing the cached meta-data and associated files.
-		for (FollowingCacheElement element : finalRecord.elements())
-		{
-			if (null != element.imageHash())
-			{
-				cache.removeFromFollowCache(HighLevelCache.Type.FILE, element.imageHash()).get();
-			}
-			if (null != element.leafHash())
-			{
-				cache.removeFromFollowCache(HighLevelCache.Type.FILE, element.leafHash()).get();
-			}
-			cache.removeFromFollowCache(HighLevelCache.Type.METADATA, element.elementHash()).get();
-		}
 		
-		// Remove all the root meta-data we have cached.
-		IpfsFile lastRoot = finalRecord.lastFetchedRoot();
-		StreamIndex streamIndex = checker.loadCached(lastRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-		Assert.assertTrue(1 == streamIndex.getVersion());
-		IpfsFile descriptionHash = IpfsFile.fromIpfsCid(streamIndex.getDescription());
-		IpfsFile recommendationsHash = IpfsFile.fromIpfsCid(streamIndex.getRecommendations());
-		IpfsFile recordsHash = IpfsFile.fromIpfsCid(streamIndex.getRecords());
-		StreamDescription description = checker.loadCached(descriptionHash, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
-		IpfsFile pictureHash = IpfsFile.fromIpfsCid(description.getPicture());
+		// Prepare for the cleanup.
+		GlobalPrefs prefs = localData.readGlobalPrefs();
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache, checker);
+		FollowingCacheElement[] updatedCacheState = FolloweeRefreshLogic.refreshFollowee(refreshSupport
+				, prefs
+				, finalRecord.elements()
+				, finalRecord.lastFetchedRoot()
+				, null
+				, currentCacheUsageInBytes
+		);
+		// We were deleting everything, so this should be empty.
+		Assert.assertTrue(0 == updatedCacheState.length);
 		
-		cache.removeFromFollowCache(HighLevelCache.Type.METADATA, pictureHash).get();
-		cache.removeFromFollowCache(HighLevelCache.Type.METADATA, recordsHash).get();
-		cache.removeFromFollowCache(HighLevelCache.Type.METADATA, recommendationsHash).get();
-		cache.removeFromFollowCache(HighLevelCache.Type.METADATA, descriptionHash).get();
-		cache.removeFromFollowCache(HighLevelCache.Type.METADATA, lastRoot).get();
 		// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 		localData.writeFollowIndex(followIndex);
 		localData.writeGlobalPinCache(pinCache);
