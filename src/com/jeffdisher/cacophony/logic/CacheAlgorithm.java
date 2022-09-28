@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 
 /**
@@ -15,6 +16,13 @@ import java.util.List;
  */
 public class CacheAlgorithm
 {
+	/**
+	 * This is exposed as public just for testing.
+	 * The function must return a double between 0.0 and 1.0:  This will reject all "chance to add" below the given
+	 * value (meaning 1.0 will reject everything and 0.0 will reject nothing).
+	 */
+	public static Supplier<Double> CACHE_PROBABILITY_FILTER = () -> Math.random();
+
 	/**
 	 * The type used to communicate cache decisions through this API.
 	 * 
@@ -106,7 +114,7 @@ public class CacheAlgorithm
 			else
 			{
 				double chanceToAdd = 1.0 - ((double)_currentSizeBytes / (double)_maximumSizeBytes);
-				if (Math.random() < chanceToAdd)
+				if (chanceToAdd > CACHE_PROBABILITY_FILTER.get())
 				{
 					// This has been selected for addition.
 					additions.add(candidate);

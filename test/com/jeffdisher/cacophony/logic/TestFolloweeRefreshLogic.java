@@ -5,9 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -34,6 +37,22 @@ import io.ipfs.cid.Cid;
 public class TestFolloweeRefreshLogic
 {
 	private static final IpfsKey DUMMY_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
+	private static Supplier<Double> STORED_FILTER = null;
+
+	@BeforeClass
+	public static void setup()
+	{
+		// We want to force the cache to accept everything.
+		STORED_FILTER = CacheAlgorithm.CACHE_PROBABILITY_FILTER;
+		CacheAlgorithm.CACHE_PROBABILITY_FILTER = () -> 0.0;
+	}
+
+	@AfterClass
+	public static void tearDown()
+	{
+		// Restore the original (note that this may still cause problems if the tests are run concurrently in one VM).
+		CacheAlgorithm.CACHE_PROBABILITY_FILTER = STORED_FILTER;
+	}
 
 	@Test
 	public void testNewEmptyFollow() throws Throwable
@@ -55,7 +74,7 @@ public class TestFolloweeRefreshLogic
 	{
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, "Name", null, null);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		TestSupport testSupport = new TestSupport(data);
 		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
@@ -71,7 +90,7 @@ public class TestFolloweeRefreshLogic
 	{
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, "Name", new byte[] {1}, new byte[] {1, 2});
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, new byte[] {1, 2}));
 		TestSupport testSupport = new TestSupport(data);
 		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
@@ -89,7 +108,7 @@ public class TestFolloweeRefreshLogic
 		// First, start following.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, "Name", null, null);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		TestSupport testSupport = new TestSupport(data);
 		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
@@ -125,7 +144,7 @@ public class TestFolloweeRefreshLogic
 		
 		// Now, add an element with no leaves and refresh.
 		IpfsFile oldIndex = index;
-		index = _addElementToStream(data, index, "Name", null, null);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		originalElements = result;
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
@@ -152,7 +171,7 @@ public class TestFolloweeRefreshLogic
 		
 		// Now, add an element with small leaves and refresh.
 		IpfsFile oldIndex = index;
-		index = _addElementToStream(data, index, "Name", new byte[] {1}, new byte[] {1, 2});
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, new byte[] {1, 2}));
 		originalElements = result;
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
@@ -179,7 +198,7 @@ public class TestFolloweeRefreshLogic
 		
 		// Now, add an element with big leaves and refresh.
 		IpfsFile oldIndex = index;
-		index = _addElementToStream(data, index, "Name", new byte[] {1, 2, 3, 4, 5, 6}, new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1, 2, 3, 4, 5, 6}, new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}));
 		originalElements = result;
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
@@ -197,7 +216,7 @@ public class TestFolloweeRefreshLogic
 		// Create a normal user with a single record.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, "Name", null, null);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		// Now, break the recommendations (just misc meta-data).
 		StreamIndex indexObject = GlobalData.deserializeIndex(data.get(index));
 		data.remove(IpfsFile.fromIpfsCid(indexObject.getRecommendations()));
@@ -227,7 +246,7 @@ public class TestFolloweeRefreshLogic
 		// Create a normal user with a single record.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, "Name", null, null);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		// Now, break the record by dropping it form storage.
 		IpfsFile[] records = _readRecordHashes(data, index);
 		Assert.assertEquals(1, records.length);
@@ -258,7 +277,7 @@ public class TestFolloweeRefreshLogic
 		// Create a normal user with a single record with leaves.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, "Name", new byte[] {1}, new byte[] { 1, 2, 3 });
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, new byte[] { 1, 2, 3 }));
 		
 		// Now, break the leaf by dropping it form storage.
 		IpfsFile[] records = _readRecordHashes(data, index);
@@ -279,6 +298,52 @@ public class TestFolloweeRefreshLogic
 		// We expect that this will succeed, since it isn't a meta-data failure, but we will decide NOT to cache this element.
 		FollowingCacheElement[] result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertEquals(0, result.length);
+	}
+
+	@Test
+	public void testRemoveRecord() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		TestSupport testSupport = new TestSupport(data);
+		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 100L);
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		FollowingCacheElement[] result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals(0, result.length);
+		
+		// Add 2 elements and refresh.
+		IpfsFile oldIndex = index;
+		IpfsFile record1 = _storeRecord(data, "Name1", new byte[] {1}, new byte[] {1, 1});
+		index = _addElementToStream(data, index, record1);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name2", new byte[] {2}, new byte[] {1, 1, 2}));
+		originalElements = result;
+		oldIndexElement = oldIndex;
+		newIndexElement = index;
+		currentCacheUsageInBytes = 0L;
+		result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(3, result[0].combinedSizeBytes());
+		Assert.assertEquals(4, result[1].combinedSizeBytes());
+		
+		// Remove the first element and add a new one, then refresh.
+		oldIndex = index;
+		index = _removeElementFromStream(data, index, record1);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name3", new byte[] {3}, new byte[] {1, 1, 1, 3}));
+		originalElements = result;
+		oldIndexElement = oldIndex;
+		newIndexElement = index;
+		currentCacheUsageInBytes = 0L;
+		result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(4, result[0].combinedSizeBytes());
+		Assert.assertEquals(5, result[1].combinedSizeBytes());
+		
+		// Verify that the removed elements have been deleted from the local data (will still be in upstream).
+		_verifyRecordDeleted(testSupport, data, record1);
 	}
 
 
@@ -318,7 +383,7 @@ public class TestFolloweeRefreshLogic
 		return indexHash;
 	}
 
-	private static IpfsFile _addElementToStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, String name, byte[] thumbnail, byte[] video)
+	private static IpfsFile _storeRecord(Map<IpfsFile, byte[]> data, String name, byte[] thumbnail, byte[] video)
 	{
 		// Create the record.
 		StreamRecord record = new StreamRecord();
@@ -352,13 +417,17 @@ public class TestFolloweeRefreshLogic
 		byte[] serialized = GlobalData.serializeRecord(record);
 		IpfsFile recordHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(recordHash, serialized));
-		
+		return recordHash;
+	}
+
+	private static IpfsFile _addElementToStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash)
+	{
 		// Read the existing stream.
 		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(index.getRecords());
 		StreamRecords records = GlobalData.deserializeRecords(data.get(recordsHash));
 		records.getRecord().add(recordHash.toSafeString());
-		serialized = GlobalData.serializeRecords(records);
+		byte[] serialized = GlobalData.serializeRecords(records);
 		recordsHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(recordsHash, serialized));
 		
@@ -367,6 +436,40 @@ public class TestFolloweeRefreshLogic
 		indexHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(indexHash, serialized));
 		return indexHash;
+	}
+
+	private static IpfsFile _removeElementFromStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash)
+	{
+		// Read the existing stream.
+		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));
+		IpfsFile recordsHash = IpfsFile.fromIpfsCid(index.getRecords());
+		StreamRecords records = GlobalData.deserializeRecords(data.get(recordsHash));
+		List<String> recordList = records.getRecord();
+		Assert.assertTrue(recordList.remove(recordHash.toSafeString()));
+		byte[] serialized = GlobalData.serializeRecords(records);
+		recordsHash = _fakeHash(serialized);
+		Assert.assertNull(data.put(recordsHash, serialized));
+		
+		index.setRecords(recordsHash.toSafeString());
+		serialized = GlobalData.serializeIndex(index);
+		indexHash = _fakeHash(serialized);
+		Assert.assertNull(data.put(indexHash, serialized));
+		return indexHash;
+	}
+
+	private static void _verifyRecordDeleted(TestSupport testSupport, Map<IpfsFile, byte[]> data, IpfsFile recordHash)
+	{
+		// Verify the record isn't in testSupport.
+		testSupport.verifyNotPresentOrPinned(recordHash);
+		
+		// Read the record from our data (it is always there, only removed from testSupport).
+		StreamRecord record = GlobalData.deserializeRecord(data.get(recordHash));
+		
+		// Read the leaf elements and make sure that they aren't cached.
+		for (DataElement element : record.getElements().getElement())
+		{
+			testSupport.verifyNotPresentOrPinned(IpfsFile.fromIpfsCid(element.getCid()));
+		}
 	}
 
 	private IpfsFile[] _readRecordHashes(Map<IpfsFile, byte[]> data, IpfsFile indexHash)
@@ -403,7 +506,12 @@ public class TestFolloweeRefreshLogic
 		{
 			_upstreamData = upstreamData;
 		}
-		
+		public void verifyNotPresentOrPinned(IpfsFile hash)
+		{
+			Assert.assertFalse(_data.containsKey(hash));
+			Assert.assertFalse(_metaDataPinCount.containsKey(hash));
+			Assert.assertFalse(_filePinCount.containsKey(hash));
+		}
 		@Override
 		public void logMessage(String message)
 		{

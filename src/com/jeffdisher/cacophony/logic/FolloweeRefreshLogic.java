@@ -366,7 +366,8 @@ public class FolloweeRefreshLogic
 				{
 					data.futureVideoPin = support.addFileToFollowCache(data.videoHash);
 				}
-				candidatesBeingPinned.add(data);
+				// NOTE:  finalSelection has the latest elements at the front but we ideally want them at the back (not required by is an order which makes more sense).
+				candidatesBeingPinned.add(0, data);
 			}
 			
 			// Finally, walk the records whose leaves we pinned and build FollowingCacheElement instances for each.
