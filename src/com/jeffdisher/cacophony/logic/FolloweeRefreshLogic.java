@@ -95,11 +95,7 @@ public class FolloweeRefreshLogic
 			if (null != newIndexElement)
 			{
 				// Make sure that this isn't too big.
-				long indexSize = support.getSizeInBytes(newIndexElement).get();
-				if (indexSize > SizeLimits.MAX_INDEX_SIZE_BYTES)
-				{
-					throw new SizeConstraintException("index", indexSize, SizeLimits.MAX_INDEX_SIZE_BYTES);
-				}
+				_checkSizeInline(support, "index", newIndexElement, SizeLimits.MAX_INDEX_SIZE_BYTES);
 				
 				// Add it to the cache before we proceed.
 				support.addMetaDataToFollowCache(newIndexElement).get();
@@ -142,7 +138,7 @@ public class FolloweeRefreshLogic
 			, List<IpfsFile> metaDataToUnpin
 			, IpfsFile oldDescriptionElement
 			, IpfsFile newDescriptionElement
-	) throws IpfsConnectionException
+	) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Check if the root changed.
 		if ((null == oldDescriptionElement) || !oldDescriptionElement.equals(newDescriptionElement))
@@ -156,10 +152,17 @@ public class FolloweeRefreshLogic
 			}
 			if (null != newDescriptionElement)
 			{
+				// Make sure that this isn't too big.
+				_checkSizeInline(support, "description", newDescriptionElement, SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
+				
 				support.addMetaDataToFollowCache(newDescriptionElement).get();
 				StreamDescription newDescription = support.loadCached(newDescriptionElement, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+				
 				// The descriptions always contain a picture reference (often the default but never nothing) which we cache as meta-data.
-				support.addMetaDataToFollowCache(IpfsFile.fromIpfsCid(newDescription.getPicture())).get();
+				// Make sure that this isn't too big.
+				IpfsFile userPicCid = IpfsFile.fromIpfsCid(newDescription.getPicture());
+				_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
+				support.addMetaDataToFollowCache(userPicCid).get();
 			}
 		}
 	}
@@ -168,7 +171,7 @@ public class FolloweeRefreshLogic
 			, List<IpfsFile> metaDataToUnpin
 			, IpfsFile oldRecommendationsElement
 			, IpfsFile newRecommendationsElement
-	) throws IpfsConnectionException
+	) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Check if the root changed.
 		if ((null == oldRecommendationsElement) || !oldRecommendationsElement.equals(newRecommendationsElement))
@@ -182,6 +185,9 @@ public class FolloweeRefreshLogic
 			}
 			if (null != newRecommendationsElement)
 			{
+				// Make sure that this isn't too big.
+				_checkSizeInline(support, "recommendations", newRecommendationsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+				
 				support.addMetaDataToFollowCache(newRecommendationsElement).get();
 				newRecommendations = support.loadCached(newRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 			}
@@ -200,7 +206,7 @@ public class FolloweeRefreshLogic
 			, IpfsFile oldRecordsElement
 			, IpfsFile newRecordsElement
 			, long currentCacheUsageInBytes
-	) throws IpfsConnectionException
+	) throws IpfsConnectionException, SizeConstraintException
 	{
 		FollowingCacheElement[] finalElements = null;
 		// Check if the root changed.
@@ -212,6 +218,9 @@ public class FolloweeRefreshLogic
 			}
 			if (null != newRecordsElement)
 			{
+				// Make sure that this isn't too big.
+				_checkSizeInline(support, "records", newRecordsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+				
 				support.addMetaDataToFollowCache(newRecordsElement).get();
 			}
 			StreamRecords oldRecords = _loadRecords(support, oldRecordsElement);
@@ -512,6 +521,15 @@ public class FolloweeRefreshLogic
 				? IpfsFile.fromIpfsCid(rawCid)
 				: null
 		;
+	}
+
+	private static void _checkSizeInline(IRefreshSupport support, String context, IpfsFile element, long sizeLimit) throws IpfsConnectionException, SizeConstraintException
+	{
+		long size = support.getSizeInBytes(element).get();
+		if (size > sizeLimit)
+		{
+			throw new SizeConstraintException(context, size, sizeLimit);
+		}
 	}
 
 	/**

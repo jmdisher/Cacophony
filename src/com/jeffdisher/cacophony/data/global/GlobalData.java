@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -63,12 +64,17 @@ public class GlobalData {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
+		// spec needs to be updated to a new version, for everyone.
+		Assert.assertTrue(result.length <= SizeLimits.MAX_INDEX_SIZE_BYTES);
 		return result;
 	}
 
 	public static StreamIndex deserializeIndex(byte[] data)
 	{
 		Assert.assertTrue(null != data);
+		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
+		Assert.assertTrue(data.length <= SizeLimits.MAX_INDEX_SIZE_BYTES);
 		StreamIndex result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamIndex.class);
@@ -98,12 +104,17 @@ public class GlobalData {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
+		// spec needs to be updated to a new version, for everyone.
+		Assert.assertTrue(result.length <= SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 		return result;
 	}
 
 	public static StreamRecords deserializeRecords(byte[] data)
 	{
 		Assert.assertTrue(null != data);
+		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
+		Assert.assertTrue(data.length <= SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 		StreamRecords result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecords.class);
@@ -133,12 +144,17 @@ public class GlobalData {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
+		// spec needs to be updated to a new version, for everyone.
+		Assert.assertTrue(result.length <= SizeLimits.MAX_RECORD_SIZE_BYTES);
 		return result;
 	}
 
 	public static StreamRecord deserializeRecord(byte[] data)
 	{
 		Assert.assertTrue(null != data);
+		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
+		Assert.assertTrue(data.length <= SizeLimits.MAX_RECORD_SIZE_BYTES);
 		StreamRecord result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecord.class);
@@ -168,12 +184,17 @@ public class GlobalData {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
+		// spec needs to be updated to a new version, for everyone.
+		Assert.assertTrue(result.length <= SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
 		return result;
 	}
 
 	public static StreamDescription deserializeDescription(byte[] data)
 	{
 		Assert.assertTrue(null != data);
+		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
+		Assert.assertTrue(data.length <= SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
 		StreamDescription result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamDescription.class);
@@ -203,12 +224,17 @@ public class GlobalData {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
+		// spec needs to be updated to a new version, for everyone.
+		Assert.assertTrue(result.length <= SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 		return result;
 	}
 
 	public static StreamRecommendations deserializeRecommendations(byte[] data)
 	{
 		Assert.assertTrue(null != data);
+		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
+		Assert.assertTrue(data.length <= SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 		StreamRecommendations result = null;
 		try {
 			JAXBContext jaxb = JAXBContext.newInstance(StreamRecommendations.class);

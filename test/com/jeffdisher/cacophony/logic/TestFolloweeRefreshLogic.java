@@ -30,6 +30,8 @@ import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 import io.ipfs.cid.Cid;
 
@@ -346,6 +348,120 @@ public class TestFolloweeRefreshLogic
 		_verifyRecordDeleted(testSupport, data, record1);
 	}
 
+	@Test
+	public void testSizeLimit_StreamIndex() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		byte[] raw = new byte[(int)SizeLimits.MAX_INDEX_SIZE_BYTES + 1];
+		IpfsFile rawHash = _fakeHash(raw);
+		data.put(rawHash, raw);
+		
+		_commonSizeCheck(data, rawHash);
+	}
+
+	@Test
+	public void testSizeLimit_StreamRecommendations() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		byte[] raw = new byte[(int)SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES + 1];
+		IpfsFile rawHash = _fakeHash(raw);
+		data.put(rawHash, raw);
+		
+		byte[] userPic = new byte[] {'a','b','c'};
+		IpfsFile userPicFile = _fakeHash(userPic);
+		data.put(userPicFile, userPic);
+		
+		IpfsFile descriptionHash = _store_StreamDescription(data, userPicFile);
+		
+		IpfsFile recordsHash = _store_StreamRecords(data);
+		
+		IpfsFile indexHash = _store_StreamIndex(data, rawHash, descriptionHash, recordsHash);
+		
+		_commonSizeCheck(data, indexHash);
+	}
+
+	@Test
+	public void testSizeLimit_StreamDescription() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		byte[] raw = new byte[(int)SizeLimits.MAX_DESCRIPTION_SIZE_BYTES + 1];
+		IpfsFile rawHash = _fakeHash(raw);
+		data.put(rawHash, raw);
+		
+		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
+		
+		IpfsFile recordsHash = _store_StreamRecords(data);
+		
+		IpfsFile indexHash = _store_StreamIndex(data, recommendationsHash, rawHash, recordsHash);
+		
+		_commonSizeCheck(data, indexHash);
+	}
+
+	@Test
+	public void testSizeLimit_StreamRecords() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		byte[] raw = new byte[(int)SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES + 1];
+		IpfsFile rawHash = _fakeHash(raw);
+		data.put(rawHash, raw);
+		
+		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
+		
+		byte[] userPic = new byte[] {'a','b','c'};
+		IpfsFile userPicFile = _fakeHash(userPic);
+		data.put(userPicFile, userPic);
+		
+		IpfsFile descriptionHash = _store_StreamDescription(data, userPicFile);
+		
+		IpfsFile indexHash = _store_StreamIndex(data, recommendationsHash, descriptionHash, rawHash);
+		
+		_commonSizeCheck(data, indexHash);
+	}
+
+	@Test
+	public void testSizeLimit_descriptionSize() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		byte[] raw = new byte[(int)SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES + 1];
+		IpfsFile rawHash = _fakeHash(raw);
+		data.put(rawHash, raw);
+		
+		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
+		
+		IpfsFile descriptionHash = _store_StreamDescription(data, rawHash);
+		
+		IpfsFile recordsHash = _store_StreamRecords(data);
+		
+		IpfsFile indexHash = _store_StreamIndex(data, recommendationsHash, descriptionHash, recordsHash);
+		
+		_commonSizeCheck(data, indexHash);
+	}
+
+	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException
+	{
+		TestSupport testSupport = new TestSupport(data);
+		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 100L);
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = indexHash;
+		long currentCacheUsageInBytes = 0L;
+		boolean didFail = false;
+		try
+		{
+			FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		}
+		catch (SizeConstraintException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+	}
+
 
 	private static IpfsFile _buildEmptyUser(Map<IpfsFile, byte[]> data)
 	{
@@ -354,11 +470,28 @@ public class TestFolloweeRefreshLogic
 		IpfsFile userPicFile = _fakeHash(userPic);
 		data.put(userPicFile, userPic);
 		
+		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
+		
+		IpfsFile descriptionHash = _store_StreamDescription(data, userPicFile);
+		
+		IpfsFile recordsHash = _store_StreamRecords(data);
+		
+		IpfsFile indexHash = _store_StreamIndex(data, recommendationsHash, descriptionHash, recordsHash);
+		return indexHash;
+	}
+
+	private static IpfsFile _store_StreamRecommendations(Map<IpfsFile, byte[]> data)
+	{
 		StreamRecommendations recommendations = new StreamRecommendations();
 		byte[] serialized = GlobalData.serializeRecommendations(recommendations);
 		IpfsFile recommendationsHash = _fakeHash(serialized);
 		data.put(recommendationsHash, serialized);
-		
+		return recommendationsHash;
+	}
+
+	private static IpfsFile _store_StreamDescription(Map<IpfsFile, byte[]> data, IpfsFile userPicFile)
+	{
+		byte[] serialized;
 		StreamDescription description = new StreamDescription();
 		description.setName("name");
 		description.setDescription("description");
@@ -366,12 +499,22 @@ public class TestFolloweeRefreshLogic
 		serialized = GlobalData.serializeDescription(description);
 		IpfsFile descriptionHash = _fakeHash(serialized);
 		data.put(descriptionHash, serialized);
-		
+		return descriptionHash;
+	}
+
+	private static IpfsFile _store_StreamRecords(Map<IpfsFile, byte[]> data)
+	{
+		byte[] serialized;
 		StreamRecords records = new StreamRecords();
 		serialized = GlobalData.serializeRecords(records);
 		IpfsFile recordsHash = _fakeHash(serialized);
 		data.put(recordsHash, serialized);
-		
+		return recordsHash;
+	}
+
+	private static IpfsFile _store_StreamIndex(Map<IpfsFile, byte[]> data, IpfsFile recommendationsHash, IpfsFile descriptionHash, IpfsFile recordsHash)
+	{
+		byte[] serialized;
 		StreamIndex index = new StreamIndex();
 		index.setVersion(1);
 		index.setDescription(descriptionHash.toSafeString());

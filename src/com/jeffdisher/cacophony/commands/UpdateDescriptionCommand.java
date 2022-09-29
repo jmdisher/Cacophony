@@ -24,6 +24,8 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
@@ -86,6 +88,10 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			catch (IOException e)
 			{
 				throw new UsageException("Unable to load picture: " + _picturePath.toPath());
+			}
+			if (rawData.length > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
+			{
+				throw new UsageException("Picture too big (is " + StringHelpers.humanReadableBytes(rawData.length) + ", limit " + StringHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
 			}
 			IpfsFile pictureHash = scheduler.saveStream(new ByteArrayInputStream(rawData), true).get();
 			cache.uploadedToThisCache(pictureHash);
