@@ -38,11 +38,8 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class JsonGenerationHelpers
 {
-	public static void generateJsonDb(PrintWriter generatedStream, String comment, LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, FollowIndex followIndex) throws IpfsConnectionException
+	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, FollowIndex followIndex) throws IpfsConnectionException
 	{
-		// Create cache.
-		LocalRecordCache cache = _buildFolloweeCache(checker, lastPublishedIndex, followIndex);
-		
 		// Start output.
 		generatedStream.println("// " + comment);
 		generatedStream.println();
@@ -256,17 +253,12 @@ public class JsonGenerationHelpers
 	 * Returns a JSON struct for the given postToResolve or null if it is unknown.
 	 * NOTE:  This will only resolve stream elements this user posted or which was posted by a followee.
 	 * 
-	 * @param checker
-	 * @param lastPublishedIndex
-	 * @param followIndex
-	 * @param postToResolve
-	 * @return
-	 * @throws IpfsConnectionException
+	 * @param cache The cache containing all the data we should be able to resolve.
+	 * @param postToResolve The StreamRecord to resolve.
+	 * @return The JSON representation of this post or null, if we don't know it.
 	 */
-	public static JsonObject postStruct(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsFile postToResolve) throws IpfsConnectionException
+	public static JsonObject postStruct(LocalRecordCache cache, IpfsFile postToResolve)
 	{
-		// Create cache - (TODO: Cache this between calls, somewhere).
-		LocalRecordCache cache = _buildFolloweeCache(checker, lastPublishedIndex, followIndex);
 		LocalRecordCache.Element element = cache.get(postToResolve);
 		return (null != element)
 				? _formatAsPostStruct(element)
@@ -284,8 +276,7 @@ public class JsonGenerationHelpers
 		return _dataPrefs(prefs);
 	}
 
-
-	private static LocalRecordCache _buildFolloweeCache(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
+	public static LocalRecordCache buildFolloweeCache(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
 	{
 		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(checker, lastPublishedIndex, followIndex);
 		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
@@ -304,6 +295,7 @@ public class JsonGenerationHelpers
 		Assert.assertTrue(!recordsIterator.hasNext());
 		return new LocalRecordCache(dataElements);
 	}
+
 
 	private static void _startLoad(List<FutureKey<StreamIndex>> list, LoadChecker checker, IpfsKey publicKey, IpfsFile indexRoot)
 	{

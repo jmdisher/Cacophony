@@ -7,6 +7,7 @@ import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -56,7 +57,19 @@ public class GET_PostStruct implements IGetHandler
 				data.close();
 				
 				IpfsFile lastPublishedIndex = localIndex.lastPublishedIndex();
-				JsonObject postStruct = JsonGenerationHelpers.postStruct(checker, lastPublishedIndex, followIndex, postToResolve);
+				LocalRecordCache cache = data.lazilyLoadFolloweeCache(() -> {
+					try
+					{
+						return JsonGenerationHelpers.buildFolloweeCache(checker, lastPublishedIndex, followIndex);
+					}
+					catch (IpfsConnectionException e)
+					{
+						// We return null on error but log this.
+						e.printStackTrace();
+						return null;
+					}
+				});
+				JsonObject postStruct = JsonGenerationHelpers.postStruct(cache, postToResolve);
 				if (null != postStruct)
 				{
 					response.setContentType("application/json");
