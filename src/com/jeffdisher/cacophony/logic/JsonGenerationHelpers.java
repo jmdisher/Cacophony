@@ -3,9 +3,11 @@ package com.jeffdisher.cacophony.logic;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.eclipsesource.json.JsonArray;
@@ -21,6 +23,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -37,6 +40,10 @@ public class JsonGenerationHelpers
 {
 	public static void generateJsonDb(PrintWriter generatedStream, String comment, LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, FollowIndex followIndex) throws IpfsConnectionException
 	{
+		// Create cache.
+		LocalRecordCache cache = _buildFolloweeCache(checker, lastPublishedIndex, followIndex);
+		
+		// Start output.
 		generatedStream.println("// " + comment);
 		generatedStream.println();
 		
@@ -65,28 +72,16 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// DATA_elements.
-		JsonObject dataElements = new JsonObject();
-		// Fetch the StreamRecords.
-		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(checker, indices);
-		
-		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
-		Iterator<FutureKey<StreamRecords>> recordsIterator = streamRecords.iterator();
-		// The first element is ourselves.
-		_populateAllElementsFromUserRoot(checker, dataElements, null, recordsIterator.next().future.get());
-		// The rest of the list is in-order with followIndex.
-		for(FollowRecord record : followIndex)
-		{
-			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
-			_populateAllElementsFromUserRoot(checker, dataElements, elementsCachedForUser, recordsIterator.next().future.get());
-		}
-		// These should end at the same time.
-		Assert.assertTrue(!recordsIterator.hasNext());
+		JsonObject dataElements = _dumpCacheToJson(cache);
 		generatedStream.println("var DATA_elements = " + dataElements.toString());
 		generatedStream.println();
 		
 		// DATA_userPosts.
 		JsonObject dataUserPosts = new JsonObject();
-		recordsIterator = streamRecords.iterator();
+		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(checker, indices);
+		
+		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
+		Iterator<FutureKey<StreamRecords>> recordsIterator = streamRecords.iterator();
 		_populatePostsForUser(checker, dataUserPosts, ourPublicKey, recordsIterator.next().future.get());
 		for(FollowRecord record : followIndex)
 		{
@@ -270,28 +265,13 @@ public class JsonGenerationHelpers
 	 */
 	public static JsonObject postStruct(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsFile postToResolve) throws IpfsConnectionException
 	{
-		JsonObject foundObject = null;
-		// TODO:  Currently, we don't store any information around what we have cached locally in any way which can be
-		// indexed for one-off lookups.  This MUST be fixed (even with a basic in-memory cache) as our current approach
-		// walks all the data to find this, including loading some data from the node in order to find the element and
-		// know how to interpret it.
-		
-		// First, scan our own data.
-		foundObject = _findElementFromRoot(checker, lastPublishedIndex, null, postToResolve);
-		if (null == foundObject)
-		{
-			// We didn't find it so take a look at the users we are following.
-			for(FollowRecord record : followIndex)
-			{
-				Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
-				foundObject = _findElementFromRoot(checker, record.lastFetchedRoot(), elementsCachedForUser, postToResolve);
-				if (null != foundObject)
-				{
-					break;
-				}
-			}
-		}
-		return foundObject;
+		// Create cache - (TODO: Cache this between calls, somewhere).
+		LocalRecordCache cache = _buildFolloweeCache(checker, lastPublishedIndex, followIndex);
+		LocalRecordCache.Element element = cache.get(postToResolve);
+		return (null != element)
+				? _formatAsPostStruct(element)
+				: null
+		;
 	}
 
 	public static JsonArray followeeKeys(FollowIndex followIndex)
@@ -305,21 +285,24 @@ public class JsonGenerationHelpers
 	}
 
 
-	private static JsonObject _findElementFromRoot(LoadChecker checker, IpfsFile lastPublishedIndex, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, IpfsFile postToResolve) throws IpfsConnectionException
+	private static LocalRecordCache _buildFolloweeCache(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
 	{
-		JsonObject foundObject = null;
-		StreamIndex index = checker.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
-		for (String rawCid : records.getRecord())
+		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(checker, lastPublishedIndex, followIndex);
+		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
+		List<FutureRead<StreamRecords>> streamRecords = _loadRecordsNoKey(checker, indices);
+		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
+		Iterator<FutureRead<StreamRecords>> recordsIterator = streamRecords.iterator();
+		// The first element is ourselves.
+		_populateElementMapFromUserRoot(checker, dataElements, null, recordsIterator.next().get());
+		// The rest of the list is in-order with followIndex.
+		for(FollowRecord record : followIndex)
 		{
-			if (postToResolve.equals(IpfsFile.fromIpfsCid(rawCid)))
-			{
-				FutureRead<StreamRecord> futureRecord = checker.loadCached(postToResolve, (byte[] data) -> GlobalData.deserializeRecord(data));
-				foundObject = _loadSinglePostStruct(checker, elementsCachedForUser, futureRecord, postToResolve);
-				break;
-			}
+			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
+			_populateElementMapFromUserRoot(checker, dataElements, elementsCachedForUser, recordsIterator.next().get());
 		}
-		return foundObject;
+		// These should end at the same time.
+		Assert.assertTrue(!recordsIterator.hasNext());
+		return new LocalRecordCache(dataElements);
 	}
 
 	private static void _startLoad(List<FutureKey<StreamIndex>> list, LoadChecker checker, IpfsKey publicKey, IpfsFile indexRoot)
@@ -363,7 +346,19 @@ public class JsonGenerationHelpers
 		return recordsList;
 	}
 
-	private static void _populateAllElementsFromUserRoot(LoadChecker checker, JsonObject rootData, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
+	private static List<FutureRead<StreamRecords>> _loadRecordsNoKey(LoadChecker checker, List<FutureRead<StreamIndex>> list) throws IpfsConnectionException
+	{
+		List<FutureRead<StreamRecords>> recordsList = new ArrayList<>();
+		for (FutureRead<StreamIndex> future : list)
+		{
+			StreamIndex index = future.get();
+			FutureRead<StreamRecords> records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			recordsList.add(records);
+		}
+		return recordsList;
+	}
+
+	private static void _populateElementMapFromUserRoot(LoadChecker checker, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -380,12 +375,25 @@ public class JsonGenerationHelpers
 		for (FutureRead<StreamRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
-			JsonObject thisElt = _loadSinglePostStruct(checker, elementsCachedForUser, future, cid);
-			rootData.set(cid.toSafeString(), thisElt);
+			LocalRecordCache.Element thisElt = _fetchDataForElement(checker, elementsCachedForUser, future, cid);
+			elementMap.put(cid, thisElt);
 		}
 	}
 
-	private static JsonObject _loadSinglePostStruct(LoadChecker checker, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
+	private static JsonObject _dumpCacheToJson(LocalRecordCache cache)
+	{
+		JsonObject object = new JsonObject();
+		Set<IpfsFile> elements = cache.getKeys();
+		for (IpfsFile file : elements)
+		{
+			LocalRecordCache.Element element = cache.get(file);
+			JsonObject thisElt = _formatAsPostStruct(element);
+			object.set(file.toSafeString(), thisElt);
+		}
+		return object;
+	}
+
+	private static LocalRecordCache.Element _fetchDataForElement(LoadChecker checker, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
 	{
 		StreamRecord record = future.get();
 		
@@ -428,7 +436,7 @@ public class JsonGenerationHelpers
 				videoUrl = checker.getCachedUrl(videoCid).toString();
 			}
 		}
-		return _formatAsPostStruct(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl);
+		return new LocalRecordCache.Element(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl);
 	}
 
 	private static void _populatePostsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, StreamRecords records)
@@ -508,6 +516,17 @@ public class JsonGenerationHelpers
 		return indices;
 	}
 
+	private static List<FutureRead<StreamIndex>> _loadStreamIndicesNoKey(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex)
+	{
+		List<FutureRead<StreamIndex>> indices = new ArrayList<>();
+		indices.add(checker.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)));
+		for(FollowRecord record : followIndex)
+		{
+			indices.add(checker.loadCached(record.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data)));
+		}
+		return indices;
+	}
+
 	private static JsonObject _dataVersion()
 	{
 		JsonObject dataVersion = new JsonObject();
@@ -567,18 +586,18 @@ public class JsonGenerationHelpers
 		return indexToLoad;
 	}
 
-	private static JsonObject _formatAsPostStruct(String name, String description, long publishedSecondsUtc, String discussionUrl, boolean isCached, String thumbnailUrl, String videoUrl)
+	private static JsonObject _formatAsPostStruct(LocalRecordCache.Element element)
 	{
 		JsonObject thisElt = new JsonObject();
-		thisElt.set("name", name);
-		thisElt.set("description", description);
-		thisElt.set("publishedSecondsUtc", publishedSecondsUtc);
-		thisElt.set("discussionUrl", discussionUrl);
-		thisElt.set("cached", isCached);
-		if (isCached)
+		thisElt.set("name", element.name());
+		thisElt.set("description", element.description());
+		thisElt.set("publishedSecondsUtc", element.publishedSecondsUtc());
+		thisElt.set("discussionUrl", element.discussionUrl());
+		thisElt.set("cached", element.isCached());
+		if (element.isCached())
 		{
-			thisElt.set("thumbnailUrl", thumbnailUrl);
-			thisElt.set("videoUrl", videoUrl);
+			thisElt.set("thumbnailUrl", element.thumbnailUrl());
+			thisElt.set("videoUrl", element.videoUrl());
 		}
 		return thisElt;
 	}
