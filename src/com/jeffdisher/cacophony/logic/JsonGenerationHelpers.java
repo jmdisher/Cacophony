@@ -27,10 +27,12 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -276,7 +278,7 @@ public class JsonGenerationHelpers
 		return _dataPrefs(prefs);
 	}
 
-	public static LocalRecordCache buildFolloweeCache(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
+	public static LocalRecordCache buildFolloweeCache(INetworkScheduler scheduler, LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
 	{
 		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(checker, lastPublishedIndex, followIndex);
 		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
@@ -284,12 +286,12 @@ public class JsonGenerationHelpers
 		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
 		Iterator<FutureRead<StreamRecords>> recordsIterator = streamRecords.iterator();
 		// The first element is ourselves.
-		_populateElementMapFromUserRoot(checker, dataElements, null, recordsIterator.next().get());
+		_populateElementMapFromUserRoot(scheduler, checker, dataElements, null, recordsIterator.next().get());
 		// The rest of the list is in-order with followIndex.
 		for(FollowRecord record : followIndex)
 		{
 			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
-			_populateElementMapFromUserRoot(checker, dataElements, elementsCachedForUser, recordsIterator.next().get());
+			_populateElementMapFromUserRoot(scheduler, checker, dataElements, elementsCachedForUser, recordsIterator.next().get());
 		}
 		// These should end at the same time.
 		Assert.assertTrue(!recordsIterator.hasNext());
@@ -350,7 +352,7 @@ public class JsonGenerationHelpers
 		return recordsList;
 	}
 
-	private static void _populateElementMapFromUserRoot(LoadChecker checker, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromUserRoot(INetworkScheduler scheduler, LoadChecker checker, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -360,8 +362,12 @@ public class JsonGenerationHelpers
 		for (String rawCid : rawCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
-			FutureRead<StreamRecord> future = checker.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
-			loads.add(future);
+			// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
+			if (scheduler.getSizeInBytes(cid).get() < SizeLimits.MAX_RECORD_SIZE_BYTES)
+			{
+				FutureRead<StreamRecord> future = checker.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+				loads.add(future);
+			}
 		}
 		Iterator<String> cidIterator = rawCids.iterator();
 		for (FutureRead<StreamRecord> future : loads)

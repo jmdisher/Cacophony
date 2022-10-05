@@ -60,7 +60,7 @@ public class GET_PostStruct implements IGetHandler
 				LocalRecordCache cache = data.lazilyLoadFolloweeCache(() -> {
 					try
 					{
-						return JsonGenerationHelpers.buildFolloweeCache(checker, lastPublishedIndex, followIndex);
+						return JsonGenerationHelpers.buildFolloweeCache(_scheduler, checker, lastPublishedIndex, followIndex);
 					}
 					catch (IpfsConnectionException e)
 					{

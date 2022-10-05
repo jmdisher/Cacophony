@@ -87,7 +87,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		LocalRecordCache cache = localData.lazilyLoadFolloweeCache(() -> {
 			try
 			{
-				return JsonGenerationHelpers.buildFolloweeCache(checker, lastPublishedIndex, followIndex);
+				return JsonGenerationHelpers.buildFolloweeCache(scheduler, checker, lastPublishedIndex, followIndex);
 			}
 			catch (IpfsConnectionException e)
 			{
