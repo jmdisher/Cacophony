@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.testutils.MockConnection;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -195,7 +195,7 @@ public class TestCacheSaturation
 		
 		public boolean isDataPresent(byte[] data) throws Throwable
 		{
-			IpfsFile file = MockConnection.generateHash(data);
+			IpfsFile file = MockSingleNode.generateHash(data);
 			byte[] stored = _user.loadDataFromNode(file);
 			if (null != stored)
 			{

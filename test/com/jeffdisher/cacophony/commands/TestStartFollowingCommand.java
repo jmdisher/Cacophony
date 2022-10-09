@@ -14,8 +14,8 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
-import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -34,11 +34,16 @@ public class TestStartFollowingCommand
 	@Test
 	public void testUsage() throws Throwable
 	{
-		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, null);
+		MockSingleNode remoteConnection = new MockSingleNode();
+		MockSingleNode sharedConnection = new MockSingleNode();
+		_configureCluster(
+				new MockSingleNode[] { remoteConnection, sharedConnection}
+				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
+				, new IpfsKey[] { REMOTE_PUBLIC_KEY, PUBLIC_KEY}
+		);
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
 		executor.createNewConfig(IPFS_HOST, KEY_NAME);
@@ -59,7 +64,7 @@ public class TestStartFollowingCommand
 		originalRootData.setRecords(originalRecordsCid.toSafeString());
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
-		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
+		remoteConnection.publish(REMOTE_KEY_NAME, originalRoot);
 		command.runInEnvironment(executor);
 		
 		// Verify the states that should have changed.
@@ -83,12 +88,17 @@ public class TestStartFollowingCommand
 	@Test
 	public void testErrorSize() throws Throwable
 	{
-		MockConnection remoteConnection = new MockConnection(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, null);
+		MockSingleNode remoteConnection = new MockSingleNode();
+		MockSingleNode sharedConnection = new MockSingleNode();
+		_configureCluster(
+				new MockSingleNode[] { remoteConnection, sharedConnection}
+				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
+				, new IpfsKey[] { REMOTE_PUBLIC_KEY, PUBLIC_KEY}
+		);
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]));
-		remoteConnection.setRootForKey(REMOTE_PUBLIC_KEY, originalRoot);
+		remoteConnection.publish(REMOTE_KEY_NAME, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		MockConnection sharedConnection = new MockConnection(KEY_NAME, PUBLIC_KEY, remoteConnection);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
 		executor.createNewConfig(IPFS_HOST, KEY_NAME);
@@ -116,5 +126,13 @@ public class TestStartFollowingCommand
 			// Expected.
 		}
 		executor.shutdown();
+	}
+
+
+	private static void _configureCluster(MockSingleNode[] nodes, String[] keyNames, IpfsKey[] keys)
+	{
+		MockSingleNode.connectPeers(nodes[0], nodes[1]);
+		nodes[0].addNewKey(keyNames[0], keys[0]);
+		nodes[1].addNewKey(keyNames[1], keys[1]);
 	}
 }

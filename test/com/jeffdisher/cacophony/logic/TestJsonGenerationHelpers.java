@@ -23,8 +23,8 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
-import com.jeffdisher.cacophony.testutils.MockConnection;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -80,7 +80,8 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testBuildFolloweeCacheEmpty() throws Throwable
 	{
-		MockConnection remoteConnection = new MockConnection(KEY_NAME, PUBLIC_KEY1, null);
+		MockSingleNode remoteConnection = new MockSingleNode();
+		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		RemoteActions actions = RemoteActions.loadIpfsConfig(executor, remoteConnection, KEY_NAME);
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
@@ -101,7 +102,8 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testBuildFolloweeCacheWithEntries() throws Throwable
 	{
-		MockConnection remoteConnection = new MockConnection(KEY_NAME, PUBLIC_KEY1, null);
+		MockSingleNode remoteConnection = new MockSingleNode();
+		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		RemoteActions actions = RemoteActions.loadIpfsConfig(executor, remoteConnection, KEY_NAME);
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
@@ -131,7 +133,7 @@ public class TestJsonGenerationHelpers
 	}
 
 
-	private static IpfsFile _storeNewIndex(MockConnection connection, GlobalPinCache pinCache, IpfsFile record1, IpfsFile record2) throws IpfsConnectionException
+	private static IpfsFile _storeNewIndex(MockSingleNode connection, GlobalPinCache pinCache, IpfsFile record1, IpfsFile record2) throws IpfsConnectionException
 	{
 		StreamRecords records = new StreamRecords();
 		if (null != record1)
@@ -163,7 +165,7 @@ public class TestJsonGenerationHelpers
 		return _storeData(connection, pinCache, data);
 	}
 
-	private static IpfsFile _storeEntry(MockConnection connection, GlobalPinCache pinCache, String name, IpfsKey publisher) throws IpfsConnectionException
+	private static IpfsFile _storeEntry(MockSingleNode connection, GlobalPinCache pinCache, String name, IpfsKey publisher) throws IpfsConnectionException
 	{
 		StreamRecord record = new StreamRecord();
 		record.setName(name);
@@ -175,11 +177,11 @@ public class TestJsonGenerationHelpers
 		return _storeData(connection, pinCache, data);
 	}
 
-	private static IpfsFile _storeData(MockConnection connection, GlobalPinCache pinCache, byte[] data) throws IpfsConnectionException
+	private static IpfsFile _storeData(MockSingleNode connection, GlobalPinCache pinCache, byte[] data) throws IpfsConnectionException
 	{
 		// We are directly going to check the pinCache since we are force-feeding the data for the test, but MockConnection doesn't like that.
 		IpfsFile file = null;
-		IpfsFile hash = MockConnection.generateHash(data);
+		IpfsFile hash = MockSingleNode.generateHash(data);
 		if (pinCache.shouldPinAfterAdding(hash))
 		{
 			file = connection.storeData(new ByteArrayInputStream(data));

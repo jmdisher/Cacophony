@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -26,17 +27,26 @@ import com.jeffdisher.cacophony.types.VersionException;
  */
 public class MockUserNode
 {
+	public static void connectNodes(MockUserNode one, MockUserNode two)
+	{
+		MockSingleNode.connectPeers(one._sharedConnection, two._sharedConnection);
+	}
+
 	private static final String IPFS_HOST = "ipfsHost";
 
-	private final MockConnection _sharedConnection;
+	private final MockSingleNode _sharedConnection;
 	private final MemoryConfigFileSystem _fileSystem;
 	private final MockConnectionFactory _factory;
 	private final StandardEnvironment _executor;
 
 	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
 	{
-		MockConnection upstreamConnection = (null != upstreamUserNode) ? upstreamUserNode._sharedConnection : null;
-		_sharedConnection = new MockConnection(keyName, key, upstreamConnection);
+		_sharedConnection = new MockSingleNode();
+		_sharedConnection.addNewKey(keyName, key);
+		if (null != upstreamUserNode)
+		{
+			MockSingleNode.connectPeers(_sharedConnection, upstreamUserNode._sharedConnection);
+		}
 		_fileSystem = new MemoryConfigFileSystem();
 		_factory = new MockConnectionFactory(_sharedConnection);
 		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, true);
@@ -74,7 +84,7 @@ public class MockUserNode
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException
 	{
-		return _sharedConnection.loadData(cid);
+		return _sharedConnection.loadDataFromNode(cid);
 	}
 
 	public IpfsFile resolveKeyOnNode(IpfsKey key) throws IpfsConnectionException
@@ -121,7 +131,14 @@ public class MockUserNode
 
 	public void deleteFile(IpfsFile cid)
 	{
-		_sharedConnection.deleteAndUnpinFile(cid);
+		try
+		{
+			_sharedConnection.rm(cid);
+		}
+		catch (IpfsConnectionException e)
+		{
+			throw Assert.unexpected(e);
+		}
 	}
 
 	public void shutdown()
@@ -131,7 +148,6 @@ public class MockUserNode
 
 	public void timeoutKey(IpfsKey publicKey)
 	{
-		// We just null out the key.
-		_sharedConnection.setRootForKey(publicKey, null);
+		_sharedConnection.timeoutKey(publicKey);
 	}
 }

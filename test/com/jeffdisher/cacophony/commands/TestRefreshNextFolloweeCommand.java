@@ -85,6 +85,7 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
 		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
+		MockUserNode.connectNodes(user, user2);
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -120,6 +121,7 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
 		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
+		MockUserNode.connectNodes(user, user2);
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -184,6 +186,7 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
 		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
+		MockUserNode.connectNodes(user, user2);
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -241,6 +244,7 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
 		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
+		MockUserNode.connectNodes(user, user2);
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));

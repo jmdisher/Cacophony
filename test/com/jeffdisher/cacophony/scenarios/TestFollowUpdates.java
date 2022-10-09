@@ -20,7 +20,7 @@ import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.testutils.MockConnection;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -60,8 +60,8 @@ public class TestFollowUpdates
 		user1.runCommand(null, publishCommand);
 		
 		// Verify the data is only in the User1 data store and not yet in User2.
-		IpfsFile videoFileHash = MockConnection.generateHash(videoFileString.getBytes());
-		IpfsFile imageFileHash = MockConnection.generateHash(imageFileString.getBytes());
+		IpfsFile videoFileHash = MockSingleNode.generateHash(videoFileString.getBytes());
+		IpfsFile imageFileHash = MockSingleNode.generateHash(imageFileString.getBytes());
 		byte[] verify = user1.loadDataFromNode(videoFileHash);
 		Assert.assertEquals(videoFileString, new String(verify));
 		verify = user1.loadDataFromNode(imageFileHash);
@@ -118,8 +118,8 @@ public class TestFollowUpdates
 		user1.runCommand(null, publishCommand);
 		
 		// Verify the data is only in the User1 data store and not yet in User2.
-		IpfsFile videoFileHash = MockConnection.generateHash(videoFileString.getBytes());
-		IpfsFile imageFileHash = MockConnection.generateHash(imageFileString.getBytes());
+		IpfsFile videoFileHash = MockSingleNode.generateHash(videoFileString.getBytes());
+		IpfsFile imageFileHash = MockSingleNode.generateHash(imageFileString.getBytes());
 		
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
@@ -196,17 +196,17 @@ public class TestFollowUpdates
 		user2.runCommand(captureStream, listCommand);
 		String capturedString = new String(captureStream.toByteArray());
 		
-		IpfsFile image1FileHash = MockConnection.generateHash("IMAGE 1\n".getBytes());
-		IpfsFile video1FileHash = MockConnection.generateHash("VIDEO FILE 640\n".getBytes());
-		IpfsFile image2FileHash = MockConnection.generateHash("IMAGE 2\n".getBytes());
-		IpfsFile video2FileHash = MockConnection.generateHash("VIDEO FILE next 640\n".getBytes());
+		IpfsFile image1FileHash = MockSingleNode.generateHash("IMAGE 1\n".getBytes());
+		IpfsFile video1FileHash = MockSingleNode.generateHash("VIDEO FILE 640\n".getBytes());
+		IpfsFile image2FileHash = MockSingleNode.generateHash("IMAGE 2\n".getBytes());
+		IpfsFile video2FileHash = MockSingleNode.generateHash("VIDEO FILE next 640\n".getBytes());
 		
 		Assert.assertTrue(capturedString.contains("(image: " + image1FileHash.toSafeString() + ", leaf: " + video1FileHash.toSafeString() + ")\n"));
 		Assert.assertTrue(capturedString.contains("(image: " + image2FileHash.toSafeString() + ", leaf: " + video2FileHash.toSafeString() + ")\n"));
 		
 		// Verify that the other sizes are in user1's store but not user2's.
-		IpfsFile missingVideo1Hash = MockConnection.generateHash("VIDEO FILE 1024\n".getBytes());
-		IpfsFile missingVideo2Hash = MockConnection.generateHash("VIDEO FILE 320\n".getBytes());
+		IpfsFile missingVideo1Hash = MockSingleNode.generateHash("VIDEO FILE 1024\n".getBytes());
+		IpfsFile missingVideo2Hash = MockSingleNode.generateHash("VIDEO FILE 320\n".getBytes());
 		Assert.assertNotNull(user1.loadDataFromNode(missingVideo1Hash));
 		Assert.assertNotNull(user1.loadDataFromNode(missingVideo2Hash));
 		Assert.assertNull(user2.loadDataFromNode(missingVideo1Hash));
