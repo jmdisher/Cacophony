@@ -21,7 +21,6 @@ public record RepublishCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
-		IOperationLog log = environment.logOperation("Republishing index...");
 		LocalConfig local = environment.loadExistingConfig();
 		
 		// Read the data elements.
@@ -37,6 +36,7 @@ public record RepublishCommand() implements ICommand
 		
 		// Republish the index.
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
+		IOperationLog log = environment.logOperation("Republishing index (" + scheduler.getPublicKey() + " -> " + indexHash + ")...");
 		IpfsConnectionException error = scheduler.publishIndex(indexHash).get();
 		// If we failed to publish, that should be considered an error for this command, since this is all it does.
 		if (null != error)
