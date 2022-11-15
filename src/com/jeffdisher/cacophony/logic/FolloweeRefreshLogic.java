@@ -281,6 +281,7 @@ public class FolloweeRefreshLogic
 			
 			// Now, wait for all the sizes to come back and only pin elements which are below our size threshold.
 			List<RawElementData> newRecordsBeingProcessedSizeChecked = new ArrayList<>();
+			support.logMessage("Checking sizes of new records (checking " + newRecordsBeingProcessedInitial.size() + " records)...");
 			for (RawElementData data : newRecordsBeingProcessedInitial)
 			{
 				// A connection exception here will cause refresh to fail.
@@ -301,6 +302,7 @@ public class FolloweeRefreshLogic
 			
 			// Now, wait for all the pins of the elements and check the sizes of their leaves.
 			List<RawElementData> newRecordsBeingProcessedCalculatingLeaves = new ArrayList<>();
+			support.logMessage("Waiting for meta-data to be pinned (pinning " + newRecordsBeingProcessedSizeChecked.size() + " records)...");
 			for (RawElementData data : newRecordsBeingProcessedSizeChecked)
 			{
 				// A connection exception here will cause refresh to fail.
@@ -316,6 +318,7 @@ public class FolloweeRefreshLogic
 			
 			// Now, we wait for the sizes to come back and then choose which elements to cache.
 			List<CacheAlgorithm.Candidate<RawElementData>> candidates = new ArrayList<>();
+			support.logMessage("Checking sizes of data elements (checking for " + newRecordsBeingProcessedCalculatingLeaves.size() + " records)...");
 			for (RawElementData data : newRecordsBeingProcessedCalculatingLeaves)
 			{
 				boolean bothLoaded = true;
@@ -364,15 +367,19 @@ public class FolloweeRefreshLogic
 			
 			// We can now walk the final selection and pin all the relevant elements.
 			List<RawElementData> candidatesBeingPinned = new ArrayList<>();
+			support.logMessage("Pinning all data elements (selected " + finalSelection.size() + " records)...");
 			for (CacheAlgorithm.Candidate<RawElementData> candidate : finalSelection)
 			{
 				RawElementData data = candidate.data();
+				support.logMessage("Pinning " + data.elementCid + "...");
 				if (null != data.thumbnailHash)
 				{
+					support.logMessage("\t-thumbnail " + StringHelpers.humanReadableBytes(data.thumbnailSize) + " (" + data.thumbnailHash + ")...");
 					data.futureThumbnailPin = support.addFileToFollowCache(data.thumbnailHash);
 				}
 				if (null != data.videoHash)
 				{
+					support.logMessage("\t-video " + StringHelpers.humanReadableBytes(data.videoSize) + " (" + data.videoHash + ")...");
 					data.futureVideoPin = support.addFileToFollowCache(data.videoHash);
 				}
 				// NOTE:  finalSelection has the latest elements at the front but we ideally want them at the back (not required by is an order which makes more sense).
@@ -380,8 +387,10 @@ public class FolloweeRefreshLogic
 			}
 			
 			// Finally, walk the records whose leaves we pinned and build FollowingCacheElement instances for each.
+			support.logMessage("Waiting for all data elements to be pinned (" + candidatesBeingPinned.size() + " records)...");
 			for (RawElementData data : candidatesBeingPinned)
 			{
+				support.logMessage("Waiting for record " + data.elementCid + "...");
 				boolean shouldProceed = true;
 				if (null != data.futureThumbnailPin)
 				{
@@ -419,11 +428,11 @@ public class FolloweeRefreshLogic
 					support.logMessage("Successfully pinned " + data.elementCid + "!");
 					if (null != data.thumbnailHash)
 					{
-						support.logMessage("\t-thumnail " + data.thumbnailHash + " (" + StringHelpers.humanReadableBytes(data.thumbnailSize) + ")");
+						support.logMessage("\t-thumnail " + StringHelpers.humanReadableBytes(data.thumbnailSize) + " (" + data.thumbnailHash + ")");
 					}
 					if (null != data.videoHash)
 					{
-						support.logMessage("\t-thumnail " + data.videoHash + " (" + StringHelpers.humanReadableBytes(data.videoSize) + ")");
+						support.logMessage("\t-video " + StringHelpers.humanReadableBytes(data.videoSize) + " (" + data.videoHash + ")");
 					}
 				}
 				else

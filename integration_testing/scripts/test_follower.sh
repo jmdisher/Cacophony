@@ -129,8 +129,10 @@ CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --publishSingleVideo --name "
 checkPreviousCommand "publishSingleVideo"
 
 echo "Refresh followee"
-CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1"
-checkPreviousCommand "Follow index changed"
+REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
+requireSubstring "$REFRESH_OUTPUT" "-thumbnail 5.24 kB (524288 bytes)"
+requireSubstring "$REFRESH_OUTPUT" "-video 2.10 MB (2097152 bytes)"
+requireSubstring "$REFRESH_OUTPUT" "<2 Follow successful!"
 
 echo "Make sure that cleaning cache won't do anything..."
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
