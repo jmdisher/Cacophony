@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -74,18 +75,22 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
-		return new CleanupData(indexHash, oldRootHash, originalRecommendations);
+		FuturePublish asyncPublish = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
+		return new CleanupData(asyncPublish, oldRootHash, originalRecommendations);
 	}
 
-	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData dataStore)
+	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
 	{
 		// Remove the previous recommendations from cache (index handled below).
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.originalRecommendations);
 		
-		CommandHelpers.commonUpdateIndex(environment, dataStore, localIndex, cache, data.oldRootHash, data.indexHash);
+		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
+		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		
+		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
+		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);
 	}
 
 
-	private static record CleanupData(IpfsFile indexHash, IpfsFile oldRootHash, IpfsFile originalRecommendations) {}
+	private static record CleanupData(FuturePublish asyncPublish, IpfsFile oldRootHash, IpfsFile originalRecommendations) {}
 }

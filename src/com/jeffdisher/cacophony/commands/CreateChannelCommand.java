@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -87,7 +88,13 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setDescription(hashDescription.toSafeString());
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
-		IpfsFile indexHash = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, streamIndex);
+		
+		FuturePublish asyncPublish = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, streamIndex);
+		
+		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
+		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		IpfsFile indexHash = asyncPublish.getIndexHash();
+		
 		// Update the local index.
 		data.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
 		cache.uploadedToThisCache(indexHash);
