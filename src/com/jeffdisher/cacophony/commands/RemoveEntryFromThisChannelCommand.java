@@ -116,25 +116,13 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			for (DataElement element : array.getElement())
 			{
 				IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
-				_safeRemove(environment, cache, cid);
+				CommandHelpers.safeRemoveFromLocalNode(environment, cache, cid);
 			}
-			_safeRemove(environment, cache, _elementCid);
+			CommandHelpers.safeRemoveFromLocalNode(environment, cache, _elementCid);
 		}
 		
 		// Remove the old root.
-		_safeRemove(environment, cache, data.oldRootHash);
-	}
-
-	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
-	{
-		try
-		{
-			cache.removeFromThisCache(file).get();
-		}
-		catch (IpfsConnectionException e)
-		{
-			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
-		}
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 	}
 
 

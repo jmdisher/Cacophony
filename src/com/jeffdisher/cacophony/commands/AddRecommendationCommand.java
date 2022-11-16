@@ -85,20 +85,8 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the previous index and recommendations from cache.
-		_safeRemove(environment, cache, data.originalRecommendations);
-		_safeRemove(environment, cache, data.oldRootHash);
-	}
-
-	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
-	{
-		try
-		{
-			cache.removeFromThisCache(file).get();
-		}
-		catch (IpfsConnectionException e)
-		{
-			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
-		}
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.originalRecommendations);
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 	}
 
 

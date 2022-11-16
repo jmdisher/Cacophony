@@ -25,6 +25,10 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
+/**
+ * This class contains miscellaneous common logic required by many of the commands.  There is no strong design to it
+ * other than being entirely static.
+ */
 public class CommandHelpers
 {
 	/**
@@ -182,6 +186,19 @@ public class CommandHelpers
 		return new FollowRecord(publicKey, successfulIndex, System.currentTimeMillis(), elementsToWrite);
 	}
 
+	/**
+	 * A common utility to unpin a file from the local IPFS node and remove it from the HighLevelCache.  Since errors
+	 * here are rare, and only represent a small leak of local node data, this call just logs them.
+	 * 
+	 * @param environment Used for logging an error.
+	 * @param cache The cache which tracks the state of the local cache and does a write-through to the local IPFS node.
+	 * @param file The file to unpin.
+	 */
+	public static void safeRemoveFromLocalNode(IEnvironment environment, HighLevelCache cache, IpfsFile file)
+	{
+		_safeRemove(environment, cache, file);
+	}
+
 
 	private static void _queueAndProcessElementRecordSize(INetworkScheduler scheduler, List<RawElementData> workingRecordList) throws IpfsConnectionException, SizeConstraintException
 	{
@@ -248,5 +265,17 @@ public class CommandHelpers
 			}
 		}
 		return candidatesList;
+	}
+
+	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
+	{
+		try
+		{
+			cache.removeFromThisCache(file).get();
+		}
+		catch (IpfsConnectionException e)
+		{
+			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
+		}
 	}
 }

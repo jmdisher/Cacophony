@@ -152,19 +152,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove the old root.
-		_safeRemove(environment, cache, data.oldRootHash);
-	}
-
-	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
-	{
-		try
-		{
-			cache.removeFromThisCache(file).get();
-		}
-		catch (IpfsConnectionException e)
-		{
-			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
-		}
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 	}
 
 	private static long _currentUtcEpochSeconds()

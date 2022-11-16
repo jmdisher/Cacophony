@@ -141,19 +141,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		cache.uploadedToThisCache(data.indexHash);
 		
 		// Remove old root.
-		_safeRemove(environment, cache, data.oldRootHash);
-	}
-
-	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
-	{
-		try
-		{
-			cache.removeFromThisCache(file).get();
-		}
-		catch (IpfsConnectionException e)
-		{
-			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
-		}
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 	}
 
 
