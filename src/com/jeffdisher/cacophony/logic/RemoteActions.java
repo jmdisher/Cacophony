@@ -97,7 +97,8 @@ public class RemoteActions
 			error = e;
 		}
 		
-		if (_environment.shouldEnableVerifications())
+		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
+		if ((null != error) || _environment.shouldEnableVerifications())
 		{
 			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
 			try

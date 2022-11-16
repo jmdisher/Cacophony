@@ -53,6 +53,8 @@ public interface IEnvironment
 	/**
 	 * Used in some testing modes to enable additional verifications that sizes/publications/etc are consistent.  Should
 	 * not normally be used as it adds some additional network reads into the critical path.
+	 * Note that the same logic of the verification is always applied if there was a network error when publishing, no
+	 * matter this setting.
 	 * 
 	 * @return True if additional checks should be applied.
 	 */
