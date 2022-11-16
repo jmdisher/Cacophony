@@ -199,6 +199,27 @@ public class CommandHelpers
 		_safeRemove(environment, cache, file);
 	}
 
+	/**
+	 * The common idiom for updating the index after any kind of change:  Updates the local storage and removes the old
+	 * index from the cache and local node.
+	 * 
+	 * @param environment Used for logging.
+	 * @param localData A representation of the local data store to modify when writing-back the updated LocalIndex.
+	 * @param oldLocalIndex The previous LocalIndex (for extracting unchanged data).
+	 * @param cache The local representation of what is cached on this node.
+	 * @param oldIndexFile The previous index root file.
+	 * @param newIndexHash the new index root file.
+	 */
+	public static void commonUpdateIndex(IEnvironment environment, IReadWriteLocalData localData, LocalIndex oldLocalIndex, HighLevelCache cache, IpfsFile oldIndexFile, IpfsFile newIndexHash)
+	{
+		// Update the local index.
+		localData.writeLocalIndex(new LocalIndex(oldLocalIndex.ipfsHost(), oldLocalIndex.keyName(), newIndexHash));
+		cache.uploadedToThisCache(newIndexHash);
+		
+		// Remove the old root.
+		_safeRemove(environment, cache, oldIndexFile);
+	}
+
 
 	private static void _queueAndProcessElementRecordSize(INetworkScheduler scheduler, List<RawElementData> workingRecordList) throws IpfsConnectionException, SizeConstraintException
 	{

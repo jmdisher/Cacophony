@@ -81,13 +81,10 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 
 	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
 	{
-		// Update the local index.
-		localData.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
-		cache.uploadedToThisCache(data.indexHash);
-		
-		// Remove the previous file from cache.
+		// Remove the previous recommendations from cache (index handled below).
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.originalRecommendations);
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
+		
+		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.indexHash);
 	}
 
 

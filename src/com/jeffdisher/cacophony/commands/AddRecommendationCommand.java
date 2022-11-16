@@ -80,13 +80,10 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 
 	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData dataStore)
 	{
-		// Update the local index.
-		dataStore.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
-		cache.uploadedToThisCache(data.indexHash);
-		
-		// Remove the previous index and recommendations from cache.
+		// Remove the previous recommendations from cache (index handled below).
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.originalRecommendations);
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
+		
+		CommandHelpers.commonUpdateIndex(environment, dataStore, localIndex, cache, data.oldRootHash, data.indexHash);
 	}
 
 

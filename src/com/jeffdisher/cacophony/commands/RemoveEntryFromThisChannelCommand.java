@@ -96,11 +96,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 
 	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, LoadChecker checker, CleanupData data, IReadWriteLocalData localData)
 	{
-		// Update the local index.
-		localData.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
-		cache.uploadedToThisCache(data.indexHash);
-		
-		// Finally, unpin the entries (we need to unpin them all since we own them so we added them all).
+		// Unpin the entries (we need to unpin them all since we own them so we added them all).
 		StreamRecord record = null;
 		try
 		{
@@ -121,8 +117,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			CommandHelpers.safeRemoveFromLocalNode(environment, cache, _elementCid);
 		}
 		
-		// Remove the old root.
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
+		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.indexHash);
 	}
 
 

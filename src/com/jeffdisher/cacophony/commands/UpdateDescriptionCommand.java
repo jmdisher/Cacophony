@@ -136,12 +136,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 
 	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
 	{
-		// Update the local index.
-		localData.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
-		cache.uploadedToThisCache(data.indexHash);
-		
-		// Remove old root.
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
+		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.indexHash);
 	}
 
 

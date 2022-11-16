@@ -56,6 +56,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
 		_runFinish(environment, local, localIndex, cache, cleanup, data);
+		
+		// Save back other parts of the data store.
 		data.writeGlobalPinCache(pinCache);
 		data.close();
 		log.finish("Publish completed!");
@@ -147,12 +149,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 
 	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
 	{
-		// Update the local index.
-		localData.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), data.indexHash));
-		cache.uploadedToThisCache(data.indexHash);
-		
-		// Remove the old root.
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
+		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.indexHash);
 	}
 
 	private static long _currentUtcEpochSeconds()
