@@ -104,7 +104,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	@Override
 	public FuturePublish publishIndex(IpfsFile indexHash)
 	{
-		FuturePublish future = new FuturePublish();
+		FuturePublish future = new FuturePublish(indexHash);
 		Runnable r = () -> {
 			IpfsConnectionException error = _remote.publishIndex(indexHash);
 			if (null == error)

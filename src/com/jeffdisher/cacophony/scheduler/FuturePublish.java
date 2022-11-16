@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.scheduler;
 
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -9,8 +10,25 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class FuturePublish
 {
+	// We store the hash just as additional data so users of the future can ask what it is trying to accomplish.
+	private final IpfsFile _hashToPublish;
+
 	private boolean _didSucceed;
 	private IpfsConnectionException _exception;
+
+	public FuturePublish(IpfsFile hashToPublish)
+	{
+		Assert.assertTrue(null != hashToPublish);
+		_hashToPublish = hashToPublish;
+	}
+
+	/**
+	 * @return The hash of the index file the future is attempting to publish (same whether it has finished or not).
+	 */
+	public IpfsFile getIndexHash()
+	{
+		return _hashToPublish;
+	}
 
 	/**
 	 * Blocks for the asynchronous operation to complete.
