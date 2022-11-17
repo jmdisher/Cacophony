@@ -140,6 +140,16 @@ function saveDraft(selectedDraft)
 	return REST.POST_asForm("/draft/" + selectedDraft.id, variables);
 }
 
+function waitForPublish(scope)
+{
+	scope.publishInProgress = true;
+	REST.POST("/wait/publish")
+		.then(function(data) {
+			scope.publishInProgress = false;
+			scope.$apply();
+		});
+}
+
 
 // We will create an Angular controller and populate it with data from generated_db.js.
 var GLOBAL_Application = angular.module('App', []);
@@ -345,7 +355,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.publish = function()
 	{
 		$scope.inProgress = true;
-		$scope.publishInProgress = true;
 		// We need to save-back the draft before publishing since the server publishes from the saved state.
 		saveDraft($scope.selectedDraft).then(function(data) {
 			// Now, begin the publish.
@@ -354,7 +363,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 					$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
 					$scope.selectedDraft = null;
 					$scope.inProgress = false;
-					$scope.publishInProgress = false;
+					// Request that we wait for the publish.
+					waitForPublish($scope);
 					$scope.$apply();
 				});
 		});
@@ -412,6 +422,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<li ng-repeat="draft in drafts"><button class="btn btn-sm btn-danger" ng-click="deleteDraft(draft)">Delete</button> <a ng-click="selectDraft(draft)">{{draft.title}}</a></li>
 				</ul>
 			</div>
+			<strong ng-show="publishInProgress">Publish in progress (this could take a while)...</strong>
 		</div>
 		<div class="card card-body col-md-3">
 			<button class="btn btn-danger" ng-click="stopServer()">STOP SERVER</button><br/>
@@ -445,7 +456,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="card card-body" ng-show="selectedDraft.originalVideo.byteSize > 0">
 					<video id="original_review" controls></video><br />
-					<button class="btn btn-danger" ng-click="deleteOriginalVideo(selectedDraft)" ng-disabled="inProgress || publishInProgress">Delete</button> Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
+					<button class="btn btn-danger" ng-click="deleteOriginalVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
 				</div>
 				<div class="card card-body"  ng-show="selectedDraft.originalVideo.byteSize > 0">
 					Post-processing: <br />
@@ -462,13 +473,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="card card-body" ng-show="selectedDraft.processedVideo.byteSize > 0">
 					<video id="processed_review" controls></video><br />
-					<button class="btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress || publishInProgress">Delete</button> Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
+					<button class="btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
 				</div>
 				<div class="card card-body">
 					Thumbnail: <br />
 					<div class="card card-body" ng-show="selectedDraft.thumbnail.byteSize > 0">
 						<canvas id="canvas" width="{{videoConfig.width}}" height="{{videoConfig.height}}"></canvas><br />
-						<button class="btn btn-danger" ng-click="deletethumbnail(selectedDraft)" ng-disabled="(null == selectedDraft.thumbnail) || (0 == selectedDraft.thumbnail.byteSize) || inProgress || publishInProgress">Delete</button> Thumbnail:  {{selectedDraft.thumbnail.byteSize}} bytes.
+						<button class="btn btn-danger" ng-click="deletethumbnail(selectedDraft)" ng-disabled="(null == selectedDraft.thumbnail) || (0 == selectedDraft.thumbnail.byteSize) || inProgress">Delete</button> Thumbnail:  {{selectedDraft.thumbnail.byteSize}} bytes.
 					</div>
 					Capture thumbnail:<br />
 					<div class="btn-group" role="group">
@@ -484,7 +495,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-disabled="publishInProgress">Publish</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-disabled="inProgress">Publish</button>
 					</div>
 				</div>
 			</div>

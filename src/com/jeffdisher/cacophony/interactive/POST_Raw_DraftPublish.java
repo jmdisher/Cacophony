@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import com.jeffdisher.breakwater.IPostRawHandler;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -69,10 +68,8 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 				);
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				
-				// We can now wait for the publish to complete, now that we have closed all the local state.
+				// The publish is something we can wait on, asynchronously, in a different call.
 				_backgroundOperations.waitAndStorePublishOperation(asyncPublish);
-				_backgroundOperations.waitForPendingPublish();
-				CommandHelpers.commonWaitForPublish(_environment, asyncPublish);
 				
 				response.setStatus(HttpServletResponse.SC_OK);
 			}

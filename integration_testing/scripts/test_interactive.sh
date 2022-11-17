@@ -157,6 +157,9 @@ PUBLISH_ID=$(echo $ID_PARSE)
 echo "...working with draft $PUBLISH_ID"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID
 
+echo "Waiting for draft publish..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/wait/publish
+
 echo "Verify that it is not in the list..."
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"
