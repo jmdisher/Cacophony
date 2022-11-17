@@ -20,7 +20,6 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -100,7 +99,7 @@ public class InteractiveHelpers
 	{
 		draftManager.deleteExistingDraft(draftId);
 	}
-	public static void publishExistingDraft(IEnvironment environment
+	public static FuturePublish publishExistingDraft(IEnvironment environment
 			, IReadWriteLocalData data
 			, IConnection connection
 			, INetworkScheduler scheduler
@@ -171,9 +170,7 @@ public class InteractiveHelpers
 		
 		// Save back other parts of the data store.
 		data.writeGlobalPinCache(pinCache);
-		
-		// We can now wait for the publish to complete, now that we have closed all the local state.
-		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		return asyncPublish;
 	}
 
 	// --- Methods related to thumbnails.

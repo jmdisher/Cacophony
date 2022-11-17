@@ -25,6 +25,9 @@ public class InteractiveServer
 {
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
+		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
+		BackgroundOperations background = new BackgroundOperations(environment);
+		
 		LocalConfig local = environment.loadExistingConfig();
 		
 		// We need to load the key name for the scheduler.
@@ -53,7 +56,7 @@ public class InteractiveServer
 		server.addGetHandler("/draft", 1, new GET_Draft(xsrf, manager));
 		server.addPostFormHandler("/draft", 1, new POST_Form_Draft(xsrf, manager));
 		server.addDeleteHandler("/draft", 1, new DELETE_Draft(xsrf, manager));
-		server.addPostRawHandler("/draft/publish", 1, new POST_Raw_DraftPublish(environment, xsrf, local, connection, scheduler, manager));
+		server.addPostRawHandler("/draft/publish", 1, new POST_Raw_DraftPublish(environment, xsrf, local, connection, scheduler, background, manager));
 		
 		server.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(xsrf, manager));
 		server.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(xsrf, manager));
