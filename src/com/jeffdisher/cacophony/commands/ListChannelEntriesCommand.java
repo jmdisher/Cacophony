@@ -13,9 +13,9 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -44,7 +44,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			pinCache = localData.readGlobalPinCache();
 		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, local.getSharedConnection());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, local.getSharedConnection());
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
 		if (null != _channelPublicKey)
@@ -76,10 +76,10 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}
-		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		StreamRecords records = (isCached
-				? checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
-				: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
+				? cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
+				: cache.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
 		).get();
 		
 		// Start the async StreamRecord loads.
@@ -87,8 +87,8 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		for (String recordCid : records.getRecord())
 		{
 			FutureRead<StreamRecord> future = (isCached
-					? checker.loadCached(IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
-					: checker.loadNotCached(environment, IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
+					? cache.loadCached(IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
+					: cache.loadNotCached(environment, IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
 			);
 			asyncRecords.add(new AsyncRecord(recordCid, future));
 		}

@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -42,8 +41,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = localData.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		FollowIndex followIndex = localData.readFollowIndex();
 		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		
@@ -60,7 +58,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPrefs prefs = localData.readGlobalPrefs();
 		
 		// This will throw exceptions in case something goes wrong.
-		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, cache, checker, currentCacheUsageInBytes, _publicKey, null, indexRoot, prefs);
+		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, cache, currentCacheUsageInBytes, _publicKey, null, indexRoot, prefs);
 		followIndex.checkinRecord(updatedRecord);
 		
 		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.

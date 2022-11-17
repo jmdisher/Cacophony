@@ -38,7 +38,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		
 		IpfsFile previousRootElement = localIndex.lastPublishedIndex();
 		PublishHelpers.PublishElement[] openElements = openElementFiles(environment, _elements);

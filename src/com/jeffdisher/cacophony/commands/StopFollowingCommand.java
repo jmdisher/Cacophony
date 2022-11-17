@@ -14,7 +14,6 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.StandardRefreshSupport;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -38,8 +37,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = localData.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		FollowIndex followIndex = localData.readFollowIndex();
 		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		
@@ -52,7 +50,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Prepare for the cleanup.
 		GlobalPrefs prefs = localData.readGlobalPrefs();
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache, checker);
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache);
 		FollowingCacheElement[] updatedCacheState = FolloweeRefreshLogic.refreshFollowee(refreshSupport
 				, prefs
 				, finalRecord.elements()

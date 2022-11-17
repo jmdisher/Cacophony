@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -41,8 +40,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = localData.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		FollowIndex followIndex = localData.readFollowIndex();
 		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		
@@ -61,7 +59,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			environment.logToConsole("Resolved as " + indexRoot);
 			GlobalPrefs prefs = localData.readGlobalPrefs();
 			
-			updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, cache, checker, currentCacheUsageInBytes, _publicKey, startRecord, indexRoot, prefs);
+			updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, cache, currentCacheUsageInBytes, _publicKey, startRecord, indexRoot, prefs);
 		}
 		else
 		{

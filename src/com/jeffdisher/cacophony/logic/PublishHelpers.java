@@ -54,15 +54,13 @@ public class PublishHelpers
 	 */
 	public static FuturePublish uploadFileAndStartPublish(IEnvironment environment, INetworkScheduler scheduler, IConnection connection, IpfsFile previousRoot, GlobalPinCache pinCache, HighLevelCache cache, String name, String description, String discussionUrl, PublishElement[] elements) throws IpfsConnectionException
 	{
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
-		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = scheduler.getPublicKey();
 		Assert.assertTrue(null != previousRoot);
-		StreamIndex index = checker.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = cache.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Upload the elements.
 		List<FutureSave> futureSaves = new ArrayList<>();

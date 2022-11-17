@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -47,8 +46,8 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
-		CleanupData cleanup = _runCore(environment, scheduler, connection, localIndex, pinCache, cache);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
+		CleanupData cleanup = _runCore(environment, scheduler, localIndex, cache);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
 		_runFinish(environment, local, localIndex, cache, cleanup, data);
@@ -58,17 +57,15 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, LocalIndex localIndex, HighLevelCache cache) throws UsageException, IpfsConnectionException
 	{
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
-		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing description since we might be only partially updating it.
-		StreamDescription description = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+		StreamDescription description = cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		
 		if (null != _name)
 		{

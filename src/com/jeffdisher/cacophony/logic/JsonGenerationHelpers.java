@@ -26,6 +26,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -40,7 +41,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class JsonGenerationHelpers
 {
-	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, FollowIndex followIndex) throws IpfsConnectionException
+	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, HighLevelCache highLevelCache, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, FollowIndex followIndex) throws IpfsConnectionException
 	{
 		// Start output.
 		generatedStream.println("// " + comment);
@@ -63,10 +64,10 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// Load all the index objects since we walk it for a few operations.
-		List<FutureKey<StreamIndex>> indices = _loadStreamIndices(checker, ourPublicKey, lastPublishedIndex, followIndex);
+		List<FutureKey<StreamIndex>> indices = _loadStreamIndices(highLevelCache, ourPublicKey, lastPublishedIndex, followIndex);
 		
 		// DATA_userInfo.
-		JsonObject dataUserInfo = _dataUserInfo(checker, indices);
+		JsonObject dataUserInfo = _dataUserInfo(highLevelCache, indices);
 		generatedStream.println("var DATA_userInfo = " + dataUserInfo.toString());
 		generatedStream.println();
 		
@@ -77,14 +78,14 @@ public class JsonGenerationHelpers
 		
 		// DATA_userPosts.
 		JsonObject dataUserPosts = new JsonObject();
-		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(checker, indices);
+		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(highLevelCache, indices);
 		
 		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
 		Iterator<FutureKey<StreamRecords>> recordsIterator = streamRecords.iterator();
-		_populatePostsForUser(checker, dataUserPosts, ourPublicKey, recordsIterator.next().future.get());
+		_populatePostsForUser(highLevelCache, dataUserPosts, ourPublicKey, recordsIterator.next().future.get());
 		for(FollowRecord record : followIndex)
 		{
-			_populatePostsForUser(checker, dataUserPosts, record.publicKey(), recordsIterator.next().future.get());
+			_populatePostsForUser(highLevelCache, dataUserPosts, record.publicKey(), recordsIterator.next().future.get());
 		}
 		Assert.assertTrue(!recordsIterator.hasNext());
 		generatedStream.println("var DATA_userPosts = " + dataUserPosts.toString());
@@ -92,13 +93,13 @@ public class JsonGenerationHelpers
 		
 		// DATA_recommended.
 		// Load recommended list.
-		List<FutureKey<StreamRecommendations>> recommendationsFutures = _loadRecommendations(checker, indices);
+		List<FutureKey<StreamRecommendations>> recommendationsFutures = _loadRecommendations(highLevelCache, indices);
 		JsonObject dataRecommended = new JsonObject();
 		Iterator<FutureKey<StreamRecommendations>> recommendationsIterator = recommendationsFutures.iterator();
-		_populateRecommendationsForUser(checker, dataRecommended, ourPublicKey, recommendationsIterator.next().future.get());
+		_populateRecommendationsForUser(highLevelCache, dataRecommended, ourPublicKey, recommendationsIterator.next().future.get());
 		for(FollowRecord record : followIndex)
 		{
-			_populateRecommendationsForUser(checker, dataRecommended, record.publicKey(), recommendationsIterator.next().future.get());
+			_populateRecommendationsForUser(highLevelCache, dataRecommended, record.publicKey(), recommendationsIterator.next().future.get());
 		}
 		Assert.assertTrue(!recommendationsIterator.hasNext());
 		generatedStream.println("var DATA_recommended = " + dataRecommended.toString());
@@ -201,29 +202,29 @@ public class JsonGenerationHelpers
 		return _dataVersion();
 	}
 
-	public static JsonObject userInfo(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	public static JsonObject userInfo(HighLevelCache cache, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
 		JsonObject foundObject = null;
 		if (null != indexToLoad)
 		{
-			StreamIndex index = checker.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamDescription description = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
-			foundObject = _populateJsonForDescription(checker, description);
+			StreamIndex index = cache.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamDescription description = cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			foundObject = _populateJsonForDescription(cache, description);
 		}
 		return foundObject;
 	}
 
-	public static JsonArray postHashes(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	public static JsonArray postHashes(HighLevelCache cache, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
-			StreamIndex index = checker.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			StreamIndex index = cache.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			array = new JsonArray();
 			for (String rawCid : records.getRecord())
 			{
@@ -233,15 +234,15 @@ public class JsonGenerationHelpers
 		return array;
 	}
 
-	public static JsonArray recommendedKeys(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	public static JsonArray recommendedKeys(HighLevelCache cache, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
-			StreamIndex index = checker.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecommendations recommendations = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			StreamIndex index = cache.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecommendations recommendations = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 			array = new JsonArray();
 			for (String rawCid : recommendations.getUser())
 			{
@@ -278,20 +279,20 @@ public class JsonGenerationHelpers
 		return _dataPrefs(prefs);
 	}
 
-	public static LocalRecordCache buildFolloweeCache(INetworkScheduler scheduler, LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
+	public static LocalRecordCache buildFolloweeCache(INetworkScheduler scheduler, HighLevelCache cache, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
 	{
-		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(checker, lastPublishedIndex, followIndex);
+		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(cache, lastPublishedIndex, followIndex);
 		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
-		List<FutureRead<StreamRecords>> streamRecords = _loadRecordsNoKey(checker, indices);
+		List<FutureRead<StreamRecords>> streamRecords = _loadRecordsNoKey(cache, indices);
 		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
 		Iterator<FutureRead<StreamRecords>> recordsIterator = streamRecords.iterator();
 		// The first element is ourselves.
-		_populateElementMapFromUserRoot(scheduler, checker, dataElements, null, recordsIterator.next().get());
+		_populateElementMapFromUserRoot(scheduler, cache, dataElements, null, recordsIterator.next().get());
 		// The rest of the list is in-order with followIndex.
 		for(FollowRecord record : followIndex)
 		{
 			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
-			_populateElementMapFromUserRoot(scheduler, checker, dataElements, elementsCachedForUser, recordsIterator.next().get());
+			_populateElementMapFromUserRoot(scheduler, cache, dataElements, elementsCachedForUser, recordsIterator.next().get());
 		}
 		// These should end at the same time.
 		Assert.assertTrue(!recordsIterator.hasNext());
@@ -299,60 +300,60 @@ public class JsonGenerationHelpers
 	}
 
 
-	private static void _startLoad(List<FutureKey<StreamIndex>> list, LoadChecker checker, IpfsKey publicKey, IpfsFile indexRoot)
+	private static void _startLoad(List<FutureKey<StreamIndex>> list, HighLevelCache cache, IpfsKey publicKey, IpfsFile indexRoot)
 	{
-		FutureRead<StreamIndex> index = checker.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data));
+		FutureRead<StreamIndex> index = cache.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data));
 		list.add(new FutureKey<StreamIndex>(publicKey, index));
 	}
 
-	private static List<FutureKey<StreamDescription>> _loadDescriptions(LoadChecker checker, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureKey<StreamDescription>> _loadDescriptions(HighLevelCache cache, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
 	{
 		List<FutureKey<StreamDescription>> descriptions = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
 		{
 			StreamIndex index = future.future.get();
-			FutureRead<StreamDescription> description = checker.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
+			FutureRead<StreamDescription> description = cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
 			descriptions.add(new FutureKey<StreamDescription>(future.publicKey, description));
 		}
 		return descriptions;
 	}
 
-	private static JsonObject _populateJsonForDescription(LoadChecker checker, StreamDescription description)
+	private static JsonObject _populateJsonForDescription(HighLevelCache cache, StreamDescription description)
 	{
 		JsonObject thisUser = new JsonObject();
 		thisUser.set("name", description.getName());
 		thisUser.set("description", description.getDescription());
-		thisUser.set("userPicUrl", checker.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
+		thisUser.set("userPicUrl", cache.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
 		thisUser.set("email", description.getEmail());
 		thisUser.set("website", description.getWebsite());
 		return thisUser;
 	}
 
-	private static List<FutureKey<StreamRecords>> _loadRecords(LoadChecker checker, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureKey<StreamRecords>> _loadRecords(HighLevelCache cache, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
 	{
 		List<FutureKey<StreamRecords>> recordsList = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
 		{
 			StreamIndex index = future.future.get();
-			FutureRead<StreamRecords> records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			FutureRead<StreamRecords> records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
 			recordsList.add(new FutureKey<StreamRecords>(future.publicKey, records));
 		}
 		return recordsList;
 	}
 
-	private static List<FutureRead<StreamRecords>> _loadRecordsNoKey(LoadChecker checker, List<FutureRead<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureRead<StreamRecords>> _loadRecordsNoKey(HighLevelCache cache, List<FutureRead<StreamIndex>> list) throws IpfsConnectionException
 	{
 		List<FutureRead<StreamRecords>> recordsList = new ArrayList<>();
 		for (FutureRead<StreamIndex> future : list)
 		{
 			StreamIndex index = future.get();
-			FutureRead<StreamRecords> records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			FutureRead<StreamRecords> records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
 			recordsList.add(records);
 		}
 		return recordsList;
 	}
 
-	private static void _populateElementMapFromUserRoot(INetworkScheduler scheduler, LoadChecker checker, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromUserRoot(INetworkScheduler scheduler, HighLevelCache cache, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -365,7 +366,7 @@ public class JsonGenerationHelpers
 			// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
 			if (scheduler.getSizeInBytes(cid).get() < SizeLimits.MAX_RECORD_SIZE_BYTES)
 			{
-				FutureRead<StreamRecord> future = checker.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+				FutureRead<StreamRecord> future = cache.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
 				loads.add(future);
 			}
 		}
@@ -373,7 +374,7 @@ public class JsonGenerationHelpers
 		for (FutureRead<StreamRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
-			LocalRecordCache.Element thisElt = _fetchDataForElement(checker, elementsCachedForUser, future, cid);
+			LocalRecordCache.Element thisElt = _fetchDataForElement(cache, elementsCachedForUser, future, cid);
 			elementMap.put(cid, thisElt);
 		}
 	}
@@ -391,7 +392,7 @@ public class JsonGenerationHelpers
 		return object;
 	}
 
-	private static LocalRecordCache.Element _fetchDataForElement(LoadChecker checker, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
+	private static LocalRecordCache.Element _fetchDataForElement(HighLevelCache cache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
 	{
 		StreamRecord record = future.get();
 		
@@ -425,19 +426,17 @@ public class JsonGenerationHelpers
 			// Note that we can have at most one thumbnail and one video but both are optional and there could be an entry with neither.
 			if (null != thumbnailCid)
 			{
-				Assert.assertTrue(checker.isCached(thumbnailCid));
-				thumbnailUrl = checker.getCachedUrl(thumbnailCid).toString();
+				thumbnailUrl = cache.getCachedUrl(thumbnailCid).toString();
 			}
 			if (null != videoCid)
 			{
-				Assert.assertTrue(checker.isCached(videoCid));
-				videoUrl = checker.getCachedUrl(videoCid).toString();
+				videoUrl = cache.getCachedUrl(videoCid).toString();
 			}
 		}
 		return new LocalRecordCache.Element(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl);
 	}
 
-	private static void _populatePostsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey, StreamRecords records)
+	private static void _populatePostsForUser(HighLevelCache cache, JsonObject rootData, IpfsKey publicKey, StreamRecords records)
 	{
 		JsonArray array = new JsonArray();
 		for (String rawCid : records.getRecord())
@@ -447,19 +446,19 @@ public class JsonGenerationHelpers
 		rootData.set(publicKey.toPublicKey(), array);
 	}
 
-	private static List<FutureKey<StreamRecommendations>> _loadRecommendations(LoadChecker checker, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureKey<StreamRecommendations>> _loadRecommendations(HighLevelCache cache, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
 	{
 		List<FutureKey<StreamRecommendations>> recommendationsList = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
 		{
 			StreamIndex index = future.future.get();
-			FutureRead<StreamRecommendations> recommendations = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data));
+			FutureRead<StreamRecommendations> recommendations = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data));
 			recommendationsList.add(new FutureKey<StreamRecommendations>(future.publicKey, recommendations));
 		}
 		return recommendationsList;
 	}
 
-	private static void _populateRecommendationsForUser(LoadChecker checker, JsonObject rootData, IpfsKey publicKey,StreamRecommendations recommendations)
+	private static void _populateRecommendationsForUser(HighLevelCache cache, JsonObject rootData, IpfsKey publicKey,StreamRecommendations recommendations)
 	{
 		JsonArray array = new JsonArray();
 		for (String rawCid : recommendations.getUser())
@@ -503,24 +502,24 @@ public class JsonGenerationHelpers
 		return videoCid;
 	}
 
-	private static List<FutureKey<StreamIndex>> _loadStreamIndices(LoadChecker checker, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex)
+	private static List<FutureKey<StreamIndex>> _loadStreamIndices(HighLevelCache cache, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex)
 	{
 		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
-		_startLoad(indices, checker, ourPublicKey, lastPublishedIndex);
+		_startLoad(indices, cache, ourPublicKey, lastPublishedIndex);
 		for(FollowRecord record : followIndex)
 		{
-			_startLoad(indices, checker, record.publicKey(), record.lastFetchedRoot());
+			_startLoad(indices, cache, record.publicKey(), record.lastFetchedRoot());
 		}
 		return indices;
 	}
 
-	private static List<FutureRead<StreamIndex>> _loadStreamIndicesNoKey(LoadChecker checker, IpfsFile lastPublishedIndex, FollowIndex followIndex)
+	private static List<FutureRead<StreamIndex>> _loadStreamIndicesNoKey(HighLevelCache cache, IpfsFile lastPublishedIndex, FollowIndex followIndex)
 	{
 		List<FutureRead<StreamIndex>> indices = new ArrayList<>();
-		indices.add(checker.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)));
+		indices.add(cache.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)));
 		for(FollowRecord record : followIndex)
 		{
-			indices.add(checker.loadCached(record.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data)));
+			indices.add(cache.loadCached(record.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data)));
 		}
 		return indices;
 	}
@@ -541,13 +540,13 @@ public class JsonGenerationHelpers
 		return dataPrefs;
 	}
 
-	private static JsonObject _dataUserInfo(LoadChecker checker, List<FutureKey<StreamIndex>> indices) throws IpfsConnectionException
+	private static JsonObject _dataUserInfo(HighLevelCache cache, List<FutureKey<StreamIndex>> indices) throws IpfsConnectionException
 	{
 		JsonObject dataUserInfo = new JsonObject();
-		List<FutureKey<StreamDescription>> descriptions = _loadDescriptions(checker, indices);
+		List<FutureKey<StreamDescription>> descriptions = _loadDescriptions(cache, indices);
 		for (FutureKey<StreamDescription> future : descriptions)
 		{
-			JsonObject json = _populateJsonForDescription(checker, future.future.get());
+			JsonObject json = _populateJsonForDescription(cache, future.future.get());
 			dataUserInfo.set(future.publicKey.toPublicKey(), json);
 		}
 		return dataUserInfo;

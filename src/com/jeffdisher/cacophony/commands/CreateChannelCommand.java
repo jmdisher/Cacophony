@@ -54,7 +54,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		LocalIndex localIndex = data.readLocalIndex();
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();

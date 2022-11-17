@@ -1,8 +1,13 @@
 package com.jeffdisher.cacophony.data.local.v1;
 
+import java.net.URL;
 import java.util.HashMap;
+import java.util.function.Function;
 
+import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureUnpin;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -24,6 +29,11 @@ import com.jeffdisher.cacophony.utils.Assert;
  * 
  * An important point to remember is that none of the caches are immediately pruned so delete actions can be issued
  * before waiting for any replacement data to propagate.
+ * 
+ * Some read-only methods were added to this implementation (inlined from the defunct LoadChecker) purely in order to
+ * validate assumptions around how we are expecting load operations to work.
+ * Currently, we do have some operations which don't require cached data (commands used in discovering new users) but
+ * we will eventually want to force even those cases through the "explicit cache".
  */
 public class HighLevelCache
 {
@@ -45,6 +55,7 @@ public class HighLevelCache
 
 	private final GlobalPinCache _globalPinCache;
 	private final INetworkScheduler _scheduler;
+	private final IConnection _ipfsConnection;
 
 	// We track the currently in-flight pin and unpin operations.
 	// This is to force in-order mutation of the _globalPinCache by blocking on any pending pin/unpin operations for the
@@ -53,10 +64,11 @@ public class HighLevelCache
 	private final HashMap<IpfsFile, FuturePin> _inFlightPins;
 	private final HashMap<IpfsFile, FutureUnpin> _inFlightUnpins;
 
-	public HighLevelCache(GlobalPinCache globalPinCache, INetworkScheduler scheduler)
+	public HighLevelCache(GlobalPinCache globalPinCache, INetworkScheduler scheduler, IConnection ipfsConnection)
 	{
 		_globalPinCache = globalPinCache;
 		_scheduler = scheduler;
+		_ipfsConnection = ipfsConnection;
 		_inFlightPins = new HashMap<>();
 		_inFlightUnpins = new HashMap<>();
 	}
@@ -143,6 +155,32 @@ public class HighLevelCache
 	public void removeFromTempCache(Type type, IpfsFile cid)
 	{
 		Assert.unimplemented(3);
+	}
+
+	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
+	{
+		Assert.assertTrue(null != file);
+		Assert.assertTrue(_globalPinCache.isCached(file));
+		return _scheduler.readData(file, decoder);
+	}
+
+	public <R> FutureRead<R> loadNotCached(IEnvironment environment, IpfsFile file, Function<byte[], R> decoder)
+	{
+		Assert.assertTrue(null != file);
+		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but
+		// we do want to at least log a warning here, just so we are aware of it in tests.
+		if (_globalPinCache.isCached(file))
+		{
+			environment.logError("WARNING!  Not expected in cache:  " + file);
+		}
+		return _scheduler.readData(file, decoder);
+	}
+
+	public URL getCachedUrl(IpfsFile file)
+	{
+		Assert.assertTrue(null != file);
+		Assert.assertTrue(_globalPinCache.isCached(file));
+		return _ipfsConnection.urlForDirectFetch(file);
 	}
 
 

@@ -6,9 +6,9 @@ import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -46,13 +46,13 @@ public class GET_PostHashes implements IGetHandler
 			try
 			{
 				IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
-				LoadChecker checker = new LoadChecker(_scheduler, data.readGlobalPinCache(), _localConfig.getSharedConnection());
+				HighLevelCache cache = new HighLevelCache(data.readGlobalPinCache(), _scheduler, _localConfig.getSharedConnection());
 				LocalIndex localIndex = data.readLocalIndex();
 				FollowIndex followIndex = data.readFollowIndex();
 				data.close();
 				
 				IpfsFile lastPublishedIndex = localIndex.lastPublishedIndex();
-				JsonArray hashes = JsonGenerationHelpers.postHashes(checker, _ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+				JsonArray hashes = JsonGenerationHelpers.postHashes(cache, _ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
 				if (null != hashes)
 				{
 					response.setContentType("application/json");

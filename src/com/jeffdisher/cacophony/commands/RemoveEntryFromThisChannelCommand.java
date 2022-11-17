@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -41,29 +40,28 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
-		CleanupData cleanup = _runCore(environment, connection, localIndex, pinCache, cache, scheduler, checker);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
+		CleanupData cleanup = _runCore(environment, localIndex, cache, scheduler);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		_runFinish(environment, local, localIndex, cache, checker, cleanup, data);
+		_runFinish(environment, local, localIndex, cache, cleanup, data);
 		data.writeGlobalPinCache(pinCache);
 		data.close();
 		log.finish("Entry removed: " + _elementCid);
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache, INetworkScheduler scheduler, LoadChecker checker) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, LocalIndex localIndex, HighLevelCache cache, INetworkScheduler scheduler) throws UsageException, IpfsConnectionException
 	{
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = checker.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Make sure that we actually have the record.
 		boolean didFind = false;
@@ -95,13 +93,13 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		return new CleanupData(asyncPublish, rootToLoad);
 	}
 
-	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, LoadChecker checker, CleanupData data, IReadWriteLocalData localData)
+	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
 	{
 		// Unpin the entries (we need to unpin them all since we own them so we added them all).
 		StreamRecord record = null;
 		try
 		{
-			record = checker.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
+			record = cache.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 		}
 		catch (IpfsConnectionException e)
 		{

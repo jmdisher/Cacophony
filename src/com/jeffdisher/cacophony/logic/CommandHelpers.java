@@ -102,7 +102,7 @@ public class CommandHelpers
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		GlobalPrefs globalPrefs = data.readGlobalPrefs();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		
 		try
 		{
@@ -132,7 +132,6 @@ public class CommandHelpers
 	public static FollowRecord doRefreshOfRecord(IEnvironment environment
 			, INetworkScheduler scheduler
 			, HighLevelCache cache
-			, LoadChecker checker
 			, long currentCacheUsageInBytes
 			, IpfsKey publicKey
 			, FollowRecord startRecord
@@ -151,7 +150,7 @@ public class CommandHelpers
 		;
 		
 		// Prepare for the initial fetch.
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache, checker);
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache);
 		IpfsFile successfulIndex = null;
 		FollowingCacheElement[] elementsToWrite = null;
 		try

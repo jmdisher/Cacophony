@@ -11,10 +11,10 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -44,7 +44,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			pinCache = localData.readGlobalPinCache();
 		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, local.getSharedConnection());
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, local.getSharedConnection());
 		FollowRecord record = followIndex.peekRecord(_followeeKey);
 		if (null != record)
 		{
@@ -52,8 +52,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			Map<IpfsFile, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
 			IpfsFile root = record.lastFetchedRoot();
 			
-			StreamIndex index = checker.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecords records = checker.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			StreamIndex index = cache.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			List<String> recordList = records.getRecord();
 			environment.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)

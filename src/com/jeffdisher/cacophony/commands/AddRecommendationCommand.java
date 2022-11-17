@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -38,8 +37,8 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		IConnection connection = local.getSharedConnection();
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler);
-		CleanupData cleanup = _runCore(environment, scheduler, connection, localIndex, pinCache, cache);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
+		CleanupData cleanup = _runCore(environment, scheduler, localIndex, cache);
 		
 		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
 		_runFinish(environment, local, localIndex, cache, cleanup, data);
@@ -48,18 +47,16 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		log.finish("Now recommending: " + _channelPublicKey);
 	}
 
-	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, IConnection connection, LocalIndex localIndex, GlobalPinCache pinCache, HighLevelCache cache) throws IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, LocalIndex localIndex, HighLevelCache cache) throws IpfsConnectionException
 	{
-		LoadChecker checker = new LoadChecker(scheduler, pinCache, connection);
-		
 		// Read our existing root key.
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != oldRootHash);
-		StreamIndex index = checker.loadCached(oldRootHash, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = cache.loadCached(oldRootHash, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = checker.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+		StreamRecommendations recommendations = cache.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		
 		// Verify that we didn't already add them.
 		Assert.assertTrue(!recommendations.getUser().contains(_channelPublicKey.toPublicKey()));

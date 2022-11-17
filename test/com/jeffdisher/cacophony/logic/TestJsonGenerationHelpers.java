@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
@@ -88,9 +89,9 @@ public class TestJsonGenerationHelpers
 		GlobalPinCache pinCache = GlobalPinCache.newCache();
 		IpfsFile indexFile = _storeNewIndex(remoteConnection, pinCache, null, null);
 		remoteConnection.publish(KEY_NAME, indexFile);
-		LoadChecker loadChecker = new LoadChecker(scheduler, pinCache, remoteConnection);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, remoteConnection);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		LocalRecordCache recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, loadChecker, indexFile, followIndex);
+		LocalRecordCache recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, cache, indexFile, followIndex);
 		
 		// This should have zero entries.
 		Assert.assertTrue(recordCache.getKeys().isEmpty());
@@ -111,7 +112,7 @@ public class TestJsonGenerationHelpers
 		IpfsFile recordFile = _storeEntry(remoteConnection, pinCache, "entry1", PUBLIC_KEY1);
 		IpfsFile indexFile = _storeNewIndex(remoteConnection, pinCache, recordFile, null);
 		remoteConnection.publish(KEY_NAME, indexFile);
-		LoadChecker loadChecker = new LoadChecker(scheduler, pinCache, remoteConnection);
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, remoteConnection);
 		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
 		
 		IpfsFile followeeRecordFile = _storeEntry(remoteConnection, pinCache, "entry2", PUBLIC_KEY2);
@@ -122,7 +123,7 @@ public class TestJsonGenerationHelpers
 				new FollowingCacheElement(followeeRecordFile, null, null, 0L)
 		});
 		followIndex.checkinRecord(record);
-		LocalRecordCache recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, loadChecker, indexFile, followIndex);
+		LocalRecordCache recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, cache, indexFile, followIndex);
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
 		Assert.assertEquals(2, recordCache.getKeys().size());

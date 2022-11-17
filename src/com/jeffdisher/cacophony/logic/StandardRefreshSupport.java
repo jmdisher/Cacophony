@@ -18,14 +18,12 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final IEnvironment _environment;
 	private final INetworkScheduler _scheduler;
 	private final HighLevelCache _cache;
-	private final LoadChecker _checker;
 
-	public StandardRefreshSupport(IEnvironment environment, INetworkScheduler scheduler, HighLevelCache cache, LoadChecker checker)
+	public StandardRefreshSupport(IEnvironment environment, INetworkScheduler scheduler, HighLevelCache cache)
 	{
 		_environment = environment;
 		_scheduler = scheduler;
 		_cache = cache;
-		_checker = checker;
 	}
 
 	@Override
@@ -61,6 +59,6 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
 	{
-		return _checker.loadCached(file, decoder);
+		return _cache.loadCached(file, decoder);
 	}
 }

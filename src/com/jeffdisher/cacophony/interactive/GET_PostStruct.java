@@ -6,10 +6,10 @@ import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.logic.LoadChecker;
 import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -51,7 +51,7 @@ public class GET_PostStruct implements IGetHandler
 			try
 			{
 				IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
-				LoadChecker checker = new LoadChecker(_scheduler, data.readGlobalPinCache(), _localConfig.getSharedConnection());
+				HighLevelCache highLevelCache = new HighLevelCache(data.readGlobalPinCache(), _scheduler, _localConfig.getSharedConnection());
 				LocalIndex localIndex = data.readLocalIndex();
 				FollowIndex followIndex = data.readFollowIndex();
 				data.close();
@@ -60,7 +60,7 @@ public class GET_PostStruct implements IGetHandler
 				LocalRecordCache cache = data.lazilyLoadFolloweeCache(() -> {
 					try
 					{
-						return JsonGenerationHelpers.buildFolloweeCache(_scheduler, checker, lastPublishedIndex, followIndex);
+						return JsonGenerationHelpers.buildFolloweeCache(_scheduler, highLevelCache, lastPublishedIndex, followIndex);
 					}
 					catch (IpfsConnectionException e)
 					{
