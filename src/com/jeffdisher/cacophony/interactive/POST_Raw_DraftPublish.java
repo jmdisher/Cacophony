@@ -4,8 +4,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.jeffdisher.breakwater.IPostRawHandler;
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,12 +22,24 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 {
 	private final IEnvironment _environment;
 	private final String _xsrf;
+	private final LocalConfig _localConfig;
+	private final IConnection _connection;
+	private final INetworkScheduler _scheduler;
 	private final DraftManager _draftManager;
 	
-	public POST_Raw_DraftPublish(IEnvironment environment, String xsrf, DraftManager draftManager)
+	public POST_Raw_DraftPublish(IEnvironment environment
+			, String xsrf
+			, LocalConfig localConfig
+			, IConnection connection
+			, INetworkScheduler scheduler
+			, DraftManager draftManager
+	)
 	{
 		_environment = environment;
 		_xsrf = xsrf;
+		_localConfig = localConfig;
+		_connection = connection;
+		_scheduler = scheduler;
 		_draftManager = draftManager;
 	}
 	
@@ -32,16 +48,30 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 	{
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
+			IReadWriteLocalData data = _localConfig.getSharedLocalData().openForWrite();
 			int draftId = Integer.parseInt(pathVariables[0]);
 			try
 			{
-				InteractiveHelpers.publishExistingDraft(_environment, _draftManager, draftId);
+				
+				InteractiveHelpers.publishExistingDraft(_environment
+						, data
+						, _connection
+						, _scheduler
+						, _draftManager
+						, draftId
+				);
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				response.setStatus(HttpServletResponse.SC_OK);
 			}
 			catch (FileNotFoundException e)
 			{
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+			finally
+			{
+				// Allow the write-back of any updated state.
+				// TODO:  Determine if we should be able to abandon this if something went wrong.
+				data.close();
 			}
 		}
 	}

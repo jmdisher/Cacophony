@@ -14,15 +14,21 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 
-import com.jeffdisher.cacophony.commands.ElementSubCommand;
-import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
+import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.logic.PublishHelpers;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.Cookie;
@@ -94,7 +100,13 @@ public class InteractiveHelpers
 	{
 		draftManager.deleteExistingDraft(draftId);
 	}
-	public static void publishExistingDraft(IEnvironment environment, DraftManager draftManager, int draftId) throws FileNotFoundException
+	public static void publishExistingDraft(IEnvironment environment
+			, IReadWriteLocalData data
+			, IConnection connection
+			, INetworkScheduler scheduler
+			, DraftManager draftManager
+			, int draftId
+	) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		Draft draft = wrapper.loadDraft();
@@ -115,23 +127,37 @@ public class InteractiveHelpers
 		{
 			elementCount += 1;
 		}
-		ElementSubCommand[] subElements = new ElementSubCommand[elementCount];
+		PublishHelpers.PublishElement[] subElements = new PublishHelpers.PublishElement[elementCount];
 		int index = 0;
 		if (null != thumbnail)
 		{
-			subElements[index] = new ElementSubCommand(thumbnail.mime(), wrapper.thumbnail(), thumbnail.height(), thumbnail.width(), true);
+			subElements[index] = new PublishHelpers.PublishElement(thumbnail.mime(), new FileInputStream(wrapper.thumbnail()), thumbnail.height(), thumbnail.width(), true);
 			index += 1;
 		}
 		if (null != video)
 		{
-			subElements[index] = new ElementSubCommand(video.mime(), videoFile, video.height(), video.width(), false);
-			elementCount += 1;
+			try
+			{
+				subElements[index] = new PublishHelpers.PublishElement(video.mime(), new FileInputStream(videoFile), video.height(), video.width(), false);
+			}
+			catch (FileNotFoundException e)
+			{
+				// Close the other file before we throw.
+				closeElementFiles(environment, subElements);
+				throw e;
+			}
+			index += 1;
 		}
 		
-		PublishCommand command = new PublishCommand(draft.title(), draft.description(), draft.discussionUrl(), subElements);
+		LocalIndex localIndex = data.readLocalIndex();
+		GlobalPinCache pinCache = data.readGlobalPinCache();
+		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
+		
+		IpfsFile previousRootElement = localIndex.lastPublishedIndex();
+		FuturePublish asyncPublish;
 		try
 		{
-			command.runInEnvironment(environment);
+			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, scheduler, connection, previousRootElement, pinCache, cache, draft.title(), draft.description(), draft.discussionUrl(), subElements);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -139,12 +165,16 @@ public class InteractiveHelpers
 			e.printStackTrace();
 			throw Assert.unexpected(e);
 		}
-		catch (CacophonyException e)
+		finally
 		{
-			System.err.println("Publish command failed with CacophonyException: " + e.getLocalizedMessage());
-			e.printStackTrace();
-			throw Assert.unexpected(e);
+			closeElementFiles(environment, subElements);
 		}
+		
+		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+		PublishHelpers.updateLocalStorageAndWaitForPublish(environment, localIndex, cache, previousRootElement, asyncPublish, data);
+		
+		// Save back other parts of the data store.
+		data.writeGlobalPinCache(pinCache);
 	}
 
 	// --- Methods related to thumbnails.
@@ -364,5 +394,25 @@ public class InteractiveHelpers
 			}
 		}
 		return totalCopied;
+	}
+
+	private static void closeElementFiles(IEnvironment environment, PublishHelpers.PublishElement[] elements)
+	{
+		for (PublishHelpers.PublishElement element : elements)
+		{
+			if (null != element)
+			{
+				InputStream file = element.fileData();
+				try
+				{
+					file.close();
+				}
+				catch (IOException e)
+				{
+					// We don't know how this fails on close.
+					throw Assert.unexpected(e);
+				}
+			}
+		}
 	}
 }
