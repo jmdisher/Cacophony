@@ -42,7 +42,8 @@ public class PublishHelpers
 	 * @param environment Used for logging.
 	 * @param scheduler Used for scheduling upload operations.
 	 * @param connection The IPFS connection.
-	 * @param previousRoot The previous root of our structure.
+	 * @param localData The local data store.
+	 * @param existingLocalIndex The state of the index file before any updates to account for this.
 	 * @param pinCache The cache of what data is pinned on the local node.
 	 * @param cache The high-level cache tracking the data we are uploading.
 	 * @param name The name of the entry.
@@ -52,10 +53,23 @@ public class PublishHelpers
 	 * @return The in-flight publish operation.
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 */
-	public static FuturePublish uploadFileAndStartPublish(IEnvironment environment, INetworkScheduler scheduler, IConnection connection, IpfsFile previousRoot, GlobalPinCache pinCache, HighLevelCache cache, String name, String description, String discussionUrl, PublishElement[] elements) throws IpfsConnectionException
+	public static FuturePublish uploadFileAndStartPublish(IEnvironment environment
+			, INetworkScheduler scheduler
+			, IConnection connection
+			, IReadWriteLocalData localData
+			, LocalIndex existingLocalIndex
+			, GlobalPinCache pinCache
+			, HighLevelCache cache
+			, String name
+			, String description
+			, String discussionUrl
+			, PublishElement[] elements
+	) throws IpfsConnectionException
 	{
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = scheduler.getPublicKey();
+		
+		IpfsFile previousRoot = existingLocalIndex.lastPublishedIndex();
 		Assert.assertTrue(null != previousRoot);
 		StreamIndex index = cache.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
@@ -121,26 +135,11 @@ public class PublishHelpers
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		return CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
-	}
-
-	/**
-	 * Updates the local storage to reflect the new root element and waits for the publish operation to complete.
-	 * 
-	 * @param environment Used for logging.
-	 * @param localIndex The local index file to be updated to reflect these changes.
-	 * @param cache The cache of what is pinned locally.
-	 * @param previousRoot The previous root we replaced (to be unpinned).
-	 * @param asyncPublish The in-flight publish operation.
-	 * @param localData The local data store.
-	 */
-	public static void updateLocalStorageAndWaitForPublish(IEnvironment environment, LocalIndex localIndex, HighLevelCache cache, IpfsFile previousRoot, FuturePublish asyncPublish, IReadWriteLocalData localData)
-	{
-		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, previousRoot, asyncPublish.getIndexHash());
+		FuturePublish asyncResult = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
 		
-		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
+		CommandHelpers.commonUpdateIndex(environment, localData, existingLocalIndex, cache, previousRoot, asyncResult.getIndexHash());
+		return asyncResult;
 	}
 
 

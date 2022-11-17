@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -28,7 +29,6 @@ import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.Cookie;
@@ -153,11 +153,10 @@ public class InteractiveHelpers
 		GlobalPinCache pinCache = data.readGlobalPinCache();
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		
-		IpfsFile previousRootElement = localIndex.lastPublishedIndex();
 		FuturePublish asyncPublish;
 		try
 		{
-			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, scheduler, connection, previousRootElement, pinCache, cache, draft.title(), draft.description(), draft.discussionUrl(), subElements);
+			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, scheduler, connection, data, localIndex, pinCache, cache, draft.title(), draft.description(), draft.discussionUrl(), subElements);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -170,11 +169,11 @@ public class InteractiveHelpers
 			closeElementFiles(environment, subElements);
 		}
 		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		PublishHelpers.updateLocalStorageAndWaitForPublish(environment, localIndex, cache, previousRootElement, asyncPublish, data);
-		
 		// Save back other parts of the data store.
 		data.writeGlobalPinCache(pinCache);
+		
+		// We can now wait for the publish to complete, now that we have closed all the local state.
+		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 	}
 
 	// --- Methods related to thumbnails.

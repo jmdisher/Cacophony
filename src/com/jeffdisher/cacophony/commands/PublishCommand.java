@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -19,7 +20,6 @@ import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -40,24 +40,24 @@ public record PublishCommand(String _name, String _description, String _discussi
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
 		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
 		
-		IpfsFile previousRootElement = localIndex.lastPublishedIndex();
 		PublishHelpers.PublishElement[] openElements = openElementFiles(environment, _elements);
 		FuturePublish asyncPublish;
 		try
 		{
-			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, scheduler, connection, previousRootElement, pinCache, cache, _name, _description, _discussionUrl, openElements);
+			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, scheduler, connection, data, localIndex, pinCache, cache, _name, _description, _discussionUrl, openElements);
 		}
 		finally
 		{
 			closeElementFiles(environment, openElements);
 		}
 		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		PublishHelpers.updateLocalStorageAndWaitForPublish(environment, localIndex, cache, previousRootElement, asyncPublish, data);
-		
 		// Save back other parts of the data store.
 		data.writeGlobalPinCache(pinCache);
 		data.close();
+		
+		// We can now wait for the publish to complete, now that we have closed all the local state.
+		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		
 		log.finish("Publish completed!");
 	}
 
