@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.access;
 
+import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -20,4 +21,7 @@ public interface IWritingAccess extends IReadingAccess
 
 	// TEMP
 	HighLevelCache loadCacheReadWrite() throws IpfsConnectionException;
+
+	// TEMP.
+	FollowIndex readWriteFollowIndex();
 }

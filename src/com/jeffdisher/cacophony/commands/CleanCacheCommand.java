@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
 
@@ -17,12 +17,13 @@ public record CleanCacheCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
-		// First, we want to shrink the local cache.
-		LocalConfig local = environment.loadExistingConfig();
-		CommandHelpers.shrinkCacheToFitInPrefs(environment, local, 1.0);
-		
-		// Even if that didn't do anything, we still want to request that the IPFS node GC.
-		IConnection connection = local.getSharedConnection();
-		connection.requestStorageGc();
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			// First, we want to shrink the local cache.
+			CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 1.0);
+			
+			// Even if that didn't do anything, we still want to request that the IPFS node GC.
+			access.requestIpfsGc();
+		}
 	}
 }

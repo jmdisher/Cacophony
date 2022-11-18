@@ -5,13 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
@@ -89,23 +87,17 @@ public class CommandHelpers
 	 * prefs, it will unpin elements until it fits.
 	 * 
 	 * @param environment The execution environment.
-	 * @param local The local storage abstraction.
+	 * @param access Write access.
 	 * @param fullnessFraction The fraction of the target we should consider our target (1.0 means full cache).
 	 * @throws IpfsConnectionException If something goes wrong interacting with the IPFS node.
 	 */
-	public static void shrinkCacheToFitInPrefs(IEnvironment environment, LocalConfig local, double fullnessFraction) throws IpfsConnectionException
+	public static void shrinkCacheToFitInPrefs(IEnvironment environment, IWritingAccess access, double fullnessFraction) throws IpfsConnectionException
 	{
 		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		FollowIndex followIndex = data.readFollowIndex();
-		LocalIndex localIndex = data.readLocalIndex();
-		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = data.readGlobalPinCache();
-		GlobalPrefs globalPrefs = data.readGlobalPrefs();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
+		FollowIndex followIndex = access.readWriteFollowIndex();
+		GlobalPrefs globalPrefs = access.readGlobalPrefs();
+		HighLevelCache cache = access.loadCacheReadWrite();
 		
-		try
 		{
 			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 			long targetSizeBytes = (long)(globalPrefs.followCacheTargetBytes() * fullnessFraction);
@@ -119,13 +111,6 @@ public class CommandHelpers
 			{
 				environment.logToConsole("Not pruning cache since " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + StringHelpers.humanReadableBytes(targetSizeBytes));
 			}
-		}
-		finally
-		{
-			// TODO:  Make sure that nothing else in the state is left broken.
-			data.writeFollowIndex(followIndex);
-			data.writeGlobalPinCache(pinCache);
-			data.close();
 		}
 		log.finish("Cache clean finished without issue");
 	}

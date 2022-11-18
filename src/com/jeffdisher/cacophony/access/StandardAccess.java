@@ -88,6 +88,8 @@ public class StandardAccess implements IWritingAccess
 	
 	private GlobalPinCache _pinCache;
 	private boolean _writePinCache;
+	private FollowIndex _followIndex;
+	private boolean _writeFollowIndex;
 
 	private StandardAccess(IEnvironment environment, LocalConfig local, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite)
 	{
@@ -127,13 +129,23 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public FollowIndex readOnlyFollowIndex()
 	{
-		return _readOnly.readFollowIndex();
+		if (null == _followIndex)
+		{
+			_followIndex = _readOnly.readFollowIndex();
+		}
+		return _followIndex;
 	}
 
 	@Override
 	public GlobalPrefs readGlobalPrefs()
 	{
 		return _readOnly.readGlobalPrefs();
+	}
+
+	@Override
+	public void requestIpfsGc() throws IpfsConnectionException
+	{
+		_local.getSharedConnection().requestStorageGc();
 	}
 
 	@Override
@@ -161,11 +173,28 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
+	public FollowIndex readWriteFollowIndex()
+	{
+		Assert.assertTrue(null != _readWrite);
+		if (null == _followIndex)
+		{
+			_followIndex = _readWrite.readFollowIndex();
+		}
+		// We will want to write this back.
+		_writeFollowIndex = true;
+		return _followIndex;
+	}
+
+	@Override
 	public void close()
 	{
 		if (_writePinCache)
 		{
 			_readWrite.writeGlobalPinCache(_pinCache);
+		}
+		if (_writeFollowIndex)
+		{
+			_readWrite.writeFollowIndex(_followIndex);
 		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();

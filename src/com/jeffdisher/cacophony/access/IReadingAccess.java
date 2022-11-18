@@ -36,4 +36,10 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The preferences for this channel.
 	 */
 	GlobalPrefs readGlobalPrefs();
+
+	/**
+	 * Requests that the IPFS node reclaim storage.
+	 * @throws IpfsConnectionException There was an error connecting to IPFS.
+	 */
+	void requestIpfsGc() throws IpfsConnectionException;
 }
