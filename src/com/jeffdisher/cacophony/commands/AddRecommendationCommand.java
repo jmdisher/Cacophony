@@ -2,18 +2,16 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -30,25 +28,24 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	{
 		Assert.assertTrue(null != _channelPublicKey);
 		
-		IOperationLog log = environment.logOperation("Adding recommendation " + _channelPublicKey + "...");
-		LocalConfig local = environment.loadExistingConfig();
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		LocalIndex localIndex = data.readLocalIndex();
-		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = data.readGlobalPinCache();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
-		CleanupData cleanup = _runCore(environment, scheduler, localIndex, cache);
-		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		_runFinish(environment, local, localIndex, cache, cleanup, data);
-		data.writeGlobalPinCache(pinCache);
-		data.close();
-		log.finish("Now recommending: " + _channelPublicKey);
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			IOperationLog log = environment.logOperation("Adding recommendation " + _channelPublicKey + "...");
+			CleanupData cleanup = _runCore(environment, access);
+			
+			// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+			_runFinish(environment, access, cleanup);
+			log.finish("Now recommending: " + _channelPublicKey);
+		}
 	}
 
-	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, LocalIndex localIndex, HighLevelCache cache) throws IpfsConnectionException
+
+	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// Read our existing root key.
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != oldRootHash);
@@ -76,13 +73,16 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		return new CleanupData(asyncPublish, oldRootHash, originalRecommendations);
 	}
 
-	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
+	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// Remove the previous recommendations from cache (index handled below).
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.originalRecommendations);
 		
 		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		CommandHelpers.commonUpdateIndex(environment, access, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

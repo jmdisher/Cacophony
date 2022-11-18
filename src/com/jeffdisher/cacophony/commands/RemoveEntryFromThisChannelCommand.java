@@ -2,23 +2,21 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -33,26 +31,24 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	{
 		Assert.assertTrue(null != _elementCid);
 		
-		IOperationLog log = environment.logOperation("Removing entry " + _elementCid + " from channel...");
-		LocalConfig local = environment.loadExistingConfig();
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		LocalIndex localIndex = data.readLocalIndex();
-		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = data.readGlobalPinCache();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
-		CleanupData cleanup = _runCore(environment, localIndex, cache, scheduler);
-		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		_runFinish(environment, local, localIndex, cache, cleanup, data);
-		data.writeGlobalPinCache(pinCache);
-		data.close();
-		log.finish("Entry removed: " + _elementCid);
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			IOperationLog log = environment.logOperation("Removing entry " + _elementCid + " from channel...");
+			CleanupData cleanup = _runCore(environment, access);
+			
+			// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+			_runFinish(environment, access, cleanup);
+			log.finish("Entry removed: " + _elementCid);
+		}
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, LocalIndex localIndex, HighLevelCache cache, INetworkScheduler scheduler) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
@@ -93,8 +89,11 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		return new CleanupData(asyncPublish, rootToLoad);
 	}
 
-	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
+	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// Unpin the entries (we need to unpin them all since we own them so we added them all).
 		StreamRecord record = null;
 		try
@@ -117,7 +116,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		}
 		
 		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		CommandHelpers.commonUpdateIndex(environment, access, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

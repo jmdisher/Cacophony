@@ -5,20 +5,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -39,26 +37,24 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			Assert.assertTrue(_picturePath.isFile());
 		}
 		
-		IOperationLog log = environment.logOperation("Updating channel description...");
-		LocalConfig local = environment.loadExistingConfig();
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		LocalIndex localIndex = data.readLocalIndex();
-		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = data.readGlobalPinCache();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
-		CleanupData cleanup = _runCore(environment, scheduler, localIndex, cache);
-		
-		// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-		_runFinish(environment, local, localIndex, cache, cleanup, data);
-		data.writeGlobalPinCache(pinCache);
-		data.close();
-		log.finish("Update completed!");
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			IOperationLog log = environment.logOperation("Updating channel description...");
+			CleanupData cleanup = _runCore(environment, access);
+			
+			// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
+			_runFinish(environment, access, cleanup);
+			log.finish("Update completed!");
+		}
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, INetworkScheduler scheduler, LocalIndex localIndex, HighLevelCache cache) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
@@ -132,10 +128,13 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		return new CleanupData(asyncPublish, rootToLoad);
 	}
 
-	private void _runFinish(IEnvironment environment, LocalConfig local, LocalIndex localIndex, HighLevelCache cache, CleanupData data, IReadWriteLocalData localData)
+	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, localData, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		CommandHelpers.commonUpdateIndex(environment, access, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

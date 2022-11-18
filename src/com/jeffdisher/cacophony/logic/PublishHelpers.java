@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -16,7 +16,6 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -40,12 +39,7 @@ public class PublishHelpers
 	 * publish operation.
 	 * 
 	 * @param environment Used for logging.
-	 * @param scheduler Used for scheduling upload operations.
-	 * @param connection The IPFS connection.
-	 * @param localData The local data store.
-	 * @param existingLocalIndex The state of the index file before any updates to account for this.
-	 * @param pinCache The cache of what data is pinned on the local node.
-	 * @param cache The high-level cache tracking the data we are uploading.
+	 * @param access The local data store.
 	 * @param name The name of the entry.
 	 * @param description The description of the entry.
 	 * @param discussionUrl The discussion URL of the entry (could be null).
@@ -54,18 +48,17 @@ public class PublishHelpers
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 */
 	public static FuturePublish uploadFileAndStartPublish(IEnvironment environment
-			, INetworkScheduler scheduler
-			, IConnection connection
-			, IReadWriteLocalData localData
-			, LocalIndex existingLocalIndex
-			, GlobalPinCache pinCache
-			, HighLevelCache cache
+			, IWritingAccess access
 			, String name
 			, String description
 			, String discussionUrl
 			, PublishElement[] elements
 	) throws IpfsConnectionException
 	{
+		LocalIndex existingLocalIndex = access.readOnlyLocalIndex();
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = scheduler.getPublicKey();
 		
@@ -138,7 +131,7 @@ public class PublishHelpers
 		FuturePublish asyncResult = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
 		
 		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, localData, existingLocalIndex, cache, previousRoot, asyncResult.getIndexHash());
+		CommandHelpers.commonUpdateIndex(environment, access, existingLocalIndex, cache, previousRoot, asyncResult.getIndexHash());
 		return asyncResult;
 	}
 

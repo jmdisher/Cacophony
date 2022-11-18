@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -213,16 +214,16 @@ public class CommandHelpers
 	 * index from the cache and local node.
 	 * 
 	 * @param environment Used for logging.
-	 * @param localData A representation of the local data store to modify when writing-back the updated LocalIndex.
+	 * @param access A representation of the local data store to modify when writing-back the updated LocalIndex.
 	 * @param oldLocalIndex The previous LocalIndex (for extracting unchanged data).
 	 * @param cache The local representation of what is cached on this node.
 	 * @param oldIndexFile The previous index root file.
 	 * @param newIndexHash the new index root file.
 	 */
-	public static void commonUpdateIndex(IEnvironment environment, IReadWriteLocalData localData, LocalIndex oldLocalIndex, HighLevelCache cache, IpfsFile oldIndexFile, IpfsFile newIndexHash)
+	public static void commonUpdateIndex(IEnvironment environment, IWritingAccess access, LocalIndex oldLocalIndex, HighLevelCache cache, IpfsFile oldIndexFile, IpfsFile newIndexHash)
 	{
 		// Update the local index.
-		localData.writeLocalIndex(new LocalIndex(oldLocalIndex.ipfsHost(), oldLocalIndex.keyName(), newIndexHash));
+		access.updateIndexHash(newIndexHash);
 		cache.uploadedToThisCache(newIndexHash);
 		
 		// Remove the old root.

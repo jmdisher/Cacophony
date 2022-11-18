@@ -14,19 +14,14 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -100,9 +95,7 @@ public class InteractiveHelpers
 		draftManager.deleteExistingDraft(draftId);
 	}
 	public static FuturePublish publishExistingDraft(IEnvironment environment
-			, IReadWriteLocalData data
-			, IConnection connection
-			, INetworkScheduler scheduler
+			, IWritingAccess access
 			, DraftManager draftManager
 			, int draftId
 	) throws FileNotFoundException
@@ -148,14 +141,10 @@ public class InteractiveHelpers
 			index += 1;
 		}
 		
-		LocalIndex localIndex = data.readLocalIndex();
-		GlobalPinCache pinCache = data.readGlobalPinCache();
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
-		
 		FuturePublish asyncPublish;
 		try
 		{
-			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, scheduler, connection, data, localIndex, pinCache, cache, draft.title(), draft.description(), draft.discussionUrl(), subElements);
+			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, access, draft.title(), draft.description(), draft.discussionUrl(), subElements);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -168,8 +157,6 @@ public class InteractiveHelpers
 			closeElementFiles(environment, subElements);
 		}
 		
-		// Save back other parts of the data store.
-		data.writeGlobalPinCache(pinCache);
 		return asyncPublish;
 	}
 
