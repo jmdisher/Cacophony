@@ -1,24 +1,22 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.FolloweeRefreshLogic;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.logic.StandardRefreshSupport;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -30,15 +28,21 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			_runCore(environment, access);
+		}
+	}
+
+
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	{
 		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
-		LocalConfig local = environment.loadExistingConfig();
-		IReadWriteLocalData localData = local.getSharedLocalData().openForWrite();
-		LocalIndex localIndex = localData.readLocalIndex();
-		IConnection connection = local.getSharedConnection();
-		GlobalPinCache pinCache = localData.readGlobalPinCache();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
-		FollowIndex followIndex = localData.readFollowIndex();
+		
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadWrite();
+		FollowIndex followIndex = access.readWriteFollowIndex();
+		
 		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
 		
 		// Removed the cache record and verify that we are following them.
@@ -49,7 +53,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		}
 		
 		// Prepare for the cleanup.
-		GlobalPrefs prefs = localData.readGlobalPrefs();
+		GlobalPrefs prefs = access.readGlobalPrefs();
 		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache);
 		FollowingCacheElement[] updatedCacheState = FolloweeRefreshLogic.refreshFollowee(refreshSupport
 				, prefs
@@ -62,10 +66,6 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		Assert.assertTrue(0 == updatedCacheState.length);
 		
 		// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
-		localData.writeFollowIndex(followIndex);
-		localData.writeGlobalPinCache(pinCache);
-		localData.writeLocalIndex(localIndex);
-		localData.close();
 		log.finish("Cleanup complete.  No longer following " + _publicKey);
 	}
 }

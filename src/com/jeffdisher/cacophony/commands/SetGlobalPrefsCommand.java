@@ -1,10 +1,12 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -13,9 +15,16 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
-		LocalConfig local = environment.loadExistingConfig();
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		GlobalPrefs original = data.readGlobalPrefs();
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			_runCore(environment, access);
+		}
+	}
+
+
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	{
+		GlobalPrefs original = access.readGlobalPrefs();
 		GlobalPrefs prefs = original;
 		
 		if (_edgeMax > 0)
@@ -28,13 +37,11 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		}
 		if (original != prefs)
 		{
-			data.writeGlobalPrefs(prefs);
+			access.writeGlobalPrefs(prefs);
 			environment.logToConsole("Updated prefs: " + prefs);
-			data.close();
 		}
 		else
 		{
-			data.close();
 			throw new UsageException("Must specify a postive value for at least one of edge size or cache");
 		}
 	}

@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -24,4 +25,11 @@ public interface IWritingAccess extends IReadingAccess
 
 	// TEMP.
 	FollowIndex readWriteFollowIndex();
+
+	/**
+	 * Writes back the given prefs to disk.
+	 * 
+	 * @param prefs The new prefs object.
+	 */
+	void writeGlobalPrefs(GlobalPrefs prefs);
 }

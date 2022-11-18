@@ -218,6 +218,13 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
+	public void writeGlobalPrefs(GlobalPrefs prefs)
+	{
+		Assert.assertTrue(null != _readWrite);
+		_readWrite.writeGlobalPrefs(prefs);
+	}
+
+	@Override
 	public void close()
 	{
 		if (_writePinCache)
