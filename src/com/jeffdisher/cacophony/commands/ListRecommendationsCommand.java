@@ -1,21 +1,22 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -24,20 +25,19 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
-		LocalConfig local = environment.loadExistingConfig();
-		
-		// Read the data elements.
-		LocalIndex localIndex = null;
-		FollowIndex followIndex = null;
-		GlobalPinCache pinCache = null;
-		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
-			localIndex = localData.readLocalIndex();
-			followIndex = localData.readFollowIndex();
-			pinCache = localData.readGlobalPinCache();
+			_runCore(environment, access);
 		}
-		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, local.getSharedConnection());
+	}
+
+
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
+	{
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadOnly();
+		FollowIndex followIndex = access.readOnlyFollowIndex();
+		LocalIndex localIndex = access.readOnlyLocalIndex();
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).

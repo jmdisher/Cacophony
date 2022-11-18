@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
+import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -26,4 +28,12 @@ public interface IReadingAccess extends AutoCloseable
 
 	// TEMP.
 	HighLevelCache loadCacheReadOnly() throws IpfsConnectionException;
+
+	// TEMP.
+	FollowIndex readOnlyFollowIndex();
+
+	/**
+	 * @return The preferences for this channel.
+	 */
+	GlobalPrefs readGlobalPrefs();
 }

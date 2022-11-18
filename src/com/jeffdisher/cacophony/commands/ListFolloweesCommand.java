@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
 
@@ -13,17 +13,13 @@ public record ListFolloweesCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
-		LocalConfig local = environment.loadExistingConfig();
-		
-		// Read the data elements.
-		FollowIndex followIndex = null;
-		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
-			followIndex = localData.readFollowIndex();
-		}
-		for(FollowRecord record : followIndex)
-		{
-			environment.logToConsole("Following: " + record.publicKey().toPublicKey());
+			FollowIndex followIndex = access.readOnlyFollowIndex();
+			for(FollowRecord record : followIndex)
+			{
+				environment.logToConsole("Following: " + record.publicKey().toPublicKey());
+			}
 		}
 	}
 }

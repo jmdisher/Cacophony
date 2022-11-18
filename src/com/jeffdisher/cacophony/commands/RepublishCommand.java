@@ -1,14 +1,16 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -21,21 +23,24 @@ public record RepublishCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
-		LocalConfig local = environment.loadExistingConfig();
-		
-		// Read the data elements.
-		LocalIndex localIndex = null;
-		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
-			localIndex = localData.readLocalIndex();
+			_runCore(environment, access);
 		}
+	}
+
+
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
+	{
+		INetworkScheduler scheduler = access.scheduler();
+		LocalIndex localIndex = access.readOnlyLocalIndex();
+		
 		// Get the previously posted index hash.
 		IpfsFile indexHash = localIndex.lastPublishedIndex();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);
 		
 		// Republish the index.
-		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
 		IOperationLog log = environment.logOperation("Republishing index (" + scheduler.getPublicKey() + " -> " + indexHash + ")...");
 		IpfsConnectionException error = scheduler.publishIndex(indexHash).get();
 		// If we failed to publish, that should be considered an error for this command, since this is all it does.

@@ -3,21 +3,18 @@ package com.jeffdisher.cacophony.commands;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -31,21 +28,16 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	{
 		Assert.assertTrue(null != _followeeKey);
 		
-		LocalConfig local = environment.loadExistingConfig();
-		
-		// Read the data elements.
-		LocalIndex localIndex = null;
-		FollowIndex followIndex = null;
-		GlobalPinCache pinCache = null;
-		try (IReadOnlyLocalData localData = local.getSharedLocalData().openForRead())
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
-			localIndex = localData.readLocalIndex();
-			followIndex = localData.readFollowIndex();
-			pinCache = localData.readGlobalPinCache();
+			_runCore(environment, access);
 		}
-		INetworkScheduler scheduler = environment.getSharedScheduler(local.getSharedConnection(), localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, local.getSharedConnection());
-		FollowRecord record = followIndex.peekRecord(_followeeKey);
+	}
+
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException
+	{
+		HighLevelCache cache = access.loadCacheReadOnly();
+		FollowRecord record = access.readOnlyFollowIndex().peekRecord(_followeeKey);
 		if (null != record)
 		{
 			// We know that all the meta-data reachable from this root is cached locally, but not all the leaf data elements, so we will check the FollowRecord.

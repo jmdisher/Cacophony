@@ -2,7 +2,9 @@ package com.jeffdisher.cacophony.access;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -32,6 +34,29 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class StandardAccess implements IWritingAccess
 {
+	/**
+	 * Requests read access.
+	 * 
+	 * @param environment The environment.
+	 * @return The read access interface.
+	 * @throws UsageException If the config directory is missing.
+	 * @throws VersionException The version file is missing or an unknown version.
+	 */
+	public static IReadingAccess readAccess(IEnvironment environment) throws UsageException, VersionException
+	{
+		LocalConfig local = environment.loadExistingConfig();
+		IReadOnlyLocalData data = local.getSharedLocalData().openForRead();
+		try
+		{
+			return new StandardAccess(environment, local, data, null);
+		}
+		catch (Throwable t)
+		{
+			data.close();
+			throw t;
+		}
+	}
+
 	/**
 	 * Requests write access.
 	 * 
@@ -97,6 +122,18 @@ public class StandardAccess implements IWritingAccess
 			_pinCache = _readOnly.readGlobalPinCache();
 		}
 		return new HighLevelCache(_pinCache, scheduler, connection);
+	}
+
+	@Override
+	public FollowIndex readOnlyFollowIndex()
+	{
+		return _readOnly.readFollowIndex();
+	}
+
+	@Override
+	public GlobalPrefs readGlobalPrefs()
+	{
+		return _readOnly.readGlobalPrefs();
 	}
 
 	@Override
