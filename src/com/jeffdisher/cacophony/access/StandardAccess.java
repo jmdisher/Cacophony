@@ -80,6 +80,32 @@ public class StandardAccess implements IWritingAccess
 		}
 	}
 
+	/**
+	 * Creates a new channel storage and opens it for write access.
+	 * 
+	 * @param environment The environment.
+	 * @param ipfsConnectionString The IPFS connection string from daemon startup (the "/ip4/127.0.0.1/tcp/5001" from
+	 * "API server listening on /ip4/127.0.0.1/tcp/5001").
+	 * @param keyName The name of the key to use for publishing.
+	 * @return The write access interface.
+	 * @throws UsageException If the config directory already exists or couldn't be created.
+	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
+	 */
+	public static IWritingAccess createForWrite(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
+	{
+		LocalConfig local = environment.createNewConfig(ipfsConnectionString, keyName);
+		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		try
+		{
+			return new StandardAccess(environment, local, data, data);
+		}
+		catch (Throwable t)
+		{
+			data.close();
+			throw t;
+		}
+	}
+
 
 	private final IEnvironment _environment;
 	private final LocalConfig _local;
@@ -134,6 +160,12 @@ public class StandardAccess implements IWritingAccess
 			_followIndex = _readOnly.readFollowIndex();
 		}
 		return _followIndex;
+	}
+
+	@Override
+	public IConnection connection() throws IpfsConnectionException
+	{
+		return _local.getSharedConnection();
 	}
 
 	@Override

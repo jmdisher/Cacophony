@@ -4,6 +4,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 
@@ -31,6 +32,9 @@ public interface IReadingAccess extends AutoCloseable
 
 	// TEMP.
 	FollowIndex readOnlyFollowIndex();
+
+	// TEMP.
+	IConnection connection() throws IpfsConnectionException;
 
 	/**
 	 * @return The preferences for this channel.

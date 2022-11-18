@@ -4,24 +4,25 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
-import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -34,8 +35,18 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		Assert.assertTrue(null != keyName);
 		
 		IOperationLog log = environment.logOperation("Creating new channel...");
-		LocalConfig local = environment.createNewConfig(ipfs, keyName);
-		IConnection connection = local.getSharedConnection();
+		try (IWritingAccess access = StandardAccess.createForWrite(environment, ipfs, keyName))
+		{
+			_runCore(environment, access);
+		}
+		log.finish("Channel created and published to Cacophony!");
+	}
+
+
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	{
+		IConnection connection = access.connection();
+		
 		// Check to see if this key exists.
 		List<IConnection.Key> keys = connection.getKeys();
 		boolean keyExists = keys.stream().anyMatch((k) -> k.name().equals(keyName));
@@ -49,12 +60,10 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 			IConnection.Key key = connection.generateKey(keyName);
 			keyLog.finish("Public key \"" + key.key() + "\" generated with name: \"" + key.name() + "\"");
 		}
-		// Make sure that there is no local index in this location.
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		LocalIndex localIndex = data.readLocalIndex();
-		GlobalPinCache pinCache = data.readGlobalPinCache();
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, connection);
+		
+		// Note that we can't create the scheduler until that key has been created.
+		INetworkScheduler scheduler = access.scheduler();
+		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
@@ -96,10 +105,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		IpfsFile indexHash = asyncPublish.getIndexHash();
 		
 		// Update the local index.
-		data.writeLocalIndex(new LocalIndex(localIndex.ipfsHost(), localIndex.keyName(), indexHash));
 		cache.uploadedToThisCache(indexHash);
-		data.writeGlobalPinCache(pinCache);
-		data.close();
-		log.finish("Channel created and published to Cacophony!");
+		access.updateIndexHash(indexHash);
 	}
 }
