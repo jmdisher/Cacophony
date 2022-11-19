@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
+import com.jeffdisher.cacophony.types.VersionException;
 
 
 public class TestLocalDataModel
@@ -57,9 +58,10 @@ public class TestLocalDataModel
 		for (int i = 0; i < threads.length; ++i)
 		{
 			threads[i] = new Thread(() -> {
-				IReadOnlyLocalData reader = model.openForRead();
+				IReadOnlyLocalData reader = null;
 				try
 				{
+					reader = model.openForRead();
 					barrier.await();
 				}
 				catch (InterruptedException e)
@@ -67,6 +69,10 @@ public class TestLocalDataModel
 					Assert.fail();
 				}
 				catch (BrokenBarrierException e)
+				{
+					Assert.fail();
+				}
+				catch (VersionException e)
 				{
 					Assert.fail();
 				}
@@ -125,7 +131,15 @@ public class TestLocalDataModel
 					Assert.fail();
 				}
 				// Now, fight over the write lock.
-				IReadWriteLocalData writer = model.openForWrite();
+				IReadWriteLocalData writer = null;
+				try
+				{
+					writer = model.openForWrite();
+				}
+				catch (VersionException e1)
+				{
+					Assert.fail();
+				}
 				// When we get the lock, increment the counter to make sure nobody else is here, and wait for a small amount of time.
 				Assert.assertTrue(owner.compareAndSet(null, Thread.currentThread()));
 				try

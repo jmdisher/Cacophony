@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -81,4 +82,9 @@ public interface IEnvironment
 	 * @return The shared DraftManager instance.
 	 */
 	DraftManager getSharedDraftManager();
+
+	/**
+	 * @return The shared LocalDataModel to allow safe access to the configured filesystem.
+	 */
+	LocalDataModel getSharedDataModel();
 }

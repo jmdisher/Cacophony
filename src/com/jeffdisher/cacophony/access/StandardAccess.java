@@ -93,8 +93,9 @@ public class StandardAccess implements IWritingAccess
 	 * @return The write access interface.
 	 * @throws UsageException If the config directory already exists or couldn't be created.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
+	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public static IWritingAccess createForWrite(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
+	public static IWritingAccess createForWrite(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException, VersionException
 	{
 		LocalConfig local = environment.createNewConfig(ipfsConnectionString, keyName);
 		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();

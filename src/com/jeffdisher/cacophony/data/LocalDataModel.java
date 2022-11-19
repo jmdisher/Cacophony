@@ -52,13 +52,18 @@ public class LocalDataModel
 	 * local data model has been loaded and no more read-only operations related to it will run against storage.
 	 * 
 	 * @param fileSystem The file system where the data lives.
-	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public LocalDataModel(IConfigFileSystem fileSystem) throws VersionException
+	public LocalDataModel(IConfigFileSystem fileSystem)
 	{
 		_fileSystem = fileSystem;
 		_readWriteLock = new ReentrantReadWriteLock();
 		
+		// Setup the lock we will use to gate access to, and creation of, the lazy followee cache.
+		_cacheLock = new ReentrantLock();
+	}
+
+	private void _eagerlyLoadFiles(IConfigFileSystem fileSystem) throws VersionException
+	{
 		// Note that we eagerly load the data files, so we can keep all the read/write capabilities within this class
 		// and eagerly throw the version exception.
 		// In the case where there is no version, we will just verify that nothing exists and will write the version
@@ -100,9 +105,6 @@ public class LocalDataModel
 				throw new VersionException("Version file missing but data exists");
 			}
 		}
-		
-		// Setup the lock we will use to gate access to, and creation of, the lazy followee cache.
-		_cacheLock = new ReentrantLock();
 	}
 
 	/**
@@ -110,11 +112,13 @@ public class LocalDataModel
 	 * before this is closed.
 	 * 
 	 * @return The interface for issuing read-only operations against the storage.
+	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public IReadOnlyLocalData openForRead()
+	public IReadOnlyLocalData openForRead() throws VersionException
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
+		_eagerlyLoadFiles(_fileSystem);
 		return LoadedStorage.openReadOnly(this, new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -133,11 +137,13 @@ public class LocalDataModel
 	 * operations can begin before this is closed.
 	 * 
 	 * @return The interface for issuing read-write operations against the storage.
+	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public IReadWriteLocalData openForWrite()
+	public IReadWriteLocalData openForWrite() throws VersionException
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();
+		_eagerlyLoadFiles(_fileSystem);
 		return LoadedStorage.openReadWrite(this, new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -250,38 +256,50 @@ public class LocalDataModel
 
 	private void _loadAllFiles()
 	{
-		_localIndex = _readFile(INDEX_FILE, LocalIndex.class);
-		InputStream pinStream = _fileSystem.readConfigFile(GLOBAL_PIN_CACHE_FILE);
-		if (null != pinStream)
+		if (null == _localIndex)
 		{
-			try (pinStream)
+			_localIndex = _readFile(INDEX_FILE, LocalIndex.class);
+		}
+		if (null == _globalPinCache)
+		{
+			InputStream pinStream = _fileSystem.readConfigFile(GLOBAL_PIN_CACHE_FILE);
+			if (null != pinStream)
 			{
-				// We shouldn't have a followee cache, yet, so no need to lock and invalidate.
-				Assert.assertTrue(null == _lazyFolloweeCache);
-				_globalPinCache = GlobalPinCache.fromStream(pinStream);
-				pinStream.close();
-			}
-			catch (IOException e)
-			{
-				// Failure on close not expected.
-				throw Assert.unexpected(e);
+				try (pinStream)
+				{
+					// We shouldn't have a followee cache, yet, so no need to lock and invalidate.
+					Assert.assertTrue(null == _lazyFolloweeCache);
+					_globalPinCache = GlobalPinCache.fromStream(pinStream);
+					pinStream.close();
+				}
+				catch (IOException e)
+				{
+					// Failure on close not expected.
+					throw Assert.unexpected(e);
+				}
 			}
 		}
-		InputStream followeeStream = _fileSystem.readConfigFile(FOLLOWING_INDEX_FILE);
-		if (null != followeeStream)
+		if (null == _followIndex)
 		{
-			try (followeeStream)
+			InputStream followeeStream = _fileSystem.readConfigFile(FOLLOWING_INDEX_FILE);
+			if (null != followeeStream)
 			{
-				_followIndex = FollowIndex.fromStream(followeeStream);
-				followeeStream.close();
-			}
-			catch (IOException e)
-			{
-				// Failure on close not expected.
-				throw Assert.unexpected(e);
+				try (followeeStream)
+				{
+					_followIndex = FollowIndex.fromStream(followeeStream);
+					followeeStream.close();
+				}
+				catch (IOException e)
+				{
+					// Failure on close not expected.
+					throw Assert.unexpected(e);
+				}
 			}
 		}
-		_globalPrefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+		if (null == _globalPrefs)
+		{
+			_globalPrefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+		}
 	}
 
 	private <T> T _readFile(String fileName, Class<T> clazz)

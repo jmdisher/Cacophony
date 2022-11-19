@@ -10,6 +10,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -26,7 +27,7 @@ public class TestLocalConfig
 	public void testCreation() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
-		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
+		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new LocalDataModel(fileSystem), new MockFactory(true), "ipfs connect", "key name");
 		Assert.assertNotNull(config);
 	}
 
@@ -34,10 +35,11 @@ public class TestLocalConfig
 	public void testLoad() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		LocalDataModel localDataModel = new LocalDataModel(fileSystem);
 		MockFactory factory = new MockFactory(true);
-		LocalConfig config = LocalConfig.createNewConfig(fileSystem, factory, "ipfs connect", "key name");
+		LocalConfig config = LocalConfig.createNewConfig(fileSystem, localDataModel, factory, "ipfs connect", "key name");
 		Assert.assertNotNull(config);
-		config = LocalConfig.loadExistingConfig(fileSystem, factory);
+		config = LocalConfig.loadExistingConfig(fileSystem, localDataModel, factory);
 		Assert.assertNotNull(config);
 	}
 
@@ -45,7 +47,8 @@ public class TestLocalConfig
 	public void testLoadVersionProblem() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
-		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
+		LocalDataModel localDataModel = new LocalDataModel(fileSystem);
+		LocalConfig config = LocalConfig.createNewConfig(fileSystem, localDataModel, new MockFactory(true), "ipfs connect", "key name");
 		Assert.assertNotNull(config);
 		try (OutputStream stream = fileSystem.writeConfigFile("version"))
 		{
@@ -53,7 +56,7 @@ public class TestLocalConfig
 		}
 		try
 		{
-			config = LocalConfig.loadExistingConfig(fileSystem, null);
+			config = LocalConfig.loadExistingConfig(fileSystem, localDataModel, null);
 			Assert.fail();
 		}
 		catch (VersionException e)
@@ -68,7 +71,7 @@ public class TestLocalConfig
 		boolean didFail = false;
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
 		try {
-			LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(false), "ipfs connect", "key name");
+			LocalConfig config = LocalConfig.createNewConfig(fileSystem, new LocalDataModel(fileSystem), new MockFactory(false), "ipfs connect", "key name");
 			Assert.assertNotNull(config);
 		}
 		catch (IpfsConnectionException e)

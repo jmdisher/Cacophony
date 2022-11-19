@@ -29,7 +29,7 @@ public class LocalConfig
 	 * @throws UsageException If there is already a loaded shared index or already one on disk.
 	 * @throws IpfsConnectionException If there is an error connecting to the IPFS daemon.
 	 */
-	public static LocalConfig createNewConfig(IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
+	public static LocalConfig createNewConfig(IConfigFileSystem fileSystem, LocalDataModel dataModel, IConnectionFactory factory, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
 	{
 		boolean doesExist = fileSystem.doesConfigDirectoryExist();
 		if (doesExist)
@@ -46,22 +46,17 @@ public class LocalConfig
 			throw new UsageException("Failed to create config directory");
 		}
 		// Create the instance and populate it with default files.
-		LocalDataModel dataModel;
-		try
-		{
-			dataModel = new LocalDataModel(fileSystem);
-		}
-		catch (VersionException e)
-		{
-			// This won't happen when we are created a new data model.
-			throw Assert.unexpected(e);
-		}
 		try (IReadWriteLocalData writing = dataModel.openForWrite())
 		{
 			writing.writeLocalIndex(new LocalIndex(ipfsConnectionString, keyName, null));
 			writing.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
 			writing.writeGlobalPinCache(GlobalPinCache.newCache());
 			writing.writeFollowIndex(FollowIndex.emptyFollowIndex());
+		}
+		catch (VersionException e)
+		{
+			// This won't happen when we are created a new data model.
+			throw Assert.unexpected(e);
 		}
 		return new LocalConfig(fileSystem.getDirectoryForReporting(), factory, ipfsConnectionString, dataModel);
 	}
@@ -71,14 +66,13 @@ public class LocalConfig
 	 * @throws UsageException If there is no existing shared index on disk.
 	 * @throws VersionException The version file is missing or an unknown version.
 	 */
-	public static LocalConfig loadExistingConfig(IConfigFileSystem fileSystem, IConnectionFactory factory) throws UsageException, VersionException
+	public static LocalConfig loadExistingConfig(IConfigFileSystem fileSystem, LocalDataModel dataModel, IConnectionFactory factory) throws UsageException, VersionException
 	{
 		boolean doesExist = fileSystem.doesConfigDirectoryExist();
 		if (!doesExist)
 		{
 			throw new UsageException("Config doesn't exist");
 		}
-		LocalDataModel dataModel = new LocalDataModel(fileSystem);
 		String ipfsConnectionString = null;
 		try (IReadOnlyLocalData reading = dataModel.openForRead())
 		{

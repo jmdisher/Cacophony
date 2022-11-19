@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -23,6 +24,7 @@ public class StandardEnvironment implements IEnvironment
 
 	private final PrintStream _stream;
 	private final IConfigFileSystem _fileSystem;
+	private final LocalDataModel _sharedDataModel;
 	private final IConnectionFactory _factory;
 	private final boolean _shouldEnableVerifications;
 	private int _nextOperationCounter;
@@ -36,6 +38,7 @@ public class StandardEnvironment implements IEnvironment
 		_internalLock = new ReentrantLock();
 		_stream = stream;
 		_fileSystem = fileSystem;
+		_sharedDataModel = new LocalDataModel(fileSystem);
 		_factory = factory;
 		_shouldEnableVerifications = shouldEnableVerifications;
 		_nextOperationCounter = 0;
@@ -75,7 +78,7 @@ public class StandardEnvironment implements IEnvironment
 	{
 		// We cannot create a config if we already loaded one.
 		Assert.assertTrue(null == _lazyConfig);
-		_lazyConfig = LocalConfig.createNewConfig(_fileSystem, _factory, ipfsConnectionString, keyName);
+		_lazyConfig = LocalConfig.createNewConfig(_fileSystem, _sharedDataModel, _factory, ipfsConnectionString, keyName);
 		// We expect the above to throw if it fails.
 		Assert.assertTrue(null != _lazyConfig);
 		return _lazyConfig;
@@ -86,7 +89,7 @@ public class StandardEnvironment implements IEnvironment
 	{
 		if (null == _lazyConfig)
 		{
-			_lazyConfig = LocalConfig.loadExistingConfig(_fileSystem, _factory);
+			_lazyConfig = LocalConfig.loadExistingConfig(_fileSystem, _sharedDataModel, _factory);
 			// We expect the above to throw if it fails.
 			Assert.assertTrue(null != _lazyConfig);
 		}
@@ -152,6 +155,12 @@ public class StandardEnvironment implements IEnvironment
 			_internalLock.unlock();
 		}
 		return draftManager;
+	}
+
+	@Override
+	public LocalDataModel getSharedDataModel()
+	{
+		return _sharedDataModel;
 	}
 
 	public void shutdown()
