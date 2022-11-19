@@ -1,9 +1,12 @@
 package com.jeffdisher.cacophony.access;
 
+import java.util.function.Supplier;
+
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -35,6 +38,9 @@ public interface IReadingAccess extends AutoCloseable
 
 	// TEMP.
 	IConnection connection() throws IpfsConnectionException;
+
+	// TEMP.
+	LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator);
 
 	/**
 	 * @return The preferences for this channel.

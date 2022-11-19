@@ -4,10 +4,14 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.breakwater.IGetHandler;
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.breakwater.utilities.Assert;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.logic.LocalConfig;
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,13 +22,13 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_FolloweeKeys implements IGetHandler
 {
+	private final IEnvironment _environment;
 	private final String _xsrf;
-	private final LocalConfig _localConfig;
 	
-	public GET_FolloweeKeys(String xsrf, LocalConfig localConfig)
+	public GET_FolloweeKeys(IEnvironment environment, String xsrf)
 	{
+		_environment = environment;
 		_xsrf = xsrf;
-		_localConfig = localConfig;
 	}
 	
 	@Override
@@ -32,19 +36,25 @@ public class GET_FolloweeKeys implements IGetHandler
 	{
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
-			IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
-			FollowIndex followIndex = data.readFollowIndex();
-			data.close();
-			JsonArray keys = JsonGenerationHelpers.followeeKeys(followIndex);
-			if (null != keys)
+			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(keys.toString());
+				FollowIndex followIndex = access.readOnlyFollowIndex();
+				JsonArray keys = JsonGenerationHelpers.followeeKeys(followIndex);
+				if (null != keys)
+				{
+					response.setContentType("application/json");
+					response.setStatus(HttpServletResponse.SC_OK);
+					response.getWriter().print(keys.toString());
+				}
+				else
+				{
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				}
 			}
-			else
+			catch (UsageException | VersionException e)
 			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				// Not expected after start-up.
+				throw Assert.unexpected(e);
 			}
 		}
 	}

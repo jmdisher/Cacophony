@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
+import java.util.function.Supplier;
+
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
@@ -7,6 +9,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalConfig;
@@ -166,6 +169,12 @@ public class StandardAccess implements IWritingAccess
 	public IConnection connection() throws IpfsConnectionException
 	{
 		return _local.getSharedConnection();
+	}
+
+	@Override
+	public LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator)
+	{
+		return _readOnly.lazilyLoadFolloweeCache(cacheGenerator);
 	}
 
 	@Override

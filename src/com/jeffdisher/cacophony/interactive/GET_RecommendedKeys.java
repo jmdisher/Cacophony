@@ -4,16 +4,18 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.breakwater.IGetHandler;
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.breakwater.utilities.Assert;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.logic.LocalConfig;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,17 +26,13 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_RecommendedKeys implements IGetHandler
 {
+	private final IEnvironment _environment;
 	private final String _xsrf;
-	private final INetworkScheduler _scheduler;
-	private final IpfsKey _ourPublicKey;
-	private final LocalConfig _localConfig;
 	
-	public GET_RecommendedKeys(String xsrf, INetworkScheduler scheduler, IpfsKey ourPublicKey, LocalConfig localConfig)
+	public GET_RecommendedKeys(IEnvironment environment, String xsrf)
 	{
+		_environment = environment;
 		_xsrf = xsrf;
-		_scheduler = scheduler;
-		_ourPublicKey = ourPublicKey;
-		_localConfig = localConfig;
 	}
 	
 	@Override
@@ -43,16 +41,13 @@ public class GET_RecommendedKeys implements IGetHandler
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
 			IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
-			try
+			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				IReadOnlyLocalData data = _localConfig.getSharedLocalData().openForRead();
-				HighLevelCache cache = new HighLevelCache(data.readGlobalPinCache(), _scheduler, _localConfig.getSharedConnection());
-				LocalIndex localIndex = data.readLocalIndex();
-				FollowIndex followIndex = data.readFollowIndex();
-				data.close();
-				
-				IpfsFile lastPublishedIndex = localIndex.lastPublishedIndex();
-				JsonArray keys = JsonGenerationHelpers.recommendedKeys(cache, _ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+				HighLevelCache cache = access.loadCacheReadOnly();
+				IpfsKey publicKey = access.scheduler().getPublicKey();
+				IpfsFile lastPublishedIndex = access.readOnlyLocalIndex().lastPublishedIndex();
+				FollowIndex followIndex = access.readOnlyFollowIndex();
+				JsonArray keys = JsonGenerationHelpers.recommendedKeys(cache, publicKey, lastPublishedIndex, followIndex, userToResolve);
 				if (null != keys)
 				{
 					response.setContentType("application/json");
@@ -68,6 +63,11 @@ public class GET_RecommendedKeys implements IGetHandler
 			{
 				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 				e.printStackTrace(response.getWriter());
+			}
+			catch (UsageException | VersionException e)
+			{
+				// Not expected after start-up.
+				throw Assert.unexpected(e);
 			}
 		}
 	}
