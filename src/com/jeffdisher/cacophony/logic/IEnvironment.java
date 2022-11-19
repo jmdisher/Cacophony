@@ -71,4 +71,14 @@ public interface IEnvironment
 	 * @throws IpfsConnectionException If there was an error creating the scheduler.
 	 */
 	INetworkScheduler getSharedScheduler(IConnection ipfs, String keyName) throws IpfsConnectionException;
+
+	/**
+	 * Returns a shared DraftManager instance, lazily creating it if needed, on top of the environment's filesystem's
+	 * draft directory.
+	 * NOTE:  The DraftManager is NOT protected by the same locks as defined in the "access" design as it is backed by
+	 * data which is completely unrelated to the core channel meta-data.
+	 * 
+	 * @return The shared DraftManager instance.
+	 */
+	DraftManager getSharedDraftManager();
 }

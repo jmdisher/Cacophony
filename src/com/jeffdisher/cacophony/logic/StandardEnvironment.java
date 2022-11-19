@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,6 +29,7 @@ public class StandardEnvironment implements IEnvironment
 	private LocalConfig _lazyConfig;
 	private boolean _errorOccurred;
 	private INetworkScheduler _lazySharedScheduler;
+	private DraftManager _lazySharedDraftManager;
 
 	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, boolean shouldEnableVerifications)
 	{
@@ -120,6 +122,36 @@ public class StandardEnvironment implements IEnvironment
 			_internalLock.unlock();
 		}
 		return scheduler;
+	}
+
+	/**
+	 * Builds a new DraftManager instance on top of the config's filesystem's draft directory.
+	 * 
+	 * @return The new DraftManager instance.
+	 */
+	@Override
+	public DraftManager getSharedDraftManager()
+	{
+		DraftManager draftManager = null;
+		_internalLock.lock();
+		try
+		{
+			if (null == _lazySharedDraftManager)
+			{
+				_lazySharedDraftManager = new DraftManager(_fileSystem.getDraftsTopLevelDirectory());
+			}
+			draftManager = _lazySharedDraftManager;
+		}
+		catch (IOException e)
+		{
+			// We don't currently know how/if we should best handle this error.
+			throw Assert.unexpected(e);
+		}
+		finally
+		{
+			_internalLock.unlock();
+		}
+		return draftManager;
 	}
 
 	public void shutdown()

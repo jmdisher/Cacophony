@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
@@ -11,7 +10,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -79,18 +77,6 @@ public class TestLocalConfig
 		}
 		Assert.assertFalse(fileSystem.doesConfigDirectoryExist());
 		Assert.assertTrue(didFail);
-	}
-
-	@Test
-	public void testDraftManager() throws Throwable
-	{
-		RealConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "config"));
-		LocalConfig config = LocalConfig.createNewConfig(fileSystem, new MockFactory(true), "ipfs connect", "key name");
-		Assert.assertNotNull(config);
-		DraftManager draftManager = config.buildDraftManager();
-		DraftWrapper wrapper = draftManager.createNewDraft(1);
-		Draft draft = wrapper.loadDraft();
-		Assert.assertEquals(1, draft.id());
 	}
 
 

@@ -37,7 +37,7 @@ public class InteractiveServer
 		
 		IConnection connection =  local.getSharedConnection();
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection, keyName);
-		DraftManager manager = local.buildDraftManager();
+		DraftManager manager = environment.getSharedDraftManager();
 		IpfsKey ourPublicKey = scheduler.getPublicKey();
 		
 		String forcedCommand = canChangeCommand
