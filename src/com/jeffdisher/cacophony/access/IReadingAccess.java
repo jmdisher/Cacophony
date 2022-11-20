@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 /**
@@ -41,6 +42,9 @@ public interface IReadingAccess extends AutoCloseable
 
 	// TEMP.
 	LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator);
+
+	// TEMP - only used for tests.
+	boolean isInPinCached(IpfsFile file);
 
 	/**
 	 * @return The preferences for this channel.

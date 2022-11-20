@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 
@@ -52,6 +53,11 @@ public class GET_Prefs implements IGetHandler
 				{
 					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 				}
+			}
+			catch (IpfsConnectionException e)
+			{
+				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+				e.printStackTrace(response.getWriter());
 			}
 			catch (UsageException | VersionException e)
 			{

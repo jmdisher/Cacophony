@@ -3,8 +3,6 @@ package com.jeffdisher.cacophony.logic;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 
 
 /**
@@ -30,26 +28,6 @@ public interface IEnvironment
 	 * @param message The message to log.
 	 */
 	void logError(String message);
-
-	/**
-	 * Called when a config needs to be created for the first time.
-	 * Note that this will verify that the config directory doesn't already exist and that the IPFS daemon can work
-	 * before creating the config directory.
-	 * 
-	 * @return The config object, with initial/empty data.
-	 * @throws UsageException If the config directory already existed or couldn't be created.
-	 * @throws IpfsConnectionException If there was an error verifying the IPFS connection.
-	 */
-	LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException;
-
-	/**
-	 * Called when an existing config should be loaded from disk.
-	 * 
-	 * @return The config object.
-	 * @throws UsageException If the config directory is missing or b
-	 * @throws VersionException The version file is missing or an unknown version.
-	 */
-	LocalConfig loadExistingConfig() throws UsageException, VersionException;
 
 	/**
 	 * Used in some testing modes to enable additional verifications that sizes/publications/etc are consistent.  Should
@@ -87,4 +65,14 @@ public interface IEnvironment
 	 * @return The shared LocalDataModel to allow safe access to the configured filesystem.
 	 */
 	LocalDataModel getSharedDataModel();
+
+	/**
+	 * @return The config filesystem location.
+	 */
+	IConfigFileSystem getConfigFileSystem();
+
+	/**
+	 * @return The factory for creating new connections.
+	 */
+	IConnectionFactory getConnectionFactory();
 }

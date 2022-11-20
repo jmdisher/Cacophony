@@ -5,7 +5,8 @@ import java.io.ByteArrayInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -46,7 +47,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
-		executor.createNewConfig(IPFS_HOST, KEY_NAME);
+		StandardAccess.createForWrite(executor, IPFS_HOST, KEY_NAME).close();
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
@@ -75,9 +76,9 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
-		IReadOnlyLocalData localData = executor.loadExistingConfig().getSharedLocalData().openForRead();
-		LocalIndex finalIndex = localData.readLocalIndex();
-		localData.close();
+		IReadingAccess reading = StandardAccess.readAccess(executor);
+		LocalIndex finalIndex = reading.readOnlyLocalIndex();
+		reading.close();
 		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
 		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
@@ -101,7 +102,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
-		executor.createNewConfig(IPFS_HOST, KEY_NAME);
+		StandardAccess.createForWrite(executor, IPFS_HOST, KEY_NAME).close();
 		
 		try {
 			command.runInEnvironment(executor);

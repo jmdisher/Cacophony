@@ -5,12 +5,12 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -92,11 +92,11 @@ public class MockUserNode
 		return _sharedConnection.resolve(key);
 	}
 
-	public LocalIndex getLocalStoredIndex() throws UsageException, VersionException
+	public LocalIndex getLocalStoredIndex() throws UsageException, VersionException, IpfsConnectionException
 	{
-		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
-		LocalIndex finalIndex = localData.readLocalIndex();
-		localData.close();
+		IReadingAccess reading = StandardAccess.readAccess(_executor);
+		LocalIndex finalIndex = reading.readOnlyLocalIndex();
+		reading.close();
 		return finalIndex;
 	}
 
@@ -105,27 +105,27 @@ public class MockUserNode
 		return _sharedConnection.isPinned(file);
 	}
 
-	public boolean isInPinCache(IpfsFile file) throws UsageException, VersionException
+	public boolean isInPinCache(IpfsFile file) throws UsageException, VersionException, IpfsConnectionException
 	{
-		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
-		GlobalPinCache pinCache = localData.readGlobalPinCache();
-		localData.close();
-		return pinCache.isCached(file);
+		IReadingAccess reading = StandardAccess.readAccess(_executor);
+		boolean isPinned = reading.isInPinCached(file);
+		reading.close();
+		return isPinned;
 	}
 
-	public GlobalPrefs readPrefs() throws UsageException, VersionException
+	public GlobalPrefs readPrefs() throws UsageException, VersionException, IpfsConnectionException
 	{
-		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
-		GlobalPrefs prefs = localData.readGlobalPrefs();
-		localData.close();
+		IReadingAccess reading = StandardAccess.readAccess(_executor);
+		GlobalPrefs prefs = reading.readGlobalPrefs();
+		reading.close();
 		return prefs;
 	}
 
-	public FollowIndex readFollowIndex() throws UsageException, VersionException
+	public FollowIndex readFollowIndex() throws UsageException, VersionException, IpfsConnectionException
 	{
-		IReadOnlyLocalData localData = _executor.loadExistingConfig().getSharedLocalData().openForRead();
-		FollowIndex followIndex = localData.readFollowIndex();
-		localData.close();
+		IReadingAccess reading = StandardAccess.readAccess(_executor);
+		FollowIndex followIndex = reading.readOnlyFollowIndex();
+		reading.close();
 		return followIndex;
 	}
 

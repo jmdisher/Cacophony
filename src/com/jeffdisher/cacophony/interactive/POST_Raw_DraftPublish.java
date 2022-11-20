@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 
@@ -66,14 +67,14 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 			{
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
-			catch (UsageException e1)
+			catch (IpfsConnectionException e)
 			{
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+				e.printStackTrace(response.getWriter());
 			}
-			catch (VersionException e)
+			catch (UsageException | VersionException e)
 			{
-				// We should have fixed this by now.
+				// Not expected after start-up.
 				throw Assert.unexpected(e);
 			}
 		}

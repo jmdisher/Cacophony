@@ -4,15 +4,16 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
+import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.LocalConfig;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -44,20 +45,26 @@ public class StandardAccess implements IWritingAccess
 	 * @return The read access interface.
 	 * @throws UsageException If the config directory is missing.
 	 * @throws VersionException The version file is missing or an unknown version.
+	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(IEnvironment environment) throws UsageException, VersionException
+	public static IReadingAccess readAccess(IEnvironment environment) throws UsageException, VersionException, IpfsConnectionException
 	{
-		LocalConfig local = environment.loadExistingConfig();
-		IReadOnlyLocalData data = local.getSharedLocalData().openForRead();
-		try
+		// Get the filesystem of our configured directory.
+		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
+		
+		boolean doesExist = fileSystem.doesConfigDirectoryExist();
+		if (!doesExist)
 		{
-			return new StandardAccess(environment, local, data, null);
+			throw new UsageException("Config doesn't exist");
 		}
-		catch (Throwable t)
-		{
-			data.close();
-			throw t;
-		}
+		LocalDataModel dataModel = environment.getSharedDataModel();
+		IReadOnlyLocalData reading = dataModel.openForRead();
+		
+		String ipfsConnectionString = reading.readLocalIndex().ipfsHost();
+		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
+		Assert.assertTrue(null != connection);
+		
+		return new StandardAccess(environment, connection, reading, null);
 	}
 
 	/**
@@ -67,20 +74,26 @@ public class StandardAccess implements IWritingAccess
 	 * @return The write access interface.
 	 * @throws UsageException If the config directory is missing.
 	 * @throws VersionException The version file is missing or an unknown version.
+	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(IEnvironment environment) throws UsageException, VersionException
+	public static IWritingAccess writeAccess(IEnvironment environment) throws UsageException, VersionException, IpfsConnectionException
 	{
-		LocalConfig local = environment.loadExistingConfig();
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
-		try
+		// Get the filesystem of our configured directory.
+		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
+		
+		boolean doesExist = fileSystem.doesConfigDirectoryExist();
+		if (!doesExist)
 		{
-			return new StandardAccess(environment, local, data, data);
+			throw new UsageException("Config doesn't exist");
 		}
-		catch (Throwable t)
-		{
-			data.close();
-			throw t;
-		}
+		LocalDataModel dataModel = environment.getSharedDataModel();
+		IReadWriteLocalData writing = dataModel.openForWrite();
+		
+		String ipfsConnectionString = writing.readLocalIndex().ipfsHost();
+		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
+		Assert.assertTrue(null != connection);
+		
+		return new StandardAccess(environment, connection, writing, writing);
 	}
 
 	/**
@@ -97,22 +110,47 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess createForWrite(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException, VersionException
 	{
-		LocalConfig local = environment.createNewConfig(ipfsConnectionString, keyName);
-		IReadWriteLocalData data = local.getSharedLocalData().openForWrite();
+		// Get the filesystem of our configured directory.
+		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
+		
+		// First, make sure it doesn't already exist.
+		boolean doesExist = fileSystem.doesConfigDirectoryExist();
+		if (doesExist)
+		{
+			throw new UsageException("Config already exists");
+		}
+		// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
+		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
+		Assert.assertTrue(null != connection);
+		
+		boolean didCreate = fileSystem.createConfigDirectory();
+		if (!didCreate)
+		{
+			throw new UsageException("Failed to create config directory");
+		}
+		// Create the instance and populate it with default files.
+		LocalDataModel dataModel = environment.getSharedDataModel();
+		IReadWriteLocalData writing = dataModel.openForWrite();
 		try
 		{
-			return new StandardAccess(environment, local, data, data);
+			writing.writeLocalIndex(new LocalIndex(ipfsConnectionString, keyName, null));
+			writing.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
+			writing.writeGlobalPinCache(GlobalPinCache.newCache());
+			writing.writeFollowIndex(FollowIndex.emptyFollowIndex());
 		}
 		catch (Throwable t)
 		{
-			data.close();
+			writing.close();
 			throw t;
 		}
+		
+		// Now, pass this open read-write abstraction into the new StandardAccess instance.
+		return new StandardAccess(environment, connection, writing, writing);
 	}
 
 
 	private final IEnvironment _environment;
-	private final LocalConfig _local;
+	private final IConnection _sharedConnection;
 	private final IReadOnlyLocalData _readOnly;
 	private final IReadWriteLocalData _readWrite;
 	
@@ -121,10 +159,10 @@ public class StandardAccess implements IWritingAccess
 	private FollowIndex _followIndex;
 	private boolean _writeFollowIndex;
 
-	private StandardAccess(IEnvironment environment, LocalConfig local, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite)
+	private StandardAccess(IEnvironment environment, IConnection sharedConnection, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite)
 	{
 		_environment = environment;
-		_local = local;
+		_sharedConnection = sharedConnection;
 		_readOnly = readOnly;
 		_readWrite = readWrite;
 	}
@@ -139,21 +177,19 @@ public class StandardAccess implements IWritingAccess
 	public INetworkScheduler scheduler() throws IpfsConnectionException
 	{
 		LocalIndex localIndex = _readOnly.readLocalIndex();
-		IConnection connection = _local.getSharedConnection();
-		return _environment.getSharedScheduler(connection, localIndex.keyName());
+		return _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
 	}
 
 	@Override
 	public HighLevelCache loadCacheReadOnly() throws IpfsConnectionException
 	{
 		LocalIndex localIndex = _readOnly.readLocalIndex();
-		IConnection connection = _local.getSharedConnection();
-		INetworkScheduler scheduler = _environment.getSharedScheduler(connection, localIndex.keyName());
+		INetworkScheduler scheduler = _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
 		if (null == _pinCache)
 		{
 			_pinCache = _readOnly.readGlobalPinCache();
 		}
-		return new HighLevelCache(_pinCache, scheduler, connection);
+		return new HighLevelCache(_pinCache, scheduler, _sharedConnection);
 	}
 
 	@Override
@@ -169,13 +205,23 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IConnection connection() throws IpfsConnectionException
 	{
-		return _local.getSharedConnection();
+		return _sharedConnection;
 	}
 
 	@Override
 	public LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator)
 	{
 		return _readOnly.lazilyLoadFolloweeCache(cacheGenerator);
+	}
+
+	@Override
+	public boolean isInPinCached(IpfsFile file)
+	{
+		if (null == _pinCache)
+		{
+			_pinCache = _readOnly.readGlobalPinCache();
+		}
+		return _pinCache.isCached(file);
 	}
 
 	@Override
@@ -187,7 +233,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public void requestIpfsGc() throws IpfsConnectionException
 	{
-		_local.getSharedConnection().requestStorageGc();
+		_sharedConnection.requestStorageGc();
 	}
 
 	@Override
@@ -203,15 +249,14 @@ public class StandardAccess implements IWritingAccess
 	{
 		Assert.assertTrue(null != _readWrite);
 		LocalIndex localIndex = _readOnly.readLocalIndex();
-		IConnection connection = _local.getSharedConnection();
-		INetworkScheduler scheduler = _environment.getSharedScheduler(connection, localIndex.keyName());
+		INetworkScheduler scheduler = _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
 		if (null == _pinCache)
 		{
 			_pinCache = _readOnly.readGlobalPinCache();
 		}
 		// We will want to write this back.
 		_writePinCache = true;
-		return new HighLevelCache(_pinCache, scheduler, connection);
+		return new HighLevelCache(_pinCache, scheduler, _sharedConnection);
 	}
 
 	@Override

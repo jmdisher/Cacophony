@@ -9,8 +9,6 @@ import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -28,7 +26,6 @@ public class StandardEnvironment implements IEnvironment
 	private final IConnectionFactory _factory;
 	private final boolean _shouldEnableVerifications;
 	private int _nextOperationCounter;
-	private LocalConfig _lazyConfig;
 	private boolean _errorOccurred;
 	private INetworkScheduler _lazySharedScheduler;
 	private DraftManager _lazySharedDraftManager;
@@ -71,29 +68,6 @@ public class StandardEnvironment implements IEnvironment
 	{
 		System.err.println(message);
 		_errorOccurred = true;
-	}
-
-	@Override
-	public LocalConfig createNewConfig(String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
-	{
-		// We cannot create a config if we already loaded one.
-		Assert.assertTrue(null == _lazyConfig);
-		_lazyConfig = LocalConfig.createNewConfig(_fileSystem, _sharedDataModel, _factory, ipfsConnectionString, keyName);
-		// We expect the above to throw if it fails.
-		Assert.assertTrue(null != _lazyConfig);
-		return _lazyConfig;
-	}
-
-	@Override
-	public LocalConfig loadExistingConfig() throws UsageException, VersionException
-	{
-		if (null == _lazyConfig)
-		{
-			_lazyConfig = LocalConfig.loadExistingConfig(_fileSystem, _sharedDataModel, _factory);
-			// We expect the above to throw if it fails.
-			Assert.assertTrue(null != _lazyConfig);
-		}
-		return _lazyConfig;
 	}
 
 	@Override
@@ -169,5 +143,17 @@ public class StandardEnvironment implements IEnvironment
 		{
 			_lazySharedScheduler.shutdown();
 		}
+	}
+
+	@Override
+	public IConfigFileSystem getConfigFileSystem()
+	{
+		return _fileSystem;
+	}
+
+	@Override
+	public IConnectionFactory getConnectionFactory()
+	{
+		return _factory;
 	}
 }
