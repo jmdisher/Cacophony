@@ -8,6 +8,9 @@ import org.junit.Test;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -18,10 +21,10 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -86,12 +89,19 @@ public class TestJsonGenerationHelpers
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		RemoteActions actions = RemoteActions.loadIpfsConfig(executor, remoteConnection, KEY_NAME);
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		IpfsFile indexFile = _storeNewIndex(remoteConnection, pinCache, null, null);
-		remoteConnection.publish(KEY_NAME, indexFile);
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, remoteConnection);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
-		LocalRecordCache recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, cache, indexFile, followIndex);
+		
+		IpfsFile indexFile = null;
+		try (IWritingAccess access = StandardAccess.createForWrite(executor, "ipfs", KEY_NAME))
+		{
+			indexFile = _storeNewIndex(access, null, null, true);
+		}
+		
+		LocalRecordCache recordCache = null;
+		try (IReadingAccess access = StandardAccess.readAccess(executor))
+		{
+			FollowIndex followIndex = access.readOnlyFollowIndex();
+			recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, access, indexFile, followIndex);
+		}
 		
 		// This should have zero entries.
 		Assert.assertTrue(recordCache.getKeys().isEmpty());
@@ -108,22 +118,35 @@ public class TestJsonGenerationHelpers
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		RemoteActions actions = RemoteActions.loadIpfsConfig(executor, remoteConnection, KEY_NAME);
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		IpfsFile recordFile = _storeEntry(remoteConnection, pinCache, "entry1", PUBLIC_KEY1);
-		IpfsFile indexFile = _storeNewIndex(remoteConnection, pinCache, recordFile, null);
-		remoteConnection.publish(KEY_NAME, indexFile);
-		HighLevelCache cache = new HighLevelCache(pinCache, scheduler, remoteConnection);
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
 		
-		IpfsFile followeeRecordFile = _storeEntry(remoteConnection, pinCache, "entry2", PUBLIC_KEY2);
-		// We want to create an oversized record to make sure that it is not in cached list.
-		IpfsFile oversizeRecordFile = _storeData(remoteConnection, pinCache, new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]);
-		IpfsFile followeeIndexFile = _storeNewIndex(remoteConnection, pinCache, followeeRecordFile, oversizeRecordFile);
-		FollowRecord record = new FollowRecord(PUBLIC_KEY2, followeeIndexFile, 1L, new FollowingCacheElement[] {
-				new FollowingCacheElement(followeeRecordFile, null, null, 0L)
-		});
-		followIndex.checkinRecord(record);
-		LocalRecordCache recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, cache, indexFile, followIndex);
+		IpfsFile recordFile = null;
+		IpfsFile indexFile = null;
+		IpfsFile followeeRecordFile = null;
+		try (IWritingAccess access = StandardAccess.createForWrite(executor, "ipfs", KEY_NAME))
+		{
+			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
+			indexFile = _storeNewIndex(access, recordFile, null, true);
+			
+			followeeRecordFile = _storeEntry(access, "entry2", PUBLIC_KEY2);
+			// We want to create an oversized record to make sure that it is not in cached list.
+			IpfsFile oversizeRecordFile = _upload(access, new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]);
+			
+			FollowIndex followIndex = access.readWriteFollowIndex();
+			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
+			FollowRecord record = new FollowRecord(PUBLIC_KEY2, followeeIndexFile, 1L, new FollowingCacheElement[] {
+					new FollowingCacheElement(followeeRecordFile, null, null, 0L)
+			});
+			followIndex.checkinRecord(record);
+		}
+		
+		LocalRecordCache recordCache = null;
+		try (IReadingAccess access = StandardAccess.readAccess(executor))
+		{
+			IpfsFile publishedIndex = access.readOnlyLocalIndex().lastPublishedIndex();
+			Assert.assertEquals(indexFile, publishedIndex);
+			FollowIndex followIndex = access.readOnlyFollowIndex();
+			recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, access, publishedIndex, followIndex);
+		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
 		Assert.assertEquals(2, recordCache.getKeys().size());
@@ -134,7 +157,7 @@ public class TestJsonGenerationHelpers
 	}
 
 
-	private static IpfsFile _storeNewIndex(MockSingleNode connection, GlobalPinCache pinCache, IpfsFile record1, IpfsFile record2) throws IpfsConnectionException
+	private static IpfsFile _storeNewIndex(IWritingAccess access, IpfsFile record1, IpfsFile record2, boolean shouldStoreAsIndex) throws IpfsConnectionException
 	{
 		StreamRecords records = new StreamRecords();
 		if (null != record1)
@@ -146,27 +169,38 @@ public class TestJsonGenerationHelpers
 			records.getRecord().add(record2.toSafeString());
 		}
 		byte[] data = GlobalData.serializeRecords(records);
-		IpfsFile recordsFile = _storeData(connection, pinCache, data);
+		IpfsFile recordsFile = _upload(access, data);
 		StreamRecommendations recommendations = new StreamRecommendations();
 		data = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile recommendationsFile = _storeData(connection, pinCache, data);
-		IpfsFile picFile = _storeData(connection, pinCache, new byte[] { 1, 2, 3, 4, 5 });
+		IpfsFile recommendationsFile = _upload(access, data);
+		IpfsFile picFile = _upload(access, new byte[] { 1, 2, 3, 4, 5 });
 		StreamDescription description = new StreamDescription();
 		description.setName("name");
 		description.setDescription("description");
 		description.setPicture(picFile.toSafeString());
 		data = GlobalData.serializeDescription(description);
-		IpfsFile descriptionFile = _storeData(connection, pinCache, data);
+		IpfsFile descriptionFile = _upload(access, data);
 		StreamIndex index = new StreamIndex();
 		index.setDescription(descriptionFile.toSafeString());
 		index.setRecommendations(recommendationsFile.toSafeString());
 		index.setRecords(recordsFile.toSafeString());
 		index.setVersion(1);
-		data = GlobalData.serializeIndex(index);
-		return _storeData(connection, pinCache, data);
+		
+		IpfsFile indexHash = null;
+		// Note that we only want to store this _as_ the index if this is the owner of the storage, since this helper is sometimes used to simulate followee refresh.
+		if (shouldStoreAsIndex)
+		{
+			indexHash = _upload(access, GlobalData.serializeIndex(index));
+			access.updateIndexHash(indexHash);
+		}
+		else
+		{
+			indexHash = _upload(access, GlobalData.serializeIndex(index));
+		}
+		return indexHash;
 	}
 
-	private static IpfsFile _storeEntry(MockSingleNode connection, GlobalPinCache pinCache, String name, IpfsKey publisher) throws IpfsConnectionException
+	private static IpfsFile _storeEntry(IWritingAccess access, String name, IpfsKey publisher) throws IpfsConnectionException
 	{
 		StreamRecord record = new StreamRecord();
 		record.setName(name);
@@ -175,22 +209,15 @@ public class TestJsonGenerationHelpers
 		record.setPublishedSecondsUtc(1L);
 		record.setPublisherKey(publisher.toPublicKey());
 		byte[] data = GlobalData.serializeRecord(record);
-		return _storeData(connection, pinCache, data);
+		return _upload(access, data);
 	}
 
-	private static IpfsFile _storeData(MockSingleNode connection, GlobalPinCache pinCache, byte[] data) throws IpfsConnectionException
+	private static IpfsFile _upload(IWritingAccess access, byte[] data) throws IpfsConnectionException
 	{
-		// We are directly going to check the pinCache since we are force-feeding the data for the test, but MockConnection doesn't like that.
-		IpfsFile file = null;
-		IpfsFile hash = MockSingleNode.generateHash(data);
-		if (pinCache.shouldPinAfterAdding(hash))
-		{
-			file = connection.storeData(new ByteArrayInputStream(data));
-		}
-		else
-		{
-			file = hash;
-		}
-		return file;
+		HighLevelCache cache = access.loadCacheReadWrite();
+		INetworkScheduler scheduler = access.scheduler();
+		IpfsFile hash = scheduler.saveStream(new ByteArrayInputStream(data), true).get();
+		cache.uploadedToThisCache(hash);
+		return hash;
 	}
 }
