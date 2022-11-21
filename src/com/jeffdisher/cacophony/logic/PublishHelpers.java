@@ -64,7 +64,8 @@ public class PublishHelpers
 		StreamIndex index = access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		IpfsFile previousRecords = IpfsFile.fromIpfsCid(index.getRecords());
+		StreamRecords records = access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
 		DataArray array = new DataArray();
@@ -116,8 +117,9 @@ public class PublishHelpers
 		environment.logToConsole("Saving and publishing new index");
 		FuturePublish asyncResult = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
 		
-		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
+		// Now that the new index has been uploaded and the publish is in progress, we can unpin the previous root and records.
 		CommandHelpers.commonUpdateIndex(environment, access, existingLocalIndex, cache, previousRoot, asyncResult.getIndexHash());
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, previousRecords);
 		return asyncResult;
 	}
 

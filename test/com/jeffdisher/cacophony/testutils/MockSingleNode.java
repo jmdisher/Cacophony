@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -76,6 +77,11 @@ public class MockSingleNode implements IConnection
 	public byte[] loadDataFromNode(IpfsFile file)
 	{
 		return _data.get(file);
+	}
+
+	public Set<IpfsFile> getStoredFileSet()
+	{
+		return Set.copyOf(_data.keySet());
 	}
 
 	@Override
