@@ -54,10 +54,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Make sure that we actually have the record.
 		boolean didFind = false;
@@ -98,7 +98,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		StreamRecord record = null;
 		try
 		{
-			record = cache.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
+			record = access.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 		}
 		catch (IpfsConnectionException e)
 		{

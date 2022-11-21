@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -36,7 +35,6 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException
 	{
-		HighLevelCache cache = access.loadCacheReadOnly();
 		FollowRecord record = access.readOnlyFollowIndex().peekRecord(_followeeKey);
 		if (null != record)
 		{
@@ -44,8 +42,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			Map<IpfsFile, FollowingCacheElement> cachedMapByElementCid = CacheHelpers.createCachedMap(record);
 			IpfsFile root = record.lastFetchedRoot();
 			
-			StreamIndex index = cache.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			List<String> recordList = records.getRecord();
 			environment.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)

@@ -49,11 +49,11 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		// Read our existing root key.
 		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != oldRootHash);
-		StreamIndex index = cache.loadCached(oldRootHash, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = access.loadCached(oldRootHash, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = cache.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+		StreamRecommendations recommendations = access.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		
 		// Verify that we didn't already add them.
 		Assert.assertTrue(!recommendations.getUser().contains(_channelPublicKey.toPublicKey()));

@@ -1,11 +1,9 @@
 package com.jeffdisher.cacophony.data.local.v1;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.function.Function;
 
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureUnpin;
@@ -55,7 +53,6 @@ public class HighLevelCache
 
 	private final GlobalPinCache _globalPinCache;
 	private final INetworkScheduler _scheduler;
-	private final IConnection _ipfsConnection;
 
 	// We track the currently in-flight pin and unpin operations.
 	// This is to force in-order mutation of the _globalPinCache by blocking on any pending pin/unpin operations for the
@@ -68,7 +65,6 @@ public class HighLevelCache
 	{
 		_globalPinCache = globalPinCache;
 		_scheduler = scheduler;
-		_ipfsConnection = ipfsConnection;
 		_inFlightPins = new HashMap<>();
 		_inFlightUnpins = new HashMap<>();
 	}
@@ -162,25 +158,6 @@ public class HighLevelCache
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_globalPinCache.isCached(file));
 		return _scheduler.readData(file, decoder);
-	}
-
-	public <R> FutureRead<R> loadNotCached(IEnvironment environment, IpfsFile file, Function<byte[], R> decoder)
-	{
-		Assert.assertTrue(null != file);
-		// Note that we don't want to assert here, since there can be hash collisions (empty structures are common) but
-		// we do want to at least log a warning here, just so we are aware of it in tests.
-		if (_globalPinCache.isCached(file))
-		{
-			environment.logError("WARNING!  Not expected in cache:  " + file);
-		}
-		return _scheduler.readData(file, decoder);
-	}
-
-	public URL getCachedUrl(IpfsFile file)
-	{
-		Assert.assertTrue(null != file);
-		Assert.assertTrue(_globalPinCache.isCached(file));
-		return _ipfsConnection.urlForDirectFetch(file);
 	}
 
 

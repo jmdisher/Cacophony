@@ -49,11 +49,11 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = cache.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+		StreamRecommendations recommendations = access.loadCached(originalRecommendations, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		
 		// Verify that they are already in the list.
 		Assert.assertTrue(recommendations.getUser().contains(_channelPublicKey.toPublicKey()));

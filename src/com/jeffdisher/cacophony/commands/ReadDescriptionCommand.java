@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -35,7 +34,6 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
 		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadOnly();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
 		LocalIndex localIndex = access.readOnlyLocalIndex();
 		
@@ -74,12 +72,12 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			Assert.assertTrue(null != rootToLoad);
 		}
 		StreamIndex index = (isCached
-				? cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
-				: cache.loadNotCached(environment, rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+				? access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+				: access.loadNotCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
 		).get();
 		StreamDescription description = (isCached
-				? cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
-				: cache.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
+				? access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
+				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
 		).get();
 		environment.logToConsole("Channel public key: " + publicKey);
 		environment.logToConsole("-name: " + description.getName());

@@ -27,7 +27,6 @@ import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -210,9 +209,8 @@ public class JsonGenerationHelpers
 		JsonObject foundObject = null;
 		if (null != indexToLoad)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
-			StreamIndex index = cache.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamDescription description = cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamDescription description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 			foundObject = _populateJsonForDescription(access, description);
 		}
 		return foundObject;
@@ -225,9 +223,8 @@ public class JsonGenerationHelpers
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
-			StreamIndex index = cache.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			array = new JsonArray();
 			for (String rawCid : records.getRecord())
 			{
@@ -244,9 +241,8 @@ public class JsonGenerationHelpers
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
-			StreamIndex index = cache.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecommendations recommendations = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamRecommendations recommendations = access.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 			array = new JsonArray();
 			for (String rawCid : recommendations.getUser())
 			{
@@ -304,10 +300,9 @@ public class JsonGenerationHelpers
 	}
 
 
-	private static void _startLoad(List<FutureKey<StreamIndex>> list, IReadingAccess access, IpfsKey publicKey, IpfsFile indexRoot) throws IpfsConnectionException
+	private static void _startLoad(List<FutureKey<StreamIndex>> list, IReadingAccess access, IpfsKey publicKey, IpfsFile indexRoot)
 	{
-		HighLevelCache cache = access.loadCacheReadOnly();
-		FutureRead<StreamIndex> index = cache.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data));
+		FutureRead<StreamIndex> index = access.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data));
 		list.add(new FutureKey<StreamIndex>(publicKey, index));
 	}
 
@@ -316,21 +311,19 @@ public class JsonGenerationHelpers
 		List<FutureKey<StreamDescription>> descriptions = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
 			StreamIndex index = future.future.get();
-			FutureRead<StreamDescription> description = cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
+			FutureRead<StreamDescription> description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
 			descriptions.add(new FutureKey<StreamDescription>(future.publicKey, description));
 		}
 		return descriptions;
 	}
 
-	private static JsonObject _populateJsonForDescription(IReadingAccess access, StreamDescription description) throws IpfsConnectionException
+	private static JsonObject _populateJsonForDescription(IReadingAccess access, StreamDescription description)
 	{
-		HighLevelCache cache = access.loadCacheReadOnly();
 		JsonObject thisUser = new JsonObject();
 		thisUser.set("name", description.getName());
 		thisUser.set("description", description.getDescription());
-		thisUser.set("userPicUrl", cache.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
+		thisUser.set("userPicUrl", access.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
 		thisUser.set("email", description.getEmail());
 		thisUser.set("website", description.getWebsite());
 		return thisUser;
@@ -341,9 +334,8 @@ public class JsonGenerationHelpers
 		List<FutureKey<StreamRecords>> recordsList = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
 			StreamIndex index = future.future.get();
-			FutureRead<StreamRecords> records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
 			recordsList.add(new FutureKey<StreamRecords>(future.publicKey, records));
 		}
 		return recordsList;
@@ -354,9 +346,8 @@ public class JsonGenerationHelpers
 		List<FutureRead<StreamRecords>> recordsList = new ArrayList<>();
 		for (FutureRead<StreamIndex> future : list)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
 			StreamIndex index = future.get();
-			FutureRead<StreamRecords> records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
 			recordsList.add(records);
 		}
 		return recordsList;
@@ -375,8 +366,7 @@ public class JsonGenerationHelpers
 			// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
 			if (scheduler.getSizeInBytes(cid).get() < SizeLimits.MAX_RECORD_SIZE_BYTES)
 			{
-				HighLevelCache cache = access.loadCacheReadOnly();
-				FutureRead<StreamRecord> future = cache.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+				FutureRead<StreamRecord> future = access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
 				loads.add(future);
 			}
 		}
@@ -432,16 +422,15 @@ public class JsonGenerationHelpers
 		String videoUrl = null;
 		if (isCached)
 		{
-			HighLevelCache cache = access.loadCacheReadOnly();
 			// However we found these, they are expected to be in the cache and they should be locally pinned.
 			// Note that we can have at most one thumbnail and one video but both are optional and there could be an entry with neither.
 			if (null != thumbnailCid)
 			{
-				thumbnailUrl = cache.getCachedUrl(thumbnailCid).toString();
+				thumbnailUrl = access.getCachedUrl(thumbnailCid).toString();
 			}
 			if (null != videoCid)
 			{
-				videoUrl = cache.getCachedUrl(videoCid).toString();
+				videoUrl = access.getCachedUrl(videoCid).toString();
 			}
 		}
 		return new LocalRecordCache.Element(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl);
@@ -459,12 +448,11 @@ public class JsonGenerationHelpers
 
 	private static List<FutureKey<StreamRecommendations>> _loadRecommendations(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
 	{
-		HighLevelCache cache = access.loadCacheReadOnly();
 		List<FutureKey<StreamRecommendations>> recommendationsList = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
 		{
 			StreamIndex index = future.future.get();
-			FutureRead<StreamRecommendations> recommendations = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data));
+			FutureRead<StreamRecommendations> recommendations = access.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data));
 			recommendationsList.add(new FutureKey<StreamRecommendations>(future.publicKey, recommendations));
 		}
 		return recommendationsList;
@@ -514,7 +502,7 @@ public class JsonGenerationHelpers
 		return videoCid;
 	}
 
-	private static List<FutureKey<StreamIndex>> _loadStreamIndices(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
+	private static List<FutureKey<StreamIndex>> _loadStreamIndices(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, FollowIndex followIndex)
 	{
 		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
 		_startLoad(indices, access, ourPublicKey, lastPublishedIndex);
@@ -525,14 +513,13 @@ public class JsonGenerationHelpers
 		return indices;
 	}
 
-	private static List<FutureRead<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsFile lastPublishedIndex, FollowIndex followIndex) throws IpfsConnectionException
+	private static List<FutureRead<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsFile lastPublishedIndex, FollowIndex followIndex)
 	{
-		HighLevelCache cache = access.loadCacheReadOnly();
 		List<FutureRead<StreamIndex>> indices = new ArrayList<>();
-		indices.add(cache.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)));
+		indices.add(access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)));
 		for(FollowRecord record : followIndex)
 		{
-			indices.add(cache.loadCached(record.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data)));
+			indices.add(access.loadCached(record.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data)));
 		}
 		return indices;
 	}

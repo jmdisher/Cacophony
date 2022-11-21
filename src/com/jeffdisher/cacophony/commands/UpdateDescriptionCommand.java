@@ -58,10 +58,10 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing description since we might be only partially updating it.
-		StreamDescription description = cache.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+		StreamDescription description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		
 		if (null != _name)
 		{

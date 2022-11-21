@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -35,7 +34,6 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
 		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadOnly();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
 		LocalIndex localIndex = access.readOnlyLocalIndex();
 		
@@ -75,14 +73,14 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			isCached = true;
 		}
 		StreamIndex index = (isCached
-				? cache.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
-				: cache.loadNotCached(environment, rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+				? access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
+				: access.loadNotCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
 		).get();
 		
 		// Read the existing recommendations list.
 		StreamRecommendations recommendations = (isCached
-				? cache.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
-				: cache.loadNotCached(environment, IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
+				? access.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
+				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
 		).get();
 		
 		// Walk the recommendations and print their keys to the console.

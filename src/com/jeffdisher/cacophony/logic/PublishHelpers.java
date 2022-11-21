@@ -64,10 +64,10 @@ public class PublishHelpers
 		
 		IpfsFile previousRoot = existingLocalIndex.lastPublishedIndex();
 		Assert.assertTrue(null != previousRoot);
-		StreamIndex index = cache.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		StreamRecords records = cache.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
 		// Upload the elements.
 		List<FutureSave> futureSaves = new ArrayList<>();

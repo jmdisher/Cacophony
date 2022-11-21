@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
+import java.net.URL;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
@@ -14,6 +16,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -154,6 +157,7 @@ public class StandardAccess implements IWritingAccess
 	private final IReadOnlyLocalData _readOnly;
 	private final IReadWriteLocalData _readWrite;
 	
+	private INetworkScheduler _scheduler;
 	private GlobalPinCache _pinCache;
 	private boolean _writePinCache;
 	private FollowIndex _followIndex;
@@ -176,20 +180,16 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public INetworkScheduler scheduler() throws IpfsConnectionException
 	{
-		LocalIndex localIndex = _readOnly.readLocalIndex();
-		return _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
+		_lazyCreateScheduler();
+		return _scheduler;
 	}
 
 	@Override
 	public HighLevelCache loadCacheReadOnly() throws IpfsConnectionException
 	{
-		LocalIndex localIndex = _readOnly.readLocalIndex();
-		INetworkScheduler scheduler = _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
-		if (null == _pinCache)
-		{
-			_pinCache = _readOnly.readGlobalPinCache();
-		}
-		return new HighLevelCache(_pinCache, scheduler, _sharedConnection);
+		_lazyLoadPinCache();
+		_lazyCreateScheduler();
+		return new HighLevelCache(_pinCache, _scheduler, _sharedConnection);
 	}
 
 	@Override
@@ -217,10 +217,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public boolean isInPinCached(IpfsFile file)
 	{
-		if (null == _pinCache)
-		{
-			_pinCache = _readOnly.readGlobalPinCache();
-		}
+		_lazyLoadPinCache();
 		return _pinCache.isCached(file);
 	}
 
@@ -260,6 +257,39 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
+	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
+	{
+		Assert.assertTrue(null != file);
+		_lazyLoadPinCache();
+		_lazyCreateScheduler();
+		Assert.assertTrue(_pinCache.isCached(file));
+		return _scheduler.readData(file, decoder);
+	}
+
+	@Override
+	public <R> FutureRead<R> loadNotCached(IpfsFile file, Function<byte[], R> decoder)
+	{
+		Assert.assertTrue(null != file);
+		_lazyLoadPinCache();
+		_lazyCreateScheduler();
+		if (_pinCache.isCached(file))
+		{
+			_environment.logError("WARNING!  Not expected in cache:  " + file);
+		}
+		return _scheduler.readData(file, decoder);
+	}
+
+	@Override
+	public URL getCachedUrl(IpfsFile file)
+	{
+		Assert.assertTrue(null != file);
+		_lazyLoadPinCache();
+		Assert.assertTrue(_pinCache.isCached(file));
+		return _sharedConnection.urlForDirectFetch(file);
+	}
+
+	// ----- Writing methods -----
+	@Override
 	public FollowIndex readWriteFollowIndex()
 	{
 		Assert.assertTrue(null != _readWrite);
@@ -292,5 +322,41 @@ public class StandardAccess implements IWritingAccess
 		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();
+	}
+
+
+	private void _lazyLoadPinCache()
+	{
+		if (null == _pinCache)
+		{
+			_pinCache = _readOnly.readGlobalPinCache();
+			// If we are in writable mode, assume we need to write this back.
+			_writePinCache = (null != _readWrite);
+		}
+	}
+
+	/**
+	 * Note that the scheduler MUST be created lazily since this avoids a bootstrapping problem:  The scheduler needs
+	 * to be able to look up the publishing key (since we want it to have everything it needs before being started) but
+	 * the key is created _after_ the StandardAccess is first created, when creating a channel (since it relies on the
+	 * bare connection and the storage).
+	 * @throws IpfsConnectionException 
+	 */
+	private void _lazyCreateScheduler()
+	{
+		if (null == _scheduler)
+		{
+			LocalIndex localIndex = _readOnly.readLocalIndex();
+			try
+			{
+				_scheduler = _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This sudden failure to contact the node isn't something we can meaningfully handle at this point in the run and is incredibly unlikely.
+				// TODO:  See if we can fix the start-up ordering in order to move this failure case somewhere earlier.
+				throw Assert.unexpected(e);
+			}
+		}
 	}
 }
