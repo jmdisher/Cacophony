@@ -4,9 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -69,24 +66,13 @@ public class PublishHelpers
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
-		// Upload the elements.
-		List<FutureSave> futureSaves = new ArrayList<>();
-		for (PublishElement elt : elements)
-		{
-			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
-			// Upload the file - we won't close the file here since the caller needs to handle cases where something could go wrong (and they gave us the file so they should close it).
-			FutureSave save = scheduler.saveStream(elt.fileData, false);
-			futureSaves.add(save);
-			eltLog.finish("-in progress...");
-		}
-		
+		// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
 		DataArray array = new DataArray();
-		Iterator<FutureSave> futureIterator = futureSaves.iterator();
 		for (PublishElement elt : elements)
 		{
 			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
 			// Wait for file upload.
-			FutureSave save = futureIterator.next();
+			FutureSave save = scheduler.saveStream(elt.fileData, false);
 			IpfsFile uploaded = save.get();
 			cache.uploadedToThisCache(uploaded);
 			
@@ -102,7 +88,7 @@ public class PublishHelpers
 			array.getElement().add(element);
 			eltLog.finish("-Done!");
 		}
-		Assert.assertTrue(!futureIterator.hasNext());
+		
 		StreamRecord record = new StreamRecord();
 		record.setName(name);
 		record.setDescription(description);
