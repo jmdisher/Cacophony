@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -7,6 +9,8 @@ import java.util.function.Supplier;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
@@ -16,7 +20,9 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -234,14 +240,6 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public void updateIndexHash(IpfsFile newIndexHash)
-	{
-		Assert.assertTrue(null != _readWrite);
-		LocalIndex oldLocalIndex = _readOnly.readLocalIndex();
-		_readWrite.writeLocalIndex(new LocalIndex(oldLocalIndex.ipfsHost(), oldLocalIndex.keyName(), newIndexHash));
-	}
-
-	@Override
 	public HighLevelCache loadCacheReadWrite() throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _readWrite);
@@ -307,6 +305,31 @@ public class StandardAccess implements IWritingAccess
 	{
 		Assert.assertTrue(null != _readWrite);
 		_readWrite.writeGlobalPrefs(prefs);
+	}
+
+	@Override
+	public IpfsFile uploadAndPin(InputStream dataToSave, boolean shouldCloseStream) throws IpfsConnectionException
+	{
+		_lazyCreateScheduler();
+		FutureSave save = _scheduler.saveStream(dataToSave, shouldCloseStream);
+		IpfsFile hash = save.get();
+		_lazyLoadPinCache();
+		_pinCache.hashWasAdded(hash);
+		return hash;
+	}
+
+	@Override
+	public FuturePublish uploadStoreAndPublishIndex(StreamIndex streamIndex) throws IpfsConnectionException
+	{
+		Assert.assertTrue(null != _readWrite);
+		_lazyCreateScheduler();
+		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true);
+		IpfsFile hash = save.get();
+		_lazyLoadPinCache();
+		_pinCache.hashWasAdded(hash);
+		LocalIndex oldLocalIndex = _readOnly.readLocalIndex();
+		_readWrite.writeLocalIndex(new LocalIndex(oldLocalIndex.ipfsHost(), oldLocalIndex.keyName(), hash));
+		return _scheduler.publishIndex(hash);
 	}
 
 	@Override

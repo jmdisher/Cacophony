@@ -1,18 +1,14 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -31,26 +27,6 @@ import com.jeffdisher.cacophony.utils.StringHelpers;
  */
 public class CommandHelpers
 {
-	/**
-	 * The common idiom of serializing, saving to IPFS, and republishing the index to IPNS.
-	 * Failures in saving will throw an exception while a failure in publication is merely logged (as this is
-	 * considered a degradation, but not a failure).
-	 * 
-	 * @param remote The remote helpers.
-	 * @param streamIndex The index to use as the updated root of the data structure.
-	 * @return The asynchronous publish operation.
-	 * @throws IpfsConnectionException An error occurred while saving the file to IPFS.
-	 */
-	public static FuturePublish serializeSaveAndPublishIndex(IEnvironment environment, INetworkScheduler scheduler, StreamIndex streamIndex) throws IpfsConnectionException
-	{
-		// Serialize the index file and save it to the IPFS node.
-		IpfsFile hashIndex = scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true).get();
-		// This never returns null.
-		Assert.assertTrue(null != hashIndex);
-		// Publish it to IPNS (returns error on failure).
-		return scheduler.publishIndex(hashIndex);
-	}
-
 	/**
 	 * Waits for the publish operation in-flight in asyncPublish to complete or fail, logging the result.
 	 * 
@@ -192,27 +168,6 @@ public class CommandHelpers
 	public static void safeRemoveFromLocalNode(IEnvironment environment, HighLevelCache cache, IpfsFile file)
 	{
 		_safeRemove(environment, cache, file);
-	}
-
-	/**
-	 * The common idiom for updating the index after any kind of change:  Updates the local storage and removes the old
-	 * index from the cache and local node.
-	 * 
-	 * @param environment Used for logging.
-	 * @param access A representation of the local data store to modify when writing-back the updated LocalIndex.
-	 * @param oldLocalIndex The previous LocalIndex (for extracting unchanged data).
-	 * @param cache The local representation of what is cached on this node.
-	 * @param oldIndexFile The previous index root file.
-	 * @param newIndexHash the new index root file.
-	 */
-	public static void commonUpdateIndex(IEnvironment environment, IWritingAccess access, LocalIndex oldLocalIndex, HighLevelCache cache, IpfsFile oldIndexFile, IpfsFile newIndexHash)
-	{
-		// Update the local index.
-		access.updateIndexHash(newIndexHash);
-		cache.uploadedToThisCache(newIndexHash);
-		
-		// Remove the old root.
-		_safeRemove(environment, cache, oldIndexFile);
 	}
 
 

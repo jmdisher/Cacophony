@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -43,8 +42,6 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
 		LocalIndex localIndex = access.readOnlyLocalIndex();
-		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
@@ -63,26 +60,24 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		
 		// Serialize and upload the description.
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile hashDescription = scheduler.saveStream(new ByteArrayInputStream(rawRecommendations), true).get();
-		cache.uploadedToThisCache(hashDescription);
+		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawRecommendations), true);
 		
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncPublish = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
+		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(index);
 		return new CleanupData(asyncPublish, rootToLoad, originalRecommendations);
 	}
 
 	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
-		LocalIndex localIndex = access.readOnlyLocalIndex();
 		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// Remove the previous recommendations from cache (index handled below).
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.originalRecommendations);
 		
-		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, access, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		// Unpin the previous index.
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

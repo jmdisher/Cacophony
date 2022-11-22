@@ -22,9 +22,8 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -129,7 +128,7 @@ public class TestJsonGenerationHelpers
 			
 			followeeRecordFile = _storeEntry(access, "entry2", PUBLIC_KEY2);
 			// We want to create an oversized record to make sure that it is not in cached list.
-			IpfsFile oversizeRecordFile = _upload(access, new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]);
+			IpfsFile oversizeRecordFile = access.uploadAndPin(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]), true);
 			
 			FollowIndex followIndex = access.readWriteFollowIndex();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
@@ -169,17 +168,17 @@ public class TestJsonGenerationHelpers
 			records.getRecord().add(record2.toSafeString());
 		}
 		byte[] data = GlobalData.serializeRecords(records);
-		IpfsFile recordsFile = _upload(access, data);
+		IpfsFile recordsFile = access.uploadAndPin(new ByteArrayInputStream(data), true);
 		StreamRecommendations recommendations = new StreamRecommendations();
 		data = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile recommendationsFile = _upload(access, data);
-		IpfsFile picFile = _upload(access, new byte[] { 1, 2, 3, 4, 5 });
+		IpfsFile recommendationsFile = access.uploadAndPin(new ByteArrayInputStream(data), true);
+		IpfsFile picFile = access.uploadAndPin(new ByteArrayInputStream(new byte[] { 1, 2, 3, 4, 5 }), true);
 		StreamDescription description = new StreamDescription();
 		description.setName("name");
 		description.setDescription("description");
 		description.setPicture(picFile.toSafeString());
 		data = GlobalData.serializeDescription(description);
-		IpfsFile descriptionFile = _upload(access, data);
+		IpfsFile descriptionFile = access.uploadAndPin(new ByteArrayInputStream(data), true);
 		StreamIndex index = new StreamIndex();
 		index.setDescription(descriptionFile.toSafeString());
 		index.setRecommendations(recommendationsFile.toSafeString());
@@ -190,12 +189,13 @@ public class TestJsonGenerationHelpers
 		// Note that we only want to store this _as_ the index if this is the owner of the storage, since this helper is sometimes used to simulate followee refresh.
 		if (shouldStoreAsIndex)
 		{
-			indexHash = _upload(access, GlobalData.serializeIndex(index));
-			access.updateIndexHash(indexHash);
+			FuturePublish publish = access.uploadStoreAndPublishIndex(index);
+			publish.get();
+			indexHash = publish.getIndexHash();
 		}
 		else
 		{
-			indexHash = _upload(access, GlobalData.serializeIndex(index));
+			indexHash = access.uploadAndPin(new ByteArrayInputStream(GlobalData.serializeIndex(index)), true);
 		}
 		return indexHash;
 	}
@@ -209,15 +209,6 @@ public class TestJsonGenerationHelpers
 		record.setPublishedSecondsUtc(1L);
 		record.setPublisherKey(publisher.toPublicKey());
 		byte[] data = GlobalData.serializeRecord(record);
-		return _upload(access, data);
-	}
-
-	private static IpfsFile _upload(IWritingAccess access, byte[] data) throws IpfsConnectionException
-	{
-		HighLevelCache cache = access.loadCacheReadWrite();
-		INetworkScheduler scheduler = access.scheduler();
-		IpfsFile hash = scheduler.saveStream(new ByteArrayInputStream(data), true).get();
-		cache.uploadedToThisCache(hash);
-		return hash;
+		return access.uploadAndPin(new ByteArrayInputStream(data), true);
 	}
 }

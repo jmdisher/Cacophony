@@ -11,13 +11,11 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -61,18 +59,13 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 			keyLog.finish("Public key \"" + key.key() + "\" generated with name: \"" + key.name() + "\"");
 		}
 		
-		// Note that we can't create the scheduler until that key has been created.
-		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
-		
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
 		description.setName("Unnamed");
 		description.setDescription("Description forthcoming");
 		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
 		Assert.assertTrue(null != pictureStream);
-		IpfsFile pictureHash = scheduler.saveStream(pictureStream, true).get();
-		cache.uploadedToThisCache(pictureHash);
+		IpfsFile pictureHash = access.uploadAndPin(pictureStream, true);
 		description.setPicture(pictureHash.toSafeString());
 		
 		StreamRecommendations recommendations = new StreamRecommendations();
@@ -84,12 +77,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		IpfsFile hashDescription = scheduler.saveStream(new ByteArrayInputStream(rawDescription), true).get();
-		cache.uploadedToThisCache(hashDescription);
-		IpfsFile hashRecommendations = scheduler.saveStream(new ByteArrayInputStream(rawRecommendations), true).get();
-		cache.uploadedToThisCache(hashRecommendations);
-		IpfsFile hashRecords = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
-		cache.uploadedToThisCache(hashRecords);
+		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawDescription), true);
+		IpfsFile hashRecommendations = access.uploadAndPin(new ByteArrayInputStream(rawRecommendations), true);
+		IpfsFile hashRecords = access.uploadAndPin(new ByteArrayInputStream(rawRecords), true);
 		
 		// Create the new local index.
 		StreamIndex streamIndex = new StreamIndex();
@@ -98,14 +88,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
 		
-		FuturePublish asyncPublish = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, streamIndex);
+		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(streamIndex);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
-		IpfsFile indexHash = asyncPublish.getIndexHash();
-		
-		// Update the local index.
-		cache.uploadedToThisCache(indexHash);
-		access.updateIndexHash(indexHash);
 	}
 }

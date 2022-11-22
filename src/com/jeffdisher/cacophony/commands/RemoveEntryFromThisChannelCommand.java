@@ -16,7 +16,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -46,8 +45,6 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
 		LocalIndex localIndex = access.readOnlyLocalIndex();
-		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
@@ -82,17 +79,15 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile newCid = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
-		cache.uploadedToThisCache(newCid);
+		IpfsFile newCid = access.uploadAndPin(new ByteArrayInputStream(rawRecords), true);
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncPublish = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
+		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(index);
 		return new CleanupData(asyncPublish, rootToLoad, previousRecords);
 	}
 
 	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
-		LocalIndex localIndex = access.readOnlyLocalIndex();
 		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// Unpin the entries (we need to unpin them all since we own them so we added them all).
@@ -117,7 +112,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		}
 		
 		// Now that the new index has been uploaded and the publish is in progress, we can unpin the previous root and records.
-		CommandHelpers.commonUpdateIndex(environment, access, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.previousRecords);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).

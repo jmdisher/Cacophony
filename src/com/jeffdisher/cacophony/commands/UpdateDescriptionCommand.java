@@ -16,7 +16,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -52,8 +51,6 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
 		LocalIndex localIndex = access.readOnlyLocalIndex();
-		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
@@ -87,8 +84,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			{
 				throw new UsageException("Picture too big (is " + StringHelpers.humanReadableBytes(rawData.length) + ", limit " + StringHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
 			}
-			IpfsFile pictureHash = scheduler.saveStream(new ByteArrayInputStream(rawData), true).get();
-			cache.uploadedToThisCache(pictureHash);
+			IpfsFile pictureHash = access.uploadAndPin(new ByteArrayInputStream(rawData), true);
 			description.setPicture(pictureHash.toSafeString());
 		}
 		if (null != _email)
@@ -118,23 +114,21 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		// Serialize and upload the description.
 		byte[] rawDescription = GlobalData.serializeDescription(description);
-		IpfsFile hashDescription = scheduler.saveStream(new ByteArrayInputStream(rawDescription), true).get();
-		cache.uploadedToThisCache(hashDescription);
+		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawDescription), true);
 		
 		// Update, save, and publish the new index.
 		index.setDescription(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncPublish = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
+		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(index);
 		return new CleanupData(asyncPublish, rootToLoad);
 	}
 
 	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
-		LocalIndex localIndex = access.readOnlyLocalIndex();
 		HighLevelCache cache = access.loadCacheReadWrite();
 		
-		// Do the local storage update while the publish continues in the background (even if it fails, we still want to update local storage).
-		CommandHelpers.commonUpdateIndex(environment, access, localIndex, cache, data.oldRootHash, data.asyncPublish.getIndexHash());
+		// Unpin the previous index.
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

@@ -17,7 +17,6 @@ import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -72,10 +71,8 @@ public class PublishHelpers
 		for (PublishElement elt : elements)
 		{
 			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
-			// Wait for file upload.
-			FutureSave save = scheduler.saveStream(elt.fileData, false);
-			IpfsFile uploaded = save.get();
-			cache.uploadedToThisCache(uploaded);
+			// Upload the file - we won't close the file here since the caller needs to handle cases where something could go wrong (and they gave us the file so they should close it).
+			IpfsFile uploaded = access.uploadAndPin(elt.fileData, false);
 			
 			DataElement element = new DataElement();
 			element.setCid(uploaded.toSafeString());
@@ -102,23 +99,21 @@ public class PublishHelpers
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = scheduler.saveStream(new ByteArrayInputStream(rawRecord), true).get();
-		cache.uploadedToThisCache(recordHash);
+		IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(rawRecord), true);
 		
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = scheduler.saveStream(new ByteArrayInputStream(rawRecords), true).get();
-		cache.uploadedToThisCache(recordsHash);
+		IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords), true);
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncResult = CommandHelpers.serializeSaveAndPublishIndex(environment, scheduler, index);
+		FuturePublish asyncResult = access.uploadStoreAndPublishIndex(index);
 		
 		// Now that the new index has been uploaded and the publish is in progress, we can unpin the previous root and records.
-		CommandHelpers.commonUpdateIndex(environment, access, existingLocalIndex, cache, previousRoot, asyncResult.getIndexHash());
+		CommandHelpers.safeRemoveFromLocalNode(environment, cache, previousRoot);
 		CommandHelpers.safeRemoveFromLocalNode(environment, cache, previousRecords);
 		return asyncResult;
 	}
