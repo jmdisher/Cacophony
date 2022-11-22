@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
@@ -181,7 +182,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public FollowIndex readOnlyFollowIndex()
+	public IReadOnlyFollowIndex readOnlyFollowIndex()
 	{
 		if (null == _followIndex)
 		{

@@ -4,8 +4,8 @@ import java.net.URL;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -29,8 +29,12 @@ public interface IReadingAccess extends AutoCloseable
 	 */
 	void close();
 
-	// TEMP.
-	FollowIndex readOnlyFollowIndex();
+	/**
+	 * Allows basic read-only access to the FollowIndex, since that is a common use-case.
+	 * 
+	 * @return A reference to the restricted read-only interface to the FollowIndex.
+	 */
+	IReadOnlyFollowIndex readOnlyFollowIndex();
 
 	// TEMP.
 	IConnection connection() throws IpfsConnectionException;

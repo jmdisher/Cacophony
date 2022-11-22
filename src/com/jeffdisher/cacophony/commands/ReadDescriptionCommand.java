@@ -5,8 +5,8 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -31,7 +31,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
-		FollowIndex followIndex = access.readOnlyFollowIndex();
+		IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).

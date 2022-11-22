@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -122,10 +123,11 @@ public class MockUserNode
 
 	public FollowIndex readFollowIndex() throws UsageException, VersionException, IpfsConnectionException
 	{
-		IReadingAccess reading = StandardAccess.readAccess(_executor);
-		FollowIndex followIndex = reading.readOnlyFollowIndex();
-		reading.close();
-		return followIndex;
+		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
+		try (IWritingAccess writing = StandardAccess.writeAccess(_executor))
+		{
+			return writing.readWriteFollowIndex();
+		}
 	}
 
 	public void deleteFile(IpfsFile cid)

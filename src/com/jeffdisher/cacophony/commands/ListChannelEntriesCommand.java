@@ -11,8 +11,8 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -38,7 +38,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
-		FollowIndex followIndex = access.readOnlyFollowIndex();
+		IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
 		
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;

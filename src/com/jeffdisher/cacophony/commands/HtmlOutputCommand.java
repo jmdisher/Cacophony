@@ -9,8 +9,8 @@ import java.nio.file.Files;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -48,7 +48,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		
 		IpfsKey ourPublicKey = access.getPublicKey();
 		IpfsFile lastPublishedIndex = access.getLastRootElement();
-		FollowIndex followIndex = access.readOnlyFollowIndex();
+		IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
 		GlobalPrefs prefs = access.readGlobalPrefs();
 		
 		if (!_directory.mkdir())

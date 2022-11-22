@@ -17,7 +17,13 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public interface IWritingAccess extends IReadingAccess
 {
-	// TEMP.
+	/**
+	 * Allows direct read-write access to the shared FollowIndex instance.  This interface is provided for cache update
+	 * and management logic which needs to very directly interact with the state of the object.
+	 * Calling this helper will mark the FollowIndex as needing to be written-back, upon closing the access.
+	 * 
+	 * @return The shared FollowIndex instance.
+	 */
 	FollowIndex readWriteFollowIndex();
 
 	/**

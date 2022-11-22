@@ -22,6 +22,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
@@ -95,7 +96,7 @@ public class TestJsonGenerationHelpers
 		LocalRecordCache recordCache = null;
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
-			FollowIndex followIndex = access.readOnlyFollowIndex();
+			IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
 			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, indexFile, followIndex);
 		}
 		
@@ -138,7 +139,7 @@ public class TestJsonGenerationHelpers
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
-			FollowIndex followIndex = access.readOnlyFollowIndex();
+			IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
 			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, publishedIndex, followIndex);
 		}
 		

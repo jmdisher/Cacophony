@@ -7,7 +7,7 @@ import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
@@ -50,7 +50,7 @@ public class GET_PostStruct implements IGetHandler
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
 				IpfsFile lastPublishedIndex = access.getLastRootElement();
-				FollowIndex followIndex = access.readOnlyFollowIndex();
+				IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
 				LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
 					try
 					{
