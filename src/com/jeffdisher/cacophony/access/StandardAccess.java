@@ -22,10 +22,13 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSave;
+import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -178,13 +181,6 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public INetworkScheduler scheduler() throws IpfsConnectionException
-	{
-		_lazyCreateScheduler();
-		return _scheduler;
-	}
-
-	@Override
 	public FollowIndex readOnlyFollowIndex()
 	{
 		if (null == _followIndex)
@@ -261,6 +257,35 @@ public class StandardAccess implements IWritingAccess
 	public IpfsFile getLastRootElement()
 	{
 		return _readOnly.readLocalIndex().lastPublishedIndex();
+	}
+
+	@Override
+	public IpfsKey getPublicKey()
+	{
+		_lazyCreateScheduler();
+		return _scheduler.getPublicKey();
+	}
+
+	@Override
+	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
+	{
+		_lazyCreateScheduler();
+		return _scheduler.resolvePublicKey(keyToResolve);
+	}
+
+	@Override
+	public FutureSize getSizeInBytes(IpfsFile cid)
+	{
+		_lazyCreateScheduler();
+		return _scheduler.getSizeInBytes(cid);
+	}
+
+	@Override
+	public FuturePublish republishIndex()
+	{
+		_lazyCreateScheduler();
+		IpfsFile lastRoot = _readOnly.readLocalIndex().lastPublishedIndex();
+		return _scheduler.publishIndex(lastRoot);
 	}
 
 	// ----- Writing methods -----

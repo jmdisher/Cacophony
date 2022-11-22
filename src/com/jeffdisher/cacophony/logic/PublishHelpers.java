@@ -15,7 +15,6 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -49,10 +48,8 @@ public class PublishHelpers
 			, PublishElement[] elements
 	) throws IpfsConnectionException
 	{
-		INetworkScheduler scheduler = access.scheduler();
-		
 		// Read the existing StreamIndex.
-		IpfsKey publicKey = scheduler.getPublicKey();
+		IpfsKey publicKey = access.getPublicKey();
 		
 		IpfsFile previousRoot = access.getLastRootElement();
 		Assert.assertTrue(null != previousRoot);

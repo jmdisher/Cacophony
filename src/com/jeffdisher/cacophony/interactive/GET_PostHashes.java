@@ -42,7 +42,7 @@ public class GET_PostHashes implements IGetHandler
 			IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				IpfsKey publicKey = access.scheduler().getPublicKey();
+				IpfsKey publicKey = access.getPublicKey();
 				IpfsFile lastPublishedIndex = access.getLastRootElement();
 				FollowIndex followIndex = access.readOnlyFollowIndex();
 				JsonArray hashes = JsonGenerationHelpers.postHashes(access, publicKey, lastPublishedIndex, followIndex, userToResolve);

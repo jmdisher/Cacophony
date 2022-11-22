@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -32,7 +31,6 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
-		INetworkScheduler scheduler = access.scheduler();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
@@ -52,7 +50,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			else
 			{
 				environment.logToConsole("NOT following " + _channelPublicKey);
-				rootToLoad = scheduler.resolvePublicKey(_channelPublicKey).get();
+				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
 				{
@@ -65,7 +63,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		{
 			// Just list our recommendations.
 			// Read the existing StreamIndex.
-			publicKey = scheduler.getPublicKey();
+			publicKey = access.getPublicKey();
 			rootToLoad = access.getLastRootElement();
 			Assert.assertTrue(null != rootToLoad);
 		}

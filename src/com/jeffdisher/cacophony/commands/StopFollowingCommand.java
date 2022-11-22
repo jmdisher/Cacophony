@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.FolloweeRefreshLogic;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.logic.StandardRefreshSupport;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -38,7 +37,6 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		
-		INetworkScheduler scheduler = access.scheduler();
 		FollowIndex followIndex = access.readWriteFollowIndex();
 		
 		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
@@ -52,7 +50,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Prepare for the cleanup.
 		GlobalPrefs prefs = access.readGlobalPrefs();
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, access);
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access);
 		FollowingCacheElement[] updatedCacheState = FolloweeRefreshLogic.refreshFollowee(refreshSupport
 				, prefs
 				, finalRecord.elements()

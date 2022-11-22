@@ -47,7 +47,7 @@ public class GET_UserInfo implements IGetHandler
 			IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				IpfsKey publicKey = access.scheduler().getPublicKey();
+				IpfsKey publicKey = access.getPublicKey();
 				IpfsFile lastPublishedIndex = access.getLastRootElement();
 				FollowIndex followIndex = access.readOnlyFollowIndex();
 				JsonObject userInfo = JsonGenerationHelpers.userInfo(access, publicKey, lastPublishedIndex, followIndex, userToResolve);

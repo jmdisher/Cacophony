@@ -38,7 +38,7 @@ public class GET_PublicKey implements IGetHandler
 			{
 				response.setContentType("text/plain");
 				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(access.scheduler().getPublicKey().toPublicKey());
+				response.getWriter().print(access.getPublicKey().toPublicKey());
 			}
 			catch (IpfsConnectionException e)
 			{

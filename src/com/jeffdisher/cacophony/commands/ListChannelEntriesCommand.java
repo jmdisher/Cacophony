@@ -15,7 +15,6 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -39,7 +38,6 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
-		INetworkScheduler scheduler = access.scheduler();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
 		
 		IpfsFile rootToLoad = null;
@@ -57,7 +55,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			else
 			{
 				environment.logToConsole("NOT following " + _channelPublicKey);
-				rootToLoad = scheduler.resolvePublicKey(_channelPublicKey).get();
+				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
 				{

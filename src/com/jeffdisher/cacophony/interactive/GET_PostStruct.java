@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -50,13 +49,12 @@ public class GET_PostStruct implements IGetHandler
 			IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				INetworkScheduler scheduler = access.scheduler();
 				IpfsFile lastPublishedIndex = access.getLastRootElement();
 				FollowIndex followIndex = access.readOnlyFollowIndex();
 				LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
 					try
 					{
-						return JsonGenerationHelpers.buildFolloweeCache(scheduler, access, lastPublishedIndex, followIndex);
+						return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followIndex);
 					}
 					catch (IpfsConnectionException e)
 					{

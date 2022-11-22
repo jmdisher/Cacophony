@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -17,13 +16,11 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupport
 {
 	private final IEnvironment _environment;
-	private final INetworkScheduler _scheduler;
 	private final IWritingAccess _access;
 
-	public StandardRefreshSupport(IEnvironment environment, INetworkScheduler scheduler, IWritingAccess access)
+	public StandardRefreshSupport(IEnvironment environment, IWritingAccess access)
 	{
 		_environment = environment;
-		_scheduler = scheduler;
 		_access = access;
 	}
 
@@ -35,7 +32,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
-		return _scheduler.getSizeInBytes(cid);
+		return _access.getSizeInBytes(cid);
 	}
 	@Override
 	public FuturePin addMetaDataToFollowCache(IpfsFile cid)

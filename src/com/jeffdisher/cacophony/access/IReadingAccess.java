@@ -8,10 +8,13 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.FutureResolve;
+import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -25,9 +28,6 @@ public interface IReadingAccess extends AutoCloseable
 	 * we override the close() not to throw it.
 	 */
 	void close();
-
-	// TEMP.
-	INetworkScheduler scheduler() throws IpfsConnectionException;
 
 	// TEMP.
 	FollowIndex readOnlyFollowIndex();
@@ -85,4 +85,32 @@ public interface IReadingAccess extends AutoCloseable
 	 * succeed).
 	 */
 	IpfsFile getLastRootElement();
+
+	/**
+	 * @return The public key of this channel.
+	 */
+	IpfsKey getPublicKey();
+
+	/**
+	 * Resolves the given keyToResolve as a public key to see the file it has published.
+	 * 
+	 * @param keyToResolve The key to resolve.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureResolve resolvePublicKey(IpfsKey keyToResolve);
+
+	/**
+	 * Reads the size of a file from the network.
+	 * 
+	 * @param cid The file to look up.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureSize getSizeInBytes(IpfsFile cid);
+
+	/**
+	 * Republishes the last saved root element for this channel's key.
+	 * 
+	 * @return The asynchronously-completed future.
+	 */
+	FuturePublish republishIndex();
 }

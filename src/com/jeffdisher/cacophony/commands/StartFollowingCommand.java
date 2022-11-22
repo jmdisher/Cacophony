@@ -9,7 +9,6 @@ import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -39,7 +38,6 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// We want to prune the cache to 75% for new followee so make space.
 		CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 0.75);
 		
-		INetworkScheduler scheduler = access.scheduler();
 		FollowIndex followIndex = access.readWriteFollowIndex();
 		
 		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
@@ -52,13 +50,13 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		}
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
-		IpfsFile indexRoot = scheduler.resolvePublicKey(_publicKey).get();
+		IpfsFile indexRoot = access.resolvePublicKey(_publicKey).get();
 		Assert.assertTrue(null != indexRoot);
 		environment.logToConsole("Resolved as " + indexRoot);
 		GlobalPrefs prefs = access.readGlobalPrefs();
 		
 		// This will throw exceptions in case something goes wrong.
-		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, access, currentCacheUsageInBytes, _publicKey, null, indexRoot, prefs);
+		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, access, currentCacheUsageInBytes, _publicKey, null, indexRoot, prefs);
 		followIndex.checkinRecord(updatedRecord);
 		
 		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.

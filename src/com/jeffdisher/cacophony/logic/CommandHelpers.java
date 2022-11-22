@@ -90,7 +90,6 @@ public class CommandHelpers
 	}
 
 	public static FollowRecord doRefreshOfRecord(IEnvironment environment
-			, INetworkScheduler scheduler
 			, IWritingAccess access
 			, long currentCacheUsageInBytes
 			, IpfsKey publicKey
@@ -110,7 +109,7 @@ public class CommandHelpers
 		;
 		
 		// Prepare for the initial fetch.
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, access);
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access);
 		IpfsFile successfulIndex = null;
 		FollowingCacheElement[] elementsToWrite = null;
 		try

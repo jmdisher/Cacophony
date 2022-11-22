@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -31,16 +30,14 @@ public record RepublishCommand() implements ICommand
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
-		INetworkScheduler scheduler = access.scheduler();
-		
 		// Get the previously posted index hash.
 		IpfsFile indexHash = access.getLastRootElement();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);
 		
 		// Republish the index.
-		IOperationLog log = environment.logOperation("Republishing index (" + scheduler.getPublicKey() + " -> " + indexHash + ")...");
-		IpfsConnectionException error = scheduler.publishIndex(indexHash).get();
+		IOperationLog log = environment.logOperation("Republishing index (" + access.getPublicKey() + " -> " + indexHash + ")...");
+		IpfsConnectionException error = access.republishIndex().get();
 		// If we failed to publish, that should be considered an error for this command, since this is all it does.
 		if (null != error)
 		{

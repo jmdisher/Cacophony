@@ -24,7 +24,6 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.SingleThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
@@ -86,8 +85,6 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode();
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
-		RemoteActions actions = RemoteActions.loadIpfsConfig(remoteConnection, KEY_NAME, false);
-		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
 		
 		IpfsFile indexFile = null;
 		try (IWritingAccess access = StandardAccess.createForWrite(executor, "ipfs", KEY_NAME))
@@ -99,7 +96,7 @@ public class TestJsonGenerationHelpers
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			FollowIndex followIndex = access.readOnlyFollowIndex();
-			recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, access, indexFile, followIndex);
+			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, indexFile, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -115,8 +112,6 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode();
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
-		RemoteActions actions = RemoteActions.loadIpfsConfig(remoteConnection, KEY_NAME, false);
-		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
@@ -144,7 +139,7 @@ public class TestJsonGenerationHelpers
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			FollowIndex followIndex = access.readOnlyFollowIndex();
-			recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, access, publishedIndex, followIndex);
+			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, publishedIndex, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
