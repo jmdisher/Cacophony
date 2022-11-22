@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -125,10 +124,8 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 
 	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
-		HighLevelCache cache = access.loadCacheReadWrite();
-		
 		// Unpin the previous index.
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
+		access.unpin(data.oldRootHash);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

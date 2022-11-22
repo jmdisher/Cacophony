@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -41,7 +40,6 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 0.90);
 		
 		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		FollowIndex followIndex = access.readWriteFollowIndex();
 		
 		IOperationLog log = environment.logOperation("Refreshing followee " + _publicKey + "...");
@@ -62,7 +60,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 			environment.logToConsole("Resolved as " + indexRoot);
 			GlobalPrefs prefs = access.readGlobalPrefs();
 			
-			updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, cache, currentCacheUsageInBytes, _publicKey, startRecord, indexRoot, prefs);
+			updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, access, currentCacheUsageInBytes, _publicKey, startRecord, indexRoot, prefs);
 		}
 		else
 		{

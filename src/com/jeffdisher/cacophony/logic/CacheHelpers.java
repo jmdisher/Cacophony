@@ -9,12 +9,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -115,7 +115,7 @@ public class CacheHelpers
 		return candidates;
 	}
 
-	public static void pruneCacheIfNeeded(HighLevelCache cache, FollowIndex followIndex, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
+	public static void pruneCacheIfNeeded(IWritingAccess access, FollowIndex followIndex, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{
@@ -136,14 +136,15 @@ public class CacheHelpers
 						IpfsFile imageHash = elt.imageHash();
 						if (null != imageHash)
 						{
-							cache.removeFromFollowCache(HighLevelCache.Type.FILE, imageHash).get();
+							access.unpin(imageHash);
 						}
 						IpfsFile leafHash = elt.leafHash();
 						if (null != leafHash)
 						{
-							cache.removeFromFollowCache(HighLevelCache.Type.FILE, leafHash).get();
+							access.unpin(leafHash);
 						}
 					}
+					// NOTE:  We always leave the meta-data cached (the StreamRecord) - only the leaf elements are prunable since they are the large files.
 				}
 				if (record.elements().length != retained.size())
 				{

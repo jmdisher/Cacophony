@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -53,7 +52,6 @@ public class PublishHelpers
 	{
 		LocalIndex existingLocalIndex = access.readOnlyLocalIndex();
 		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = scheduler.getPublicKey();
@@ -113,8 +111,8 @@ public class PublishHelpers
 		FuturePublish asyncResult = access.uploadStoreAndPublishIndex(index);
 		
 		// Now that the new index has been uploaded and the publish is in progress, we can unpin the previous root and records.
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, previousRoot);
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, previousRecords);
+		access.unpin(previousRoot);
+		access.unpin(previousRecords);
 		return asyncResult;
 	}
 

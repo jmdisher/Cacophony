@@ -5,7 +5,7 @@ import java.io.InputStream;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
+import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -17,9 +17,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public interface IWritingAccess extends IReadingAccess
 {
-	// TEMP
-	HighLevelCache loadCacheReadWrite() throws IpfsConnectionException;
-
 	// TEMP.
 	FollowIndex readWriteFollowIndex();
 
@@ -53,4 +50,26 @@ public interface IWritingAccess extends IReadingAccess
 	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
 	 */
 	FuturePublish uploadStoreAndPublishIndex(StreamIndex streamIndex) throws IpfsConnectionException;
+
+	/**
+	 * Requests that the given cid be pinned on the local node.  Since a pin operation can be a very long-running
+	 * operation (either because the node is fetching a lot of data or because it timed out), the result is returned
+	 * as a future.
+	 * NOTE:  The implementation should merely record the duplicate pin, in the case where the file has already been
+	 * pinned, since the pin actions are reference-counted.
+	 * 
+	 * @param cid The file to pin locally.
+	 * @return The future of the pin status.
+	 */
+	FuturePin pin(IpfsFile cid);
+
+	/**
+	 * Requests that the given cid be unpinned on the local node.
+	 * NOTE:  The implementation should interpret this as a decrement of the pin reference count, only actually
+	 * unpinning from the IPFS node if this count drops to 0.
+	 * 
+	 * @param cid The file to unpin.
+	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
+	 */
+	void unpin(IpfsFile cid) throws IpfsConnectionException;
 }

@@ -14,12 +14,12 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSave;
@@ -191,14 +191,6 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public HighLevelCache loadCacheReadOnly() throws IpfsConnectionException
-	{
-		_lazyLoadPinCache();
-		_lazyCreateScheduler();
-		return new HighLevelCache(_pinCache, _scheduler, _sharedConnection);
-	}
-
-	@Override
 	public FollowIndex readOnlyFollowIndex()
 	{
 		if (null == _followIndex)
@@ -237,21 +229,6 @@ public class StandardAccess implements IWritingAccess
 	public void requestIpfsGc() throws IpfsConnectionException
 	{
 		_sharedConnection.requestStorageGc();
-	}
-
-	@Override
-	public HighLevelCache loadCacheReadWrite() throws IpfsConnectionException
-	{
-		Assert.assertTrue(null != _readWrite);
-		LocalIndex localIndex = _readOnly.readLocalIndex();
-		INetworkScheduler scheduler = _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
-		if (null == _pinCache)
-		{
-			_pinCache = _readOnly.readGlobalPinCache();
-		}
-		// We will want to write this back.
-		_writePinCache = true;
-		return new HighLevelCache(_pinCache, scheduler, _sharedConnection);
 	}
 
 	@Override
@@ -330,6 +307,38 @@ public class StandardAccess implements IWritingAccess
 		LocalIndex oldLocalIndex = _readOnly.readLocalIndex();
 		_readWrite.writeLocalIndex(new LocalIndex(oldLocalIndex.ipfsHost(), oldLocalIndex.keyName(), hash));
 		return _scheduler.publishIndex(hash);
+	}
+
+	@Override
+	public FuturePin pin(IpfsFile cid)
+	{
+		_lazyLoadPinCache();
+		_lazyCreateScheduler();
+		boolean shouldPin = _pinCache.shouldPinAfterAdding(cid);
+		FuturePin pin = null;
+		if (shouldPin)
+		{
+			pin = _scheduler.pin(cid);
+		}
+		else
+		{
+			// If we decided that this was already pinned, just return an already completed pin.
+			pin = new FuturePin();
+			pin.success();
+		}
+		return pin;
+	}
+
+	@Override
+	public void unpin(IpfsFile cid) throws IpfsConnectionException
+	{
+		_lazyLoadPinCache();
+		_lazyCreateScheduler();
+		boolean shouldUnpin = _pinCache.shouldUnpinAfterRemoving(cid);
+		if (shouldUnpin)
+		{
+			_scheduler.unpin(cid).get();
+		}
 	}
 
 	@Override

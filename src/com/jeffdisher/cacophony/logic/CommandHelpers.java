@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -72,7 +71,6 @@ public class CommandHelpers
 		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
 		FollowIndex followIndex = access.readWriteFollowIndex();
 		GlobalPrefs globalPrefs = access.readGlobalPrefs();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		
 		{
 			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
@@ -81,7 +79,7 @@ public class CommandHelpers
 			{
 				environment.logToConsole("Pruning cache to " + StringHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
 				long bytesToAdd = 0L;
-				CacheHelpers.pruneCacheIfNeeded(cache, followIndex, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
+				CacheHelpers.pruneCacheIfNeeded(access, followIndex, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
 			}
 			else
 			{
@@ -93,7 +91,7 @@ public class CommandHelpers
 
 	public static FollowRecord doRefreshOfRecord(IEnvironment environment
 			, INetworkScheduler scheduler
-			, HighLevelCache cache
+			, IWritingAccess access
 			, long currentCacheUsageInBytes
 			, IpfsKey publicKey
 			, FollowRecord startRecord
@@ -112,7 +110,7 @@ public class CommandHelpers
 		;
 		
 		// Prepare for the initial fetch.
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, cache);
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, scheduler, access);
 		IpfsFile successfulIndex = null;
 		FollowingCacheElement[] elementsToWrite = null;
 		try
@@ -155,19 +153,6 @@ public class CommandHelpers
 		Assert.assertTrue(null != successfulIndex);
 		Assert.assertTrue(null != elementsToWrite);
 		return new FollowRecord(publicKey, successfulIndex, System.currentTimeMillis(), elementsToWrite);
-	}
-
-	/**
-	 * A common utility to unpin a file from the local IPFS node and remove it from the HighLevelCache.  Since errors
-	 * here are rare, and only represent a small leak of local node data, this call just logs them.
-	 * 
-	 * @param environment Used for logging an error.
-	 * @param cache The cache which tracks the state of the local cache and does a write-through to the local IPFS node.
-	 * @param file The file to unpin.
-	 */
-	public static void safeRemoveFromLocalNode(IEnvironment environment, HighLevelCache cache, IpfsFile file)
-	{
-		_safeRemove(environment, cache, file);
 	}
 
 
@@ -236,17 +221,5 @@ public class CommandHelpers
 			}
 		}
 		return candidatesList;
-	}
-
-	private static void _safeRemove(IEnvironment environment, HighLevelCache cache, IpfsFile file)
-	{
-		try
-		{
-			cache.removeFromThisCache(file).get();
-		}
-		catch (IpfsConnectionException e)
-		{
-			environment.logError("WARNING: Error unpinning " + file + ".  This will need to be done manually.");
-		}
 	}
 }

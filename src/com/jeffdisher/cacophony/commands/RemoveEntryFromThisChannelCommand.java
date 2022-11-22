@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -88,8 +87,6 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 
 	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
-		HighLevelCache cache = access.loadCacheReadWrite();
-		
 		// Unpin the entries (we need to unpin them all since we own them so we added them all).
 		StreamRecord record = null;
 		try
@@ -106,14 +103,14 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			for (DataElement element : array.getElement())
 			{
 				IpfsFile cid = IpfsFile.fromIpfsCid(element.getCid());
-				CommandHelpers.safeRemoveFromLocalNode(environment, cache, cid);
+				access.unpin(cid);
 			}
-			CommandHelpers.safeRemoveFromLocalNode(environment, cache, _elementCid);
+			access.unpin(_elementCid);
 		}
 		
 		// Now that the new index has been uploaded and the publish is in progress, we can unpin the previous root and records.
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.oldRootHash);
-		CommandHelpers.safeRemoveFromLocalNode(environment, cache, data.previousRecords);
+		access.unpin(data.oldRootHash);
+		access.unpin(data.previousRecords);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);

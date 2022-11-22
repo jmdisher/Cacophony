@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -41,7 +40,6 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 0.75);
 		
 		INetworkScheduler scheduler = access.scheduler();
-		HighLevelCache cache = access.loadCacheReadWrite();
 		FollowIndex followIndex = access.readWriteFollowIndex();
 		
 		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
@@ -60,7 +58,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		GlobalPrefs prefs = access.readGlobalPrefs();
 		
 		// This will throw exceptions in case something goes wrong.
-		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, cache, currentCacheUsageInBytes, _publicKey, null, indexRoot, prefs);
+		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, scheduler, access, currentCacheUsageInBytes, _publicKey, null, indexRoot, prefs);
 		followIndex.checkinRecord(updatedRecord);
 		
 		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.

@@ -2,11 +2,12 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.function.Function;
 
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -17,13 +18,13 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 {
 	private final IEnvironment _environment;
 	private final INetworkScheduler _scheduler;
-	private final HighLevelCache _cache;
+	private final IWritingAccess _access;
 
-	public StandardRefreshSupport(IEnvironment environment, INetworkScheduler scheduler, HighLevelCache cache)
+	public StandardRefreshSupport(IEnvironment environment, INetworkScheduler scheduler, IWritingAccess access)
 	{
 		_environment = environment;
 		_scheduler = scheduler;
-		_cache = cache;
+		_access = access;
 	}
 
 	@Override
@@ -39,26 +40,40 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public FuturePin addMetaDataToFollowCache(IpfsFile cid)
 	{
-		return _cache.addToFollowCache(HighLevelCache.Type.METADATA, cid);
+		return _access.pin(cid);
 	}
 	@Override
 	public void removeMetaDataFromFollowCache(IpfsFile cid)
 	{
-		_cache.removeFromFollowCache(HighLevelCache.Type.METADATA, cid);
+		try
+		{
+			_access.unpin(cid);
+		}
+		catch (IpfsConnectionException e)
+		{
+			_environment.logError("Failed to unpin meta-data " + cid + ": " + e.getLocalizedMessage());
+		}
 	}
 	@Override
 	public FuturePin addFileToFollowCache(IpfsFile cid)
 	{
-		return _cache.addToFollowCache(HighLevelCache.Type.FILE, cid);
+		return _access.pin(cid);
 	}
 	@Override
 	public void removeFileFromFollowCache(IpfsFile cid)
 	{
-		_cache.removeFromFollowCache(HighLevelCache.Type.FILE, cid);
+		try
+		{
+			_access.unpin(cid);
+		}
+		catch (IpfsConnectionException e)
+		{
+			_environment.logError("Failed to unpin file " + cid + ": " + e.getLocalizedMessage());
+		}
 	}
 	@Override
 	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
 	{
-		return _cache.loadCached(file, decoder);
+		return _access.loadCached(file, decoder);
 	}
 }

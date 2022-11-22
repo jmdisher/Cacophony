@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.HighLevelCache;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -33,9 +32,6 @@ public interface IReadingAccess extends AutoCloseable
 
 	// TEMP.
 	INetworkScheduler scheduler() throws IpfsConnectionException;
-
-	// TEMP.
-	HighLevelCache loadCacheReadOnly() throws IpfsConnectionException;
 
 	// TEMP.
 	FollowIndex readOnlyFollowIndex();
