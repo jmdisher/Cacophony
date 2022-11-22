@@ -192,7 +192,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public IConnection connection() throws IpfsConnectionException
+	public IConnection connection()
 	{
 		return _sharedConnection;
 	}
@@ -200,6 +200,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator)
 	{
+		// NOTE:  The underlying data store actually manages the locking around this generation so we can just defer to it.
 		return _readOnly.lazilyLoadFolloweeCache(cacheGenerator);
 	}
 

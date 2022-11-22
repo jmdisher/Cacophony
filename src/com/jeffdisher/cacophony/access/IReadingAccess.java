@@ -36,13 +36,35 @@ public interface IReadingAccess extends AutoCloseable
 	 */
 	IReadOnlyFollowIndex readOnlyFollowIndex();
 
-	// TEMP.
-	IConnection connection() throws IpfsConnectionException;
+	/**
+	 * Allows direct access to the shared connection object.
+	 * NOTE:  This should only be used during some bootstrapping cases which require interfaces which aren't normally
+	 * required by the high-level code.
+	 * 
+	 * @return The shared connection object.
+	 */
+	IConnection connection();
 
-	// TEMP.
+	/**
+	 * Returns a reference to the record cache, lazily constructing it if need be.
+	 * NOTE:  This is in the read-only interface since, even though it technically modifies the state of the object when
+	 * it performs the lazy creation of the cache.  This is acceptable since it doesn't modify on-disk or network state
+	 * and is technically an optimization (everything would work the same way if it generated the cache on every call).
+	 * To explain further, the cache is only created by one calling thread and persists until the FolloweeIndex is
+	 * modified, at which point it is invalidated and must be recreated by a later caller.
+	 * 
+	 * @param cacheGenerator The cache generation helper.
+	 * @return The shared read-only followee cache instance.
+	 */
 	LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator);
 
-	// TEMP - only used for tests.
+	/**
+	 * Checks if the given file is tracked in the local pin cache.
+	 * NOTE:  This should only be used in tests as it doesn't have any general use (it is too low-level).
+	 * 
+	 * @param file The file to check.
+	 * @return True if this file is in the pin cache, false if it is not explicitly pinned locally.
+	 */
 	boolean isInPinCached(IpfsFile file);
 
 	/**
