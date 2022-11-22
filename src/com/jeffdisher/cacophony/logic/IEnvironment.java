@@ -30,16 +30,6 @@ public interface IEnvironment
 	void logError(String message);
 
 	/**
-	 * Used in some testing modes to enable additional verifications that sizes/publications/etc are consistent.  Should
-	 * not normally be used as it adds some additional network reads into the critical path.
-	 * Note that the same logic of the verification is always applied if there was a network error when publishing, no
-	 * matter this setting.
-	 * 
-	 * @return True if additional checks should be applied.
-	 */
-	boolean shouldEnableVerifications();
-
-	/**
 	 * Returns the shared scheduler for network operations, lazily creating it if it doesn't yet exist.
 	 * Note that the scheduler is lazily created but long-lived and shared by potentially multiple threads and
 	 * concurrent commands.

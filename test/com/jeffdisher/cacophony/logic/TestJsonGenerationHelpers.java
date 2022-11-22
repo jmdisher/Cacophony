@@ -86,7 +86,7 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode();
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
-		RemoteActions actions = RemoteActions.loadIpfsConfig(executor, remoteConnection, KEY_NAME);
+		RemoteActions actions = RemoteActions.loadIpfsConfig(remoteConnection, KEY_NAME, false);
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
 		
 		IpfsFile indexFile = null;
@@ -115,7 +115,7 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode();
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
-		RemoteActions actions = RemoteActions.loadIpfsConfig(executor, remoteConnection, KEY_NAME);
+		RemoteActions actions = RemoteActions.loadIpfsConfig(remoteConnection, KEY_NAME, false);
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler(actions);
 		
 		IpfsFile recordFile = null;

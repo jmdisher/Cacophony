@@ -13,16 +13,16 @@ public class RemoteActions
 	/**
 	 * Loads a RemoteActions abstraction using the given executor, loaded from the given ILocalActions abstraction.
 	 * 
-	 * @param environment The environment in which this should run.
 	 * @param ipfs The IPFS connection.
 	 * @param keyName The name of the key to use when publishing updates.
+	 * @param shouldEnableVerifications True if additional publish verifications should be applied.
 	 * @return The abstraction over the remote actions.
 	 * @throws IpfsConnectionException Something went wrong interacting with the remote server when attaching.
 	 */
-	public static RemoteActions loadIpfsConfig(IEnvironment environment, IConnection ipfs, String keyName) throws IpfsConnectionException
+	public static RemoteActions loadIpfsConfig(IConnection ipfs, String keyName, boolean shouldEnableVerifications) throws IpfsConnectionException
 	{
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(environment, ipfs, keyName, publicKey);
+		return new RemoteActions(ipfs, keyName, publicKey, shouldEnableVerifications);
 	}
 
 	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
@@ -41,25 +41,22 @@ public class RemoteActions
 	}
 
 
-	private final IEnvironment _environment;
 	private final IConnection _ipfs;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
+	private final boolean _shouldEnableVerifications;
 
-	private RemoteActions(IEnvironment environment, IConnection ipfs, String keyName, IpfsKey publicKey)
+	private RemoteActions(IConnection ipfs, String keyName, IpfsKey publicKey, boolean shouldEnableVerifications)
 	{
-		_environment = environment;
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
+		_shouldEnableVerifications = shouldEnableVerifications;
 	}
 
 	public IpfsFile saveStream(InputStream stream) throws IpfsConnectionException
 	{
-		StandardEnvironment.IOperationLog log = _environment.logOperation("Saving stream...");
-		IpfsFile file = _ipfs.storeData(stream);
-		log.finish("saved: " + file.toSafeString());
-		return file;
+		return _ipfs.storeData(stream);
 	}
 
 	public byte[] readData(IpfsFile indexHash) throws IpfsConnectionException
@@ -98,7 +95,7 @@ public class RemoteActions
 		}
 		
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
-		if ((null != error) || _environment.shouldEnableVerifications())
+		if ((null != error) || _shouldEnableVerifications)
 		{
 			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
 			try

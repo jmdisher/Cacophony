@@ -70,12 +70,6 @@ public class StandardEnvironment implements IEnvironment
 		_errorOccurred = true;
 	}
 
-	@Override
-	public boolean shouldEnableVerifications()
-	{
-		return _shouldEnableVerifications;
-	}
-
 	public boolean didErrorOccur()
 	{
 		return _errorOccurred;
@@ -90,7 +84,7 @@ public class StandardEnvironment implements IEnvironment
 		{
 			if (null == _lazySharedScheduler)
 			{
-				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(this, ipfs, keyName), THREAD_COUNT);
+				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(ipfs, keyName, _shouldEnableVerifications), THREAD_COUNT);
 			}
 			scheduler = _lazySharedScheduler;
 		}
