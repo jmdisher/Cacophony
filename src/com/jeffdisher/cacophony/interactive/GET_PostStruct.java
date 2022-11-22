@@ -51,7 +51,7 @@ public class GET_PostStruct implements IGetHandler
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
 				INetworkScheduler scheduler = access.scheduler();
-				IpfsFile lastPublishedIndex = access.readOnlyLocalIndex().lastPublishedIndex();
+				IpfsFile lastPublishedIndex = access.getLastRootElement();
 				FollowIndex followIndex = access.readOnlyFollowIndex();
 				LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
 					try

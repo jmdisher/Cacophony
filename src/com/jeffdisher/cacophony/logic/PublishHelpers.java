@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -50,13 +49,12 @@ public class PublishHelpers
 			, PublishElement[] elements
 	) throws IpfsConnectionException
 	{
-		LocalIndex existingLocalIndex = access.readOnlyLocalIndex();
 		INetworkScheduler scheduler = access.scheduler();
 		
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = scheduler.getPublicKey();
 		
-		IpfsFile previousRoot = existingLocalIndex.lastPublishedIndex();
+		IpfsFile previousRoot = access.getLastRootElement();
 		Assert.assertTrue(null != previousRoot);
 		StreamIndex index = access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		

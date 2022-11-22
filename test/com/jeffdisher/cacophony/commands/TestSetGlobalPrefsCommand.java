@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -24,10 +23,7 @@ public class TestSetGlobalPrefsCommand
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Verify initial update.
-		LocalIndex index1 = user.getLocalStoredIndex();
-		Assert.assertEquals(IPFS_HOST, index1.ipfsHost());
-		Assert.assertEquals(KEY_NAME, index1.keyName());
-		Assert.assertNotNull(index1.lastPublishedIndex());
+		Assert.assertNotNull(user.getLastRootElement());
 		
 		GlobalPrefs original = user.readPrefs();
 		SetGlobalPrefsCommand command = new SetGlobalPrefsCommand(original.videoEdgePixelMax() + 1, original.followCacheTargetBytes() + 1);

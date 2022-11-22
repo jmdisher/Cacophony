@@ -49,7 +49,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		
 		INetworkScheduler scheduler = access.scheduler();
 		IpfsKey ourPublicKey = scheduler.getPublicKey();
-		IpfsFile lastPublishedIndex = access.readOnlyLocalIndex().lastPublishedIndex();
+		IpfsFile lastPublishedIndex = access.getLastRootElement();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
 		GlobalPrefs prefs = access.readGlobalPrefs();
 		

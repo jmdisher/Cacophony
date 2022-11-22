@@ -12,7 +12,6 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -77,12 +76,10 @@ public class TestStartFollowingCommand
 		
 		// Make sure that the local index is correct.
 		IReadingAccess reading = StandardAccess.readAccess(executor);
-		LocalIndex finalIndex = reading.readOnlyLocalIndex();
+		IpfsFile lastPublishedIndex = reading.getLastRootElement();
 		reading.close();
-		Assert.assertEquals(IPFS_HOST, finalIndex.ipfsHost());
-		Assert.assertEquals(KEY_NAME, finalIndex.keyName());
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
-		Assert.assertNull(finalIndex.lastPublishedIndex());
+		Assert.assertNull(lastPublishedIndex);
 		executor.shutdown();
 	}
 

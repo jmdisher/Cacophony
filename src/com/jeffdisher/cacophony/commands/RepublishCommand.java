@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -33,10 +32,9 @@ public record RepublishCommand() implements ICommand
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
 	{
 		INetworkScheduler scheduler = access.scheduler();
-		LocalIndex localIndex = access.readOnlyLocalIndex();
 		
 		// Get the previously posted index hash.
-		IpfsFile indexHash = localIndex.lastPublishedIndex();
+		IpfsFile indexHash = access.getLastRootElement();
 		// We must have previously published something.
 		Assert.assertTrue(null != indexHash);
 		

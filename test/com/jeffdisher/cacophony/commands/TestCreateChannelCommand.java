@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -28,9 +27,6 @@ public class TestCreateChannelCommand
 		user1.runCommand(null, command);
 		
 		// Verify the states that should have changed.
-		LocalIndex storedIndex = user1.getLocalStoredIndex();
-		Assert.assertEquals(IPFS_HOST, storedIndex.ipfsHost());
-		Assert.assertEquals(KEY_NAME, storedIndex.keyName());
 		IpfsFile root = user1.resolveKeyOnNode(PUBLIC_KEY);
 		Assert.assertTrue(user1.isInPinCache(root));
 		StreamIndex index = GlobalData.deserializeIndex(user1.loadDataFromNode(root));

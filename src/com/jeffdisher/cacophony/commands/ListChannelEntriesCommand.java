@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -42,7 +41,6 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	{
 		INetworkScheduler scheduler = access.scheduler();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
-		LocalIndex localIndex = access.readOnlyLocalIndex();
 		
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
@@ -71,7 +69,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		else
 		{
 			// This is us.
-			rootToLoad = localIndex.lastPublishedIndex();
+			rootToLoad = access.getLastRootElement();
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}

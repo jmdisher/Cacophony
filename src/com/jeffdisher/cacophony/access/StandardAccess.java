@@ -178,12 +178,6 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public LocalIndex readOnlyLocalIndex()
-	{
-		return _readOnly.readLocalIndex();
-	}
-
-	@Override
 	public INetworkScheduler scheduler() throws IpfsConnectionException
 	{
 		_lazyCreateScheduler();
@@ -261,6 +255,12 @@ public class StandardAccess implements IWritingAccess
 		_lazyLoadPinCache();
 		Assert.assertTrue(_pinCache.isCached(file));
 		return _sharedConnection.urlForDirectFetch(file);
+	}
+
+	@Override
+	public IpfsFile getLastRootElement()
+	{
+		return _readOnly.readLocalIndex().lastPublishedIndex();
 	}
 
 	// ----- Writing methods -----

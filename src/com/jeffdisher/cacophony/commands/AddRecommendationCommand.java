@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -40,10 +39,8 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 
 	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
-		LocalIndex localIndex = access.readOnlyLocalIndex();
-		
 		// Read our existing root key.
-		IpfsFile oldRootHash = localIndex.lastPublishedIndex();
+		IpfsFile oldRootHash = access.getLastRootElement();
 		Assert.assertTrue(null != oldRootHash);
 		StreamIndex index = access.loadCached(oldRootHash, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		IpfsFile originalRecommendations = IpfsFile.fromIpfsCid(index.getRecommendations());

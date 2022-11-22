@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -35,7 +34,6 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	{
 		INetworkScheduler scheduler = access.scheduler();
 		FollowIndex followIndex = access.readOnlyFollowIndex();
-		LocalIndex localIndex = access.readOnlyLocalIndex();
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
@@ -68,7 +66,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			// Just list our recommendations.
 			// Read the existing StreamIndex.
 			publicKey = scheduler.getPublicKey();
-			rootToLoad = localIndex.lastPublishedIndex();
+			rootToLoad = access.getLastRootElement();
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}

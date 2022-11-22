@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.commands;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
@@ -25,17 +25,15 @@ public class TestRepublishCommand
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Verify initial update.
-		LocalIndex index1 = user.getLocalStoredIndex();
-		Assert.assertEquals(IPFS_HOST, index1.ipfsHost());
-		Assert.assertEquals(KEY_NAME, index1.keyName());
-		Assert.assertNotNull(index1.lastPublishedIndex());
+		IpfsFile update1 = user.getLastRootElement();
+		Assert.assertNotNull(update1);
 		
 		// Now, run the refresh command.
 		user.runCommand(null, command);
 		
 		// Verify nothing changed.
-		LocalIndex index2 = user.getLocalStoredIndex();
-		Assert.assertEquals(index1, index2);
+		IpfsFile update2 = user.getLastRootElement();
+		Assert.assertEquals(update1, update2);
 		user.shutdown();
 	}
 }

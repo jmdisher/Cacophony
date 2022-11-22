@@ -141,7 +141,7 @@ public class TestJsonGenerationHelpers
 		LocalRecordCache recordCache = null;
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
-			IpfsFile publishedIndex = access.readOnlyLocalIndex().lastPublishedIndex();
+			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			FollowIndex followIndex = access.readOnlyFollowIndex();
 			recordCache = JsonGenerationHelpers.buildFolloweeCache(scheduler, access, publishedIndex, followIndex);

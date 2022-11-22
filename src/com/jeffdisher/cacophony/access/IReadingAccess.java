@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -26,9 +25,6 @@ public interface IReadingAccess extends AutoCloseable
 	 * we override the close() not to throw it.
 	 */
 	void close();
-
-	// TEMP.
-	LocalIndex readOnlyLocalIndex();
 
 	// TEMP.
 	INetworkScheduler scheduler() throws IpfsConnectionException;
@@ -83,4 +79,10 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The URL to directly GET the file contents.
 	 */
 	URL getCachedUrl(IpfsFile file);
+
+	/**
+	 * @return The last index which had been stored as the root (StreamIndex) and published (even if the publish didn't
+	 * succeed).
+	 */
+	IpfsFile getLastRootElement();
 }

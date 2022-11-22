@@ -12,7 +12,6 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -92,12 +91,12 @@ public class MockUserNode
 		return _sharedConnection.resolve(key);
 	}
 
-	public LocalIndex getLocalStoredIndex() throws UsageException, VersionException, IpfsConnectionException
+	public IpfsFile getLastRootElement() throws UsageException, VersionException, IpfsConnectionException
 	{
-		IReadingAccess reading = StandardAccess.readAccess(_executor);
-		LocalIndex finalIndex = reading.readOnlyLocalIndex();
-		reading.close();
-		return finalIndex;
+		try (IReadingAccess reading = StandardAccess.readAccess(_executor))
+		{
+			return reading.getLastRootElement();
+		}
 	}
 
 	public boolean isPinnedLocally(IpfsFile file)

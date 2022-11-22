@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -49,10 +48,8 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 
 	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
-		LocalIndex localIndex = access.readOnlyLocalIndex();
-		
 		// Read the existing StreamIndex.
-		IpfsFile rootToLoad = localIndex.lastPublishedIndex();
+		IpfsFile rootToLoad = access.getLastRootElement();
 		Assert.assertTrue(null != rootToLoad);
 		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		

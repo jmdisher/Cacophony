@@ -43,7 +43,7 @@ public class GET_RecommendedKeys implements IGetHandler
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
 				IpfsKey publicKey = access.scheduler().getPublicKey();
-				IpfsFile lastPublishedIndex = access.readOnlyLocalIndex().lastPublishedIndex();
+				IpfsFile lastPublishedIndex = access.getLastRootElement();
 				FollowIndex followIndex = access.readOnlyFollowIndex();
 				JsonArray keys = JsonGenerationHelpers.recommendedKeys(access, publicKey, lastPublishedIndex, followIndex, userToResolve);
 				if (null != keys)
