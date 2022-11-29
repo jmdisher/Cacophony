@@ -272,7 +272,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id);
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, true);
 		}
 		
 		// Verify the data is on the node.
@@ -306,17 +306,57 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id);
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, true);
 		}
 		
 		// Verify that we see both.
 		record = null;
 		boolean didSeeFirst = false;
+		IpfsFile secondRecord = null;
 		for (IpfsFile file : connection.getStoredFileSet())
 		{
 			if (firstRecord.equals(file))
 			{
 				didSeeFirst = true;
+			}
+			else
+			{
+				try
+				{
+					record = GlobalData.deserializeRecord(connection.loadData(file));
+					Assert.assertNull(secondRecord);
+					secondRecord = file;
+				}
+				catch (FailedDeserializationException e)
+				{
+					// This is a failure to parse.
+				}
+			}
+		}
+		Assert.assertTrue(didSeeFirst);
+		Assert.assertEquals("title2", record.getName());
+		Assert.assertEquals(1, record.getElements().getElement().size());
+		
+		// Now, publish another entry but explicitly forbid attaching the video.
+		id = 3;
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.updateDraftText(draftManager, id, "title3", "description", null);
+		saver = InteractiveHelpers.openNewVideo(draftManager, id);
+		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
+		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		
+		// Publish the draft WITHOUT uploading the video attachment.
+		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		{
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, false);
+		}
+		
+		// Verify that the new entry has no attachments.
+		record = null;
+		for (IpfsFile file : connection.getStoredFileSet())
+		{
+			if (firstRecord.equals(file) || secondRecord.equals(file))
+			{
 			}
 			else
 			{
@@ -330,9 +370,8 @@ public class TestInteractiveHelpers
 				}
 			}
 		}
-		Assert.assertTrue(didSeeFirst);
-		Assert.assertEquals("title2", record.getName());
-		Assert.assertEquals(1, record.getElements().getElement().size());
+		Assert.assertEquals("title3", record.getName());
+		Assert.assertEquals(0, record.getElements().getElement().size());
 	}
 
 

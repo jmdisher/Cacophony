@@ -99,16 +99,22 @@ public class InteractiveHelpers
 			, IWritingAccess access
 			, DraftManager draftManager
 			, int draftId
+			, boolean shouldPublishVideo
 	) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		Draft draft = wrapper.loadDraft();
-		SizedElement video = draft.processedVideo();
-		File videoFile = wrapper.processedVideo();
-		if (null == video)
+		SizedElement video = null;
+		File videoFile = null;
+		if (shouldPublishVideo)
 		{
-			video = draft.originalVideo();
-			videoFile = wrapper.originalVideo();
+			video = draft.processedVideo();
+			videoFile = wrapper.processedVideo();
+			if (null == video)
+			{
+				video = draft.originalVideo();
+				videoFile = wrapper.originalVideo();
+			}
 		}
 		SizedElement thumbnail = draft.thumbnail();
 		int elementCount = 0;

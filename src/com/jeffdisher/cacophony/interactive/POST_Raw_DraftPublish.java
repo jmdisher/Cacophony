@@ -20,6 +20,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Publishes the given draft and returns 200 on success, 404 if not found, or 500 if something went wrong.
+ * Accepts 2 path arguments:
+ * [0] = draft ID
+ * [1] = PublishType
  */
 public class POST_Raw_DraftPublish implements IPostRawHandler
 {
@@ -48,13 +51,16 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 			// Make sure there isn't already a publish update in-progress (later, we can just overwrite it).
 			_backgroundOperations.waitForPendingPublish();
 			
-			int draftId = Integer.parseInt(pathVariables[0]);
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
+				int draftId = Integer.parseInt(pathVariables[0]);
+				PublishType type = PublishType.valueOf(pathVariables[1]);
+				
 				FuturePublish asyncPublish = InteractiveHelpers.publishExistingDraft(_environment
 						, access
 						, _draftManager
 						, draftId
+						, (PublishType.VIDEO == type)
 				);
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				
@@ -62,6 +68,18 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 				_backgroundOperations.waitAndStorePublishOperation(asyncPublish);
 				
 				response.setStatus(HttpServletResponse.SC_OK);
+			}
+			catch (NumberFormatException e)
+			{
+				// Draft ID invalid.
+				response.getWriter().println("Invalid draft ID: \"" + pathVariables[0] + "\"");
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			}
+			catch (IllegalArgumentException e)
+			{
+				// Typically thrown by PublishType.valueOf.
+				response.getWriter().println("Invalid draft type: \"" + pathVariables[1] + "\"");
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			}
 			catch (FileNotFoundException e)
 			{
@@ -78,5 +96,15 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 				throw Assert.unexpected(e);
 			}
 		}
+	}
+
+
+	/**
+	 * This type is just used to formalize the interfact but isn't part of the actual data model.
+	 */
+	private static enum PublishType
+	{
+		VIDEO,
+		TEXT_ONLY,
 	}
 }

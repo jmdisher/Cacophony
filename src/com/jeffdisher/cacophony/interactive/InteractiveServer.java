@@ -41,7 +41,7 @@ public class InteractiveServer
 		server.addGetHandler("/draft", 1, new GET_Draft(xsrf, manager));
 		server.addPostFormHandler("/draft", 1, new POST_Form_Draft(xsrf, manager));
 		server.addDeleteHandler("/draft", 1, new DELETE_Draft(xsrf, manager));
-		server.addPostRawHandler("/draft/publish", 1, new POST_Raw_DraftPublish(environment, xsrf, background, manager));
+		server.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, xsrf, background, manager));
 		server.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(environment, xsrf, background));
 		
 		server.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(xsrf, manager));

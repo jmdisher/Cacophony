@@ -144,6 +144,7 @@ function selectDraft(canvas, original_review, processed_review, scope, draft)
 		{
 			processed_review.src = "";
 		}
+		populateSyntheticType(scope.selectedDraft);
 	}
 	else
 	{
@@ -196,6 +197,24 @@ function waitForPublish(scope)
 		});
 }
 
+// The "type" field is essentially a synthetic enum (see POST_Raw_DraftPublish.PublishType):
+// -VIDEO
+// -TEXT_ONLY
+// This method over-writes that field in the given draft by looking at the other elements to see what kind of data is present.
+// This can be later over-written again since it is isn't actually part of the data model but just meant to be a convenient way of communicating what parts of the UI the user wants to see and what data it should actually publish.
+function populateSyntheticType(draft)
+{
+	// If we have a processed video OR an original video, this can be considered a VIDEO type.
+	// Otherwise, we default to TEXT_ONLY.
+	// Note that any type can have a thumbnail image.
+	let type = "TEXT_ONLY";
+	if ((null !== draft.originalVideo) || (null !== draft.processedVideo))
+	{
+		type = "VIDEO";
+	}
+	draft.type = type;
+}
+
 
 // We will create an Angular controller and populate it with data from generated_db.js.
 var GLOBAL_Application = angular.module('App', []);
@@ -242,6 +261,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 		REST.POST("/createDraft")
 			.then(data => data.json())
 			.then(draftObject => {
+				populateSyntheticType(draftObject);
 				$scope.drafts.push(draftObject);
 				$scope.selectedDraft = draftObject;
 				$scope.$apply();
@@ -411,7 +431,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 		// We need to save-back the draft before publishing since the server publishes from the saved state.
 		saveDraft($scope.selectedDraft).then(function(data) {
 			// Now, begin the publish.
-			REST.POST("/draft/publish/" + $scope.selectedDraft.id)
+			REST.POST("/draft/publish/" + $scope.selectedDraft.id + "/" + $scope.selectedDraft.type)
 				.then(function(data) {
 					$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
 					$scope.selectedDraft = null;
@@ -533,6 +553,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.$apply();
 			});
 	}
+	$scope.setDraftType = function(type)
+	{
+		$scope.selectedDraft.type = type;
+	}
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
@@ -599,7 +623,12 @@ GLOBAL_Application.controller('AppController', function($scope)
 				Select a draft to see details.
 			</div>
 			<div class="card card-body" ng-show="null != selectedDraft">
-				Draft:  <strong>{{selectedDraft.title}}</strong>.<br />
+				Draft:  <strong>{{selectedDraft.title}}</strong><br />
+				Post type:
+				<div class="btn-group" role="group">
+					<button type="button" class="btn btn-primary" ng-click="setDraftType('TEXT_ONLY')" ng-disabled="'TEXT_ONLY' === selectedDraft.type">Text only</button>
+					<button type="button" class="btn btn-primary" ng-click="setDraftType('VIDEO')" ng-disabled="'VIDEO' === selectedDraft.type">Video</button>
+				</div>
 				<div class="card card-body">
 					Video preview: <br />
 					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoState.stream"></input><br />
@@ -610,7 +639,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-disabled="null != videoState.stream">Start Camera</button>
 						<button type="button" class="btn btn-primary" ng-click="stopCamera()" ng-disabled="null == videoState.stream">Stop Camera</button>
 					</div>
-					
+				</div>
+				<div class="card card-body" ng-show="'VIDEO' === selectedDraft.type">
 					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
 					<br />Upload from filesystem: <input type="file" accept="video/*" id="video_upload_selector" />
 					<button type="button" class="btn btn-primary" ng-click="uploadSelectedVideo()" ng-show="null !== selectedFiles.video" ng-disabled="selectedFiles.video.uploading">Upload {{selectedFiles.video.name}} ({{selectedFiles.video.byteSize}} bytes)</button><br />
@@ -620,18 +650,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 						</div>
 					</div>
 				</div>
-				<div class="card card-body" ng-show="null != videoState.stream">
+				<div class="card card-body" ng-show="(null != videoState.stream) && ('VIDEO' === selectedDraft.type)">
 					Recording: <br />
 					Video bits/s: <input type="text" class="form-control" ng-model="videoConfig.videoBitrate" ng-disabled="null != videoState.recorder"></input><br />
 					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != videoState.recorder"></input><br />
 					<button class="btn btn-success" ng-click="startRecording()" ng-disabled="null != videoState.recorder">Start Recording</button>
 					<button class="btn btn-danger" ng-click="stopRecording()" ng-disabled="null == videoState.recorder">Stop Recording</button>
 				</div>
-				<div class="card card-body" ng-show="selectedDraft.originalVideo.byteSize > 0">
+				<div class="card card-body" ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					<video id="original_review" controls></video><br />
 					<button class="btn btn-danger" ng-click="deleteOriginalVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
 				</div>
-				<div class="card card-body"  ng-show="selectedDraft.originalVideo.byteSize > 0">
+				<div class="card card-body"  ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					Post-processing: <br />
 					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
 					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed.<br />
@@ -644,7 +674,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 						</div>
 					</div>
 				</div>
-				<div class="card card-body" ng-show="selectedDraft.processedVideo.byteSize > 0">
+				<div class="card card-body" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					<video id="processed_review" controls></video><br />
 					<button class="btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
 				</div>
@@ -672,7 +702,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-disabled="inProgress">Publish</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo))" ng-disabled="inProgress">Publish without video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress">Publish with original video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress">Publish with processed video</button>
 					</div>
 				</div>
 			</div>
