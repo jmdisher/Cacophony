@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.scheduler;
 
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -11,17 +12,19 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class FutureRead<D>
 {
 	private D _data;
-	private IpfsConnectionException _exception;
+	private IpfsConnectionException _connectionException;
+	private FailedDeserializationException _decodingException;
 
 	/**
 	 * Blocks for the asynchronous operation to complete.
 	 * 
 	 * @return The successful result of the request.
 	 * @throws IpfsConnectionException The exception which caused the read to fail.
+	 * @throws FailedDeserializationException There was a failure in decoding the data after loading.
 	 */
-	public synchronized D get() throws IpfsConnectionException
+	public synchronized D get() throws IpfsConnectionException, FailedDeserializationException
 	{
-		while ((null == _data) && (null == _exception))
+		while ((null == _data) && (null == _connectionException) && (null == _decodingException))
 		{
 			try
 			{
@@ -33,9 +36,13 @@ public class FutureRead<D>
 				throw Assert.unexpected(e);
 			}
 		}
-		if (null != _exception)
+		if (null != _connectionException)
 		{
-			throw _exception;
+			throw _connectionException;
+		}
+		else if (null != _decodingException)
+		{
+			throw _decodingException;
 		}
 		return _data;
 	}
@@ -52,13 +59,24 @@ public class FutureRead<D>
 	}
 
 	/**
-	 * Called to set the exception which caused the failure.
+	 * Called to set the exception which caused the failure when it was an IPFS error.
 	 * 
 	 * @param exception The exception to throw.
 	 */
-	public synchronized void failure(IpfsConnectionException exception)
+	public synchronized void failureInConnection(IpfsConnectionException exception)
 	{
-		_exception = exception;
+		_connectionException = exception;
+		this.notify();
+	}
+
+	/**
+	 * Called to set the exception which caused the failure when it was a decoding error.
+	 * 
+	 * @param exception The exception to throw.
+	 */
+	public synchronized void failureInDecoding(FailedDeserializationException exception)
+	{
+		_decodingException = exception;
 		this.notify();
 	}
 }

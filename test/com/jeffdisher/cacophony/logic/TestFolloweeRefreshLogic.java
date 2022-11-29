@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -24,9 +23,11 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -442,7 +443,7 @@ public class TestFolloweeRefreshLogic
 		_commonSizeCheck(data, indexHash);
 	}
 
-	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException
+	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
 		TestSupport testSupport = new TestSupport(data);
 		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 100L);
@@ -563,7 +564,7 @@ public class TestFolloweeRefreshLogic
 		return recordHash;
 	}
 
-	private static IpfsFile _addElementToStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash)
+	private static IpfsFile _addElementToStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash) throws FailedDeserializationException
 	{
 		// Read the existing stream.
 		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));
@@ -581,7 +582,7 @@ public class TestFolloweeRefreshLogic
 		return indexHash;
 	}
 
-	private static IpfsFile _removeElementFromStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash)
+	private static IpfsFile _removeElementFromStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash) throws FailedDeserializationException
 	{
 		// Read the existing stream.
 		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));
@@ -600,7 +601,7 @@ public class TestFolloweeRefreshLogic
 		return indexHash;
 	}
 
-	private static void _verifyRecordDeleted(TestSupport testSupport, Map<IpfsFile, byte[]> data, IpfsFile recordHash)
+	private static void _verifyRecordDeleted(TestSupport testSupport, Map<IpfsFile, byte[]> data, IpfsFile recordHash) throws FailedDeserializationException
 	{
 		// Verify the record isn't in testSupport.
 		testSupport.verifyNotPresentOrPinned(recordHash);
@@ -615,7 +616,7 @@ public class TestFolloweeRefreshLogic
 		}
 	}
 
-	private IpfsFile[] _readRecordHashes(Map<IpfsFile, byte[]> data, IpfsFile indexHash)
+	private IpfsFile[] _readRecordHashes(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws FailedDeserializationException
 	{
 		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(index.getRecords());
@@ -769,11 +770,18 @@ public class TestFolloweeRefreshLogic
 			}
 		}
 		@Override
-		public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
+		public <R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder)
 		{
 			Assert.assertTrue(_data.containsKey(file));
 			FutureRead<R> future = new FutureRead<R>();
-			future.success(decoder.apply(_data.get(file)));
+			try
+			{
+				future.success(decoder.apply(_data.get(file)));
+			}
+			catch (FailedDeserializationException e)
+			{
+				future.failureInDecoding(e);
+			}
 			return future;
 		}
 	}

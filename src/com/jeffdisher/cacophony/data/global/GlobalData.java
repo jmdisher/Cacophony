@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -70,7 +71,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static StreamIndex deserializeIndex(byte[] data)
+	public static StreamIndex deserializeIndex(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
 		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
@@ -82,8 +83,7 @@ public class GlobalData {
 			un.setSchema(INDEX_SCHEMA);
 			result = (StreamIndex) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new FailedDeserializationException(StreamIndex.class);
 		}
 		return result;
 	}
@@ -110,7 +110,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static StreamRecords deserializeRecords(byte[] data)
+	public static StreamRecords deserializeRecords(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
 		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
@@ -122,8 +122,7 @@ public class GlobalData {
 			un.setSchema(RECORDS_SCHEMA);
 			result = (StreamRecords) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new FailedDeserializationException(StreamRecords.class);
 		}
 		return result;
 	}
@@ -150,7 +149,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static StreamRecord deserializeRecord(byte[] data)
+	public static StreamRecord deserializeRecord(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
 		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
@@ -162,8 +161,7 @@ public class GlobalData {
 			un.setSchema(RECORD_SCHEMA);
 			result = (StreamRecord) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new FailedDeserializationException(StreamRecord.class);
 		}
 		return result;
 	}
@@ -190,7 +188,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static StreamDescription deserializeDescription(byte[] data)
+	public static StreamDescription deserializeDescription(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
 		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
@@ -202,8 +200,7 @@ public class GlobalData {
 			un.setSchema(DESCRIPTION_SCHEMA);
 			result = (StreamDescription) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new FailedDeserializationException(StreamDescription.class);
 		}
 		return result;
 	}
@@ -230,7 +227,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static StreamRecommendations deserializeRecommendations(byte[] data)
+	public static StreamRecommendations deserializeRecommendations(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
 		// We should never be called with an invalid size - that should be handled at a higher-level of the system.
@@ -242,8 +239,7 @@ public class GlobalData {
 			un.setSchema(RECOMMENDATIONS_SCHEMA);
 			result = (StreamRecommendations) un.unmarshal(new ByteArrayInputStream(data));
 		} catch (JAXBException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new FailedDeserializationException(StreamRecommendations.class);
 		}
 		return result;
 	}

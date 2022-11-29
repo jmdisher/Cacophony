@@ -1,13 +1,13 @@
 package com.jeffdisher.cacophony.access;
 
 import java.net.URL;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
@@ -86,7 +86,7 @@ public interface IReadingAccess extends AutoCloseable
 	 * @param decoder The decoder helper to invoke on the returned bytes.
 	 * @return The loaded and decoded instance.
 	 */
-	<R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder);
+	<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
 
 	/**
 	 * Loads the given file, decoding it into and instance of R, but asserting that it is NOT pinned on the local node.
@@ -96,7 +96,7 @@ public interface IReadingAccess extends AutoCloseable
 	 * @param decoder The decoder helper to invoke on the returned bytes.
 	 * @return The loaded and decoded instance.
 	 */
-	<R> FutureRead<R> loadNotCached(IpfsFile file, Function<byte[], R> decoder);
+	<R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder);
 
 	/**
 	 * Gets a URL which can be used to access the given file.

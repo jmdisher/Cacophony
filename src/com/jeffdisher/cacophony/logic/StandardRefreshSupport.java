@@ -1,8 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.util.function.Function;
-
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
@@ -69,7 +68,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		}
 	}
 	@Override
-	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
+	public <R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder)
 	{
 		return _access.loadCached(file, decoder);
 	}

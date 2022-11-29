@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -56,7 +57,7 @@ public class GET_PostStruct implements IGetHandler
 					{
 						return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followIndex);
 					}
-					catch (IpfsConnectionException e)
+					catch (IpfsConnectionException | FailedDeserializationException e)
 					{
 						// We return null on error but log this.
 						e.printStackTrace();

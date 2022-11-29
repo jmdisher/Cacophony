@@ -22,6 +22,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -216,7 +217,7 @@ public class TestFollowUpdates
 	}
 
 
-	private static String _getFirstElementCid(MockUserNode userNode, IpfsKey publicKey) throws IpfsConnectionException
+	private static String _getFirstElementCid(MockUserNode userNode, IpfsKey publicKey) throws IpfsConnectionException, FailedDeserializationException
 	{
 		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(userNode.resolveKeyOnNode(PUBLIC_KEY1)));
 		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));

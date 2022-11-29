@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 
 
 public class TestGlobalData {
@@ -35,7 +36,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testIndex2() throws IOException {
+	public void testIndex2() throws FailedDeserializationException
+	{
 		byte[] input = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><index xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/index.xsd\"><version>5</version><description>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</description><recommendations>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</recommendations><records>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</records></index>".getBytes();
 		StreamIndex didRead = GlobalData.deserializeIndex(input);
 		Assert.assertEquals("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG", didRead.getDescription());
@@ -54,7 +56,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testRecords2() throws IOException {
+	public void testRecords2() throws FailedDeserializationException
+	{
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<records xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/records.xsd\">\n"
 				+ "    <record>QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG</record>\n"
@@ -96,7 +99,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testRecord2() throws IOException {
+	public void testRecord2() throws FailedDeserializationException
+	{
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd\">\n"
 				+ "    <name>name</name>\n"
@@ -132,7 +136,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testDescription2() throws IOException {
+	public void testDescription2() throws FailedDeserializationException
+	{
 		byte[] input = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<description xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/description.xsd\">\n"
 				+ "    <name>name</name>\n"
@@ -156,7 +161,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testRecommendations2() throws IOException {
+	public void testRecommendations2() throws FailedDeserializationException
+	{
 		byte[] input = ("<recommendations xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/recommendations.xsd\">\n"
 				+ "    <user>z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141</user>\n"
 				+ "</recommendations>\n").getBytes();
@@ -165,7 +171,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testPublishWithImage() throws IOException {
+	public void testPublishWithImage() throws FailedDeserializationException
+	{
 		DataElement element = new DataElement();
 		element.setCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		element.setMime("image/jpeg");

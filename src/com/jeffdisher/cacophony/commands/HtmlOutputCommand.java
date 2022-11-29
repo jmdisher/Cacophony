@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -42,7 +43,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		}
 	}
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		IOperationLog log = environment.logOperation("Generating static HTML output in " + _directory);
 		
@@ -81,7 +82,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			{
 				return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followIndex);
 			}
-			catch (IpfsConnectionException e)
+			catch (IpfsConnectionException | FailedDeserializationException e)
 			{
 				// We return null on error but log this.
 				e.printStackTrace();

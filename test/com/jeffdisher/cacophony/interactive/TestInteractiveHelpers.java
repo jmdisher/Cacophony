@@ -25,6 +25,7 @@ import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -285,10 +286,9 @@ public class TestInteractiveHelpers
 				Assert.assertNull(firstRecord);
 				firstRecord = file;
 			}
-			catch (RuntimeException e)
+			catch (FailedDeserializationException e)
 			{
 				// This is a failure to parse.
-				// TODO:  Formalize this exception.
 			}
 		}
 		Assert.assertEquals("title", record.getName());
@@ -324,10 +324,9 @@ public class TestInteractiveHelpers
 				{
 					record = GlobalData.deserializeRecord(connection.loadData(file));
 				}
-				catch (RuntimeException e)
+				catch (FailedDeserializationException e)
 				{
 					// This is a failure to parse.
-					// TODO:  Formalize this exception.
 				}
 			}
 		}

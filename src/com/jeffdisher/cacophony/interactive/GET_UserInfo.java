@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -62,7 +63,7 @@ public class GET_UserInfo implements IGetHandler
 					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 				}
 			}
-			catch (IpfsConnectionException e)
+			catch (IpfsConnectionException | FailedDeserializationException e)
 			{
 				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 				e.printStackTrace(response.getWriter());

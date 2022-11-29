@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -33,7 +34,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		}
 	}
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		FollowRecord record = access.readOnlyFollowIndex().peekRecord(_followeeKey);
 		if (null != record)

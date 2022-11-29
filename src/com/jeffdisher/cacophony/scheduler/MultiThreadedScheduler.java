@@ -2,9 +2,9 @@ package com.jeffdisher.cacophony.scheduler;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Function;
 
 import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -49,7 +49,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
-	public <R> FutureRead<R> readData(IpfsFile file, Function<byte[], R> decoder)
+	public <R> FutureRead<R> readData(IpfsFile file, DataDeserializer<R> decoder)
 	{
 		FutureRead<R> future = new FutureRead<R>();
 		Runnable r = () -> {
@@ -60,7 +60,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 			}
 			catch (IpfsConnectionException e)
 			{
-				future.failure(e);
+				future.failureInConnection(e);
+			}
+			catch (FailedDeserializationException e)
+			{
+				future.failureInDecoding(e);
 			}
 		};
 		_queue.enqueue(r);

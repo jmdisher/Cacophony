@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -17,9 +16,11 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -71,7 +72,7 @@ public class FolloweeRefreshLogic
 			, IpfsFile oldIndexElement
 			, IpfsFile newIndexElement
 			, long currentCacheUsageInBytes
-	) throws IpfsConnectionException, SizeConstraintException
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Note that only the roots can be null (at most one).
 		// Even the existingRecord will be non-null, even if nothing is in it.
@@ -138,7 +139,7 @@ public class FolloweeRefreshLogic
 			, List<IpfsFile> metaDataToUnpin
 			, IpfsFile oldDescriptionElement
 			, IpfsFile newDescriptionElement
-	) throws IpfsConnectionException, SizeConstraintException
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Check if the root changed.
 		if ((null == oldDescriptionElement) || !oldDescriptionElement.equals(newDescriptionElement))
@@ -171,7 +172,7 @@ public class FolloweeRefreshLogic
 			, List<IpfsFile> metaDataToUnpin
 			, IpfsFile oldRecommendationsElement
 			, IpfsFile newRecommendationsElement
-	) throws IpfsConnectionException, SizeConstraintException
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Check if the root changed.
 		if ((null == oldRecommendationsElement) || !oldRecommendationsElement.equals(newRecommendationsElement))
@@ -206,7 +207,7 @@ public class FolloweeRefreshLogic
 			, IpfsFile oldRecordsElement
 			, IpfsFile newRecordsElement
 			, long currentCacheUsageInBytes
-	) throws IpfsConnectionException, SizeConstraintException
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		FollowingCacheElement[] finalElements = null;
 		// Check if the root changed.
@@ -477,7 +478,7 @@ public class FolloweeRefreshLogic
 		return finalSelection;
 	}
 
-	private static StreamIndex _loadIndex(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException
+	private static StreamIndex _loadIndex(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException, FailedDeserializationException
 	{
 		return (null != element)
 				? support.loadCached(element, (byte[] data) -> GlobalData.deserializeIndex(data)).get()
@@ -485,7 +486,7 @@ public class FolloweeRefreshLogic
 		;
 	}
 
-	private static StreamRecords _loadRecords(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException
+	private static StreamRecords _loadRecords(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException, FailedDeserializationException
 	{
 		return (null != element)
 				? support.loadCached(element, (byte[] data) -> GlobalData.deserializeRecords(data)).get()
@@ -553,6 +554,6 @@ public class FolloweeRefreshLogic
 		void removeMetaDataFromFollowCache(IpfsFile cid);
 		FuturePin addFileToFollowCache(IpfsFile cid);
 		void removeFileFromFollowCache(IpfsFile cid);
-		<R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder);
+		<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
 	}
 }

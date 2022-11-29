@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.scheduler;
 
 import java.io.InputStream;
-import java.util.function.Function;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -23,7 +22,7 @@ public interface INetworkScheduler
 	 * this).
 	 * @return The asynchronously-completed future.
 	 */
-	<R> FutureRead<R> readData(IpfsFile file, Function<byte[], R> decoder);
+	<R> FutureRead<R> readData(IpfsFile file, DataDeserializer<R> decoder);
 
 	/**
 	 * Saves a stream of data to the network and returns the location.

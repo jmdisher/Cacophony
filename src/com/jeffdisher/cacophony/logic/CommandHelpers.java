@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -52,7 +53,7 @@ public class CommandHelpers
 		_queueAndProcessElementRecordSize(scheduler, workingRecordList);
 	}
 
-	public static List<CacheAlgorithm.Candidate<RawElementData>> fetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, List<RawElementData> workingRecordList) throws IpfsConnectionException
+	public static List<CacheAlgorithm.Candidate<RawElementData>> fetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, List<RawElementData> workingRecordList) throws IpfsConnectionException, FailedDeserializationException
 	{
 		return _fetchLeafSizes(scheduler, videoEdgePixelMax, workingRecordList);
 	}
@@ -96,7 +97,7 @@ public class CommandHelpers
 			, FollowRecord startRecord
 			, IpfsFile indexRoot
 			, GlobalPrefs prefs
-	) throws IpfsConnectionException, SizeConstraintException
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Handle the differences between start and refresh.
 		FollowingCacheElement[] startElements = (null != startRecord)
@@ -174,7 +175,7 @@ public class CommandHelpers
 		}
 	}
 
-	private static List<CacheAlgorithm.Candidate<RawElementData>> _fetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, List<RawElementData> workingRecordList) throws IpfsConnectionException
+	private static List<CacheAlgorithm.Candidate<RawElementData>> _fetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, List<RawElementData> workingRecordList) throws IpfsConnectionException, FailedDeserializationException
 	{
 		for (RawElementData data : workingRecordList)
 		{

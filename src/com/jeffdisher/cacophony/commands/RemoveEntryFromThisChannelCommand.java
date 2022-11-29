@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -40,7 +41,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
+	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException, FailedDeserializationException
 	{
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
@@ -82,7 +83,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		return new CleanupData(asyncPublish, rootToLoad, previousRecords);
 	}
 
-	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
+	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// Unpin the entries (we need to unpin them all since we own them so we added them all).
 		StreamRecord record = null;

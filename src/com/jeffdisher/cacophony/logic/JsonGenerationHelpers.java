@@ -28,6 +28,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -40,7 +41,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class JsonGenerationHelpers
 {
-	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, IReadOnlyFollowIndex followIndex) throws IpfsConnectionException
+	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, IReadOnlyFollowIndex followIndex) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// Start output.
 		generatedStream.println("// " + comment);
@@ -201,7 +202,7 @@ public class JsonGenerationHelpers
 		return _dataVersion();
 	}
 
-	public static JsonObject userInfo(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	public static JsonObject userInfo(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
@@ -215,7 +216,7 @@ public class JsonGenerationHelpers
 		return foundObject;
 	}
 
-	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
@@ -233,7 +234,7 @@ public class JsonGenerationHelpers
 		return array;
 	}
 
-	public static JsonArray recommendedKeys(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException
+	public static JsonArray recommendedKeys(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
@@ -278,7 +279,7 @@ public class JsonGenerationHelpers
 		return _dataPrefs(prefs);
 	}
 
-	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, Iterable<FollowRecord> followIndex) throws IpfsConnectionException
+	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, Iterable<FollowRecord> followIndex) throws IpfsConnectionException, FailedDeserializationException
 	{
 		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(access, lastPublishedIndex, followIndex);
 		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
@@ -305,7 +306,7 @@ public class JsonGenerationHelpers
 		list.add(new FutureKey<StreamIndex>(publicKey, index));
 	}
 
-	private static List<FutureKey<StreamDescription>> _loadDescriptions(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureKey<StreamDescription>> _loadDescriptions(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
 	{
 		List<FutureKey<StreamDescription>> descriptions = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
@@ -328,7 +329,7 @@ public class JsonGenerationHelpers
 		return thisUser;
 	}
 
-	private static List<FutureKey<StreamRecords>> _loadRecords(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureKey<StreamRecords>> _loadRecords(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
 	{
 		List<FutureKey<StreamRecords>> recordsList = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
@@ -340,7 +341,7 @@ public class JsonGenerationHelpers
 		return recordsList;
 	}
 
-	private static List<FutureRead<StreamRecords>> _loadRecordsNoKey(IReadingAccess access, List<FutureRead<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureRead<StreamRecords>> _loadRecordsNoKey(IReadingAccess access, List<FutureRead<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
 	{
 		List<FutureRead<StreamRecords>> recordsList = new ArrayList<>();
 		for (FutureRead<StreamIndex> future : list)
@@ -352,7 +353,7 @@ public class JsonGenerationHelpers
 		return recordsList;
 	}
 
-	private static void _populateElementMapFromUserRoot(IReadingAccess access, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromUserRoot(IReadingAccess access, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -391,7 +392,7 @@ public class JsonGenerationHelpers
 		return object;
 	}
 
-	private static LocalRecordCache.Element _fetchDataForElement(IReadingAccess access, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
+	private static LocalRecordCache.Element _fetchDataForElement(IReadingAccess access, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
 	{
 		StreamRecord record = future.get();
 		
@@ -445,7 +446,7 @@ public class JsonGenerationHelpers
 		rootData.set(publicKey.toPublicKey(), array);
 	}
 
-	private static List<FutureKey<StreamRecommendations>> _loadRecommendations(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException
+	private static List<FutureKey<StreamRecommendations>> _loadRecommendations(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
 	{
 		List<FutureKey<StreamRecommendations>> recommendationsList = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : list)
@@ -539,7 +540,7 @@ public class JsonGenerationHelpers
 		return dataPrefs;
 	}
 
-	private static JsonObject _dataUserInfo(IReadingAccess access, List<FutureKey<StreamIndex>> indices) throws IpfsConnectionException
+	private static JsonObject _dataUserInfo(IReadingAccess access, List<FutureKey<StreamIndex>> indices) throws IpfsConnectionException, FailedDeserializationException
 	{
 		JsonObject dataUserInfo = new JsonObject();
 		List<FutureKey<StreamDescription>> descriptions = _loadDescriptions(access, indices);

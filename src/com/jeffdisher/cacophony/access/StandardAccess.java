@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.access;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
@@ -20,6 +19,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -224,7 +224,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public <R> FutureRead<R> loadCached(IpfsFile file, Function<byte[], R> decoder)
+	public <R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(null != file);
 		_lazyLoadPinCache();
@@ -234,7 +234,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public <R> FutureRead<R> loadNotCached(IpfsFile file, Function<byte[], R> decoder)
+	public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(null != file);
 		_lazyLoadPinCache();
