@@ -13,16 +13,31 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestInteractiveHelpers
 {
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
+
+	private static final String IPFS_HOST = "ipfsHost";
+	private static final String KEY_NAME = "keyName";
+	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
+
 
 	@Test
 	public void testEmptyList() throws Throwable
@@ -232,6 +247,93 @@ public class TestInteractiveHelpers
 		{
 			// Expected.
 		}
+	}
+
+	@Test
+	public void testPublish() throws Throwable
+	{
+		// Make sure that the directory doesn't exist.
+		IConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "sub"));
+		MockSingleNode connection = new MockSingleNode();
+		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
+		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
+		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, true);
+		
+		// First, create a channel so the channel is set up.
+		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);
+		
+		// Now, create a basic draft.
+		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
+		int id = 1;
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
+		
+		// Publish the draft.
+		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		{
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id);
+		}
+		
+		// Verify the data is on the node.
+		StreamRecord record = null;
+		IpfsFile firstRecord = null;
+		for (IpfsFile file : connection.getStoredFileSet())
+		{
+			try
+			{
+				record = GlobalData.deserializeRecord(connection.loadData(file));
+				Assert.assertNull(firstRecord);
+				firstRecord = file;
+			}
+			catch (RuntimeException e)
+			{
+				// This is a failure to parse.
+				// TODO:  Formalize this exception.
+			}
+		}
+		Assert.assertEquals("title", record.getName());
+		Assert.assertEquals(0, record.getElements().getElement().size());
+		
+		// Now, post a second entry with a video and make sure we see the attachment.
+		id = 2;
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.updateDraftText(draftManager, id, "title2", "description", null);
+		byte[] data = "Testing video".getBytes();
+		VideoSaver saver = InteractiveHelpers.openNewVideo(draftManager, id);
+		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
+		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		
+		// Publish the draft.
+		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		{
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id);
+		}
+		
+		// Verify that we see both.
+		record = null;
+		boolean didSeeFirst = false;
+		for (IpfsFile file : connection.getStoredFileSet())
+		{
+			if (firstRecord.equals(file))
+			{
+				didSeeFirst = true;
+			}
+			else
+			{
+				try
+				{
+					record = GlobalData.deserializeRecord(connection.loadData(file));
+				}
+				catch (RuntimeException e)
+				{
+					// This is a failure to parse.
+					// TODO:  Formalize this exception.
+				}
+			}
+		}
+		Assert.assertTrue(didSeeFirst);
+		Assert.assertEquals("title2", record.getName());
+		Assert.assertEquals(1, record.getElements().getElement().size());
 	}
 
 
