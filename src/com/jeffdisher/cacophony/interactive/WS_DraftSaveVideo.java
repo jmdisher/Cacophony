@@ -1,6 +1,8 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -8,6 +10,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -46,7 +49,9 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		private final int _height;
 		private final int _width;
 		private final String _mime;
-		private VideoSaver _saver;
+		private DraftWrapper _openDraft;
+		private FileOutputStream _outputStream;
+		private long _bytesSavedToStream;
 		
 		public SaveVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, int height, int width, String mime)
 		{
@@ -61,8 +66,19 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		@Override
 		public void onWebSocketClose(int statusCode, String reason)
 		{
-			InteractiveHelpers.closeNewVideo(_saver, _mime, _height, _width);
-			_saver = null;
+			Assert.assertTrue(null != _outputStream);
+			try
+			{
+				_outputStream.close();
+			}
+			catch (IOException e)
+			{
+				// Not expected here.
+				throw Assert.unexpected(e);
+			}
+			InteractiveHelpers.updateOriginalVideo(_openDraft, _mime, _height, _width, _bytesSavedToStream);
+			_openDraft = null;
+			_outputStream = null;
 		}
 		
 		@Override
@@ -72,10 +88,12 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 			{
 				// 256 KiB should be reasonable.
 				session.setMaxBinaryMessageSize(256 * 1024);
-				Assert.assertTrue(null == _saver);
+				Assert.assertTrue(null == _outputStream);
 				try
 				{
-					_saver = InteractiveHelpers.openNewVideo(_draftManager, _draftId);
+					_openDraft = _draftManager.openExistingDraft(_draftId);
+					_outputStream = new FileOutputStream(_openDraft.originalVideo());
+					_bytesSavedToStream = 0;
 				}
 				catch (FileNotFoundException e)
 				{
@@ -88,8 +106,17 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		@Override
 		public void onWebSocketBinary(byte[] payload, int offset, int len)
 		{
-			Assert.assertTrue(null != _saver);
-			InteractiveHelpers.appendToNewVideo(_saver, payload, offset, len);
+			Assert.assertTrue(null != _outputStream);
+			try
+			{
+				_outputStream.write(payload, offset, len);
+				_bytesSavedToStream += len;
+			}
+			catch (IOException e)
+			{
+				// TODO:  Determine how we want to handle this failure if we see it happen.
+				throw Assert.unexpected(e);
+			}
 		}
 	}
 }

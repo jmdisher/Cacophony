@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -20,6 +21,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -146,9 +148,9 @@ public class TestInteractiveHelpers
 		
 		// Save the video content.
 		byte[] data = "Testing video".getBytes();
-		VideoSaver saver = InteractiveHelpers.openNewVideo(draftManager, id);
-		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
-		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		Files.write(openDraft.originalVideo().toPath(), data);
+		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Re-read it.
 		String[] outMime = new String[1];
@@ -174,9 +176,9 @@ public class TestInteractiveHelpers
 		
 		// Save the video content.
 		byte[] data = "Testing video".getBytes();
-		VideoSaver saver = InteractiveHelpers.openNewVideo(draftManager, id);
-		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
-		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		Files.write(openDraft.originalVideo().toPath(), data);
+		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Process it.
 		long[] outSize = new long[1];
@@ -299,9 +301,9 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.createNewDraft(draftManager, id);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title2", "description", null);
 		byte[] data = "Testing video".getBytes();
-		VideoSaver saver = InteractiveHelpers.openNewVideo(draftManager, id);
-		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
-		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		Files.write(openDraft.originalVideo().toPath(), data);
+		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
@@ -341,9 +343,9 @@ public class TestInteractiveHelpers
 		id = 3;
 		InteractiveHelpers.createNewDraft(draftManager, id);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title3", "description", null);
-		saver = InteractiveHelpers.openNewVideo(draftManager, id);
-		InteractiveHelpers.appendToNewVideo(saver, data, 0, data.length);
-		InteractiveHelpers.closeNewVideo(saver, "video/webm", 5, 6);
+		openDraft = draftManager.openExistingDraft(id);
+		Files.write(openDraft.originalVideo().toPath(), data);
+		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))

@@ -41,23 +41,12 @@ public class InteractiveHelpers
 	private static final String LOCAL_IP = "127.0.0.1";
 
 	// --- Methods related to saving the new video.
-	public static VideoSaver openNewVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
+	public static void updateOriginalVideo(DraftWrapper openDraft, String mime, int height, int width, long savedFileSizeBytes)
 	{
-		return new VideoSaver(draftManager, draftId);
-	}
-	public static void appendToNewVideo(VideoSaver saver, byte[] payload, int offset, int len)
-	{
-		saver.append(payload, offset, len);
-	}
-	public static void closeNewVideo(VideoSaver saver, String mime, int height, int width)
-	{
-		long savedFileSizeBytes = saver.sockedDidClose();
-		
-		// We now update the final state.
-		Draft oldDraft = saver.draftWrapper.loadDraft();
+		Draft oldDraft = openDraft.loadDraft();
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
 		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo());
-		saver.draftWrapper.saveDraft(newDraft);
+		openDraft.saveDraft(newDraft);
 	}
 
 	// --- Methods related to processing the video (this is small since it mostly just invokes callbacks to the session on a different thread).
