@@ -70,7 +70,7 @@ function uploadVideoData(draftId, height, width, videoType, fileData, progressCa
 	});
 }
 
-function startRecording(stream, videoBitrate, audioBitrate, draftId, height, width, finalSizeCallback)
+function startRecordingVideo(stream, videoBitrate, audioBitrate, draftId, height, width, finalSizeCallback)
 {
 	let recorder = new MediaRecorder(stream, { mimeType: 'video/webm', audioBitsPerSecond: audioBitrate,  videoBitsPerSecond: videoBitrate });
 	let bytes = 0;
@@ -93,7 +93,7 @@ function startRecording(stream, videoBitrate, audioBitrate, draftId, height, wid
 	return recorder;
 }
 
-function stopRecording(videoState)
+function stopRecordingVideo(videoState)
 {
 	videoState.recorder.stop();
 	videoState.recorder = null;
@@ -224,8 +224,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let video_preview = document.getElementById('video_preview');
 	let original_review = document.getElementById('original_review');
 	let processed_review = document.getElementById('processed_review');
-	let progress_bar = document.getElementById('progress_bar');
-	let upload_progress_bar = document.getElementById('upload_progress_bar');
+	let processing_progress_bar = document.getElementById('processing_progress_bar');
+	let video_upload_progress_bar = document.getElementById('video_upload_progress_bar');
 	
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
@@ -297,9 +297,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		stopCamera(video_preview, $scope.videoState);
 	}
-	$scope.startRecording = function()
+	$scope.startRecordingVideo = function()
 	{
-		$scope.videoState.recorder = startRecording($scope.videoState.stream
+		$scope.videoState.recorder = startRecordingVideo($scope.videoState.stream
 			, $scope.videoConfig.videoBitrate
 			, $scope.videoConfig.audioBitrate
 			, $scope.selectedDraft.id
@@ -317,9 +317,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 			}
 		);
 	}
-	$scope.stopRecording = function()
+	$scope.stopRecordingVideo = function()
 	{
-		stopRecording($scope.videoState);
+		stopRecordingVideo($scope.videoState);
 	}
 	$scope.startProcessing = function()
 	{
@@ -334,9 +334,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 			{
 				let percentage = Math.round(100 * object.bytes / $scope.selectedDraft.originalVideo.byteSize);
 				console.log("Processing " + percentage + "%");
-				progress_bar.ariaValueNow = percentage;
-				progress_bar["style"] = "width: " + percentage + "%;";
-				progress_bar.textContent = percentage + "%";
+				processing_progress_bar.ariaValueNow = percentage;
+				processing_progress_bar["style"] = "width: " + percentage + "%;";
+				processing_progress_bar.textContent = percentage + "%";
 			}
 			else if ("done" == object.type)
 			{
@@ -515,9 +515,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 			{
 				let percentage = Math.round(100 * uploadedBytes / totalBytes);
 				console.log("Uploading " + percentage + "%");
-				upload_progress_bar.ariaValueNow = percentage;
-				upload_progress_bar["style"] = "width: " + percentage + "%;";
-				upload_progress_bar.textContent = percentage + "%";
+				video_upload_progress_bar.ariaValueNow = percentage;
+				video_upload_progress_bar["style"] = "width: " + percentage + "%;";
+				video_upload_progress_bar.textContent = percentage + "%";
 			}
 			, function(finalByteSize)
 			{
@@ -642,10 +642,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="card card-body" ng-show="'VIDEO' === selectedDraft.type">
 					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload from filesystem: <input type="file" accept="video/*" id="video_upload_selector" />
+					<br />Upload video from filesystem: <input type="file" accept="video/*" id="video_upload_selector" />
 					<button type="button" class="btn btn-primary" ng-click="uploadSelectedVideo()" ng-show="null !== selectedFiles.video" ng-disabled="selectedFiles.video.uploading">Upload {{selectedFiles.video.name}} ({{selectedFiles.video.byteSize}} bytes)</button><br />
 					<div class="progress" ng-show="selectedFiles.video.uploading">
-						<div class="progress-bar" id="upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+						<div class="progress-bar" id="video_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
 							0%
 						</div>
 					</div>
@@ -654,8 +654,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 					Recording: <br />
 					Video bits/s: <input type="text" class="form-control" ng-model="videoConfig.videoBitrate" ng-disabled="null != videoState.recorder"></input><br />
 					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != videoState.recorder"></input><br />
-					<button class="btn btn-success" ng-click="startRecording()" ng-disabled="null != videoState.recorder">Start Recording</button>
-					<button class="btn btn-danger" ng-click="stopRecording()" ng-disabled="null == videoState.recorder">Stop Recording</button>
+					<button class="btn btn-success" ng-click="startRecordingVideo()" ng-disabled="null != videoState.recorder">Start Recording</button>
+					<button class="btn btn-danger" ng-click="stopRecordingVideo()" ng-disabled="null == videoState.recorder">Stop Recording</button>
 				</div>
 				<div class="card card-body" ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					<video id="original_review" controls></video><br />
@@ -669,7 +669,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="inProgress || (null != videoState.processingSocket)">Start Processing</button>
 					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="inProgress || (null == videoState.processingSocket)">Stop Processing</button>
 					<div class="progress" ng-show="null != videoState.processingSocket">
-						<div class="progress-bar" id="progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+						<div class="progress-bar" id="processing_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
 							0%
 						</div>
 					</div>
@@ -692,7 +692,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					</div>
 					
 					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload from filesystem: <input type="file" accept="image/*" id="thumbnail_upload_selector" />
+					<br />Upload thumbnail from filesystem: <input type="file" accept="image/*" id="thumbnail_upload_selector" />
 					<button type="button" class="btn btn-primary" ng-click="uploadSelectedThumbnail()" ng-show="null !== selectedFiles.thumbnail" ng-disabled="selectedFiles.thumbnail.uploading">Upload {{selectedFiles.thumbnail.name}} ({{selectedFiles.thumbnail.byteSize}} bytes)</button><br />
 				</div>
 				<div class="card card-body">

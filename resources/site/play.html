@@ -49,7 +49,7 @@ function postWasLoaded($scope, elt)
 	{
 		$scope.thumbnailUrl = elt["thumbnailUrl"];
 		$scope.videoUrl = elt["videoUrl"];
-		if (null != $scope.videoUrl)
+		if (null !== $scope.videoUrl)
 		{
 			// The version of Angular we are using doesn't support the video tag so do this, ourselves.
 			let v = document.getElementById("video");
@@ -82,10 +82,10 @@ function postWasLoaded($scope, elt)
 </nav>
 <div class="container">
 	<div class="jumbotron">
-		<div class="row card card-body" ng-show="cached && videoUrl">
+		<div class="row card card-body" ng-show="cached && (null !== videoUrl)">
 			<center><video id="video" controls /></center>
 		</div>
-		<div class="row card card-body" ng-show="cached && thumbnailUrl && !videoUrl">
+		<div class="row card card-body" ng-show="cached && (null !== thumbnailUrl) && (null === videoUrl)">
 			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
 		</div>
 		<div class="row card card-body" ng-hide="cached">
