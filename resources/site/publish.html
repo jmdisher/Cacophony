@@ -27,11 +27,12 @@ function startCamera(height, width, fps)
 	});
 }
 
-function stopCamera(previewElement, videoState)
+function stopCamera(previewElement, videoState, audioState)
 {
 	previewElement.srcObject = null;
 	videoState.stream.getTracks().forEach(function(track) { track.stop(); });
 	videoState.stream = null;
+	audioState.stream = null;
 }
 
 function openVideoUploadWebSocket(draftId, height, width, videoType, onOpen, onClose)
@@ -47,10 +48,46 @@ function openVideoUploadWebSocket(draftId, height, width, videoType, onOpen, onC
 	return ws;
 }
 
+function openAudioUploadWebSocket(draftId, audioType, onOpen, onClose)
+{
+	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveAudio/" + draftId + "/" + audioType, "audio");
+	ws.onopen = onOpen;
+	ws.onclose = onClose;
+	ws.onerror = function(event)
+	{
+		console.log(event);
+	};
+	
+	return ws;
+}
+
 function uploadVideoData(draftId, height, width, videoType, fileData, progressCallback, finalSizeCallback)
 {
 	let bytes = 0;
 	let ws = openVideoUploadWebSocket(draftId, height, width, videoType,
+	function()
+	{
+		let chunkSize = 64 * 1024;
+		for (let start = 0; start < fileData.size; start += chunkSize)
+		{
+			let split = Math.min(fileData.size - start, chunkSize);
+			let blob = fileData.slice(start, start + split);
+			ws.send(blob);
+			bytes += split;
+			progressCallback(bytes, fileData.size);
+		}
+		ws.close();
+	},
+	function()
+	{
+		finalSizeCallback(bytes);
+	});
+}
+
+function uploadAudioData(draftId, audioType, fileData, progressCallback, finalSizeCallback)
+{
+	let bytes = 0;
+	let ws = openAudioUploadWebSocket(draftId, audioType,
 	function()
 	{
 		let chunkSize = 64 * 1024;
@@ -99,6 +136,35 @@ function stopRecordingVideo(videoState)
 	videoState.recorder = null;
 }
 
+function startRecordingAudioOnly(stream, audioBitrate, draftId, finalSizeCallback)
+{
+	let recorder = new MediaRecorder(stream, { mimeType: 'audio/ogg', audioBitsPerSecond: audioBitrate });
+	let bytes = 0;
+	let ws = openAudioUploadWebSocket(draftId, 'ogg',
+	function()
+	{
+		recorder.addEventListener('dataavailable', function(e) {
+			bytes += e.data.size;
+			ws.send(e.data);
+		});
+		recorder.addEventListener('stop', function() {
+			ws.close();
+		});
+		recorder.start(100);
+	},
+	function()
+	{
+		finalSizeCallback(bytes);
+	});
+	return recorder;
+}
+
+function stopRecordingAudio(audioState)
+{
+	audioState.recorder.stop();
+	audioState.recorder = null;
+}
+
 function setThumbnail(canvas, draft)
 {
 	let image = new Image();
@@ -110,7 +176,7 @@ function setThumbnail(canvas, draft)
 	image.src = "http://127.0.0.1:8000/draft/thumb/" + draft.id + "?uniq=" + (new Date()).getTime();
 }
 
-function selectDraft(canvas, original_review, processed_review, scope, draft)
+function selectDraft(canvas, original_review, processed_review, audio_review, scope, draft)
 {
 	scope.selectedDraft = draft;
 	if (null !== draft)
@@ -144,12 +210,21 @@ function selectDraft(canvas, original_review, processed_review, scope, draft)
 		{
 			processed_review.src = "";
 		}
+		if (null !== draft.audio)
+		{
+			audio_review.src = "http://127.0.0.1:8000/draft/audio/" + draft.id + "?uniq=" + (new Date()).getTime();
+		}
+		else
+		{
+			audio_review.src = "";
+		}
 		populateSyntheticType(scope.selectedDraft);
 	}
 	else
 	{
 		original_review.src = "";
 		processed_review.src = "";
+		audio_review.src = "";
 	}
 }
 
@@ -200,17 +275,23 @@ function waitForPublish(scope)
 // The "type" field is essentially a synthetic enum (see POST_Raw_DraftPublish.PublishType):
 // -VIDEO
 // -TEXT_ONLY
+// -AUDIO
 // This method over-writes that field in the given draft by looking at the other elements to see what kind of data is present.
 // This can be later over-written again since it is isn't actually part of the data model but just meant to be a convenient way of communicating what parts of the UI the user wants to see and what data it should actually publish.
 function populateSyntheticType(draft)
 {
 	// If we have a processed video OR an original video, this can be considered a VIDEO type.
+	// If there is no video, check audio.
 	// Otherwise, we default to TEXT_ONLY.
 	// Note that any type can have a thumbnail image.
 	let type = "TEXT_ONLY";
 	if ((null !== draft.originalVideo) || (null !== draft.processedVideo))
 	{
 		type = "VIDEO";
+	}
+	else if (null !== draft.audio)
+	{
+		type = "AUDIO";
 	}
 	draft.type = type;
 }
@@ -223,9 +304,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 	let canvas = document.getElementById('canvas');
 	let video_preview = document.getElementById('video_preview');
 	let original_review = document.getElementById('original_review');
+	let audio_review = document.getElementById('audio_review');
 	let processed_review = document.getElementById('processed_review');
 	let processing_progress_bar = document.getElementById('processing_progress_bar');
 	let video_upload_progress_bar = document.getElementById('video_upload_progress_bar');
+	let audio_upload_progress_bar = document.getElementById('audio_upload_progress_bar');
 	
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
@@ -240,11 +323,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 		processingSocket: null,
 		finalProcessed: 0,
 	};
+	$scope.audioState = {
+		stream: null,
+		recorder: null,
+		processingSocket: null,
+		finalProcessed: 0,
+	};
 	
 	// Data we use to with the manual file uploads.
 	$scope.selectedFiles = {
 		video: null,
 		thumbnail: null,
+		audio: null,
 	};
 	
 	$scope.stopServer = function()
@@ -254,7 +344,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.selectDraft = function(draft)
 	{
-		selectDraft(canvas, original_review, processed_review, $scope, draft);
+		selectDraft(canvas, original_review, processed_review, audio_review, $scope, draft);
 	}
 	$scope.createNewDraft = function()
 	{
@@ -273,7 +363,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			.then(data => {
 				if ((null !== $scope.selectedDraft) && ($scope.selectedDraft.id === draft.id))
 				{
-					selectDraft(canvas, original_review, processed_review, $scope, null);
+					selectDraft(canvas, original_review, processed_review, audio_review, $scope, null);
 				}
 				$scope.drafts = $scope.drafts.filter((element, index, array) => {
 					return (element.id !== draft.id);
@@ -286,6 +376,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 		startCamera($scope.videoConfig.height, $scope.videoConfig.width, $scope.videoConfig.fps)
 			.then(result => {
 				$scope.videoState.stream = result;
+				// We will also extract the audio track.
+				$scope.audioState.stream = new MediaStream(result.getAudioTracks());
 				video_preview.srcObject = result;
 				$scope.$apply();
 			}, error => {
@@ -295,7 +387,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.stopCamera = function()
 	{
-		stopCamera(video_preview, $scope.videoState);
+		stopCamera(video_preview, $scope.videoState, $scope.audioState);
 	}
 	$scope.startRecordingVideo = function()
 	{
@@ -320,6 +412,27 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.stopRecordingVideo = function()
 	{
 		stopRecordingVideo($scope.videoState);
+	}
+	$scope.startRecordingAudioOnly = function()
+	{
+		$scope.audioState.recorder = startRecordingAudioOnly($scope.audioState.stream
+			, $scope.videoConfig.audioBitrate
+			, $scope.selectedDraft.id
+			, function(finalByteSize)
+			{
+				$scope.selectedDraft.audio = {
+					height: 0,
+					width: 0,
+					byteSize: finalByteSize,
+				};
+				$scope.$apply();
+				audio_review.src = "http://127.0.0.1:8000/draft/audio/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+			}
+		);
+	}
+	$scope.stopRecordingAudio = function()
+	{
+		stopRecordingAudio($scope.audioState);
 	}
 	$scope.startProcessing = function()
 	{
@@ -402,6 +515,16 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.$apply();
 			});
 	}
+	$scope.deleteAudio = function(draft)
+	{
+		$scope.inProgress = true;
+		REST.DELETE("/draft/audio/" + draft.id)
+			.then(data => {
+				draft.audio = null;
+				$scope.inProgress = false;
+				$scope.$apply();
+			});
+	}
 	$scope.deletethumbnail = function(draft)
 	{
 		$scope.inProgress = true;
@@ -473,6 +596,41 @@ GLOBAL_Application.controller('AppController', function($scope)
 			video.src = URL.createObjectURL(file);
 		}
 	});
+	document.getElementById("audio_upload_selector").addEventListener("change", function(event)
+	{
+		let file = event.srcElement.files[0];
+		let mime = file.type;
+		if (mime.includes('/ogg'))
+		{
+			// Despite the filter saying only "audio/", sometimes the browser seems to then detect "audio/ogg" and something like "video/ogg" so we will hard-code a work-around for that, here.
+			mime = 'audio/ogg';
+		}
+		if (!mime.startsWith('audio/'))
+		{
+			// Drag and drop can bypass the "accept", it seems.
+			event.srcElement.value = null;
+			$scope.selectedFiles.audio = null;
+			$scope.$apply();
+		}
+		else
+		{
+			// We need to find the meta-data.
+			const audio = document.createElement('audio');
+			audio.addEventListener('loadedmetadata', event => {
+				console.log("Got audio");
+				$scope.selectedFiles.audio = {
+					file: file,
+					name: file.name,
+					byteSize: file.size,
+					mime: mime,
+					videoWidth: 0,
+					videoHeight: 0,
+				};
+				$scope.$apply();
+			})
+			audio.src = URL.createObjectURL(file);
+		}
+	});
 	document.getElementById("thumbnail_upload_selector").addEventListener("change", function(event)
 	{
 		let file = event.srcElement.files[0];
@@ -530,6 +688,33 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.selectedFiles.video = null;
 				$scope.$apply();
 				original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+			});
+	}
+	$scope.uploadSelectedAudio = function()
+	{
+		$scope.selectedFiles.audio.uploading = true;
+		uploadAudioData($scope.selectedDraft.id
+			, $scope.selectedFiles.audio.mime.substring(6)
+			, $scope.selectedFiles.audio.file
+			, function(uploadedBytes, totalBytes)
+			{
+				let percentage = Math.round(100 * uploadedBytes / totalBytes);
+				console.log("Uploading " + percentage + "%");
+				audio_upload_progress_bar.ariaValueNow = percentage;
+				audio_upload_progress_bar["style"] = "width: " + percentage + "%;";
+				audio_upload_progress_bar.textContent = percentage + "%";
+			}
+			, function(finalByteSize)
+			{
+				$scope.selectedDraft.audio = {
+					height: 0,
+					width: 0,
+					byteSize: finalByteSize,
+				};
+				document.getElementById("audio_upload_selector").value = null;
+				$scope.selectedFiles.audio = null;
+				$scope.$apply();
+				audio_review.src = "http://127.0.0.1:8000/draft/audio/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
 			});
 	}
 	$scope.uploadSelectedThumbnail = function()
@@ -628,6 +813,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 				<div class="btn-group" role="group">
 					<button type="button" class="btn btn-primary" ng-click="setDraftType('TEXT_ONLY')" ng-disabled="'TEXT_ONLY' === selectedDraft.type">Text only</button>
 					<button type="button" class="btn btn-primary" ng-click="setDraftType('VIDEO')" ng-disabled="'VIDEO' === selectedDraft.type">Video</button>
+					<button type="button" class="btn btn-primary" ng-click="setDraftType('AUDIO')" ng-disabled="'AUDIO' === selectedDraft.type">Audio</button>
 				</div>
 				<div class="card card-body">
 					Video preview: <br />
@@ -650,12 +836,28 @@ GLOBAL_Application.controller('AppController', function($scope)
 						</div>
 					</div>
 				</div>
+				<div class="card card-body" ng-show="'AUDIO' === selectedDraft.type">
+					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
+					<br />Upload audio from filesystem: <input type="file" accept="audio/*" id="audio_upload_selector" />
+					<button type="button" class="btn btn-primary" ng-click="uploadSelectedAudio()" ng-show="null !== selectedFiles.audio" ng-disabled="selectedFiles.audio.uploading">Upload {{selectedFiles.audio.name}} ({{selectedFiles.audio.byteSize}} bytes)</button><br />
+					<div class="progress" ng-show="selectedFiles.audio.uploading">
+						<div class="progress-bar" id="audio_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+							0%
+						</div>
+					</div>
+				</div>
 				<div class="card card-body" ng-show="(null != videoState.stream) && ('VIDEO' === selectedDraft.type)">
 					Recording: <br />
 					Video bits/s: <input type="text" class="form-control" ng-model="videoConfig.videoBitrate" ng-disabled="null != videoState.recorder"></input><br />
 					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != videoState.recorder"></input><br />
 					<button class="btn btn-success" ng-click="startRecordingVideo()" ng-disabled="null != videoState.recorder">Start Recording</button>
 					<button class="btn btn-danger" ng-click="stopRecordingVideo()" ng-disabled="null == videoState.recorder">Stop Recording</button>
+				</div>
+				<div class="card card-body" ng-show="(null != audioState.stream) && ('AUDIO' === selectedDraft.type)">
+					Recording: <br />
+					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != audioState.recorder"></input><br />
+					<button class="btn btn-success" ng-click="startRecordingAudioOnly()" ng-disabled="null !== audioState.recorder">Start Recording Audio</button>
+					<button class="btn btn-danger" ng-click="stopRecordingAudio()" ng-disabled="null === audioState.recorder">Stop Recording Audio</button>
 				</div>
 				<div class="card card-body" ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					<video id="original_review" controls></video><br />
@@ -677,6 +879,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 				<div class="card card-body" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					<video id="processed_review" controls></video><br />
 					<button class="btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
+				</div>
+				<div class="card card-body" ng-show="(null !== selectedDraft.audio) && ('AUDIO' === selectedDraft.type)">
+					<audio id="audio_review" controls></audio><br />
+					<button class="btn btn-danger" ng-click="deleteAudio(selectedDraft)" ng-disabled="inProgress">Delete</button> Audio:  {{selectedDraft.audio.byteSize}} bytes.
 				</div>
 				<div class="card card-body">
 					Thumbnail: <br />
@@ -702,9 +908,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo))" ng-disabled="inProgress">Publish without video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress">Publish without video</button>
 						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress">Publish with original video</button>
 						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress">Publish with processed video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.audio.byteSize > 0) && ('AUDIO' === selectedDraft.type)" ng-disabled="inProgress">Publish with audio</button>
 					</div>
 				</div>
 			</div>
