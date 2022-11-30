@@ -253,6 +253,34 @@ public class TestInteractiveHelpers
 	}
 
 	@Test
+	public void testSaveAudio() throws Throwable
+	{
+		IConfigFileSystem files = _getTestingDraftFiles();
+		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
+		int id = 1;
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		
+		// Save the video content.
+		byte[] data = "Testing audio".getBytes();
+		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		Files.write(openDraft.audio().toPath(), data);
+		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
+		
+		// Re-read it.
+		String[] outMime = new String[1];
+		long[] outByteSize = new long[1];
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		InteractiveHelpers.writeAudioToStream(draftManager, id, (String mime, Long byteSize) -> {
+			outMime[0] = mime;
+			outByteSize[0] = byteSize;
+		}, outStream);
+		byte[] output = outStream.toByteArray();
+		Assert.assertEquals("audio/ogg", outMime[0]);
+		Assert.assertEquals(data.length, (int)outByteSize[0]);
+		Assert.assertArrayEquals(data, output);
+	}
+
+	@Test
 	public void testPublish() throws Throwable
 	{
 		// Make sure that the directory doesn't exist.

@@ -48,6 +48,13 @@ public class InteractiveHelpers
 		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo(), oldDraft.audio());
 		openDraft.saveDraft(newDraft);
 	}
+	public static void updateAudio(DraftWrapper openDraft, String mime, long savedFileSizeBytes)
+	{
+		Draft oldDraft = openDraft.loadDraft();
+		SizedElement audio = new SizedElement(mime, 0, 0, savedFileSizeBytes);
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), audio);
+		openDraft.saveDraft(newDraft);
+	}
 
 	// --- Methods related to processing the video (this is small since it mostly just invokes callbacks to the session on a different thread).
 	public static VideoProcessor openVideoProcessor(VideoProcessor.ProcessWriter session, DraftManager draftManager, int draftId, String processCommand) throws FileNotFoundException, IOException
@@ -208,6 +215,16 @@ public class InteractiveHelpers
 			_copyToEndOfFile(input, outStream);
 		}
 	}
+	public static void writeAudioToStream(DraftManager draftManager, int draftId, BiConsumer<String, Long> mimeSizeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		File audioFile = wrapper.audio();
+		try (FileInputStream input = new FileInputStream(audioFile))
+		{
+			mimeSizeConsumer.accept(wrapper.loadDraft().audio().mime(), audioFile.length());
+			_copyToEndOfFile(input, outStream);
+		}
+	}
 
 	// --- Methods related to deleting videos.
 	// Note that we don't build any special interlock around the delete relative to other operations like processing.
@@ -250,6 +267,26 @@ public class InteractiveHelpers
 		{
 			Draft oldDraft = wrapper.loadDraft();
 			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null, oldDraft.audio());
+			wrapper.saveDraft(newDraft);
+		}
+		return didDelete;
+	}
+	/**
+	 * Deletes the audio from the draft.
+	 * @param draftManager The DraftManager.
+	 * @param draftId The draft to open when searching for the audio.
+	 * @return True if this was deleted or false if it couldn't be or there was no audio file.
+	 * @throws FileNotFoundException The draft doesn't exist.
+	 */
+	public static boolean deleteAudio(DraftManager draftManager, int draftId) throws FileNotFoundException
+	{
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		File audioFile = wrapper.audio();
+		boolean didDelete = audioFile.delete();
+		if (didDelete)
+		{
+			Draft oldDraft = wrapper.loadDraft();
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), null);
 			wrapper.saveDraft(newDraft);
 		}
 		return didDelete;

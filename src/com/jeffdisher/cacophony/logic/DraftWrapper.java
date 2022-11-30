@@ -24,6 +24,8 @@ public class DraftWrapper
 	private static final String ORIGINAL_VIDEO_NAME = "original_video.webm";
 	// The "processed" video (we are currently just assuming webm but the name doesn't matter).
 	private static final String PROCESSED_VIDEO_NAME = "processed_video.webm";
+	// The audio (we are currently just assuming ogg but the name doesn't matter).
+	private static final String AUDIO_NAME = "audio.ogg";
 	// The thumbnail image (we are currently just assuming JPEG but the name doesn't matter).
 	private static final String THUMBNAIL_NAME = "thumbnail.jpeg";
 
@@ -107,6 +109,14 @@ public class DraftWrapper
 	public File processedVideo()
 	{
 		return new File(_directory, PROCESSED_VIDEO_NAME);
+	}
+
+	/**
+	 * @return The audio file.
+	 */
+	public File audio()
+	{
+		return new File(_directory, AUDIO_NAME);
 	}
 
 
