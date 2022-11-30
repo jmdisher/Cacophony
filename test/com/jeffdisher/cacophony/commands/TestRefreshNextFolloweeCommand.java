@@ -271,7 +271,7 @@ public class TestRefreshNextFolloweeCommand
 		stream.write("file".getBytes());
 		stream.close();
 		user3.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
-				new ElementSubCommand("text/plain", tempFile, 0, 0, false) ,
+				new ElementSubCommand("video/webm", tempFile, 0, 0, false) ,
 		}));
 		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {}));
 		StreamIndex index = GlobalData.deserializeIndex(user3.loadDataFromNode(user3.resolveKeyOnNode(PUBLIC_KEY3)));

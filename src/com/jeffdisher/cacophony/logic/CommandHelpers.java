@@ -195,15 +195,15 @@ public class CommandHelpers
 				// Now, find the size of the relevant leaves within.
 				if (null != data.thumbnailSizeFuture)
 				{
-					data.thumbnailSize = data.thumbnailSizeFuture.get();
+					data.thumbnailSizeBytes = data.thumbnailSizeFuture.get();
 					data.thumbnailSizeFuture = null;
-					bytesForLeaves += data.thumbnailSize;
+					bytesForLeaves += data.thumbnailSizeBytes;
 				}
-				if (null != data.videoSizeFuture)
+				if (null != data.leafSizeFuture)
 				{
-					data.videoSize = data.videoSizeFuture.get();
-					data.videoSizeFuture = null;
-					bytesForLeaves += data.videoSize;
+					data.leafSizeBytes = data.leafSizeFuture.get();
+					data.leafSizeFuture = null;
+					bytesForLeaves += data.leafSizeBytes;
 				}
 				isVerified = true;
 			}

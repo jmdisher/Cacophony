@@ -63,8 +63,8 @@ public class CacheHelpers
 		}
 		if (null != leafHash)
 		{
-			element.videoHash = leafHash;
-			element.videoSizeFuture = scheduler.getSizeInBytes(leafHash);
+			element.leafHash = leafHash;
+			element.leafSizeFuture = scheduler.getSizeInBytes(leafHash);
 		}
 	}
 

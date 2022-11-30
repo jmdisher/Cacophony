@@ -329,7 +329,7 @@ public class FolloweeRefreshLogic
 				{
 					try
 					{
-						data.thumbnailSize = data.thumbnailSizeFuture.get();
+						data.thumbnailSizeBytes = data.thumbnailSizeFuture.get();
 					}
 					catch (IpfsConnectionException e)
 					{
@@ -337,21 +337,21 @@ public class FolloweeRefreshLogic
 						support.logMessage("Failed to load size for thumbnail for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
 					}
 					data.thumbnailSizeFuture = null;
-					byteSize += data.thumbnailSize;
+					byteSize += data.thumbnailSizeBytes;
 				}
-				if (null != data.videoSizeFuture)
+				if (null != data.leafSizeFuture)
 				{
 					try
 					{
-						data.videoSize = data.videoSizeFuture.get();
+						data.leafSizeBytes = data.leafSizeFuture.get();
 					}
 					catch (IpfsConnectionException e)
 					{
 						bothLoaded = false;
-						support.logMessage("Failed to load size for video for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
+						support.logMessage("Failed to load size for leaf for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
 					}
-					data.videoSizeFuture = null;
-					byteSize += data.videoSize;
+					data.leafSizeFuture = null;
+					byteSize += data.leafSizeBytes;
 				}
 				// We will only consider this a successful cache operation if all leaf elements' sizes were fetched.
 				if (bothLoaded)
@@ -375,13 +375,13 @@ public class FolloweeRefreshLogic
 				support.logMessage("Pinning " + data.elementCid + "...");
 				if (null != data.thumbnailHash)
 				{
-					support.logMessage("\t-thumbnail " + StringHelpers.humanReadableBytes(data.thumbnailSize) + " (" + data.thumbnailHash + ")...");
+					support.logMessage("\t-thumbnail " + StringHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
 					data.futureThumbnailPin = support.addFileToFollowCache(data.thumbnailHash);
 				}
-				if (null != data.videoHash)
+				if (null != data.leafHash)
 				{
-					support.logMessage("\t-video " + StringHelpers.humanReadableBytes(data.videoSize) + " (" + data.videoHash + ")...");
-					data.futureVideoPin = support.addFileToFollowCache(data.videoHash);
+					support.logMessage("\t-leaf " + StringHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
+					data.futureLeafPin = support.addFileToFollowCache(data.leafHash);
 				}
 				// NOTE:  finalSelection has the latest elements at the front but we ideally want them at the back (not required by is an order which makes more sense).
 				candidatesBeingPinned.add(0, data);
@@ -407,33 +407,33 @@ public class FolloweeRefreshLogic
 						support.logMessage("Failed to pin thumbnail for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
 					}
 				}
-				if (null != data.futureVideoPin)
+				if (null != data.futureLeafPin)
 				{
 					try
 					{
-						data.futureVideoPin.get();
+						data.futureLeafPin.get();
 					}
 					catch (IpfsConnectionException e)
 					{
 						// We failed the pin so drop this element.
 						shouldProceed = false;
-						data.videoHash = null;
-						support.logMessage("Failed to pin video for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
+						data.leafHash = null;
+						support.logMessage("Failed to pin leaf for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
 					}
 				}
 				// We will only proceed to add this to the cache if everything was pinned.
 				if (shouldProceed)
 				{
-					FollowingCacheElement element = new FollowingCacheElement(data.elementCid, data.thumbnailHash, data.videoHash, data.thumbnailSize + data.videoSize);
+					FollowingCacheElement element = new FollowingCacheElement(data.elementCid, data.thumbnailHash, data.leafHash, data.thumbnailSizeBytes + data.leafSizeBytes);
 					finalList.add(element);
 					support.logMessage("Successfully pinned " + data.elementCid + "!");
 					if (null != data.thumbnailHash)
 					{
-						support.logMessage("\t-thumnail " + StringHelpers.humanReadableBytes(data.thumbnailSize) + " (" + data.thumbnailHash + ")");
+						support.logMessage("\t-thumnail " + StringHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
 					}
-					if (null != data.videoHash)
+					if (null != data.leafHash)
 					{
-						support.logMessage("\t-video " + StringHelpers.humanReadableBytes(data.videoSize) + " (" + data.videoHash + ")");
+						support.logMessage("\t-leaf " + StringHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
 					}
 				}
 				else
@@ -443,9 +443,9 @@ public class FolloweeRefreshLogic
 					{
 						support.removeFileFromFollowCache(data.thumbnailHash);
 					}
-					if (null != data.videoHash)
+					if (null != data.leafHash)
 					{
-						support.removeFileFromFollowCache(data.videoHash);
+						support.removeFileFromFollowCache(data.leafHash);
 					}
 				}
 			}
@@ -502,12 +502,13 @@ public class FolloweeRefreshLogic
 		for (DataElement elt : record.getElements().getElement())
 		{
 			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
+			String mime = elt.getMime();
 			if (null != elt.getSpecial())
 			{
 				Assert.assertTrue(null == imageHash);
 				imageHash = eltCid;
 			}
-			else if ((elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
+			else if (mime.startsWith("video/") && (elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
 			{
 				biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
 				leafHash = eltCid;
@@ -520,8 +521,8 @@ public class FolloweeRefreshLogic
 		}
 		if (null != leafHash)
 		{
-			data.videoHash = leafHash;
-			data.videoSizeFuture = support.getSizeInBytes(leafHash);
+			data.leafHash = leafHash;
+			data.leafSizeFuture = support.getSizeInBytes(leafHash);
 		}
 	}
 

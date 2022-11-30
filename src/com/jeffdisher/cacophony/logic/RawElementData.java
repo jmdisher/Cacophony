@@ -23,11 +23,11 @@ public class RawElementData
 	public StreamRecord record;
 	
 	public IpfsFile thumbnailHash;
-	public IpfsFile videoHash;
+	public IpfsFile leafHash;
 	public FutureSize thumbnailSizeFuture;
-	public FutureSize videoSizeFuture;
-	public long thumbnailSize;
-	public long videoSize;
+	public FutureSize leafSizeFuture;
+	public long thumbnailSizeBytes;
+	public long leafSizeBytes;
 	public FuturePin futureThumbnailPin;
-	public FuturePin futureVideoPin;
+	public FuturePin futureLeafPin;
 }
