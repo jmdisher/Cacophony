@@ -403,23 +403,44 @@ public class JsonGenerationHelpers
 		
 		IpfsFile thumbnailCid = null;
 		IpfsFile videoCid = null;
+		IpfsFile audioCid = null;
 		if (isLocalUser)
 		{
 			// In the local case, we want to look at the rest of the record and figure out what makes most sense since all entries will be pinned.
 			List<DataElement> elements = record.getElements().getElement();
 			thumbnailCid = _findThumbnail(elements);
 			videoCid = _findLargestVideo(elements);
+			audioCid = _findAudio(elements);
 		}
 		else if (isCachedFollowee)
 		{
-			// In this case, we want to just see what we recorded in the followee cache since that is what we pinned.
+			// If this case, we will use whatever is in the followee cache, since that is what we pinned, but we need to look at the record to see if the leaf element is video or audio.
 			FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
 			thumbnailCid = cachedElement.imageHash();
-			videoCid = cachedElement.leafHash();
+			List<DataElement> elements = record.getElements().getElement();
+			IpfsFile leafCid = cachedElement.leafHash();
+			if (null != leafCid)
+			{
+				String leafMime = _findMimeForLeaf(elements, leafCid);
+				if (leafMime.startsWith("video/"))
+				{
+					videoCid = leafCid;
+				}
+				else if (leafMime.startsWith("audio/"))
+				{
+					audioCid = leafCid;
+				}
+				else
+				{
+					// We don't currently pin anything like this.
+					throw Assert.unreachable();
+				}
+			}
 		}
 		
 		String thumbnailUrl = null;
 		String videoUrl = null;
+		String audioUrl = null;
 		if (isCached)
 		{
 			// However we found these, they are expected to be in the cache and they should be locally pinned.
@@ -432,8 +453,12 @@ public class JsonGenerationHelpers
 			{
 				videoUrl = access.getCachedUrl(videoCid).toString();
 			}
+			if (null != audioCid)
+			{
+				audioUrl = access.getCachedUrl(audioCid).toString();
+			}
 		}
-		return new LocalRecordCache.Element(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl);
+		return new LocalRecordCache.Element(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl, audioUrl);
 	}
 
 	private static void _populatePostsForUser(JsonObject rootData, IpfsKey publicKey, StreamRecords records)
@@ -500,6 +525,36 @@ public class JsonGenerationHelpers
 			}
 		}
 		return videoCid;
+	}
+
+	private static IpfsFile _findAudio(List<DataElement> elements)
+	{
+		IpfsFile audioCid = null;
+		for (DataElement leaf : elements)
+		{
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (leaf.getMime().startsWith("audio/"))
+			{
+				audioCid = leafCid;
+				break;
+			}
+		}
+		return audioCid;
+	}
+
+	private static String _findMimeForLeaf(List<DataElement> elements, IpfsFile target)
+	{
+		String mime = null;
+		for (DataElement leaf : elements)
+		{
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (target.equals(leafCid))
+			{
+				mime = leaf.getMime();
+			}
+		}
+		Assert.assertTrue(null != mime);
+		return mime;
 	}
 
 	private static List<FutureKey<StreamIndex>> _loadStreamIndices(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex)
@@ -595,6 +650,7 @@ public class JsonGenerationHelpers
 		{
 			thisElt.set("thumbnailUrl", element.thumbnailUrl());
 			thisElt.set("videoUrl", element.videoUrl());
+			thisElt.set("audioUrl", element.audioUrl());
 		}
 		return thisElt;
 	}

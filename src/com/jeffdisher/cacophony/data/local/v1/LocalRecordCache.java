@@ -52,7 +52,7 @@ public class LocalRecordCache
 	/**
 	 * A description of the data we have cached for a given StreamRecord.
 	 */
-	public static record Element(String name, String description, long publishedSecondsUtc, String discussionUrl, boolean isCached, String thumbnailUrl, String videoUrl)
+	public static record Element(String name, String description, long publishedSecondsUtc, String discussionUrl, boolean isCached, String thumbnailUrl, String videoUrl, String audioUrl)
 	{
 	}
 }

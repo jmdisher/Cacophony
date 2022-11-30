@@ -49,6 +49,7 @@ function postWasLoaded($scope, elt)
 	{
 		$scope.thumbnailUrl = elt["thumbnailUrl"];
 		$scope.videoUrl = elt["videoUrl"];
+		$scope.audioUrl = elt["audioUrl"];
 		if (null !== $scope.videoUrl)
 		{
 			// The version of Angular we are using doesn't support the video tag so do this, ourselves.
@@ -58,6 +59,12 @@ function postWasLoaded($scope, elt)
 			{
 				v.poster = $scope.thumbnailUrl;
 			}
+		}
+		if (null !== $scope.audioUrl)
+		{
+			// The version of Angular we are using doesn't support the audio tag so do this, ourselves.
+			let a = document.getElementById("audio");
+			a.src = $scope.audioUrl;
 		}
 	}
 	$scope.$apply();
@@ -84,6 +91,9 @@ function postWasLoaded($scope, elt)
 	<div class="jumbotron">
 		<div class="row card card-body" ng-show="cached && (null !== videoUrl)">
 			<center><video id="video" controls /></center>
+		</div>
+		<div class="row card card-body" ng-show="cached && (null !== audioUrl)">
+			<center><audio id="audio" controls /></center>
 		</div>
 		<div class="row card card-body" ng-show="cached && (null !== thumbnailUrl) && (null === videoUrl)">
 			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>

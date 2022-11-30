@@ -51,7 +51,7 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testPostStructNotCached() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", false, null, null)));
+		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", false, null, null, null)));
 		JsonObject data = JsonGenerationHelpers.postStruct(cache, FILE1);
 		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":false}", data.toString());
 	}
@@ -59,9 +59,17 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testPostStructCached() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", true, "url1", "url2")));
+		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", true, "url1", "url2", null)));
 		JsonObject data = JsonGenerationHelpers.postStruct(cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url1\",\"videoUrl\":\"url2\"}", data.toString());
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url1\",\"videoUrl\":\"url2\",\"audioUrl\":null}", data.toString());
+	}
+
+	@Test
+	public void testPostStructCachedAudio() throws Throwable
+	{
+		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", true, "url1", null, "audio URL")));
+		JsonObject data = JsonGenerationHelpers.postStruct(cache, FILE1);
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url1\",\"videoUrl\":null,\"audioUrl\":\"audio URL\"}", data.toString());
 	}
 
 	@Test

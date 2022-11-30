@@ -497,7 +497,8 @@ public class FolloweeRefreshLogic
 	private static void _selectLeavesForElement(IRefreshSupport support, RawElementData data, StreamRecord record, int videoEdgePixelMax)
 	{
 		IpfsFile imageHash = null;
-		IpfsFile leafHash = null;
+		IpfsFile videoHash = null;
+		IpfsFile audioHash = null;
 		int biggestEdge = 0;
 		for (DataElement elt : record.getElements().getElement())
 		{
@@ -511,9 +512,16 @@ public class FolloweeRefreshLogic
 			else if (mime.startsWith("video/") && (elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
 			{
 				biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
-				leafHash = eltCid;
+				videoHash = eltCid;
+			}
+			else if (mime.startsWith("audio/"))
+			{
+				// If there are multiple audio attachments, we will just grab the last one (since that use-case isn't currently defined).
+				audioHash = eltCid;
 			}
 		}
+		// We will prefer the video leaf, if available (although we don't currently have a use-case where there would be both).
+		IpfsFile leafHash = (null != videoHash) ? videoHash : audioHash;
 		if (null != imageHash)
 		{
 			data.thumbnailHash = imageHash;

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -15,6 +16,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -328,6 +330,74 @@ public class TestRefreshNextFolloweeCommand
 		Assert.assertEquals(lastRoot, lastRoot2);
 		long secondMillis = record.lastPollMillis();
 		Assert.assertTrue(secondMillis > firstMillis);
+		
+		user2.shutdown();
+		user.shutdown();
+	}
+
+	@Test
+	public void testOneFolloweeWithAudio() throws Throwable
+	{
+		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
+		
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user2);
+		MockUserNode.connectNodes(user, user2);
+		
+		// We need to create the channel first so we will just use the command to do that.
+		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		
+		// We need to add the followee.
+		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		
+		// We should be able to run this multiple times, without it causing problems.
+		FollowIndex followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.nextKeyToPoll();
+		// We expect to do the initial check on the first one we added (since it was populated when first read).
+		Assert.assertEquals(PUBLIC_KEY2, nextKey);
+		user.runCommand(null, command);
+		
+		// We want to create 3 data elements, all with special images, but differing in video, audio, and text only.
+		File tempImage = FOLDER.newFile();
+		File tempVideo = FOLDER.newFile();
+		File tempAudio = FOLDER.newFile();
+		Files.write(tempImage.toPath(), "image".getBytes());
+		Files.write(tempVideo.toPath(), "video".getBytes());
+		Files.write(tempAudio.toPath(), "audio".getBytes());
+		user2.runCommand(null, new PublishCommand("video", "", null, new ElementSubCommand[] {
+				new ElementSubCommand("video/webm", tempVideo, 480, 640, false) ,
+				new ElementSubCommand("image/jpeg", tempImage, 480, 640, true) ,
+		}));
+		user2.runCommand(null, new PublishCommand("audio", "", null, new ElementSubCommand[] {
+				new ElementSubCommand("audio/ogg", tempAudio, 0, 0, false) ,
+				new ElementSubCommand("image/jpeg", tempImage, 480, 640, true) ,
+		}));
+		user2.runCommand(null, new PublishCommand("text only", "", null, new ElementSubCommand[] {
+				new ElementSubCommand("image/jpeg", tempImage, 480, 640, true) ,
+		}));
+		
+		// Run the refresh command.
+		user.runCommand(null, command);
+		nextKey = followees.nextKeyToPoll();
+		Assert.assertEquals(PUBLIC_KEY2, nextKey);
+		
+		// Generate the expected leaf hashes.
+		IpfsFile imageHash = MockSingleNode.generateHash("image".getBytes());
+		IpfsFile videoHash = MockSingleNode.generateHash("video".getBytes());
+		IpfsFile audioHash = MockSingleNode.generateHash("audio".getBytes());
+		
+		// Check that we see just the 3 entries in the index, with the appropriate leaves.
+		FollowIndex followIndex = user.readFollowIndex();
+		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY2);
+		FollowingCacheElement[] elements = record.elements();
+		Assert.assertEquals(3, elements.length);
+		Assert.assertEquals(imageHash, elements[0].imageHash());
+		Assert.assertEquals(videoHash, elements[0].leafHash());
+		Assert.assertEquals(imageHash, elements[1].imageHash());
+		Assert.assertEquals(audioHash, elements[1].leafHash());
+		Assert.assertEquals(imageHash, elements[2].imageHash());
+		Assert.assertNull(elements[2].leafHash());
 		
 		user2.shutdown();
 		user.shutdown();
