@@ -36,8 +36,7 @@ public class StringHelpers
 
 	private static String _getMagnitudeString(long bytes, double magnitude, String suffix)
 	{
-		long rounded = Math.round(((double)bytes) / (magnitude / 100));
-		String base = Long.toString(rounded);
-		return base.substring(0, 1) + "." + base.substring(1, 3) + " " + suffix;
+		double direct = (double)bytes / magnitude;
+		return String.format("%.2f %s", direct, suffix);
 	}
 }

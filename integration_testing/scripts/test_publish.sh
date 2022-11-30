@@ -107,7 +107,7 @@ checkPreviousCommand "republish"
 echo "Verify that the prefs look right..."
 PREFS=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --getGlobalPrefs)
 requireSubstring "$PREFS" "Video preferred bounds: 1280 x 1280"
-requireSubstring "$PREFS" "Follower cache target size: 1.00 GB (10000000000 bytes)"
+requireSubstring "$PREFS" "Follower cache target size: 10.00 GB (10000000000 bytes)"
 
 kill $PID1
 kill $PID2

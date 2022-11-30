@@ -130,13 +130,21 @@ checkPreviousCommand "publishSingleVideo"
 
 echo "Refresh followee"
 REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
-requireSubstring "$REFRESH_OUTPUT" "-thumbnail 5.24 kB (524288 bytes)"
+requireSubstring "$REFRESH_OUTPUT" "-thumbnail 524.29 kB (524288 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "-leaf 2.10 MB (2097152 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "<2 Follow successful!"
 
+echo "Publish a post with only the video attachment, refresh the follower, and verify that we can see this..."
+CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --publishToThisChannel --name "special post" --description "this has no thumbnail" --element --mime "video/webm" --file "$VIDEO_FILE"
+checkPreviousCommand "publishToThisChannel"
+REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
+requireSubstring "$REFRESH_OUTPUT" "Not pruning cache since 2.62 MB (2621440 bytes) is below target of 9.00 GB (9000000000 bytes)"
+LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
+requireSubstring "$LIST_OUTPUT" "(image: (none), leaf: Qm"
+
 echo "Make sure that cleaning cache won't do anything..."
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
-requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 2.62 MB (2621440 bytes) is below target of 1.00 GB (10000000000 bytes)"
+requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 4.72 MB (4718592 bytes) is below target of 10.00 GB (10000000000 bytes)"
 
 echo "Regenerate the static HTML"
 rm -rf "$STATIC2"
@@ -160,7 +168,7 @@ requireSubstring "$REFRESH_NEXT_OUTPUT" "Usage error in running command: Not fol
 echo "Shrink the cache and force a cache cleaning to verify it doesn't break anything..."
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --setGlobalPrefs --followCacheTargetBytes 2000000
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
-requireSubstring "$CLEAN_OUTPUT" "Pruning cache to 2.00 MB (2000000 bytes) from current size of 2.62 MB (2621440 bytes)"
+requireSubstring "$CLEAN_OUTPUT" "Pruning cache to 2.00 MB (2000000 bytes) from current size of 4.72 MB (4718592 bytes)"
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
 requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 0 bytes is below target of 2.00 MB (2000000 bytes)"
 

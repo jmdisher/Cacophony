@@ -68,4 +68,20 @@ public class TestStringHelpers
 		String readable = StringHelpers.humanReadableBytes(bytes);
 		org.junit.Assert.assertEquals("4.00 GB (3999987567 bytes)", readable);
 	}
+
+	@Test
+	public void test10G()
+	{
+		long bytes = 10_000_000_000L;
+		String readable = StringHelpers.humanReadableBytes(bytes);
+		org.junit.Assert.assertEquals("10.00 GB (10000000000 bytes)", readable);
+	}
+
+	@Test
+	public void testRounding()
+	{
+		long bytes = 2_097_152L;
+		String readable = StringHelpers.humanReadableBytes(bytes);
+		org.junit.Assert.assertEquals("2.10 MB (2097152 bytes)", readable);
+	}
 }
