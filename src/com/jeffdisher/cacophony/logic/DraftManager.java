@@ -51,7 +51,7 @@ public class DraftManager
 		Assert.assertTrue(!subDir.exists());
 		// Make sure that the creation is a success.
 		Assert.assertTrue(subDir.mkdir());
-		Draft draft = new Draft(id, 0L, "New Draft - " + id, "No description", null, null, null, null);
+		Draft draft = new Draft(id, 0L, "New Draft - " + id, "No description", null, null, null, null, null);
 		DraftWrapper wrapper = new DraftWrapper(subDir);
 		wrapper.saveDraft(draft);
 		return wrapper;

@@ -124,7 +124,7 @@ public class TestVideoProcessor
 		Files.write(original.toPath(), bytes);
 		SizedElement originalVideo = new SizedElement("video/webm", 720, 1280, bytes.length);
 		Draft originalDraft = wrapper.loadDraft();
-		wrapper.saveDraft(new Draft(originalDraft.id(), originalDraft.publishedSecondsUtc(), originalDraft.title(), originalDraft.description(), originalDraft.discussionUrl(), originalDraft.thumbnail(), originalVideo, originalDraft.processedVideo()));
+		wrapper.saveDraft(new Draft(originalDraft.id(), originalDraft.publishedSecondsUtc(), originalDraft.title(), originalDraft.description(), originalDraft.discussionUrl(), originalDraft.thumbnail(), originalVideo, originalDraft.processedVideo(), originalDraft.audio()));
 		return bytes;
 	}
 }

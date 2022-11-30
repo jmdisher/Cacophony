@@ -45,7 +45,7 @@ public class InteractiveHelpers
 	{
 		Draft oldDraft = openDraft.loadDraft();
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo());
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo(), oldDraft.audio());
 		openDraft.saveDraft(newDraft);
 	}
 
@@ -76,7 +76,7 @@ public class InteractiveHelpers
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		Draft oldDraft = wrapper.loadDraft();
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo());
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
 		wrapper.saveDraft(newDraft);
 		return newDraft;
 	}
@@ -183,7 +183,7 @@ public class InteractiveHelpers
 		Assert.assertTrue(bytesCopied > 0L);
 		Draft oldDraft = wrapper.loadDraft();
 		SizedElement thumbnail = new SizedElement(mime, height, width, bytesCopied);
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo());
+		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
 		wrapper.saveDraft(newDraft);
 	}
 
@@ -229,7 +229,7 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), null, oldDraft.processedVideo());
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), null, oldDraft.processedVideo(), oldDraft.audio());
 			wrapper.saveDraft(newDraft);
 		}
 		return didDelete;
@@ -249,7 +249,7 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null);
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null, oldDraft.audio());
 			wrapper.saveDraft(newDraft);
 		}
 		return didDelete;
@@ -269,7 +269,7 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), null, oldDraft.originalVideo(), oldDraft.processedVideo());
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), null, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
 			wrapper.saveDraft(newDraft);
 		}
 		return didDelete;

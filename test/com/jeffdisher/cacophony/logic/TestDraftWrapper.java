@@ -22,7 +22,7 @@ public class TestDraftWrapper
 		DraftWrapper wrapper = new DraftWrapper(directory);
 		
 		// We need to write an initial value.
-		Draft initial = new Draft(1, 5L, "title", "description", null, null, null, null);
+		Draft initial = new Draft(1, 5L, "title", "description", null, null, null, null, null);
 		wrapper.saveDraft(initial);
 		Draft read = wrapper.loadDraft();
 		Assert.assertEquals(initial, read);

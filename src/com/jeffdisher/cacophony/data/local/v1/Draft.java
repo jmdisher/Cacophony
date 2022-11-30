@@ -20,6 +20,7 @@ public record Draft(int id
 		, SizedElement thumbnail
 		, SizedElement originalVideo
 		, SizedElement processedVideo
+		, SizedElement audio
 ) implements Serializable
 {
 	public static Draft fromJson(JsonObject json)
@@ -37,7 +38,8 @@ public record Draft(int id
 		SizedElement thumbnail = _getElementOrNull(json, "thumbnail");
 		SizedElement originalVideo = _getElementOrNull(json, "originalVideo");
 		SizedElement processedVideo = _getElementOrNull(json, "processedVideo");
-		return new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, originalVideo, processedVideo);
+		SizedElement audio = _getElementOrNull(json, "audio");
+		return new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, originalVideo, processedVideo, audio);
 	}
 
 	private static SizedElement _getElementOrNull(JsonObject json, String key)
@@ -62,6 +64,7 @@ public record Draft(int id
 			.add("discussionUrl", (null != discussionUrl) ? Json.value(discussionUrl) : Json.NULL)
 			.add("originalVideo", (null != originalVideo) ? originalVideo.toJson() : Json.NULL)
 			.add("processedVideo", (null != processedVideo) ? processedVideo.toJson() : Json.NULL)
+			.add("audio", (null != audio) ? audio.toJson() : Json.NULL)
 		;
 	}
 }

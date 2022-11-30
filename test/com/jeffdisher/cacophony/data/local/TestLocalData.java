@@ -57,7 +57,7 @@ public class TestLocalData {
 		String title = "title";
 		String description = "description";
 		String discussionUrl = "URL";
-		Draft initial = new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, null, null);
+		Draft initial = new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, null, null, null);
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		try (ObjectOutputStream output = new ObjectOutputStream(bytes))
 		{
@@ -107,7 +107,7 @@ public class TestLocalData {
 		String title = "title";
 		String description = "description";
 		String discussionUrl = "URL";
-		Draft initial = new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, null, null);
+		Draft initial = new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, null, null, null);
 		String json = initial.toJson().toString();
 		Draft result = Draft.fromJson((JsonObject) Json.parse(json));
 		Assert.assertEquals(id, result.id());

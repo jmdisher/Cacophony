@@ -63,7 +63,7 @@ public class VideoProcessor
 			Draft oldDraft = _wrapper.loadDraft();
 			SizedElement original = oldDraft.originalVideo();
 			SizedElement processed = new SizedElement(original.mime(), original.height(), original.width(), processedSizeBytes);
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed);
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed, oldDraft.audio());
 			_wrapper.saveDraft(newDraft);
 		}
 	}
