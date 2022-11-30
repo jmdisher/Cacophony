@@ -96,6 +96,7 @@ public class InteractiveHelpers
 			, DraftManager draftManager
 			, int draftId
 			, boolean shouldPublishVideo
+			, boolean shouldPublishAudio
 	) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -112,6 +113,13 @@ public class InteractiveHelpers
 				videoFile = wrapper.originalVideo();
 			}
 		}
+		SizedElement audio = null;
+		File audioFile = null;
+		if (shouldPublishAudio)
+		{
+			audio = draft.audio();
+			audioFile = wrapper.audio();
+		}
 		SizedElement thumbnail = draft.thumbnail();
 		int elementCount = 0;
 		if (null != thumbnail)
@@ -119,6 +127,10 @@ public class InteractiveHelpers
 			elementCount += 1;
 		}
 		if (null != video)
+		{
+			elementCount += 1;
+		}
+		if (null != audio)
 		{
 			elementCount += 1;
 		}
@@ -134,6 +146,20 @@ public class InteractiveHelpers
 			try
 			{
 				subElements[index] = new PublishHelpers.PublishElement(video.mime(), new FileInputStream(videoFile), video.height(), video.width(), false);
+			}
+			catch (FileNotFoundException e)
+			{
+				// Close the other file before we throw.
+				closeElementFiles(environment, subElements);
+				throw e;
+			}
+			index += 1;
+		}
+		if (null != audio)
+		{
+			try
+			{
+				subElements[index] = new PublishHelpers.PublishElement(audio.mime(), new FileInputStream(audioFile), audio.height(), audio.width(), false);
 			}
 			catch (FileNotFoundException e)
 			{

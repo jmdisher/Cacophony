@@ -61,6 +61,7 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 						, _draftManager
 						, draftId
 						, (PublishType.VIDEO == type)
+						, (PublishType.AUDIO == type)
 				);
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				
@@ -106,5 +107,6 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 	{
 		VIDEO,
 		TEXT_ONLY,
+		AUDIO,
 	}
 }

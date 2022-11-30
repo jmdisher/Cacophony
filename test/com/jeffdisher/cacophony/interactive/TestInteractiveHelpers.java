@@ -302,7 +302,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, true);
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, true, false);
 		}
 		
 		// Verify the data is on the node.
@@ -336,7 +336,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, true);
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, true, false);
 		}
 		
 		// Verify that we see both.
@@ -378,7 +378,7 @@ public class TestInteractiveHelpers
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, false);
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, false, false);
 		}
 		
 		// Verify that the new entry has no attachments.
@@ -402,6 +402,56 @@ public class TestInteractiveHelpers
 		}
 		Assert.assertEquals("title3", record.getName());
 		Assert.assertEquals(0, record.getElements().getElement().size());
+	}
+
+	@Test
+	public void testPublishAudio() throws Throwable
+	{
+		// Make sure that the directory doesn't exist.
+		IConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "sub"));
+		MockSingleNode connection = new MockSingleNode();
+		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
+		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
+		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, true);
+		
+		// First, create a channel so the channel is set up.
+		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);
+		
+		// Now, create a draft and attach audio.
+		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
+		int id = 1;
+		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
+		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		byte[] data = "Testing audio".getBytes();
+		Files.write(openDraft.audio().toPath(), data);
+		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
+
+		// Publish the draft.
+		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		{
+			InteractiveHelpers.publishExistingDraft(env, access, draftManager, id, false, true);
+		}
+		
+		// Verify the data is on the node.
+		StreamRecord record = null;
+		IpfsFile firstRecord = null;
+		for (IpfsFile file : connection.getStoredFileSet())
+		{
+			try
+			{
+				record = GlobalData.deserializeRecord(connection.loadData(file));
+				Assert.assertNull(firstRecord);
+				firstRecord = file;
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is a failure to parse.
+			}
+		}
+		Assert.assertEquals("title", record.getName());
+		Assert.assertEquals(1, record.getElements().getElement().size());
+		Assert.assertEquals("audio/ogg", record.getElements().getElement().get(0).getMime());
 	}
 
 
