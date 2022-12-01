@@ -4,12 +4,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -40,22 +37,6 @@ import io.ipfs.cid.Cid;
 public class TestFolloweeRefreshLogic
 {
 	private static final IpfsKey DUMMY_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	private static Supplier<Double> STORED_FILTER = null;
-
-	@BeforeClass
-	public static void setup()
-	{
-		// We want to force the cache to accept everything.
-		STORED_FILTER = CacheAlgorithm.CACHE_PROBABILITY_FILTER;
-		CacheAlgorithm.CACHE_PROBABILITY_FILTER = () -> 0.0;
-	}
-
-	@AfterClass
-	public static void tearDown()
-	{
-		// Restore the original (note that this may still cause problems if the tests are run concurrently in one VM).
-		CacheAlgorithm.CACHE_PROBABILITY_FILTER = STORED_FILTER;
-	}
 
 	@Test
 	public void testNewEmptyFollow() throws Throwable

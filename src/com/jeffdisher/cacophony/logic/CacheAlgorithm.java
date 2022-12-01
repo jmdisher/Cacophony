@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 
 /**
@@ -13,16 +12,11 @@ import java.util.function.Supplier;
  * lists, meaning the lists can be ordered to favour recent entries, large/small entries, or some other ordering.
  * The cache decisions are internally random but will tend toward being mostly full but will not make overflowing
  * decisions, itself (although it can handle the cases where it asked to overflow).
+ * Note that the cache actively avoids being less than 50% full (that is, if it is less full than that, it will always
+ * choose to cache, without randomness).
  */
 public class CacheAlgorithm
 {
-	/**
-	 * This is exposed as public just for testing.
-	 * The function must return a double between 0.0 and 1.0:  This will reject all "chance to add" below the given
-	 * value (meaning 1.0 will reject everything and 0.0 will reject nothing).
-	 */
-	public static Supplier<Double> CACHE_PROBABILITY_FILTER = () -> Math.random();
-
 	/**
 	 * The type used to communicate cache decisions through this API.
 	 * 
@@ -113,8 +107,25 @@ public class CacheAlgorithm
 			}
 			else
 			{
-				double chanceToAdd = 1.0 - ((double)_currentSizeBytes / (double)_maximumSizeBytes);
-				if (chanceToAdd > CACHE_PROBABILITY_FILTER.get())
+				boolean shouldSelect = false;
+				// The cache decision is based on the cache occupancy.
+				double cacheOccupancy = ((double)_currentSizeBytes / (double)_maximumSizeBytes);
+				// Note that we want to aggressively fill the cache when it is very empty so we automatically select this if less than 50% full.
+				// (this also makes most of our tests deterministic since they typically operate on minimally full caches)
+				if (cacheOccupancy < 0.5d)
+				{
+					shouldSelect = true;
+				}
+				else
+				{
+					// Adjust the occupancy for this top 50% so we don't create a discontinuity in the curve.
+					double adjustedOccupancy = (cacheOccupancy - 0.5d) * 2.0d;
+					// Select a random number between 0.0 and 1.0:  If it is greater than the current adjusted occupancy, then we will select this for the cache.
+					// This approach means that we will be less likely to add an element to the cache as it becomes more full.
+					double randomDecision = Math.random();
+					shouldSelect = randomDecision > adjustedOccupancy;
+				}
+				if (shouldSelect)
 				{
 					// This has been selected for addition.
 					additions.add(candidate);
