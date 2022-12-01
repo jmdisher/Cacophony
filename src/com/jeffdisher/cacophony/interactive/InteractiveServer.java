@@ -5,7 +5,9 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.jeffdisher.breakwater.RestServer;
+import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -48,9 +50,18 @@ public class InteractiveServer
 		server.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(xsrf, manager));
 		server.addDeleteHandler("/draft/thumb", 1, new DELETE_DraftThumb(xsrf, manager));
 		
-		server.addGetHandler("/draft/originalVideo", 1, new GET_DraftOriginalVideo(xsrf, manager));
-		server.addGetHandler("/draft/processedVideo", 1, new GET_DraftProcessedVideo(xsrf, manager));
-		server.addGetHandler("/draft/audio", 1, new GET_DraftAudio(xsrf, manager));
+		server.addGetHandler("/draft/originalVideo", 1, new GET_DraftLargeStream(xsrf, manager
+				, (DraftWrapper wrapper) -> wrapper.originalVideo()
+				, (Draft draft) -> draft.originalVideo().mime()
+		));
+		server.addGetHandler("/draft/processedVideo", 1, new GET_DraftLargeStream(xsrf, manager
+				, (DraftWrapper wrapper) -> wrapper.processedVideo()
+				, (Draft draft) -> draft.processedVideo().mime()
+		));
+		server.addGetHandler("/draft/audio", 1, new GET_DraftLargeStream(xsrf, manager
+				, (DraftWrapper wrapper) -> wrapper.audio()
+				, (Draft draft) -> draft.audio().mime()
+		));
 		
 		server.addDeleteHandler("/draft/originalVideo", 1, new DELETE_DraftOriginalVideo(xsrf, manager));
 		server.addDeleteHandler("/draft/processedVideo", 1, new DELETE_DraftProcessedVideo(xsrf, manager));

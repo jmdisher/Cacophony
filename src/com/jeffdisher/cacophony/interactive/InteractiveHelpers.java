@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -218,38 +217,6 @@ public class InteractiveHelpers
 		SizedElement thumbnail = new SizedElement(mime, height, width, bytesCopied);
 		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
 		wrapper.saveDraft(newDraft);
-	}
-
-	// --- Methods related to video streaming.
-	public static void writeOriginalVideoToStream(DraftManager draftManager, int draftId, BiConsumer<String, Long> mimeSizeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
-	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File originalFile = wrapper.originalVideo();
-		try (FileInputStream input = new FileInputStream(originalFile))
-		{
-			mimeSizeConsumer.accept(wrapper.loadDraft().originalVideo().mime(), originalFile.length());
-			_copyToEndOfFile(input, outStream);
-		}
-	}
-	public static void writeProcessedVideoToStream(DraftManager draftManager, int draftId, BiConsumer<String, Long> mimeSizeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
-	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File processedFile = wrapper.processedVideo();
-		try (FileInputStream input = new FileInputStream(processedFile))
-		{
-			mimeSizeConsumer.accept(wrapper.loadDraft().processedVideo().mime(), processedFile.length());
-			_copyToEndOfFile(input, outStream);
-		}
-	}
-	public static void writeAudioToStream(DraftManager draftManager, int draftId, BiConsumer<String, Long> mimeSizeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
-	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File audioFile = wrapper.audio();
-		try (FileInputStream input = new FileInputStream(audioFile))
-		{
-			mimeSizeConsumer.accept(wrapper.loadDraft().audio().mime(), audioFile.length());
-			_copyToEndOfFile(input, outStream);
-		}
 	}
 
 	// --- Methods related to deleting videos.

@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
@@ -139,34 +140,6 @@ public class TestInteractiveHelpers
 	}
 
 	@Test
-	public void testSaveVideo() throws Throwable
-	{
-		IConfigFileSystem files = _getTestingDraftFiles();
-		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
-		int id = 1;
-		InteractiveHelpers.createNewDraft(draftManager, id);
-		
-		// Save the video content.
-		byte[] data = "Testing video".getBytes();
-		DraftWrapper openDraft = draftManager.openExistingDraft(id);
-		Files.write(openDraft.originalVideo().toPath(), data);
-		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
-		
-		// Re-read it.
-		String[] outMime = new String[1];
-		long[] outByteSize = new long[1];
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		InteractiveHelpers.writeOriginalVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
-			outMime[0] = mime;
-			outByteSize[0] = byteSize;
-		}, outStream);
-		byte[] output = outStream.toByteArray();
-		Assert.assertEquals("video/webm", outMime[0]);
-		Assert.assertEquals(data.length, (int)outByteSize[0]);
-		Assert.assertArrayEquals(data, output);
-	}
-
-	@Test
 	public void testProcessVideo() throws Throwable
 	{
 		IConfigFileSystem files = _getTestingDraftFiles();
@@ -210,74 +183,21 @@ public class TestInteractiveHelpers
 		Assert.assertNull(outError[0]);
 		
 		// Re-read it.
-		String[] outMime = new String[1];
-		long[] outByteSize = new long[1];
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		InteractiveHelpers.writeProcessedVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
-			outMime[0] = mime;
-			outByteSize[0] = byteSize;
-		}, outStream);
-		Assert.assertEquals("video/webm", outMime[0]);
-		Assert.assertEquals(data.length, (int)outByteSize[0]);
+		DraftWrapper wrapper = draftManager.openExistingDraft(id);
+		byte[] output = Files.readAllBytes(wrapper.processedVideo().toPath());
 		byte[] expected = "TXstYng vYdXZ".getBytes();
-		byte[] output = outStream.toByteArray();
 		Assert.assertArrayEquals(expected, output);
+		SizedElement processedSizedElement = wrapper.loadDraft().processedVideo();
+		Assert.assertEquals("video/webm", processedSizedElement.mime());
+		Assert.assertEquals(expected.length, processedSizedElement.byteSize());
+		Assert.assertEquals(5, processedSizedElement.height());
+		Assert.assertEquals(6, processedSizedElement.width());
 		
 		// Verify that we can delete these videos.
 		Assert.assertTrue(InteractiveHelpers.deleteOriginalVideo(draftManager, id));
-		try
-		{
-			InteractiveHelpers.writeOriginalVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
-				// This shouldn't be called.
-				Assert.fail();
-			}, outStream);
-			Assert.fail();
-		}
-		catch (FileNotFoundException e)
-		{
-			// Expected.
-		}
+		Assert.assertFalse(wrapper.originalVideo().exists());
 		Assert.assertTrue(InteractiveHelpers.deleteProcessedVideo(draftManager, id));
-		try
-		{
-			InteractiveHelpers.writeProcessedVideoToStream(draftManager, id, (String mime, Long byteSize) -> {
-				// This shouldn't be called.
-				Assert.fail();
-			}, outStream);
-			Assert.fail();
-		}
-		catch (FileNotFoundException e)
-		{
-			// Expected.
-		}
-	}
-
-	@Test
-	public void testSaveAudio() throws Throwable
-	{
-		IConfigFileSystem files = _getTestingDraftFiles();
-		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
-		int id = 1;
-		InteractiveHelpers.createNewDraft(draftManager, id);
-		
-		// Save the video content.
-		byte[] data = "Testing audio".getBytes();
-		DraftWrapper openDraft = draftManager.openExistingDraft(id);
-		Files.write(openDraft.audio().toPath(), data);
-		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
-		
-		// Re-read it.
-		String[] outMime = new String[1];
-		long[] outByteSize = new long[1];
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		InteractiveHelpers.writeAudioToStream(draftManager, id, (String mime, Long byteSize) -> {
-			outMime[0] = mime;
-			outByteSize[0] = byteSize;
-		}, outStream);
-		byte[] output = outStream.toByteArray();
-		Assert.assertEquals("audio/ogg", outMime[0]);
-		Assert.assertEquals(data.length, (int)outByteSize[0]);
-		Assert.assertArrayEquals(data, output);
+		Assert.assertFalse(wrapper.processedVideo().exists());
 	}
 
 	@Test
