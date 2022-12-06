@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.logic;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -21,6 +22,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.Pair;
 
 
 /**
@@ -119,6 +121,30 @@ public class CacheHelpers
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{
+			// Create the initial list of eviction candidates (this list doesn't favour any specific edge since eviction
+			// is random).
+			// Note that we don't handle duplicates across different followees, or even within the same followee, as
+			// being special - we allow them to be double-counted so they must be double-evicted.
+			List<CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>>> evictionCandidates = new ArrayList<>();
+			for (FollowRecord record : followIndex)
+			{
+				IpfsKey followee = record.publicKey();
+				for (FollowingCacheElement elt : record.elements())
+				{
+					evictionCandidates.add(new CacheAlgorithm.Candidate<>(elt.combinedSizeBytes(), new Pair<>(followee, elt)));
+				}
+			}
+			
+			// Now, see which elements we should evict.
+			List<CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>>> evictions = algorithm.toRemoveInResize(evictionCandidates);
+			
+			// Now, rebuild the index by removing anything from the evictions list (since there can be duplicates, we will use instance comparison on FollowingCacheElement since we don't create them here).
+			IdentityHashMap<FollowingCacheElement, Boolean> lookupRemoved = new IdentityHashMap<>();
+			for (CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>> elt : evictions)
+			{
+				lookupRemoved.put(elt.data().second(), true);
+			}
+			
 			Map<IpfsKey, FollowingCacheElement[]> toReplace = new HashMap<>();
 			for (FollowRecord record : followIndex)
 			{
@@ -126,7 +152,7 @@ public class CacheHelpers
 				List<FollowingCacheElement> retained = new ArrayList<>();
 				for (FollowingCacheElement elt : record.elements())
 				{
-					if (algorithm.toRemoveInResize(List.of(new CacheAlgorithm.Candidate<FollowingCacheElement>(elt.combinedSizeBytes(), elt))).isEmpty())
+					if (!lookupRemoved.containsKey(elt))
 					{
 						// We are NOT removing this element so keep it in the list.
 						retained.add(elt);

@@ -173,9 +173,11 @@ echo "Shrink the cache and force a cache cleaning to verify it doesn't break any
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --setGlobalPrefs --followCacheTargetBytes 2000000
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
 requireSubstring "$CLEAN_OUTPUT" "Pruning cache to 2.00 MB (2000000 bytes) from current size of 2.88 MB (2883584 bytes)"
-# The second clean attempt should change nothing but report the remaining audio entry.
+# The second clean attempt should change nothing but report the remaining audio entry or nothing at all (since there is randomness in the eviction - it should at least be satisfed).
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --cleanCache)
-requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 262.14 kB (262144 bytes) is below target of 2.00 MB (2000000 bytes)"
+# The size remaining here is either 262144 bytes or 0 bytes, depending on the order of eviction decisions, so we don't check that part of the line.
+requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since "
+requireSubstring "$CLEAN_OUTPUT" " is below target of 2.00 MB (2000000 bytes)"
 
 echo "Stop following and verify it is no longer in the list"
 CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --stopFollowing --publicKey "$PUBLIC1"
