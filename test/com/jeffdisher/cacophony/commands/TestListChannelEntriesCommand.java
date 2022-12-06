@@ -1,5 +1,8 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.File;
+import java.nio.file.Files;
+
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -55,6 +58,32 @@ public class TestListChannelEntriesCommand
 		
 		// Check that we can ask about someone we aren't following who does exist.
 		user2.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY1));
+		user1.shutdown();
+		user2.shutdown();
+	}
+
+	@Test
+	public void testNotCachedEntry() throws Throwable
+	{
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, null);
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, user1);
+		
+		// Create the channels.
+		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		
+		// Make an entry with no leaves and one with a big leaf.
+		user1.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[0]));
+		File video = FOLDER.newFile();
+		Files.write(video.toPath(), new byte[] { 1,2,3,4,5 });
+		user1.runCommand(null, new PublishCommand("big name", "leaf description", null, new ElementSubCommand[] { new ElementSubCommand("video/webm", video, 720, 1280, false) } ));
+		
+		// Reduce the cache size and start following the user.
+		user2.runCommand(null, new SetGlobalPrefsCommand(1280, 2L));
+		user2.runCommand(null, new StartFollowingCommand(PUBLIC_KEY1));
+		
+		// Check that the output from the listing makes sense.
+		user2.runCommand(null, new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1));
 		user1.shutdown();
 		user2.shutdown();
 	}

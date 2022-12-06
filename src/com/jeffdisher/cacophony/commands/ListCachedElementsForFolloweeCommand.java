@@ -50,18 +50,23 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			for(String elementCid : recordList)
 			{
 				FollowingCacheElement element = cachedMapByElementCid.get(IpfsFile.fromIpfsCid(elementCid));
-				String imageString = (null != element.imageHash())
-						? element.imageHash().toSafeString()
-						: "(none)"
-				;
-				String leafString = (null != element.leafHash())
-						? element.leafHash().toSafeString()
-						: "(none)"
-				;
-				String suffix = (null == element)
-						? "(not cached)"
-						: "(image: " + imageString + ", leaf: " + leafString + ")"
-				;
+				String suffix = null;
+				if (null != element)
+				{
+					String imageString = (null != element.imageHash())
+							? element.imageHash().toSafeString()
+							: "(none)"
+					;
+					String leafString = (null != element.leafHash())
+							? element.leafHash().toSafeString()
+							: "(none)"
+					;
+					suffix = "(image: " + imageString + ", leaf: " + leafString + ")";
+				}
+				else
+				{
+					suffix = "(not cached)";
+				}
 				environment.logToConsole("Element CID: " + elementCid + " " + suffix);
 			}
 		}
