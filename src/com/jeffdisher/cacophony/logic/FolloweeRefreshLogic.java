@@ -393,8 +393,10 @@ public class FolloweeRefreshLogic
 			{
 				support.logMessage("Waiting for record " + data.elementCid + "...");
 				boolean shouldProceed = true;
+				boolean hasLeafElements = false;
 				if (null != data.futureThumbnailPin)
 				{
+					hasLeafElements = true;
 					try
 					{
 						data.futureThumbnailPin.get();
@@ -409,6 +411,7 @@ public class FolloweeRefreshLogic
 				}
 				if (null != data.futureLeafPin)
 				{
+					hasLeafElements = true;
 					try
 					{
 						data.futureLeafPin.get();
@@ -421,8 +424,9 @@ public class FolloweeRefreshLogic
 						support.logMessage("Failed to pin leaf for " + data.elementCid + ": Ignoring this entry (will also be ignored in the future)");
 					}
 				}
-				// We will only proceed to add this to the cache if everything was pinned.
-				if (shouldProceed)
+				// We will only proceed to add this to the cache if everything was pinned and there were leaf elements.
+				// (Note that we don't record elements without leaves since we always cache meta-data, anyway)
+				if (shouldProceed && hasLeafElements)
 				{
 					FollowingCacheElement element = new FollowingCacheElement(data.elementCid, data.thumbnailHash, data.leafHash, data.thumbnailSizeBytes + data.leafSizeBytes);
 					finalList.add(element);

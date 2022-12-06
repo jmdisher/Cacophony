@@ -268,14 +268,16 @@ public class TestRefreshNextFolloweeCommand
 		Assert.assertEquals(PUBLIC_KEY3, nextKey);
 		
 		// Update 2 data elements and remove one of them from the node before refreshing this user.
-		File tempFile = FOLDER.newFile();
-		FileOutputStream stream = new FileOutputStream(tempFile);
-		stream.write("file".getBytes());
-		stream.close();
+		File fakeVideo = FOLDER.newFile();
+		Files.write(fakeVideo.toPath(), "video".getBytes());
+		File fakeImage = FOLDER.newFile();
+		Files.write(fakeImage.toPath(), "image".getBytes());
 		user3.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
-				new ElementSubCommand("video/webm", tempFile, 0, 0, false) ,
+				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
 		}));
-		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {}));
+		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {
+				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
+		}));
 		StreamIndex index = GlobalData.deserializeIndex(user3.loadDataFromNode(user3.resolveKeyOnNode(PUBLIC_KEY3)));
 		StreamRecords records = GlobalData.deserializeRecords(user3.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		StreamRecord firstRecord = GlobalData.deserializeRecord(user3.loadDataFromNode(IpfsFile.fromIpfsCid(records.getRecord().get(0))));

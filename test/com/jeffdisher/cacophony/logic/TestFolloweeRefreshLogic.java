@@ -65,8 +65,9 @@ public class TestFolloweeRefreshLogic
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
+		// We don't add leaf-less entries to the followee index, since that would be redundant.
 		FollowingCacheElement[] result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
-		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(0, result.length);
 	}
 
 	@Test
@@ -92,7 +93,7 @@ public class TestFolloweeRefreshLogic
 		// First, start following.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, null));
 		TestSupport testSupport = new TestSupport(data);
 		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
@@ -101,6 +102,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		FollowingCacheElement[] result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(1, result[0].combinedSizeBytes());
 		
 		// Now, stop following.
 		originalElements = result;
@@ -133,9 +135,9 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
+		// We don't add leaf-less entries to the followee index, since that would be redundant.
 		result = FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, originalElements, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
-		Assert.assertEquals(1, result.length);
-		Assert.assertEquals(0, result[0].combinedSizeBytes());
+		Assert.assertEquals(0, result.length);
 	}
 
 	@Test
