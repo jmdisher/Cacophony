@@ -110,18 +110,18 @@ public class CommandHelpers
 		;
 		
 		// Prepare for the initial fetch.
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access);
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access, startElements);
 		IpfsFile successfulIndex = null;
 		FollowingCacheElement[] elementsToWrite = null;
 		try
 		{
-			elementsToWrite = FolloweeRefreshLogic.refreshFollowee(refreshSupport
+			FolloweeRefreshLogic.refreshFollowee(refreshSupport
 					, prefs
-					, startElements
 					, lastFetchedRoot
 					, indexRoot
 					, currentCacheUsageInBytes
 			);
+			elementsToWrite = refreshSupport.applyAndReturnElements();
 			successfulIndex = indexRoot;
 		}
 		catch (IpfsConnectionException e)

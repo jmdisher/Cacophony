@@ -51,14 +51,14 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Prepare for the cleanup.
 		GlobalPrefs prefs = access.readGlobalPrefs();
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access);
-		FollowingCacheElement[] updatedCacheState = FolloweeRefreshLogic.refreshFollowee(refreshSupport
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access, finalRecord.elements());
+		FolloweeRefreshLogic.refreshFollowee(refreshSupport
 				, prefs
-				, finalRecord.elements()
 				, finalRecord.lastFetchedRoot()
 				, null
 				, currentCacheUsageInBytes
 		);
+		FollowingCacheElement[] updatedCacheState = refreshSupport.applyAndReturnElements();
 		// We were deleting everything, so this should be empty.
 		Assert.assertTrue(0 == updatedCacheState.length);
 		

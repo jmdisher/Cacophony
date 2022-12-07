@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.logic;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -48,7 +46,6 @@ import com.jeffdisher.cacophony.utils.StringHelpers;
  * -elements we choose to explicitly cache may or may not actually include leaf elements
  * The general design of this algorithm is that it shouldn't need to reach into other components or explicitly
  * read/write any local storage.
- * TODO:  Treat all records without leaves as being part of the cache, and never evict them as they are tiny.
  */
 public class FolloweeRefreshLogic
 {
@@ -58,17 +55,14 @@ public class FolloweeRefreshLogic
 	 * 
 	 * @param support The interface of external requirements used by the algorithm.
 	 * @param globalPrefs The global preferences object (used for leaf selection and cache limit checks).
-	 * @param existingCacheElements The cache elements which are already cached for this user from previous calls.
 	 * @param oldIndexElement The previous index of the user, from the last refresh attempt.
 	 * @param newIndexElement The new index of the user, to be used for this refresh attempt.
 	 * @param currentCacheUsageInBytes The current cache occupancy.
-	 * @return The new list of cache elements for this user (replaces the old, not adding to it).
 	 * @throws IpfsConnectionException If there is a failure to fetch a meta-data element (means an abort).
 	 * @throws SizeConstraintException If a meta-data element is too big for our limits (means an abort).
 	 */
-	public static FollowingCacheElement[] refreshFollowee(IRefreshSupport support
+	public static void refreshFollowee(IRefreshSupport support
 			, GlobalPrefs globalPrefs
-			, FollowingCacheElement[] existingCacheElements
 			, IpfsFile oldIndexElement
 			, IpfsFile newIndexElement
 			, long currentCacheUsageInBytes
@@ -78,20 +72,14 @@ public class FolloweeRefreshLogic
 		// Even the existingRecord will be non-null, even if nothing is in it.
 		Assert.assertTrue(null != support);
 		Assert.assertTrue(null != globalPrefs);
-		Assert.assertTrue(null != existingCacheElements);
 		Assert.assertTrue((null != oldIndexElement) || (null != newIndexElement));
 		
 		// Check if the root changed.
-		FollowingCacheElement[] updatedCacheElements = null;
 		if ((null == oldIndexElement) || !oldIndexElement.equals(newIndexElement))
 		{
-			// In case of failure and a need to retry, we want to pin everything before we unpin anything.
-			List<IpfsFile> metaDataToUnpin = new ArrayList<>();
-			List<IpfsFile> filesToUnpin = new ArrayList<>();
-			
 			if (null != oldIndexElement)
 			{
-				metaDataToUnpin.add(oldIndexElement);
+				support.deferredRemoveMetaDataFromFollowCache(oldIndexElement);
 			}
 			if (null != newIndexElement)
 			{
@@ -106,37 +94,20 @@ public class FolloweeRefreshLogic
 			
 			IpfsFile oldDescriptionElement = _cidOrNull(oldIndex.getDescription());
 			IpfsFile newDescriptionElement = _cidOrNull(newIndex.getDescription());
-			_refreshDescription(support, metaDataToUnpin, oldDescriptionElement, newDescriptionElement);
+			_refreshDescription(support, oldDescriptionElement, newDescriptionElement);
 			
 			IpfsFile oldRecommendationsElement = _cidOrNull(oldIndex.getRecommendations());
 			IpfsFile newRecommendationsElement = _cidOrNull(newIndex.getRecommendations());
-			_refreshRecommendations(support, metaDataToUnpin, oldRecommendationsElement, newRecommendationsElement);
+			_refreshRecommendations(support, oldRecommendationsElement, newRecommendationsElement);
 			
 			IpfsFile oldRecordsElement = _cidOrNull(oldIndex.getRecords());
 			IpfsFile newRecordsElement = _cidOrNull(newIndex.getRecords());
-			updatedCacheElements = _refreshRecords(support, globalPrefs, existingCacheElements, metaDataToUnpin, filesToUnpin, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
-			
-			// Drain all the records of whatever we want to unpin, now that everything is working.
-			for (IpfsFile cid : metaDataToUnpin)
-			{
-				support.removeMetaDataFromFollowCache(cid);
-			}
-			for (IpfsFile cid : filesToUnpin)
-			{
-				support.removeFileFromFollowCache(cid);
-			}
+			_refreshRecords(support, globalPrefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
 		}
-		else
-		{
-			// Nothing changed so just return the original.
-			updatedCacheElements = existingCacheElements;
-		}
-		return updatedCacheElements;
 	}
 
 
 	private static void _refreshDescription(IRefreshSupport support
-			, List<IpfsFile> metaDataToUnpin
 			, IpfsFile oldDescriptionElement
 			, IpfsFile newDescriptionElement
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
@@ -146,10 +117,10 @@ public class FolloweeRefreshLogic
 		{
 			if (null != oldDescriptionElement)
 			{
-				metaDataToUnpin.add(oldDescriptionElement);
+				support.deferredRemoveMetaDataFromFollowCache(oldDescriptionElement);
 				StreamDescription oldDescription = support.loadCached(oldDescriptionElement, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 				// The descriptions always contain a picture reference (often the default but never nothing) which we cache as meta-data.
-				metaDataToUnpin.add(IpfsFile.fromIpfsCid(oldDescription.getPicture()));
+				support.deferredRemoveMetaDataFromFollowCache(IpfsFile.fromIpfsCid(oldDescription.getPicture()));
 			}
 			if (null != newDescriptionElement)
 			{
@@ -169,7 +140,6 @@ public class FolloweeRefreshLogic
 	}
 
 	private static void _refreshRecommendations(IRefreshSupport support
-			, List<IpfsFile> metaDataToUnpin
 			, IpfsFile oldRecommendationsElement
 			, IpfsFile newRecommendationsElement
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
@@ -181,7 +151,7 @@ public class FolloweeRefreshLogic
 			StreamRecommendations newRecommendations = null;
 			if (null != oldRecommendationsElement)
 			{
-				metaDataToUnpin.add(oldRecommendationsElement);
+				support.deferredRemoveMetaDataFromFollowCache(oldRecommendationsElement);
 				oldRecommendations = support.loadCached(oldRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 			}
 			if (null != newRecommendationsElement)
@@ -199,23 +169,19 @@ public class FolloweeRefreshLogic
 		}
 	}
 
-	private static FollowingCacheElement[] _refreshRecords(IRefreshSupport support
+	private static void _refreshRecords(IRefreshSupport support
 			, GlobalPrefs globalPrefs
-			, FollowingCacheElement[] initialElements
-			, List<IpfsFile> metaDataToUnpin
-			, List<IpfsFile> filesToUnpin
 			, IpfsFile oldRecordsElement
 			, IpfsFile newRecordsElement
 			, long currentCacheUsageInBytes
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
-		FollowingCacheElement[] finalElements = null;
 		// Check if the root changed.
 		if ((null == oldRecordsElement) || !oldRecordsElement.equals(newRecordsElement))
 		{
 			if (null != oldRecordsElement)
 			{
-				metaDataToUnpin.add(oldRecordsElement);
+				support.deferredRemoveMetaDataFromFollowCache(oldRecordsElement);
 			}
 			if (null != newRecordsElement)
 			{
@@ -234,41 +200,33 @@ public class FolloweeRefreshLogic
 			Set<IpfsFile> removedRecords = new HashSet<>();
 			removedRecords.addAll(oldRecordSet);
 			removedRecords.removeAll(newRecordList);
-			Map<IpfsFile, FollowingCacheElement> recordsWithCachedLeaves = List.of(initialElements).stream().collect(Collectors.toMap((FollowingCacheElement elt) -> elt.elementHash(), (FollowingCacheElement elt) -> elt));
 			
 			// Process the removed set, adding them to the meta-data to unpin collection and adding any cached leaves to the files to unpin collection.
 			for (IpfsFile removedRecord : removedRecords)
 			{
-				metaDataToUnpin.add(removedRecord);
-				FollowingCacheElement elt = recordsWithCachedLeaves.get(removedRecord);
-				if (null != elt)
+				support.deferredRemoveMetaDataFromFollowCache(removedRecord);
+				IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
+				if (null != imageHash)
 				{
-					if (null != elt.imageHash())
-					{
-						filesToUnpin.add(elt.imageHash());
-					}
-					if (null != elt.leafHash())
-					{
-						filesToUnpin.add(elt.leafHash());
-					}
+					support.deferredRemoveFileFromFollowCache(imageHash);
 				}
+				IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
+				if (null != leafHash)
+				{
+					support.deferredRemoveFileFromFollowCache(leafHash);
+				}
+				support.removeElementFromCache(removedRecord);
 			}
 			
 			// Walk the new record list to create our final FollowingCacheElement list:
 			// -adding any existing FollowingCacheElement
 			// -process any new records to pin them and decide if we should pin their leaf elements
-			List<FollowingCacheElement> finalList = new ArrayList<>();
 			List<RawElementData> newRecordsBeingProcessedInitial = new ArrayList<>();
 			for (IpfsFile currentRecord : newRecordList)
 			{
 				if (oldRecordSet.contains(currentRecord))
 				{
-					// This is a record which is staying.  Check to see if there is an existing cache element.
-					FollowingCacheElement elt = recordsWithCachedLeaves.get(currentRecord);
-					if (null != elt)
-					{
-						finalList.add(elt);
-					}
+					// This is a record which is staying so leave its pinned elements and whether or not we cached it unchanged.
 				}
 				else
 				{
@@ -428,8 +386,6 @@ public class FolloweeRefreshLogic
 				// (Note that we don't record elements without leaves since we always cache meta-data, anyway)
 				if (shouldProceed && hasLeafElements)
 				{
-					FollowingCacheElement element = new FollowingCacheElement(data.elementCid, data.thumbnailHash, data.leafHash, data.thumbnailSizeBytes + data.leafSizeBytes);
-					finalList.add(element);
 					support.logMessage("Successfully pinned " + data.elementCid + "!");
 					if (null != data.thumbnailHash)
 					{
@@ -439,28 +395,22 @@ public class FolloweeRefreshLogic
 					{
 						support.logMessage("\t-leaf " + StringHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
 					}
+					support.addElementToCache(data.elementCid, data.thumbnailHash, data.leafHash, data.thumbnailSizeBytes + data.leafSizeBytes);
 				}
 				else
 				{
 					// We may have only partially failed so see which we may need to unpin - ignore the results as this is just best-efforts cleanup.
 					if (null != data.thumbnailHash)
 					{
-						support.removeFileFromFollowCache(data.thumbnailHash);
+						support.deferredRemoveFileFromFollowCache(data.thumbnailHash);
 					}
 					if (null != data.leafHash)
 					{
-						support.removeFileFromFollowCache(data.leafHash);
+						support.deferredRemoveFileFromFollowCache(data.leafHash);
 					}
 				}
 			}
-			finalElements = finalList.toArray(new FollowingCacheElement[finalList.size()]);
 		}
-		else
-		{
-			// Nothing is changing.
-			finalElements = initialElements;
-		}
-		return finalElements;
 	}
 
 	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(GlobalPrefs globalPrefs, long currentCacheUsageInBytes, List<CacheAlgorithm.Candidate<RawElementData>> candidates)
@@ -564,9 +514,15 @@ public class FolloweeRefreshLogic
 		void logMessage(String message);
 		FutureSize getSizeInBytes(IpfsFile cid);
 		FuturePin addMetaDataToFollowCache(IpfsFile cid);
-		void removeMetaDataFromFollowCache(IpfsFile cid);
+		void deferredRemoveMetaDataFromFollowCache(IpfsFile cid);
+		
 		FuturePin addFileToFollowCache(IpfsFile cid);
-		void removeFileFromFollowCache(IpfsFile cid);
+		void deferredRemoveFileFromFollowCache(IpfsFile cid);
 		<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
+		
+		IpfsFile getImageForCachedElement(IpfsFile elementHash);
+		IpfsFile getLeafForCachedElement(IpfsFile elementHash);
+		void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes);
+		void removeElementFromCache(IpfsFile elementHash);
 	}
 }
