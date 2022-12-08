@@ -2,13 +2,13 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -22,8 +22,8 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
+import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
@@ -80,14 +80,10 @@ public class JsonGenerationHelpers
 		JsonObject dataUserPosts = new JsonObject();
 		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(access, indices);
 		
-		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
-		Iterator<FutureKey<StreamRecords>> recordsIterator = streamRecords.iterator();
-		_populatePostsForUser(dataUserPosts, ourPublicKey, recordsIterator.next().future.get());
-		for(FollowRecord record : followIndex)
+		for (FutureKey<StreamRecords> elt : streamRecords)
 		{
-			_populatePostsForUser(dataUserPosts, record.publicKey(), recordsIterator.next().future.get());
+			_populatePostsForUser(dataUserPosts, elt.publicKey(), elt.future().get());
 		}
-		Assert.assertTrue(!recordsIterator.hasNext());
 		generatedStream.println("var DATA_userPosts = " + dataUserPosts.toString());
 		generatedStream.println();
 		
@@ -95,13 +91,10 @@ public class JsonGenerationHelpers
 		// Load recommended list.
 		List<FutureKey<StreamRecommendations>> recommendationsFutures = _loadRecommendations(access, indices);
 		JsonObject dataRecommended = new JsonObject();
-		Iterator<FutureKey<StreamRecommendations>> recommendationsIterator = recommendationsFutures.iterator();
-		_populateRecommendationsForUser(dataRecommended, ourPublicKey, recommendationsIterator.next().future.get());
-		for(FollowRecord record : followIndex)
+		for (FutureKey<StreamRecommendations> elt : recommendationsFutures)
 		{
-			_populateRecommendationsForUser(dataRecommended, record.publicKey(), recommendationsIterator.next().future.get());
+			_populateRecommendationsForUser(dataRecommended, elt.publicKey(), elt.future().get());
 		}
-		Assert.assertTrue(!recommendationsIterator.hasNext());
 		generatedStream.println("var DATA_recommended = " + dataRecommended.toString());
 		generatedStream.println();
 		
@@ -279,31 +272,31 @@ public class JsonGenerationHelpers
 		return _dataPrefs(prefs);
 	}
 
-	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, Iterable<FollowRecord> followIndex) throws IpfsConnectionException, FailedDeserializationException
+	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex) throws IpfsConnectionException, FailedDeserializationException
 	{
-		List<FutureRead<StreamIndex>> indices = _loadStreamIndicesNoKey(access, lastPublishedIndex, followIndex);
+		IpfsKey ourPublicKey = access.getPublicKey();
+		List<FutureKey<StreamIndex>> indices = _loadStreamIndicesNoKey(access, ourPublicKey, lastPublishedIndex, followIndex);
+		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(access, indices);
+		
 		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
-		List<FutureRead<StreamRecords>> streamRecords = _loadRecordsNoKey(access, indices);
-		// Note that the elements in streamRecords are derived from ourselves and all FollowIndex elements, so we can walk them in the same order.
-		Iterator<FutureRead<StreamRecords>> recordsIterator = streamRecords.iterator();
-		// The first element is ourselves.
-		_populateElementMapFromUserRoot(access, dataElements, null, recordsIterator.next().get());
-		// The rest of the list is in-order with followIndex.
-		for(FollowRecord record : followIndex)
+		for (FutureKey<StreamRecords> elt : streamRecords)
 		{
-			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = Arrays.stream(record.elements()).collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e));
-			_populateElementMapFromUserRoot(access, dataElements, elementsCachedForUser, recordsIterator.next().get());
+			IpfsKey followeeKey = elt.publicKey();
+			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = (ourPublicKey.equals(followeeKey))
+					? null
+					: Stream.of(followIndex.peekRecord(followeeKey).elements())
+					.collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e))
+			;
+			_populateElementMapFromUserRoot(access, dataElements, elementsCachedForUser, elt.future().get());
 		}
-		// These should end at the same time.
-		Assert.assertTrue(!recordsIterator.hasNext());
 		return new LocalRecordCache(dataElements);
 	}
 
 
-	private static void _startLoad(List<FutureKey<StreamIndex>> list, IReadingAccess access, IpfsKey publicKey, IpfsFile indexRoot)
+	private static FutureKey<StreamIndex> _startLoad(IReadingAccess access, IpfsKey publicKey, IpfsFile indexRoot)
 	{
 		FutureRead<StreamIndex> index = access.loadCached(indexRoot, (byte[] data) -> GlobalData.deserializeIndex(data));
-		list.add(new FutureKey<StreamIndex>(publicKey, index));
+		return new FutureKey<StreamIndex>(publicKey, index);
 	}
 
 	private static List<FutureKey<StreamDescription>> _loadDescriptions(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
@@ -337,18 +330,6 @@ public class JsonGenerationHelpers
 			StreamIndex index = future.future.get();
 			FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
 			recordsList.add(new FutureKey<StreamRecords>(future.publicKey, records));
-		}
-		return recordsList;
-	}
-
-	private static List<FutureRead<StreamRecords>> _loadRecordsNoKey(IReadingAccess access, List<FutureRead<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
-	{
-		List<FutureRead<StreamRecords>> recordsList = new ArrayList<>();
-		for (FutureRead<StreamIndex> future : list)
-		{
-			StreamIndex index = future.get();
-			FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
-			recordsList.add(records);
 		}
 		return recordsList;
 	}
@@ -560,21 +541,21 @@ public class JsonGenerationHelpers
 	private static List<FutureKey<StreamIndex>> _loadStreamIndices(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex)
 	{
 		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
-		_startLoad(indices, access, ourPublicKey, lastPublishedIndex);
-		for(FollowRecord record : followIndex)
+		indices.add(_startLoad(access, ourPublicKey, lastPublishedIndex));
+		for(FollowRecord followee : followIndex)
 		{
-			_startLoad(indices, access, record.publicKey(), record.lastFetchedRoot());
+			indices.add(_startLoad(access, followee.publicKey(), followee.lastFetchedRoot()));
 		}
 		return indices;
 	}
 
-	private static List<FutureRead<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsFile lastPublishedIndex, Iterable<FollowRecord> followIndex)
+	private static List<FutureKey<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, Iterable<FollowRecord> followIndex)
 	{
-		List<FutureRead<StreamIndex>> indices = new ArrayList<>();
-		indices.add(access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data)));
-		for(FollowRecord record : followIndex)
+		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
+		indices.add(new FutureKey<>(ourPublicKey, access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data))));
+		for(FollowRecord followee : followIndex)
 		{
-			indices.add(access.loadCached(record.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data)));
+			indices.add(new FutureKey<>(followee.publicKey(), access.loadCached(followee.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data))));
 		}
 		return indices;
 	}
@@ -607,12 +588,12 @@ public class JsonGenerationHelpers
 		return dataUserInfo;
 	}
 
-	private static JsonArray _dataFollowing(IReadOnlyFollowIndex followIndex)
+	private static JsonArray _dataFollowing(Iterable<FollowRecord> followIndex)
 	{
 		JsonArray dataFollowing = new JsonArray();
-		for(FollowRecord record : followIndex)
+		for(FollowRecord followee: followIndex)
 		{
-			dataFollowing.add(record.publicKey().toPublicKey());
+			dataFollowing.add(followee.publicKey().toPublicKey());
 		}
 		return dataFollowing;
 	}
@@ -626,14 +607,7 @@ public class JsonGenerationHelpers
 		}
 		else
 		{
-			for(FollowRecord record : followIndex)
-			{
-				if (userToResolve.equals(record.publicKey()))
-				{
-					indexToLoad = record.lastFetchedRoot();
-					break;
-				}
-			}
+			indexToLoad = followIndex.peekRecord(userToResolve).lastFetchedRoot();
 		}
 		return indexToLoad;
 	}
