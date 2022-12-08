@@ -150,7 +150,10 @@ public class CommandHelpers
 		}
 		
 		// Create and save the updated record (if this was an abort, this just has the impact of updating the time).
-		Assert.assertTrue(null != successfulIndex);
+		if (null != indexRoot)
+		{
+			Assert.assertTrue(null != successfulIndex);
+		}
 		Assert.assertTrue(null != elementsToWrite);
 		return new FollowRecord(publicKey, successfulIndex, System.currentTimeMillis(), elementsToWrite);
 	}
