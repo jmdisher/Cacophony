@@ -23,7 +23,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * It does, however, mean that care must be taken to either entirely drop the index or re-checkin an element, on
  * failure.
  */
-public class FollowIndex implements IReadOnlyFollowIndex
+public class FollowIndex implements Iterable<FollowRecord>
 {
 	public static FollowIndex emptyFollowIndex()
 	{
@@ -86,7 +86,6 @@ public class FollowIndex implements IReadOnlyFollowIndex
 		return _removeRecordFromList(publicKey);
 	}
 
-	@Override
 	public FollowRecord peekRecord(IpfsKey publicKey)
 	{
 		return _getFollowerRecord(publicKey);
