@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -13,9 +14,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -99,16 +98,16 @@ public class TestRefreshNextFolloweeCommand
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
-		FollowIndex followees = user.readFollowIndex();
-		IpfsKey nextKey = followees.nextKeyToPoll();
+		IFolloweeReading followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.getNextFolloweeToPoll();
 		// We expect to do the initial check on the first one we added (since it was populated when first read).
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		user.runCommand(null, command);
-		nextKey = user.readFollowIndex().nextKeyToPoll();
+		nextKey = user.readFollowIndex().getNextFolloweeToPoll();
 		// The key should have rotated, even though nothing changed.
 		Assert.assertEquals(PUBLIC_KEY3, nextKey);
 		user.runCommand(null, command);
-		nextKey = followees.nextKeyToPoll();
+		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		user2.shutdown();
 		user3.shutdown();
@@ -135,12 +134,12 @@ public class TestRefreshNextFolloweeCommand
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
-		FollowIndex followees = user.readFollowIndex();
-		IpfsKey nextKey = followees.nextKeyToPoll();
+		IFolloweeReading followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.getNextFolloweeToPoll();
 		// We expect to do the initial check on the first one we added (since it was populated when first read).
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		user.runCommand(null, command);
-		nextKey = user.readFollowIndex().nextKeyToPoll();
+		nextKey = user.readFollowIndex().getNextFolloweeToPoll();
 		// The key should have rotated, even though nothing changed.
 		Assert.assertEquals(PUBLIC_KEY3, nextKey);
 		
@@ -160,21 +159,19 @@ public class TestRefreshNextFolloweeCommand
 		// Note that we expect this to fail, but the command will handle any exceptions internally.
 		// The only way we can observe this failure is by scraping the output or observing the root didn't change but the next to poll advanced.
 		followees = user.readFollowIndex();
-		IpfsKey beforeToPoll = followees.nextKeyToPoll();
+		IpfsKey beforeToPoll = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY3, beforeToPoll);
-		IpfsFile beforeRoot = followees.peekRecord(beforeToPoll).lastFetchedRoot();
+		IpfsFile beforeRoot = followees.getLastFetchedRootForFollowee(beforeToPoll);
 		user.runCommand(null, command);
 		followees = user.readFollowIndex();
-		IpfsKey afterToPoll = followees.nextKeyToPoll();
-		IpfsFile afterRoot = followees.peekRecord(beforeToPoll).lastFetchedRoot();
+		IpfsKey afterToPoll = followees.getNextFolloweeToPoll();
+		IpfsFile afterRoot = followees.getLastFetchedRootForFollowee(beforeToPoll);
 		Assert.assertEquals(PUBLIC_KEY2, afterToPoll);
 		Assert.assertEquals(beforeRoot, afterRoot);
 		
 		// Check that we see that we failed to update the cache.
-		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
-		FollowingCacheElement[] elements = record.elements();
-		Assert.assertEquals(0, elements.length);
+		IFolloweeReading followIndex = user.readFollowIndex();
+		Assert.assertEquals(0, followIndex.getElementsForFollowee(PUBLIC_KEY3).size());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();
@@ -200,12 +197,12 @@ public class TestRefreshNextFolloweeCommand
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
-		FollowIndex followees = user.readFollowIndex();
-		IpfsKey nextKey = followees.nextKeyToPoll();
+		IFolloweeReading followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.getNextFolloweeToPoll();
 		// We expect to do the initial check on the first one we added (since it was populated when first read).
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		user.runCommand(null, command);
-		nextKey = user.readFollowIndex().nextKeyToPoll();
+		nextKey = user.readFollowIndex().getNextFolloweeToPoll();
 		// The key should have rotated, even though nothing changed.
 		Assert.assertEquals(PUBLIC_KEY3, nextKey);
 		
@@ -225,14 +222,12 @@ public class TestRefreshNextFolloweeCommand
 		
 		// This should abort, just advancing the next to poll.
 		user.runCommand(null, command);
-		nextKey = followees.nextKeyToPoll();
+		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		
 		// Check that we see that we did update the cache with the valid entry.
-		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
-		FollowingCacheElement[] elements = record.elements();
-		Assert.assertEquals(0, elements.length);
+		followees = user.readFollowIndex();
+		Assert.assertEquals(0, followees.getElementsForFollowee(PUBLIC_KEY3).size());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();
@@ -258,12 +253,12 @@ public class TestRefreshNextFolloweeCommand
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
-		FollowIndex followees = user.readFollowIndex();
-		IpfsKey nextKey = followees.nextKeyToPoll();
+		IFolloweeReading followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.getNextFolloweeToPoll();
 		// We expect to do the initial check on the first one we added (since it was populated when first read).
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		user.runCommand(null, command);
-		nextKey = user.readFollowIndex().nextKeyToPoll();
+		nextKey = user.readFollowIndex().getNextFolloweeToPoll();
 		// The key should have rotated, even though nothing changed.
 		Assert.assertEquals(PUBLIC_KEY3, nextKey);
 		
@@ -286,15 +281,14 @@ public class TestRefreshNextFolloweeCommand
 		IpfsFile recordToKeep = IpfsFile.fromIpfsCid(records.getRecord().get(1));
 		
 		user.runCommand(null, command);
-		nextKey = followees.nextKeyToPoll();
+		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		
 		// Check that we see just the one entry in the cache.
-		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY3);
-		FollowingCacheElement[] elements = record.elements();
-		Assert.assertEquals(1, elements.length);
-		Assert.assertEquals(recordToKeep, elements[0].elementHash());
+		followees = user.readFollowIndex();
+		List<IpfsFile> keys = followees.getElementsForFollowee(PUBLIC_KEY3);
+		Assert.assertEquals(1, keys.size());
+		Assert.assertEquals(recordToKeep, followees.getElementForFollowee(PUBLIC_KEY3, keys.get(0)).elementHash());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();
@@ -317,20 +311,20 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Run the command once and make sure that the followee key exists.
 		user.runCommand(null, command);
-		FollowRecord record = user.readFollowIndex().peekRecord(PUBLIC_KEY2);
-		IpfsFile lastRoot = record.lastFetchedRoot();
+		IFolloweeReading reading = user.readFollowIndex();
+		IpfsFile lastRoot = reading.getLastFetchedRootForFollowee(PUBLIC_KEY2);
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
-		long firstMillis = record.lastPollMillis();
+		long firstMillis = reading.getLastPollMillisForFollowee(PUBLIC_KEY2);
 		
 		// Now, break the key reference and run it again to make sure the time is updated but not the root (we sleep for a few millis to make sure the clock advances).
 		Thread.sleep(2);
 		user2.timeoutKey(PUBLIC_KEY2);
 		user.runCommand(null, command);
-		record = user.readFollowIndex().peekRecord(PUBLIC_KEY2);
-		IpfsFile lastRoot2 = record.lastFetchedRoot();
+		reading = user.readFollowIndex();
+		IpfsFile lastRoot2 = reading.getLastFetchedRootForFollowee(PUBLIC_KEY2);
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));
 		Assert.assertEquals(lastRoot, lastRoot2);
-		long secondMillis = record.lastPollMillis();
+		long secondMillis = reading.getLastPollMillisForFollowee(PUBLIC_KEY2);
 		Assert.assertTrue(secondMillis > firstMillis);
 		
 		user2.shutdown();
@@ -354,8 +348,8 @@ public class TestRefreshNextFolloweeCommand
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
 		// We should be able to run this multiple times, without it causing problems.
-		FollowIndex followees = user.readFollowIndex();
-		IpfsKey nextKey = followees.nextKeyToPoll();
+		IFolloweeReading followees = user.readFollowIndex();
+		IpfsKey nextKey = followees.getNextFolloweeToPoll();
 		// We expect to do the initial check on the first one we added (since it was populated when first read).
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		user.runCommand(null, command);
@@ -381,7 +375,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Run the refresh command.
 		user.runCommand(null, command);
-		nextKey = followees.nextKeyToPoll();
+		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		
 		// Generate the expected leaf hashes.
@@ -390,16 +384,15 @@ public class TestRefreshNextFolloweeCommand
 		IpfsFile audioHash = MockSingleNode.generateHash("audio".getBytes());
 		
 		// Check that we see just the 3 entries in the index, with the appropriate leaves.
-		FollowIndex followIndex = user.readFollowIndex();
-		FollowRecord record = followIndex.peekRecord(PUBLIC_KEY2);
-		FollowingCacheElement[] elements = record.elements();
-		Assert.assertEquals(3, elements.length);
-		Assert.assertEquals(imageHash, elements[0].imageHash());
-		Assert.assertEquals(videoHash, elements[0].leafHash());
-		Assert.assertEquals(imageHash, elements[1].imageHash());
-		Assert.assertEquals(audioHash, elements[1].leafHash());
-		Assert.assertEquals(imageHash, elements[2].imageHash());
-		Assert.assertNull(elements[2].leafHash());
+		followees = user.readFollowIndex();
+		List<IpfsFile> elements = followees.getElementsForFollowee(PUBLIC_KEY2);
+		Assert.assertEquals(3, elements.size());
+		Assert.assertEquals(imageHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(0)).imageHash());
+		Assert.assertEquals(videoHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(0)).leafHash());
+		Assert.assertEquals(imageHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(1)).imageHash());
+		Assert.assertEquals(audioHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(1)).leafHash());
+		Assert.assertEquals(imageHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(2)).imageHash());
+		Assert.assertNull(followees.getElementForFollowee(PUBLIC_KEY2, elements.get(2)).leafHash());
 		
 		user2.shutdown();
 		user.shutdown();

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -23,10 +22,9 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -41,7 +39,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class JsonGenerationHelpers
 {
-	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, IReadOnlyFollowIndex followIndex) throws IpfsConnectionException, FailedDeserializationException
+	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// Start output.
 		generatedStream.println("// " + comment);
@@ -64,7 +62,7 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// Load all the index objects since we walk it for a few operations.
-		List<FutureKey<StreamIndex>> indices = _loadStreamIndices(access, ourPublicKey, lastPublishedIndex, followIndex);
+		List<FutureKey<StreamIndex>> indices = _loadStreamIndices(access, ourPublicKey, lastPublishedIndex, followees);
 		
 		// DATA_userInfo.
 		JsonObject dataUserInfo = _dataUserInfo(access, indices);
@@ -99,7 +97,7 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// DATA_following.
-		JsonArray dataFollowing = _dataFollowing(followIndex);
+		JsonArray dataFollowing = _dataFollowing(followees);
 		generatedStream.println("var DATA_following = " + dataFollowing.toString());
 		generatedStream.println();
 		
@@ -195,10 +193,10 @@ public class JsonGenerationHelpers
 		return _dataVersion();
 	}
 
-	public static JsonObject userInfo(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
+	public static JsonObject userInfo(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
-		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followees, userToResolve);
 		JsonObject foundObject = null;
 		if (null != indexToLoad)
 		{
@@ -209,10 +207,10 @@ public class JsonGenerationHelpers
 		return foundObject;
 	}
 
-	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
+	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
-		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followees, userToResolve);
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
@@ -227,10 +225,10 @@ public class JsonGenerationHelpers
 		return array;
 	}
 
-	public static JsonArray recommendedKeys(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
+	public static JsonArray recommendedKeys(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
-		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followIndex, userToResolve);
+		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followees, userToResolve);
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
@@ -262,9 +260,9 @@ public class JsonGenerationHelpers
 		;
 	}
 
-	public static JsonArray followeeKeys(IReadOnlyFollowIndex followIndex)
+	public static JsonArray followeeKeys(IFolloweeReading followees)
 	{
-		return _dataFollowing(followIndex);
+		return _dataFollowing(followees);
 	}
 
 	public static JsonObject prefs(GlobalPrefs prefs)
@@ -272,10 +270,10 @@ public class JsonGenerationHelpers
 		return _dataPrefs(prefs);
 	}
 
-	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex) throws IpfsConnectionException, FailedDeserializationException
+	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
 	{
 		IpfsKey ourPublicKey = access.getPublicKey();
-		List<FutureKey<StreamIndex>> indices = _loadStreamIndicesNoKey(access, ourPublicKey, lastPublishedIndex, followIndex);
+		List<FutureKey<StreamIndex>> indices = _loadStreamIndicesNoKey(access, ourPublicKey, lastPublishedIndex, followees);
 		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(access, indices);
 		
 		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
@@ -284,7 +282,8 @@ public class JsonGenerationHelpers
 			IpfsKey followeeKey = elt.publicKey();
 			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = (ourPublicKey.equals(followeeKey))
 					? null
-					: Stream.of(followIndex.peekRecord(followeeKey).elements())
+					: followees.getElementsForFollowee(followeeKey).stream()
+					.map((IpfsFile cid) -> followees.getElementForFollowee(followeeKey, cid))
 					.collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e))
 			;
 			_populateElementMapFromUserRoot(access, dataElements, elementsCachedForUser, elt.future().get());
@@ -538,24 +537,24 @@ public class JsonGenerationHelpers
 		return mime;
 	}
 
-	private static List<FutureKey<StreamIndex>> _loadStreamIndices(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex)
+	private static List<FutureKey<StreamIndex>> _loadStreamIndices(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees)
 	{
 		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
 		indices.add(_startLoad(access, ourPublicKey, lastPublishedIndex));
-		for(FollowRecord followee : followIndex)
+		for(IpfsKey followee : followees.getAllKnownFollowees())
 		{
-			indices.add(_startLoad(access, followee.publicKey(), followee.lastFetchedRoot()));
+			indices.add(_startLoad(access, followee, followees.getLastFetchedRootForFollowee(followee)));
 		}
 		return indices;
 	}
 
-	private static List<FutureKey<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, Iterable<FollowRecord> followIndex)
+	private static List<FutureKey<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees)
 	{
 		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
 		indices.add(new FutureKey<>(ourPublicKey, access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data))));
-		for(FollowRecord followee : followIndex)
+		for(IpfsKey followee : followees.getAllKnownFollowees())
 		{
-			indices.add(new FutureKey<>(followee.publicKey(), access.loadCached(followee.lastFetchedRoot(), (byte[] data) -> GlobalData.deserializeIndex(data))));
+			indices.add(new FutureKey<>(followee, access.loadCached(followees.getLastFetchedRootForFollowee(followee), (byte[] data) -> GlobalData.deserializeIndex(data))));
 		}
 		return indices;
 	}
@@ -588,17 +587,17 @@ public class JsonGenerationHelpers
 		return dataUserInfo;
 	}
 
-	private static JsonArray _dataFollowing(Iterable<FollowRecord> followIndex)
+	private static JsonArray _dataFollowing(IFolloweeReading followees)
 	{
 		JsonArray dataFollowing = new JsonArray();
-		for(FollowRecord followee: followIndex)
+		for(IpfsKey followee: followees.getAllKnownFollowees())
 		{
-			dataFollowing.add(followee.publicKey().toPublicKey());
+			dataFollowing.add(followee.toPublicKey());
 		}
 		return dataFollowing;
 	}
 
-	private static IpfsFile _getLastKnownIndexForKey(IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IReadOnlyFollowIndex followIndex, IpfsKey userToResolve)
+	private static IpfsFile _getLastKnownIndexForKey(IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve)
 	{
 		IpfsFile indexToLoad = null;
 		if (userToResolve.equals(ourPublicKey))
@@ -607,7 +606,7 @@ public class JsonGenerationHelpers
 		}
 		else
 		{
-			indexToLoad = followIndex.peekRecord(userToResolve).lastFetchedRoot();
+			indexToLoad = followees.getLastFetchedRootForFollowee(userToResolve);
 		}
 		return indexToLoad;
 	}

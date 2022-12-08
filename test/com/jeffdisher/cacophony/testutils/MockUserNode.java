@@ -11,9 +11,9 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -121,12 +121,12 @@ public class MockUserNode
 		return prefs;
 	}
 
-	public FollowIndex readFollowIndex() throws UsageException, VersionException, IpfsConnectionException
+	public IFolloweeReading readFollowIndex() throws UsageException, VersionException, IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
 		try (IWritingAccess writing = StandardAccess.writeAccess(_executor))
 		{
-			return writing.readWriteFollowIndex();
+			return writing.readableFolloweeData();
 		}
 	}
 

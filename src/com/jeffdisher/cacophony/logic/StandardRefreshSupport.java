@@ -3,18 +3,18 @@ package com.jeffdisher.cacophony.logic;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -24,20 +24,20 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 {
 	private final IEnvironment _environment;
 	private final IWritingAccess _access;
-	private final List<FollowingCacheElement> _initialElements;
-	private final Map<IpfsFile, FollowingCacheElement> _initialElementsForLookup;
+	private final IFolloweeWriting _followees;
+	private final IpfsKey _followeeKey;
 	
 	private final List<IpfsFile> _deferredMetaDataUnpins;
 	private final List<IpfsFile> _deferredFileUnpins;
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 
-	public StandardRefreshSupport(IEnvironment environment, IWritingAccess access, FollowingCacheElement[] initialElements)
+	public StandardRefreshSupport(IEnvironment environment, IWritingAccess access, IFolloweeWriting followees, IpfsKey followeeKey)
 	{
 		_environment = environment;
 		_access = access;
-		_initialElements = List.of(initialElements);
-		_initialElementsForLookup = _initialElements.stream().collect(Collectors.toMap((FollowingCacheElement elt) -> elt.elementHash(), (FollowingCacheElement elt) -> elt));
+		_followees = followees;
+		_followeeKey = followeeKey;
 		
 		_deferredMetaDataUnpins = new ArrayList<>();
 		_deferredFileUnpins = new ArrayList<>();
@@ -45,7 +45,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_elementsToAddToCache = new ArrayList<>();
 	}
 
-	public FollowingCacheElement[] applyAndReturnElements()
+	public void commitChanges()
 	{
 		// We can now commit to unpinning anything which we wanted to drop.
 		for (IpfsFile cid : _deferredMetaDataUnpins)
@@ -71,22 +71,15 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			}
 		}
 		
-		// Now, compose the list of elements we are left with (we want to keep these in order and only append to the end, though).
-		List<FollowingCacheElement> list = new ArrayList<>();
-		for (FollowingCacheElement elt : _initialElements)
+		// Now, write-back our changes to the actual cache.
+		for (IpfsFile cid : _elementsToRemoveFromCache)
 		{
-			if (!_elementsToRemoveFromCache.contains(elt.elementHash()))
-			{
-				// We are not removing it, so add it to the list, in-order.
-				list.add(elt);
-			}
+			_followees.removeElement(_followeeKey, cid);
 		}
 		for (FollowingCacheElement elt : _elementsToAddToCache)
 		{
-			// This is new, so add it to the end.
-			list.add(elt);
+			_followees.addElement(_followeeKey, elt);
 		}
-		return list.toArray((int size) -> new FollowingCacheElement[size]);
 	}
 
 	@Override
@@ -127,7 +120,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public IpfsFile getImageForCachedElement(IpfsFile elementHash)
 	{
-		FollowingCacheElement elt = _initialElementsForLookup.get(elementHash);
+		FollowingCacheElement elt = _followees.getElementForFollowee(_followeeKey, elementHash);
 		return (null != elt)
 				? elt.imageHash()
 				: null
@@ -136,7 +129,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public IpfsFile getLeafForCachedElement(IpfsFile elementHash)
 	{
-		FollowingCacheElement elt = _initialElementsForLookup.get(elementHash);
+		FollowingCacheElement elt = _followees.getElementForFollowee(_followeeKey, elementHash);
 		return (null != elt)
 				? elt.leafHash()
 				: null

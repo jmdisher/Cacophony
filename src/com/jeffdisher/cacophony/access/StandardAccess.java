@@ -13,12 +13,14 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -182,13 +184,13 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public IReadOnlyFollowIndex readOnlyFollowIndex()
+	public IFolloweeReading readableFolloweeData()
 	{
 		if (null == _followIndex)
 		{
 			_followIndex = _readOnly.readFollowIndex();
 		}
-		return _followIndex;
+		return FolloweeData.buildOnIndex(_followIndex);
 	}
 
 	@Override
@@ -292,7 +294,7 @@ public class StandardAccess implements IWritingAccess
 
 	// ----- Writing methods -----
 	@Override
-	public FollowIndex readWriteFollowIndex()
+	public IFolloweeWriting writableFolloweeData()
 	{
 		Assert.assertTrue(null != _readWrite);
 		if (null == _followIndex)
@@ -301,7 +303,7 @@ public class StandardAccess implements IWritingAccess
 		}
 		// We will want to write this back.
 		_writeFollowIndex = true;
-		return _followIndex;
+		return FolloweeData.buildOnIndex(_followIndex);
 	}
 
 	@Override

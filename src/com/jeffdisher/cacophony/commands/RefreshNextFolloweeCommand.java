@@ -2,13 +2,12 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -37,38 +36,42 @@ public record RefreshNextFolloweeCommand() implements ICommand
 		// We want to prune the cache to 90% for update so make space.
 		CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 0.90);
 		
-		FollowIndex followIndex = access.readWriteFollowIndex();
+		IFolloweeWriting followees = access.writableFolloweeData();
 		
-		IpfsKey publicKey = followIndex.nextKeyToPoll();
+		IpfsKey publicKey = followees.getNextFolloweeToPoll();
 		if (null == publicKey)
 		{
 			throw new UsageException("Not following any users");
 		}
 		IOperationLog log = environment.logOperation("Refreshing followee " + publicKey + "...");
 		
-		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
-		FollowRecord startRecord = followIndex.checkoutRecord(publicKey);
-		Assert.assertTrue(null != startRecord);
+		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
+		IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(publicKey);
+		Assert.assertTrue(null != lastRoot);
 		
 		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
 		IpfsFile indexRoot = access.resolvePublicKey(publicKey).get();
-		FollowRecord updatedRecord = null;
+		IpfsFile newRoot = null;
 		if (null != indexRoot)
 		{
 			environment.logToConsole("Resolved as " + indexRoot);
 			GlobalPrefs prefs = access.readGlobalPrefs();
 			
-			updatedRecord = CommandHelpers.doRefreshOfRecord(environment, access, currentCacheUsageInBytes, publicKey, startRecord, indexRoot, prefs);
+			boolean didRefresh = CommandHelpers.doRefreshOfRecord(environment, access, followees, publicKey, currentCacheUsageInBytes, lastRoot, indexRoot, prefs);
+			newRoot = didRefresh
+					? indexRoot
+					: lastRoot
+			;
 		}
 		else
 		{
 			// We couldn't resolve them so just advance the poll time.
 			environment.logToConsole("Could not find followee");
-			updatedRecord = new FollowRecord(publicKey, startRecord.lastFetchedRoot(), System.currentTimeMillis(), startRecord.elements());
+			newRoot = lastRoot;
 		}
-		followIndex.checkinRecord(updatedRecord);
+		long lastPollMillis = System.currentTimeMillis();
+		followees.updateExistingFollowee(publicKey, newRoot, lastPollMillis);
 		
-		// TODO: Handle the errors in partial load of a followee so we can still progress and save back, here.
 		log.finish("Follow successful!");
 	}
 }

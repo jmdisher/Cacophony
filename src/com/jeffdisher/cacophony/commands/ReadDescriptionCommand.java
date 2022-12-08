@@ -5,9 +5,8 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -32,7 +31,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException, FailedDeserializationException
 	{
-		IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
+		IFolloweeReading followees = access.readableFolloweeData();
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
@@ -42,8 +41,8 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		if (null != _channelPublicKey)
 		{
 			publicKey = _channelPublicKey;
-			FollowRecord record = followIndex.peekRecord(_channelPublicKey);
-			if (null != record)
+			IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_channelPublicKey);
+			if (null != lastRoot)
 			{
 				environment.logToConsole("Following " + _channelPublicKey);
 				isCached = true;

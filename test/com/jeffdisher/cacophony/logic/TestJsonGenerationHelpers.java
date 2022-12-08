@@ -19,11 +19,12 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
+import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -75,7 +76,7 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testFolloweeKeys() throws Throwable
 	{
-		FollowIndex followIndex = FollowIndex.emptyFollowIndex();
+		FolloweeData followIndex = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
 		JsonArray followeeKeys = JsonGenerationHelpers.followeeKeys(followIndex);
 		Assert.assertEquals("[]", followeeKeys.toString());
 	}
@@ -104,7 +105,7 @@ public class TestJsonGenerationHelpers
 		LocalRecordCache recordCache = null;
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
-			IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
+			IFolloweeReading followIndex = access.readableFolloweeData();
 			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, indexFile, followIndex);
 		}
 		
@@ -134,12 +135,10 @@ public class TestJsonGenerationHelpers
 			// We want to create an oversized record to make sure that it is not in cached list.
 			IpfsFile oversizeRecordFile = access.uploadAndPin(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]), true);
 			
-			FollowIndex followIndex = access.readWriteFollowIndex();
+			IFolloweeWriting followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
-			FollowRecord record = new FollowRecord(PUBLIC_KEY2, followeeIndexFile, 1L, new FollowingCacheElement[] {
-					new FollowingCacheElement(followeeRecordFile, null, null, 0L)
-			});
-			followIndex.checkinRecord(record);
+			followIndex.createNewFollowee(PUBLIC_KEY2, followeeIndexFile, 1L);
+			followIndex.addElement(PUBLIC_KEY2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
 		}
 		
 		LocalRecordCache recordCache = null;
@@ -147,7 +146,7 @@ public class TestJsonGenerationHelpers
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
-			IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
+			IFolloweeReading followIndex = access.readableFolloweeData();
 			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, publishedIndex, followIndex);
 		}
 		

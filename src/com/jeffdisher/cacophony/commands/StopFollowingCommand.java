@@ -2,16 +2,16 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -36,24 +36,23 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		
-		FollowIndex followIndex = access.readWriteFollowIndex();
+		IFolloweeWriting followees = access.writableFolloweeData();
 		
-		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
+		long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
 		
 		// Removed the cache record and verify that we are following them.
-		FollowRecord startRecord = followIndex.checkoutRecord(_publicKey);
-		if (null == startRecord)
+		IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_publicKey);
+		if (null == lastRoot)
 		{
 			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
 		}
 		
 		// Prepare for the cleanup.
 		GlobalPrefs prefs = access.readGlobalPrefs();
-		FollowRecord updatedRecord = CommandHelpers.doRefreshOfRecord(environment, access, currentCacheUsageInBytes, _publicKey, startRecord, null, prefs);
+		boolean didRefresh = CommandHelpers.doRefreshOfRecord(environment, access, followees, _publicKey, currentCacheUsageInBytes, lastRoot, null, prefs);
 		// There is no real way to fail at this refresh since we are just dropping things.
-		Assert.assertTrue(null == updatedRecord.lastFetchedRoot());
-		Assert.assertTrue(0 == updatedRecord.elements().length);
-		// We just don't check this back in.
+		Assert.assertTrue(didRefresh);
+		followees.removeFollowee(_publicKey);
 		
 		// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 		log.finish("Cleanup complete.  No longer following " + _publicKey);

@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -16,7 +14,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
-import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 import com.jeffdisher.cacophony.utils.StringHelpers;
 
@@ -70,17 +67,17 @@ public class CommandHelpers
 	public static void shrinkCacheToFitInPrefs(IEnvironment environment, IWritingAccess access, double fullnessFraction) throws IpfsConnectionException
 	{
 		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
-		FollowIndex followIndex = access.readWriteFollowIndex();
+		IFolloweeWriting followees = access.writableFolloweeData();
 		GlobalPrefs globalPrefs = access.readGlobalPrefs();
 		
 		{
-			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followIndex);
+			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
 			long targetSizeBytes = (long)(globalPrefs.followCacheTargetBytes() * fullnessFraction);
 			if (currentCacheSizeBytes > targetSizeBytes)
 			{
 				environment.logToConsole("Pruning cache to " + StringHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
 				long bytesToAdd = 0L;
-				CacheHelpers.pruneCacheIfNeeded(access, followIndex, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
+				CacheHelpers.pruneCacheIfNeeded(access, followees, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
 			}
 			else
 			{
@@ -90,29 +87,19 @@ public class CommandHelpers
 		log.finish("Cache clean finished without issue");
 	}
 
-	public static FollowRecord doRefreshOfRecord(IEnvironment environment
+	public static boolean doRefreshOfRecord(IEnvironment environment
 			, IWritingAccess access
+			, IFolloweeWriting followees
+			, IpfsKey followeeKey
 			, long currentCacheUsageInBytes
-			, IpfsKey publicKey
-			, FollowRecord startRecord
+			, IpfsFile lastFetchedRoot
 			, IpfsFile indexRoot
 			, GlobalPrefs prefs
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
-		// Handle the differences between start and refresh.
-		FollowingCacheElement[] startElements = (null != startRecord)
-				? startRecord.elements()
-				: new FollowingCacheElement[0]
-		;
-		IpfsFile lastFetchedRoot = (null != startRecord)
-				? startRecord.lastFetchedRoot()
-				: null
-		;
-		
 		// Prepare for the initial fetch.
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access, startElements);
-		IpfsFile successfulIndex = null;
-		FollowingCacheElement[] elementsToWrite = null;
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access, followees, followeeKey);
+		boolean refreshWasSuccess = false;
 		try
 		{
 			FolloweeRefreshLogic.refreshFollowee(refreshSupport
@@ -121,8 +108,9 @@ public class CommandHelpers
 					, indexRoot
 					, currentCacheUsageInBytes
 			);
-			elementsToWrite = refreshSupport.applyAndReturnElements();
-			successfulIndex = indexRoot;
+			// We got this far so commit the changes from the refresh operation.
+			refreshSupport.commitChanges();
+			refreshWasSuccess = true;
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -133,8 +121,7 @@ public class CommandHelpers
 			}
 			environment.logToConsole("Network failure in refresh: " + e.getLocalizedMessage());
 			environment.logToConsole("Refresh aborted and will be retried in the future");
-			elementsToWrite = startElements;
-			successfulIndex = lastFetchedRoot;
+			refreshWasSuccess = false;
 		}
 		catch (SizeConstraintException e)
 		{
@@ -145,17 +132,9 @@ public class CommandHelpers
 			}
 			environment.logToConsole("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
 			environment.logToConsole("Refresh aborted and will be retried in the future");
-			elementsToWrite = startElements;
-			successfulIndex = lastFetchedRoot;
+			refreshWasSuccess = false;
 		}
-		
-		// Create and save the updated record (if this was an abort, this just has the impact of updating the time).
-		if (null != indexRoot)
-		{
-			Assert.assertTrue(null != successfulIndex);
-		}
-		Assert.assertTrue(null != elementsToWrite);
-		return new FollowRecord(publicKey, successfulIndex, System.currentTimeMillis(), elementsToWrite);
+		return refreshWasSuccess;
 	}
 
 

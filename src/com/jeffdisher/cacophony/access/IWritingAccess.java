@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.access;
 import java.io.InputStream;
 
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -18,13 +18,13 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 public interface IWritingAccess extends IReadingAccess
 {
 	/**
-	 * Allows direct read-write access to the shared FollowIndex instance.  This interface is provided for cache update
-	 * and management logic which needs to very directly interact with the state of the object.
-	 * Calling this helper will mark the FollowIndex as needing to be written-back, upon closing the access.
+	 * Allows direct read-write access to the shared followee data projection instance.  This interface is provided for
+	 * cache update and management logic.
+	 * Calling this helper will mark the followee data as needing to be written-back, upon closing the access.
 	 * 
-	 * @return The shared FollowIndex instance.
+	 * @return The shared followee data instance.
 	 */
-	FollowIndex readWriteFollowIndex();
+	IFolloweeWriting writableFolloweeData();
 
 	/**
 	 * Writes back the given prefs to disk.

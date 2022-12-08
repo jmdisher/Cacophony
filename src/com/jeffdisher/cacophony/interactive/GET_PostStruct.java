@@ -7,10 +7,10 @@ import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -51,11 +51,11 @@ public class GET_PostStruct implements IGetHandler
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
 				IpfsFile lastPublishedIndex = access.getLastRootElement();
-				IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
+				IFolloweeReading followees = access.readableFolloweeData();
 				LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
 					try
 					{
-						return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followIndex);
+						return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followees);
 					}
 					catch (IpfsConnectionException | FailedDeserializationException e)
 					{

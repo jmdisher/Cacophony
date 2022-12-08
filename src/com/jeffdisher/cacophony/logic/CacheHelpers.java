@@ -1,14 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
@@ -17,6 +10,8 @@ import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -32,11 +27,6 @@ public class CacheHelpers
 {
 	// We currently want to make sure the cache is at most 90% full before caching a new channel.
 	private static final double CACHE_MAX_MULTIPLIER_PRE_NEW_CHANNEL = 0.90;
-
-	public static Map<IpfsFile, FollowingCacheElement> createCachedMap(FollowRecord record)
-	{
-		return Arrays.stream(record.elements()).collect(Collectors.toMap(FollowingCacheElement::elementHash, Function.identity()));
-	}
 
 	public static void chooseAndFetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, RawElementData element) throws IpfsConnectionException
 	{
@@ -85,15 +75,20 @@ public class CacheHelpers
 	/**
 	 * Sums all the element data in the given followIndex.
 	 * 
-	 * @param followIndex The index to sum.
+	 * @param followees The index to sum.
 	 * @return The sum of all bytes in the cache.
 	 */
-	public static long getCurrentCacheSizeBytes(FollowIndex followIndex)
+	public static long getCurrentCacheSizeBytes(IFolloweeReading followees)
 	{
 		long sizeBytes = 0L;
-		for (FollowRecord record : followIndex)
+		// Note that the cache allows for double-counting so we need to check every element from each followee, not just the raw list.
+		for (IpfsKey key : followees.getAllKnownFollowees())
 		{
-			sizeBytes += Stream.of(record.elements()).mapToLong((elt) -> elt.combinedSizeBytes()).sum();
+			for (IpfsFile cid : followees.getElementsForFollowee(key))
+			{
+				FollowingCacheElement elt = followees.getElementForFollowee(key, cid);
+				sizeBytes += elt.combinedSizeBytes();
+			}
 		}
 		return sizeBytes;
 	}
@@ -117,7 +112,7 @@ public class CacheHelpers
 		return candidates;
 	}
 
-	public static void pruneCacheIfNeeded(IWritingAccess access, FollowIndex followIndex, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
+	public static void pruneCacheIfNeeded(IWritingAccess access, IFolloweeWriting followees, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{
@@ -126,61 +121,38 @@ public class CacheHelpers
 			// Note that we don't handle duplicates across different followees, or even within the same followee, as
 			// being special - we allow them to be double-counted so they must be double-evicted.
 			List<CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>>> evictionCandidates = new ArrayList<>();
-			for (FollowRecord record : followIndex)
+			for (IpfsKey key : followees.getAllKnownFollowees())
 			{
-				IpfsKey followee = record.publicKey();
-				for (FollowingCacheElement elt : record.elements())
+				for (IpfsFile cid : followees.getElementsForFollowee(key))
 				{
-					evictionCandidates.add(new CacheAlgorithm.Candidate<>(elt.combinedSizeBytes(), new Pair<>(followee, elt)));
+					FollowingCacheElement elt = followees.getElementForFollowee(key, cid);
+					evictionCandidates.add(new CacheAlgorithm.Candidate<>(elt.combinedSizeBytes(), new Pair<>(key, elt)));
 				}
 			}
 			
 			// Now, see which elements we should evict.
 			List<CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>>> evictions = algorithm.toRemoveInResize(evictionCandidates);
 			
-			// Now, rebuild the index by removing anything from the evictions list (since there can be duplicates, we will use instance comparison on FollowingCacheElement since we don't create them here).
-			IdentityHashMap<FollowingCacheElement, Boolean> lookupRemoved = new IdentityHashMap<>();
-			for (CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>> elt : evictions)
+			// We can walk this list once, doing the leaf unpinning and cache updates as we go (since we don't care about anything failing here).
+			for (CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>> eviction : evictions)
 			{
-				lookupRemoved.put(elt.data().second(), true);
-			}
-			
-			Map<IpfsKey, FollowingCacheElement[]> toReplace = new HashMap<>();
-			for (FollowRecord record : followIndex)
-			{
-				// TODO:  This algorithm needs to be replaced since it is reaching into the FollowIndex.
-				List<FollowingCacheElement> retained = new ArrayList<>();
-				for (FollowingCacheElement elt : record.elements())
+				IpfsKey followee = eviction.data().first();
+				FollowingCacheElement element = eviction.data().second();
+				
+				// Unpin the leaf elements.
+				IpfsFile imageHash = element.imageHash();
+				if (null != imageHash)
 				{
-					if (!lookupRemoved.containsKey(elt))
-					{
-						// We are NOT removing this element so keep it in the list.
-						retained.add(elt);
-					}
-					else
-					{
-						IpfsFile imageHash = elt.imageHash();
-						if (null != imageHash)
-						{
-							access.unpin(imageHash);
-						}
-						IpfsFile leafHash = elt.leafHash();
-						if (null != leafHash)
-						{
-							access.unpin(leafHash);
-						}
-					}
-					// NOTE:  We always leave the meta-data cached (the StreamRecord) - only the leaf elements are prunable since they are the large files.
+					access.unpin(imageHash);
 				}
-				if (record.elements().length != retained.size())
+				IpfsFile leafHash = element.leafHash();
+				if (null != leafHash)
 				{
-					toReplace.put(record.publicKey(), retained.toArray((int size) -> new FollowingCacheElement[size]));
+					access.unpin(leafHash);
 				}
-			}
-			for (IpfsKey key : toReplace.keySet())
-			{
-				FollowingCacheElement[] value = toReplace.get(key);
-				followIndex.replaceCached(key, value);
+				
+				// Clean up the cache.
+				followees.removeElement(followee, element.elementHash());
 			}
 		}
 	}

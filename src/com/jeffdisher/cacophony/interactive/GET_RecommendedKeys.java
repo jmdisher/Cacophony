@@ -7,9 +7,9 @@ import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -45,8 +45,8 @@ public class GET_RecommendedKeys implements IGetHandler
 			{
 				IpfsKey publicKey = access.getPublicKey();
 				IpfsFile lastPublishedIndex = access.getLastRootElement();
-				IReadOnlyFollowIndex followIndex = access.readOnlyFollowIndex();
-				JsonArray keys = JsonGenerationHelpers.recommendedKeys(access, publicKey, lastPublishedIndex, followIndex, userToResolve);
+				IFolloweeReading followees = access.readableFolloweeData();
+				JsonArray keys = JsonGenerationHelpers.recommendedKeys(access, publicKey, lastPublishedIndex, followees, userToResolve);
 				if (null != keys)
 				{
 					response.setContentType("application/json");

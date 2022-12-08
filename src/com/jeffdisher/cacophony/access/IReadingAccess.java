@@ -4,9 +4,9 @@ import java.net.URL;
 import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.IReadOnlyFollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -30,11 +30,11 @@ public interface IReadingAccess extends AutoCloseable
 	void close();
 
 	/**
-	 * Allows basic read-only access to the FollowIndex, since that is a common use-case.
+	 * Allows basic read-only access to the followee data, since that is a common use-case.
 	 * 
-	 * @return A reference to the restricted read-only interface to the FollowIndex.
+	 * @return A reference to the restricted read-only interface to the followee data projection.
 	 */
-	IReadOnlyFollowIndex readOnlyFollowIndex();
+	IFolloweeReading readableFolloweeData();
 
 	/**
 	 * Allows direct access to the shared connection object.
