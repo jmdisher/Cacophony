@@ -34,7 +34,7 @@ public class FolloweeData implements IFolloweeWriting
 		Map<IpfsKey, List<FollowingCacheElement>> followeeElements = new HashMap<>();
 		Map<IpfsKey, IpfsFile> followeeLastIndices = new HashMap<>();
 		Map<IpfsKey, Long> followeeLastFetchMillis = new HashMap<>();
-		for (FollowRecord record : followIndex)
+		for (FollowRecord record : followIndex.readRecords())
 		{
 			IpfsKey publicKey = record.publicKey();
 			List<FollowingCacheElement> elements = Stream.of(record.elements())

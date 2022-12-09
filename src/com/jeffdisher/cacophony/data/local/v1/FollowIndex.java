@@ -23,7 +23,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * It does, however, mean that care must be taken to either entirely drop the index or re-checkin an element, on
  * failure.
  */
-public class FollowIndex implements Iterable<FollowRecord>
+public class FollowIndex
 {
 	public static FollowIndex emptyFollowIndex()
 	{
@@ -124,10 +124,9 @@ public class FollowIndex implements Iterable<FollowRecord>
 		_sortedFollowList.add(record);
 	}
 
-	@Override
-	public Iterator<FollowRecord> iterator()
+	public List<FollowRecord> readRecords()
 	{
-		return Collections.unmodifiableList(_sortedFollowList).iterator();
+		return Collections.unmodifiableList(_sortedFollowList);
 	}
 
 	/**
@@ -138,23 +137,6 @@ public class FollowIndex implements Iterable<FollowRecord>
 	public FollowIndex mutableClone()
 	{
 		return new FollowIndex(new ArrayList<>(_sortedFollowList));
-	}
-
-	public void replaceCached(IpfsKey publicKey, FollowingCacheElement[] newElements)
-	{
-		int index = -1;
-		for (int i = 0; i < _sortedFollowList.size(); ++i)
-		{
-			if (publicKey.equals(_sortedFollowList.get(i).publicKey()))
-			{
-				index = i;
-				break;
-			}
-		}
-		Assert.assertTrue(-1 != index);
-		FollowRecord oldRecord = _sortedFollowList.remove(index);
-		FollowRecord newRecord = new FollowRecord(publicKey, oldRecord.lastFetchedRoot(), oldRecord.lastPollMillis(), newElements);
-		_sortedFollowList.add(index, newRecord);
 	}
 
 

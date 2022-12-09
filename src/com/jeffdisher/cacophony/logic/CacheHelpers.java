@@ -5,11 +5,8 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.logic.CacheAlgorithm.Candidate;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -91,25 +88,6 @@ public class CacheHelpers
 			}
 		}
 		return sizeBytes;
-	}
-
-	/**
-	 * Finds a list of candidates for evictions.
-	 * 
-	 * @param followIndex The index to search.
-	 * @return The list of candidates which should be considered for eviction.
-	 */
-	public static List<Candidate<FollowingCacheElement>> getEvictionCandidateList(FollowIndex followIndex)
-	{
-		List<Candidate<FollowingCacheElement>> candidates = new ArrayList<>();
-		for (FollowRecord record : followIndex)
-		{
-			for (FollowingCacheElement elt : record.elements())
-			{
-				candidates.add(new CacheAlgorithm.Candidate<FollowingCacheElement>(elt.combinedSizeBytes(), elt));
-			}
-		}
-		return candidates;
 	}
 
 	public static void pruneCacheIfNeeded(IWritingAccess access, IFolloweeWriting followees, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException

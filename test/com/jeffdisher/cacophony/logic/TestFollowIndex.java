@@ -84,13 +84,13 @@ public class TestFollowIndex
 		FollowIndex index = FollowIndex.emptyFollowIndex();
 		index.checkinRecord(new FollowRecord(K1, F1, 1, new FollowingCacheElement[0]));
 		index.checkinRecord(new FollowRecord(K2, F2, 2, new FollowingCacheElement[0]));
-		Iterator<FollowRecord> iter = index.iterator();
+		Iterator<FollowRecord> iter = index.readRecords().iterator();
 		Assert.assertEquals(K1, iter.next().publicKey());
 		Assert.assertEquals(K2, iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 		
 		Assert.assertNotNull(index.checkoutRecord(K2));
-		iter = index.iterator();
+		iter = index.readRecords().iterator();
 		Assert.assertEquals(K1, iter.next().publicKey());
 		Assert.assertFalse(iter.hasNext());
 	}
