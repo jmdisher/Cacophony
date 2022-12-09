@@ -172,7 +172,7 @@ public class StandardAccess implements IWritingAccess
 	private INetworkScheduler _scheduler;
 	private GlobalPinCache _pinCache;
 	private boolean _writePinCache;
-	private FollowIndex _followIndex;
+	private FolloweeData _followeeData;
 	private boolean _writeFollowIndex;
 
 	private StandardAccess(IEnvironment environment, IConnection sharedConnection, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite)
@@ -186,11 +186,11 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IFolloweeReading readableFolloweeData()
 	{
-		if (null == _followIndex)
+		if (null == _followeeData)
 		{
-			_followIndex = _readOnly.readFollowIndex();
+			_followeeData = FolloweeData.buildOnIndex(_readOnly.readFollowIndex());
 		}
-		return FolloweeData.buildOnIndex(_followIndex);
+		return _followeeData;
 	}
 
 	@Override
@@ -297,13 +297,13 @@ public class StandardAccess implements IWritingAccess
 	public IFolloweeWriting writableFolloweeData()
 	{
 		Assert.assertTrue(null != _readWrite);
-		if (null == _followIndex)
+		if (null == _followeeData)
 		{
-			_followIndex = _readWrite.readFollowIndex();
+			_followeeData = FolloweeData.buildOnIndex(_readWrite.readFollowIndex());
 		}
 		// We will want to write this back.
 		_writeFollowIndex = true;
-		return FolloweeData.buildOnIndex(_followIndex);
+		return _followeeData;
 	}
 
 	@Override
@@ -379,7 +379,7 @@ public class StandardAccess implements IWritingAccess
 		}
 		if (_writeFollowIndex)
 		{
-			_readWrite.writeFollowIndex(_followIndex);
+			_readWrite.writeFollowIndex(_followeeData.serializeToIndex());
 		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();

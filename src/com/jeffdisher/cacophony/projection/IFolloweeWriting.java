@@ -14,6 +14,7 @@ public interface IFolloweeWriting extends IFolloweeReading
 {
 	/**
 	 * Adds a new element for the given followee.
+	 * Asserts that an element with the same elementHash is not already in the cache for this followee.
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param element The new element to track.
@@ -22,6 +23,7 @@ public interface IFolloweeWriting extends IFolloweeReading
 
 	/**
 	 * Removes the element from the tracking for this followee.
+	 * If the followee isn't already tracking this element, this method does nothing.
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param elementCid The CID of the StreamRecord to drop from the cache.
