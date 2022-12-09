@@ -134,6 +134,15 @@ public class GlobalPinCache
 		return new GlobalPinCache(new HashMap<>(_map));
 	}
 
+	/**
+	 * Note:  This is only used to facilitate the PinCacheData projection.
+	 * @return A mutable copy of the internal reference count map.
+	 */
+	public Map<IpfsFile, Integer> readInternalCopy()
+	{
+		return new HashMap<>(_map);
+	}
+
 
 	private boolean _isNewAfterIncrement(IpfsFile hash)
 	{

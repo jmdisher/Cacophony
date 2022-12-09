@@ -22,6 +22,7 @@ import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -175,7 +176,7 @@ public class StandardAccess implements IWritingAccess
 	private final IReadWriteLocalData _readWrite;
 	
 	private INetworkScheduler _scheduler;
-	private GlobalPinCache _pinCache;
+	private PinCacheData _pinCache;
 	private boolean _writePinCache;
 	private FolloweeData _followeeData;
 	private boolean _writeFollowIndex;
@@ -218,7 +219,7 @@ public class StandardAccess implements IWritingAccess
 	public boolean isInPinCached(IpfsFile file)
 	{
 		_lazyLoadPinCache();
-		return _pinCache.isCached(file);
+		return _pinCache.isPinned(file);
 	}
 
 	@Override
@@ -239,7 +240,7 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != file);
 		_lazyLoadPinCache();
 		_lazyCreateScheduler();
-		Assert.assertTrue(_pinCache.isCached(file));
+		Assert.assertTrue(_pinCache.isPinned(file));
 		return _scheduler.readData(file, decoder);
 	}
 
@@ -249,7 +250,7 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != file);
 		_lazyLoadPinCache();
 		_lazyCreateScheduler();
-		if (_pinCache.isCached(file))
+		if (_pinCache.isPinned(file))
 		{
 			_environment.logError("WARNING!  Not expected in cache:  " + file);
 		}
@@ -261,7 +262,7 @@ public class StandardAccess implements IWritingAccess
 	{
 		Assert.assertTrue(null != file);
 		_lazyLoadPinCache();
-		Assert.assertTrue(_pinCache.isCached(file));
+		Assert.assertTrue(_pinCache.isPinned(file));
 		return _sharedConnection.urlForDirectFetch(file);
 	}
 
@@ -328,7 +329,7 @@ public class StandardAccess implements IWritingAccess
 		FutureSave save = _scheduler.saveStream(dataToSave, shouldCloseStream);
 		IpfsFile hash = save.get();
 		_lazyLoadPinCache();
-		_pinCache.hashWasAdded(hash);
+		_pinCache.addRef(hash);
 		return hash;
 	}
 
@@ -340,7 +341,7 @@ public class StandardAccess implements IWritingAccess
 		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true);
 		IpfsFile hash = save.get();
 		_lazyLoadPinCache();
-		_pinCache.hashWasAdded(hash);
+		_pinCache.addRef(hash);
 		_channelData.setLastPublishedIndex(hash);
 		_writeChannelData = true;
 		return _scheduler.publishIndex(hash);
@@ -351,7 +352,8 @@ public class StandardAccess implements IWritingAccess
 	{
 		_lazyLoadPinCache();
 		_lazyCreateScheduler();
-		boolean shouldPin = _pinCache.shouldPinAfterAdding(cid);
+		boolean shouldPin = !_pinCache.isPinned(cid);
+		_pinCache.addRef(cid);
 		FuturePin pin = null;
 		if (shouldPin)
 		{
@@ -371,7 +373,8 @@ public class StandardAccess implements IWritingAccess
 	{
 		_lazyLoadPinCache();
 		_lazyCreateScheduler();
-		boolean shouldUnpin = _pinCache.shouldUnpinAfterRemoving(cid);
+		_pinCache.delRef(cid);
+		boolean shouldUnpin = !_pinCache.isPinned(cid);
 		if (shouldUnpin)
 		{
 			_scheduler.unpin(cid).get();
@@ -383,7 +386,7 @@ public class StandardAccess implements IWritingAccess
 	{
 		if (_writePinCache)
 		{
-			_readWrite.writeGlobalPinCache(_pinCache);
+			_readWrite.writeGlobalPinCache(_pinCache.serializeToPinCache());
 		}
 		if (_writeFollowIndex)
 		{
@@ -402,7 +405,7 @@ public class StandardAccess implements IWritingAccess
 	{
 		if (null == _pinCache)
 		{
-			_pinCache = _readOnly.readGlobalPinCache();
+			_pinCache = PinCacheData.buildOnCache(_readOnly.readGlobalPinCache());
 			// If we are in writable mode, assume we need to write this back.
 			_writePinCache = (null != _readWrite);
 		}
