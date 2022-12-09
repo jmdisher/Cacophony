@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -76,11 +77,12 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		String ipfsConnectionString = reading.readLocalIndex().ipfsHost();
+		LocalIndex localIndex = reading.readLocalIndex();
+		String ipfsConnectionString = localIndex.ipfsHost();
 		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
 		Assert.assertTrue(null != connection);
 		
-		return new StandardAccess(environment, connection, reading, null);
+		return new StandardAccess(environment, connection, reading, null, ChannelData.buildOnIndex(localIndex));
 	}
 
 	/**
@@ -105,11 +107,12 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		String ipfsConnectionString = writing.readLocalIndex().ipfsHost();
+		LocalIndex localIndex = writing.readLocalIndex();
+		String ipfsConnectionString = localIndex.ipfsHost();
 		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
 		Assert.assertTrue(null != connection);
 		
-		return new StandardAccess(environment, connection, writing, writing);
+		return new StandardAccess(environment, connection, writing, writing, ChannelData.buildOnIndex(localIndex));
 	}
 
 	/**
@@ -147,9 +150,10 @@ public class StandardAccess implements IWritingAccess
 		// Create the instance and populate it with default files.
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
+		LocalIndex localIndex = new LocalIndex(ipfsConnectionString, keyName, null);
 		try
 		{
-			writing.writeLocalIndex(new LocalIndex(ipfsConnectionString, keyName, null));
+			writing.writeLocalIndex(localIndex);
 			writing.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
 			writing.writeGlobalPinCache(GlobalPinCache.newCache());
 			writing.writeFollowIndex(FollowIndex.emptyFollowIndex());
@@ -161,7 +165,7 @@ public class StandardAccess implements IWritingAccess
 		}
 		
 		// Now, pass this open read-write abstraction into the new StandardAccess instance.
-		return new StandardAccess(environment, connection, writing, writing);
+		return new StandardAccess(environment, connection, writing, writing, ChannelData.buildOnIndex(localIndex));
 	}
 
 
@@ -175,13 +179,16 @@ public class StandardAccess implements IWritingAccess
 	private boolean _writePinCache;
 	private FolloweeData _followeeData;
 	private boolean _writeFollowIndex;
+	private ChannelData _channelData;
+	private boolean _writeChannelData;
 
-	private StandardAccess(IEnvironment environment, IConnection sharedConnection, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite)
+	private StandardAccess(IEnvironment environment, IConnection sharedConnection, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, ChannelData channelData)
 	{
 		_environment = environment;
 		_sharedConnection = sharedConnection;
 		_readOnly = readOnly;
 		_readWrite = readWrite;
+		_channelData = channelData;
 	}
 
 	@Override
@@ -261,7 +268,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IpfsFile getLastRootElement()
 	{
-		return _readOnly.readLocalIndex().lastPublishedIndex();
+		return _channelData.lastPublishedIndex();
 	}
 
 	@Override
@@ -289,7 +296,7 @@ public class StandardAccess implements IWritingAccess
 	public FuturePublish republishIndex()
 	{
 		_lazyCreateScheduler();
-		IpfsFile lastRoot = _readOnly.readLocalIndex().lastPublishedIndex();
+		IpfsFile lastRoot = _channelData.lastPublishedIndex();
 		return _scheduler.publishIndex(lastRoot);
 	}
 
@@ -334,8 +341,8 @@ public class StandardAccess implements IWritingAccess
 		IpfsFile hash = save.get();
 		_lazyLoadPinCache();
 		_pinCache.hashWasAdded(hash);
-		LocalIndex oldLocalIndex = _readOnly.readLocalIndex();
-		_readWrite.writeLocalIndex(new LocalIndex(oldLocalIndex.ipfsHost(), oldLocalIndex.keyName(), hash));
+		_channelData.setLastPublishedIndex(hash);
+		_writeChannelData = true;
 		return _scheduler.publishIndex(hash);
 	}
 
@@ -382,6 +389,10 @@ public class StandardAccess implements IWritingAccess
 		{
 			_readWrite.writeFollowIndex(_followeeData.serializeToIndex());
 		}
+		if (_writeChannelData)
+		{
+			_readWrite.writeLocalIndex(_channelData.serializeToIndex());
+		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();
 	}
@@ -408,10 +419,9 @@ public class StandardAccess implements IWritingAccess
 	{
 		if (null == _scheduler)
 		{
-			LocalIndex localIndex = _readOnly.readLocalIndex();
 			try
 			{
-				_scheduler = _environment.getSharedScheduler(_sharedConnection, localIndex.keyName());
+				_scheduler = _environment.getSharedScheduler(_sharedConnection, _channelData.keyName());
 			}
 			catch (IpfsConnectionException e)
 			{
