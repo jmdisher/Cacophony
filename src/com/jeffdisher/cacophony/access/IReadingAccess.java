@@ -3,10 +3,10 @@ package com.jeffdisher.cacophony.access;
 import java.net.URL;
 import java.util.function.Supplier;
 
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -70,7 +70,7 @@ public interface IReadingAccess extends AutoCloseable
 	/**
 	 * @return The preferences for this channel.
 	 */
-	GlobalPrefs readGlobalPrefs();
+	PrefsData readPrefs();
 
 	/**
 	 * Requests that the IPFS node reclaim storage.

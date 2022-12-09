@@ -25,6 +25,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -84,7 +85,7 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testPrefs() throws Throwable
 	{
-		GlobalPrefs prefs = GlobalPrefs.defaultPrefs();
+		PrefsData prefs = PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs());
 		JsonObject data = JsonGenerationHelpers.prefs(prefs);
 		Assert.assertEquals("{\"edgeSize\":1280,\"followerCacheBytes\":10000000000}", data.toString());
 	}

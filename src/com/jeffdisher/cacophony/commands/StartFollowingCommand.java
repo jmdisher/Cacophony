@@ -2,12 +2,12 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -55,7 +55,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		// TODO:  Improve the reporting of this error.
 		Assert.assertTrue(null != indexRoot);
 		environment.logToConsole("Resolved as " + indexRoot);
-		GlobalPrefs prefs = access.readGlobalPrefs();
+		PrefsData prefs = access.readPrefs();
 		
 		// This will throw exceptions in case something goes wrong.
 		// Create the new entry but we will drop it if it fails to refresh or throws an exception.

@@ -71,7 +71,7 @@ checkPreviousCommand "createNewChannel2"
 
 echo "Verify that we can set the prefs..."
 PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --setGlobalPrefs --edgeMaxPixels 1280 --followCacheTargetBytes 50M)
-requireSubstring "$PREFS_OUTPUT" "Updated prefs: GlobalPrefs[videoEdgePixelMax=1280, followCacheTargetBytes=50000000]"
+requireSubstring "$PREFS_OUTPUT" "Updated prefs!"
 
 echo "Verify that the puplic key is correct..."
 PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --getPublicKey)

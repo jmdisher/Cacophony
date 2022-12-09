@@ -13,7 +13,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -54,7 +54,7 @@ public class FolloweeRefreshLogic
 	 * refresh an existing followee, and stop following a given user.
 	 * 
 	 * @param support The interface of external requirements used by the algorithm.
-	 * @param globalPrefs The global preferences object (used for leaf selection and cache limit checks).
+	 * @param prefs The preferences object (used for leaf selection and cache limit checks).
 	 * @param oldIndexElement The previous index of the user, from the last refresh attempt.
 	 * @param newIndexElement The new index of the user, to be used for this refresh attempt.
 	 * @param currentCacheUsageInBytes The current cache occupancy.
@@ -62,7 +62,7 @@ public class FolloweeRefreshLogic
 	 * @throws SizeConstraintException If a meta-data element is too big for our limits (means an abort).
 	 */
 	public static void refreshFollowee(IRefreshSupport support
-			, GlobalPrefs globalPrefs
+			, PrefsData prefs
 			, IpfsFile oldIndexElement
 			, IpfsFile newIndexElement
 			, long currentCacheUsageInBytes
@@ -71,7 +71,7 @@ public class FolloweeRefreshLogic
 		// Note that only the roots can be null (at most one).
 		// Even the existingRecord will be non-null, even if nothing is in it.
 		Assert.assertTrue(null != support);
-		Assert.assertTrue(null != globalPrefs);
+		Assert.assertTrue(null != prefs);
 		Assert.assertTrue((null != oldIndexElement) || (null != newIndexElement));
 		
 		// Check if the root changed.
@@ -102,7 +102,7 @@ public class FolloweeRefreshLogic
 			
 			IpfsFile oldRecordsElement = _cidOrNull(oldIndex.getRecords());
 			IpfsFile newRecordsElement = _cidOrNull(newIndex.getRecords());
-			_refreshRecords(support, globalPrefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
+			_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
 		}
 	}
 
@@ -170,7 +170,7 @@ public class FolloweeRefreshLogic
 	}
 
 	private static void _refreshRecords(IRefreshSupport support
-			, GlobalPrefs globalPrefs
+			, PrefsData prefs
 			, IpfsFile oldRecordsElement
 			, IpfsFile newRecordsElement
 			, long currentCacheUsageInBytes
@@ -270,7 +270,7 @@ public class FolloweeRefreshLogic
 				// We pinned this so the read should be pretty-well instantaneous.
 				StreamRecord record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
-				_selectLeavesForElement(support, data, record, globalPrefs.videoEdgePixelMax());
+				_selectLeavesForElement(support, data, record, prefs.videoEdgePixelMax());
 				newRecordsBeingProcessedCalculatingLeaves.add(data);
 			}
 			newRecordsBeingProcessedSizeChecked = null;
@@ -321,7 +321,7 @@ public class FolloweeRefreshLogic
 			}
 			newRecordsBeingProcessedCalculatingLeaves = null;
 			
-			List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(globalPrefs, currentCacheUsageInBytes, candidates);
+			List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(prefs, currentCacheUsageInBytes, candidates);
 			candidates = null;
 			
 			// We can now walk the final selection and pin all the relevant elements.
@@ -413,7 +413,7 @@ public class FolloweeRefreshLogic
 		}
 	}
 
-	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(GlobalPrefs globalPrefs, long currentCacheUsageInBytes, List<CacheAlgorithm.Candidate<RawElementData>> candidates)
+	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(PrefsData prefs, long currentCacheUsageInBytes, List<CacheAlgorithm.Candidate<RawElementData>> candidates)
 	{
 		// NOTE:  We always want to add the newest element whether this is a new followee or a refreshed one, so handle that as a special case.
 		// Also remember that we need to add this size to the cache since it counts as already being selected.
@@ -426,7 +426,7 @@ public class FolloweeRefreshLogic
 			effectiveCacheUsedBytes += firstElement.byteSize();
 			finalSelection.add(firstElement);
 		}
-		CacheAlgorithm algorithm = new CacheAlgorithm(globalPrefs.followCacheTargetBytes(), effectiveCacheUsedBytes);
+		CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes(), effectiveCacheUsedBytes);
 		List<CacheAlgorithm.Candidate<RawElementData>> selected = algorithm.toAddInNewAddition(candidates);
 		finalSelection.addAll(selected);
 		return finalSelection;

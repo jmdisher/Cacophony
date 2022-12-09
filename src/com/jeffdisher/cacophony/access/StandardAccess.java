@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -214,9 +215,9 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public GlobalPrefs readGlobalPrefs()
+	public PrefsData readPrefs()
 	{
-		return _readOnly.readGlobalPrefs();
+		return PrefsData.buildOnPrefs(_readOnly.readGlobalPrefs());
 	}
 
 	@Override
@@ -307,10 +308,10 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public void writeGlobalPrefs(GlobalPrefs prefs)
+	public void writePrefs(PrefsData prefs)
 	{
 		Assert.assertTrue(null != _readWrite);
-		_readWrite.writeGlobalPrefs(prefs);
+		_readWrite.writeGlobalPrefs(prefs.serializeToPrefs());
 	}
 
 	@Override

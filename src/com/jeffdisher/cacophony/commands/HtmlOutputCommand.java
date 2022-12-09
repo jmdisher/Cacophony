@@ -9,12 +9,12 @@ import java.nio.file.Files;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -50,7 +50,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		IpfsKey ourPublicKey = access.getPublicKey();
 		IpfsFile lastPublishedIndex = access.getLastRootElement();
 		IFolloweeReading followees = access.readableFolloweeData();
-		GlobalPrefs prefs = access.readGlobalPrefs();
+		PrefsData prefs = access.readPrefs();
 		
 		if (!_directory.mkdir())
 		{

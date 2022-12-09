@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -68,11 +68,11 @@ public class CommandHelpers
 	{
 		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
 		IFolloweeWriting followees = access.writableFolloweeData();
-		GlobalPrefs globalPrefs = access.readGlobalPrefs();
+		PrefsData prefs = access.readPrefs();
 		
 		{
 			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
-			long targetSizeBytes = (long)(globalPrefs.followCacheTargetBytes() * fullnessFraction);
+			long targetSizeBytes = (long)(prefs.followCacheTargetBytes() * fullnessFraction);
 			if (currentCacheSizeBytes > targetSizeBytes)
 			{
 				environment.logToConsole("Pruning cache to " + StringHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
@@ -94,7 +94,7 @@ public class CommandHelpers
 			, long currentCacheUsageInBytes
 			, IpfsFile lastFetchedRoot
 			, IpfsFile indexRoot
-			, GlobalPrefs prefs
+			, PrefsData prefs
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Prepare for the initial fetch.

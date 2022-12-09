@@ -2,12 +2,12 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -48,7 +48,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		}
 		
 		// Prepare for the cleanup.
-		GlobalPrefs prefs = access.readGlobalPrefs();
+		PrefsData prefs = access.readPrefs();
 		boolean didRefresh = CommandHelpers.doRefreshOfRecord(environment, access, followees, _publicKey, currentCacheUsageInBytes, lastRoot, null, prefs);
 		// There is no real way to fail at this refresh since we are just dropping things.
 		Assert.assertTrue(didRefresh);

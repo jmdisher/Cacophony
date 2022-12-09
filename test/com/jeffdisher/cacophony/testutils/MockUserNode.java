@@ -11,9 +11,9 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -113,10 +113,10 @@ public class MockUserNode
 		return isPinned;
 	}
 
-	public GlobalPrefs readPrefs() throws UsageException, VersionException, IpfsConnectionException
+	public PrefsData readPrefs() throws UsageException, VersionException, IpfsConnectionException
 	{
 		IReadingAccess reading = StandardAccess.readAccess(_executor);
-		GlobalPrefs prefs = reading.readGlobalPrefs();
+		PrefsData prefs = reading.readPrefs();
 		reading.close();
 		return prefs;
 	}

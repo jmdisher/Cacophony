@@ -23,8 +23,8 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -39,7 +39,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class JsonGenerationHelpers
 {
-	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, GlobalPrefs prefs, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
+	public static void generateJsonDb(PrintWriter generatedStream, LocalRecordCache cache, String comment, IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, PrefsData prefs, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// Start output.
 		generatedStream.println("// " + comment);
@@ -265,7 +265,7 @@ public class JsonGenerationHelpers
 		return _dataFollowing(followees);
 	}
 
-	public static JsonObject prefs(GlobalPrefs prefs)
+	public static JsonObject prefs(PrefsData prefs)
 	{
 		return _dataPrefs(prefs);
 	}
@@ -567,7 +567,7 @@ public class JsonGenerationHelpers
 		return dataVersion;
 	}
 
-	private static JsonObject _dataPrefs(GlobalPrefs prefs)
+	private static JsonObject _dataPrefs(PrefsData prefs)
 	{
 		JsonObject dataPrefs = new JsonObject();
 		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax());

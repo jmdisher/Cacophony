@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -44,13 +45,13 @@ public class TestFolloweeRefreshLogic
 	{
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 	}
@@ -61,14 +62,14 @@ public class TestFolloweeRefreshLogic
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		// We don't add leaf-less entries to the followee index, since that would be redundant.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 	}
@@ -79,13 +80,13 @@ public class TestFolloweeRefreshLogic
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, new byte[] {1, 2}));
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
@@ -98,13 +99,13 @@ public class TestFolloweeRefreshLogic
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, null));
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(1, result[0].combinedSizeBytes());
@@ -114,7 +115,7 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = index;
 		newIndexElement = null;
 		currentCacheUsageInBytes = 0L;
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 	}
@@ -125,13 +126,13 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		
@@ -143,7 +144,7 @@ public class TestFolloweeRefreshLogic
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
 		// We don't add leaf-less entries to the followee index, since that would be redundant.
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 	}
@@ -154,13 +155,13 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		
@@ -171,7 +172,7 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
@@ -183,13 +184,13 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		
@@ -200,7 +201,7 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		// NOTE:  Since there is only one element, it is currently allowed to overflow the cache.
@@ -218,7 +219,7 @@ public class TestFolloweeRefreshLogic
 		// Now, break the recommendations (just misc meta-data).
 		StreamIndex indexObject = GlobalData.deserializeIndex(data.get(index));
 		data.remove(IpfsFile.fromIpfsCid(indexObject.getRecommendations()));
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -229,7 +230,7 @@ public class TestFolloweeRefreshLogic
 		try
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
-			FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -249,7 +250,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile[] records = _readRecordHashes(data, index);
 		Assert.assertEquals(1, records.length);
 		data.remove(records[0]);
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -260,7 +261,7 @@ public class TestFolloweeRefreshLogic
 		try
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
-			FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -286,7 +287,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile leafCid = IpfsFile.fromIpfsCid(leaves.get(0).getCid());
 		data.remove(leafCid);
 		
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 5L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -294,7 +295,7 @@ public class TestFolloweeRefreshLogic
 		
 		// We expect that this will succeed, since it isn't a meta-data failure, but we will decide NOT to cache this element.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 	}
@@ -305,13 +306,13 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 100L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 100L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		
@@ -324,7 +325,7 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(2, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
@@ -338,7 +339,7 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
-		FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(2, result.length);
 		Assert.assertEquals(4, result[0].combinedSizeBytes());
@@ -444,7 +445,7 @@ public class TestFolloweeRefreshLogic
 
 	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
-		GlobalPrefs globalPrefs = new GlobalPrefs(1280, 100L);
+		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 100L));
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = indexHash;
@@ -453,7 +454,7 @@ public class TestFolloweeRefreshLogic
 		try
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
-			FolloweeRefreshLogic.refreshFollowee(testSupport, globalPrefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (SizeConstraintException e)
 		{

@@ -2,8 +2,8 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -24,21 +24,23 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 
 	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
 	{
-		GlobalPrefs original = access.readGlobalPrefs();
-		GlobalPrefs prefs = original;
+		PrefsData prefs = access.readPrefs();
+		boolean didChange = false;
 		
 		if (_edgeMax > 0)
 		{
-			prefs = new GlobalPrefs(_edgeMax, prefs.followCacheTargetBytes());
+			prefs.setVideoEdgePixelMax(_edgeMax);
+			didChange = true;
 		}
 		if (_followCacheTargetBytes > 0L)
 		{
-			prefs = new GlobalPrefs(prefs.videoEdgePixelMax(), _followCacheTargetBytes);
+			prefs.setFollowCacheTargetBytes(_followCacheTargetBytes);
+			didChange = true;
 		}
-		if (original != prefs)
+		if (didChange)
 		{
-			access.writeGlobalPrefs(prefs);
-			environment.logToConsole("Updated prefs: " + prefs);
+			access.writePrefs(prefs);
+			environment.logToConsole("Updated prefs!");
 		}
 		else
 		{

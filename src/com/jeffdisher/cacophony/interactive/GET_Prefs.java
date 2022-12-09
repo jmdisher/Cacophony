@@ -7,9 +7,9 @@ import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
@@ -41,7 +41,7 @@ public class GET_Prefs implements IGetHandler
 		{
 			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				GlobalPrefs prefs = access.readGlobalPrefs();
+				PrefsData prefs = access.readPrefs();
 				JsonObject userInfo = JsonGenerationHelpers.prefs(prefs);
 				if (null != userInfo)
 				{

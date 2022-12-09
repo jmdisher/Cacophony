@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.access;
 import java.io.InputStream;
 
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -27,11 +27,11 @@ public interface IWritingAccess extends IReadingAccess
 	IFolloweeWriting writableFolloweeData();
 
 	/**
-	 * Writes back the given prefs to disk.
+	 * Requests that the given prefs be written to disk.
 	 * 
 	 * @param prefs The new prefs object.
 	 */
-	void writeGlobalPrefs(GlobalPrefs prefs);
+	void writePrefs(PrefsData prefs);
 
 	/**
 	 * Uploads the data in dataToSave, recording that the file is pinned locally.
