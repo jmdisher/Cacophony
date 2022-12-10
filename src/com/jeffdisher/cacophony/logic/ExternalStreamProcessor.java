@@ -53,12 +53,14 @@ public class ExternalStreamProcessor
 	/**
 	 * Requests that the background video processing operation begins.  Note that the function takes ownership of the
 	 * streams it is given, meaning it will close them when done with them.
+	 * The given callbacks may not be issued on the same thread, but won't be issued concurrently.
 	 * 
 	 * @param originalVideo The data stream containing the original video content.
 	 * @param processedVideo The data stream where the processed video will be sent.
 	 * @param progressCallback This callback will be passed the number of input bytes processed periodically.
 	 * @param errorCallback This callback will be notified of errors or STDERR content.
-	 * @param doneCallback This callback will be passed the final number of output bytes when processing is done and stop should be called.
+	 * @param doneCallback This callback will be passed the final number of output bytes when processing is done and
+	 * stop should be called.  Note that this no other callbacks will be sent after this one.
 	 * @throws IOException The process could not be started.
 	 */
 	public void start(InputStream originalVideo, OutputStream processedVideo, Consumer<Long> progressCallback, Consumer<String> errorCallback, Consumer<Long> doneCallback) throws IOException
@@ -131,10 +133,6 @@ public class ExternalStreamProcessor
 			}
 			
 			// Set the process status and notify the output thread observing the file size, if it beat us there.
-			if (0 != result)
-			{
-				_postError(errorCallback, "Process exit status: " + result);
-			}
 			_processCompleted(result);
 		});
 		_outputProcessor = new Thread(() -> {
@@ -174,8 +172,19 @@ public class ExternalStreamProcessor
 			}
 			
 			// We now wait for the process to terminate to make sure it was successful before sending the done callback.
-			boolean isSuccess = _waitForProcessTermination();
-			_postDone(doneCallback, isSuccess ? totalBytes : -1L);
+			int processExitCode = _waitForProcessTermination();
+			try
+			{
+				// We want for the other threads to terminate (which WILL happen, now that the process has terminated) so that we can force the doneCallback to be the last one we send.
+				_inputProcessor.join();
+				_errorProcessor.join();
+			}
+			catch (InterruptedException e)
+			{
+				// The _inputProcessor thread is the only one which can receive interrupts so we can never observe this exception on this thread.
+				throw Assert.unexpected(e);
+			}
+			_postDone(doneCallback, (0 == processExitCode) ? totalBytes : -1L, errorCallback, processExitCode);
 		});
 		_errorProcessor = new Thread(() -> {
 			InputStream errorStream = process.getErrorStream();
@@ -287,6 +296,8 @@ public class ExternalStreamProcessor
 		_callbackLock.lock();
 		try
 		{
+			// We can never call this after _postDone is called.
+			Assert.assertTrue(-1L == _processedVideoBytes);
 			errorCallback.accept(error);
 		}
 		finally
@@ -306,6 +317,8 @@ public class ExternalStreamProcessor
 		_callbackLock.lock();
 		try
 		{
+			// We can never call this after _postDone is called.
+			Assert.assertTrue(-1L == _processedVideoBytes);
 			progressCallback.accept(progress);
 		}
 		finally
@@ -314,13 +327,18 @@ public class ExternalStreamProcessor
 		}
 	}
 
-	private void _postDone(Consumer<Long> doneCallback, long totalOutputBytes)
+	private void _postDone(Consumer<Long> doneCallback, long totalOutputBytes, Consumer<String> errorCallback, int processExitCode)
 	{
 		Assert.assertTrue(Thread.currentThread() == _outputProcessor);
 		_callbackLock.lock();
 		try
 		{
 			_processedVideoBytes = totalOutputBytes;
+			if (0 != processExitCode)
+			{
+				// doneCallback is the last one we send so this our last opportunity to report exit status (if we do, it will be the last error reported).
+				errorCallback.accept("Process exit status: " + processExitCode);
+			}
 			doneCallback.accept(totalOutputBytes);
 		}
 		finally
@@ -342,7 +360,7 @@ public class ExternalStreamProcessor
 		this.notifyAll();
 	}
 
-	private synchronized boolean _waitForProcessTermination()
+	private synchronized int _waitForProcessTermination()
 	{
 		Assert.assertTrue(Thread.currentThread() == _outputProcessor);
 		while (-1 == _processReturnValue)
@@ -357,6 +375,6 @@ public class ExternalStreamProcessor
 				throw Assert.unexpected(e);
 			}
 		}
-		return (0 == _processReturnValue);
+		return _processReturnValue;
 	}
 }
