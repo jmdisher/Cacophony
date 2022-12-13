@@ -46,7 +46,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
-		StandardAccess.createForWrite(executor, IPFS_HOST, KEY_NAME).close();
+		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
@@ -99,7 +99,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
-		StandardAccess.createForWrite(executor, IPFS_HOST, KEY_NAME).close();
+		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
 		try {
 			command.runInEnvironment(executor);

@@ -32,12 +32,16 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);
 		
-		IOperationLog log = environment.logOperation("Creating new channel...");
-		try (IWritingAccess access = StandardAccess.createForWrite(environment, ipfs, keyName))
+		IOperationLog log = environment.logOperation("Creating new channel configuration...");
+		StandardAccess.createNewChannelConfig(environment, ipfs, keyName);
+		log.finish("Config ready!");
+		
+		log = environment.logOperation("Creating initial channel state...");
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			_runCore(environment, access);
 		}
-		log.finish("Channel created and published to Cacophony!");
+		log.finish("Initial state published to Cacophony!");
 	}
 
 

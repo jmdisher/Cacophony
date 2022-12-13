@@ -98,7 +98,8 @@ public class TestJsonGenerationHelpers
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		
 		IpfsFile indexFile = null;
-		try (IWritingAccess access = StandardAccess.createForWrite(executor, "ipfs", KEY_NAME))
+		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
+		try (IWritingAccess access = StandardAccess.writeAccess(executor))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
@@ -127,7 +128,8 @@ public class TestJsonGenerationHelpers
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		try (IWritingAccess access = StandardAccess.createForWrite(executor, "ipfs", KEY_NAME))
+		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
+		try (IWritingAccess access = StandardAccess.writeAccess(executor))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);

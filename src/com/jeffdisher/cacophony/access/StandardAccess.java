@@ -117,18 +117,17 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	/**
-	 * Creates a new channel storage and opens it for write access.
+	 * Creates a new channel storage.
 	 * 
 	 * @param environment The environment.
 	 * @param ipfsConnectionString The IPFS connection string from daemon startup (the "/ip4/127.0.0.1/tcp/5001" from
 	 * "API server listening on /ip4/127.0.0.1/tcp/5001").
 	 * @param keyName The name of the key to use for publishing.
-	 * @return The write access interface.
 	 * @throws UsageException If the config directory already exists or couldn't be created.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public static IWritingAccess createForWrite(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException, VersionException
+	public static void createNewChannelConfig(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException, VersionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
@@ -150,23 +149,14 @@ public class StandardAccess implements IWritingAccess
 		}
 		// Create the instance and populate it with default files.
 		LocalDataModel dataModel = environment.getSharedDataModel();
-		IReadWriteLocalData writing = dataModel.openForWrite();
 		LocalIndex localIndex = new LocalIndex(ipfsConnectionString, keyName, null);
-		try
+		try (IReadWriteLocalData writing = dataModel.openForWrite())
 		{
 			writing.writeLocalIndex(localIndex);
 			writing.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
 			writing.writeGlobalPinCache(GlobalPinCache.newCache());
 			writing.writeFollowIndex(FollowIndex.emptyFollowIndex());
 		}
-		catch (Throwable t)
-		{
-			writing.close();
-			throw t;
-		}
-		
-		// Now, pass this open read-write abstraction into the new StandardAccess instance.
-		return new StandardAccess(environment, connection, writing, writing, ChannelData.buildOnIndex(localIndex));
 	}
 
 
