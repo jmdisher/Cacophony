@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -17,6 +18,10 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.PinCacheData;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -39,10 +44,10 @@ public class LocalDataModel
 	private final IConfigFileSystem _fileSystem;
 	private final ReadWriteLock _readWriteLock;
 
-	private LocalIndex _localIndex;
-	private GlobalPinCache _globalPinCache;
-	private FollowIndex _followIndex;
-	private GlobalPrefs _globalPrefs;
+	private ChannelData _localIndex;
+	private PinCacheData _globalPinCache;
+	private FolloweeData _followIndex;
+	private PrefsData _globalPrefs;
 
 	private final ReentrantLock _cacheLock;
 	private LocalRecordCache _lazyFolloweeCache;
@@ -157,7 +162,7 @@ public class LocalDataModel
 	 * @param updateFollowIndex Non-null if this should be saved as the new FollowIndex.
 	 * @param updateGlobalPrefs Non-null if this should be saved as the new GlobalPrefs.
 	 */
-	public void closeWrite(WriteLock lock, LocalIndex updateLocalIndex, GlobalPinCache updateGlobalPinCache, FollowIndex updateFollowIndex, GlobalPrefs updateGlobalPrefs)
+	public void closeWrite(WriteLock lock, ChannelData updateLocalIndex, PinCacheData updateGlobalPinCache, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs)
 	{
 		// Write-back the elements they provided (anything passed as null is unchanged).
 		
@@ -165,7 +170,7 @@ public class LocalDataModel
 		if (null != updateLocalIndex)
 		{
 			_localIndex = updateLocalIndex;
-			_storeFile(INDEX_FILE, _localIndex);
+			_storeFile(INDEX_FILE, _localIndex.serializeToIndex());
 			somethingUpdated = true;
 		}
 		if (null != updateGlobalPinCache)
@@ -173,7 +178,7 @@ public class LocalDataModel
 			_globalPinCache = updateGlobalPinCache;
 			try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
 			{
-				_globalPinCache.writeToStream(stream);
+				_globalPinCache.serializeToPinCache().writeToStream(stream);
 			}
 			catch (IOException e)
 			{
@@ -203,7 +208,7 @@ public class LocalDataModel
 			_followIndex = updateFollowIndex;
 			try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
 			{
-				_followIndex.writeToStream(stream);
+				_followIndex.serializeToIndex().writeToStream(stream);
 			}
 			catch (IOException e)
 			{
@@ -215,7 +220,7 @@ public class LocalDataModel
 		if (null != updateGlobalPrefs)
 		{
 			_globalPrefs = updateGlobalPrefs;
-			_storeFile(GLOBAL_PREFS_FILE, _globalPrefs);
+			_storeFile(GLOBAL_PREFS_FILE, _globalPrefs.serializeToPrefs());
 			somethingUpdated = true;
 		}
 		// Write the version if anything changed.
@@ -253,12 +258,38 @@ public class LocalDataModel
 		}
 	}
 
+	/**
+	 * Drops all the internal caches, forcing them to be lazily reloaded when next needed.  The only real reason for
+	 * this is for unit tests which may run into problems due to accidentally shared state.
+	 */
+	public void dropAllCaches()
+	{
+		_localIndex = null;
+		_globalPinCache = null;
+		_followIndex = null;
+		_globalPrefs = null;
+		
+		_cacheLock.lock();
+		try
+		{
+			_lazyFolloweeCache = null;
+		}
+		finally
+		{
+			_cacheLock.unlock();
+		}
+	}
+
 
 	private void _loadAllFiles()
 	{
 		if (null == _localIndex)
 		{
-			_localIndex = _readFile(INDEX_FILE, LocalIndex.class);
+			LocalIndex temp = _readFile(INDEX_FILE, LocalIndex.class);
+			_localIndex = (null != temp)
+					? ChannelData.buildOnIndex(temp)
+					: null
+			;
 		}
 		if (null == _globalPinCache)
 		{
@@ -269,7 +300,7 @@ public class LocalDataModel
 				{
 					// We shouldn't have a followee cache, yet, so no need to lock and invalidate.
 					Assert.assertTrue(null == _lazyFolloweeCache);
-					_globalPinCache = GlobalPinCache.fromStream(pinStream);
+					_globalPinCache = PinCacheData.buildOnCache(GlobalPinCache.fromStream(pinStream));
 					pinStream.close();
 				}
 				catch (IOException e)
@@ -286,7 +317,7 @@ public class LocalDataModel
 			{
 				try (followeeStream)
 				{
-					_followIndex = FollowIndex.fromStream(followeeStream);
+					_followIndex = FolloweeData.buildOnIndex(FollowIndex.fromStream(followeeStream));
 					followeeStream.close();
 				}
 				catch (IOException e)
@@ -298,7 +329,11 @@ public class LocalDataModel
 		}
 		if (null == _globalPrefs)
 		{
-			_globalPrefs = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+			GlobalPrefs temp = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
+			_globalPrefs = (null != temp)
+					? PrefsData.buildOnPrefs(temp)
+					: null
+			;
 		}
 	}
 
@@ -328,7 +363,7 @@ public class LocalDataModel
 		return object;
 	}
 
-	private <T> void _storeFile(String fileName, T object)
+	private <T extends Serializable> void _storeFile(String fileName, T object)
 	{
 		try (ObjectOutputStream stream = new ObjectOutputStream(_fileSystem.writeConfigFile(fileName)))
 		{

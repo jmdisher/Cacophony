@@ -131,11 +131,16 @@ public class StandardEnvironment implements IEnvironment
 		return _sharedDataModel;
 	}
 
+	/**
+	 * Shuts down the scheduler and drops all associated caches.
+	 */
 	public void shutdown()
 	{
+		_sharedDataModel.dropAllCaches();
 		if (null != _lazySharedScheduler)
 		{
 			_lazySharedScheduler.shutdown();
+			_lazySharedScheduler = null;
 		}
 	}
 

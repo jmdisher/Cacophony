@@ -2,15 +2,11 @@ package com.jeffdisher.cacophony.data;
 
 import java.util.function.Supplier;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -21,12 +17,12 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class LoadedStorage implements IReadWriteLocalData
 {
-	public static IReadOnlyLocalData openReadOnly(LocalDataModel dataModel, LocalDataModel.ReadLock readLock, LocalIndex localIndex, GlobalPinCache globalPinCache, FollowIndex followIndex, GlobalPrefs globalPrefs)
+	public static IReadOnlyLocalData openReadOnly(LocalDataModel dataModel, LocalDataModel.ReadLock readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
 		return new LoadedStorage(dataModel, readLock, null, localIndex, globalPinCache, followIndex, globalPrefs);
 	}
 
-	public static IReadWriteLocalData openReadWrite(LocalDataModel dataModel, LocalDataModel.WriteLock writeLock, LocalIndex localIndex, GlobalPinCache globalPinCache, FollowIndex followIndex, GlobalPrefs globalPrefs)
+	public static IReadWriteLocalData openReadWrite(LocalDataModel dataModel, LocalDataModel.WriteLock writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
 		return new LoadedStorage(dataModel, null, writeLock, localIndex, globalPinCache, followIndex, globalPrefs);
 	}
@@ -45,29 +41,17 @@ public class LoadedStorage implements IReadWriteLocalData
 	private PrefsData _globalPrefs;
 	private boolean _changed_globalPrefs;
 
-	private LoadedStorage(LocalDataModel dataModel, LocalDataModel.ReadLock readLock, LocalDataModel.WriteLock writeLock, LocalIndex localIndex, GlobalPinCache globalPinCache, FollowIndex followIndex, GlobalPrefs globalPrefs)
+	private LoadedStorage(LocalDataModel dataModel, LocalDataModel.ReadLock readLock, LocalDataModel.WriteLock writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
 		_dataModel = dataModel;
 		_readLock = readLock;
 		_writeLock = writeLock;
 		_isOpen = true;
 		
-		_localIndex = (null != localIndex)
-				? ChannelData.buildOnIndex(localIndex)
-				: null
-		;
-		_globalPinCache = (null != globalPinCache)
-				? PinCacheData.buildOnCache(globalPinCache)
-				: null
-		;
-		_followIndex = (null != followIndex)
-				? FolloweeData.buildOnIndex(followIndex)
-				: null
-		;
-		_globalPrefs = (null != globalPrefs)
-				? PrefsData.buildOnPrefs(globalPrefs)
-				: null
-		;
+		_localIndex = localIndex;
+		_globalPinCache = globalPinCache;
+		_followIndex = followIndex;
+		_globalPrefs = globalPrefs;
 	}
 
 	@Override
@@ -105,10 +89,10 @@ public class LoadedStorage implements IReadWriteLocalData
 		if (null != _writeLock)
 		{
 			_dataModel.closeWrite(_writeLock
-					, (_changed_localIndex ? _localIndex.serializeToIndex() : null)
-					, (_changed_globalPinCache ? _globalPinCache.serializeToPinCache() : null)
-					, (_changed_followIndex ? _followIndex.serializeToIndex() : null)
-					, (_changed_globalPrefs ? _globalPrefs.serializeToPrefs() : null)
+					, (_changed_localIndex ? _localIndex : null)
+					, (_changed_globalPinCache ? _globalPinCache : null)
+					, (_changed_followIndex ? _followIndex : null)
+					, (_changed_globalPrefs ? _globalPrefs : null)
 			);
 		}
 		else

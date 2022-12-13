@@ -26,6 +26,8 @@ public class TestSetGlobalPrefsCommand
 		Assert.assertNotNull(user.getLastRootElement());
 		
 		PrefsData original = user.readPrefs();
+		// Shutdown the environment so that it drops all caches - otherwise, we will end up re-reading the same instance of the prefs object.
+		user.shutdown();
 		SetGlobalPrefsCommand command = new SetGlobalPrefsCommand(original.videoEdgePixelMax() + 1, original.followCacheTargetBytes() + 1);
 		
 		// Now, run the refresh command.
