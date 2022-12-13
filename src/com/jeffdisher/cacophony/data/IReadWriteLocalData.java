@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.data;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.PinCacheData;
+import com.jeffdisher.cacophony.projection.PrefsData;
 
 
 /**
@@ -13,8 +13,8 @@ import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
  */
 public interface IReadWriteLocalData extends IReadOnlyLocalData
 {
-	void writeLocalIndex(LocalIndex index);
-	void writeGlobalPrefs(GlobalPrefs prefs);
-	void writeGlobalPinCache(GlobalPinCache pinCache);
-	void writeFollowIndex(FollowIndex followIndex);
+	void writeLocalIndex(ChannelData index);
+	void writeGlobalPrefs(PrefsData prefs);
+	void writeGlobalPinCache(PinCacheData pinCache);
+	void writeFollowIndex(FolloweeData followIndex);
 }

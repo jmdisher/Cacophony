@@ -2,11 +2,11 @@ package com.jeffdisher.cacophony.data;
 
 import java.util.function.Supplier;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.PinCacheData;
+import com.jeffdisher.cacophony.projection.PrefsData;
 
 
 /**
@@ -18,10 +18,10 @@ import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
  */
 public interface IReadOnlyLocalData extends AutoCloseable
 {
-	LocalIndex readLocalIndex();
-	GlobalPrefs readGlobalPrefs();
-	GlobalPinCache readGlobalPinCache();
-	FollowIndex readFollowIndex();
+	ChannelData readLocalIndex();
+	PrefsData readGlobalPrefs();
+	PinCacheData readGlobalPinCache();
+	FolloweeData readFollowIndex();
 	/**
 	 * We implement AudoCloseable so we can use the try-with-resources idiom but we have no need for the exception so
 	 * we override the close() not to throw it.

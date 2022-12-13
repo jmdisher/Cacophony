@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.types.VersionException;
 
@@ -26,11 +27,11 @@ public class TestLocalDataModel
 		Assert.assertNull(access.readGlobalPinCache());
 		Assert.assertNull(access.readGlobalPrefs());
 		Assert.assertNull(access.readLocalIndex());
-		access.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
+		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
 		access.close();
 		
 		IReadOnlyLocalData reader = model.openForRead();
-		GlobalPrefs prefs = reader.readGlobalPrefs();
+		GlobalPrefs prefs = reader.readGlobalPrefs().serializeToPrefs();
 		reader.close();
 		GlobalPrefs defaults = GlobalPrefs.defaultPrefs();
 		Assert.assertEquals(defaults, prefs);
@@ -49,7 +50,7 @@ public class TestLocalDataModel
 		Assert.assertNull(access.readGlobalPinCache());
 		Assert.assertNull(access.readGlobalPrefs());
 		Assert.assertNull(access.readLocalIndex());
-		access.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
+		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
 		access.close();
 		
 		// Create a bunch of threads with a barrier to synchronize them inside the read lock.
@@ -106,7 +107,7 @@ public class TestLocalDataModel
 		Assert.assertNull(access.readGlobalPinCache());
 		Assert.assertNull(access.readGlobalPrefs());
 		Assert.assertNull(access.readLocalIndex());
-		access.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
+		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
 		access.close();
 		
 		// Create a bunch of threads with an atomic counter to verify that nobody is ever inside the write lock at the same time.

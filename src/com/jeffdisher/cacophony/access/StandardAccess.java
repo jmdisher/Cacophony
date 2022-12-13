@@ -78,12 +78,12 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		LocalIndex localIndex = reading.readLocalIndex();
+		ChannelData localIndex = reading.readLocalIndex();
 		String ipfsConnectionString = localIndex.ipfsHost();
 		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
 		Assert.assertTrue(null != connection);
 		
-		return new StandardAccess(environment, connection, reading, null, ChannelData.buildOnIndex(localIndex));
+		return new StandardAccess(environment, connection, reading, null, localIndex);
 	}
 
 	/**
@@ -108,12 +108,12 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		LocalIndex localIndex = writing.readLocalIndex();
+		ChannelData localIndex = writing.readLocalIndex();
 		String ipfsConnectionString = localIndex.ipfsHost();
 		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
 		Assert.assertTrue(null != connection);
 		
-		return new StandardAccess(environment, connection, writing, writing, ChannelData.buildOnIndex(localIndex));
+		return new StandardAccess(environment, connection, writing, writing, localIndex);
 	}
 
 	/**
@@ -152,10 +152,10 @@ public class StandardAccess implements IWritingAccess
 		LocalIndex localIndex = new LocalIndex(ipfsConnectionString, keyName, null);
 		try (IReadWriteLocalData writing = dataModel.openForWrite())
 		{
-			writing.writeLocalIndex(localIndex);
-			writing.writeGlobalPrefs(GlobalPrefs.defaultPrefs());
-			writing.writeGlobalPinCache(GlobalPinCache.newCache());
-			writing.writeFollowIndex(FollowIndex.emptyFollowIndex());
+			writing.writeLocalIndex(ChannelData.buildOnIndex(localIndex));
+			writing.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
+			writing.writeGlobalPinCache(PinCacheData.buildOnCache(GlobalPinCache.newCache()));
+			writing.writeFollowIndex(FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex()));
 		}
 	}
 
@@ -187,7 +187,7 @@ public class StandardAccess implements IWritingAccess
 	{
 		if (null == _followeeData)
 		{
-			_followeeData = FolloweeData.buildOnIndex(_readOnly.readFollowIndex());
+			_followeeData = _readOnly.readFollowIndex();
 		}
 		return _followeeData;
 	}
@@ -215,7 +215,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public PrefsData readPrefs()
 	{
-		return PrefsData.buildOnPrefs(_readOnly.readGlobalPrefs());
+		return _readOnly.readGlobalPrefs();
 	}
 
 	@Override
@@ -298,7 +298,7 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != _readWrite);
 		if (null == _followeeData)
 		{
-			_followeeData = FolloweeData.buildOnIndex(_readWrite.readFollowIndex());
+			_followeeData = _readWrite.readFollowIndex();
 		}
 		// We will want to write this back.
 		_writeFollowIndex = true;
@@ -309,7 +309,7 @@ public class StandardAccess implements IWritingAccess
 	public void writePrefs(PrefsData prefs)
 	{
 		Assert.assertTrue(null != _readWrite);
-		_readWrite.writeGlobalPrefs(prefs.serializeToPrefs());
+		_readWrite.writeGlobalPrefs(prefs);
 	}
 
 	@Override
@@ -376,15 +376,15 @@ public class StandardAccess implements IWritingAccess
 	{
 		if (_writePinCache)
 		{
-			_readWrite.writeGlobalPinCache(_pinCache.serializeToPinCache());
+			_readWrite.writeGlobalPinCache(_pinCache);
 		}
 		if (_writeFollowIndex)
 		{
-			_readWrite.writeFollowIndex(_followeeData.serializeToIndex());
+			_readWrite.writeFollowIndex(_followeeData);
 		}
 		if (_writeChannelData)
 		{
-			_readWrite.writeLocalIndex(_channelData.serializeToIndex());
+			_readWrite.writeLocalIndex(_channelData);
 		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();
@@ -395,7 +395,7 @@ public class StandardAccess implements IWritingAccess
 	{
 		if (null == _pinCache)
 		{
-			_pinCache = PinCacheData.buildOnCache(_readOnly.readGlobalPinCache());
+			_pinCache = _readOnly.readGlobalPinCache();
 			// If we are in writable mode, assume we need to write this back.
 			_writePinCache = (null != _readWrite);
 		}
