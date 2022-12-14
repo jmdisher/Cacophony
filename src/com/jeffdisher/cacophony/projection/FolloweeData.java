@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +14,8 @@ import java.util.stream.Stream;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v2.Opcode_AddFollowee;
+import com.jeffdisher.cacophony.data.local.v2.Opcode_AddFolloweeRecord;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -109,6 +113,22 @@ public class FolloweeData implements IFolloweeWriting
 			index.checkinRecord(record);
 		}
 		return index;
+	}
+
+	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
+	{
+		for (Map.Entry<IpfsKey, List<FollowingCacheElement>> elt : _followeeElements.entrySet())
+		{
+			IpfsKey followee = elt.getKey();
+			IpfsFile indexRoot = _followeeLastIndices.get(followee);
+			Assert.assertTrue(null != indexRoot);
+			long lastPollMillis = _followeeLastFetchMillis.get(followee);
+			stream.writeObject(new Opcode_AddFollowee(followee, indexRoot, lastPollMillis));
+			for (FollowingCacheElement record : elt.getValue())
+			{
+				stream.writeObject(new Opcode_AddFolloweeRecord(followee, record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
+			}
+		}
 	}
 
 	@Override

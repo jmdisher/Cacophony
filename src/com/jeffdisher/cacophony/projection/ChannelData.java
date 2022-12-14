@@ -1,6 +1,11 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
+import com.jeffdisher.cacophony.data.local.v2.Opcode_CreateChannel;
+import com.jeffdisher.cacophony.data.local.v2.Opcode_SetLastPublishedIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -32,6 +37,15 @@ public class ChannelData
 	public LocalIndex serializeToIndex()
 	{
 		return new LocalIndex(_ipfsHost, _keyName, _lastPublishedIndex);
+	}
+
+	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
+	{
+		stream.writeObject(new Opcode_CreateChannel(_ipfsHost, _keyName));
+		if (null != _lastPublishedIndex)
+		{
+			stream.writeObject(new Opcode_SetLastPublishedIndex(_lastPublishedIndex));
+		}
 	}
 
 	public String ipfsHost()
