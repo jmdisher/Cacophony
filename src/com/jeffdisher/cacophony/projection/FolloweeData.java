@@ -48,6 +48,14 @@ public class FolloweeData implements IFolloweeWriting
 		return new FolloweeData(followeeElements, followeeLastIndices, followeeLastFetchMillis);
 	}
 
+	public static FolloweeData createEmpty()
+	{
+		Map<IpfsKey, List<FollowingCacheElement>> followeeElements = new HashMap<>();
+		Map<IpfsKey, IpfsFile> followeeLastIndices = new HashMap<>();
+		Map<IpfsKey, Long> followeeLastFetchMillis = new HashMap<>();
+		return new FolloweeData(followeeElements, followeeLastIndices, followeeLastFetchMillis);
+	}
+
 
 	private final Map<IpfsKey, List<FollowingCacheElement>> _followeeElements;
 	private final Map<IpfsKey, Map<IpfsFile, FollowingCacheElement>> _elementsForLookup;

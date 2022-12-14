@@ -8,7 +8,14 @@ public class ChannelData
 {
 	public static ChannelData buildOnIndex(LocalIndex index)
 	{
-		return new ChannelData(index.ipfsHost(), index.keyName(), index.lastPublishedIndex());
+		ChannelData data = new ChannelData(index.ipfsHost(), index.keyName());
+		data.setLastPublishedIndex(index.lastPublishedIndex());
+		return data;
+	}
+
+	public static ChannelData create(String ipfsHost, String keyName)
+	{
+		return new ChannelData(ipfsHost, keyName);
 	}
 
 
@@ -16,11 +23,10 @@ public class ChannelData
 	private String _keyName;
 	private IpfsFile _lastPublishedIndex;
 
-	private ChannelData(String ipfsHost, String keyName, IpfsFile lastPublishedIndex)
+	private ChannelData(String ipfsHost, String keyName)
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
-		_lastPublishedIndex = lastPublishedIndex;
 	}
 
 	public LocalIndex serializeToIndex()

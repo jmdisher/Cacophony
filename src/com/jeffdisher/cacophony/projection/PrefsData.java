@@ -15,6 +15,12 @@ public class PrefsData
 		return new PrefsData(prefs.videoEdgePixelMax(), prefs.followCacheTargetBytes());
 	}
 
+	public static PrefsData defaultPrefs()
+	{
+		GlobalPrefs prefs = GlobalPrefs.defaultPrefs();
+		return new PrefsData(prefs.videoEdgePixelMax(), prefs.followCacheTargetBytes());
+	}
+
 
 	// Note that this is currently a trivial re-interpretation of GlobalPrefs, just meant to decouple us from the serialized form.
 	private int _videoEdgePixelMax;

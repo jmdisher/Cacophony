@@ -10,10 +10,6 @@ import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -149,13 +145,12 @@ public class StandardAccess implements IWritingAccess
 		}
 		// Create the instance and populate it with default files.
 		LocalDataModel dataModel = environment.getSharedDataModel();
-		LocalIndex localIndex = new LocalIndex(ipfsConnectionString, keyName, null);
 		try (IReadWriteLocalData writing = dataModel.openForWrite())
 		{
-			writing.writeLocalIndex(ChannelData.buildOnIndex(localIndex));
-			writing.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
-			writing.writeGlobalPinCache(PinCacheData.buildOnCache(GlobalPinCache.newCache()));
-			writing.writeFollowIndex(FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex()));
+			writing.writeLocalIndex(ChannelData.create(ipfsConnectionString, keyName));
+			writing.writeGlobalPrefs(PrefsData.defaultPrefs());
+			writing.writeGlobalPinCache(PinCacheData.createEmpty());
+			writing.writeFollowIndex(FolloweeData.createEmpty());
 		}
 	}
 

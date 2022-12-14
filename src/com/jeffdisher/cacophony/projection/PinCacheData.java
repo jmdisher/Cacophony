@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
@@ -13,6 +14,11 @@ public class PinCacheData
 	{
 		Map<IpfsFile, Integer> map = pinCache.readInternalCopy();
 		return new PinCacheData(map);
+	}
+
+	public static PinCacheData createEmpty()
+	{
+		return new PinCacheData(new HashMap<>());
 	}
 
 
