@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.data;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -14,6 +16,7 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
+import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
@@ -22,6 +25,7 @@ import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.projection.ProjectionBuilder;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -290,6 +294,24 @@ public class LocalDataModel
 					? ChannelData.buildOnIndex(temp)
 					: null
 			;
+			if (null != _localIndex)
+			{
+				// Verify that the opcode stream works.
+				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+				try
+				{
+					ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
+					_localIndex.serializeToOpcodeStream(output);
+					output.close();
+					_localIndex = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).channel();
+				}
+				catch (IOException e)
+				{
+					// In-memory stream won't fail.
+					throw Assert.unexpected(e);
+				}
+				Assert.assertTrue(null != _localIndex);
+			}
 		}
 		if (null == _globalPinCache)
 		{
@@ -308,6 +330,24 @@ public class LocalDataModel
 					// Failure on close not expected.
 					throw Assert.unexpected(e);
 				}
+				if (null != _globalPinCache)
+				{
+					// Verify that the opcode stream works.
+					ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+					try
+					{
+						ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
+						_globalPinCache.serializeToOpcodeStream(output);
+						output.close();
+						_globalPinCache = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).pinCache();
+					}
+					catch (IOException e)
+					{
+						// In-memory stream won't fail.
+						throw Assert.unexpected(e);
+					}
+					Assert.assertTrue(null != _globalPinCache);
+				}
 			}
 		}
 		if (null == _followIndex)
@@ -325,6 +365,24 @@ public class LocalDataModel
 					// Failure on close not expected.
 					throw Assert.unexpected(e);
 				}
+				if (null != _followIndex)
+				{
+					// Verify that the opcode stream works.
+					ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+					try
+					{
+						ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
+						_followIndex.serializeToOpcodeStream(output);
+						output.close();
+						_followIndex = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).followee();
+					}
+					catch (IOException e)
+					{
+						// In-memory stream won't fail.
+						throw Assert.unexpected(e);
+					}
+					Assert.assertTrue(null != _followIndex);
+				}
 			}
 		}
 		if (null == _globalPrefs)
@@ -334,6 +392,24 @@ public class LocalDataModel
 					? PrefsData.buildOnPrefs(temp)
 					: null
 			;
+			if (null != _globalPrefs)
+			{
+				// Verify that the opcode stream works.
+				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+				try
+				{
+					ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
+					_globalPrefs.serializeToOpcodeStream(output);
+					output.close();
+					_globalPrefs = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).prefs();
+				}
+				catch (IOException e)
+				{
+					// In-memory stream won't fail.
+					throw Assert.unexpected(e);
+				}
+				Assert.assertTrue(null != _globalPrefs);
+			}
 		}
 	}
 
