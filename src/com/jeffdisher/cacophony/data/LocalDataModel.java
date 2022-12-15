@@ -26,6 +26,7 @@ import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -71,48 +72,75 @@ public class LocalDataModel
 		_cacheLock = new ReentrantLock();
 	}
 
-	private void _eagerlyLoadFiles(IConfigFileSystem fileSystem) throws VersionException
+	/**
+	 * Called during start-up to make sure that the storage model is consistent.  A consistent model either doesn't
+	 * exist or does exist and contains all files, updated to the latest version of the storage.
+	 * If the storage is inconsistent, it will be repaired (if possible) or an exception will be thrown.
+	 * 
+	 * @throws UsageException The data model was inconsistent and couldn't be repaired.
+	 */
+	public void verifyStorageConsistency() throws UsageException
 	{
-		// Note that we eagerly load the data files, so we can keep all the read/write capabilities within this class
-		// and eagerly throw the version exception.
-		// In the case where there is no version, we will just verify that nothing exists and will write the version
-		// file when we first write anything.
-		
-		// We do require that the config directly at least exist.
-		Assert.assertTrue(_fileSystem.doesConfigDirectoryExist());
-		
-		// Check if the version file exists (if not, no other files can exist).
-		InputStream versionStream = fileSystem.readConfigFile(VERSION_FILE);
-		if (null != versionStream)
+		if (_fileSystem.doesConfigDirectoryExist())
 		{
-			// The version file exists so just make sure it is what we expect.
-			try (versionStream)
+			try
 			{
-				byte[] data = versionStream.readAllBytes();
-				if ((1 == data.length) && (LOCAL_CONFIG_VERSION_NUMBER == data[0]))
+				// The config directory exists, so make sure that the version file is there.
+				InputStream versionStream = _fileSystem.readConfigFile(VERSION_FILE);
+				if (null != versionStream)
 				{
-					// This is a version we can understand so load whatever data there is.
-					_loadAllFiles();
+					// The version file exists so just make sure it is what we expect.
+					try (versionStream)
+					{
+						byte[] data = versionStream.readAllBytes();
+						boolean validVersion = ((1 == data.length) && (LOCAL_CONFIG_VERSION_NUMBER == data[0]));
+						if (!validVersion)
+						{
+							throw new UsageException("Version data incorrect");
+						}
+					}
 				}
 				else
 				{
-					throw new VersionException("Local config is unknown version");
+					// This file needs to exist.
+					throw new UsageException("Version file missing");
+				}
+				
+				// If we made it this far, the version is correct.  The only other file which MUST exist, is the index file.
+				if (!_doesFileExist(INDEX_FILE))
+				{
+					throw new UsageException("Index file missing");
+				}
+				
+				// From here on, we can repair any missing files.
+				if (!_doesFileExist(GLOBAL_PREFS_FILE))
+				{
+					_storeFile(GLOBAL_PREFS_FILE, PrefsData.defaultPrefs().serializeToPrefs());
+				}
+				if (!_doesFileExist(GLOBAL_PIN_CACHE_FILE))
+				{
+					try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
+					{
+						PinCacheData.createEmpty().serializeToPinCache().writeToStream(stream);
+					}
+				}
+				if (!_doesFileExist(FOLLOWING_INDEX_FILE))
+				{
+					try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
+					{
+						FolloweeData.createEmpty().serializeToIndex().writeToStream(stream);
+					}
 				}
 			}
 			catch (IOException e)
 			{
-				// We don't really have a fall-back for these exceptions.
+				// Not expected.
 				throw Assert.unexpected(e);
 			}
 		}
 		else
 		{
-			// The version file is missing so check that nothing else is there.
-			_loadAllFiles();
-			if ((null != _localIndex) || (null != _globalPinCache) || (null != _followIndex) || (null != _globalPrefs))
-			{
-				throw new VersionException("Version file missing but data exists");
-			}
+			// If the directory doesn't, this is valid (means that no channel has been created).
 		}
 	}
 
@@ -127,7 +155,7 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
-		_eagerlyLoadFiles(_fileSystem);
+		_loadAllFiles();
 		return LoadedStorage.openReadOnly(this, new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -152,7 +180,7 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();
-		_eagerlyLoadFiles(_fileSystem);
+		_loadAllFiles();
 		return LoadedStorage.openReadWrite(this, new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -450,6 +478,26 @@ public class LocalDataModel
 			// We don't expect this.
 			throw Assert.unexpected(e);
 		}
+	}
+
+	private boolean _doesFileExist(String fileName)
+	{
+		boolean doesExist = false;
+		InputStream indexStream = _fileSystem.readConfigFile(fileName);
+		if (null != indexStream)
+		{
+			try
+			{
+				indexStream.close();
+			}
+			catch (IOException e)
+			{
+				// Not expected.
+				throw Assert.unexpected(e);
+			}
+			doesExist = true;
+		}
+		return doesExist;
 	}
 
 	public static record ReadLock(Lock lock) {};

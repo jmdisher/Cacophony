@@ -89,8 +89,12 @@ public class Cacophony {
 				// Enable verifications if the env var is set, at all.
 				boolean shouldEnableVerifications = (null != System.getenv(ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
 				StandardEnvironment executor = new StandardEnvironment(System.out, new RealConfigFileSystem(directory), new RealConnectionFactory(), shouldEnableVerifications);
+				// Make sure we get ownership of the lock file.
 				try (FileChannel lockFile = _lockFile(directory))
 				{
+					// Verify that the storage is consistent, before we start.
+					executor.getSharedDataModel().verifyStorageConsistency();
+					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					command.runInEnvironment(executor);
 				}
 				catch (UsageException e)

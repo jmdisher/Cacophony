@@ -3,7 +3,9 @@ package com.jeffdisher.cacophony.data;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -17,6 +19,7 @@ import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
@@ -24,6 +27,7 @@ import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 
 
@@ -246,6 +250,57 @@ public class TestLocalDataModel
 		Assert.assertEquals(2, counting.followeeCount);
 	}
 
+	@Test
+	public void corruptData() throws Throwable
+	{
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		
+		// Create the directory with valid version but nothing else.
+		fileSystem.createConfigDirectory();
+		try (OutputStream stream = fileSystem.writeConfigFile("version"))
+		{
+			stream.write(new byte[] {1});
+		}
+		
+		// Verify that this throws a version error.
+		LocalDataModel model = new LocalDataModel(fileSystem);
+		boolean error = false;
+		try
+		{
+			model.verifyStorageConsistency();
+		}
+		catch (UsageException e)
+		{
+			error = true;
+		}
+		Assert.assertTrue(error);
+	}
+
+	@Test
+	public void repairData() throws Throwable
+	{
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		
+		// Create the directory with valid version and index file but nothing else.
+		fileSystem.createConfigDirectory();
+		try (OutputStream stream = fileSystem.writeConfigFile("version"))
+		{
+			stream.write(new byte[] {1});
+		}
+		try (ObjectOutputStream stream = new ObjectOutputStream(fileSystem.writeConfigFile("index1.dat")))
+		{
+			stream.writeObject(ChannelData.create("host", "name").serializeToIndex());
+		}
+		
+		// Verify that this can be repaired and that the missing files are created.
+		LocalDataModel model = new LocalDataModel(fileSystem);
+		model.verifyStorageConsistency();
+		
+		Assert.assertTrue(_doesFileExist(fileSystem, "global_prefs1.dat"));
+		Assert.assertTrue(_doesFileExist(fileSystem, "global_pin_cache1.dat"));
+		Assert.assertTrue(_doesFileExist(fileSystem, "following_index1.dat"));
+	}
+
 
 	private byte[] _serializeModelToOpcodes(LocalDataModel model) throws IOException, VersionException
 	{
@@ -262,6 +317,18 @@ public class TestLocalDataModel
 			serialized = bytes.toByteArray();
 		}
 		return serialized;
+	}
+
+	private boolean _doesFileExist(IConfigFileSystem fileSystem, String fileName) throws IOException
+	{
+		boolean doesExist = false;
+		InputStream indexStream = fileSystem.readConfigFile(fileName);
+		if (null != indexStream)
+		{
+			indexStream.close();
+			doesExist = true;
+		}
+		return doesExist;
 	}
 
 
