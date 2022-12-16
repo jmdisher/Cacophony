@@ -1,13 +1,11 @@
 package com.jeffdisher.cacophony.data;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,11 +38,15 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class LocalDataModel
 {
 	private static final String VERSION_FILE = "version";
-	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 1;
-	private static final String INDEX_FILE = "index1.dat";
-	private static final String GLOBAL_PREFS_FILE = "global_prefs1.dat";
-	private static final String GLOBAL_PIN_CACHE_FILE = "global_pin_cache1.dat";
-	private static final String FOLLOWING_INDEX_FILE = "following_index1.dat";
+	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 2;
+
+	private static final byte V1 = 1;
+	private static final String V1_INDEX_FILE = "index1.dat";
+	private static final String V1_GLOBAL_PREFS_FILE = "global_prefs1.dat";
+	private static final String V1_GLOBAL_PIN_CACHE_FILE = "global_pin_cache1.dat";
+	private static final String V1_FOLLOWING_INDEX_FILE = "following_index1.dat";
+
+	private static final String V2_FINAL_LOG = "opcodes_0.final.gzlog";
 
 	private final IConfigFileSystem _fileSystem;
 	private final ReadWriteLock _readWriteLock;
@@ -93,9 +95,22 @@ public class LocalDataModel
 					try (versionStream)
 					{
 						byte[] data = versionStream.readAllBytes();
-						boolean validVersion = ((1 == data.length) && (LOCAL_CONFIG_VERSION_NUMBER == data[0]));
-						if (!validVersion)
+						byte version = (1 == data.length)
+								? data[0]
+								: 0
+						;
+						if (LOCAL_CONFIG_VERSION_NUMBER == version)
 						{
+							// Current version, do nothing special.
+						}
+						else if (V1 == version)
+						{
+							// Old version, migrate the data.
+							_migrateData();
+						}
+						else
+						{
+							// Unknown.
 							throw new UsageException("Version data incorrect");
 						}
 					}
@@ -104,32 +119,6 @@ public class LocalDataModel
 				{
 					// This file needs to exist.
 					throw new UsageException("Version file missing");
-				}
-				
-				// If we made it this far, the version is correct.  The only other file which MUST exist, is the index file.
-				if (!_doesFileExist(INDEX_FILE))
-				{
-					throw new UsageException("Index file missing");
-				}
-				
-				// From here on, we can repair any missing files.
-				if (!_doesFileExist(GLOBAL_PREFS_FILE))
-				{
-					_storeFile(GLOBAL_PREFS_FILE, PrefsData.defaultPrefs().serializeToPrefs());
-				}
-				if (!_doesFileExist(GLOBAL_PIN_CACHE_FILE))
-				{
-					try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
-					{
-						PinCacheData.createEmpty().serializeToPinCache().writeToStream(stream);
-					}
-				}
-				if (!_doesFileExist(FOLLOWING_INDEX_FILE))
-				{
-					try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
-					{
-						FolloweeData.createEmpty().serializeToIndex().writeToStream(stream);
-					}
 				}
 			}
 			catch (IOException e)
@@ -202,21 +191,11 @@ public class LocalDataModel
 		if (null != updateLocalIndex)
 		{
 			_localIndex = updateLocalIndex;
-			_storeFile(INDEX_FILE, _localIndex.serializeToIndex());
 			somethingUpdated = true;
 		}
 		if (null != updateGlobalPinCache)
 		{
 			_globalPinCache = updateGlobalPinCache;
-			try (OutputStream stream = _fileSystem.writeConfigFile(GLOBAL_PIN_CACHE_FILE))
-			{
-				_globalPinCache.serializeToPinCache().writeToStream(stream);
-			}
-			catch (IOException e)
-			{
-				// Failure not expected.
-				throw Assert.unexpected(e);
-			}
 			// Updating the _globalPinCache invalidates the _lazyFolloweeCache (this lock is redundant in this function
 			//  but is the right pattern).
 			// NOTE:  This isn't done on _followIndex since the cases where it changes in ways which would break the 
@@ -238,29 +217,19 @@ public class LocalDataModel
 		if (null != updateFollowIndex)
 		{
 			_followIndex = updateFollowIndex;
-			try (OutputStream stream = _fileSystem.writeConfigFile(FOLLOWING_INDEX_FILE))
-			{
-				_followIndex.serializeToIndex().writeToStream(stream);
-			}
-			catch (IOException e)
-			{
-				// Failure not expected.
-				throw Assert.unexpected(e);
-			}
 			somethingUpdated = true;
 		}
 		if (null != updateGlobalPrefs)
 		{
 			_globalPrefs = updateGlobalPrefs;
-			_storeFile(GLOBAL_PREFS_FILE, _globalPrefs.serializeToPrefs());
 			somethingUpdated = true;
 		}
 		// Write the version if anything changed.
 		if (somethingUpdated)
 		{
-			try (OutputStream versionStream = _fileSystem.writeConfigFile(VERSION_FILE))
+			try
 			{
-				versionStream.write(new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
+				_flushStateToStream();
 			}
 			catch (IOException e)
 			{
@@ -315,129 +284,29 @@ public class LocalDataModel
 
 	private void _loadAllFiles()
 	{
-		if (null == _localIndex)
+		try (InputStream input = _fileSystem.readConfigFile(V2_FINAL_LOG))
 		{
-			LocalIndex temp = _readFile(INDEX_FILE, LocalIndex.class);
-			_localIndex = (null != temp)
-					? ChannelData.buildOnIndex(temp)
-					: null
-			;
-			if (null != _localIndex)
+			// Note that this is null during initial creation.
+			if (null != input)
 			{
-				// Verify that the opcode stream works.
-				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-				try
-				{
-					ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
-					_localIndex.serializeToOpcodeStream(output);
-					output.close();
-					_localIndex = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).channel();
-				}
-				catch (IOException e)
-				{
-					// In-memory stream won't fail.
-					throw Assert.unexpected(e);
-				}
-				Assert.assertTrue(null != _localIndex);
+				ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(_fileSystem.readConfigFile(V2_FINAL_LOG));
+				_localIndex = projections.channel();
+				_globalPrefs = projections.prefs();
+				_globalPinCache = projections.pinCache();
+				_followIndex = projections.followee();
+			}
+			else
+			{
+				// We can't create a default _localIndex, so we will need to assume that we are creating a new channel.
+				_globalPrefs = PrefsData.defaultPrefs();
+				_globalPinCache = PinCacheData.createEmpty();
+				_followIndex = FolloweeData.createEmpty();
 			}
 		}
-		if (null == _globalPinCache)
+		catch (IOException e)
 		{
-			InputStream pinStream = _fileSystem.readConfigFile(GLOBAL_PIN_CACHE_FILE);
-			if (null != pinStream)
-			{
-				try (pinStream)
-				{
-					// We shouldn't have a followee cache, yet, so no need to lock and invalidate.
-					Assert.assertTrue(null == _lazyFolloweeCache);
-					_globalPinCache = PinCacheData.buildOnCache(GlobalPinCache.fromStream(pinStream));
-					pinStream.close();
-				}
-				catch (IOException e)
-				{
-					// Failure on close not expected.
-					throw Assert.unexpected(e);
-				}
-				if (null != _globalPinCache)
-				{
-					// Verify that the opcode stream works.
-					ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-					try
-					{
-						ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
-						_globalPinCache.serializeToOpcodeStream(output);
-						output.close();
-						_globalPinCache = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).pinCache();
-					}
-					catch (IOException e)
-					{
-						// In-memory stream won't fail.
-						throw Assert.unexpected(e);
-					}
-					Assert.assertTrue(null != _globalPinCache);
-				}
-			}
-		}
-		if (null == _followIndex)
-		{
-			InputStream followeeStream = _fileSystem.readConfigFile(FOLLOWING_INDEX_FILE);
-			if (null != followeeStream)
-			{
-				try (followeeStream)
-				{
-					_followIndex = FolloweeData.buildOnIndex(FollowIndex.fromStream(followeeStream));
-					followeeStream.close();
-				}
-				catch (IOException e)
-				{
-					// Failure on close not expected.
-					throw Assert.unexpected(e);
-				}
-				if (null != _followIndex)
-				{
-					// Verify that the opcode stream works.
-					ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-					try
-					{
-						ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
-						_followIndex.serializeToOpcodeStream(output);
-						output.close();
-						_followIndex = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).followee();
-					}
-					catch (IOException e)
-					{
-						// In-memory stream won't fail.
-						throw Assert.unexpected(e);
-					}
-					Assert.assertTrue(null != _followIndex);
-				}
-			}
-		}
-		if (null == _globalPrefs)
-		{
-			GlobalPrefs temp = _readFile(GLOBAL_PREFS_FILE, GlobalPrefs.class);
-			_globalPrefs = (null != temp)
-					? PrefsData.buildOnPrefs(temp)
-					: null
-			;
-			if (null != _globalPrefs)
-			{
-				// Verify that the opcode stream works.
-				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-				try
-				{
-					ObjectOutputStream output = OpcodeContext.createOutputStream(bytes);
-					_globalPrefs.serializeToOpcodeStream(output);
-					output.close();
-					_globalPrefs = ProjectionBuilder.buildProjectionsFromOpcodeStream(new ByteArrayInputStream(bytes.toByteArray())).prefs();
-				}
-				catch (IOException e)
-				{
-					// In-memory stream won't fail.
-					throw Assert.unexpected(e);
-				}
-				Assert.assertTrue(null != _globalPrefs);
-			}
+			// We have no way to handle this failure.
+			throw Assert.unexpected(e);
 		}
 	}
 
@@ -467,37 +336,89 @@ public class LocalDataModel
 		return object;
 	}
 
-	private <T extends Serializable> void _storeFile(String fileName, T object)
+	private void _migrateData() throws IOException, UsageException
 	{
-		try (ObjectOutputStream stream = new ObjectOutputStream(_fileSystem.writeConfigFile(fileName)))
+		// Read the original files.
+		LocalIndex localIndex = _readFile(V1_INDEX_FILE, LocalIndex.class);
+		// If the original file is missing, this is a UsageException.
+		if (null == localIndex)
 		{
-			stream.writeObject(object);
+			throw new UsageException("Missing index file");
 		}
-		catch (IOException e)
+		ChannelData channelData = ChannelData.buildOnIndex(localIndex);
+		
+		PinCacheData pinCacheData = null;
+		InputStream pinStream = _fileSystem.readConfigFile(V1_GLOBAL_PIN_CACHE_FILE);
+		if (null != pinStream)
 		{
-			// We don't expect this.
-			throw Assert.unexpected(e);
+			try (pinStream)
+			{
+				// We shouldn't have a followee cache, yet, so no need to lock and invalidate.
+				Assert.assertTrue(null == _lazyFolloweeCache);
+				pinCacheData = PinCacheData.buildOnCache(GlobalPinCache.fromStream(pinStream));
+			}
+			Assert.assertTrue(null != pinCacheData);
 		}
+		else
+		{
+			pinCacheData = PinCacheData.createEmpty();
+		}
+		
+		FolloweeData followeeData = null;
+		InputStream followeeStream = _fileSystem.readConfigFile(V1_FOLLOWING_INDEX_FILE);
+		if (null != followeeStream)
+		{
+			try (followeeStream)
+			{
+				followeeData = FolloweeData.buildOnIndex(FollowIndex.fromStream(followeeStream));
+			}
+		}
+		else
+		{
+			followeeData = FolloweeData.createEmpty();
+		}
+		
+		GlobalPrefs prefs = _readFile(V1_GLOBAL_PREFS_FILE, GlobalPrefs.class);
+		PrefsData prefsData = (null != prefs)
+				? PrefsData.buildOnPrefs(prefs)
+				: PrefsData.defaultPrefs()
+		;
+		
+		// Set the ivars.
+		_localIndex = channelData;
+		_globalPinCache = pinCacheData;
+		_followIndex = followeeData;
+		_globalPrefs = prefsData;
+		
+		// Write the projections to the new stream.
+		_flushStateToStream();
 	}
 
-	private boolean _doesFileExist(String fileName)
+	private void _flushStateToStream() throws IOException
 	{
-		boolean doesExist = false;
-		InputStream indexStream = _fileSystem.readConfigFile(fileName);
-		if (null != indexStream)
+		// We will first serialize to memory, before we re-write the on-disk file.
+		// This will protect us from bugs, but not power loss.
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (ObjectOutputStream output = OpcodeContext.createOutputStream(bytes))
 		{
-			try
-			{
-				indexStream.close();
-			}
-			catch (IOException e)
-			{
-				// Not expected.
-				throw Assert.unexpected(e);
-			}
-			doesExist = true;
+			_localIndex.serializeToOpcodeStream(output);
+			_globalPrefs.serializeToOpcodeStream(output);
+			_globalPinCache.serializeToOpcodeStream(output);
+			_followIndex.serializeToOpcodeStream(output);
 		}
-		return doesExist;
+		bytes.close();
+		
+		byte[] serialized = bytes.toByteArray();
+		try (OutputStream output = _fileSystem.writeConfigFile(V2_FINAL_LOG))
+		{
+			output.write(serialized);
+		}
+		
+		// Update the version file.
+		try (OutputStream versionStream = _fileSystem.writeConfigFile(VERSION_FILE))
+		{
+			versionStream.write(new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
+		}
 	}
 
 	public static record ReadLock(Lock lock) {};

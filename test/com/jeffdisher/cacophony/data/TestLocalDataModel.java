@@ -14,8 +14,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
+import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
+import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
@@ -47,10 +51,11 @@ public class TestLocalDataModel
 		
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
-		Assert.assertNull(access.readFollowIndex());
-		Assert.assertNull(access.readGlobalPinCache());
-		Assert.assertNull(access.readGlobalPrefs());
-		Assert.assertNull(access.readLocalIndex());
+		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
+		Assert.assertNotNull(access.readFollowIndex());
+		Assert.assertNotNull(access.readGlobalPinCache());
+		Assert.assertNotNull(access.readGlobalPrefs());
+		Assert.assertNotNull(access.readLocalIndex());
 		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
 		access.close();
 		
@@ -70,10 +75,11 @@ public class TestLocalDataModel
 		// Create the model.
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
-		Assert.assertNull(access.readFollowIndex());
-		Assert.assertNull(access.readGlobalPinCache());
-		Assert.assertNull(access.readGlobalPrefs());
-		Assert.assertNull(access.readLocalIndex());
+		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
+		Assert.assertNotNull(access.readFollowIndex());
+		Assert.assertNotNull(access.readGlobalPinCache());
+		Assert.assertNotNull(access.readGlobalPrefs());
+		Assert.assertNotNull(access.readLocalIndex());
 		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
 		access.close();
 		
@@ -127,10 +133,11 @@ public class TestLocalDataModel
 		// Create the model.
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
-		Assert.assertNull(access.readFollowIndex());
-		Assert.assertNull(access.readGlobalPinCache());
-		Assert.assertNull(access.readGlobalPrefs());
-		Assert.assertNull(access.readLocalIndex());
+		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
+		Assert.assertNotNull(access.readFollowIndex());
+		Assert.assertNotNull(access.readGlobalPinCache());
+		Assert.assertNotNull(access.readGlobalPrefs());
+		Assert.assertNotNull(access.readLocalIndex());
 		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
 		access.close();
 		
@@ -296,9 +303,77 @@ public class TestLocalDataModel
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		model.verifyStorageConsistency();
 		
-		Assert.assertTrue(_doesFileExist(fileSystem, "global_prefs1.dat"));
-		Assert.assertTrue(_doesFileExist(fileSystem, "global_pin_cache1.dat"));
-		Assert.assertTrue(_doesFileExist(fileSystem, "following_index1.dat"));
+		// We should only see the new log file, not the other version 1 files.
+		Assert.assertTrue(_doesFileExist(fileSystem, "opcodes_0.final.gzlog"));
+		Assert.assertTrue(!_doesFileExist(fileSystem, "global_prefs1.dat"));
+		Assert.assertTrue(!_doesFileExist(fileSystem, "global_pin_cache1.dat"));
+		Assert.assertTrue(!_doesFileExist(fileSystem, "following_index1.dat"));
+	}
+
+	@Test
+	public void dataMigration() throws Throwable
+	{
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		fileSystem.createConfigDirectory();
+		
+		// Manually create the data, as it would appear in version 1, and make sure it migrates correctly.
+		try (ObjectOutputStream out = new ObjectOutputStream(fileSystem.writeConfigFile("index1.dat")))
+		{
+			LocalIndex index = new LocalIndex("host", "key", null);
+			out.writeObject(index);
+		}
+		try (ObjectOutputStream out = new ObjectOutputStream(fileSystem.writeConfigFile("global_prefs1.dat")))
+		{
+			GlobalPrefs prefs = new GlobalPrefs(100, 1000L);
+			out.writeObject(prefs);
+		}
+		try (OutputStream out = fileSystem.writeConfigFile("global_pin_cache1.dat"))
+		{
+			GlobalPinCache pinCache = GlobalPinCache.newCache();
+			pinCache.hashWasAdded(F1);
+			pinCache.writeToStream(out);
+		}
+		try (OutputStream out = fileSystem.writeConfigFile("following_index1.dat"))
+		{
+			FollowIndex index = FollowIndex.emptyFollowIndex();
+			FollowRecord record = new FollowRecord(K1, F2, 1L, new FollowingCacheElement[] {
+					new FollowingCacheElement(F3, F2, null, 3L)
+			});
+			index.checkinRecord(record);
+			index.writeToStream(out);
+		}
+		try (OutputStream out = fileSystem.writeConfigFile("version"))
+		{
+			out.write(new byte[] {1});
+		}
+		
+		// Now, migrate the data and make sure it was preserved.
+		LocalDataModel model = new LocalDataModel(fileSystem);
+		model.verifyStorageConsistency();
+		try (IReadOnlyLocalData access = model.openForRead())
+		{
+			ChannelData channelData = access.readLocalIndex();
+			Assert.assertEquals("host", channelData.ipfsHost());
+			Assert.assertEquals("key", channelData.keyName());
+			Assert.assertNull(channelData.lastPublishedIndex());
+			
+			PrefsData prefsData = access.readGlobalPrefs();
+			Assert.assertEquals(100, prefsData.videoEdgePixelMax());
+			Assert.assertEquals(1000L, prefsData.followCacheTargetBytes());
+			
+			PinCacheData pinCacheData = access.readGlobalPinCache();
+			Assert.assertTrue(pinCacheData.isPinned(F1));
+			Assert.assertFalse(pinCacheData.isPinned(F2));
+			
+			FolloweeData followeeData = access.readFollowIndex();
+			Assert.assertEquals(F2, followeeData.getLastFetchedRootForFollowee(K1));
+			Assert.assertArrayEquals(new IpfsKey[] { K1 }, followeeData.getAllKnownFollowees().toArray((int size) -> new IpfsKey[size]));
+			FollowingCacheElement elt = followeeData.getElementForFollowee(K1, F3);
+			Assert.assertEquals(F3, elt.elementHash());
+			Assert.assertEquals(F2, elt.imageHash());
+			Assert.assertNull(elt.leafHash());
+			Assert.assertEquals(3L, elt.combinedSizeBytes());
+		}
 	}
 
 
