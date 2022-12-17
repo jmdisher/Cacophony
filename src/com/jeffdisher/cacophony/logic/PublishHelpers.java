@@ -14,7 +14,6 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -29,8 +28,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class PublishHelpers
 {
 	/**
-	 * Upload the given files, create the record entry for the new post, append it to the record stream, and begin the
-	 * publish operation.
+	 * Upload the given files, create the record entry for the new post, append it to the record stream.
 	 * 
 	 * @param environment Used for logging.
 	 * @param access The local data store.
@@ -38,10 +36,10 @@ public class PublishHelpers
 	 * @param description The description of the entry.
 	 * @param discussionUrl The discussion URL of the entry (could be null).
 	 * @param elements The list of elements we want to upload as attachments to this entry.
-	 * @return The in-flight publish operation.
+	 * @return The hash of the new index.
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 */
-	public static FuturePublish uploadFileAndStartPublish(IEnvironment environment
+	public static IpfsFile uploadFileAndUpdateTracking(IEnvironment environment
 			, IWritingAccess access
 			, String name
 			, String description
@@ -104,12 +102,13 @@ public class PublishHelpers
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncResult = access.uploadStoreAndPublishIndex(index);
+		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
 		
-		// Now that the new index has been uploaded and the publish is in progress, we can unpin the previous root and records.
+		// Now that the new index has been uploaded, we can unpin the previous root and records.
+		// (we may want more explicit control over this, in the future)
 		access.unpin(previousRoot);
 		access.unpin(previousRecords);
-		return asyncResult;
+		return newRoot;
 	}
 
 

@@ -62,7 +62,8 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		// Update, save, and publish the new index.
 		index.setRecommendations(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(index);
+		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
+		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 		return new CleanupData(asyncPublish, oldRootHash, originalRecommendations);
 	}
 

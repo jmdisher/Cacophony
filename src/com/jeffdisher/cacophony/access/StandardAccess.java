@@ -319,7 +319,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public FuturePublish uploadStoreAndPublishIndex(StreamIndex streamIndex) throws IpfsConnectionException
+	public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _readWrite);
 		_lazyCreateScheduler();
@@ -329,7 +329,7 @@ public class StandardAccess implements IWritingAccess
 		_pinCache.addRef(hash);
 		_channelData.setLastPublishedIndex(hash);
 		_writeChannelData = true;
-		return _scheduler.publishIndex(hash);
+		return hash;
 	}
 
 	@Override
@@ -364,6 +364,13 @@ public class StandardAccess implements IWritingAccess
 		{
 			_scheduler.unpin(cid).get();
 		}
+	}
+
+	@Override
+	public FuturePublish beginIndexPublish(IpfsFile indexRoot)
+	{
+		_lazyCreateScheduler();
+		return _scheduler.publishIndex(indexRoot);
 	}
 
 	@Override

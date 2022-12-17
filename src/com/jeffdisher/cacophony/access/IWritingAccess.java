@@ -44,18 +44,14 @@ public interface IWritingAccess extends IReadingAccess
 	IpfsFile uploadAndPin(InputStream dataToSave, boolean shouldCloseStream) throws IpfsConnectionException;
 
 	/**
-	 * This method wraps up several operations which make up the root index update into a single call:
-	 * -serializes the given streamIndex
-	 * -uploads it to the local node
-	 * -adds it to the local pin cache
-	 * -updates local storage to know this new index as the root element for the channel
-	 * -initiates the asynchronous publish operation
+	 * Uploads the new StreamIndex and updates local tracking.
+	 * Note that this doesn't republish the new index, as that needs to be explicitly done.
 	 * 
 	 * @param streamIndex The new stream index.
-	 * @return The asynchronous publish.
+	 * @return The CID of the published index.
 	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
 	 */
-	FuturePublish uploadStoreAndPublishIndex(StreamIndex streamIndex) throws IpfsConnectionException;
+	IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException;
 
 	/**
 	 * Requests that the given cid be pinned on the local node.  Since a pin operation can be a very long-running
@@ -78,4 +74,12 @@ public interface IWritingAccess extends IReadingAccess
 	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
 	 */
 	void unpin(IpfsFile cid) throws IpfsConnectionException;
+
+	/**
+	 * Requests that the given indexRoot be published under our key, to the IPFS network.
+	 * 
+	 * @param indexRoot The root to publish.
+	 * @return The asynchronous publish operation.
+	 */
+	FuturePublish beginIndexPublish(IpfsFile indexRoot);
 }

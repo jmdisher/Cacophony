@@ -116,7 +116,8 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		// Update, save, and publish the new index.
 		index.setDescription(hashDescription.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
-		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(index);
+		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
+		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 		return new CleanupData(asyncPublish, rootToLoad);
 	}
 

@@ -195,7 +195,8 @@ public class TestJsonGenerationHelpers
 		// Note that we only want to store this _as_ the index if this is the owner of the storage, since this helper is sometimes used to simulate followee refresh.
 		if (shouldStoreAsIndex)
 		{
-			FuturePublish publish = access.uploadStoreAndPublishIndex(index);
+			indexHash = access.uploadIndexAndUpdateTracking(index);
+			FuturePublish publish = access.beginIndexPublish(indexHash);
 			publish.get();
 			indexHash = publish.getIndexHash();
 		}

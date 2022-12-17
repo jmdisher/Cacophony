@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -31,7 +32,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 		FuturePublish asyncPublish;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
-			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, access, _name, _description, _discussionUrl, openElements);
+			IpfsFile newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements);
+			asyncPublish = access.beginIndexPublish(newRoot);
 		}
 		finally
 		{

@@ -92,7 +92,8 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
 		
-		FuturePublish asyncPublish = access.uploadStoreAndPublishIndex(streamIndex);
+		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(streamIndex);
+		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
 		CommandHelpers.commonWaitForPublish(environment, asyncPublish);

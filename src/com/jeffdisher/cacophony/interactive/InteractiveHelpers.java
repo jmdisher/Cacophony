@@ -20,9 +20,9 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.Cookie;
@@ -90,7 +90,7 @@ public class InteractiveHelpers
 	{
 		draftManager.deleteExistingDraft(draftId);
 	}
-	public static FuturePublish publishExistingDraft(IEnvironment environment
+	public static IpfsFile postExistingDraft(IEnvironment environment
 			, IWritingAccess access
 			, DraftManager draftManager
 			, int draftId
@@ -169,10 +169,10 @@ public class InteractiveHelpers
 			index += 1;
 		}
 		
-		FuturePublish asyncPublish;
+		IpfsFile newRoot;
 		try
 		{
-			asyncPublish = PublishHelpers.uploadFileAndStartPublish(environment, access, draft.title(), draft.description(), draft.discussionUrl(), subElements);
+			newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), draft.discussionUrl(), subElements);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -191,7 +191,7 @@ public class InteractiveHelpers
 			closeElementFiles(environment, subElements);
 		}
 		
-		return asyncPublish;
+		return newRoot;
 	}
 
 	// --- Methods related to thumbnails.
