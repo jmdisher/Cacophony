@@ -1,8 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -12,52 +11,124 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class BackgroundOperations
 {
-	private final IEnvironment _environment;
-	private final Object _publishMonitor;
-	private FuturePublish _latestPublish;
+	private final Thread _background;
 
-	public BackgroundOperations(IEnvironment environment)
+	private boolean _keepRunning;
+	private IpfsFile _nextToPublish;
+	private FuturePublish _currentOperation;
+
+	public BackgroundOperations(IOperationRunner operations)
 	{
-		_environment = environment;
-		_publishMonitor = new Object();
-	}
-
-	/**
-	 * Blocks on any existing publish operation and then stores the given one.
-	 * 
-	 * @param publish The new publish operation to store in the background (cannot be NULL).
-	 */
-	public void waitAndStorePublishOperation(FuturePublish publish)
-	{
-		Assert.assertTrue(null != publish);
-		synchronized (_publishMonitor)
-		{
-			_lockedBlockAndReleasePublish();
-			_latestPublish = publish;
-		}
-	}
-
-	/**
-	 * Blocks on any existing publish operation, removing it once it is complete.
-	 */
-	public void waitForPendingPublish()
-	{
-		_lockedBlockAndReleasePublish();
-	}
-
-
-	private void _lockedBlockAndReleasePublish()
-	{
-		if (null != _latestPublish)
-		{
-			// We wait for this, under the monitor, since all monitor operations would need to block on us.
-			IpfsConnectionException error = _latestPublish.get();
-			if (null != error)
+		_background = new Thread(() -> {
+			IpfsFile target = _background_consumeNextToPublish();
+			while (null != target)
 			{
-				// We don't actually care about the error since publish often has an error.
-				_environment.logError("Error on previous publish: " + error.getMessage());
+				FuturePublish publish = operations.startPublish(target);
+				_background_setInProgressPublish(publish);
+				publish.get();
+				target = _background_consumeNextToPublish();
 			}
-			_latestPublish = null;
+		});
+	}
+
+	public void startProcess()
+	{
+		_keepRunning = true;
+		_background.start();
+	}
+
+	public void shutdownProcess()
+	{
+		synchronized (this)
+		{
+			_keepRunning = false;
+			this.notifyAll();
 		}
+		try
+		{
+			_background.join();
+		}
+		catch (InterruptedException e)
+		{
+			// We don't use interruption on the top-level threads.
+			throw Assert.unexpected(e);
+		}
+	}
+
+	public synchronized void requestPublish(IpfsFile rootElement)
+	{
+		// We will just over-write whatever the pending element is.
+		_nextToPublish = rootElement;
+		this.notifyAll();
+	}
+
+	/**
+	 * Blocks until any enqueued publish operations are complete.
+	 */
+	public synchronized void waitForPendingPublish()
+	{
+		// Wait until there is nothing pending.
+		while(_keepRunning && (null != _currentOperation) && (null != _nextToPublish))
+		{
+			try
+			{
+				// Just wait.
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't use interruption on the top-level threads.
+				throw Assert.unexpected(e);
+			}
+		}
+	}
+
+
+	private synchronized IpfsFile _background_consumeNextToPublish()
+	{
+		// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
+		_currentOperation = null;
+		this.notifyAll();
+		
+		// Now, wait for more work.
+		while (_keepRunning && (null == _nextToPublish))
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't interrupt this thread.
+				throw Assert.unexpected(e);
+			}
+		}
+		
+		// Consume the next.
+		IpfsFile next = null;
+		if (_keepRunning)
+		{
+			Assert.assertTrue(null != _nextToPublish);
+			next = _nextToPublish;
+			_nextToPublish = null;
+			this.notifyAll();
+		}
+		return next;
+	}
+
+	private synchronized void _background_setInProgressPublish(FuturePublish publish)
+	{
+		Assert.assertTrue(null == _currentOperation);
+		_currentOperation = publish;
+		this.notifyAll();
+	}
+
+
+	/**
+	 * This is just here to make the testing more concise.
+	 */
+	public static interface IOperationRunner
+	{
+		FuturePublish startPublish(IpfsFile newRoot);
 	}
 }

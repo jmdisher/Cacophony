@@ -9,7 +9,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -67,8 +66,7 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 				
 				// The publish is something we can wait on, asynchronously, in a different call.
-				FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
-				_backgroundOperations.waitAndStorePublishOperation(asyncPublish);
+				_backgroundOperations.requestPublish(newRoot);
 				
 				response.setStatus(HttpServletResponse.SC_OK);
 			}

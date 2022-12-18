@@ -5,11 +5,16 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.jeffdisher.breakwater.RestServer;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -23,7 +28,32 @@ public class InteractiveServer
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
-		BackgroundOperations background = new BackgroundOperations(environment);
+		BackgroundOperations background = new BackgroundOperations((IpfsFile target) -> {
+			FuturePublish publish = null;
+			try (IWritingAccess access = StandardAccess.writeAccess(environment))
+			{
+				publish = access.beginIndexPublish(target);
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This case, we just log.
+				// (we may want to re-request the publish attempt).
+				environment.logError("Error in background publish: " + e.getLocalizedMessage());
+			}
+			catch (UsageException | VersionException e)
+			{
+				// We don't expect these by this point.
+				throw Assert.unexpected(e);
+			}
+			return publish;
+		});
+		background.startProcess();
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		{
+			// We want to request that we update the last published element.
+			IpfsFile rootElement = access.getLastRootElement();
+			background.requestPublish(rootElement);
+		}
 		
 		DraftManager manager = environment.getSharedDraftManager();
 		
@@ -101,6 +131,10 @@ public class InteractiveServer
 			// This thread isn't interrupted.
 			throw Assert.unexpected(e);
 		}
+		System.out.println("Shutting down server...");
 		server.stop();
+		System.out.println("Server shut down.  Shutting down background process...");
+		background.shutdownProcess();
+		System.out.println("Background process shut down.");
 	}
 }
