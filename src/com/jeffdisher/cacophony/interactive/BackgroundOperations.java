@@ -1,5 +1,8 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -14,21 +17,35 @@ public class BackgroundOperations
 	private final Thread _background;
 
 	private boolean _keepRunning;
+	private int _nextOperationNumber;
+
 	private IpfsFile _nextToPublish;
+	private int  _nextToPublishNumber;
 	private FuturePublish _currentOperation;
+
+	// Data related to the listener and how we track active operations for reporting purposes.
+	private final Object _listenerMonitor;
+	private final Map<Integer, Action> _listenerCapture;
+	private IOperationListener _listener;
 
 	public BackgroundOperations(IOperationRunner operations)
 	{
 		_background = new Thread(() -> {
-			IpfsFile target = _background_consumeNextToPublish();
+			int[] out_operationNumber = new int[1];
+			IpfsFile target = _background_consumeNextToPublish(out_operationNumber);
 			while (null != target)
 			{
 				FuturePublish publish = operations.startPublish(target);
+				_background_setOperationStarted(out_operationNumber[0]);
 				_background_setInProgressPublish(publish);
 				publish.get();
-				target = _background_consumeNextToPublish();
+				_background_setOperationEnded(out_operationNumber[0]);
+				target = _background_consumeNextToPublish(out_operationNumber);
 			}
 		});
+		_nextOperationNumber = 1;
+		_listenerMonitor = new Object();
+		_listenerCapture = new HashMap<>();
 	}
 
 	public void startProcess()
@@ -55,11 +72,28 @@ public class BackgroundOperations
 		}
 	}
 
-	public synchronized void requestPublish(IpfsFile rootElement)
+	public void requestPublish(IpfsFile rootElement)
 	{
-		// We will just over-write whatever the pending element is.
-		_nextToPublish = rootElement;
-		this.notifyAll();
+		Assert.assertTrue(null != rootElement);
+		
+		// We will modify the state and notify under monitor but call-out after.
+		int operationNumber = -1;
+		synchronized (this)
+		{
+			boolean isNew = (null == _nextToPublish);
+			_nextToPublish = rootElement;
+			if (isNew)
+			{
+				_nextToPublishNumber = _nextOperationNumber;
+				_nextOperationNumber += 1;
+				operationNumber = _nextToPublishNumber;
+			}
+			this.notifyAll();
+		}
+		if (operationNumber >= 0)
+		{
+			_setOperationEnqueued(operationNumber, "Publish " + rootElement);
+		}
 	}
 
 	/**
@@ -83,8 +117,40 @@ public class BackgroundOperations
 		}
 	}
 
+	public void setListener(IOperationListener listener)
+	{
+		synchronized(_listenerMonitor)
+		{
+			// We will just replace this, assuming the user knows what they are doing.
+			_listener = listener;
+			for (Map.Entry<Integer, Action> entry : _listenerCapture.entrySet())
+			{
+				int number = entry.getKey();
+				Action action = entry.getValue();
+				_listener.operationEnqueued(number, action.description);
+				if (action.isStarted)
+				{
+					_listener.operationStart(number);
+				}
+			}
+		}
+	}
 
-	private synchronized IpfsFile _background_consumeNextToPublish()
+
+	private void _setOperationEnqueued(int number, String description)
+	{
+		synchronized(_listenerMonitor)
+		{
+			_listenerCapture.put(number, new Action(description));
+			if (null != _listener)
+			{
+				_listener.operationEnqueued(number, description);
+			}
+		}
+	}
+
+	// (we will just use this C-style pass-by-reference just to avoid defining a tuple for this one case)
+	private synchronized IpfsFile _background_consumeNextToPublish(int[] number)
 	{
 		// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
 		_currentOperation = null;
@@ -110,6 +176,7 @@ public class BackgroundOperations
 		{
 			Assert.assertTrue(null != _nextToPublish);
 			next = _nextToPublish;
+			number[0] = _nextToPublishNumber;
 			_nextToPublish = null;
 			this.notifyAll();
 		}
@@ -123,6 +190,30 @@ public class BackgroundOperations
 		this.notifyAll();
 	}
 
+	private void _background_setOperationStarted(int number)
+	{
+		synchronized(_listenerMonitor)
+		{
+			_listenerCapture.get(number).isStarted = true;
+			if (null != _listener)
+			{
+				_listener.operationStart(number);
+			}
+		}
+	}
+
+	private void _background_setOperationEnded(int number)
+	{
+		synchronized(_listenerMonitor)
+		{
+			_listenerCapture.remove(number);
+			if (null != _listener)
+			{
+				_listener.operationEnd(number);
+			}
+		}
+	}
+
 
 	/**
 	 * This is just here to make the testing more concise.
@@ -130,5 +221,29 @@ public class BackgroundOperations
 	public static interface IOperationRunner
 	{
 		FuturePublish startPublish(IpfsFile newRoot);
+	}
+
+
+	/**
+	 * Callbacks associated with changes of state in the listener.  Note that these calls could be issued on any thread
+	 * but they will always be sequentially issued.
+	 */
+	public static interface IOperationListener
+	{
+		void operationEnqueued(int number, String description);
+		void operationStart(int number);
+		void operationEnd(int number);
+	}
+
+
+	private static class Action
+	{
+		public Action(String description)
+		{
+			this.description = description;
+			this.isStarted = false;
+		}
+		public String description;
+		public boolean isStarted;
 	}
 }
