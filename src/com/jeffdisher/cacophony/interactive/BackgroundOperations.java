@@ -127,8 +127,12 @@ public class BackgroundOperations
 			{
 				int number = entry.getKey();
 				Action action = entry.getValue();
-				_listener.operationEnqueued(number, action.description);
-				if (action.isStarted)
+				// Technically, the listener argument can be null or can be set to null in these callbacks so we need to check it in the loop.
+				if (null != _listener)
+				{
+					_listener.operationEnqueued(number, action.description);
+				}
+				if ((action.isStarted) && (null != _listener))
 				{
 					_listener.operationStart(number);
 				}

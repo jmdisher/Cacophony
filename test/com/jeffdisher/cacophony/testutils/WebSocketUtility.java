@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.testutils;
 
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -28,14 +29,16 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
  */
 public class WebSocketUtility implements WebSocketListener
 {
+	private final PrintStream _textOutput;
 	private final WebSocketClient _client;
 	private boolean _isRunning;
 	private Session _connectedSession;
 	private boolean _errorWasObserved;
 
 
-	public WebSocketUtility()
+	public WebSocketUtility(PrintStream textOutput)
 	{
+		_textOutput = textOutput;
 		_client = new WebSocketClient();
 	}
 
@@ -76,6 +79,15 @@ public class WebSocketUtility implements WebSocketListener
 	{
 		WebSocketListener.super.onWebSocketError(cause);
 		_errorWasObserved = true;
+	}
+
+	@Override
+	public void onWebSocketText(String message)
+	{
+		if (null != _textOutput)
+		{
+			_textOutput.println(message);
+		}
 	}
 
 	public boolean waitForClose() throws Exception
@@ -130,6 +142,7 @@ public class WebSocketUtility implements WebSocketListener
 			String uri = args[2];
 			String protocol = args[3];
 			boolean sendMode = false;
+			PrintStream textOutput = null;
 			if ("SEND".equals(mode))
 			{
 				sendMode = true;
@@ -138,12 +151,17 @@ public class WebSocketUtility implements WebSocketListener
 			{
 				sendMode = false;
 			}
+			else if ("OUTPUT_TEXT".equals(mode))
+			{
+				sendMode = false;
+				textOutput = System.out;
+			}
 			else
 			{
 				_usageExit();
 			}
 			
-			WebSocketUtility utility = new WebSocketUtility();
+			WebSocketUtility utility = new WebSocketUtility(textOutput);
 			utility.connect(uri, xsrf, protocol);
 			if (sendMode)
 			{
@@ -164,7 +182,7 @@ public class WebSocketUtility implements WebSocketListener
 
 	private static void _usageExit()
 	{
-		System.err.println("Usage: XSRF_TOKEN SEND/DRAIN URI protocol");
+		System.err.println("Usage: XSRF_TOKEN SEND/DRAIN/OUTPUT_TEXT URI protocol");
 		System.exit(1);
 	}
 }

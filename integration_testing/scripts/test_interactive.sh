@@ -24,6 +24,7 @@ REPO2=/tmp/repo2
 USER1=/tmp/user1
 USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
+STATUS_FILE=/tmp/status_output
 
 rm -rf "$REPO1"
 rm -rf "$REPO2"
@@ -72,6 +73,11 @@ requireSubstring "$INDEX" "Cacophony - Static Index"
 
 echo "Requesting creation of XSRF token..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/cookie
+XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
+
+echo "Now that we have verified that the server is up, start listening to status events..."
+java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" OUTPUT_TEXT "ws://127.0.0.1:8000/backgroundStatus" status > "$STATUS_FILE" &
+STATUS_PID=$!
 
 echo "Get the default video config..."
 VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/videoConfig)
@@ -114,7 +120,6 @@ DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -
 requireSubstring "$DRAFT" "\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15}"
 
 echo "Upload and process data as the video for the draft..."
-XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 echo "aXbXcXdXe" | java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
 java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" process
 ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
@@ -240,6 +245,14 @@ requireSubstring "$STATUS_PAGE" "TODO:  Implement server activity."
 echo "Stop the server and wait for it to exit..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST http://127.0.0.1:8000/stop
 wait $SERVER_PID
+
+echo "Now that the server stopped, the status should be done"
+wait $STATUS_PID
+STATUS_DATA=$(cat "$STATUS_FILE")
+# We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
+requireSubstring "$STATUS_DATA" ",\"event\":\"ENQUEUE\",\"description\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA" ",\"event\":\"START\",\"description\":null"
+requireSubstring "$STATUS_DATA" ",\"event\":\"END\",\"description\":null"
 
 echo "Verify that we can see the published post in out list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
