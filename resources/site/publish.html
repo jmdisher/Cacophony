@@ -255,16 +255,6 @@ function saveDraft(selectedDraft)
 	return REST.POST_asForm("/draft/" + selectedDraft.id, variables);
 }
 
-function waitForPublish(scope)
-{
-	scope.publishInProgress = true;
-	REST.POST("/wait/publish")
-		.then(function(data) {
-			scope.publishInProgress = false;
-			scope.$apply();
-		});
-}
-
 // The "type" field is essentially a synthetic enum (see POST_Raw_DraftPublish.PublishType):
 // -VIDEO
 // -TEXT_ONLY
@@ -306,7 +296,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.drafts = null;
 	$scope.selectedDraft = null;
 	$scope.inProgress = false;
-	$scope.publishInProgress = false;
 	
 	// This is set after we get the cookie - call to "GET /videoConfig".
 	$scope.videoConfig = null;
@@ -547,8 +536,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 					$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
 					$scope.selectedDraft = null;
 					$scope.inProgress = false;
-					// Request that we wait for the publish.
-					waitForPublish($scope);
+					// NOTE:  The publish operation is still continuing, but in the background (can be seen on the status page).
 					$scope.$apply();
 				});
 		});
@@ -785,7 +773,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 					<li ng-repeat="draft in drafts"><button class="btn btn-sm btn-danger" ng-click="deleteDraft(draft)">Delete</button> <a ng-click="selectDraft(draft)">{{draft.title}}</a></li>
 				</ul>
 			</div>
-			<strong ng-show="publishInProgress">Publish in progress (this could take a while)...</strong>
 		</div>
 		<div class="card card-body col-md-3">
 			<button class="btn btn-small btn-success" ng-click="createNewDraft()" ng-disabled="inProgress">New Draft</button><br />

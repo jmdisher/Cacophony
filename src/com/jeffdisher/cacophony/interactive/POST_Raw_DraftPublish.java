@@ -48,9 +48,6 @@ public class POST_Raw_DraftPublish implements IPostRawHandler
 	{
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
-			// Make sure there isn't already a publish update in-progress (later, we can just overwrite it).
-			_backgroundOperations.waitForPendingPublish();
-			
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
 				int draftId = Integer.parseInt(pathVariables[0]);

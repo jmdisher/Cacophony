@@ -12,11 +12,11 @@
 <script src="./rest.js" type="text/javascript"></script>
 <script src="./generated_db.js" type="text/javascript"></script>
 <script type="text/javascript">
-function stopServer()
+function stopServer(onComplete)
 {
 	REST.POST("/stop")
 		.then(data => data.text())
-		.then(text => console.log(text));
+		.then(onComplete);
 }
 
 
@@ -24,14 +24,64 @@ function stopServer()
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	$scope.serverState = "RUNNING";
+	$scope.canPressStop = true;
+	$scope.states = [];
 	$scope.stopServer = function()
 	{
-		// We can't call this directly since it is a module.
-		stopServer();
+		$scope.canPressStop = false;
+		stopServer(function(text){
+			$scope.serverState = "STOPPED";
+			$scope.$apply();
+		});
 	}
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
+		// Now that we have the XSRF, open the status event WebSocket.
+		let statusSocket = new WebSocket("ws://127.0.0.1:8000/backgroundStatus", "status");
+		statusSocket.onopen = function()
+		{
+			console.log("Status listener open");
+		}
+		statusSocket.addEventListener('message', function(event)
+		{
+			let object = JSON.parse(event.data);
+			if ('ENQUEUE' == object.event)
+			{
+				// This is being added to the list.
+				$scope.states.push(object);
+			}
+			else if ('START' == object.event)
+			{
+				// This is already in the list, so just update the state (and nothing else).
+				let elt = $scope.states.find(function(value, index, array)
+				{
+					return (value.number == object.number);
+				});
+				elt.event = object.event;
+			}
+			else if ('END' == object.event)
+			{
+				// Remove this from the list.
+				$scope.states = $scope.states.filter(function(elt)
+				{
+					return (elt.number != object.number);
+				});
+			}
+			else
+			{
+				console.log("unknown event type: " + object.event);
+			}
+			$scope.$apply();
+		});
+		statusSocket.onclose = function(e)
+		{
+			console.log("Status listener closed");
+			$scope.serverState = "Status closed: " + e.reason;
+			$scope.states = [];
+			$scope.$apply();
+		}
 	});
 });
 
@@ -65,9 +115,15 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
-		<div class="card card-body col-md-9">
-			Click to stop server:  <button class="btn btn-danger" ng-click="stopServer()">STOP SERVER</button><br/>
-			TODO:  Implement server activity.
+		<div class="col-md-9">
+			<div class="row card card-body">
+				Server is {{serverState}}:  <button class="btn btn-danger" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
+			</div>
+			<div class="row card card-body" ng-repeat="state in states">
+				<span class="badge rounded-pill text-bg-primary" ng-show="state.event === 'ENQUEUE'">Waiting</span>
+				<span class="badge rounded-pill text-bg-success" ng-show="state.event === 'START'">Running</span>
+				{{state.description}}
+			</div>
 		</div>
 	</div>
 </div>

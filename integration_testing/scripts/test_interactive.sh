@@ -240,7 +240,7 @@ requireSubstring "$VERSION" "\"version\""
 
 echo "Verify that we can load the status page..."
 STATUS_PAGE=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/status.html")
-requireSubstring "$STATUS_PAGE" "TODO:  Implement server activity."
+requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
 echo "Stop the server and wait for it to exit..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST http://127.0.0.1:8000/stop
