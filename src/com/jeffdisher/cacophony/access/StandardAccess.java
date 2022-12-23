@@ -74,12 +74,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		ChannelData localIndex = reading.readLocalIndex();
-		String ipfsConnectionString = localIndex.ipfsHost();
-		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
-		Assert.assertTrue(null != connection);
-		
-		return new StandardAccess(environment, connection, reading, null, localIndex);
+		return new StandardAccess(environment, reading, null);
 	}
 
 	/**
@@ -104,12 +99,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		ChannelData localIndex = writing.readLocalIndex();
-		String ipfsConnectionString = localIndex.ipfsHost();
-		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
-		Assert.assertTrue(null != connection);
-		
-		return new StandardAccess(environment, connection, writing, writing, localIndex);
+		return new StandardAccess(environment, writing, writing);
 	}
 
 	/**
@@ -157,40 +147,44 @@ public class StandardAccess implements IWritingAccess
 
 	private final IEnvironment _environment;
 	private final IConnection _sharedConnection;
+	private final INetworkScheduler _scheduler;
 	private final IReadOnlyLocalData _readOnly;
 	private final IReadWriteLocalData _readWrite;
 	
-	private INetworkScheduler _scheduler;
-	private PinCacheData _pinCache;
-	private boolean _writePinCache;
-	private FolloweeData _followeeData;
+	private final PinCacheData _pinCache;
+	private final FolloweeData _followeeData;
 	private boolean _writeFollowIndex;
-	private ChannelData _channelData;
+	private final ChannelData _channelData;
 	private boolean _writeChannelData;
 
-	private StandardAccess(IEnvironment environment, IConnection sharedConnection, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, ChannelData channelData)
+	private StandardAccess(IEnvironment environment, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite) throws IpfsConnectionException
 	{
+		PinCacheData pinCache = readOnly.readGlobalPinCache();
+		Assert.assertTrue(null != pinCache);
+		FolloweeData followeeData = readOnly.readFollowIndex();
+		Assert.assertTrue(null != followeeData);
+		ChannelData localIndex = readOnly.readLocalIndex();
+		Assert.assertTrue(null != localIndex);
+		IConnection connection = environment.getConnectionFactory().buildConnection(localIndex.ipfsHost());
+		Assert.assertTrue(null != connection);
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		Assert.assertTrue(null != scheduler);
+		
 		_environment = environment;
-		_sharedConnection = sharedConnection;
+		_sharedConnection = connection;
+		_scheduler = scheduler;
 		_readOnly = readOnly;
 		_readWrite = readWrite;
-		_channelData = channelData;
+		
+		_pinCache = pinCache;
+		_followeeData = followeeData;
+		_channelData = localIndex;
 	}
 
 	@Override
 	public IFolloweeReading readableFolloweeData()
 	{
-		if (null == _followeeData)
-		{
-			_followeeData = _readOnly.readFollowIndex();
-		}
 		return _followeeData;
-	}
-
-	@Override
-	public IConnection connection()
-	{
-		return _sharedConnection;
 	}
 
 	@Override
@@ -203,7 +197,6 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public boolean isInPinCached(IpfsFile file)
 	{
-		_lazyLoadPinCache();
 		return _pinCache.isPinned(file);
 	}
 
@@ -223,8 +216,6 @@ public class StandardAccess implements IWritingAccess
 	public <R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(null != file);
-		_lazyLoadPinCache();
-		_lazyCreateScheduler();
 		Assert.assertTrue(_pinCache.isPinned(file));
 		return _scheduler.readData(file, decoder);
 	}
@@ -233,8 +224,6 @@ public class StandardAccess implements IWritingAccess
 	public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(null != file);
-		_lazyLoadPinCache();
-		_lazyCreateScheduler();
 		if (_pinCache.isPinned(file))
 		{
 			_environment.logError("WARNING!  Not expected in cache:  " + file);
@@ -246,7 +235,6 @@ public class StandardAccess implements IWritingAccess
 	public URL getCachedUrl(IpfsFile file)
 	{
 		Assert.assertTrue(null != file);
-		_lazyLoadPinCache();
 		Assert.assertTrue(_pinCache.isPinned(file));
 		return _sharedConnection.urlForDirectFetch(file);
 	}
@@ -260,28 +248,24 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IpfsKey getPublicKey()
 	{
-		_lazyCreateScheduler();
 		return _scheduler.getPublicKey();
 	}
 
 	@Override
 	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 	{
-		_lazyCreateScheduler();
 		return _scheduler.resolvePublicKey(keyToResolve);
 	}
 
 	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
-		_lazyCreateScheduler();
 		return _scheduler.getSizeInBytes(cid);
 	}
 
 	@Override
 	public FuturePublish republishIndex()
 	{
-		_lazyCreateScheduler();
 		IpfsFile lastRoot = _channelData.lastPublishedIndex();
 		return _scheduler.publishIndex(lastRoot);
 	}
@@ -291,10 +275,6 @@ public class StandardAccess implements IWritingAccess
 	public IFolloweeWriting writableFolloweeData()
 	{
 		Assert.assertTrue(null != _readWrite);
-		if (null == _followeeData)
-		{
-			_followeeData = _readWrite.readFollowIndex();
-		}
 		// We will want to write this back.
 		_writeFollowIndex = true;
 		return _followeeData;
@@ -310,10 +290,8 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IpfsFile uploadAndPin(InputStream dataToSave, boolean shouldCloseStream) throws IpfsConnectionException
 	{
-		_lazyCreateScheduler();
 		FutureSave save = _scheduler.saveStream(dataToSave, shouldCloseStream);
 		IpfsFile hash = save.get();
-		_lazyLoadPinCache();
 		_pinCache.addRef(hash);
 		return hash;
 	}
@@ -322,10 +300,8 @@ public class StandardAccess implements IWritingAccess
 	public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _readWrite);
-		_lazyCreateScheduler();
 		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true);
 		IpfsFile hash = save.get();
-		_lazyLoadPinCache();
 		_pinCache.addRef(hash);
 		_channelData.setLastPublishedIndex(hash);
 		_writeChannelData = true;
@@ -335,8 +311,6 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public FuturePin pin(IpfsFile cid)
 	{
-		_lazyLoadPinCache();
-		_lazyCreateScheduler();
 		boolean shouldPin = !_pinCache.isPinned(cid);
 		_pinCache.addRef(cid);
 		FuturePin pin = null;
@@ -356,8 +330,6 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public void unpin(IpfsFile cid) throws IpfsConnectionException
 	{
-		_lazyLoadPinCache();
-		_lazyCreateScheduler();
 		_pinCache.delRef(cid);
 		boolean shouldUnpin = !_pinCache.isPinned(cid);
 		if (shouldUnpin)
@@ -369,14 +341,14 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public FuturePublish beginIndexPublish(IpfsFile indexRoot)
 	{
-		_lazyCreateScheduler();
 		return _scheduler.publishIndex(indexRoot);
 	}
 
 	@Override
 	public void close()
 	{
-		if (_writePinCache)
+		// We always assume the pin cache is being written.
+		if (null != _readWrite)
 		{
 			_readWrite.writeGlobalPinCache(_pinCache);
 		}
@@ -390,40 +362,5 @@ public class StandardAccess implements IWritingAccess
 		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();
-	}
-
-
-	private void _lazyLoadPinCache()
-	{
-		if (null == _pinCache)
-		{
-			_pinCache = _readOnly.readGlobalPinCache();
-			// If we are in writable mode, assume we need to write this back.
-			_writePinCache = (null != _readWrite);
-		}
-	}
-
-	/**
-	 * Note that the scheduler MUST be created lazily since this avoids a bootstrapping problem:  The scheduler needs
-	 * to be able to look up the publishing key (since we want it to have everything it needs before being started) but
-	 * the key is created _after_ the StandardAccess is first created, when creating a channel (since it relies on the
-	 * bare connection and the storage).
-	 * @throws IpfsConnectionException 
-	 */
-	private void _lazyCreateScheduler()
-	{
-		if (null == _scheduler)
-		{
-			try
-			{
-				_scheduler = _environment.getSharedScheduler(_sharedConnection, _channelData.keyName());
-			}
-			catch (IpfsConnectionException e)
-			{
-				// This sudden failure to contact the node isn't something we can meaningfully handle at this point in the run and is incredibly unlikely.
-				// TODO:  See if we can fix the start-up ordering in order to move this failure case somewhere earlier.
-				throw Assert.unexpected(e);
-			}
-		}
 	}
 }

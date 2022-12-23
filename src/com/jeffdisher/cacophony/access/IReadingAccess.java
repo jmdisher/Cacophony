@@ -4,7 +4,6 @@ import java.net.URL;
 import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -35,15 +34,6 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return A reference to the restricted read-only interface to the followee data projection.
 	 */
 	IFolloweeReading readableFolloweeData();
-
-	/**
-	 * Allows direct access to the shared connection object.
-	 * NOTE:  This should only be used during some bootstrapping cases which require interfaces which aren't normally
-	 * required by the high-level code.
-	 * 
-	 * @return The shared connection object.
-	 */
-	IConnection connection();
 
 	/**
 	 * Returns a reference to the record cache, lazily constructing it if need be.

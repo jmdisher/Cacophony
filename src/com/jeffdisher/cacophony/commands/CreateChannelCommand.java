@@ -32,6 +32,13 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);
 		
+		// First, we want to verify that we can contact the server and configure our publication key.
+		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
+		IOperationLog setupLog = environment.logOperation("Verifying IPFS and setting up public key called \"" + keyName + "\"");
+		_setupKey(environment);
+		setupLog.finish("Key setup done!");
+		
+		// By this point, the key should be set up for us so we can just start using it.
 		IOperationLog log = environment.logOperation("Creating new channel configuration...");
 		StandardAccess.createNewChannelConfig(environment, ipfs, keyName);
 		log.finish("Config ready!");
@@ -45,9 +52,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	private void _setupKey(IEnvironment environment) throws IpfsConnectionException, SizeConstraintException, UsageException
 	{
-		IConnection connection = access.connection();
+		IConnection connection = environment.getConnectionFactory().buildConnection(ipfs);
 		
 		// Check to see if this key exists.
 		List<IConnection.Key> keys = connection.getKeys();
@@ -62,7 +69,10 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 			IConnection.Key key = connection.generateKey(keyName);
 			keyLog.finish("Public key \"" + key.key() + "\" generated with name: \"" + key.name() + "\"");
 		}
-		
+	}
+
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	{
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
 		description.setName("Unnamed");
