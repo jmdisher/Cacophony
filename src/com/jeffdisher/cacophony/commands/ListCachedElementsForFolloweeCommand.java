@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -35,7 +36,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
-		List<IpfsFile> cachedElements = followees.getElementsForFollowee(_followeeKey);
+		Map<IpfsFile, FollowingCacheElement> cachedElements = followees.snapshotAllElementsForFollowee(_followeeKey);
 		if (null != cachedElements)
 		{
 			// We know that all the meta-data reachable from this root is cached locally, but not all the leaf data elements, so we will check the FollowRecord.
@@ -47,7 +48,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			environment.logToConsole("Followee has " + recordList.size() + " elements");
 			for(String elementCid : recordList)
 			{
-				FollowingCacheElement element = followees.getElementForFollowee(_followeeKey, IpfsFile.fromIpfsCid(elementCid));
+				FollowingCacheElement element = cachedElements.get(IpfsFile.fromIpfsCid(elementCid));
 				String suffix = null;
 				if (null != element)
 				{

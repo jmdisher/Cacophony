@@ -368,7 +368,7 @@ public class TestLocalDataModel
 			FolloweeData followeeData = access.readFollowIndex();
 			Assert.assertEquals(F2, followeeData.getLastFetchedRootForFollowee(K1));
 			Assert.assertArrayEquals(new IpfsKey[] { K1 }, followeeData.getAllKnownFollowees().toArray((int size) -> new IpfsKey[size]));
-			FollowingCacheElement elt = followeeData.getElementForFollowee(K1, F3);
+			FollowingCacheElement elt = followeeData.snapshotAllElementsForFollowee(K1).get(F3);
 			Assert.assertEquals(F3, elt.elementHash());
 			Assert.assertEquals(F2, elt.imageHash());
 			Assert.assertNull(elt.leafHash());

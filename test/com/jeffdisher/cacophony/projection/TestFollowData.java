@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,11 +51,12 @@ public class TestFollowData
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
 		
+		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
 		Assert.assertEquals(K1, data.getAllKnownFollowees().iterator().next());
-		Assert.assertEquals(5, data.getElementForFollowee(K1, F1).combinedSizeBytes());
-		Assert.assertEquals(1, data.getElementsForFollowee(K1).size());
-		Assert.assertEquals(F1, data.getElementsForFollowee(K1).get(0));
+		Assert.assertEquals(5, cachedEntries.get(F1).combinedSizeBytes());
+		Assert.assertEquals(1, cachedEntries.size());
+		Assert.assertEquals(F1, cachedEntries.keySet().iterator().next());
 		Assert.assertEquals(F2, data.getLastFetchedRootForFollowee(K1));
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
@@ -62,14 +65,16 @@ public class TestFollowData
 		data.serializeToIndex().writeToStream(outStream);
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 		FolloweeData read = FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
-		Assert.assertEquals(5, read.getElementForFollowee(K1, F1).combinedSizeBytes());
+		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = read.snapshotAllElementsForFollowee(K1);
+		Assert.assertEquals(5, cachedEntries1.get(F1).combinedSizeBytes());
 		
 		// Verify that the opcode stream works.
 		byte[] byteArray = _serializeAsOpcodeStream(data);
 		FolloweeData latest = _decodeOpcodeStream(byteArray);
+		Map<IpfsFile, FollowingCacheElement> cachedEntries2 = latest.snapshotAllElementsForFollowee(K1);
 		byte[] byteArray2 = _serializeAsOpcodeStream(latest);
 		Assert.assertArrayEquals(byteArray, byteArray2);
-		Assert.assertEquals(5, latest.getElementForFollowee(K1, F1).combinedSizeBytes());
+		Assert.assertEquals(5, cachedEntries2.get(F1).combinedSizeBytes());
 	}
 
 	@Test
@@ -80,11 +85,12 @@ public class TestFollowData
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
 		
+		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
 		Assert.assertEquals(K1, data.getAllKnownFollowees().iterator().next());
-		Assert.assertEquals(5, data.getElementForFollowee(K1, F1).combinedSizeBytes());
-		Assert.assertEquals(1, data.getElementsForFollowee(K1).size());
-		Assert.assertEquals(F1, data.getElementsForFollowee(K1).get(0));
+		Assert.assertEquals(5, cachedEntries.get(F1).combinedSizeBytes());
+		Assert.assertEquals(1, cachedEntries.size());
+		Assert.assertEquals(F1, cachedEntries.keySet().iterator().next());
 		Assert.assertEquals(F2, data.getLastFetchedRootForFollowee(K1));
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
@@ -116,11 +122,12 @@ public class TestFollowData
 		data.updateExistingFollowee(K1, F2, 2L);
 		data.createNewFollowee(K2, F1, 3L);
 		
+		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = data.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(2, data.getAllKnownFollowees().size());
-		Assert.assertEquals(5, data.getElementForFollowee(K1, F1).combinedSizeBytes());
-		Assert.assertEquals(1, data.getElementsForFollowee(K1).size());
-		Assert.assertEquals(F1, data.getElementsForFollowee(K1).get(0));
-		Assert.assertEquals(0, data.getElementsForFollowee(K2).size());
+		Assert.assertEquals(5, cachedEntries1.get(F1).combinedSizeBytes());
+		Assert.assertEquals(1, cachedEntries1.size());
+		Assert.assertEquals(F1, cachedEntries1.keySet().iterator().next());
+		Assert.assertEquals(0, data.snapshotAllElementsForFollowee(K2).size());
 		Assert.assertEquals(F2, data.getLastFetchedRootForFollowee(K1));
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
@@ -149,15 +156,18 @@ public class TestFollowData
 		data.addElement(K1, new FollowingCacheElement(F3, null, null, 0));
 		data.updateExistingFollowee(K1, F2, 2L);
 		
+		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
 		Assert.assertEquals(K1, data.getAllKnownFollowees().iterator().next());
-		Assert.assertEquals(5, data.getElementForFollowee(K1, F1).combinedSizeBytes());
-		Assert.assertEquals(6, data.getElementForFollowee(K1, F2).combinedSizeBytes());
-		Assert.assertEquals(0, data.getElementForFollowee(K1, F3).combinedSizeBytes());
-		Assert.assertEquals(3, data.getElementsForFollowee(K1).size());
-		Assert.assertEquals(F1, data.getElementsForFollowee(K1).get(0));
-		Assert.assertEquals(F2, data.getElementsForFollowee(K1).get(1));
-		Assert.assertEquals(F3, data.getElementsForFollowee(K1).get(2));
+		Assert.assertEquals(5, cachedEntries.get(F1).combinedSizeBytes());
+		Assert.assertEquals(6, cachedEntries.get(F2).combinedSizeBytes());
+		Assert.assertEquals(0, cachedEntries.get(F3).combinedSizeBytes());
+		Assert.assertEquals(3, cachedEntries.size());
+		List<IpfsFile> cids = List.copyOf(cachedEntries.keySet());
+		// Note that the cache elements aren't exposed to use in a deterministic order.
+		Assert.assertTrue(cids.contains(F1));
+		Assert.assertTrue(cids.contains(F2));
+		Assert.assertTrue(cids.contains(F3));
 		Assert.assertEquals(F2, data.getLastFetchedRootForFollowee(K1));
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
@@ -166,20 +176,24 @@ public class TestFollowData
 		data.serializeToIndex().writeToStream(outStream);
 		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 		FolloweeData read = FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
-		Assert.assertEquals(5, read.getElementForFollowee(K1, F1).combinedSizeBytes());
+		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = read.snapshotAllElementsForFollowee(K1);
+		Assert.assertEquals(5, cachedEntries1.get(F1).combinedSizeBytes());
 		
 		read.removeElement(K1, F1);
 		read.removeElement(K1, F2);
-		Assert.assertEquals(1, read.getElementsForFollowee(K1).size());
-		Assert.assertEquals(F3, read.getElementsForFollowee(K1).get(0));
+		// (we need to re-read the map since this will be changed)
+		cachedEntries1 = read.snapshotAllElementsForFollowee(K1);
+		Assert.assertEquals(1, cachedEntries1.size());
+		Assert.assertEquals(F3, cachedEntries1.keySet().iterator().next());
 		
 		// Verify that the opcode stream works.
 		byte[] byteArray = _serializeAsOpcodeStream(read);
 		FolloweeData latest = _decodeOpcodeStream(byteArray);
+		Map<IpfsFile, FollowingCacheElement> cachedEntries2 = latest.snapshotAllElementsForFollowee(K1);
 		byte[] byteArray2 = _serializeAsOpcodeStream(latest);
 		Assert.assertArrayEquals(byteArray, byteArray2);
-		Assert.assertEquals(1, latest.getElementsForFollowee(K1).size());
-		Assert.assertEquals(F3, latest.getElementsForFollowee(K1).get(0));
+		Assert.assertEquals(1, cachedEntries2.size());
+		Assert.assertEquals(F3, cachedEntries2.keySet().iterator().next());
 	}
 
 

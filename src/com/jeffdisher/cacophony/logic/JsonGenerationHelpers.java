@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -280,12 +279,7 @@ public class JsonGenerationHelpers
 		for (FutureKey<StreamRecords> elt : streamRecords)
 		{
 			IpfsKey followeeKey = elt.publicKey();
-			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = (ourPublicKey.equals(followeeKey))
-					? null
-					: followees.getElementsForFollowee(followeeKey).stream()
-					.map((IpfsFile cid) -> followees.getElementForFollowee(followeeKey, cid))
-					.collect(Collectors.toMap((e) -> e.elementHash(), (e) -> e))
-			;
+			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = followees.snapshotAllElementsForFollowee(followeeKey);
 			_populateElementMapFromUserRoot(access, dataElements, elementsCachedForUser, elt.future().get());
 		}
 		return new LocalRecordCache(dataElements);

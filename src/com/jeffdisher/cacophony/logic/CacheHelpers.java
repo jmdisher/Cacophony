@@ -81,9 +81,8 @@ public class CacheHelpers
 		// Note that the cache allows for double-counting so we need to check every element from each followee, not just the raw list.
 		for (IpfsKey key : followees.getAllKnownFollowees())
 		{
-			for (IpfsFile cid : followees.getElementsForFollowee(key))
+			for (FollowingCacheElement elt : followees.snapshotAllElementsForFollowee(key).values())
 			{
-				FollowingCacheElement elt = followees.getElementForFollowee(key, cid);
 				sizeBytes += elt.combinedSizeBytes();
 			}
 		}
@@ -101,9 +100,8 @@ public class CacheHelpers
 			List<CacheAlgorithm.Candidate<Pair<IpfsKey, FollowingCacheElement>>> evictionCandidates = new ArrayList<>();
 			for (IpfsKey key : followees.getAllKnownFollowees())
 			{
-				for (IpfsFile cid : followees.getElementsForFollowee(key))
+				for (FollowingCacheElement elt : followees.snapshotAllElementsForFollowee(key).values())
 				{
-					FollowingCacheElement elt = followees.getElementForFollowee(key, cid);
 					evictionCandidates.add(new CacheAlgorithm.Candidate<>(elt.combinedSizeBytes(), new Pair<>(key, elt)));
 				}
 			}

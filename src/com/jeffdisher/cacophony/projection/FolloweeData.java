@@ -138,9 +138,13 @@ public class FolloweeData implements IFolloweeWriting
 	}
 
 	@Override
-	public FollowingCacheElement getElementForFollowee(IpfsKey publicKey, IpfsFile cid)
+	public Map<IpfsFile, FollowingCacheElement> snapshotAllElementsForFollowee(IpfsKey publicKey)
 	{
-		return _elementsForLookup.get(publicKey).get(cid);
+		Map<IpfsFile, FollowingCacheElement> map = _elementsForLookup.get(publicKey);
+		return (null != map)
+				? Map.copyOf(map)
+				: null
+		;
 	}
 
 	@Override
@@ -153,15 +157,6 @@ public class FolloweeData implements IFolloweeWriting
 	public long getLastPollMillisForFollowee(IpfsKey publicKey)
 	{
 		return _followeeLastFetchMillis.get(publicKey);
-	}
-
-	@Override
-	public List<IpfsFile> getElementsForFollowee(IpfsKey publicKey)
-	{
-		return _followeeElements.get(publicKey).stream()
-				.map((FollowingCacheElement elt) -> elt.elementHash())
-				.collect(Collectors.toList())
-		;
 	}
 
 	@Override

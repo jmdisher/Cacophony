@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.logic;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
@@ -26,6 +27,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final IWritingAccess _access;
 	private final IFolloweeWriting _followees;
 	private final IpfsKey _followeeKey;
+	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
 	
 	private final List<IpfsFile> _deferredMetaDataUnpins;
 	private final List<IpfsFile> _deferredFileUnpins;
@@ -38,6 +40,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_access = access;
 		_followees = followees;
 		_followeeKey = followeeKey;
+		_cachedEntriesForFollowee = _followees.snapshotAllElementsForFollowee(_followeeKey);
 		
 		_deferredMetaDataUnpins = new ArrayList<>();
 		_deferredFileUnpins = new ArrayList<>();
@@ -120,7 +123,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public IpfsFile getImageForCachedElement(IpfsFile elementHash)
 	{
-		FollowingCacheElement elt = _followees.getElementForFollowee(_followeeKey, elementHash);
+		FollowingCacheElement elt = _cachedEntriesForFollowee.get(elementHash);
 		return (null != elt)
 				? elt.imageHash()
 				: null
@@ -129,7 +132,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public IpfsFile getLeafForCachedElement(IpfsFile elementHash)
 	{
-		FollowingCacheElement elt = _followees.getElementForFollowee(_followeeKey, elementHash);
+		FollowingCacheElement elt = _cachedEntriesForFollowee.get(elementHash);
 		return (null != elt)
 				? elt.leafHash()
 				: null

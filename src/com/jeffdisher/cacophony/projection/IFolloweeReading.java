@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.projection;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
@@ -23,11 +23,13 @@ public interface IFolloweeReading
 	Set<IpfsKey> getAllKnownFollowees();
 
 	/**
+	 * Grants access to the internal map of elements known for a given followee.  Note that this returned map is
+	 * NOT connected to the internal state of the callee.
+	 * 
 	 * @param publicKey The key of the followee.
-	 * @param cid The CID of the StreamRecord element.
-	 * @return The element associated with this CID for this followee or null, if not cached.
+	 * @return A copy of all the elements cached for the given followee or null, if it is not known.
 	 */
-	FollowingCacheElement getElementForFollowee(IpfsKey publicKey, IpfsFile cid);
+	Map<IpfsFile, FollowingCacheElement> snapshotAllElementsForFollowee(IpfsKey publicKey);
 
 	/**
 	 * @param publicKey The key of the followee.
@@ -42,12 +44,6 @@ public interface IFolloweeReading
 	 * @return The last time we polled for updates for this followee.
 	 */
 	long getLastPollMillisForFollowee(IpfsKey publicKey);
-
-	/**
-	 * @param publicKey The key of the followee.
-	 * @return The in-order list of StreamRecords elements cached for this followee, more recent entries at the end.
-	 */
-	List<IpfsFile> getElementsForFollowee(IpfsKey publicKey);
 
 	/**
 	 * @return The next followee key we should poll.

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -14,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -171,7 +173,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see that we failed to update the cache.
 		IFolloweeReading followIndex = user.readFollowIndex();
-		Assert.assertEquals(0, followIndex.getElementsForFollowee(PUBLIC_KEY3).size());
+		Assert.assertEquals(0, followIndex.snapshotAllElementsForFollowee(PUBLIC_KEY3).size());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();
@@ -227,7 +229,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see that we did update the cache with the valid entry.
 		followees = user.readFollowIndex();
-		Assert.assertEquals(0, followees.getElementsForFollowee(PUBLIC_KEY3).size());
+		Assert.assertEquals(0, followees.snapshotAllElementsForFollowee(PUBLIC_KEY3).size());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();
@@ -286,9 +288,9 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see just the one entry in the cache.
 		followees = user.readFollowIndex();
-		List<IpfsFile> keys = followees.getElementsForFollowee(PUBLIC_KEY3);
-		Assert.assertEquals(1, keys.size());
-		Assert.assertEquals(recordToKeep, followees.getElementForFollowee(PUBLIC_KEY3, keys.get(0)).elementHash());
+		Map<IpfsFile, FollowingCacheElement> cachedEntries = followees.snapshotAllElementsForFollowee(PUBLIC_KEY3);
+		Assert.assertEquals(1, cachedEntries.size());
+		Assert.assertEquals(recordToKeep, cachedEntries.values().iterator().next().elementHash());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();
@@ -385,14 +387,41 @@ public class TestRefreshNextFolloweeCommand
 		
 		// Check that we see just the 3 entries in the index, with the appropriate leaves.
 		followees = user.readFollowIndex();
-		List<IpfsFile> elements = followees.getElementsForFollowee(PUBLIC_KEY2);
+		Map<IpfsFile, FollowingCacheElement> cachedEntries = followees.snapshotAllElementsForFollowee(PUBLIC_KEY2);
+		List<IpfsFile> elements = List.copyOf(cachedEntries.keySet());
 		Assert.assertEquals(3, elements.size());
-		Assert.assertEquals(imageHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(0)).imageHash());
-		Assert.assertEquals(videoHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(0)).leafHash());
-		Assert.assertEquals(imageHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(1)).imageHash());
-		Assert.assertEquals(audioHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(1)).leafHash());
-		Assert.assertEquals(imageHash, followees.getElementForFollowee(PUBLIC_KEY2, elements.get(2)).imageHash());
-		Assert.assertNull(followees.getElementForFollowee(PUBLIC_KEY2, elements.get(2)).leafHash());
+		// Note that the cache elements aren't exposed to use in a deterministic order.
+		int matchedImage = 0;
+		int matchedVideo = 0;
+		int matchedAudio = 0;
+		for (FollowingCacheElement elt : cachedEntries.values())
+		{
+			if (imageHash.equals(elt.imageHash()))
+			{
+				matchedImage += 1;
+			}
+			IpfsFile leaf = elt.leafHash();
+			if (null == leaf)
+			{
+				// This is the default case.
+			}
+			else if (leaf.equals(videoHash))
+			{
+				matchedVideo += 1;
+			}
+			else if (leaf.equals(audioHash))
+			{
+				matchedAudio += 1;
+			}
+			else
+			{
+				// This can't happen.
+				Assert.fail();
+			}
+		}
+		Assert.assertEquals(3, matchedImage);
+		Assert.assertEquals(1, matchedVideo);
+		Assert.assertEquals(1, matchedAudio);
 		
 		user2.shutdown();
 		user.shutdown();
