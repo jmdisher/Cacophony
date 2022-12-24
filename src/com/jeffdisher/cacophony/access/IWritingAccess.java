@@ -1,6 +1,8 @@
 package com.jeffdisher.cacophony.access;
 
 import java.io.InputStream;
+import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -82,4 +84,14 @@ public interface IWritingAccess extends IReadingAccess
 	 * @return The asynchronous publish operation.
 	 */
 	FuturePublish beginIndexPublish(IpfsFile indexRoot);
+
+	/**
+	 * Called when we wish to commit or rollback a ConcurrentTransaction.  This helper allows it to rationalize any pin
+	 * state changes it performed with the actual values in the access object's pin cache.
+	 * 
+	 * @param changedPinCounts Counts of increments/decrements for each changed pin.
+	 * @param falsePins A set of resources which were network-pinned to unpin them if they aren't in the canonical pin
+	 * cache.
+	 */
+	void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins);
 }

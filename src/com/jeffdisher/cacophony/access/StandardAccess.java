@@ -3,6 +3,8 @@ package com.jeffdisher.cacophony.access;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
@@ -270,6 +272,12 @@ public class StandardAccess implements IWritingAccess
 		return _scheduler.publishIndex(lastRoot);
 	}
 
+	@Override
+	public ConcurrentTransaction openConcurrentTransaction()
+	{
+		return new ConcurrentTransaction(_scheduler, _pinCache.snapshotPinnedSet());
+	}
+
 	// ----- Writing methods -----
 	@Override
 	public IFolloweeWriting writableFolloweeData()
@@ -362,5 +370,39 @@ public class StandardAccess implements IWritingAccess
 		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();
+	}
+
+	@Override
+	public void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins)
+	{
+		// First, walk the map of changed reference counts, adding and removing references where listed.
+		for (Map.Entry<IpfsFile, Integer> entry: changedPinCounts.entrySet())
+		{
+			IpfsFile cid = entry.getKey();
+			int countToChange = entry.getValue();
+			while (countToChange > 0)
+			{
+				countToChange -= 1;
+				_pinCache.addRef(cid);
+			}
+			while (countToChange < 0)
+			{
+				countToChange += 1;
+				_pinCache.delRef(cid);
+			}
+			Assert.assertTrue(0 == countToChange);
+			if (!_pinCache.isPinned(cid))
+			{
+				_scheduler.unpin(cid);
+			}
+		}
+		// Now, walk the set of false pins, requesting that the network unpin them if they aren't referenced.
+		for (IpfsFile pin : falsePins)
+		{
+			if (!_pinCache.isPinned(pin))
+			{
+				_scheduler.unpin(pin);
+			}
+		}
 	}
 }

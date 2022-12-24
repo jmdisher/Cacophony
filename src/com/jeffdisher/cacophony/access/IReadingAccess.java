@@ -129,4 +129,12 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The asynchronously-completed future.
 	 */
 	FuturePublish republishIndex();
+
+	/**
+	 * Requests that a new ConcurrentTransaction be opened, based on the scheduler and pin cache state of the receiver.
+	 * This must be later committed or rolled back by calling commitTransactionPinCanges in IWritingAccess.
+	 * 
+	 * @return The new transaction.
+	 */
+	ConcurrentTransaction openConcurrentTransaction();
 }

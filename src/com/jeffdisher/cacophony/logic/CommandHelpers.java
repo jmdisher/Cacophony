@@ -2,7 +2,10 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -98,7 +101,12 @@ public class CommandHelpers
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Prepare for the initial fetch.
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, access, followees, followeeKey);
+		ConcurrentTransaction transaction = access.openConcurrentTransaction();
+		ConcurrentTransaction.IStateResolver resolver = (Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins) ->
+		{
+			access.commitTransactionPinCanges(changedPinCounts, falsePins);
+		};
+		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, transaction, followeeKey, followees.snapshotAllElementsForFollowee(followeeKey));
 		boolean refreshWasSuccess = false;
 		try
 		{
@@ -109,7 +117,8 @@ public class CommandHelpers
 					, currentCacheUsageInBytes
 			);
 			// We got this far so commit the changes from the refresh operation.
-			refreshSupport.commitChanges();
+			refreshSupport.commitFolloweeChanges(followees);
+			transaction.commit(resolver);
 			refreshWasSuccess = true;
 		}
 		catch (IpfsConnectionException e)
@@ -121,6 +130,7 @@ public class CommandHelpers
 			}
 			environment.logToConsole("Network failure in refresh: " + e.getLocalizedMessage());
 			environment.logToConsole("Refresh aborted and will be retried in the future");
+			transaction.rollback(resolver);
 			refreshWasSuccess = false;
 		}
 		catch (SizeConstraintException e)
@@ -132,6 +142,7 @@ public class CommandHelpers
 			}
 			environment.logToConsole("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
 			environment.logToConsole("Refresh aborted and will be retried in the future");
+			transaction.rollback(resolver);
 			refreshWasSuccess = false;
 		}
 		return refreshWasSuccess;

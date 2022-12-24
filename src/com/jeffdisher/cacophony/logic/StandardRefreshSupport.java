@@ -6,14 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -24,64 +23,33 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupport
 {
 	private final IEnvironment _environment;
-	private final IWritingAccess _access;
-	private final IFolloweeWriting _followees;
+	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
 	
-	private final List<IpfsFile> _deferredMetaDataUnpins;
-	private final List<IpfsFile> _deferredFileUnpins;
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 
-	public StandardRefreshSupport(IEnvironment environment, IWritingAccess access, IFolloweeWriting followees, IpfsKey followeeKey)
+	public StandardRefreshSupport(IEnvironment environment, ConcurrentTransaction transaction, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee)
 	{
 		_environment = environment;
-		_access = access;
-		_followees = followees;
+		_transaction = transaction;
 		_followeeKey = followeeKey;
-		_cachedEntriesForFollowee = _followees.snapshotAllElementsForFollowee(_followeeKey);
+		_cachedEntriesForFollowee = cachedEntriesForFollowee;
 		
-		_deferredMetaDataUnpins = new ArrayList<>();
-		_deferredFileUnpins = new ArrayList<>();
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
 	}
 
-	public void commitChanges()
+	public void commitFolloweeChanges(IFolloweeWriting followees)
 	{
-		// We can now commit to unpinning anything which we wanted to drop.
-		for (IpfsFile cid : _deferredMetaDataUnpins)
-		{
-			try
-			{
-				_access.unpin(cid);
-			}
-			catch (IpfsConnectionException e)
-			{
-				_environment.logError("Failed to unpin meta-data " + cid + ": " + e.getLocalizedMessage());
-			}
-		}
-		for (IpfsFile cid : _deferredFileUnpins)
-		{
-			try
-			{
-				_access.unpin(cid);
-			}
-			catch (IpfsConnectionException e)
-			{
-				_environment.logError("Failed to unpin file " + cid + ": " + e.getLocalizedMessage());
-			}
-		}
-		
-		// Now, write-back our changes to the actual cache.
 		for (IpfsFile cid : _elementsToRemoveFromCache)
 		{
-			_followees.removeElement(_followeeKey, cid);
+			followees.removeElement(_followeeKey, cid);
 		}
 		for (FollowingCacheElement elt : _elementsToAddToCache)
 		{
-			_followees.addElement(_followeeKey, elt);
+			followees.addElement(_followeeKey, elt);
 		}
 	}
 
@@ -93,32 +61,32 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
-		return _access.getSizeInBytes(cid);
+		return _transaction.getSizeInBytes(cid);
 	}
 	@Override
 	public FuturePin addMetaDataToFollowCache(IpfsFile cid)
 	{
-		return _access.pin(cid);
+		return _transaction.pin(cid);
 	}
 	@Override
 	public void deferredRemoveMetaDataFromFollowCache(IpfsFile cid)
 	{
-		_deferredMetaDataUnpins.add(cid);
+		_transaction.unpin(cid);
 	}
 	@Override
 	public FuturePin addFileToFollowCache(IpfsFile cid)
 	{
-		return _access.pin(cid);
+		return _transaction.pin(cid);
 	}
 	@Override
 	public void deferredRemoveFileFromFollowCache(IpfsFile cid)
 	{
-		_deferredFileUnpins.add(cid);
+		_transaction.unpin(cid);
 	}
 	@Override
 	public <R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder)
 	{
-		return _access.loadCached(file, decoder);
+		return _transaction.loadCached(file, decoder);
 	}
 	@Override
 	public IpfsFile getImageForCachedElement(IpfsFile elementHash)

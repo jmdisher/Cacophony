@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_SetPinnedCount;
@@ -83,5 +84,15 @@ public class PinCacheData
 		{
 			_map.remove(file);
 		}
+	}
+
+	/**
+	 * Used when starting new transactions.
+	 * 
+	 * @return A copy of the set of resources we have explicitly pinned.
+	 */
+	public Set<IpfsFile> snapshotPinnedSet()
+	{
+		return Set.copyOf(_map.keySet());
 	}
 }
