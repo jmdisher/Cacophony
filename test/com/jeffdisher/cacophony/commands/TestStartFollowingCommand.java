@@ -1,12 +1,16 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -18,7 +22,6 @@ import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -97,17 +100,25 @@ public class TestStartFollowingCommand
 		remoteConnection.publish(REMOTE_KEY_NAME, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(sharedConnection), true);
+		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		MemoryConfigFileSystem filesystem = new MemoryConfigFileSystem();
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(outputStream), filesystem, new MockConnectionFactory(sharedConnection), true);
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
-		try {
-			command.runInEnvironment(executor);
-			Assert.fail();
-		} catch (SizeConstraintException e) {
-			// Expected.
-		}
+		command.runInEnvironment(executor);
 		executor.shutdown();
+		
+		// Check for the error message.
+		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Refresh aborted and will be retried in the future"));
+		
+		// Check that the data shows nobody being followed.
+		LocalDataModel model = new LocalDataModel(filesystem);
+		try (IReadOnlyLocalData access = model.openForRead())
+		{
+			Assert.assertTrue(access.readFollowIndex().getAllKnownFollowees().isEmpty());
+		}
 	}
 
 	@Test

@@ -132,7 +132,7 @@ echo "Refresh followee"
 REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
 requireSubstring "$REFRESH_OUTPUT" "-thumbnail 524.29 kB (524288 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "-leaf 2.10 MB (2097152 bytes)"
-requireSubstring "$REFRESH_OUTPUT" "<2 Follow successful!"
+requireSubstring "$REFRESH_OUTPUT" "<1 Refresh successful!"
 
 echo "Publish a post with an audio attachment, refresh the follower, and verify that we can see this..."
 AUDIO_FILE="/tmp/audio_file"

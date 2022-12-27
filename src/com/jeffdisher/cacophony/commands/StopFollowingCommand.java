@@ -32,7 +32,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException, FailedDeserializationException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
 	{
 		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
 		
@@ -49,7 +49,25 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Prepare for the cleanup.
 		PrefsData prefs = access.readPrefs();
-		boolean didRefresh = CommandHelpers.doRefreshOfRecord(environment, access, followees, _publicKey, currentCacheUsageInBytes, lastRoot, null, prefs);
+		boolean didRefresh = false;
+		try
+		{
+			didRefresh = CommandHelpers.doRefreshOfRecord(environment, access, followees, _publicKey, currentCacheUsageInBytes, lastRoot, null, prefs);
+		}
+		catch (IpfsConnectionException e)
+		{
+			throw e;
+		}
+		catch (SizeConstraintException e)
+		{
+			// We don't expect this in unfollow.
+			throw Assert.unexpected(e);
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We don't expect this in unfollow.
+			throw Assert.unexpected(e);
+		}
 		// There is no real way to fail at this refresh since we are just dropping things.
 		Assert.assertTrue(didRefresh);
 		followees.removeFollowee(_publicKey);
