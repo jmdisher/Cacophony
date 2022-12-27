@@ -21,18 +21,40 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
+		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
+		ConcurrentFolloweeRefresher refresher = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
-			_runCore(environment, access);
+			refresher = _setup(environment, access);
+		}
+		
+		// Run the actual refresh.
+		boolean didRefresh = (null != refresher)
+				? refresher.runRefresh()
+				: false
+		;
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			_finish(environment, access, refresher);
+		}
+		finally
+		{
+			if (didRefresh)
+			{
+				log.finish("Follow successful!");
+			}
+			else
+			{
+				log.finish("Follow failed!");
+			}
 		}
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
+	private ConcurrentFolloweeRefresher _setup(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
-		
-		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
 		
 		// We need to first verify that we aren't already following them.
 		IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_publicKey);
@@ -48,28 +70,15 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 				, false
 		);
 		
-		boolean didRefresh = false;
-		try {
-			// Clean the cache and setup state for the refresh.
-			refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
-			
-			// Run the actual refresh.
-			didRefresh = refresher.runRefresh();
-			
-			// Do the cleanup.
-			long lastPollMillis = System.currentTimeMillis();
-			refresher.finishRefresh(access, followees, lastPollMillis);
-		}
-		finally
-		{
-			if (didRefresh)
-			{
-				log.finish("Follow successful!");
-			}
-			else
-			{
-				log.finish("Follow failed!");
-			}
-		}
+		// Clean the cache and setup state for the refresh.
+		refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+		return refresher;
+	}
+
+	private void _finish(IEnvironment environment, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
+	{
+		IFolloweeWriting followees = access.writableFolloweeData();
+		long lastPollMillis = System.currentTimeMillis();
+		refresher.finishRefresh(access, followees, lastPollMillis);
 	}
 }

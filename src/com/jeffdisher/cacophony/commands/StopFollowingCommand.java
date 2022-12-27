@@ -21,17 +21,35 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
+		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
+		ConcurrentFolloweeRefresher refresher = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
-			_runCore(environment, access);
+			refresher = _setup(environment, access);
+		}
+		
+		// Run the actual refresh.
+		boolean didRefresh = (null != refresher)
+				? refresher.runRefresh()
+				: false
+		;
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		{
+			_finish(environment, access, refresher);
+		}
+		finally
+		{
+			// There is no real way to fail at this refresh since we are just dropping things.
+			Assert.assertTrue(didRefresh);
+			// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
+			log.finish("Cleanup complete.  No longer following " + _publicKey);
 		}
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
+	private ConcurrentFolloweeRefresher _setup(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
 	{
-		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
-		
 		IFolloweeWriting followees = access.writableFolloweeData();
 		IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_publicKey);
 		if (null == lastRoot)
@@ -46,24 +64,15 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 				, true
 		);
 		
-		boolean didRefresh = false;
-		try {
-			// Clean the cache and setup state for the refresh.
-			refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION);
-			
-			// Run the actual refresh.
-			didRefresh = refresher.runRefresh();
-			
-			// Do the cleanup.
-			long lastPollMillis = System.currentTimeMillis();
-			refresher.finishRefresh(access, followees, lastPollMillis);
-		}
-		finally
-		{
-			// There is no real way to fail at this refresh since we are just dropping things.
-			Assert.assertTrue(didRefresh);
-			// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
-			log.finish("Cleanup complete.  No longer following " + _publicKey);
-		}
+		// Clean the cache and setup state for the refresh.
+		refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION);
+		return refresher;
+	}
+
+	private void _finish(IEnvironment environment, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
+	{
+		IFolloweeWriting followees = access.writableFolloweeData();
+		long lastPollMillis = System.currentTimeMillis();
+		refresher.finishRefresh(access, followees, lastPollMillis);
 	}
 }
