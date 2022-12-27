@@ -19,9 +19,8 @@ public class BackgroundOperations
 	private boolean _keepRunning;
 	private int _nextOperationNumber;
 
-	private IpfsFile _nextToPublish;
-	private int  _nextToPublishNumber;
-	private FuturePublish _currentOperation;
+	private PendingOperation<IpfsFile> _nextToPublish;
+	private FuturePublish _currentPublish;
 
 	// Data related to the listener and how we track active operations for reporting purposes.
 	private final Object _listenerMonitor;
@@ -31,16 +30,15 @@ public class BackgroundOperations
 	public BackgroundOperations(IOperationRunner operations)
 	{
 		_background = new Thread(() -> {
-			int[] out_operationNumber = new int[1];
-			IpfsFile target = _background_consumeNextToPublish(out_operationNumber);
-			while (null != target)
+			RequestedOperation operation = _background_consumeNextOperation();
+			while (null != operation)
 			{
-				FuturePublish publish = operations.startPublish(target);
-				_background_setOperationStarted(out_operationNumber[0]);
+				FuturePublish publish = operations.startPublish(operation.publishTarget);
+				_background_setOperationStarted(operation.publishNumber);
 				_background_setInProgressPublish(publish);
 				publish.get();
-				_background_setOperationEnded(out_operationNumber[0]);
-				target = _background_consumeNextToPublish(out_operationNumber);
+				_background_setOperationEnded(operation.publishNumber);
+				operation = _background_consumeNextOperation();
 			}
 		});
 		_nextOperationNumber = 1;
@@ -77,26 +75,33 @@ public class BackgroundOperations
 		Assert.assertTrue(null != rootElement);
 		
 		// We will modify the state and notify under monitor but call-out after.
-		int operationNumber = -1;
+		int newNumber = -1;
 		synchronized (this)
 		{
 			boolean isNew = (null == _nextToPublish);
-			_nextToPublish = rootElement;
+			int thisNumber = -1;
 			if (isNew)
 			{
-				_nextToPublishNumber = _nextOperationNumber;
+				thisNumber = _nextOperationNumber;
 				_nextOperationNumber += 1;
-				operationNumber = _nextToPublishNumber;
+				// If this is new, we want to emit the enqueue.
+				newNumber = thisNumber;
 			}
-			this.notifyAll();
-			if (operationNumber >= 0)
+			else
 			{
-				_defineOperation(operationNumber, "Publish " + rootElement);
+				// We will just reuse the existing number if an operation were waiting.
+				thisNumber = _nextToPublish.number;
+			}
+			_nextToPublish = new PendingOperation<IpfsFile>(rootElement, thisNumber);
+			this.notifyAll();
+			if (newNumber >= 0)
+			{
+				_defineOperation(newNumber, "Publish " + rootElement);
 			}
 		}
-		if (operationNumber >= 0)
+		if (newNumber >= 0)
 		{
-			_setOperationEnqueued(operationNumber);
+			_setOperationEnqueued(newNumber);
 		}
 	}
 
@@ -106,7 +111,7 @@ public class BackgroundOperations
 	public synchronized void waitForPendingPublish()
 	{
 		// Wait until there is nothing pending.
-		while(_keepRunning && (null != _currentOperation) && (null != _nextToPublish))
+		while(_keepRunning && (null != _currentPublish) && (null != _nextToPublish))
 		{
 			try
 			{
@@ -164,11 +169,10 @@ public class BackgroundOperations
 		}
 	}
 
-	// (we will just use this C-style pass-by-reference just to avoid defining a tuple for this one case)
-	private synchronized IpfsFile _background_consumeNextToPublish(int[] number)
+	private synchronized RequestedOperation _background_consumeNextOperation()
 	{
 		// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
-		_currentOperation = null;
+		_currentPublish = null;
 		this.notifyAll();
 		
 		// Now, wait for more work.
@@ -186,12 +190,16 @@ public class BackgroundOperations
 		}
 		
 		// Consume the next.
-		IpfsFile next = null;
+		RequestedOperation next = null;
 		if (_keepRunning)
 		{
 			Assert.assertTrue(null != _nextToPublish);
-			next = _nextToPublish;
-			number[0] = _nextToPublishNumber;
+			IpfsFile publish = _nextToPublish.target;
+			int publishNumber = _nextToPublish.number;
+			next = new RequestedOperation(
+					publish
+					, publishNumber
+			);
 			_nextToPublish = null;
 			this.notifyAll();
 		}
@@ -200,8 +208,8 @@ public class BackgroundOperations
 
 	private synchronized void _background_setInProgressPublish(FuturePublish publish)
 	{
-		Assert.assertTrue(null == _currentOperation);
-		_currentOperation = publish;
+		Assert.assertTrue(null == _currentPublish);
+		_currentPublish = publish;
 		this.notifyAll();
 	}
 
@@ -261,4 +269,13 @@ public class BackgroundOperations
 		public String description;
 		public boolean isStarted;
 	}
+
+
+	private static record RequestedOperation(
+			IpfsFile publishTarget
+			, int publishNumber
+	) {}
+
+
+	private static record PendingOperation<T>(T target, int number) {}
 }
