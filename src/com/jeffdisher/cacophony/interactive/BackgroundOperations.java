@@ -89,10 +89,14 @@ public class BackgroundOperations
 				operationNumber = _nextToPublishNumber;
 			}
 			this.notifyAll();
+			if (operationNumber >= 0)
+			{
+				_defineOperation(operationNumber, "Publish " + rootElement);
+			}
 		}
 		if (operationNumber >= 0)
 		{
-			_setOperationEnqueued(operationNumber, "Publish " + rootElement);
+			_setOperationEnqueued(operationNumber);
 		}
 	}
 
@@ -141,14 +145,21 @@ public class BackgroundOperations
 	}
 
 
-	private void _setOperationEnqueued(int number, String description)
+	private void _defineOperation(int number, String description)
 	{
 		synchronized(_listenerMonitor)
 		{
 			_listenerCapture.put(number, new Action(description));
+		}
+	}
+
+	private void _setOperationEnqueued(int number)
+	{
+		synchronized(_listenerMonitor)
+		{
 			if (null != _listener)
 			{
-				_listener.operationEnqueued(number, description);
+				_listener.operationEnqueued(number, _listenerCapture.get(number).description);
 			}
 		}
 	}
