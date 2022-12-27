@@ -2,10 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -14,8 +11,6 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 import com.jeffdisher.cacophony.utils.StringHelpers;
@@ -88,64 +83,6 @@ public class CommandHelpers
 			}
 		}
 		log.finish("Cache clean finished without issue");
-	}
-
-	public static boolean doRefreshOfRecord(IEnvironment environment
-			, IWritingAccess access
-			, IFolloweeWriting followees
-			, IpfsKey followeeKey
-			, long currentCacheUsageInBytes
-			, IpfsFile lastFetchedRoot
-			, IpfsFile indexRoot
-			, PrefsData prefs
-	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
-	{
-		// Prepare for the initial fetch.
-		ConcurrentTransaction transaction = access.openConcurrentTransaction();
-		ConcurrentTransaction.IStateResolver resolver = (Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins) ->
-		{
-			access.commitTransactionPinCanges(changedPinCounts, falsePins);
-		};
-		StandardRefreshSupport refreshSupport = new StandardRefreshSupport(environment, transaction, followeeKey, followees.snapshotAllElementsForFollowee(followeeKey));
-		boolean refreshWasSuccess = false;
-		try
-		{
-			FolloweeRefreshLogic.refreshFollowee(refreshSupport
-					, prefs
-					, lastFetchedRoot
-					, indexRoot
-					, currentCacheUsageInBytes
-			);
-			// We got this far so commit the changes from the refresh operation.
-			refreshSupport.commitFolloweeChanges(followees);
-			transaction.commit(resolver);
-			refreshWasSuccess = true;
-		}
-		catch (IpfsConnectionException e)
-		{
-			// If we were looking at the first attempt, just throw the exception.
-			if (null == lastFetchedRoot)
-			{
-				throw e;
-			}
-			environment.logToConsole("Network failure in refresh: " + e.getLocalizedMessage());
-			environment.logToConsole("Refresh aborted and will be retried in the future");
-			transaction.rollback(resolver);
-			refreshWasSuccess = false;
-		}
-		catch (SizeConstraintException e)
-		{
-			// If we were looking at the first attempt, just throw the exception.
-			if (null == lastFetchedRoot)
-			{
-				throw e;
-			}
-			environment.logToConsole("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
-			environment.logToConsole("Refresh aborted and will be retried in the future");
-			transaction.rollback(resolver);
-			refreshWasSuccess = false;
-		}
-		return refreshWasSuccess;
 	}
 
 

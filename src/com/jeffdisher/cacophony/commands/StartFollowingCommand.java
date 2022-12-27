@@ -2,18 +2,14 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
+import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
-import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -45,37 +41,24 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
 		}
 		
-		// We need to prune the cache before adding someone and write this back before we proceed - hence, this needs to happen before we open storage.
-		// We want to prune the cache to 75% for new followee so make space.
-		CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 0.75);
+		ConcurrentFolloweeRefresher refresher = new ConcurrentFolloweeRefresher(environment
+				, _publicKey
+				, lastRoot
+				, access.readPrefs()
+				, false
+		);
 		
-		// Then, do the initial resolve of the key to make sure the network thinks it is valid.
-		IpfsFile indexRoot = access.resolvePublicKey(_publicKey).get();
-		// TODO:  Improve the reporting of this error.
-		Assert.assertTrue(null != indexRoot);
-		environment.logToConsole("Resolved as " + indexRoot);
-		PrefsData prefs = access.readPrefs();
-		
-		// This will throw exceptions in case something goes wrong.
-		// Create the new entry but we will drop it if it fails to refresh or throws an exception.
 		boolean didRefresh = false;
-		long lastPollMillis = System.currentTimeMillis();
-		followees.createNewFollowee(_publicKey, indexRoot, lastPollMillis);
 		try {
-			long currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
-			didRefresh = CommandHelpers.doRefreshOfRecord(environment, access, followees, _publicKey, currentCacheUsageInBytes, lastRoot, indexRoot, prefs);
-		}
-		catch (SizeConstraintException e)
-		{
-			environment.logToConsole("Meta-data element too big (probably wrong file published): " + e.getLocalizedMessage());
-			environment.logToConsole("Refresh aborted and will be retried in the future");
-			didRefresh = false;
-		}
-		catch (FailedDeserializationException e)
-		{
-			environment.logToConsole("Followee data appears to be corrupt: " + e.getLocalizedMessage());
-			environment.logToConsole("Refresh aborted and will be retried in the future");
-			didRefresh = false;
+			// Clean the cache and setup state for the refresh.
+			refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+			
+			// Run the actual refresh.
+			didRefresh = refresher.runRefresh();
+			
+			// Do the cleanup.
+			long lastPollMillis = System.currentTimeMillis();
+			refresher.finishRefresh(access, followees, lastPollMillis);
 		}
 		finally
 		{
@@ -86,7 +69,6 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			else
 			{
 				log.finish("Follow failed!");
-				followees.removeFollowee(_publicKey);
 			}
 		}
 	}
