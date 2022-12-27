@@ -64,11 +64,11 @@ public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 	{
 		if (keyName.equals(PrefsData.INT_VIDEO_EDGE))
 		{
-			_prefs.setVideoEdgePixelMax((Integer)value);
+			_prefs.videoEdgePixelMax = (Integer)value;
 		}
 		else if (keyName.equals(PrefsData.LONG_FOLLOW_CACHE_BYTES))
 		{
-			_prefs.setFollowCacheTargetBytes((Long)value);
+			_prefs.followCacheTargetBytes = (Long)value;
 		}
 		else
 		{

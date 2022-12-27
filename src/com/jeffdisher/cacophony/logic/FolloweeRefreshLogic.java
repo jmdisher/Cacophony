@@ -270,7 +270,7 @@ public class FolloweeRefreshLogic
 				// We pinned this so the read should be pretty-well instantaneous.
 				StreamRecord record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
-				_selectLeavesForElement(support, data, record, prefs.videoEdgePixelMax());
+				_selectLeavesForElement(support, data, record, prefs.videoEdgePixelMax);
 				newRecordsBeingProcessedCalculatingLeaves.add(data);
 			}
 			newRecordsBeingProcessedSizeChecked = null;
@@ -426,7 +426,7 @@ public class FolloweeRefreshLogic
 			effectiveCacheUsedBytes += firstElement.byteSize();
 			finalSelection.add(firstElement);
 		}
-		CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes(), effectiveCacheUsedBytes);
+		CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes, effectiveCacheUsedBytes);
 		List<CacheAlgorithm.Candidate<RawElementData>> selected = algorithm.toAddInNewAddition(candidates);
 		finalSelection.addAll(selected);
 		return finalSelection;

@@ -56,14 +56,15 @@ public class TestLocalDataModel
 		Assert.assertNotNull(access.readGlobalPinCache());
 		Assert.assertNotNull(access.readGlobalPrefs());
 		Assert.assertNotNull(access.readLocalIndex());
-		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
+		access.writeGlobalPrefs(PrefsData.defaultPrefs());
 		access.close();
 		
 		IReadOnlyLocalData reader = model.openForRead();
-		GlobalPrefs prefs = reader.readGlobalPrefs().serializeToPrefs();
+		PrefsData prefs = reader.readGlobalPrefs();
 		reader.close();
-		GlobalPrefs defaults = GlobalPrefs.defaultPrefs();
-		Assert.assertEquals(defaults, prefs);
+		PrefsData defaults = PrefsData.defaultPrefs();
+		Assert.assertEquals(defaults.videoEdgePixelMax, prefs.videoEdgePixelMax);
+		Assert.assertEquals(defaults.followCacheTargetBytes, prefs.followCacheTargetBytes);
 	}
 
 	@Test
@@ -80,7 +81,7 @@ public class TestLocalDataModel
 		Assert.assertNotNull(access.readGlobalPinCache());
 		Assert.assertNotNull(access.readGlobalPrefs());
 		Assert.assertNotNull(access.readLocalIndex());
-		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
+		access.writeGlobalPrefs(PrefsData.defaultPrefs());
 		access.close();
 		
 		// Create a bunch of threads with a barrier to synchronize them inside the read lock.
@@ -138,7 +139,7 @@ public class TestLocalDataModel
 		Assert.assertNotNull(access.readGlobalPinCache());
 		Assert.assertNotNull(access.readGlobalPrefs());
 		Assert.assertNotNull(access.readLocalIndex());
-		access.writeGlobalPrefs(PrefsData.buildOnPrefs(GlobalPrefs.defaultPrefs()));
+		access.writeGlobalPrefs(PrefsData.defaultPrefs());
 		access.close();
 		
 		// Create a bunch of threads with an atomic counter to verify that nobody is ever inside the write lock at the same time.
@@ -358,8 +359,8 @@ public class TestLocalDataModel
 			Assert.assertNull(channelData.lastPublishedIndex());
 			
 			PrefsData prefsData = access.readGlobalPrefs();
-			Assert.assertEquals(100, prefsData.videoEdgePixelMax());
-			Assert.assertEquals(1000L, prefsData.followCacheTargetBytes());
+			Assert.assertEquals(100, prefsData.videoEdgePixelMax);
+			Assert.assertEquals(1000L, prefsData.followCacheTargetBytes);
 			
 			PinCacheData pinCacheData = access.readGlobalPinCache();
 			Assert.assertTrue(pinCacheData.isPinned(F1));

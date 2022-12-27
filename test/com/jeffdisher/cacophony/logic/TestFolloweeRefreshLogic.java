@@ -20,7 +20,6 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -45,7 +44,9 @@ public class TestFolloweeRefreshLogic
 	{
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -62,7 +63,9 @@ public class TestFolloweeRefreshLogic
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -80,7 +83,9 @@ public class TestFolloweeRefreshLogic
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, new byte[] {1, 2}));
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -99,7 +104,9 @@ public class TestFolloweeRefreshLogic
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, null));
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -126,7 +133,9 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -155,7 +164,9 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -184,7 +195,9 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -219,7 +232,9 @@ public class TestFolloweeRefreshLogic
 		// Now, break the recommendations (just misc meta-data).
 		StreamIndex indexObject = GlobalData.deserializeIndex(data.get(index));
 		data.remove(IpfsFile.fromIpfsCid(indexObject.getRecommendations()));
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -250,7 +265,9 @@ public class TestFolloweeRefreshLogic
 		IpfsFile[] records = _readRecordHashes(data, index);
 		Assert.assertEquals(1, records.length);
 		data.remove(records[0]);
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -287,7 +304,9 @@ public class TestFolloweeRefreshLogic
 		IpfsFile leafCid = IpfsFile.fromIpfsCid(leaves.get(0).getCid());
 		data.remove(leafCid);
 		
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 5L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -306,7 +325,9 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 100L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 100L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
@@ -445,7 +466,9 @@ public class TestFolloweeRefreshLogic
 
 	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
-		PrefsData prefs = PrefsData.buildOnPrefs(new GlobalPrefs(1280, 100L));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 100L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = indexHash;

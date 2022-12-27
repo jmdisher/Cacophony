@@ -379,10 +379,12 @@ public class LocalDataModel
 		}
 		
 		GlobalPrefs prefs = _readFile(V1_GLOBAL_PREFS_FILE, GlobalPrefs.class);
-		PrefsData prefsData = (null != prefs)
-				? PrefsData.buildOnPrefs(prefs)
-				: PrefsData.defaultPrefs()
-		;
+		PrefsData prefsData = PrefsData.defaultPrefs();
+		if (null != prefs)
+		{
+			prefsData.videoEdgePixelMax = prefs.videoEdgePixelMax();
+			prefsData.followCacheTargetBytes = prefs.followCacheTargetBytes();
+		}
 		
 		// Set the ivars.
 		_localIndex = channelData;

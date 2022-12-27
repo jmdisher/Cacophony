@@ -28,15 +28,15 @@ public class TestSetGlobalPrefsCommand
 		PrefsData original = user.readPrefs();
 		// Shutdown the environment so that it drops all caches - otherwise, we will end up re-reading the same instance of the prefs object.
 		user.shutdown();
-		SetGlobalPrefsCommand command = new SetGlobalPrefsCommand(original.videoEdgePixelMax() + 1, original.followCacheTargetBytes() + 1);
+		SetGlobalPrefsCommand command = new SetGlobalPrefsCommand(original.videoEdgePixelMax + 1, original.followCacheTargetBytes + 1);
 		
 		// Now, run the refresh command.
 		user.runCommand(null, command);
 		
 		// Verify the update.
 		PrefsData updated = user.readPrefs();
-		Assert.assertEquals(original.videoEdgePixelMax() + 1, updated.videoEdgePixelMax());
-		Assert.assertEquals(original.followCacheTargetBytes() + 1, updated.followCacheTargetBytes());
+		Assert.assertEquals(original.videoEdgePixelMax + 1, updated.videoEdgePixelMax);
+		Assert.assertEquals(original.followCacheTargetBytes + 1, updated.followCacheTargetBytes);
 		user.shutdown();
 	}
 }

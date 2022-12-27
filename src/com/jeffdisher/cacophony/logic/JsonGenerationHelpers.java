@@ -564,8 +564,8 @@ public class JsonGenerationHelpers
 	private static JsonObject _dataPrefs(PrefsData prefs)
 	{
 		JsonObject dataPrefs = new JsonObject();
-		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax());
-		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes());
+		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax);
+		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes);
 		return dataPrefs;
 	}
 

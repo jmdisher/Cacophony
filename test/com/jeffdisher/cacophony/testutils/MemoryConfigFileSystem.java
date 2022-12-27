@@ -9,8 +9,8 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -26,7 +26,7 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 		{
 			_data = new HashMap<>();
 			// We want to sleeze in our reduced size default testing prefs, here.
-			GlobalPrefs.FOLLOWING_CACHE_TARGET_BYTES = 100L;
+			PrefsData.DEFAULT_FOLLOW_CACHE_BYTES = 100L;
 		}
 		return !doesExist;
 	}

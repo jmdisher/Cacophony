@@ -29,12 +29,12 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		
 		if (_edgeMax > 0)
 		{
-			prefs.setVideoEdgePixelMax(_edgeMax);
+			prefs.videoEdgePixelMax = _edgeMax;
 			didChange = true;
 		}
 		if (_followCacheTargetBytes > 0L)
 		{
-			prefs.setFollowCacheTargetBytes(_followCacheTargetBytes);
+			prefs.followCacheTargetBytes = _followCacheTargetBytes;
 			didChange = true;
 		}
 		if (didChange)
