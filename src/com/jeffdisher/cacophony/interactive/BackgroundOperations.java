@@ -1,10 +1,13 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -20,6 +23,7 @@ public class BackgroundOperations
 	private int _nextOperationNumber;
 
 	private PendingOperation<IpfsFile> _nextToPublish;
+	private Queue<PendingOperation<IpfsKey>> _followeesToRefresh;
 	private FuturePublish _currentPublish;
 
 	// Data related to the listener and how we track active operations for reporting purposes.
@@ -30,18 +34,38 @@ public class BackgroundOperations
 	public BackgroundOperations(IOperationRunner operations)
 	{
 		_background = new Thread(() -> {
-			RequestedOperation operation = _background_consumeNextOperation();
+			RequestedOperation operation = _background_consumeNextOperation(true, true);
 			while (null != operation)
 			{
-				FuturePublish publish = operations.startPublish(operation.publishTarget);
-				_background_setOperationStarted(operation.publishNumber);
-				_background_setInProgressPublish(publish);
-				publish.get();
-				_background_setOperationEnded(operation.publishNumber);
-				operation = _background_consumeNextOperation();
+				// If we have a publish operation, start that first, since that typically takes a long time.
+				FuturePublish publish = null;
+				if (null != operation.publishTarget)
+				{
+					publish = operations.startPublish(operation.publishTarget);
+					Assert.assertTrue(null != publish);
+					_background_setOperationStarted(operation.publishNumber);
+					_background_setInProgressPublish(publish);
+				}
+				// If we have a followee to refresh, do that work.
+				if (null != operation.followeeKey)
+				{
+					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
+					_background_setOperationStarted(operation.followeeNumber);
+					refresher.run();
+					operations.finishFolloweeRefresh(refresher);
+					_background_setOperationEnded(operation.followeeNumber);
+				}
+				// Now, we can wait for the publish before we go back for more work.
+				if (null != publish)
+				{
+					publish.get();
+					_background_setOperationEnded(operation.publishNumber);
+				}
+				operation = _background_consumeNextOperation(true, true);
 			}
 		});
 		_nextOperationNumber = 1;
+		_followeesToRefresh = new LinkedList<>();
 		_listenerMonitor = new Object();
 		_listenerCapture = new HashMap<>();
 	}
@@ -103,6 +127,28 @@ public class BackgroundOperations
 		{
 			_setOperationEnqueued(newNumber);
 		}
+	}
+
+	public void enqueueFolloweeRefresh(IpfsKey followeeKey)
+	{
+		Assert.assertTrue(null != followeeKey);
+		
+		// We will modify the state and notify under monitor but call-out after.
+		int operationNumber = -1;
+		synchronized (this)
+		{
+			operationNumber = _nextOperationNumber;
+			_nextOperationNumber += 1;
+			boolean shouldNotify = _followeesToRefresh.isEmpty();
+			_followeesToRefresh.add(new PendingOperation<IpfsKey>(followeeKey, operationNumber));
+			if (shouldNotify)
+			{
+				this.notifyAll();
+			}
+			_defineOperation(operationNumber, "Refresh followee " + followeeKey);
+		}
+		Assert.assertTrue(operationNumber >= 0);
+		_setOperationEnqueued(operationNumber);
 	}
 
 	/**
@@ -169,14 +215,22 @@ public class BackgroundOperations
 		}
 	}
 
-	private synchronized RequestedOperation _background_consumeNextOperation()
+	private synchronized RequestedOperation _background_consumeNextOperation(boolean includePublish, boolean includeFollowee)
 	{
-		// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
-		_currentPublish = null;
-		this.notifyAll();
+		// We can request both of these but must request at least one.
+		Assert.assertTrue(includePublish || includeFollowee);
+		if (includePublish)
+		{
+			// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
+			_currentPublish = null;
+			this.notifyAll();
+		}
 		
 		// Now, wait for more work.
-		while (_keepRunning && (null == _nextToPublish))
+		while (_keepRunning
+				&& !(includePublish && (null != _nextToPublish))
+				&& !(includeFollowee && !_followeesToRefresh.isEmpty())
+		)
 		{
 			try
 			{
@@ -193,14 +247,29 @@ public class BackgroundOperations
 		RequestedOperation next = null;
 		if (_keepRunning)
 		{
-			Assert.assertTrue(null != _nextToPublish);
-			IpfsFile publish = _nextToPublish.target;
-			int publishNumber = _nextToPublish.number;
+			IpfsFile publish = null;
+			int publishNumber = -1;
+			IpfsKey refresh = null;
+			int refreshNumber = -1;
+			
+			if (includePublish && (null != _nextToPublish))
+			{
+				publish = _nextToPublish.target;
+				publishNumber = _nextToPublish.number;
+				_nextToPublish = null;
+			}
+			if (includeFollowee && !_followeesToRefresh.isEmpty())
+			{
+				PendingOperation<IpfsKey> followee = _followeesToRefresh.remove();
+				refresh = followee.target;
+				refreshNumber = followee.number;
+			}
 			next = new RequestedOperation(
 					publish
 					, publishNumber
+					, refresh
+					, refreshNumber
 			);
-			_nextToPublish = null;
 			this.notifyAll();
 		}
 		return next;
@@ -244,6 +313,8 @@ public class BackgroundOperations
 	public static interface IOperationRunner
 	{
 		FuturePublish startPublish(IpfsFile newRoot);
+		Runnable startFolloweeRefresh(IpfsKey followeeKey);
+		void finishFolloweeRefresh(Runnable refresher);
 	}
 
 
@@ -274,6 +345,8 @@ public class BackgroundOperations
 	private static record RequestedOperation(
 			IpfsFile publishTarget
 			, int publishNumber
+			, IpfsKey followeeKey
+			, int followeeNumber
 	) {}
 
 

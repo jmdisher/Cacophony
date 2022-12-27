@@ -9,12 +9,16 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -28,32 +32,93 @@ public class InteractiveServer
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
-		BackgroundOperations background = new BackgroundOperations((IpfsFile target) -> {
-			FuturePublish publish = null;
-			try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		BackgroundOperations background = new BackgroundOperations(new BackgroundOperations.IOperationRunner()
+		{
+			@Override
+			public FuturePublish startPublish(IpfsFile newRoot)
 			{
-				publish = access.beginIndexPublish(target);
+				FuturePublish publish = null;
+				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				{
+					publish = access.beginIndexPublish(newRoot);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// This case, we just log.
+					// (we may want to re-request the publish attempt).
+					environment.logError("Error in background publish: " + e.getLocalizedMessage());
+				}
+				catch (UsageException | VersionException e)
+				{
+					// We don't expect these by this point.
+					throw Assert.unexpected(e);
+				}
+				return publish;
 			}
-			catch (IpfsConnectionException e)
+			@Override
+			public Runnable startFolloweeRefresh(IpfsKey followeeKey)
 			{
-				// This case, we just log.
-				// (we may want to re-request the publish attempt).
-				environment.logError("Error in background publish: " + e.getLocalizedMessage());
+				ConcurrentFolloweeRefresher refresher = null;
+				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				{
+					IFolloweeWriting followees = access.writableFolloweeData();
+					IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(followeeKey);
+					refresher = new ConcurrentFolloweeRefresher(environment, followeeKey, lastRoot, access.readPrefs(), false);
+					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// This case, we just log.
+					// (we may want to re-request the publish attempt).
+					environment.logError("Error in background refresh start: " + e.getLocalizedMessage());
+				}
+				catch (UsageException | VersionException e)
+				{
+					// We don't expect these by this point.
+					throw Assert.unexpected(e);
+				}
+				return new RefreshWrapper(refresher);
 			}
-			catch (UsageException | VersionException e)
+			@Override
+			public void finishFolloweeRefresh(Runnable refresher)
 			{
-				// We don't expect these by this point.
-				throw Assert.unexpected(e);
+				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				{
+					IFolloweeWriting followees = access.writableFolloweeData();
+					
+					long lastPollMillis = System.currentTimeMillis();
+					((RefreshWrapper)refresher).refresher.finishRefresh(access, followees, lastPollMillis);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// This case, we just log.
+					// (we may want to re-request the publish attempt).
+					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
+				}
+				catch (UsageException | VersionException e)
+				{
+					// We don't expect these by this point.
+					throw Assert.unexpected(e);
+				}
 			}
-			return publish;
 		});
-		background.startProcess();
+		
+		// Pre-seed the background process with a bunch of work, before we start it up (to see how it saturates more easily).
+		// In a later change, all of these operations which are dumped in will be actually scheduled using some more complex mechanism.
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
 			// We want to request that we update the last published element.
 			IpfsFile rootElement = access.getLastRootElement();
 			background.requestPublish(rootElement);
+			
+			// We will also just request an update of every followee we have.
+			IFolloweeReading followees = access.readableFolloweeData();
+			for (IpfsKey followeeKey : followees.getAllKnownFollowees())
+			{
+				background.enqueueFolloweeRefresh(followeeKey);
+			}
 		}
+		background.startProcess();
 		
 		DraftManager manager = environment.getSharedDraftManager();
 		
@@ -139,5 +204,17 @@ public class InteractiveServer
 		System.out.println("Server shut down.  Shutting down background process...");
 		background.shutdownProcess();
 		System.out.println("Background process shut down.");
+	}
+
+
+	private static record RefreshWrapper(ConcurrentFolloweeRefresher refresher) implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			boolean didRefresh = this.refresher.runRefresh();
+			// (we just log the result)
+			System.out.println("Background refresh: " + didRefresh);
+		}
 	}
 }

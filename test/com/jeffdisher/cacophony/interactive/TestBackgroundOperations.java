@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestBackgroundOperations
@@ -12,6 +13,7 @@ public class TestBackgroundOperations
 	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 	public static final IpfsFile F3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
+	private static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 
 	@Test
@@ -127,11 +129,75 @@ public class TestBackgroundOperations
 		Assert.assertEquals(1, listener.ended);
 	}
 
+	@Test
+	public void oneRefresh() throws Throwable
+	{
+		boolean didRun[] = new boolean[1];
+		TestOperations ops = new TestOperations();
+		Runnable refresher = () -> {
+			Assert.assertFalse(didRun[0]);
+			didRun[0] = true;
+		};
+		BackgroundOperations back = new BackgroundOperations(ops);
+		back.startProcess();
+		
+		// Enqueue one.
+		ops.returnFolloweeOn(K1, refresher);
+		back.enqueueFolloweeRefresh(K1);
+		ops.waitForConsume();
+		
+		back.shutdownProcess();
+		Assert.assertTrue(didRun[0]);
+	}
+
+	@Test
+	public void refreshAndPublish() throws Throwable
+	{
+		// We will publish, then use the delay that causes to install both a publish and a refresh so we can see what happens when they both run.
+		FuturePublish publishFirst = new FuturePublish(F1);
+		FuturePublish publishSecond = new FuturePublish(F2);
+		boolean didRun[] = new boolean[1];
+		Runnable refresher = () -> {
+			Assert.assertFalse(didRun[0]);
+			didRun[0] = true;
+		};
+		TestOperations ops = new TestOperations();
+		TestListener listener = new TestListener();
+		BackgroundOperations back = new BackgroundOperations(ops);
+		back.setListener(listener);
+		back.startProcess();
+		
+		// Enqueue the first, wait for consume but do not yet set success.
+		back.requestPublish(F1);
+		ops.returnOn(F1, publishFirst);
+		ops.waitForConsume();
+		
+		// Now we know that the background thread is waiting for success to enqueue the next publish and refresh so the next iteration, it will run both.
+		back.requestPublish(F2);
+		ops.returnOn(F2, publishSecond);
+		back.enqueueFolloweeRefresh(K1);
+		ops.returnFolloweeOn(K1, refresher);
+		
+		// Now, allow the first publish to complete and wait for everything else to be consumed.
+		publishFirst.success();
+		ops.waitForConsume();
+		publishSecond.success();
+		
+		back.shutdownProcess();
+		
+		Assert.assertTrue(didRun[0]);
+		Assert.assertEquals(3, listener.enqueued);
+		Assert.assertEquals(3, listener.started);
+		Assert.assertEquals(3, listener.ended);
+	}
+
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{
 		private IpfsFile _match;
 		private FuturePublish _return;
+		private IpfsKey _expectedFolloweeKey;
+		private Runnable _refresher;
 		
 		@Override
 		public synchronized FuturePublish startPublish(IpfsFile newRoot)
@@ -154,9 +220,23 @@ public class TestBackgroundOperations
 			this.notifyAll();
 			return publish;
 		}
+		@Override
+		public synchronized Runnable startFolloweeRefresh(IpfsKey followeeKey)
+		{
+			Assert.assertEquals(_expectedFolloweeKey, followeeKey);
+			_expectedFolloweeKey = null;
+			this.notifyAll();
+			return _refresher;
+		}
+		@Override
+		public void finishFolloweeRefresh(Runnable refresher)
+		{
+			Assert.assertEquals(_refresher, refresher);
+			_refresher = null;
+		}
 		public synchronized void waitForConsume()
 		{
-			while (null != _match)
+			while ((null != _match) || (null != _expectedFolloweeKey))
 			{
 				try
 				{
@@ -172,6 +252,12 @@ public class TestBackgroundOperations
 		{
 			_match = file;
 			_return = publish;
+			this.notifyAll();
+		}
+		public synchronized void returnFolloweeOn(IpfsKey expectedFolloweeKey, Runnable refresher)
+		{
+			_expectedFolloweeKey = expectedFolloweeKey;
+			_refresher = refresher;
 			this.notifyAll();
 		}
 	}
