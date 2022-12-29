@@ -15,7 +15,12 @@
 function startCamera(height, width, fps)
 {
 	return new Promise((resolve, reject) => {
-		let constraints = { video: { width: {exact: width}, height: {exact: height}, frameRate: {exact: fps}}, audio: {channelCount: {exact: 1}}};
+		let video = { width: {exact: width}, height: {exact: height}};
+		if (null !== fps)
+		{
+			video.frameRate = {exact: fps};
+		}
+		let constraints = { video: video, audio: {channelCount: {exact: 1}}};
 		navigator.mediaDevices.getUserMedia(constraints).then(resolve, reject);
 	});
 }
@@ -190,8 +195,6 @@ function selectDraft(canvas, original_review, processed_review, audio_review, sc
 		}
 		else
 		{
-			scope.videoConfig.height =  720;
-			scope.videoConfig.width = 1280;
 			original_review.src = "";
 		}
 		
@@ -350,11 +353,20 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.startCamera = function()
 	{
-		startCamera($scope.videoConfig.height, $scope.videoConfig.width, $scope.videoConfig.fps)
+		let fps = $scope.videoConfig.enableFps
+			? $scope.videoConfig.fps
+			: null
+		;
+		startCamera($scope.videoConfig.height, $scope.videoConfig.width, fps)
 			.then(result => {
 				$scope.videoState.stream = result;
 				// We will also extract the audio track.
 				$scope.audioState.stream = new MediaStream(result.getAudioTracks());
+				// If the framerate was disabled, see what we got and store it in the UI.
+				if (!$scope.videoConfig.enableFps)
+				{
+					$scope.videoConfig.fps = result.getVideoTracks()[0].getSettings().frameRate;
+				}
 				video_preview.srcObject = result;
 				$scope.$apply();
 			}, error => {
@@ -718,6 +730,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		$scope.selectedDraft.type = type;
 	}
+	$scope.setVideoConfig = function(width, height)
+	{
+		$scope.videoConfig.width = width;
+		$scope.videoConfig.height = height;
+	}
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
@@ -793,10 +810,20 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="card card-body">
 					Video preview: <br />
+					<div class="btn-group btn-group-sm" role="group" aria-label="Presets">
+						Common presets: 
+						<button type="button" class="btn btn-light" ng-click="setVideoConfig(640, 480)" ng-disabled="null != videoState.stream">480p (4:3)</button>
+						<button type="button" class="btn btn-light" ng-click="setVideoConfig(1280, 720)" ng-disabled="null != videoState.stream">720p (16:9)</button>
+					</div>
 					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoState.stream"></input><br />
 					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoState.stream"></input><br />
-					Framerate: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoState.stream"></input><br />
-					<video id="video_preview" playsinline autoplay muted></video><br />
+					<div class="input-group">
+						<input type="checkbox" class="btn-check" ng-model="videoConfig.enableFps" id="framecheck" autocomplete="off">
+							<label class="btn btn-outline-primary" for="framecheck">Enable framerate</label>
+						</input>
+						<input type="text" class="form-control" placeholder="Specify framerate" ng-model="videoConfig.fps" ng-disabled="(null !== videoState.stream) || !videoConfig.enableFps"></input>
+					</div>
+					<video id="video_preview" ng-show="null !== videoState.stream" playsinline autoplay muted></video><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-disabled="null != videoState.stream">Start Camera</button>
 						<button type="button" class="btn btn-primary" ng-click="stopCamera()" ng-disabled="null == videoState.stream">Stop Camera</button>
