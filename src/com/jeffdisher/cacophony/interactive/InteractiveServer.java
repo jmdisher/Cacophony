@@ -31,6 +31,12 @@ public class InteractiveServer
 {
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
+		IpfsFile rootElement = null;
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		{
+			rootElement = access.getLastRootElement();
+		}
+		
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
 		BackgroundOperations background = new BackgroundOperations(new BackgroundOperations.IOperationRunner()
 		{
@@ -101,21 +107,21 @@ public class InteractiveServer
 					throw Assert.unexpected(e);
 				}
 			}
-		});
+			@Override
+			public long currentTimeMillis()
+			{
+				return System.currentTimeMillis();
+			}
+		}, rootElement, 12L * 60L * 60L * 1000L, 60L * 60L * 1000L);
 		
-		// Pre-seed the background process with a bunch of work, before we start it up (to see how it saturates more easily).
-		// In a later change, all of these operations which are dumped in will be actually scheduled using some more complex mechanism.
+		// Load all the known followees into the background operations for background refresh.
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
-			// We want to request that we update the last published element.
-			IpfsFile rootElement = access.getLastRootElement();
-			background.requestPublish(rootElement);
-			
 			// We will also just request an update of every followee we have.
 			IFolloweeReading followees = access.readableFolloweeData();
 			for (IpfsKey followeeKey : followees.getAllKnownFollowees())
 			{
-				background.enqueueFolloweeRefresh(followeeKey);
+				background.enqueueFolloweeRefresh(followeeKey, followees.getLastPollMillisForFollowee(followeeKey));
 			}
 		}
 		background.startProcess();

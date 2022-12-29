@@ -1,5 +1,8 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,13 +17,15 @@ public class TestBackgroundOperations
 	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 	public static final IpfsFile F3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
 	private static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
+	private static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
+	private static final IpfsKey K3 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 
 	@Test
 	public void noOperations() throws Throwable
 	{
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -30,11 +35,10 @@ public class TestBackgroundOperations
 	{
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
-		back.requestPublish(F1);
 		ops.returnOn(F1, publish);
 		publish.success();
 		
@@ -47,7 +51,7 @@ public class TestBackgroundOperations
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one, then another.
@@ -70,7 +74,7 @@ public class TestBackgroundOperations
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
 		back.setListener(beforeListener);
@@ -108,7 +112,7 @@ public class TestBackgroundOperations
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
@@ -132,18 +136,21 @@ public class TestBackgroundOperations
 	@Test
 	public void oneRefresh() throws Throwable
 	{
+		FuturePublish publishFirst = new FuturePublish(F1);
+		publishFirst.success();
 		boolean didRun[] = new boolean[1];
 		TestOperations ops = new TestOperations();
 		Runnable refresher = () -> {
 			Assert.assertFalse(didRun[0]);
 			didRun[0] = true;
 		};
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
+		ops.returnOn(F1, publishFirst);
 		ops.returnFolloweeOn(K1, refresher);
-		back.enqueueFolloweeRefresh(K1);
+		back.enqueueFolloweeRefresh(K1, 1L);
 		ops.waitForConsume();
 		
 		back.shutdownProcess();
@@ -163,7 +170,7 @@ public class TestBackgroundOperations
 		};
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
-		BackgroundOperations back = new BackgroundOperations(ops);
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
 		back.setListener(listener);
 		back.startProcess();
 		
@@ -175,7 +182,7 @@ public class TestBackgroundOperations
 		// Now we know that the background thread is waiting for success to enqueue the next publish and refresh so the next iteration, it will run both.
 		back.requestPublish(F2);
 		ops.returnOn(F2, publishSecond);
-		back.enqueueFolloweeRefresh(K1);
+		back.enqueueFolloweeRefresh(K1, 1L);
 		ops.returnFolloweeOn(K1, refresher);
 		
 		// Now, allow the first publish to complete and wait for everything else to be consumed.
@@ -189,6 +196,51 @@ public class TestBackgroundOperations
 		Assert.assertEquals(3, listener.enqueued);
 		Assert.assertEquals(3, listener.started);
 		Assert.assertEquals(3, listener.ended);
+	}
+
+	@Test
+	public void sortingAssumptions() throws Throwable
+	{
+		// Just make sure that our understanding of the sorting Comparator is correct.
+		int didRun[] = new int[1];
+		TestOperations ops = new TestOperations();
+		// We use a barrier to synchronize between the background and foreground threads so we can set up the next followee refresh value before the previous one finished.
+		// (Otherwise, this causes intermittent errors when the background thread goes to request the next refresh but the value we are matching on is still null)
+		CyclicBarrier barrier = new CyclicBarrier(2);
+		Runnable refresher = () -> {
+			try
+			{
+				barrier.await();
+			}
+			catch (InterruptedException | BrokenBarrierException e)
+			{
+				// Not in test.
+				Assert.fail();
+			}
+			didRun[0] += 1;
+		};
+		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		FuturePublish publishFirst = new FuturePublish(F1);
+		ops.returnOn(F1, publishFirst);
+		publishFirst.success();
+		back.enqueueFolloweeRefresh(K2, 5L);
+		back.enqueueFolloweeRefresh(K1, 1L);
+		back.enqueueFolloweeRefresh(K3, 10L);
+		back.startProcess();
+		
+		// Enqueue one.
+		ops.returnFolloweeOn(K1, refresher);
+		ops.waitForConsume();
+		ops.returnFolloweeOn(K2, refresher);
+		barrier.await();
+		ops.waitForConsume();
+		ops.returnFolloweeOn(K3, refresher);
+		barrier.await();
+		ops.waitForConsume();
+		barrier.await();
+		
+		back.shutdownProcess();
+		Assert.assertEquals(3, didRun[0]);
 	}
 
 
@@ -225,14 +277,20 @@ public class TestBackgroundOperations
 		{
 			Assert.assertEquals(_expectedFolloweeKey, followeeKey);
 			_expectedFolloweeKey = null;
+			Runnable runnable = _refresher;
+			_refresher = null;
 			this.notifyAll();
-			return _refresher;
+			return runnable;
 		}
 		@Override
 		public void finishFolloweeRefresh(Runnable refresher)
 		{
-			Assert.assertEquals(_refresher, refresher);
-			_refresher = null;
+			// Do nothing.
+		}
+		@Override
+		public long currentTimeMillis()
+		{
+			return 1000L;
 		}
 		public synchronized void waitForConsume()
 		{
