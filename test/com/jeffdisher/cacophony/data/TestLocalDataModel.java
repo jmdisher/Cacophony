@@ -222,7 +222,7 @@ public class TestLocalDataModel
 		CountingCallbacks counting = new CountingCallbacks();
 		OpcodeContext context = new OpcodeContext(counting, counting);
 		context.decodeWholeStream(new ByteArrayInputStream(serialized));
-		Assert.assertEquals(3, counting.miscCount);
+		Assert.assertEquals(5, counting.miscCount);
 		Assert.assertEquals(0, counting.followeeCount);
 	}
 
@@ -254,7 +254,7 @@ public class TestLocalDataModel
 		CountingCallbacks counting = new CountingCallbacks();
 		OpcodeContext context = new OpcodeContext(counting, counting);
 		context.decodeWholeStream(new ByteArrayInputStream(serialized));
-		Assert.assertEquals(5, counting.miscCount);
+		Assert.assertEquals(7, counting.miscCount);
 		Assert.assertEquals(2, counting.followeeCount);
 	}
 

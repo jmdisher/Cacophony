@@ -70,6 +70,14 @@ public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 		{
 			_prefs.followCacheTargetBytes = (Long)value;
 		}
+		else if (keyName.equals(PrefsData.LONG_REPUBLISH_INTERVAL_MILLIS))
+		{
+			_prefs.republishIntervalMillis = (Long)value;
+		}
+		else if (keyName.equals(PrefsData.LONG_FOLLOWEE_REFRESH_MILLIS))
+		{
+			_prefs.followeeRefreshMillis = (Long)value;
+		}
 		else
 		{
 			throw Assert.unreachable();

@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -31,9 +32,11 @@ public class InteractiveServer
 {
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
+		PrefsData prefs = null;
 		IpfsFile rootElement = null;
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
+			prefs = access.readPrefs();
 			rootElement = access.getLastRootElement();
 		}
 		
@@ -112,7 +115,7 @@ public class InteractiveServer
 			{
 				return System.currentTimeMillis();
 			}
-		}, rootElement, 12L * 60L * 60L * 1000L, 60L * 60L * 1000L);
+		}, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
 		// Load all the known followees into the background operations for background refresh.
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
