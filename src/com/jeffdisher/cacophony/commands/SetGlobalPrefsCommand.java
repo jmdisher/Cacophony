@@ -10,7 +10,7 @@ import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
-public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) implements ICommand
+public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, long _republishIntervalMillis, long _followeeRefreshMillis) implements ICommand
 {
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
@@ -35,6 +35,16 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes) 
 		if (_followCacheTargetBytes > 0L)
 		{
 			prefs.followCacheTargetBytes = _followCacheTargetBytes;
+			didChange = true;
+		}
+		if (_republishIntervalMillis > 0L)
+		{
+			prefs.republishIntervalMillis = _republishIntervalMillis;
+			didChange = true;
+		}
+		if (_followeeRefreshMillis > 0L)
+		{
+			prefs.followeeRefreshMillis = _followeeRefreshMillis;
 			didChange = true;
 		}
 		if (didChange)

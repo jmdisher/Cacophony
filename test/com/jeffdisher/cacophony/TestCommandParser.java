@@ -142,7 +142,12 @@ public class TestCommandParser
 	@Test
 	public void testSetGlobalPrefs() throws Throwable
 	{
-		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5000000000"};
+		String[] foo = {"--setGlobalPrefs"
+				, "--edgeMaxPixels", "7"
+				, "--followCacheTargetBytes", "5G"
+				, "--republishIntervalMillis", "2000"
+				, "--followeeRefreshMillis", "3000"
+		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, capture);

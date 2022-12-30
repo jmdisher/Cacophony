@@ -175,7 +175,7 @@ public class TestFollowUpdates
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
 		
 		// Set our preferences for requested video sizes - 640 pixel edge and make sure the data limit is high enough to capture everything.
-		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L));
+		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L, 0L, 0L));
 		
 		// Start following before the upload so we can refresh on each update, meaning we will get both with no eviction or change of not caching.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);

@@ -79,7 +79,7 @@ public class TestListChannelEntriesCommand
 		user1.runCommand(null, new PublishCommand("big name", "leaf description", null, new ElementSubCommand[] { new ElementSubCommand("video/webm", video, 720, 1280, false) } ));
 		
 		// Reduce the cache size and start following the user.
-		user2.runCommand(null, new SetGlobalPrefsCommand(1280, 2L));
+		user2.runCommand(null, new SetGlobalPrefsCommand(1280, 2L, 0L, 0L));
 		user2.runCommand(null, new StartFollowingCommand(PUBLIC_KEY1));
 		
 		// Check that the output from the listing makes sense.

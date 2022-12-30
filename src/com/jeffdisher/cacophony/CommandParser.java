@@ -195,11 +195,22 @@ public class CommandParser
 		}),
 		
 		// Methods to manage local state.
-		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[] {"--edgeMaxPixels", "--followCacheTargetBytes"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		SET_GLOBAL_PREFS(true, "--setGlobalPrefs", new String[0], new String[]
+				{ "--edgeMaxPixels"
+				, "--followCacheTargetBytes"
+				, "--republishIntervalMillis"
+				, "--followeeRefreshMillis"
+				}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			int edgeMaxPixels = _parseAsInt(optional[0], 0);
 			long followCacheTargetBytes = _parseAsStorageNumber(optional[1], 0L);
-			return new SetGlobalPrefsCommand(edgeMaxPixels, followCacheTargetBytes);
+			long republishIntervalMillis = _parseAsLong(optional[2], 0L);
+			long followeeRefreshMillis = _parseAsLong(optional[3], 0L);
+			return new SetGlobalPrefsCommand(edgeMaxPixels
+					, followCacheTargetBytes
+					, republishIntervalMillis
+					, followeeRefreshMillis
+			);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
@@ -278,6 +289,21 @@ public class CommandParser
 			{
 				return (null != num)
 						? Integer.parseInt(num)
+						: ifNull
+				;
+			}
+			catch (NumberFormatException e)
+			{
+				throw new UsageException("Not a number: \"" + num + "\"");
+			}
+		}
+		
+		private static long _parseAsLong(String num, long ifNull) throws UsageException
+		{
+			try
+			{
+				return (null != num)
+						? Long.parseLong(num)
 						: ifNull
 				;
 			}
