@@ -76,8 +76,11 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
-java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" OUTPUT_TEXT "ws://127.0.0.1:8000/backgroundStatus" status > "$STATUS_FILE" &
-STATUS_PID=$!
+# We will use 2 copies, just to verify that concurrent connections are ok.
+java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" OUTPUT_TEXT "ws://127.0.0.1:8000/backgroundStatus" status > "$STATUS_FILE.1" &
+STATUS_PID1=$!
+java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" OUTPUT_TEXT "ws://127.0.0.1:8000/backgroundStatus" status > "$STATUS_FILE.2" &
+STATUS_PID2=$!
 
 echo "Get the default video config..."
 VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/videoConfig)
@@ -247,11 +250,15 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST http://127.0.0.1:8000/
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"
-wait $STATUS_PID
-STATUS_DATA=$(cat "$STATUS_FILE")
+wait $STATUS_PID1
+wait $STATUS_PID2
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
-requireSubstring "$STATUS_DATA" ",\"event\":\"START\",\"description\":\"Publish IpfsFile("
-requireSubstring "$STATUS_DATA" ",\"event\":\"END\",\"description\":null"
+STATUS_DATA1=$(cat "$STATUS_FILE.1")
+requireSubstring "$STATUS_DATA1" ",\"event\":\"START\",\"description\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA1" ",\"event\":\"END\",\"description\":null"
+STATUS_DATA2=$(cat "$STATUS_FILE.2")
+requireSubstring "$STATUS_DATA2" ",\"event\":\"START\",\"description\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA2" ",\"event\":\"END\",\"description\":null"
 
 echo "Verify that we can see the published post in out list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)

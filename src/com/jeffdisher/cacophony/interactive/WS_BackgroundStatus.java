@@ -9,6 +9,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.breakwater.IWebSocketFactory;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -21,37 +22,37 @@ import com.jeffdisher.breakwater.IWebSocketFactory;
 public class WS_BackgroundStatus implements IWebSocketFactory
 {
 	private final String _xsrf;
-	private final BackgroundOperations _background;
+	private final HandoffConnector<Integer, String> _statusHandoff;
 	
-	public WS_BackgroundStatus(String xsrf, BackgroundOperations background)
+	public WS_BackgroundStatus(String xsrf, HandoffConnector<Integer, String> statusHandoff)
 	{
 		_xsrf = xsrf;
-		_background = background;
+		_statusHandoff = statusHandoff;
 	}
 	
 	@Override
 	public WebSocketListener create(String[] variables)
 	{
-		return new StatusListener(_xsrf, _background);
+		return new StatusListener(_xsrf, _statusHandoff);
 	}
 
 
-	private static class StatusListener implements WebSocketListener, BackgroundOperations.IOperationListener
+	private static class StatusListener implements WebSocketListener, HandoffConnector.IHandoffListener<Integer, String>
 	{
 		private final String _xsrf;
-		private final BackgroundOperations _background;
+		private final HandoffConnector<Integer, String> _statusHandoff;
 		private RemoteEndpoint _endPoint;
 		
-		public StatusListener(String xsrf, BackgroundOperations background)
+		public StatusListener(String xsrf, HandoffConnector<Integer, String> statusHandoff)
 		{
 			_xsrf = xsrf;
-			_background = background;
+			_statusHandoff = statusHandoff;
 		}
 		
 		@Override
 		public void onWebSocketClose(int statusCode, String reason)
 		{
-			_background.setListener(null);
+			_statusHandoff.unregisterListener(this);
 		}
 		
 		@Override
@@ -60,39 +61,49 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
 			{
 				_endPoint = session.getRemote();
-				_background.setListener(this);
+				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
+				_statusHandoff.registerListener(this);
 				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
 				session.setIdleTimeout(Duration.ofDays(1));
 			}
 		}
 		
 		@Override
-		public void operationStart(int number, String description)
+		public boolean create(Integer key, String value)
 		{
-			_writeEvent(number, Event.START, description);
+			return _writeEvent(key, Event.START, value);
 		}
 		
 		@Override
-		public void operationEnd(int number)
+		public boolean update(Integer key, String value)
 		{
-			_writeEvent(number, Event.END, null);
+			// We don't have updates for this event.
+			throw Assert.unreachable();
 		}
 		
-		private void _writeEvent(int number, Event event, String description)
+		@Override
+		public boolean destroy(Integer key)
+		{
+			return _writeEvent(key, Event.END, null);
+		}
+		
+		private boolean _writeEvent(int number, Event event, String description)
 		{
 			JsonObject root = new JsonObject();
 			root.add("number", number);
 			root.add("event", event.name());
 			root.add("description", description);
+			boolean success;
 			try
 			{
 				_endPoint.sendString(root.toString());
+				success = true;
 			}
 			catch (IOException e)
 			{
-				// If something went wrong, unset the listener so we can stop sending data.
-				_background.setListener(null);
+				success = false;
 			}
+			return success;
 		}
 	}
 

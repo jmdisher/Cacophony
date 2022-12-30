@@ -1,8 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -22,6 +20,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class BackgroundOperations
 {
 	// Instance variables which are never written after construction (safe everywhere).
+	private final HandoffConnector<Integer, String> _connector;
 	private final Thread _background;
 	private final long _republishIntervalMillis;
 	private final long _followeeRefreshMillis;
@@ -36,14 +35,9 @@ public class BackgroundOperations
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
 
-	// Data related to the listener and how we track active operations for reporting purposes.
-	// Only accessible under the specialized listener monitor.
-	private final Object _listenerMonitor;
-	private final Map<Integer, String> _listenerCapture;
-	private IOperationListener _listener;
-
-	public BackgroundOperations(IOperationRunner operations, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
+	public BackgroundOperations(IOperationRunner operations, HandoffConnector<Integer, String> connector, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
 	{
+		_connector = connector;
 		_background = new Thread(() -> {
 			RequestedOperation operation = _background_consumeNextOperation(operations.currentTimeMillis());
 			while (null != operation)
@@ -54,22 +48,22 @@ public class BackgroundOperations
 				{
 					publish = operations.startPublish(operation.publishTarget);
 					Assert.assertTrue(null != publish);
-					_background_setOperationStarted(operation.publishNumber);
+					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
 				}
 				// If we have a followee to refresh, do that work.
 				if (null != operation.followeeKey)
 				{
 					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
-					_background_setOperationStarted(operation.followeeNumber);
+					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
 					refresher.run();
 					operations.finishFolloweeRefresh(refresher);
-					_background_setOperationEnded(operation.followeeNumber);
+					_connector.destroy(operation.followeeNumber);
 				}
 				// Now, we can wait for the publish before we go back for more work.
 				if (null != publish)
 				{
 					publish.get();
-					_background_setOperationEnded(operation.publishNumber);
+					_connector.destroy(operation.publishNumber);
 				}
 				operation = _background_consumeNextOperation(operations.currentTimeMillis());
 			}
@@ -91,9 +85,6 @@ public class BackgroundOperations
 				return Long.signum(arg0.lastRefreshMillis - arg1.lastRefreshMillis);
 			}
 		});
-		
-		_listenerMonitor = new Object();
-		_listenerCapture = new HashMap<>();
 	}
 
 	public void startProcess()
@@ -167,33 +158,6 @@ public class BackgroundOperations
 		}
 	}
 
-	public void setListener(IOperationListener listener)
-	{
-		synchronized(_listenerMonitor)
-		{
-			// We will just replace this, assuming the user knows what they are doing.
-			_listener = listener;
-			for (Map.Entry<Integer, String> entry : _listenerCapture.entrySet())
-			{
-				int number = entry.getKey();
-				String description = entry.getValue();
-				// Technically, the listener argument can be null or can be set to null in these callbacks so we need to check it in the loop.
-				if (null != _listener)
-				{
-					_listener.operationStart(number, description);
-				}
-			}
-		}
-	}
-
-
-	private void _background_defineOperation(int number, String description)
-	{
-		synchronized(_listenerMonitor)
-		{
-			_listenerCapture.put(number, description);
-		}
-	}
 
 	// Requests work to perform but also is responsible for the core scheduling operations - creating operations from the system described to us and the requests passed in from callers.
 	private synchronized RequestedOperation _background_consumeNextOperation(long currentTimeMillis)
@@ -222,7 +186,6 @@ public class BackgroundOperations
 				publish = _handoff_currentRoot;
 				publishNumber = _background_nextOperationNumber;
 				_background_nextOperationNumber += 1;
-				_background_defineOperation(publishNumber, "Publish " + publish);
 			}
 			
 			// Determine if we have refresh work to do.
@@ -239,7 +202,6 @@ public class BackgroundOperations
 					refresh = followee.followee;
 					refreshNumber = _background_nextOperationNumber;
 					_background_nextOperationNumber += 1;
-					_background_defineOperation(refreshNumber, "Refresh " + refresh);
 				}
 			}
 			
@@ -281,29 +243,6 @@ public class BackgroundOperations
 		return work;
 	}
 
-	private void _background_setOperationStarted(int number)
-	{
-		synchronized(_listenerMonitor)
-		{
-			if (null != _listener)
-			{
-				_listener.operationStart(number, _listenerCapture.get(number));
-			}
-		}
-	}
-
-	private void _background_setOperationEnded(int number)
-	{
-		synchronized(_listenerMonitor)
-		{
-			_listenerCapture.remove(number);
-			if (null != _listener)
-			{
-				_listener.operationEnd(number);
-			}
-		}
-	}
-
 
 	/**
 	 * This is just here to make the testing more concise.
@@ -314,17 +253,6 @@ public class BackgroundOperations
 		Runnable startFolloweeRefresh(IpfsKey followeeKey);
 		void finishFolloweeRefresh(Runnable refresher);
 		long currentTimeMillis();
-	}
-
-
-	/**
-	 * Callbacks associated with changes of state in the listener.  Note that these calls could be issued on any thread
-	 * but they will always be sequentially issued.
-	 */
-	public static interface IOperationListener
-	{
-		void operationStart(int number, String description);
-		void operationEnd(int number);
 	}
 
 

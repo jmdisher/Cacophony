@@ -25,7 +25,8 @@ public class TestBackgroundOperations
 	public void noOperations() throws Throwable
 	{
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -35,7 +36,8 @@ public class TestBackgroundOperations
 	{
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -51,7 +53,8 @@ public class TestBackgroundOperations
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one, then another.
@@ -74,10 +77,11 @@ public class TestBackgroundOperations
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
-		back.setListener(beforeListener);
+		statusHandoff.registerListener(beforeListener);
 		
 		// Enqueue the one which may or may not be seen, then wait to set its success until we have set all the others.
 		back.requestPublish(F1);
@@ -96,7 +100,7 @@ public class TestBackgroundOperations
 		back.shutdownProcess();
 		
 		TestListener afterListener = new TestListener();
-		back.setListener(afterListener);
+		statusHandoff.registerListener(afterListener);
 		// The capture from the start should see 2 of each event but the one at the end should see none, since everything should be done.
 		Assert.assertEquals(2, beforeListener.started);
 		Assert.assertEquals(2, beforeListener.ended);
@@ -110,7 +114,8 @@ public class TestBackgroundOperations
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
@@ -120,7 +125,7 @@ public class TestBackgroundOperations
 		
 		// We can now install the listener and see all the events, since we know it didn't yet succeed.
 		TestListener listener = new TestListener();
-		back.setListener(listener);
+		statusHandoff.registerListener(listener);
 		// Now, allow it to succeed.
 		publishFirst.success();
 		
@@ -141,7 +146,8 @@ public class TestBackgroundOperations
 			Assert.assertFalse(didRun[0]);
 			didRun[0] = true;
 		};
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -167,8 +173,9 @@ public class TestBackgroundOperations
 		};
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
-		back.setListener(listener);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		statusHandoff.registerListener(listener);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
@@ -215,7 +222,8 @@ public class TestBackgroundOperations
 			}
 			didRun[0] += 1;
 		};
-		BackgroundOperations back = new BackgroundOperations(ops, F1, 10L, 20L);
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		ops.returnOn(F1, publishFirst);
 		publishFirst.success();
@@ -316,20 +324,29 @@ public class TestBackgroundOperations
 		}
 	}
 
-	private static class TestListener implements BackgroundOperations.IOperationListener
+	private static class TestListener implements HandoffConnector.IHandoffListener<Integer, String>
 	{
 		public int started = 0;
 		public int ended = 0;
 		
 		@Override
-		public void operationStart(int number, String description)
+		public boolean create(Integer key, String value)
 		{
 			this.started += 1;
+			return true;
 		}
 		@Override
-		public void operationEnd(int number)
+		public boolean update(Integer key, String value)
+		{
+			// Not used in this case.
+			Assert.fail();
+			return false;
+		}
+		@Override
+		public boolean destroy(Integer key)
 		{
 			this.ended += 1;
+			return true;
 		}
 	}
 }
