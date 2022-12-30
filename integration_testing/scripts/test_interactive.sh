@@ -254,11 +254,11 @@ wait $STATUS_PID1
 wait $STATUS_PID2
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
 STATUS_DATA1=$(cat "$STATUS_FILE.1")
-requireSubstring "$STATUS_DATA1" ",\"event\":\"START\",\"description\":\"Publish IpfsFile("
-requireSubstring "$STATUS_DATA1" ",\"event\":\"END\",\"description\":null"
+requireSubstring "$STATUS_DATA1" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA1" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 STATUS_DATA2=$(cat "$STATUS_FILE.2")
-requireSubstring "$STATUS_DATA2" ",\"event\":\"START\",\"description\":\"Publish IpfsFile("
-requireSubstring "$STATUS_DATA2" ",\"event\":\"END\",\"description\":null"
+requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
 echo "Verify that we can see the published post in out list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)

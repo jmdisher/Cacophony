@@ -1,13 +1,12 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.IOException;
 import java.time.Duration;
 
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
-import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -71,7 +70,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 		@Override
 		public boolean create(Integer key, String value)
 		{
-			return _writeEvent(key, Event.START, value);
+			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key), Json.value(value));
 		}
 		
 		@Override
@@ -84,33 +83,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 		@Override
 		public boolean destroy(Integer key)
 		{
-			return _writeEvent(key, Event.END, null);
+			return SocketEventHelpers.sendDelete(_endPoint, Json.value(key));
 		}
-		
-		private boolean _writeEvent(int number, Event event, String description)
-		{
-			JsonObject root = new JsonObject();
-			root.add("number", number);
-			root.add("event", event.name());
-			root.add("description", description);
-			boolean success;
-			try
-			{
-				_endPoint.sendString(root.toString());
-				success = true;
-			}
-			catch (IOException e)
-			{
-				success = false;
-			}
-			return success;
-		}
-	}
-
-
-	private static enum Event
-	{
-		START,
-		END,
 	}
 }
