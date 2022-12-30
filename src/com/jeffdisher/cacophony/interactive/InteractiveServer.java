@@ -43,7 +43,7 @@ public class InteractiveServer
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
-		BackgroundOperations background = new BackgroundOperations(new BackgroundOperations.IOperationRunner()
+		BackgroundOperations background = new BackgroundOperations(environment, new BackgroundOperations.IOperationRunner()
 		{
 			@Override
 			public FuturePublish startPublish(IpfsFile newRoot)

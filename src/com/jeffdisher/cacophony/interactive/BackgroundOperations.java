@@ -3,7 +3,9 @@ package com.jeffdisher.cacophony.interactive;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -20,6 +22,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class BackgroundOperations
 {
 	// Instance variables which are never written after construction (safe everywhere).
+	private final IEnvironment _environment;
 	private final HandoffConnector<Integer, String> _connector;
 	private final Thread _background;
 	private final long _republishIntervalMillis;
@@ -35,8 +38,9 @@ public class BackgroundOperations
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
 
-	public BackgroundOperations(IOperationRunner operations, HandoffConnector<Integer, String> connector, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
+	public BackgroundOperations(IEnvironment environment, IOperationRunner operations, HandoffConnector<Integer, String> connector, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
 	{
+		_environment = environment;
 		_connector = connector;
 		_background = new Thread(() -> {
 			RequestedOperation operation = _background_consumeNextOperation(operations.currentTimeMillis());
@@ -46,6 +50,7 @@ public class BackgroundOperations
 				FuturePublish publish = null;
 				if (null != operation.publishTarget)
 				{
+					_environment.logToConsole("Background start publish: " + operation.publishTarget);
 					publish = operations.startPublish(operation.publishTarget);
 					Assert.assertTrue(null != publish);
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
@@ -53,17 +58,20 @@ public class BackgroundOperations
 				// If we have a followee to refresh, do that work.
 				if (null != operation.followeeKey)
 				{
+					_environment.logToConsole("Background start refresh: " + operation.followeeKey);
 					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
 					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
 					refresher.run();
 					operations.finishFolloweeRefresh(refresher);
 					_connector.destroy(operation.followeeNumber);
+					_environment.logToConsole("Background end refresh: " + operation.followeeKey);
 				}
 				// Now, we can wait for the publish before we go back for more work.
 				if (null != publish)
 				{
-					publish.get();
+					IpfsConnectionException error = publish.get();
 					_connector.destroy(operation.publishNumber);
+					_environment.logToConsole("Background end publish: " + operation.publishTarget + ((null == error) ? " SUCCESS" : (" FAILED with " + error)));
 				}
 				operation = _background_consumeNextOperation(operations.currentTimeMillis());
 			}

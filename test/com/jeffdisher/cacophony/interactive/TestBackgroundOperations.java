@@ -6,6 +6,7 @@ import java.util.concurrent.CyclicBarrier;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,9 +25,10 @@ public class TestBackgroundOperations
 	@Test
 	public void noOperations() throws Throwable
 	{
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -34,10 +36,11 @@ public class TestBackgroundOperations
 	@Test
 	public void oneOperation() throws Throwable
 	{
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -50,11 +53,12 @@ public class TestBackgroundOperations
 	@Test
 	public void sequentialOperations() throws Throwable
 	{
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one, then another.
@@ -74,11 +78,12 @@ public class TestBackgroundOperations
 		// This one is somewhat non-deterministic in that the first element added may be seen, or could be overwritten.
 		// We do know that none of the others will be seen, but then the last will ALWAYS be seen.
 		// We will verify this by only setting success on the first and last.
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
 		statusHandoff.registerListener(beforeListener);
@@ -112,10 +117,11 @@ public class TestBackgroundOperations
 	public void testPartialListening() throws Throwable
 	{
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
@@ -138,6 +144,7 @@ public class TestBackgroundOperations
 	@Test
 	public void oneRefresh() throws Throwable
 	{
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		publishFirst.success();
 		boolean didRun[] = new boolean[1];
@@ -147,7 +154,7 @@ public class TestBackgroundOperations
 			didRun[0] = true;
 		};
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -164,6 +171,7 @@ public class TestBackgroundOperations
 	public void refreshAndPublish() throws Throwable
 	{
 		// We will publish, then use the delay that causes to install both a publish and a refresh so we can see what happens when they both run.
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishSecond = new FuturePublish(F2);
 		boolean didRun[] = new boolean[1];
@@ -174,7 +182,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener);
 		back.startProcess();
 		
@@ -204,6 +212,7 @@ public class TestBackgroundOperations
 	@Test
 	public void sortingAssumptions() throws Throwable
 	{
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		// Just make sure that our understanding of the sorting Comparator is correct.
 		int didRun[] = new int[1];
 		TestOperations ops = new TestOperations();
@@ -223,7 +232,7 @@ public class TestBackgroundOperations
 			didRun[0] += 1;
 		};
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
-		BackgroundOperations back = new BackgroundOperations(ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		ops.returnOn(F1, publishFirst);
 		publishFirst.success();
