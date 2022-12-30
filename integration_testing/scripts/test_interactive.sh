@@ -250,8 +250,7 @@ echo "Now that the server stopped, the status should be done"
 wait $STATUS_PID
 STATUS_DATA=$(cat "$STATUS_FILE")
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
-requireSubstring "$STATUS_DATA" ",\"event\":\"ENQUEUE\",\"description\":\"Publish IpfsFile("
-requireSubstring "$STATUS_DATA" ",\"event\":\"START\",\"description\":null"
+requireSubstring "$STATUS_DATA" ",\"event\":\"START\",\"description\":\"Publish IpfsFile("
 requireSubstring "$STATUS_DATA" ",\"event\":\"END\",\"description\":null"
 
 echo "Verify that we can see the published post in out list..."

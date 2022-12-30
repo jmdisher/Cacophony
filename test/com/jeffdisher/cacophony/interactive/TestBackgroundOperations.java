@@ -98,10 +98,8 @@ public class TestBackgroundOperations
 		TestListener afterListener = new TestListener();
 		back.setListener(afterListener);
 		// The capture from the start should see 2 of each event but the one at the end should see none, since everything should be done.
-		Assert.assertEquals(2, beforeListener.enqueued);
 		Assert.assertEquals(2, beforeListener.started);
 		Assert.assertEquals(2, beforeListener.ended);
-		Assert.assertEquals(0, afterListener.enqueued);
 		Assert.assertEquals(0, afterListener.started);
 		Assert.assertEquals(0, afterListener.ended);
 	}
@@ -128,7 +126,6 @@ public class TestBackgroundOperations
 		
 		back.shutdownProcess();
 		
-		Assert.assertEquals(1, listener.enqueued);
 		Assert.assertEquals(1, listener.started);
 		Assert.assertEquals(1, listener.ended);
 	}
@@ -193,7 +190,6 @@ public class TestBackgroundOperations
 		back.shutdownProcess();
 		
 		Assert.assertTrue(didRun[0]);
-		Assert.assertEquals(3, listener.enqueued);
 		Assert.assertEquals(3, listener.started);
 		Assert.assertEquals(3, listener.ended);
 	}
@@ -322,17 +318,11 @@ public class TestBackgroundOperations
 
 	private static class TestListener implements BackgroundOperations.IOperationListener
 	{
-		public int enqueued = 0;
 		public int started = 0;
 		public int ended = 0;
 		
 		@Override
-		public void operationEnqueued(int number, String description)
-		{
-			this.enqueued += 1;
-		}
-		@Override
-		public void operationStart(int number)
+		public void operationStart(int number, String description)
 		{
 			this.started += 1;
 		}

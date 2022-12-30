@@ -47,19 +47,22 @@ GLOBAL_Application.controller('AppController', function($scope)
 		statusSocket.addEventListener('message', function(event)
 		{
 			let object = JSON.parse(event.data);
-			if ('ENQUEUE' == object.event)
-			{
-				// This is being added to the list.
-				$scope.states.push(object);
-			}
-			else if ('START' == object.event)
+			if ('START' == object.event)
 			{
 				// This is already in the list, so just update the state (and nothing else).
 				let elt = $scope.states.find(function(value, index, array)
 				{
 					return (value.number == object.number);
 				});
-				elt.event = object.event;
+				if (undefined === elt)
+				{
+					// This is being added to the list.
+					$scope.states.push(object);
+				}
+				else
+				{
+					elt.event = object.event;
+				}
 			}
 			else if ('END' == object.event)
 			{
@@ -120,8 +123,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 				Server is {{serverState}}:  <button class="btn btn-danger" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
 			</div>
 			<div class="row card card-body" ng-repeat="state in states">
-				<span class="badge rounded-pill text-bg-primary" ng-show="state.event === 'ENQUEUE'">Waiting</span>
-				<span class="badge rounded-pill text-bg-success" ng-show="state.event === 'START'">Running</span>
+				<span class="badge rounded-pill text-bg-success">Running</span>
 				{{state.description}}
 			</div>
 		</div>

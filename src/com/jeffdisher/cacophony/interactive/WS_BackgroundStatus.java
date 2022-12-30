@@ -67,15 +67,9 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 		}
 		
 		@Override
-		public void operationEnqueued(int number, String description)
+		public void operationStart(int number, String description)
 		{
-			_writeEvent(number, Event.ENQUEUE, description);
-		}
-		
-		@Override
-		public void operationStart(int number)
-		{
-			_writeEvent(number, Event.START, null);
+			_writeEvent(number, Event.START, description);
 		}
 		
 		@Override
@@ -105,7 +99,6 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 
 	private static enum Event
 	{
-		ENQUEUE,
 		START,
 		END,
 	}

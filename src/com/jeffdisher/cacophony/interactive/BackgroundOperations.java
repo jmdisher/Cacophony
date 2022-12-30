@@ -39,7 +39,7 @@ public class BackgroundOperations
 	// Data related to the listener and how we track active operations for reporting purposes.
 	// Only accessible under the specialized listener monitor.
 	private final Object _listenerMonitor;
-	private final Map<Integer, Action> _listenerCapture;
+	private final Map<Integer, String> _listenerCapture;
 	private IOperationListener _listener;
 
 	public BackgroundOperations(IOperationRunner operations, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
@@ -173,18 +173,14 @@ public class BackgroundOperations
 		{
 			// We will just replace this, assuming the user knows what they are doing.
 			_listener = listener;
-			for (Map.Entry<Integer, Action> entry : _listenerCapture.entrySet())
+			for (Map.Entry<Integer, String> entry : _listenerCapture.entrySet())
 			{
 				int number = entry.getKey();
-				Action action = entry.getValue();
+				String description = entry.getValue();
 				// Technically, the listener argument can be null or can be set to null in these callbacks so we need to check it in the loop.
 				if (null != _listener)
 				{
-					_listener.operationEnqueued(number, action.description);
-				}
-				if ((action.isStarted) && (null != _listener))
-				{
-					_listener.operationStart(number);
+					_listener.operationStart(number, description);
 				}
 			}
 		}
@@ -195,7 +191,7 @@ public class BackgroundOperations
 	{
 		synchronized(_listenerMonitor)
 		{
-			_listenerCapture.put(number, new Action(description));
+			_listenerCapture.put(number, description);
 		}
 	}
 
@@ -289,12 +285,9 @@ public class BackgroundOperations
 	{
 		synchronized(_listenerMonitor)
 		{
-			_listenerCapture.get(number).isStarted = true;
 			if (null != _listener)
 			{
-				// For now, we also synthesize the enqueue of this operation since we aren't distinguishing between enqueue and start.
-				_listener.operationEnqueued(number, _listenerCapture.get(number).description);
-				_listener.operationStart(number);
+				_listener.operationStart(number, _listenerCapture.get(number));
 			}
 		}
 	}
@@ -330,21 +323,8 @@ public class BackgroundOperations
 	 */
 	public static interface IOperationListener
 	{
-		void operationEnqueued(int number, String description);
-		void operationStart(int number);
+		void operationStart(int number, String description);
 		void operationEnd(int number);
-	}
-
-
-	private static class Action
-	{
-		public Action(String description)
-		{
-			this.description = description;
-			this.isStarted = false;
-		}
-		public String description;
-		public boolean isStarted;
 	}
 
 
