@@ -165,6 +165,16 @@ public class TestCommandParser
 		CommandParser.parseArgs(foo, capture);
 	}
 
+	@Test(expected = UsageException.class)
+	public void testSetGlobalPrefsNegative() throws Throwable
+	{
+		String[] foo = {"--setGlobalPrefs", "--republishIntervalMillis", "-2000"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		// We expect this to throw the UsageException.
+		CommandParser.parseArgs(foo, capture);
+	}
+
 	@Test
 	public void testSetGlobalPrefsGigs() throws Throwable
 	{

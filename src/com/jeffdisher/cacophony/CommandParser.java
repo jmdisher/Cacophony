@@ -287,10 +287,15 @@ public class CommandParser
 		{
 			try
 			{
-				return (null != num)
+				int result = (null != num)
 						? Integer.parseInt(num)
 						: ifNull
 				;
+				if (result < 0)
+				{
+					throw new UsageException("Value cannot be negative: \"" + result + "\"");
+				}
+				return result;
 			}
 			catch (NumberFormatException e)
 			{
@@ -302,10 +307,15 @@ public class CommandParser
 		{
 			try
 			{
-				return (null != num)
+				long result = (null != num)
 						? Long.parseLong(num)
 						: ifNull
 				;
+				if (result < 0L)
+				{
+					throw new UsageException("Value cannot be negative: \"" + result + "\"");
+				}
+				return result;
 			}
 			catch (NumberFormatException e)
 			{
@@ -353,6 +363,10 @@ public class CommandParser
 				{
 					long value = Long.parseLong(toParse);
 					result = value * magnitude;
+					if (result < 0L)
+					{
+						throw new UsageException("Value cannot be negative: \"" + result + "\"");
+					}
 				}
 				catch (NumberFormatException e)
 				{
