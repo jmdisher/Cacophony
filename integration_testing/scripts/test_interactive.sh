@@ -24,16 +24,22 @@ REPO2=/tmp/repo2
 USER1=/tmp/user1
 USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
-STATUS_FILE=/tmp/status_output
+STATUS_OUTPUT=/tmp/status_output
+STATUS_INPUT=/tmp/status_input
 
 rm -rf "$REPO1"
 rm -rf "$REPO2"
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
+rm -f "$STATUS_OUTPUT.1" "$STATUS_OUTPUT.2"
+rm -f "$STATUS_INPUT.1" "$STATUS_INPUT.2"
 
 mkdir "$REPO1"
 mkdir "$REPO2"
+
+mkfifo $STATUS_INPUT.1
+mkfifo $STATUS_INPUT.2
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
 cp "$PATH_TO_JAR" Cacophony.jar
@@ -76,10 +82,12 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
-# We will use 2 copies, just to verify that concurrent connections are ok.
-java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" OUTPUT_TEXT "ws://127.0.0.1:8000/backgroundStatus" status > "$STATUS_FILE.1" &
+# We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
+mkfifo "$STATUS_OUTPUT.1"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" status "$STATUS_INPUT.1" "$STATUS_OUTPUT.1" &
 STATUS_PID1=$!
-java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" OUTPUT_TEXT "ws://127.0.0.1:8000/backgroundStatus" status > "$STATUS_FILE.2" &
+touch "$STATUS_OUTPUT.2"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" status "$STATUS_INPUT.2" "$STATUS_OUTPUT.2" &
 STATUS_PID2=$!
 
 echo "Get the default video config..."
@@ -123,8 +131,8 @@ DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -
 requireSubstring "$DRAFT" "\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15}"
 
 echo "Upload and process data as the video for the draft..."
-echo "aXbXcXdXe" | java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
-java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" process
+echo "aXbXcXdXe" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" process "/dev/null"
 ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
 if [ "aXbXcXdXe" != "$ORIGINAL_VIDEO" ];
 then
@@ -139,7 +147,7 @@ then
 fi
 
 echo "Upload some audio, as well..."
-echo "AUDIO_DATA" | java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$ID/ogg" audio
+echo "AUDIO_DATA" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$ID/ogg" audio
 ORIGINAL_AUDIO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/audio/$ID")
 if [ "AUDIO_DATA" != "$ORIGINAL_AUDIO" ];
 then
@@ -189,6 +197,16 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 echo "Waiting for draft publish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/wait/publish
 
+# We will verify that this is in the pipe we are reading from the WebSocket (note that we may sometimes see event "1" from the start-up publish, so just skip that one in this case).
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+if [[ "$STATUS_EVENT" =~ "\"event\":\"create\",\"key\":1," ]]; then
+	STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+	STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+fi
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
+
 echo "Verify that it is not in the list..."
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"
@@ -221,13 +239,19 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
-echo "AUDIO_DATA" | java -cp build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$PUBLISH_ID/ogg" audio
+echo "AUDIO_DATA" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$PUBLISH_ID/ogg" audio
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/AUDIO
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
 # We want to look for the second post so get field 4:  1 "2" 3 "4" 5
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 4)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" "\"audioUrl\":\"http:"
+
+# Check that we see this in the output events.
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
 echo "Check the list of followee keys for this user"
 FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followeeKeys")
@@ -250,13 +274,14 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST http://127.0.0.1:8000/
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"
+echo -n "" > "$STATUS_INPUT.1"
 wait $STATUS_PID1
+echo -n "" > "$STATUS_INPUT.2"
 wait $STATUS_PID2
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
-STATUS_DATA1=$(cat "$STATUS_FILE.1")
-requireSubstring "$STATUS_DATA1" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
-requireSubstring "$STATUS_DATA1" "{\"event\":\"delete\",\"key\":3,\"value\":null"
-STATUS_DATA2=$(cat "$STATUS_FILE.2")
+STATUS_DATA2=$(cat "$STATUS_OUTPUT.2")
+requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
