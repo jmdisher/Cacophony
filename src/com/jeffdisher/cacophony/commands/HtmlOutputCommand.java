@@ -67,8 +67,13 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			_writeStaticFile(_directory, "play.html");
 			_writeStaticFile(_directory, "recommending.html");
 			_writeStaticFile(_directory, "following.html");
+			// These pages can't be used in non-interactive mode but we still produce them to verify our API fails correctly and to not break links.
+			_writeStaticFile(_directory, "publish.html");
+			_writeStaticFile(_directory, "status.html");
 			// We can't use REST in the offline mode but we don't want to complain about failing to load the file.
 			_writeStaticFile(_directory, "rest.js");
+			// We are moving toward dynamic pages using "event_api.js" for event-based population of data so we have an offline version which reads data from generated_db.js into that shape.
+			_copyStaticFile(_directory, "offline_event_api.js", "event_api.js");
 			
 			generatedStream = new PrintWriter(new FileOutputStream(new File(_directory, "generated_db.js")));
 		}
@@ -104,6 +109,14 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		String path = "/resources/site/" + fileName;
 		InputStream stream = HtmlOutputCommand.class.getResourceAsStream(path);
 		Files.copy(stream, new File(directory, fileName).toPath());
+		stream.close();
+	}
+
+	private void _copyStaticFile(File directory, String sourceName, String destName) throws IOException
+	{
+		String path = "/resources/site/" + sourceName;
+		InputStream stream = HtmlOutputCommand.class.getResourceAsStream(path);
+		Files.copy(stream, new File(directory, destName).toPath());
 		stream.close();
 	}
 }

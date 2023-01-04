@@ -12,6 +12,7 @@
 <script src="./rest.js" type="text/javascript"></script>
 <script src="./utils.js" type="text/javascript"></script>
 <script src="./generated_db.js" type="text/javascript"></script>
+<script src="./event_api.js" type="text/javascript"></script>
 <script type="text/javascript">
 function stopServer(onComplete)
 {
@@ -40,9 +41,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
 		// Now that we have the XSRF, open the status event WebSocket.
-		createWebSocketStateEventListener("ws://127.0.0.1:8000/backgroundStatus", "status"
+		EVENTS_API.backgroundStatus(
 			// Create.
-			, function(key, value)
+			function(key, value)
 			{
 				// This is a create so just add it to the list.
 				$scope.states.push({
