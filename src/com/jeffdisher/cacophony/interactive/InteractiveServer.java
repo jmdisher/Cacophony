@@ -144,7 +144,6 @@ public class InteractiveServer
 		CountDownLatch stopLatch = new CountDownLatch(1);
 		RestServer server = new RestServer(port, staticResource);
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
-		server.addPostRawHandler("/stop", 0, new POST_Raw_Stop(xsrf, stopLatch));
 		server.addGetHandler("/videoConfig", 0, new GET_VideoConfig(xsrf, processingCommand, canChangeCommand));
 		
 		server.addGetHandler("/drafts", 0, new GET_Drafts(xsrf, manager));
@@ -181,7 +180,7 @@ public class InteractiveServer
 		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
 		
 		// We use a web socket for listening to updates of background process state.
-		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(xsrf, statusHandoff));
+		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(xsrf, statusHandoff, stopLatch));
 		
 		// Prefs.
 		server.addGetHandler("/prefs", 0, new GET_Prefs(environment, xsrf));

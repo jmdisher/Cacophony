@@ -2,6 +2,9 @@
 // NOTE:  This needs to be manually updated when every new key is added to the events_api.js implementation of the EVENTS_API object.
 
 var EVENTS_API = {
-	backgroundStatus: function(onCreate, onUpdate, onDelete, onSocketClose) { setTimeout(function() { onSocketClose( {reason:"offline mode"}); }) },
+	backgroundStatus: function(onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { setTimeout(function() {
+		// We won't send the open event but we will send the close event, for information.
+		onSocketClose({reason:"offline mode"});
+	}) },
 };
 
