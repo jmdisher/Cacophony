@@ -29,6 +29,18 @@ function xsrfLoaded($scope)
 		$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
 		$scope.$apply();
 	});
+	
+	$scope.inProgress = false;
+	$scope.savePrefs = function()
+	{
+		let variables = {
+			"edgeSize": $scope.edgePixels,
+			"followerCacheBytes": ($scope.followCacheGB * 1000000000),
+			"republishIntervalMillis": ($scope.republishIntervalMinutes * 1000 * 60),
+			"followeeRefreshMillis": ($scope.followeeRefreshMinutes * 1000 * 60),
+		};
+		return REST.POST_asForm("/prefs", variables);
+	}
 }
 </script>
 
@@ -62,10 +74,23 @@ function xsrfLoaded($scope)
 		</div>
 		<div class="col-md-9">
 			<div class="row">Preferences:</div>
-			<div class="row"><div class="card card-body">Max video size: {{edgePixels}} x {{edgePixels}} pixels.</div></div>
-			<div class="row"><div class="card card-body">Follower cache target size: {{followCacheGB}} GB.</div></div>
-			<div class="row"><div class="card card-body">Republish root element: Every {{republishIntervalMinutes}} minutes.</div></div>
-			<div class="row"><div class="card card-body">Refresh each followee: Every {{followeeRefreshMinutes}} minutes.</div></div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="video-size">Max video size (pixels)</span>
+				<input type="text" class="form-control" ng-model="edgePixels" ng-disabled="inProgress" aria-label="Max video size (pixels)" aria-describedby="video-size">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="follow-cache">Followee cache target size (GB)</span>
+				<input type="text" class="form-control" ng-model="followCacheGB" ng-disabled="inProgress" aria-label="Followee cache target size (GB)" aria-describedby="follow-cache">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="republish-interval">Republish interval (minutes)</span>
+				<input type="text" class="form-control" ng-model="republishIntervalMinutes" ng-disabled="inProgress" aria-label="Republish interval (minutes)" aria-describedby="republish-interval">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="refresh-interval">Followee refresh interval (minutes)</span>
+				<input type="text" class="form-control" ng-model="followeeRefreshMinutes" ng-disabled="inProgress" aria-label="Followee refresh interval (minutes)" aria-describedby="refresh-interval">
+			</div>
+			<div class="row"><button type="button" class="btn btn-success" ng-click="savePrefs()" ng-disabled="inProgress">Save Preferences</button></div>
 		</div>
 	</div>
 </div>

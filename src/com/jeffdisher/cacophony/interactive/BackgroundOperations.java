@@ -25,8 +25,6 @@ public class BackgroundOperations
 	private final IEnvironment _environment;
 	private final HandoffConnector<Integer, String> _connector;
 	private final Thread _background;
-	private final long _republishIntervalMillis;
-	private final long _followeeRefreshMillis;
 
 	// Instance variables which are shared between caller thread and background thread (can only be touched on monitor).
 	private boolean _handoff_keepRunning;
@@ -34,6 +32,8 @@ public class BackgroundOperations
 	private long _handoff_lastPublishedMillis;
 	private boolean _handoff_isPublishRunning;
 	private final PriorityQueue<SchedulableFollowee> _handoff_knownFollowees;
+	private long _republishIntervalMillis;
+	private long _followeeRefreshMillis;
 
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
@@ -164,6 +164,13 @@ public class BackgroundOperations
 				throw Assert.unexpected(e);
 			}
 		}
+	}
+
+	public synchronized void intervalsWereUpdated(long republishIntervalMillis, long followeeRefreshMillis)
+	{
+		// Note that we just update the instance variables but won't reschedule anything already in our system.
+		_republishIntervalMillis = republishIntervalMillis;
+		_followeeRefreshMillis = followeeRefreshMillis;
 	}
 
 
