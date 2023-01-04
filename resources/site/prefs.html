@@ -25,6 +25,8 @@ function xsrfLoaded($scope)
 	API_getPrefs().then(prefs => {
 		$scope.edgePixels = prefs["edgeSize"];
 		$scope.followCacheGB = prefs["followerCacheBytes"] / 1000000000;
+		$scope.republishIntervalMinutes = (prefs["republishIntervalMillis"] / 1000 / 60);
+		$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
 		$scope.$apply();
 	});
 }
@@ -62,6 +64,8 @@ function xsrfLoaded($scope)
 			<div class="row">Preferences:</div>
 			<div class="row"><div class="card card-body">Max video size: {{edgePixels}} x {{edgePixels}} pixels.</div></div>
 			<div class="row"><div class="card card-body">Follower cache target size: {{followCacheGB}} GB.</div></div>
+			<div class="row"><div class="card card-body">Republish root element: Every {{republishIntervalMinutes}} minutes.</div></div>
+			<div class="row"><div class="card card-body">Refresh each followee: Every {{followeeRefreshMinutes}} minutes.</div></div>
 		</div>
 	</div>
 </div>

@@ -566,6 +566,8 @@ public class JsonGenerationHelpers
 		JsonObject dataPrefs = new JsonObject();
 		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax);
 		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes);
+		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
+		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
 		return dataPrefs;
 	}
 

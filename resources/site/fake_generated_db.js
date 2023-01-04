@@ -12,6 +12,8 @@ var DATA_version = {
 var DATA_prefs = {
 	"edgeSize": 720,
 	"followerCacheBytes": 2500000000,
+	"republishIntervalMillis": 43200000,
+	"followeeRefreshMillis": 3600000,
 };
 var DATA_userInfo = {
 	"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F": {
