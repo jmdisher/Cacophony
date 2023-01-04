@@ -180,7 +180,7 @@ public class InteractiveServer
 		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
 		
 		// We use a web socket for listening to updates of background process state.
-		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(xsrf, statusHandoff, stopLatch));
+		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, xsrf, statusHandoff, stopLatch, background));
 		
 		// Prefs.
 		server.addGetHandler("/prefs", 0, new GET_Prefs(environment, xsrf));

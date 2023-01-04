@@ -25,6 +25,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		$scope.socket.send("COMMAND_STOP");
 	}
+	$scope.republishRoot = function()
+	{
+		$scope.socket.send("COMMAND_REPUBLISH");
+	}
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
@@ -103,7 +107,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<div class="row card card-body">
 				<span class="badge text-bg-success" ng-show="null !== socket">Server Online</span>
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>
-				<button class="btn btn-danger" ng-show="null !== socket" ng-click="stopServer()">STOP SERVER</button><br/>
+				<div class="btn-group" role="group">
+					<button class="btn btn-primary" ng-show="null !== socket" ng-click="republishRoot()">Republish Root Element</button><br/>
+					<button class="btn btn-danger" ng-show="null !== socket" ng-click="stopServer()">STOP SERVER</button><br/>
+				</div>
 			</div>
 			<div class="row card card-body" ng-repeat="state in states">
 				<span class="badge rounded-pill text-bg-success">Running</span>

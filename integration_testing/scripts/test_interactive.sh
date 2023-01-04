@@ -274,6 +274,13 @@ echo "Verify that we can load the status page..."
 STATUS_PAGE=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/status.html")
 requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
+echo "Test that we can request another republish..."
+echo -n "COMMAND_REPUBLISH" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
+
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT.1"
 wait $SERVER_PID
@@ -289,6 +296,8 @@ requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":2,\"value\":\"Pu
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":3,\"value\":null"
+requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Verify that we can see the published post in out list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)

@@ -6,9 +6,17 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -23,16 +31,21 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 	// WebSocket close codes in the range 4000-4999 are "private" and are for use in non-registered applications so we just use 4000 as our "invalid command" opcode.
 	public final static int WS_CLOSE_INVALID_COMMAND = 4000;
 	public final static String COMMAND_STOP = "COMMAND_STOP";
+	public final static String COMMAND_REPUBLISH = "COMMAND_REPUBLISH";
 
+	private final IEnvironment _environment;
 	private final String _xsrf;
 	private final HandoffConnector<Integer, String> _statusHandoff;
 	private final CountDownLatch _stopLatch;
+	private final BackgroundOperations _background;
 	
-	public WS_BackgroundStatus(String xsrf, HandoffConnector<Integer, String> statusHandoff, CountDownLatch stopLatch)
+	public WS_BackgroundStatus(IEnvironment environment, String xsrf, HandoffConnector<Integer, String> statusHandoff, CountDownLatch stopLatch, BackgroundOperations background)
 	{
+		_environment = environment;
 		_xsrf = xsrf;
 		_statusHandoff = statusHandoff;
 		_stopLatch = stopLatch;
+		_background = background;
 	}
 	
 	@Override
@@ -75,6 +88,29 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 			{
 				// Stop the server.
 				_stopLatch.countDown();
+			}
+			else if (COMMAND_REPUBLISH.equals(message))
+			{
+				// Look up the last published root and request that background operations republish it.
+				IpfsFile root = null;
+				try (IReadingAccess access = StandardAccess.readAccess(_environment))
+				{
+					root = access.getLastRootElement();
+				}
+				catch (UsageException | VersionException e)
+				{
+					// Not expected after startup.
+					throw Assert.unexpected(e);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// This error probably means serious issues so close the socket.
+					_session.close(CloseStatus.SERVER_ERROR, e.getLocalizedMessage());
+				}
+				if (null != root)
+				{
+					_background.requestPublish(root);
+				}
 			}
 			else
 			{
