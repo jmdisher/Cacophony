@@ -256,9 +256,54 @@ public class TestBackgroundOperations
 		Assert.assertEquals(3, didRun[0]);
 	}
 
+	@Test
+	public void refreshAndPublishWithTimedWait() throws Throwable
+	{
+		// Unfortunately, since this uses the actual monitor with a timed wait, we need to use some real delays for the test.
+		// While we could use an external monitor, it would complicate the code in the BackgroundOperations further, so we won't.
+		// The down-side to using this real delay should only be that the test could actually test nothing, if running too slowly (seems to not happen, in practice).
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		// We will just use a single publish, and will repeat it, but it will always be left with success.
+		FuturePublish publish = new FuturePublish(F1);
+		publish.success();
+		int runCount[] = new int[1];
+		Runnable refresher = () -> {
+			runCount[0] += 1;
+		};
+		TestOperations ops = new TestOperations();
+		TestListener listener = new TestListener();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		statusHandoff.registerListener(listener);
+		back.startProcess();
+		
+		// Enqueue a followee refresh.
+		back.enqueueFolloweeRefresh(K1, 1L);
+		ops.returnFolloweeOn(K1, refresher);
+		
+		// Just wait for them to request the initial publish to re-run.
+		ops.returnOn(F1, publish);
+		ops.waitForConsume();
+		
+		Thread.sleep(100);
+		ops.returnOn(F1, publish);
+		ops.returnFolloweeOn(K1, refresher);
+		// Allow time to progress - we are using 10 and 20 for the delays, so just skip it past that.
+		ops.currentTimeMillis += 20L;
+		ops.waitForConsume();
+		
+		back.shutdownProcess();
+		
+		// We should see each publish and refresh happen twice, so the refresher runs twice and we see 4 starts and ends.
+		Assert.assertEquals(2, runCount[0]);
+		Assert.assertEquals(4, listener.started);
+		Assert.assertEquals(4, listener.ended);
+	}
+
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{
+		public long currentTimeMillis = 1000L;
 		private IpfsFile _match;
 		private FuturePublish _return;
 		private IpfsKey _expectedFolloweeKey;
@@ -303,7 +348,7 @@ public class TestBackgroundOperations
 		@Override
 		public long currentTimeMillis()
 		{
-			return 1000L;
+			return currentTimeMillis;
 		}
 		public synchronized void waitForConsume()
 		{

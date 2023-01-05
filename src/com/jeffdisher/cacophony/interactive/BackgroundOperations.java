@@ -178,7 +178,7 @@ public class BackgroundOperations
 	private synchronized RequestedOperation _background_consumeNextOperation(long currentTimeMillis)
 	{
 		RequestedOperation work = null;
-		while (_handoff_keepRunning && (null == work))
+		if (_handoff_keepRunning)
 		{
 			boolean shouldNotify = false;
 			// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
@@ -253,6 +253,8 @@ public class BackgroundOperations
 					// We don't interrupt this thread.
 					throw Assert.unexpected(e);
 				}
+				// In this case, we don't want to terminate so we need to return something but we leave it empty so we just get called with an updated timer.
+				work = new RequestedOperation(null, -1, null, -1);
 			}
 		}
 		return work;
