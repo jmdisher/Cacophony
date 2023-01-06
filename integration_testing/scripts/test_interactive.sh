@@ -130,8 +130,28 @@ checkPreviousCommand "POST /draft/thumb"
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" "\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15}"
 
-echo "Upload and process data as the video for the draft..."
+echo "Upload the video for the draft..."
 echo "aXbXcXdXe" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
+
+echo "Verify that we can cancel a video processing operation..."
+rm -f /tmp/fail_fifo
+mkfifo /tmp/fail_fifo
+rm -f fail_input
+mkfifo fail_input
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" process fail_input "/dev/null" &
+FAIL_PID=$!
+FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
+if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
+	echo "Failed to find the stuck process with $FAIL_PROC_COUNT matches"
+	kill -9 $FAIL_PID
+	exit 1
+fi
+echo "...sleeping for 10 seconds to make sure no timeout happens..."
+sleep 10
+echo -n "" > fail_input
+wait $FAIL_PID
+
+echo "Process the uploaded video..."
 java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" process "/dev/null"
 ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
 if [ "aXbXcXdXe" != "$ORIGINAL_VIDEO" ];

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.Duration;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -87,6 +88,9 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 					// This happened if we failed to run the processor.
 					session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + _processCommand + "\"");
 				}
+				// Set a 1-day idle timeout, just to avoid this dropping on slower systems while waiting for the
+				// processing to finish the last bit of input (since we don't see progress in those last few seconds).
+				session.setIdleTimeout(Duration.ofDays(1));
 			}
 		}
 	}
@@ -113,8 +117,9 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 			}
 			catch (IOException e)
 			{
-				// Not yet sure why this may happen (race on close?).
-				throw Assert.unexpected(e);
+				// This should be able to happen, and just means the connection has dropped.
+				// We haven't observed this case in testing but we know that it is the cause of the exception in the
+				// other cases.
 			}
 		}
 		
@@ -130,8 +135,10 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 			}
 			catch (IOException e)
 			{
-				// Not yet sure why this may happen (race on close?).
-				throw Assert.unexpected(e);
+				// This should be able to happen, and just means the connection has dropped.
+				// In fact, we see an error in the case when an early disconnect causes the background process to be
+				// killed.  However, it seems as though the first message sent after the disconnect doesn't trigger the
+				// exception so we typically don't see a failure here, but in the following "done" callback.
 			}
 		}
 		
@@ -147,8 +154,9 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 			}
 			catch (IOException e)
 			{
-				// Not yet sure why this may happen (race on close?).
-				throw Assert.unexpected(e);
+				// This typically happens if the processing completes after a disconnect.
+				// Since we always receive this call, no matter how the process terminated, this case will always be hit
+				// when the disconnect triggers termination.
 			}
 			_session.close();
 			System.out.println("PROCESSING DONE");
