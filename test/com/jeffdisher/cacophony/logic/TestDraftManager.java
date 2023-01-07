@@ -23,7 +23,7 @@ public class TestDraftManager
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
 		Assert.assertEquals(0, manager.listAllDrafts().size());
-		DraftWrapper wrapper = manager.createNewDraft(1);
+		IDraftWrapper wrapper = manager.createNewDraft(1);
 		Assert.assertEquals(1, wrapper.loadDraft().id());
 		List<Draft> drafts = manager.listAllDrafts();
 		Assert.assertEquals(1, drafts.size());
@@ -36,9 +36,9 @@ public class TestDraftManager
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
 		Assert.assertEquals(0, manager.listAllDrafts().size());
-		DraftWrapper wrapper1 = manager.createNewDraft(1);
+		IDraftWrapper wrapper1 = manager.createNewDraft(1);
 		Assert.assertEquals(1, wrapper1.loadDraft().id());
-		DraftWrapper wrapper2 = manager.createNewDraft(2);
+		IDraftWrapper wrapper2 = manager.createNewDraft(2);
 		Assert.assertEquals(2, wrapper2.loadDraft().id());
 		List<Draft> drafts = manager.listAllDrafts();
 		Assert.assertEquals(2, drafts.size());
@@ -52,7 +52,7 @@ public class TestDraftManager
 	{
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
-		DraftWrapper wrapper1 = manager.createNewDraft(1);
+		IDraftWrapper wrapper1 = manager.createNewDraft(1);
 		
 		try (OutputStream output = wrapper1.writeOriginalVideo())
 		{

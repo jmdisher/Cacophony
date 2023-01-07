@@ -9,7 +9,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -44,7 +44,7 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 		private final DraftManager _draftManager;
 		private final int _draftId;
 		private final String _mime;
-		private DraftWrapper _openDraft;
+		private IDraftWrapper _openDraft;
 		private OutputStream _outputStream;
 		private long _bytesSavedToStream;
 		

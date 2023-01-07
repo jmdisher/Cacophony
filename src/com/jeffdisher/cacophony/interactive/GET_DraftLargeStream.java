@@ -8,7 +8,7 @@ import java.util.function.Function;
 import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 import jakarta.servlet.ServletOutputStream;
@@ -23,11 +23,11 @@ public class GET_DraftLargeStream implements IGetHandler
 {
 	private final String _xsrf;
 	private final DraftManager _draftManager;
-	private final Function<DraftWrapper, InputStream> _fileLoader;
+	private final Function<IDraftWrapper, InputStream> _fileLoader;
 	private final Function<Draft, String> _mimeLoader;
 	private final Function<Draft, Long> _sizeLoader;
 
-	public GET_DraftLargeStream(String xsrf, DraftManager draftManager, Function<DraftWrapper, InputStream> fileLoader, Function<Draft, String> mimeLoader, Function<Draft, Long> sizeLoader)
+	public GET_DraftLargeStream(String xsrf, DraftManager draftManager, Function<IDraftWrapper, InputStream> fileLoader, Function<Draft, String> mimeLoader, Function<Draft, Long> sizeLoader)
 	{
 		_xsrf = xsrf;
 		_draftManager = draftManager;
@@ -46,7 +46,7 @@ public class GET_DraftLargeStream implements IGetHandler
 			{
 				ServletOutputStream output = response.getOutputStream();
 				
-				DraftWrapper wrapper = _draftManager.openExistingDraft(draftId);
+				IDraftWrapper wrapper = _draftManager.openExistingDraft(draftId);
 				if (null == wrapper)
 				{
 					throw new FileNotFoundException();

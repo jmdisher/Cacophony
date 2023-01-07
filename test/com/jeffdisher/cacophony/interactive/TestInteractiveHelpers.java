@@ -23,8 +23,8 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -150,7 +150,7 @@ public class TestInteractiveHelpers
 		
 		// Save the video content.
 		byte[] data = "Testing video".getBytes();
-		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		IDraftWrapper openDraft = draftManager.openExistingDraft(id);
 		try (OutputStream out = openDraft.writeOriginalVideo())
 		{
 			out.write(data);
@@ -187,7 +187,7 @@ public class TestInteractiveHelpers
 		Assert.assertNull(outError[0]);
 		
 		// Re-read it.
-		DraftWrapper wrapper = draftManager.openExistingDraft(id);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(id);
 		byte[] output = null;
 		try (InputStream stream = wrapper.readProcessedVideo())
 		{
@@ -258,7 +258,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.createNewDraft(draftManager, id);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title2", "description", null);
 		byte[] data = "Testing video".getBytes();
-		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		IDraftWrapper openDraft = draftManager.openExistingDraft(id);
 		try (OutputStream out = openDraft.writeOriginalVideo())
 		{
 			out.write(data);
@@ -359,7 +359,7 @@ public class TestInteractiveHelpers
 		int id = 1;
 		InteractiveHelpers.createNewDraft(draftManager, id);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
-		DraftWrapper openDraft = draftManager.openExistingDraft(id);
+		IDraftWrapper openDraft = draftManager.openExistingDraft(id);
 		byte[] data = "Testing audio".getBytes();
 		try (OutputStream out = openDraft.writeAudio())
 		{

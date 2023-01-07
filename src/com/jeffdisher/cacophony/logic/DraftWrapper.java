@@ -25,7 +25,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * sharing allows the DraftWrapper interface to use basic synchronization to make sure that concurrent accesses are
  * done safely.
  */
-public class DraftWrapper
+public class DraftWrapper implements IDraftWrapper
 {
 	// The serialized Draft object.
 	private static final String DRAFT_NAME = "draft.dat";
@@ -61,12 +61,7 @@ public class DraftWrapper
 		_audioTracking = new ReferenceTuple(AUDIO_NAME);
 	}
 
-	/**
-	 * Saves the given draft data, overwriting whatever may have already been there.  This doesn't delete the videos or
-	 * thumbnail.
-	 * 
-	 * @param draft The draft data to save to disk.
-	 */
+	@Override
 	public synchronized void saveDraft(Draft draft)
 	{
 		// This can be used for both new files and over-writing files.
@@ -81,12 +76,7 @@ public class DraftWrapper
 		}
 	}
 
-	/**
-	 * Loads the draft data from disk.
-	 * Note that this will assert fail if the draft doesn't exist.
-	 * 
-	 * @return The deserialized Draft (never null).
-	 */
+	@Override
 	public synchronized Draft loadDraft()
 	{
 		// This can be used for both new files and over-writing files.
@@ -108,8 +98,6 @@ public class DraftWrapper
 
 	/**
 	 * Attempts to delete the draft.
-	 * WARNING:  THIS CAN ONLY BE CALLED BY THE DRAFTMANAGER!
-	 * TODO:  Fix how these are returned so that callers only see a minimal interface.
 	 * 
 	 * @return True if the draft was deleted and false if the delete couldn't be performed due to open readers or
 	 * writers.
@@ -144,127 +132,73 @@ public class DraftWrapper
 		return didDelete;
 	}
 
-	/**
-	 * Blocks until there are no thumbnail writers and then opens it for reading.  Doesn't change the draft data.
-	 * 
-	 * @return The stream to read the thumbnail (null if there is no thumbnail).
-	 */
+	@Override
 	public synchronized InputStream readThumbnail()
 	{
 		return _readCase(_thumbTracking);
 	}
 
-	/**
-	 * Blocks until there are no thumbnail readers or writers and then opens it for writing.  Doesn't change the draft
-	 * data.
-	 * 
-	 * @return The stream to write the thumbnail.
-	 */
+	@Override
 	public synchronized OutputStream writeThumbnail()
 	{
 		return _writeCase(_thumbTracking);
 	}
 
-	/**
-	 * Blocks until there are no thumbnail readers or writers and then deletes it from disk.  Doesn't change the draft
-	 * data.
-	 * 
-	 * @return True if the thumbnail file existed and was deleted.
-	 */
+	@Override
 	public synchronized boolean deleteThumbnail()
 	{
 		return _deleteCase(_thumbTracking);
 	}
 
-	/**
-	 * Blocks until there are no original video writers and then opens it for reading.  Doesn't change the draft data.
-	 * 
-	 * @return The stream to read the original video (null if there is no original video).
-	 */
+	@Override
 	public synchronized InputStream readOriginalVideo()
 	{
 		return _readCase(_originalTracking);
 	}
 
-	/**
-	 * Blocks until there are no original video readers or writers and then opens it for writing.  Doesn't change the
-	 * draft data.
-	 * 
-	 * @return The stream to write the original video.
-	 */
+	@Override
 	public synchronized OutputStream writeOriginalVideo()
 	{
 		return _writeCase(_originalTracking);
 	}
 
-	/**
-	 * Blocks until there are no original video readers or writers and then deletes it from disk.  Doesn't change the
-	 * draft data.
-	 * 
-	 * @return True if the original audio file existed and was deleted.
-	 */
+	@Override
 	public synchronized boolean deleteOriginalVideo()
 	{
 		return _deleteCase(_originalTracking);
 	}
 
-	/**
-	 * Blocks until there are no processed video writers and then opens it for reading.  Doesn't change the draft data.
-	 * 
-	 * @return The stream to read the processed video (null if there is no processed video).
-	 */
+	@Override
 	public synchronized InputStream readProcessedVideo()
 	{
 		return _readCase(_processedTracking);
 	}
 
-	/**
-	 * Blocks until there are no processed video readers or writers and then opens it for writing.  Doesn't change the
-	 * draft data.
-	 * 
-	 * @return The stream to write the processed video.
-	 */
+	@Override
 	public synchronized OutputStream writeProcessedVideo()
 	{
 		return _writeCase(_processedTracking);
 	}
 
-	/**
-	 * Blocks until there are no processed video readers or writers and then deletes it from disk.  Doesn't change the
-	 * draft data.
-	 * 
-	 * @return True if the processed video file existed and was deleted.
-	 */
+	@Override
 	public synchronized boolean deleteProcessedVideo()
 	{
 		return _deleteCase(_processedTracking);
 	}
 
-	/**
-	 * Blocks until there are no audio writers and then opens it for reading.  Doesn't change the draft data.
-	 * 
-	 * @return The stream to read the audio (null if there is no audio).
-	 */
+	@Override
 	public synchronized InputStream readAudio()
 	{
 		return _readCase(_audioTracking);
 	}
 
-	/**
-	 * Blocks until there are no audio readers or writers and then opens it for writing.  Doesn't change the draft data.
-	 * 
-	 * @return The stream to write the audio.
-	 */
+	@Override
 	public synchronized OutputStream writeAudio()
 	{
 		return _writeCase(_audioTracking);
 	}
 
-	/**
-	 * Blocks until there are no audio readers or writers and then deletes it from disk.  Doesn't change the draft data.
-	 * 
-	 * @return True if the audio file existed and was deleted.
-	 */
+	@Override
 	public synchronized boolean deleteAudio()
 	{
 		return _deleteCase(_audioTracking);

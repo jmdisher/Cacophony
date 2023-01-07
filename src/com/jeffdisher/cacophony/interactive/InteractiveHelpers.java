@@ -14,7 +14,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -38,14 +38,14 @@ public class InteractiveHelpers
 	private static final String LOCAL_IP = "127.0.0.1";
 
 	// --- Methods related to saving the new video.
-	public static void updateOriginalVideo(DraftWrapper openDraft, String mime, int height, int width, long savedFileSizeBytes)
+	public static void updateOriginalVideo(IDraftWrapper openDraft, String mime, int height, int width, long savedFileSizeBytes)
 	{
 		Draft oldDraft = openDraft.loadDraft();
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
 		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo(), oldDraft.audio());
 		openDraft.saveDraft(newDraft);
 	}
-	public static void updateAudio(DraftWrapper openDraft, String mime, long savedFileSizeBytes)
+	public static void updateAudio(IDraftWrapper openDraft, String mime, long savedFileSizeBytes)
 	{
 		Draft oldDraft = openDraft.loadDraft();
 		SizedElement audio = new SizedElement(mime, 0, 0, savedFileSizeBytes);
@@ -74,7 +74,7 @@ public class InteractiveHelpers
 	}
 	public static Draft readExistingDraft(DraftManager draftManager, int draftId)
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		Draft loaded = null;
 		if (null != wrapper)
 		{
@@ -84,7 +84,7 @@ public class InteractiveHelpers
 	}
 	public static Draft updateDraftText(DraftManager draftManager, int draftId, String title, String description, String discussionUrl)
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		Draft finalDraft = null;
 		if (null != wrapper)
 		{
@@ -107,7 +107,7 @@ public class InteractiveHelpers
 			, boolean shouldPublishAudio
 	) throws FileNotFoundException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();
@@ -197,7 +197,7 @@ public class InteractiveHelpers
 	// --- Methods related to thumbnails.
 	public static void loadThumbnailToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();
@@ -214,7 +214,7 @@ public class InteractiveHelpers
 	}
 	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, String mime, InputStream inStream) throws FileNotFoundException, IOException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();
@@ -240,7 +240,7 @@ public class InteractiveHelpers
 	 */
 	public static boolean deleteOriginalVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();
@@ -263,7 +263,7 @@ public class InteractiveHelpers
 	 */
 	public static boolean deleteProcessedVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();
@@ -286,7 +286,7 @@ public class InteractiveHelpers
 	 */
 	public static boolean deleteAudio(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();
@@ -309,7 +309,7 @@ public class InteractiveHelpers
 	 */
 	public static boolean deleteThumbnail(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		if (null == wrapper)
 		{
 			throw new FileNotFoundException();

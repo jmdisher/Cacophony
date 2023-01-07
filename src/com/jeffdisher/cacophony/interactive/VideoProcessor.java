@@ -9,8 +9,8 @@ import java.util.function.Consumer;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
 import com.jeffdisher.cacophony.logic.ExternalStreamProcessor;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 
 
 /**
@@ -18,7 +18,7 @@ import com.jeffdisher.cacophony.logic.ExternalStreamProcessor;
  */
 public class VideoProcessor
 {
-	private DraftWrapper _wrapper;
+	private IDraftWrapper _wrapper;
 	private ExternalStreamProcessor _processor;
 
 	/**

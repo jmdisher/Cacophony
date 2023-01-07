@@ -15,7 +15,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 
 
 public class TestVideoProcessor
@@ -123,7 +123,7 @@ public class TestVideoProcessor
 		draftManager.createNewDraft(draftId);
 		
 		// Populate the input data in the draft (and make sure that the meta-data is updated).
-		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
 		byte[] bytes = "Testing 1 2 3...\nNew line\n".getBytes();
 		try (OutputStream out = wrapper.writeOriginalVideo())
 		{

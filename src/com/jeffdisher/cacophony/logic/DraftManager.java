@@ -39,7 +39,7 @@ public class DraftManager
 	 * @param id The draft ID.
 	 * @return The shared DraftWrapper instance for the given id or null if the draft is unknown.
 	 */
-	public synchronized DraftWrapper openExistingDraft(int id)
+	public synchronized IDraftWrapper openExistingDraft(int id)
 	{
 		Assert.assertTrue(id > 0);
 		return _sharedWrappers.get(id);
@@ -53,7 +53,7 @@ public class DraftManager
 	 * @param id The draft ID.
 	 * @return The shared DraftWrapper instance for the given id..
 	 */
-	public synchronized DraftWrapper createNewDraft(int id)
+	public synchronized IDraftWrapper createNewDraft(int id)
 	{
 		Assert.assertTrue(id > 0);
 		String directoryName = DIRECTORY_PREFIX + id;

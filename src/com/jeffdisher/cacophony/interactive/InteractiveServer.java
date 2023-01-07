@@ -11,7 +11,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -159,17 +159,17 @@ public class InteractiveServer
 		server.addDeleteHandler("/draft/thumb", 1, new DELETE_DraftThumb(xsrf, manager));
 		
 		server.addGetHandler("/draft/originalVideo", 1, new GET_DraftLargeStream(xsrf, manager
-				, (DraftWrapper wrapper) -> wrapper.readOriginalVideo()
+				, (IDraftWrapper wrapper) -> wrapper.readOriginalVideo()
 				, (Draft draft) -> draft.originalVideo().mime()
 				, (Draft draft) -> draft.originalVideo().byteSize()
 		));
 		server.addGetHandler("/draft/processedVideo", 1, new GET_DraftLargeStream(xsrf, manager
-				, (DraftWrapper wrapper) -> wrapper.readProcessedVideo()
+				, (IDraftWrapper wrapper) -> wrapper.readProcessedVideo()
 				, (Draft draft) -> draft.processedVideo().mime()
 				, (Draft draft) -> draft.processedVideo().byteSize()
 		));
 		server.addGetHandler("/draft/audio", 1, new GET_DraftLargeStream(xsrf, manager
-				, (DraftWrapper wrapper) -> wrapper.readAudio()
+				, (IDraftWrapper wrapper) -> wrapper.readAudio()
 				, (Draft draft) -> draft.audio().mime()
 				, (Draft draft) -> draft.audio().byteSize()
 		));
