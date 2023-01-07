@@ -40,17 +40,17 @@ public class InteractiveHelpers
 	// --- Methods related to saving the new video.
 	public static void updateOriginalVideo(IDraftWrapper openDraft, String mime, int height, int width, long savedFileSizeBytes)
 	{
-		Draft oldDraft = openDraft.loadDraft();
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo(), oldDraft.audio());
-		openDraft.saveDraft(newDraft);
+		openDraft.updateDraftUnderLock((Draft oldDraft) ->
+			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo(), oldDraft.audio())
+		);
 	}
 	public static void updateAudio(IDraftWrapper openDraft, String mime, long savedFileSizeBytes)
 	{
-		Draft oldDraft = openDraft.loadDraft();
 		SizedElement audio = new SizedElement(mime, 0, 0, savedFileSizeBytes);
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), audio);
-		openDraft.saveDraft(newDraft);
+		openDraft.updateDraftUnderLock((Draft oldDraft) ->
+			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), audio)
+		);
 	}
 
 	// --- Methods related to processing the video (this is small since it mostly just invokes callbacks to the session on a different thread).
@@ -88,10 +88,9 @@ public class InteractiveHelpers
 		Draft finalDraft = null;
 		if (null != wrapper)
 		{
-			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
-			wrapper.saveDraft(newDraft);
-			finalDraft = newDraft;
+			finalDraft = wrapper.updateDraftUnderLock((Draft oldDraft) ->
+				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio())
+			);
 		}
 		return finalDraft;
 	}
@@ -225,10 +224,10 @@ public class InteractiveHelpers
 			bytesCopied = MiscHelpers.copyToEndOfFile(inStream, output);
 		}
 		Assert.assertTrue(bytesCopied > 0L);
-		Draft oldDraft = wrapper.loadDraft();
 		SizedElement thumbnail = new SizedElement(mime, height, width, bytesCopied);
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
-		wrapper.saveDraft(newDraft);
+		wrapper.updateDraftUnderLock((Draft oldDraft) ->
+			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio())
+		);
 	}
 
 	/**
@@ -248,9 +247,9 @@ public class InteractiveHelpers
 		boolean didDelete = wrapper.deleteOriginalVideo();
 		if (didDelete)
 		{
-			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), null, oldDraft.processedVideo(), oldDraft.audio());
-			wrapper.saveDraft(newDraft);
+			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
+				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), null, oldDraft.processedVideo(), oldDraft.audio())
+			);
 		}
 		return didDelete;
 	}
@@ -271,9 +270,9 @@ public class InteractiveHelpers
 		boolean didDelete = wrapper.deleteProcessedVideo();
 		if (didDelete)
 		{
-			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null, oldDraft.audio());
-			wrapper.saveDraft(newDraft);
+			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
+				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null, oldDraft.audio())
+			);
 		}
 		return didDelete;
 	}
@@ -294,9 +293,9 @@ public class InteractiveHelpers
 		boolean didDelete = wrapper.deleteAudio();
 		if (didDelete)
 		{
-			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), null);
-			wrapper.saveDraft(newDraft);
+			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
+				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), null)
+			);
 		}
 		return didDelete;
 	}
@@ -317,9 +316,9 @@ public class InteractiveHelpers
 		boolean didDelete = wrapper.deleteThumbnail();
 		if (didDelete)
 		{
-			Draft oldDraft = wrapper.loadDraft();
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), null, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
-			wrapper.saveDraft(newDraft);
+			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
+				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), null, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio())
+			);
 		}
 		return didDelete;
 	}

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.function.Function;
 
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 
@@ -27,6 +28,14 @@ public interface IDraftWrapper
 	 * @return The deserialized Draft (never null).
 	 */
 	Draft loadDraft();
+
+	/**
+	 * Loads and re-saves the draft data structure without releasing the receiver's lock.
+	 * 
+	 * @param updateFunction The function to convert the old instance into the new.
+	 * @return The Draft object returned from updateFunction.
+	 */
+	Draft updateDraftUnderLock(Function<Draft, Draft> updateFunction);
 
 	/**
 	 * Blocks until there are no thumbnail writers and then opens it for reading.  Doesn't change the draft data.

@@ -56,11 +56,11 @@ public class VideoProcessor
 			// We want to update the draft data before we fire the done callback, but still on that background thread.
 			if (outputSizeBytes >= 0L)
 			{
-				Draft oldDraft = _wrapper.loadDraft();
-				SizedElement original = oldDraft.originalVideo();
-				SizedElement processed = new SizedElement(original.mime(), original.height(), original.width(), outputSizeBytes);
-				Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed, oldDraft.audio());
-				_wrapper.saveDraft(newDraft);
+				_wrapper.updateDraftUnderLock((Draft oldDraft) -> {
+					SizedElement original = oldDraft.originalVideo();
+					SizedElement processed = new SizedElement(original.mime(), original.height(), original.width(), outputSizeBytes);
+					return new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed, oldDraft.audio());
+				});
 			}
 			
 			progressListener.processingDone(outputSizeBytes);

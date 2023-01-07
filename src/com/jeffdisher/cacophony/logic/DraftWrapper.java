@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.function.Function;
 
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -64,36 +65,22 @@ public class DraftWrapper implements IDraftWrapper
 	@Override
 	public synchronized void saveDraft(Draft draft)
 	{
-		// This can be used for both new files and over-writing files.
-		try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(_draftFile())))
-		{
-			stream.writeObject(draft);
-		}
-		catch (IOException e)
-		{
-			// We have no reasonable way to handle this.
-			throw Assert.unexpected(e);
-		}
+		_saveDraft(draft);
 	}
 
 	@Override
 	public synchronized Draft loadDraft()
 	{
-		// This can be used for both new files and over-writing files.
-		try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(_draftFile())))
-		{
-			return (Draft) stream.readObject();
-		}
-		catch (IOException e)
-		{
-			// We have no reasonable way to handle this.
-			throw Assert.unexpected(e);
-		}
-		catch (ClassNotFoundException e)
-		{
-			// This would be corrupt data or a broken installation.
-			throw Assert.unexpected(e);
-		}
+		return _loadDraft();
+	}
+
+	@Override
+	public synchronized Draft updateDraftUnderLock(Function<Draft, Draft> updateFunction)
+	{
+		Draft draft = _loadDraft();
+		Draft updated = updateFunction.apply(draft);
+		_saveDraft(updated);
+		return updated;
 	}
 
 	/**
@@ -305,6 +292,39 @@ public class DraftWrapper implements IDraftWrapper
 		// monitor and then notify anyone waiting.
 		handler.run();
 		this.notifyAll();
+	}
+
+	private void _saveDraft(Draft draft)
+	{
+		// This can be used for both new files and over-writing files.
+		try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(_draftFile())))
+		{
+			stream.writeObject(draft);
+		}
+		catch (IOException e)
+		{
+			// We have no reasonable way to handle this.
+			throw Assert.unexpected(e);
+		}
+	}
+
+	private Draft _loadDraft()
+	{
+		// This can be used for both new files and over-writing files.
+		try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(_draftFile())))
+		{
+			return (Draft) stream.readObject();
+		}
+		catch (IOException e)
+		{
+			// We have no reasonable way to handle this.
+			throw Assert.unexpected(e);
+		}
+		catch (ClassNotFoundException e)
+		{
+			// This would be corrupt data or a broken installation.
+			throw Assert.unexpected(e);
+		}
 	}
 
 
