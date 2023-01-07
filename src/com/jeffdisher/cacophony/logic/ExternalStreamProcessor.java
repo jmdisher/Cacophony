@@ -104,6 +104,14 @@ public class ExternalStreamProcessor
 				try
 				{
 					originalVideo.close();
+				}
+				catch (IOException e)
+				{
+					// This normally shouldn't happen but we do observe it in cases where the program exits with an error since the BufferedOutputStream flushes on close.
+					forceFail = true;
+				}
+				try
+				{
 					inputStream.close();
 				}
 				catch (IOException e)

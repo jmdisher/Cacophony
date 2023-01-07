@@ -3,7 +3,8 @@ package com.jeffdisher.cacophony.interactive;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
@@ -60,7 +61,11 @@ public class TestVideoProcessor
 		processor.sockedDidClose();
 		
 		byte[] expected = "Testing 1 2 3...$\nNew line$\n".getBytes();
-		byte[] readBack = Files.readAllBytes(draftManager.openExistingDraft(draftId).processedVideo().toPath());
+		byte[] readBack = null;
+		try (InputStream stream = draftManager.openExistingDraft(draftId).readProcessedVideo())
+		{
+			readBack = stream.readAllBytes();
+		}
 		Assert.assertNull(out_error[0]);
 		Assert.assertEquals(bytes.length, out_processed[0]);
 		Assert.assertEquals(expected.length, out_outputSize[0]);
@@ -119,9 +124,11 @@ public class TestVideoProcessor
 		
 		// Populate the input data in the draft (and make sure that the meta-data is updated).
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File original = wrapper.originalVideo();
 		byte[] bytes = "Testing 1 2 3...\nNew line\n".getBytes();
-		Files.write(original.toPath(), bytes);
+		try (OutputStream out = wrapper.writeOriginalVideo())
+		{
+			out.write(bytes);
+		}
 		SizedElement originalVideo = new SizedElement("video/webm", 720, 1280, bytes.length);
 		Draft originalDraft = wrapper.loadDraft();
 		wrapper.saveDraft(new Draft(originalDraft.id(), originalDraft.publishedSecondsUtc(), originalDraft.title(), originalDraft.description(), originalDraft.discussionUrl(), originalDraft.thumbnail(), originalVideo, originalDraft.processedVideo(), originalDraft.audio()));

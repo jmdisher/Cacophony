@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.jeffdisher.breakwater.IPostFormHandler;
 import com.jeffdisher.breakwater.StringMultiMap;
+import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,12 +41,12 @@ public class POST_Form_Draft implements IPostFormHandler
 			}
 			if ((null != title) && !title.isEmpty() && (null != description))
 			{
-				try
+				Draft written = InteractiveHelpers.updateDraftText(_draftManager, draftId, title, description, discussionUrl);
+				if (null != written)
 				{
-					InteractiveHelpers.updateDraftText(_draftManager, draftId, title, description, discussionUrl);
 					response.setStatus(HttpServletResponse.SC_OK);
 				}
-				catch (FileNotFoundException e)
+				else
 				{
 					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 				}

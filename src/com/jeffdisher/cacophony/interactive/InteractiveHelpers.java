@@ -1,9 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -57,7 +54,7 @@ public class InteractiveHelpers
 	}
 
 	// --- Methods related to processing the video (this is small since it mostly just invokes callbacks to the session on a different thread).
-	public static VideoProcessor openVideoProcessor(VideoProcessor.ProcessWriter session, DraftManager draftManager, int draftId, String processCommand) throws FileNotFoundException, IOException
+	public static VideoProcessor openVideoProcessor(VideoProcessor.ProcessWriter session, DraftManager draftManager, int draftId, String processCommand) throws IOException
 	{
 		return new VideoProcessor(session, draftManager, draftId, processCommand);
 	}
@@ -75,21 +72,32 @@ public class InteractiveHelpers
 	{
 		return draftManager.createNewDraft(draftId).loadDraft();
 	}
-	public static Draft readExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
-	{
-		return draftManager.openExistingDraft(draftId).loadDraft();
-	}
-	public static Draft updateDraftText(DraftManager draftManager, int draftId, String title, String description, String discussionUrl) throws FileNotFoundException
+	public static Draft readExistingDraft(DraftManager draftManager, int draftId)
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		Draft oldDraft = wrapper.loadDraft();
-		Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
-		wrapper.saveDraft(newDraft);
-		return newDraft;
+		Draft loaded = null;
+		if (null != wrapper)
+		{
+			loaded = wrapper.loadDraft();
+		}
+		return loaded;
 	}
-	public static void deleteExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
+	public static Draft updateDraftText(DraftManager draftManager, int draftId, String title, String description, String discussionUrl)
 	{
-		draftManager.deleteExistingDraft(draftId);
+		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		Draft finalDraft = null;
+		if (null != wrapper)
+		{
+			Draft oldDraft = wrapper.loadDraft();
+			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
+			wrapper.saveDraft(newDraft);
+			finalDraft = newDraft;
+		}
+		return finalDraft;
+	}
+	public static boolean deleteExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
+	{
+		return draftManager.deleteExistingDraft(draftId);
 	}
 	public static IpfsFile postExistingDraft(IEnvironment environment
 			, IWritingAccess access
@@ -100,25 +108,30 @@ public class InteractiveHelpers
 	) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException();
+		}
 		Draft draft = wrapper.loadDraft();
 		SizedElement video = null;
-		File videoFile = null;
+		InputStream videoInput = null;
 		if (shouldPublishVideo)
 		{
 			video = draft.processedVideo();
-			videoFile = wrapper.processedVideo();
+			videoInput = wrapper.readProcessedVideo();
 			if (null == video)
 			{
+				Assert.assertTrue(null == videoInput);
 				video = draft.originalVideo();
-				videoFile = wrapper.originalVideo();
+				videoInput = wrapper.readOriginalVideo();
 			}
 		}
 		SizedElement audio = null;
-		File audioFile = null;
+		InputStream audioInput = null;
 		if (shouldPublishAudio)
 		{
 			audio = draft.audio();
-			audioFile = wrapper.audio();
+			audioInput = wrapper.readAudio();
 		}
 		SizedElement thumbnail = draft.thumbnail();
 		int elementCount = 0;
@@ -138,35 +151,21 @@ public class InteractiveHelpers
 		int index = 0;
 		if (null != thumbnail)
 		{
-			subElements[index] = new PublishHelpers.PublishElement(thumbnail.mime(), new FileInputStream(wrapper.thumbnail()), thumbnail.height(), thumbnail.width(), true);
+			InputStream thumbnailInput = wrapper.readThumbnail();
+			Assert.assertTrue(null != thumbnailInput);
+			subElements[index] = new PublishHelpers.PublishElement(thumbnail.mime(), thumbnailInput, thumbnail.height(), thumbnail.width(), true);
 			index += 1;
 		}
 		if (null != video)
 		{
-			try
-			{
-				subElements[index] = new PublishHelpers.PublishElement(video.mime(), new FileInputStream(videoFile), video.height(), video.width(), false);
-			}
-			catch (FileNotFoundException e)
-			{
-				// Close the other file before we throw.
-				closeElementFiles(environment, subElements);
-				throw e;
-			}
+			Assert.assertTrue(null != videoInput);
+			subElements[index] = new PublishHelpers.PublishElement(video.mime(), videoInput, video.height(), video.width(), false);
 			index += 1;
 		}
 		if (null != audio)
 		{
-			try
-			{
-				subElements[index] = new PublishHelpers.PublishElement(audio.mime(), new FileInputStream(audioFile), audio.height(), audio.width(), false);
-			}
-			catch (FileNotFoundException e)
-			{
-				// Close the other file before we throw.
-				closeElementFiles(environment, subElements);
-				throw e;
-			}
+			Assert.assertTrue(null != audioInput);
+			subElements[index] = new PublishHelpers.PublishElement(audio.mime(), audioInput, audio.height(), audio.width(), false);
 			index += 1;
 		}
 		
@@ -199,8 +198,16 @@ public class InteractiveHelpers
 	public static void loadThumbnailToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		try (FileInputStream input = new FileInputStream(wrapper.thumbnail()))
+		if (null == wrapper)
 		{
+			throw new FileNotFoundException();
+		}
+		try (InputStream input = wrapper.readThumbnail())
+		{
+			if (null == input)
+			{
+				throw new FileNotFoundException();
+			}
 			mimeConsumer.accept(wrapper.loadDraft().thumbnail().mime());
 			MiscHelpers.copyToEndOfFile(input, outStream);
 		}
@@ -208,8 +215,12 @@ public class InteractiveHelpers
 	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, String mime, InputStream inStream) throws FileNotFoundException, IOException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException();
+		}
 		long bytesCopied = 0L;
-		try (FileOutputStream output = new FileOutputStream(wrapper.thumbnail()))
+		try (OutputStream output = wrapper.writeThumbnail())
 		{
 			bytesCopied = MiscHelpers.copyToEndOfFile(inStream, output);
 		}
@@ -220,11 +231,6 @@ public class InteractiveHelpers
 		wrapper.saveDraft(newDraft);
 	}
 
-	// --- Methods related to deleting videos.
-	// Note that we don't build any special interlock around the delete relative to other operations like processing.
-	// This is because that would be heavy-weight and complicated for something which we can prevent in the front-end
-	//  and it would only corrupt the draft in progress.
-	// More complex protection could be added in the future if this turns out to be a problem but this keeps it simple.
 	/**
 	 * Deletes the original video from the draft.
 	 * @param draftManager The DraftManager.
@@ -235,8 +241,11 @@ public class InteractiveHelpers
 	public static boolean deleteOriginalVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File originalFile = wrapper.originalVideo();
-		boolean didDelete = originalFile.delete();
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException();
+		}
+		boolean didDelete = wrapper.deleteOriginalVideo();
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();
@@ -255,8 +264,11 @@ public class InteractiveHelpers
 	public static boolean deleteProcessedVideo(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File processedFile = wrapper.processedVideo();
-		boolean didDelete = processedFile.delete();
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException();
+		}
+		boolean didDelete = wrapper.deleteProcessedVideo();
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();
@@ -275,8 +287,11 @@ public class InteractiveHelpers
 	public static boolean deleteAudio(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File audioFile = wrapper.audio();
-		boolean didDelete = audioFile.delete();
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException();
+		}
+		boolean didDelete = wrapper.deleteAudio();
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();
@@ -295,8 +310,11 @@ public class InteractiveHelpers
 	public static boolean deleteThumbnail(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		DraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		File originalFile = wrapper.thumbnail();
-		boolean didDelete = originalFile.delete();
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException();
+		}
+		boolean didDelete = wrapper.deleteThumbnail();
 		if (didDelete)
 		{
 			Draft oldDraft = wrapper.loadDraft();

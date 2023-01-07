@@ -1,8 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -50,7 +49,7 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		private final int _width;
 		private final String _mime;
 		private DraftWrapper _openDraft;
-		private FileOutputStream _outputStream;
+		private OutputStream _outputStream;
 		private long _bytesSavedToStream;
 		
 		public SaveVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, int height, int width, String mime)
@@ -89,13 +88,13 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 				// 256 KiB should be reasonable.
 				session.setMaxBinaryMessageSize(256 * 1024);
 				Assert.assertTrue(null == _outputStream);
-				try
+				_openDraft = _draftManager.openExistingDraft(_draftId);
+				if (null != _openDraft)
 				{
-					_openDraft = _draftManager.openExistingDraft(_draftId);
-					_outputStream = new FileOutputStream(_openDraft.originalVideo());
+					_outputStream = _openDraft.writeOriginalVideo();
 					_bytesSavedToStream = 0;
 				}
-				catch (FileNotFoundException e)
+				else
 				{
 					// This happens in the case where the draft doesn't exist.
 					session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");

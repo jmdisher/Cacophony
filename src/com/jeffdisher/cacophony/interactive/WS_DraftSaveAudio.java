@@ -1,8 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -46,7 +45,7 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 		private final int _draftId;
 		private final String _mime;
 		private DraftWrapper _openDraft;
-		private FileOutputStream _outputStream;
+		private OutputStream _outputStream;
 		private long _bytesSavedToStream;
 		
 		public SaveAudioWebSocketListener(String xsrf, DraftManager draftManager, int draftId, String mime)
@@ -83,13 +82,13 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 				// 256 KiB should be reasonable.
 				session.setMaxBinaryMessageSize(256 * 1024);
 				Assert.assertTrue(null == _outputStream);
-				try
+				_openDraft = _draftManager.openExistingDraft(_draftId);
+				if (null != _openDraft)
 				{
-					_openDraft = _draftManager.openExistingDraft(_draftId);
-					_outputStream = new FileOutputStream(_openDraft.audio());
+					_outputStream = _openDraft.writeAudio();
 					_bytesSavedToStream = 0;
 				}
-				catch (FileNotFoundException e)
+				else
 				{
 					// This happens in the case where the draft doesn't exist.
 					session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");

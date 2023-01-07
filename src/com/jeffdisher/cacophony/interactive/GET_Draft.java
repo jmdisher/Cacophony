@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.jeffdisher.breakwater.IGetHandler;
@@ -31,15 +30,14 @@ public class GET_Draft implements IGetHandler
 		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
 		{
 			int draftId = Integer.parseInt(variables[0]);
-			try
+			Draft draft = InteractiveHelpers.readExistingDraft(_draftManager, draftId);
+			if (null != draft)
 			{
-				Draft draft = InteractiveHelpers.readExistingDraft(_draftManager, draftId);
-				
 				response.setContentType("application/json");
 				response.setStatus(HttpServletResponse.SC_OK);
 				response.getWriter().print(draft.toJson().toString());
 			}
-			catch (FileNotFoundException e)
+			else
 			{
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}

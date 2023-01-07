@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.data.local.v1.Draft;
@@ -35,8 +35,16 @@ public class VideoProcessor
 	public VideoProcessor(ProcessWriter progressListener, DraftManager manager, int draftId, String processCommand) throws FileNotFoundException, IOException
 	{
 		_wrapper = manager.openExistingDraft(draftId);
-		FileInputStream input = new FileInputStream(_wrapper.originalVideo());
-		FileOutputStream output = new FileOutputStream(_wrapper.processedVideo());
+		if (null == _wrapper)
+		{
+			throw new FileNotFoundException();
+		}
+		InputStream input = _wrapper.readOriginalVideo();
+		if (null == input)
+		{
+			throw new FileNotFoundException();
+		}
+		OutputStream output = _wrapper.writeProcessedVideo();
 		_processor = new ExternalStreamProcessor(processCommand);
 		Consumer<Long> progressCallback = (Long sizeBytes) -> {
 			progressListener.totalBytesProcessed(sizeBytes);

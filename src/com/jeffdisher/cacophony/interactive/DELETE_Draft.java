@@ -33,8 +33,15 @@ public class DELETE_Draft implements IDeleteHandler
 			
 			try
 			{
-				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
-				response.setStatus(HttpServletResponse.SC_OK);
+				if (InteractiveHelpers.deleteExistingDraft(_draftManager, draftId))
+				{
+					response.setStatus(HttpServletResponse.SC_OK);
+				}
+				else
+				{
+					// This means the draft exists but couldn't be deleted since it is in use.
+					response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+				}
 			}
 			catch (FileNotFoundException e)
 			{

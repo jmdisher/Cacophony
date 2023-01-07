@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.util.List;
 
 import org.junit.Assert;
@@ -44,5 +45,20 @@ public class TestDraftManager
 		manager.deleteExistingDraft(1);
 		manager.deleteExistingDraft(2);
 		Assert.assertEquals(0, manager.listAllDrafts().size());
+	}
+
+	@Test
+	public void testDeleteFailure() throws Throwable
+	{
+		File directory = FOLDER.newFolder();
+		DraftManager manager = new DraftManager(directory);
+		DraftWrapper wrapper1 = manager.createNewDraft(1);
+		
+		try (OutputStream output = wrapper1.writeOriginalVideo())
+		{
+			Assert.assertFalse(manager.deleteExistingDraft(1));
+		}
+		List<Draft> drafts = manager.listAllDrafts();
+		Assert.assertEquals(1, drafts.size());
 	}
 }

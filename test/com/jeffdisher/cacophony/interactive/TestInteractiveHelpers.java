@@ -5,7 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -150,7 +151,10 @@ public class TestInteractiveHelpers
 		// Save the video content.
 		byte[] data = "Testing video".getBytes();
 		DraftWrapper openDraft = draftManager.openExistingDraft(id);
-		Files.write(openDraft.originalVideo().toPath(), data);
+		try (OutputStream out = openDraft.writeOriginalVideo())
+		{
+			out.write(data);
+		}
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Process it.
@@ -184,7 +188,11 @@ public class TestInteractiveHelpers
 		
 		// Re-read it.
 		DraftWrapper wrapper = draftManager.openExistingDraft(id);
-		byte[] output = Files.readAllBytes(wrapper.processedVideo().toPath());
+		byte[] output = null;
+		try (InputStream stream = wrapper.readProcessedVideo())
+		{
+			output = stream.readAllBytes();
+		}
 		byte[] expected = "TXstYng vYdXZ".getBytes();
 		Assert.assertArrayEquals(expected, output);
 		SizedElement processedSizedElement = wrapper.loadDraft().processedVideo();
@@ -195,9 +203,9 @@ public class TestInteractiveHelpers
 		
 		// Verify that we can delete these videos.
 		Assert.assertTrue(InteractiveHelpers.deleteOriginalVideo(draftManager, id));
-		Assert.assertFalse(wrapper.originalVideo().exists());
+		Assert.assertFalse(new File(new File(files.getDraftsTopLevelDirectory(), "draft_1"), "original_video.webm").exists());
 		Assert.assertTrue(InteractiveHelpers.deleteProcessedVideo(draftManager, id));
-		Assert.assertFalse(wrapper.processedVideo().exists());
+		Assert.assertFalse(new File(new File(files.getDraftsTopLevelDirectory(), "draft_1"), "processed_video.webm").exists());
 	}
 
 	@Test
@@ -251,7 +259,10 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateDraftText(draftManager, id, "title2", "description", null);
 		byte[] data = "Testing video".getBytes();
 		DraftWrapper openDraft = draftManager.openExistingDraft(id);
-		Files.write(openDraft.originalVideo().toPath(), data);
+		try (OutputStream out = openDraft.writeOriginalVideo())
+		{
+			out.write(data);
+		}
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft.
@@ -294,7 +305,10 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.createNewDraft(draftManager, id);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title3", "description", null);
 		openDraft = draftManager.openExistingDraft(id);
-		Files.write(openDraft.originalVideo().toPath(), data);
+		try (OutputStream out = openDraft.writeOriginalVideo())
+		{
+			out.write(data);
+		}
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft WITHOUT uploading the video attachment.
@@ -347,7 +361,10 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
 		DraftWrapper openDraft = draftManager.openExistingDraft(id);
 		byte[] data = "Testing audio".getBytes();
-		Files.write(openDraft.audio().toPath(), data);
+		try (OutputStream out = openDraft.writeAudio())
+		{
+			out.write(data);
+		}
 		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
 
 		// Publish the draft.

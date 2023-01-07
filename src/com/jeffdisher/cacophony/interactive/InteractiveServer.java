@@ -159,16 +159,19 @@ public class InteractiveServer
 		server.addDeleteHandler("/draft/thumb", 1, new DELETE_DraftThumb(xsrf, manager));
 		
 		server.addGetHandler("/draft/originalVideo", 1, new GET_DraftLargeStream(xsrf, manager
-				, (DraftWrapper wrapper) -> wrapper.originalVideo()
+				, (DraftWrapper wrapper) -> wrapper.readOriginalVideo()
 				, (Draft draft) -> draft.originalVideo().mime()
+				, (Draft draft) -> draft.originalVideo().byteSize()
 		));
 		server.addGetHandler("/draft/processedVideo", 1, new GET_DraftLargeStream(xsrf, manager
-				, (DraftWrapper wrapper) -> wrapper.processedVideo()
+				, (DraftWrapper wrapper) -> wrapper.readProcessedVideo()
 				, (Draft draft) -> draft.processedVideo().mime()
+				, (Draft draft) -> draft.processedVideo().byteSize()
 		));
 		server.addGetHandler("/draft/audio", 1, new GET_DraftLargeStream(xsrf, manager
-				, (DraftWrapper wrapper) -> wrapper.audio()
+				, (DraftWrapper wrapper) -> wrapper.readAudio()
 				, (Draft draft) -> draft.audio().mime()
+				, (Draft draft) -> draft.audio().byteSize()
 		));
 		
 		server.addDeleteHandler("/draft/originalVideo", 1, new DELETE_DraftOriginalVideo(xsrf, manager));
