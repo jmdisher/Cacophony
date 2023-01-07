@@ -53,6 +53,16 @@ public class VideoProcessor
 			progressListener.processingError(error);
 		};
 		Consumer<Long> doneCallback = (Long outputSizeBytes) -> {
+			// We want to update the draft data before we fire the done callback, but still on that background thread.
+			if (outputSizeBytes >= 0L)
+			{
+				Draft oldDraft = _wrapper.loadDraft();
+				SizedElement original = oldDraft.originalVideo();
+				SizedElement processed = new SizedElement(original.mime(), original.height(), original.width(), outputSizeBytes);
+				Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed, oldDraft.audio());
+				_wrapper.saveDraft(newDraft);
+			}
+			
 			progressListener.processingDone(outputSizeBytes);
 		};
 		_processor.start(input, output, progressCallback, errorCallback, doneCallback);
@@ -61,19 +71,10 @@ public class VideoProcessor
 	/**
 	 * Called to stop the video processing operation (or acknowledge that it has completed) when the socket monitoring
 	 * the processing operation has been closed.
-	 * Has the side-effect of writing-back the updated draft sizing data.
 	 */
 	public void sockedDidClose()
 	{
-		long processedSizeBytes = _processor.stop();
-		if (processedSizeBytes >= 0L)
-		{
-			Draft oldDraft = _wrapper.loadDraft();
-			SizedElement original = oldDraft.originalVideo();
-			SizedElement processed = new SizedElement(original.mime(), original.height(), original.width(), processedSizeBytes);
-			Draft newDraft = new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed, oldDraft.audio());
-			_wrapper.saveDraft(newDraft);
-		}
+		_processor.stop();
 	}
 
 
