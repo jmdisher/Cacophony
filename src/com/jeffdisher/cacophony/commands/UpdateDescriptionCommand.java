@@ -20,8 +20,8 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 import com.jeffdisher.cacophony.utils.SizeLimits;
-import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
@@ -79,7 +79,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			}
 			if (rawData.length > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
 			{
-				throw new UsageException("Picture too big (is " + StringHelpers.humanReadableBytes(rawData.length) + ", limit " + StringHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
+				throw new UsageException("Picture too big (is " + MiscHelpers.humanReadableBytes(rawData.length) + ", limit " + MiscHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
 			}
 			IpfsFile pictureHash = access.uploadAndPin(new ByteArrayInputStream(rawData), true);
 			description.setPicture(pictureHash.toSafeString());

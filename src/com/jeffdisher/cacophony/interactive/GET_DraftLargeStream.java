@@ -4,14 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.function.Function;
 
 import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.DraftWrapper;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,7 +56,7 @@ public class GET_DraftLargeStream implements IGetHandler
 					response.setContentLengthLong(byteSize);
 					response.setStatus(HttpServletResponse.SC_OK);
 					
-					_copyToEndOfFile(input, output);
+					MiscHelpers.copyToEndOfFile(input, output);
 				}
 			}
 			catch (FileNotFoundException e)
@@ -66,27 +65,5 @@ public class GET_DraftLargeStream implements IGetHandler
 			}
 			
 		}
-	}
-
-
-	private static long _copyToEndOfFile(InputStream input, OutputStream output) throws IOException
-	{
-		long totalCopied = 0L;
-		boolean reading = true;
-		byte[] data = new byte[4096];
-		while (reading)
-		{
-			int read = input.read(data);
-			if (read > 0)
-			{
-				output.write(data, 0, read);
-				totalCopied += (long)read;
-			}
-			else
-			{
-				reading = false;
-			}
-		}
-		return totalCopied;
 	}
 }

@@ -5,7 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
-import com.jeffdisher.cacophony.utils.StringHelpers;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 public record GetGlobalPrefsCommand() implements ICommand
@@ -17,7 +17,7 @@ public record GetGlobalPrefsCommand() implements ICommand
 		{
 			PrefsData prefs = access.readPrefs();
 			environment.logToConsole("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
-			environment.logToConsole("Follower cache target size: " + StringHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			environment.logToConsole("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
 		}
 	}
 }

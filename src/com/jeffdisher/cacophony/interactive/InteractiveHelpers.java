@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -201,7 +202,7 @@ public class InteractiveHelpers
 		try (FileInputStream input = new FileInputStream(wrapper.thumbnail()))
 		{
 			mimeConsumer.accept(wrapper.loadDraft().thumbnail().mime());
-			_copyToEndOfFile(input, outStream);
+			MiscHelpers.copyToEndOfFile(input, outStream);
 		}
 	}
 	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, String mime, InputStream inStream) throws FileNotFoundException, IOException
@@ -210,7 +211,7 @@ public class InteractiveHelpers
 		long bytesCopied = 0L;
 		try (FileOutputStream output = new FileOutputStream(wrapper.thumbnail()))
 		{
-			bytesCopied = _copyToEndOfFile(inStream, output);
+			bytesCopied = MiscHelpers.copyToEndOfFile(inStream, output);
 		}
 		Assert.assertTrue(bytesCopied > 0L);
 		Draft oldDraft = wrapper.loadDraft();
@@ -389,27 +390,6 @@ public class InteractiveHelpers
 		return isSafe;
 	}
 
-
-	private static long _copyToEndOfFile(InputStream input, OutputStream output) throws IOException
-	{
-		long totalCopied = 0L;
-		boolean reading = true;
-		byte[] data = new byte[4096];
-		while (reading)
-		{
-			int read = input.read(data);
-			if (read > 0)
-			{
-				output.write(data, 0, read);
-				totalCopied += (long)read;
-			}
-			else
-			{
-				reading = false;
-			}
-		}
-		return totalCopied;
-	}
 
 	private static void closeElementFiles(IEnvironment environment, PublishHelpers.PublishElement[] elements)
 	{

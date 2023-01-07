@@ -1,10 +1,14 @@
 package com.jeffdisher.cacophony.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 
 /**
- * Basic utilities for string manipulation.
+ * Basic utilities for miscellaneous uses.
  */
-public class StringHelpers
+public class MiscHelpers
 {
 	/**
 	 * Converts a given number of bytes into a human-readable string.
@@ -31,6 +35,35 @@ public class StringHelpers
 				? (firstPart + " (" + bytes + " bytes)")
 				: (bytes + " bytes")
 		;
+	}
+
+	/**
+	 * Copies all the data from the input stream to the output stream, stopping once input reaches end of file.
+	 * 
+	 * @param input The input stream to read.
+	 * @param output The output stream to write.
+	 * @return The number of bytes copied.
+	 * @throws IOException If there is an error interacting with the streams.
+	 */
+	public static long copyToEndOfFile(InputStream input, OutputStream output) throws IOException
+	{
+		long totalCopied = 0L;
+		boolean reading = true;
+		byte[] data = new byte[4096];
+		while (reading)
+		{
+			int read = input.read(data);
+			if (read > 0)
+			{
+				output.write(data, 0, read);
+				totalCopied += (long)read;
+			}
+			else
+			{
+				reading = false;
+			}
+		}
+		return totalCopied;
 	}
 
 

@@ -23,8 +23,8 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 import com.jeffdisher.cacophony.utils.SizeLimits;
-import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
 /**
@@ -254,7 +254,7 @@ public class FolloweeRefreshLogic
 				}
 				else
 				{
-					support.logMessage("Record entry for " + data.elementCid + " is too big (" + StringHelpers.humanReadableBytes(data.size) + "): Ignoring this entry (will also be ignored in the future)");
+					support.logMessage("Record entry for " + data.elementCid + " is too big (" + MiscHelpers.humanReadableBytes(data.size) + "): Ignoring this entry (will also be ignored in the future)");
 				}
 			}
 			newRecordsBeingProcessedInitial = null;
@@ -333,12 +333,12 @@ public class FolloweeRefreshLogic
 				support.logMessage("Pinning " + data.elementCid + "...");
 				if (null != data.thumbnailHash)
 				{
-					support.logMessage("\t-thumbnail " + StringHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
+					support.logMessage("\t-thumbnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
 					data.futureThumbnailPin = support.addFileToFollowCache(data.thumbnailHash);
 				}
 				if (null != data.leafHash)
 				{
-					support.logMessage("\t-leaf " + StringHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
+					support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
 					data.futureLeafPin = support.addFileToFollowCache(data.leafHash);
 				}
 				// NOTE:  finalSelection has the latest elements at the front but we ideally want them at the back (not required by is an order which makes more sense).
@@ -389,11 +389,11 @@ public class FolloweeRefreshLogic
 					support.logMessage("Successfully pinned " + data.elementCid + "!");
 					if (null != data.thumbnailHash)
 					{
-						support.logMessage("\t-thumnail " + StringHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
+						support.logMessage("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
 					}
 					if (null != data.leafHash)
 					{
-						support.logMessage("\t-leaf " + StringHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
+						support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
 					}
 					support.addElementToCache(data.elementCid, data.thumbnailHash, data.leafHash, data.thumbnailSizeBytes + data.leafSizeBytes);
 				}

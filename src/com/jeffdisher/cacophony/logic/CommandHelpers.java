@@ -12,8 +12,8 @@ import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 import com.jeffdisher.cacophony.utils.SizeLimits;
-import com.jeffdisher.cacophony.utils.StringHelpers;
 
 
 /**
@@ -73,13 +73,13 @@ public class CommandHelpers
 			long targetSizeBytes = (long)(prefs.followCacheTargetBytes * fullnessFraction);
 			if (currentCacheSizeBytes > targetSizeBytes)
 			{
-				environment.logToConsole("Pruning cache to " + StringHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
+				environment.logToConsole("Pruning cache to " + MiscHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
 				long bytesToAdd = 0L;
 				CacheHelpers.pruneCacheIfNeeded(access, followees, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
 			}
 			else
 			{
-				environment.logToConsole("Not pruning cache since " + StringHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + StringHelpers.humanReadableBytes(targetSizeBytes));
+				environment.logToConsole("Not pruning cache since " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + MiscHelpers.humanReadableBytes(targetSizeBytes));
 			}
 		}
 		log.finish("Cache clean finished without issue");
