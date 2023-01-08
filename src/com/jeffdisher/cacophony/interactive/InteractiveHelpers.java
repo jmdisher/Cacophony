@@ -60,7 +60,7 @@ public class InteractiveHelpers
 	}
 	public static void closeVideoProcessor(VideoProcessor processor)
 	{
-		processor.sockedDidClose();
+		processor.stopProcess();
 	}
 
 	// --- Methods related to draft management.

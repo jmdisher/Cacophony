@@ -69,10 +69,9 @@ public class VideoProcessor
 	}
 
 	/**
-	 * Called to stop the video processing operation (or acknowledge that it has completed) when the socket monitoring
-	 * the processing operation has been closed.
+	 * Called to stop the video processing operation.
 	 */
-	public void sockedDidClose()
+	public void stopProcess()
 	{
 		_processor.stop();
 	}

@@ -58,7 +58,7 @@ public class TestVideoProcessor
 		
 		// Wait for this to finish.
 		latch.await();
-		processor.sockedDidClose();
+		processor.stopProcess();
 		
 		byte[] expected = "Testing 1 2 3...$\nNew line$\n".getBytes();
 		byte[] readBack = null;
@@ -107,7 +107,7 @@ public class TestVideoProcessor
 		}, draftManager, draftId, "cat /dev/random");
 		
 		// Force the background task to stop.
-		processor.sockedDidClose();
+		processor.stopProcess();
 		
 		// Wait for this to finish.
 		latch.await();

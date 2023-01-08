@@ -26,6 +26,8 @@ USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
 STATUS_OUTPUT=/tmp/status_output
 STATUS_INPUT=/tmp/status_input
+FAIL_PROCESS_FIFO=/tmp/fail_fifo
+CANCEL_PROCESS_INPUT=/tmp/fail_input
 
 rm -rf "$REPO1"
 rm -rf "$REPO2"
@@ -134,11 +136,12 @@ echo "Upload the video for the draft..."
 echo "aXbXcXdXe" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
 
 echo "Verify that we can cancel a video processing operation..."
-rm -f /tmp/fail_fifo
-mkfifo /tmp/fail_fifo
-rm -f fail_input
-mkfifo fail_input
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" process fail_input "/dev/null" &
+rm -f "$FAIL_PROCESS_FIFO"
+mkfifo "$FAIL_PROCESS_FIFO"
+rm -f "$CANCEL_PROCESS_INPUT"
+mkfifo "$CANCEL_PROCESS_INPUT"
+# Note that the value of FAIL_PROCESS_FIFO is hard-coded in this process:  "%2Ftmp%2Ffail_fifo"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" process "$CANCEL_PROCESS_INPUT" "/dev/null" &
 FAIL_PID=$!
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
@@ -148,7 +151,7 @@ if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
 fi
 echo "...sleeping for 10 seconds to make sure no timeout happens..."
 sleep 10
-echo -n "" > fail_input
+echo -n "" > "$CANCEL_PROCESS_INPUT"
 wait $FAIL_PID
 
 echo "Process the uploaded video..."
