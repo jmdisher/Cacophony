@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 /**
@@ -28,7 +29,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		_threads = new Thread[threadCount];
 		for (int i = 0; i < threadCount; ++i)
 		{
-			_threads[i] = new Thread(() -> {
+			_threads[i] = MiscHelpers.createThread(() -> {
 				boolean keepRunning = true;
 				while (keepRunning)
 				{
@@ -42,8 +43,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 						keepRunning = false;
 					}
 				}
-			});
-			_threads[i].setName("Scheduler thread #" + i);
+			}, "Scheduler thread #" + i);
 			_threads[i].start();
 		}
 	}

@@ -329,6 +329,11 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Pu
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
+echo "Make sure that the core threads are still running..."
+JSTACK=$(jstack "$SERVER_PID")
+requireSubstring "$JSTACK" "Background Operations"
+requireSubstring "$JSTACK" "Scheduler thread"
+
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT.1"
 wait $SERVER_PID

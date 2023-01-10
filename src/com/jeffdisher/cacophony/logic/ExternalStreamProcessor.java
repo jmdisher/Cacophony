@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 /**
@@ -74,7 +75,7 @@ public class ExternalStreamProcessor
 		// For this reason, this thread need to handle asynchronous interruption (it blocks in IO, not a monitor).  Note
 		// that the interrupt doesn't actually cause the IO operation to fail but we don't expect to block in IO for any
 		// substantial amount of time (as we are just feeding an input pipe) so we check the flag on every copy cycle.
-		_inputProcessor = new Thread(() -> {
+		_inputProcessor = MiscHelpers.createThread(() -> {
 			OutputStream inputStream = process.getOutputStream();
 			byte[] buffer = new byte[64 * 1024];
 			long totalBytes = 0;
@@ -148,13 +149,13 @@ public class ExternalStreamProcessor
 			
 			// Set the process status and notify the output thread observing the file size, if it beat us there.
 			_processCompleted(result);
-		});
+		}, "External Processor Input");
 		
 		// The _outputProcessor copies the processed bytes coming from the pipe from the STDOUT of the background
 		// process into the processed video file.
 		// NOTE:  This thread is responsible for waiting for the others to shut down and then calling the final finish
 		// callback (preceeded by an error callback if the exit code was non-zero).
-		_outputProcessor = new Thread(() -> {
+		_outputProcessor = MiscHelpers.createThread(() -> {
 			InputStream outputStream = process.getInputStream();
 			byte[] buffer = new byte[64 * 1024];
 			long totalBytes = 0;
@@ -204,11 +205,11 @@ public class ExternalStreamProcessor
 				throw Assert.unexpected(e);
 			}
 			_postDone(doneCallback, (0 == processExitCode) ? totalBytes : -1L, errorCallback, processExitCode);
-		});
+		}, "External Processor Output");
 		
 		// The _errorProcessor just drains the STDERR of the background process, sending off any data it sees to the
 		// error callback.
-		_errorProcessor = new Thread(() -> {
+		_errorProcessor = MiscHelpers.createThread(() -> {
 			InputStream errorStream = process.getErrorStream();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream));
 			try
@@ -235,7 +236,7 @@ public class ExternalStreamProcessor
 					throw Assert.unexpected(e);
 				}
 			}
-		});
+		}, "External Processor Error");
 		
 		_processReturnValue = -1;
 		_processedVideoBytes = -1l;

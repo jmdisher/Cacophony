@@ -66,6 +66,29 @@ public class MiscHelpers
 		return totalCopied;
 	}
 
+	/**
+	 * A helper to create a thread which forces us to name it but also injects error reporting and creates a single top-
+	 * level implementation which can be further instrumented during debugging.
+	 * 
+	 * @param runnable The main entry-point of the thread.
+	 * @param name The name of the thread.
+	 * @return A new Thread instance.
+	 */
+	public static Thread createThread(Runnable runnable, String name)
+	{
+		Runnable reportingRunnable = () -> {
+			try
+			{
+				runnable.run();
+			}
+			catch (Throwable t)
+			{
+				t.printStackTrace();
+			}
+		};
+		return new Thread(reportingRunnable, name);
+	}
+
 
 	private static String _getMagnitudeString(long bytes, double magnitude, String suffix)
 	{

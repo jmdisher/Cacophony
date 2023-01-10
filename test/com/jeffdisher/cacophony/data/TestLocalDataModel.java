@@ -33,6 +33,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 public class TestLocalDataModel
@@ -89,7 +90,7 @@ public class TestLocalDataModel
 		CyclicBarrier barrier = new CyclicBarrier(threads.length);
 		for (int i = 0; i < threads.length; ++i)
 		{
-			threads[i] = new Thread(() -> {
+			threads[i] = MiscHelpers.createThread(() -> {
 				IReadOnlyLocalData reader = null;
 				try
 				{
@@ -109,7 +110,7 @@ public class TestLocalDataModel
 					Assert.fail();
 				}
 				reader.close();
-			});
+			}, "TestLocalDataModel thread #" + i);
 		}
 		
 		// Start the threads.
@@ -149,7 +150,7 @@ public class TestLocalDataModel
 		AtomicReference<Thread> owner = new AtomicReference<>();
 		for (int i = 0; i < threads.length; ++i)
 		{
-			threads[i] = new Thread(() -> {
+			threads[i] = MiscHelpers.createThread(() -> {
 				// Synchronize thread start-up on the barrier.
 				try
 				{
@@ -185,7 +186,7 @@ public class TestLocalDataModel
 				}
 				Assert.assertTrue(owner.compareAndSet(Thread.currentThread(), null));
 				writer.close();
-			});
+			}, "TestLocalDataModel thread #" + i);
 		}
 		
 		// Start the threads.

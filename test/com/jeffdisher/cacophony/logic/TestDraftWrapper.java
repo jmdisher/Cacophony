@@ -123,6 +123,7 @@ public class TestDraftWrapper
 		public int bigCount;
 		public ReadThread(DraftWrapper wrapper)
 		{
+			super("TestDraftWrapper");
 			_wrapper = wrapper;
 		}
 		@Override

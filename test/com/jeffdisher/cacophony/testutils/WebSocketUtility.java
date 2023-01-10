@@ -17,6 +17,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 /**
@@ -159,7 +160,7 @@ public class WebSocketUtility implements WebSocketListener
 		// We will interpret a zero-byte message as an explicit client-side disconnect.
 		if ((null != _connectedSession) && (null != inputPipe))
 		{
-			_inputReaderThread = new Thread(() -> {
+			_inputReaderThread = MiscHelpers.createThread(() -> {
 				boolean shouldContinue = true;
 				while (shouldContinue)
 				{
@@ -187,7 +188,7 @@ public class WebSocketUtility implements WebSocketListener
 					}
 					
 				}
-			});
+			}, "WebSocketUtility Input Reader");
 			_inputReaderThread.start();
 		}
 	}

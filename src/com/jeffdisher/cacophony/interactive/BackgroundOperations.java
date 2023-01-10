@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 /**
@@ -42,7 +43,7 @@ public class BackgroundOperations
 	{
 		_environment = environment;
 		_connector = connector;
-		_background = new Thread(() -> {
+		_background = MiscHelpers.createThread(() -> {
 			RequestedOperation operation = _background_consumeNextOperation(operations.currentTimeMillis());
 			while (null != operation)
 			{
@@ -75,7 +76,7 @@ public class BackgroundOperations
 				}
 				operation = _background_consumeNextOperation(operations.currentTimeMillis());
 			}
-		});
+		}, "Background Operations");
 		_republishIntervalMillis = republishIntervalMillis;
 		_followeeRefreshMillis = followeeRefreshMillis;
 		
