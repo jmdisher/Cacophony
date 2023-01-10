@@ -179,7 +179,7 @@ public class InteractiveServer
 		server.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(xsrf, manager));
 		
 		server.addWebSocketFactory("/draft/saveVideo", 4, "video", new WS_DraftSaveVideo(xsrf, manager));
-		server.addWebSocketFactory("/draft/processVideo", 2, "process", new WS_DraftProcessVideo(xsrf, manager, forcedCommand));
+		server.addWebSocketFactory("/draft/processVideo", 2, "event_api", new WS_DraftProcessVideo(xsrf, manager, forcedCommand));
 		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
 		
 		// We use a web socket for listening to updates of background process state.

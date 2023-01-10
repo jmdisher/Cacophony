@@ -28,6 +28,7 @@ STATUS_OUTPUT=/tmp/status_output
 STATUS_INPUT=/tmp/status_input
 FAIL_PROCESS_FIFO=/tmp/fail_fifo
 CANCEL_PROCESS_INPUT=/tmp/fail_input
+PROCESS_OUTPUT=/tmp/process_output
 
 rm -rf "$REPO1"
 rm -rf "$REPO2"
@@ -141,7 +142,7 @@ mkfifo "$FAIL_PROCESS_FIFO"
 rm -f "$CANCEL_PROCESS_INPUT"
 mkfifo "$CANCEL_PROCESS_INPUT"
 # Note that the value of FAIL_PROCESS_FIFO is hard-coded in this process:  "%2Ftmp%2Ffail_fifo"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" process "$CANCEL_PROCESS_INPUT" "/dev/null" &
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "$CANCEL_PROCESS_INPUT" "/dev/null" &
 FAIL_PID=$!
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
@@ -155,7 +156,26 @@ echo -n "" > "$CANCEL_PROCESS_INPUT"
 wait $FAIL_PID
 
 echo "Process the uploaded video..."
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" process "/dev/null"
+rm -f "$PROCESS_OUTPUT"
+mkfifo "$PROCESS_OUTPUT"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_OUTPUT" &
+SAMPLE_PID=$!
+# We expect every message to be an "event" - we need to see the "create", zero or more "update", and then a single "delete".
+SAMPLE=$(cat "$PROCESS_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"inputBytes\",\"value\":"
+SAMPLE=$(cat "$PROCESS_OUTPUT")
+while [ "$SAMPLE" != "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null}" ]
+do
+	requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"inputBytes\",\"value\":"
+	SAMPLE=$(cat "$PROCESS_OUTPUT")
+done
+# At the end, we see the final update with processed size (2 bytes - "c\n").
+SAMPLE=$(cat "$PROCESS_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":2}"
+SAMPLE=$(cat "$PROCESS_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null}"
+wait $SAMPLE_PID
+
 ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
 if [ "aXbXcXdXe" != "$ORIGINAL_VIDEO" ];
 then

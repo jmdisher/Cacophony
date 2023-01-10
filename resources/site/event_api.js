@@ -51,8 +51,13 @@ function createWebSocketStateEventListener(url, protocol, onSocketOpen, onCreate
 // To namespace these, since we can't use _actual_ module semantics (since a file with this name is exported for both http and file - file can't use modules for some bogus reason), we will attach these methods to an object for export.
 // This also gives us a single point where we can associate the URL and protocol name to the definitions in InteractiveServer.java.
 var EVENTS_API = {
-	backgroundStatus: function(onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { createWebSocketStateEventListener("ws://127.0.0.1:8000/backgroundStatus", "event_api"
+	backgroundStatus: function(onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/backgroundStatus", "event_api"
 		, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+	); },
+	processVideo: function(id, command, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) {
+		let url = "ws://127.0.0.1:8000/draft/processVideo/" + id + "/" + encodeURIComponent(command);
+		return createWebSocketStateEventListener(url, "event_api"
+			, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
 	); },
 };
 
