@@ -28,6 +28,7 @@ STATUS_OUTPUT=/tmp/status_output
 STATUS_INPUT=/tmp/status_input
 FAIL_PROCESS_FIFO=/tmp/fail_fifo
 CANCEL_PROCESS_INPUT=/tmp/fail_input
+PROCESS_INPUT=/tmp/process_input
 PROCESS_OUTPUT=/tmp/process_output
 
 rm -rf "$REPO1"
@@ -36,13 +37,13 @@ rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 rm -f "$STATUS_OUTPUT.1" "$STATUS_OUTPUT.2"
-rm -f "$STATUS_INPUT.1" "$STATUS_INPUT.2"
+rm -f "$STATUS_INPUT.1"
+rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
 
 mkdir "$REPO1"
 mkdir "$REPO2"
 
 mkfifo $STATUS_INPUT.1
-mkfifo $STATUS_INPUT.2
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
 cp "$PATH_TO_JAR" Cacophony.jar
@@ -90,7 +91,7 @@ mkfifo "$STATUS_OUTPUT.1"
 java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT.1" "$STATUS_OUTPUT.1" &
 STATUS_PID1=$!
 touch "$STATUS_OUTPUT.2"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT.2" "$STATUS_OUTPUT.2" &
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
 STATUS_PID2=$!
 
 echo "Get the default video config..."
@@ -150,30 +151,35 @@ if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
 	kill -9 $FAIL_PID
 	exit 1
 fi
-echo "...sleeping for 10 seconds to make sure no timeout happens..."
-sleep 10
-echo -n "" > "$CANCEL_PROCESS_INPUT"
+echo "Close the processing channel to cancel it"
+echo -n "-CLOSE" > "$CANCEL_PROCESS_INPUT"
 wait $FAIL_PID
 
 echo "Process the uploaded video..."
-rm -f "$PROCESS_OUTPUT"
+mkfifo "$PROCESS_INPUT"
 mkfifo "$PROCESS_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_OUTPUT" &
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
 SAMPLE_PID=$!
 # We expect every message to be an "event" - we need to see the "create", zero or more "update", and then a single "delete".
 SAMPLE=$(cat "$PROCESS_OUTPUT")
+echo -n "-ACK" > "$PROCESS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"inputBytes\",\"value\":"
 SAMPLE=$(cat "$PROCESS_OUTPUT")
+echo -n "-ACK" > "$PROCESS_INPUT"
 while [ "$SAMPLE" != "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null}" ]
 do
 	requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"inputBytes\",\"value\":"
 	SAMPLE=$(cat "$PROCESS_OUTPUT")
+	echo -n "-ACK" > "$PROCESS_INPUT"
 done
 # At the end, we see the final update with processed size (2 bytes - "c\n").
 SAMPLE=$(cat "$PROCESS_OUTPUT")
+echo -n "-ACK" > "$PROCESS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":2}"
 SAMPLE=$(cat "$PROCESS_OUTPUT")
+echo -n "-ACK" > "$PROCESS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null}"
+echo -n "-WAIT" > "$PROCESS_INPUT"
 wait $SAMPLE_PID
 
 ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
@@ -247,12 +253,16 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 
 # We will verify that this is in the pipe we are reading from the WebSocket (note that we may sometimes see event "1" from the start-up publish, so just skip that one in this case).
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
 if [[ "$STATUS_EVENT" =~ "\"event\":\"create\",\"key\":1," ]]; then
 	STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+	echo -n "-ACK" > "$STATUS_INPUT.1"
 	STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+	echo -n "-ACK" > "$STATUS_INPUT.1"
 fi
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 
 echo "Verify that it is not in the list..."
@@ -297,8 +307,10 @@ requireSubstring "$POST_STRUCT" "\"audioUrl\":\"http:"
 
 # Check that we see this in the output events.
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
 echo "Check the list of followee keys for this user"
@@ -325,8 +337,10 @@ requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 echo "Test that we can request another republish..."
 echo -n "COMMAND_REPUBLISH" > "$STATUS_INPUT.1"
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Make sure that the core threads are still running..."
@@ -339,9 +353,8 @@ echo -n "COMMAND_STOP" > "$STATUS_INPUT.1"
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"
-echo -n "" > "$STATUS_INPUT.1"
+echo -n "-WAIT" > "$STATUS_INPUT.1"
 wait $STATUS_PID1
-echo -n "" > "$STATUS_INPUT.2"
 wait $STATUS_PID2
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
 STATUS_DATA2=$(cat "$STATUS_OUTPUT.2")

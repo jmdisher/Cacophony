@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Collections;
 
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -34,26 +35,107 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
  * In "SEND" mode, will read stdin, sending this data to the other side as binary.  Closes the socket on EOF.
  * In "JSON_IO" mode, we open an optional input_pipe and required output_pipe.  These don't need to be pipes, but the
  * design intends for this to be the case since we will always open-read/write-close for each message:
- * -open input pipe, read all bytes to EOF, send this as a String message, loop (0-byte message means "client-side
- * close")
- * -wait for message, open output pipie, write message, close, loop, exit when socket closes
+ * -open input pipe, read all bytes to EOF:
+ *   -if starts with "-", interpret as a command:
+ *     -CLOSE - request a client-side close of the socket
+ *     -WAIT - waits for the server-side close of the socket
+ *     -ACK -acknowledge a previous message
+ *   -else, send this as a String message
+ *   -loop
+ * -wait for message, open output pipe, write message, close, loop, wait for ack, exit when socket closes
  * NOTE:  If the input pipe is provided, a zero-byte message will ALWAYS be required in order to close down correctly.
  * Returns 0 on success, 1 on arg failure, 2 on WebSocket error.
  */
 public class WebSocketUtility implements WebSocketListener
 {
+	public static final String COMMAND_CLOSE = "-CLOSE";
+	public static final String COMMAND_WAIT = "-WAIT";
+	public static final String COMMAND_ACK = "-ACK";
+
 	private final File _outputPipe;
 	private final WebSocketClient _client;
-	private boolean _isRunning;
 	private Session _connectedSession;
 	private boolean _errorWasObserved;
-	private Thread _inputReaderThread;
+	private final Thread _inputReaderThread;
+
+	private boolean _isConnected;
+	private boolean _awaitingAck;
+	private boolean _isShuttingDown;
 
 
-	public WebSocketUtility(File outputPipe)
+	public WebSocketUtility(File inputPipe, File outputPipe)
 	{
 		_outputPipe = outputPipe;
 		_client = new WebSocketClient();
+		
+		// We will create the input reader but won't START it until the connection is established.  This allows us to
+		// make internal decisions around whether or not we are planning to process input, later on.
+		if (null != inputPipe)
+		{
+			_inputReaderThread = MiscHelpers.createThread(() -> {
+				boolean shouldContinue = true;
+				while (shouldContinue)
+				{
+					try
+					{
+						byte[] data = Files.readAllBytes(inputPipe.toPath());
+						String stringValue = new String(data);
+						if (stringValue.startsWith("-"))
+						{
+							// Command.
+							if (stringValue.equals(COMMAND_CLOSE))
+							{
+								_connectedSession.close();
+								shouldContinue = false;
+							}
+							else if (stringValue.equals(COMMAND_WAIT))
+							{
+								shouldContinue = false;
+							}
+							else if (stringValue.equals(COMMAND_ACK))
+							{
+								synchronized(WebSocketUtility.this)
+								{
+									// We should already awaiting the ack.
+									Assert.assertTrue(_awaitingAck);
+									_awaitingAck = false;
+									WebSocketUtility.this.notifyAll();
+								}
+							}
+							else
+							{
+								throw Assert.unreachable();
+							}
+						}
+						else
+						{
+							// Raw JSON value.
+							_connectedSession.getRemote().sendString(stringValue);
+						}
+					}
+					catch (IOException e)
+					{
+						// If something went wrong, we will also just exit.
+						e.printStackTrace();
+						shouldContinue = false;
+					}
+					
+				}
+				// We dropped out of the loop so we will set the flag that we are shutting down.
+				synchronized(WebSocketUtility.this)
+				{
+					_isShuttingDown = true;
+					WebSocketUtility.this.notifyAll();
+				}
+			}, "WebSocketUtility Input Reader");
+		}
+		else
+		{
+			_inputReaderThread = null;
+		}
+		_isConnected = false;
+		_awaitingAck = false;
+		_isShuttingDown = false;
 	}
 
 	public void connect(String uri, String xsrf, String protocol) throws Exception
@@ -63,7 +145,7 @@ public class WebSocketUtility implements WebSocketListener
 		req.setCookies(Collections.singletonList(new HttpCookie("XSRF", xsrf)));
 		req.setSubProtocols(protocol);
 		_client.connect(this, new URI(uri), req);
-		_isRunning = true;
+		_isConnected = true;
 	}
 
 	@Override
@@ -72,7 +154,7 @@ public class WebSocketUtility implements WebSocketListener
 		WebSocketListener.super.onWebSocketClose(statusCode, reason);
 		synchronized (this)
 		{
-			_isRunning = false;
+			_isConnected = false;
 			this.notifyAll();
 		}
 	}
@@ -81,6 +163,7 @@ public class WebSocketUtility implements WebSocketListener
 	public void onWebSocketConnect(Session session)
 	{
 		WebSocketListener.super.onWebSocketConnect(session);
+		session.setIdleTimeout(Duration.ofDays(1));
 		synchronized (this)
 		{
 			_connectedSession = session;
@@ -100,13 +183,38 @@ public class WebSocketUtility implements WebSocketListener
 	{
 		if (null != _outputPipe)
 		{
-			try
+			synchronized (this)
 			{
-				Files.write(_outputPipe.toPath(), message.getBytes(), StandardOpenOption.APPEND);
-			}
-			catch (IOException e)
-			{
-				throw Assert.unexpected(e);
+				while (!_isShuttingDown && _awaitingAck)
+				{
+					try
+					{
+						this.wait();
+					}
+					catch (InterruptedException e)
+					{
+						// Doesn't use interruption.
+						throw Assert.unexpected(e);
+					}
+				}
+				if (!_isShuttingDown)
+				{
+					try
+					{
+						Files.write(_outputPipe.toPath(), message.getBytes(), StandardOpenOption.APPEND);
+					}
+					catch (IOException e)
+					{
+						throw Assert.unexpected(e);
+					}
+				}
+				// If we have an input reader, we will wait for ack.
+				// Reasoning:
+				// With FIFOs (which is what we normally use here), attempting open(write) while an external process
+				// has the open(read) still open, can allow multiple writers to be observed by the same reader, but we
+				// want to force each reader and writer to see precisely one partner performing the other operation.
+				// The ack forces the caller to explicitly lock-step with us so this doesn't happen.
+				_awaitingAck = (null != _inputReaderThread);
 			}
 		}
 	}
@@ -115,7 +223,7 @@ public class WebSocketUtility implements WebSocketListener
 	{
 		synchronized (this)
 		{
-			while (_isRunning)
+			while (_isConnected)
 			{
 				this.wait();
 			}
@@ -148,48 +256,9 @@ public class WebSocketUtility implements WebSocketListener
 
 	public synchronized void waitForConnection() throws InterruptedException
 	{
-		while (_isRunning && (null == _connectedSession))
+		while (!_isShuttingDown && (null == _connectedSession))
 		{
 			this.wait();
-		}
-	}
-
-	public synchronized void startInputReaderThread(File inputPipe)
-	{
-		// We will handle each full extent of data read from the input pipe as a single message.
-		// We will interpret a zero-byte message as an explicit client-side disconnect.
-		if ((null != _connectedSession) && (null != inputPipe))
-		{
-			_inputReaderThread = MiscHelpers.createThread(() -> {
-				boolean shouldContinue = true;
-				while (shouldContinue)
-				{
-					try
-					{
-						byte[] data = Files.readAllBytes(inputPipe.toPath());
-						if (0 == data.length)
-						{
-							// Explicit close.
-							System.err.println("Closing web socket");
-							_connectedSession.close();
-							shouldContinue = false;
-						}
-						else
-						{
-							// In this mode, we always send the data as a string since we assume it is JSON.
-							_connectedSession.getRemote().sendString(new String(data));
-						}
-					}
-					catch (IOException e)
-					{
-						// If something went wrong, we will also just exit.
-						e.printStackTrace();
-						shouldContinue = false;
-					}
-					
-				}
-			}, "WebSocketUtility Input Reader");
-			_inputReaderThread.start();
 		}
 	}
 
@@ -230,20 +299,17 @@ public class WebSocketUtility implements WebSocketListener
 				_usageExit();
 			}
 			
-			WebSocketUtility utility = new WebSocketUtility(outputPipe);
+			WebSocketUtility utility = new WebSocketUtility(inputPipe, outputPipe);
 			utility.connect(uri, xsrf, protocol);
 			utility.waitForConnection();
 			if (sendMode)
 			{
 				utility.sendAllBinary(System.in);
 			}
-			else
+			else if (null != inputPipe)
 			{
-				// We are in interactive JSON_IO mode, which is more complicated:
-				// -WebSocketUtility will write each message to the outputPipe, as a distinct open/close operation.
-				// -we will need to wait for connection, then start a thread which reads from the input pipe and writes
-				//  to the stream, as a distinct input file open/close operation
-				utility.startInputReaderThread(inputPipe);
+				// We can now start the input processor.
+				utility._inputReaderThread.start();
 			}
 			boolean wasSuccess = utility.waitForClose();
 			if (wasSuccess)
