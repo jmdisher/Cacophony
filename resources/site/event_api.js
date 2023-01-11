@@ -59,5 +59,10 @@ var EVENTS_API = {
 		return createWebSocketStateEventListener(url, "event_api"
 			, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
 	); },
+	existingVideo: function(id, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) {
+		let url = "ws://127.0.0.1:8000/draft/existingVideo/" + id;
+		return createWebSocketStateEventListener(url, "event_api"
+			, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+	); },
 };
 

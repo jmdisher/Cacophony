@@ -135,6 +135,7 @@ public class InteractiveServer
 		background.startProcess();
 		
 		DraftManager manager = environment.getSharedDraftManager();
+		VideoProcessContainer videoProcessContainer = new VideoProcessContainer(manager);
 		
 		String forcedCommand = canChangeCommand
 				? null
@@ -179,7 +180,8 @@ public class InteractiveServer
 		server.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(xsrf, manager));
 		
 		server.addWebSocketFactory("/draft/saveVideo", 4, "video", new WS_DraftSaveVideo(xsrf, manager));
-		server.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(xsrf, manager, forcedCommand));
+		server.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(xsrf, videoProcessContainer, forcedCommand));
+		server.addWebSocketFactory("/draft/existingVideo", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(xsrf, videoProcessContainer));
 		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
 		
 		// We use a web socket for listening to updates of background process state.

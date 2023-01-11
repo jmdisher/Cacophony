@@ -9,7 +9,6 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
-import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -19,19 +18,21 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class WS_DraftProcessVideo implements IWebSocketFactory
 {
 	private final String _xsrf;
-	private final DraftManager _draftManager;
+	private final VideoProcessContainer _videoProcessContainer;
 	private final String _forcedCommand;
 	
-	public WS_DraftProcessVideo(String xsrf, DraftManager draftManager, String forcedCommand)
+	public WS_DraftProcessVideo(String xsrf, VideoProcessContainer videoProcessContainer, String forcedCommand)
 	{
 		_xsrf = xsrf;
-		_draftManager = draftManager;
+		_videoProcessContainer = videoProcessContainer;
 		_forcedCommand = forcedCommand;
 	}
 	
 	@Override
 	public WebSocketListener create(String[] variables)
 	{
+		// TODO:  If the Breakwater interface changes to provide the session here, we should change this to validate
+		// XSRF and start the process here, then attach the listener on connect.
 		int draftId = Integer.parseInt(variables[0]);
 		String processCommand = variables[1];
 		// See if we are supposed to override this connection.
@@ -48,14 +49,28 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 	{
 		private final int _draftId;
 		private final String _processCommand;
-		private final VideoProcessContainer _videoProcessContainer;
 		private VideoProcessorCallbackHandler _handler;
 		
 		public ProcessVideoWebSocketListener(int draftId, String processCommand)
 		{
 			_draftId = draftId;
 			_processCommand = processCommand;
-			_videoProcessContainer = new VideoProcessContainer(_draftManager);
+		}
+		
+		@Override
+		public void onWebSocketText(String message)
+		{
+			// For now (at least), we will make the assumption that the front-end only sends us messages after it sees data.
+			Assert.assertTrue(null != _handler);
+			if (VideoProcessContainer.COMMAND_CANCEL_PROCESSING.equals(message))
+			{
+				_videoProcessContainer.cancelProcess();
+			}
+			else
+			{
+				// Something bogus was passed in so we should look at this.
+				throw Assert.unreachable();
+			}
 		}
 		
 		@Override
@@ -63,7 +78,6 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 		{
 			if (null != _handler)
 			{
-				_videoProcessContainer.cancelProcess();
 				_videoProcessContainer.detachListener(_handler);
 				_handler = null;
 			}

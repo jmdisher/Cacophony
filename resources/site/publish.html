@@ -283,6 +283,54 @@ function populateSyntheticType(draft)
 	draft.type = type;
 }
 
+function onProcessingSocketOpen(socket)
+{
+}
+
+function onProcessingKeyCreate(videoState, key, value)
+{
+	// We will only bother with the final processed size, in this path (the input bytes will be zero on create).
+	if (key === "outputBytes")
+	{
+		videoState.finalProcessed = value;
+	}
+}
+
+function onProcessingKeyUpdate(selectedDraft, processing_progress_bar, key, value)
+{
+	// We only have an interest in the in-progress size, in this path (since output bytes is only ever sent in the create).
+	if (key === "inputBytes")
+	{
+		let percentage = Math.round(100 * value / selectedDraft.originalVideo.byteSize);
+		console.log("Processing " + percentage + "% " + value);
+		processing_progress_bar.ariaValueNow = percentage;
+		processing_progress_bar["style"] = "width: " + percentage + "%;";
+		processing_progress_bar.textContent = percentage + "%";
+	}
+}
+
+function onProcessingKeyDelete(key)
+{
+	// We don't need to track the deletion.
+}
+
+function onProcessingSocketClose(scope, processed_review, event)
+{
+	// Note that scope.videoState.finalProcessed will be -1 if this was a failure but 0 if we found no active processor when this closed so we don't want to override in that case.
+	if (0 !== scope.videoState.finalProcessed)
+	{
+		scope.selectedDraft.processedVideo = {
+			height: scope.videoConfig.height,
+			width: scope.videoConfig.width,
+			byteSize: scope.videoState.finalProcessed,
+		};
+		processed_review.src = "http://127.0.0.1:8000/draft/processedVideo/" + scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+	}
+	scope.videoState.processingSocket = null;
+	scope.videoState.finalProcessed = 0;
+	scope.$apply();
+}
+
 
 // We will create an Angular controller and populate it with data from generated_db.js.
 var GLOBAL_Application = angular.module('App', []);
@@ -326,6 +374,19 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.selectDraft = function(draft)
 	{
 		selectDraft(canvas, original_review, processed_review, audio_review, $scope, draft);
+		// These keys are defined in VideoProcessContainer.java.
+		$scope.videoState.processingSocket = EVENTS_API.existingVideo($scope.selectedDraft.id
+			// onSocketOpen
+			, onProcessingSocketOpen
+			// onCreate
+			, function(key, value) { onProcessingKeyCreate($scope.videoState, key, value); }
+			// onUpdate
+			, function(key, value) {onProcessingKeyUpdate($scope.selectedDraft, processing_progress_bar, key, value); }
+			// onDelete
+			, onProcessingKeyDelete
+			// onSocketClose
+			, function(event) { onProcessingSocketClose($scope, processed_review, event); }
+		);
 	}
 	$scope.createNewDraft = function()
 	{
@@ -430,56 +491,21 @@ GLOBAL_Application.controller('AppController', function($scope)
 		// These keys are defined in VideoProcessContainer.java.
 		$scope.videoState.processingSocket = EVENTS_API.processVideo($scope.selectedDraft.id, $scope.videoConfig.processingCommand
 			// onSocketOpen
-			, function(socket)
-			{
-				console.log("Process start");
-			}
+			, onProcessingSocketOpen
 			// onCreate
-			, function(key, value)
-			{
-				// We will only bother with the final processed size, in this path (the input bytes will be zero on create).
-				if (key === "outputBytes")
-				{
-					$scope.videoState.finalProcessed = value;
-				}
-			}
+			, function(key, value) { onProcessingKeyCreate($scope.videoState, key, value); }
 			// onUpdate
-			, function(key, value)
-			{
-				// We only have an interest in the in-progress size, in this path (since output bytes is only ever sent in the create).
-				if (key === "inputBytes")
-				{
-					let percentage = Math.round(100 * value / $scope.selectedDraft.originalVideo.byteSize);
-					console.log("Processing " + percentage + "% " + value);
-					processing_progress_bar.ariaValueNow = percentage;
-					processing_progress_bar["style"] = "width: " + percentage + "%;";
-					processing_progress_bar.textContent = percentage + "%";
-				}
-			}
+			, function(key, value) {onProcessingKeyUpdate($scope.selectedDraft, processing_progress_bar, key, value); }
 			// onDelete
-			, function(key)
-			{
-				// We don't need to track the deletion.
-			}
+			, onProcessingKeyDelete
 			// onSocketClose
-			, function(event)
-			{
-				$scope.selectedDraft.processedVideo = {
-					height: $scope.videoConfig.height,
-					width: $scope.videoConfig.width,
-					byteSize: $scope.videoState.finalProcessed,
-				};
-				$scope.videoState.processingSocket = null;
-				$scope.videoState.finalProcessed = 0;
-				$scope.$apply();
-				processed_review.src = "http://127.0.0.1:8000/draft/processedVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
-				console.log("Process DONE");
-			}
+			, function(event) { onProcessingSocketClose($scope, processed_review, event); }
 		);
 	}
 	$scope.stopProcessing = function()
 	{
-		$scope.videoState.processingSocket.close();
+		// Constant defined in VideoProcessContainer.java.
+		$scope.videoState.processingSocket.send("COMMAND_CANCEL_PROCESSING");
 	}
 	$scope.captureFromPreview = function()
 	{

@@ -30,6 +30,8 @@ FAIL_PROCESS_FIFO=/tmp/fail_fifo
 CANCEL_PROCESS_INPUT=/tmp/fail_input
 PROCESS_INPUT=/tmp/process_input
 PROCESS_OUTPUT=/tmp/process_output
+EXISTING_INPUT=/tmp/existing_input
+EXISTING_OUTPUT=/tmp/existing_output
 
 rm -rf "$REPO1"
 rm -rf "$REPO2"
@@ -39,6 +41,7 @@ rm -f "$COOKIES1"
 rm -f "$STATUS_OUTPUT.1" "$STATUS_OUTPUT.2"
 rm -f "$STATUS_INPUT.1"
 rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
+rm -f "$EXISTING_INPUT" "$EXISTING_OUTPUT"
 
 mkdir "$REPO1"
 mkdir "$REPO2"
@@ -154,6 +157,47 @@ fi
 echo "Close the processing channel to cancel it"
 echo -n "-CLOSE" > "$CANCEL_PROCESS_INPUT"
 wait $FAIL_PID
+# We expect that the process is still running.
+FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
+if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
+	echo "Failed to find the stuck process, after closing connection, with $FAIL_PROC_COUNT matches"
+	exit 1
+fi
+
+# Do the re-open.
+echo "Do the re-open..."
+mkfifo "$EXISTING_INPUT"
+mkfifo "$EXISTING_OUTPUT"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_INPUT" "$EXISTING_OUTPUT" &
+FAIL_PID=$!
+# We should see the replay of the creation of inputBytes key.
+SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
+echo -n "-ACK" > "$EXISTING_INPUT"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"create\",\"key\":\"inputBytes\",\"value\":"
+# Do the cancel (VideoProcessorCallbackHandler.COMMAND_CANCEL_PROCESSING) and wait for the close.
+echo "Cancel the processing..."
+echo -n "COMMAND_CANCEL_PROCESSING" > "$EXISTING_INPUT"
+# We should see this force-stop as a delete of that input bytes key followed by a create and delete pair of the output bytes set to -1.
+SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
+echo -n "-ACK" > "$EXISTING_INPUT"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null}"
+SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
+echo -n "-ACK" > "$EXISTING_INPUT"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":-1}"
+SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
+echo -n "-ACK" > "$EXISTING_INPUT"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null}"
+# Verify that the process has terminated.
+FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
+if [ "$FAIL_PROC_COUNT" -ne 0 ]; then
+	echo "Stuck processes remaining: $FAIL_PROC_COUNT"
+	exit 1
+fi
+echo -n "-WAIT" > "$EXISTING_INPUT"
+wait $FAIL_PID
+echo "Verify that the draft shows no processed video..."
+DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
+requireSubstring "$DRAFT" ",\"originalVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":10},\"processedVideo\":null,\"audio\":null}"
 
 echo "Process the uploaded video..."
 mkfifo "$PROCESS_INPUT"

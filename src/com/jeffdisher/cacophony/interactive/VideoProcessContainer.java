@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.interactive.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -17,6 +18,9 @@ public class VideoProcessContainer
 	// (input bytes) versus completion (output bytes).
 	public static final String KEY_INPUT_BYTES = "inputBytes";
 	public static final String KEY_OUTPUT_BYTES = "outputBytes";
+
+	// We put the common command name here since anyone listening for it already references this.
+	public static final String COMMAND_CANCEL_PROCESSING = "COMMAND_CANCEL_PROCESSING";
 
 	private final DraftManager _manager;
 	private final HandoffConnector<String, Long> _connector;
@@ -80,8 +84,25 @@ public class VideoProcessContainer
 	}
 
 
-	private synchronized void _clearProcess()
+	private synchronized void _clearProcess(boolean deleteVideo)
 	{
+		// If the video processing failed or was cancelled, we want to delete the video.
+		if (deleteVideo)
+		{
+			try
+			{
+				boolean didDelete = InteractiveHelpers.deleteProcessedVideo(_manager, _draftId);
+				// For us to get to this point, it must be there.
+				// TODO: Verify that a race condition couldn't cause this to fail for safe reason.
+				Assert.assertTrue(didDelete);
+			}
+			catch (FileNotFoundException e)
+			{
+				// For us to get to this point, it must be there.
+				// TODO: Verify that a race condition couldn't cause this to fail for safe reason.
+				throw Assert.unexpected(e);
+			}
+		}
 		_processor = null;
 		_draftId = 0;
 	}
@@ -106,7 +127,9 @@ public class VideoProcessContainer
 			_connector.destroy(KEY_INPUT_BYTES);
 			_connector.create(KEY_OUTPUT_BYTES, outputSizeBytes);
 			_connector.destroy(KEY_OUTPUT_BYTES);
-			_clearProcess();
+			// We know that a -1 byte size means "cancel" or "error".
+			boolean shouldDelete = (-1L == outputSizeBytes);
+			_clearProcess(shouldDelete);
 		}
 	}
 }
