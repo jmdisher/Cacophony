@@ -2,6 +2,7 @@
 
 BASEDIR=$(dirname $0)
 source "$BASEDIR/utils.sh"
+export CACOPHONY_ENABLE_VERIFICATIONS=1
 
 
 # START.
@@ -9,17 +10,9 @@ if [ $# -ne 3 ]; then
 	echo "Missing arguments: path_to_ipfs path_to_resources path_to_jar"
 	exit 1
 fi
-
-# We always want to run our tests with extra verifications.
-export CACOPHONY_ENABLE_VERIFICATIONS=1
-
-BASEDIR=$(dirname $0)
 PATH_TO_IPFS="$1"
 RESOURCES="$2"
 PATH_TO_JAR="$3"
-
-REPO1=/tmp/repo1
-REPO2=/tmp/repo2
 
 USER1=/tmp/user1
 USER2=/tmp/user2
@@ -33,8 +26,6 @@ PROCESS_OUTPUT=/tmp/process_output
 EXISTING_INPUT=/tmp/existing_input
 EXISTING_OUTPUT=/tmp/existing_output
 
-rm -rf "$REPO1"
-rm -rf "$REPO2"
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
@@ -43,29 +34,17 @@ rm -f "$STATUS_INPUT.1"
 rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
 rm -f "$EXISTING_INPUT" "$EXISTING_OUTPUT"
 
-mkdir "$REPO1"
-mkdir "$REPO2"
-
-mkfifo $STATUS_INPUT.1
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
 cp "$PATH_TO_JAR" Cacophony.jar
 
-IPFS_PATH="$REPO1" $PATH_TO_IPFS init
-checkPreviousCommand "repo1 init"
-IPFS_PATH="$REPO2" $PATH_TO_IPFS init
-checkPreviousCommand "repo2 init"
-
-cp "$RESOURCES/swarm.key" "$REPO1/"
-cp "$RESOURCES/seed_config" "$REPO1/config"
-cp "$RESOURCES/swarm.key" "$REPO2/"
-cp "$RESOURCES/node1_config" "$REPO2/config"
-
-IPFS_PATH="$REPO1" $PATH_TO_IPFS daemon &
-PID1=$!
+setupIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 1
+setupIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 2
+startIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 1
+PID1=$RET
 echo "Daemon 1: $PID1"
-IPFS_PATH="$REPO2" $PATH_TO_IPFS daemon &
-PID2=$!
+startIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 2
+PID2=$RET
 echo "Daemon 2: $PID2"
 
 echo "Pausing for startup..."
@@ -90,6 +69,7 @@ XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
+mkfifo "$STATUS_INPUT.1"
 mkfifo "$STATUS_OUTPUT.1"
 java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT.1" "$STATUS_OUTPUT.1" &
 STATUS_PID1=$!
