@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import com.jeffdisher.breakwater.IDeleteHandler;
 import com.jeffdisher.cacophony.logic.DraftManager;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,40 +12,35 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Deletes the given draft and returns 200 on success or 404 if not found.
  */
-public class DELETE_Draft implements IDeleteHandler
+public class DELETE_Draft implements ValidatedEntryPoints.DELETE
 {
-	private final String _xsrf;
 	private final DraftManager _draftManager;
 	
-	public DELETE_Draft(String xsrf, DraftManager draftManager)
+	public DELETE_Draft(DraftManager draftManager)
 	{
-		_xsrf = xsrf;
 		_draftManager = draftManager;
 	}
 	
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 	{
-		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
+		int draftId = Integer.parseInt(pathVariables[0]);
+		
+		try
 		{
-			int draftId = Integer.parseInt(pathVariables[0]);
-			
-			try
+			if (InteractiveHelpers.deleteExistingDraft(_draftManager, draftId))
 			{
-				if (InteractiveHelpers.deleteExistingDraft(_draftManager, draftId))
-				{
-					response.setStatus(HttpServletResponse.SC_OK);
-				}
-				else
-				{
-					// This means the draft exists but couldn't be deleted since it is in use.
-					response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-				}
+				response.setStatus(HttpServletResponse.SC_OK);
 			}
-			catch (FileNotFoundException e)
+			else
 			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				// This means the draft exists but couldn't be deleted since it is in use.
+				response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 			}
+		}
+		catch (FileNotFoundException e)
+		{
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
 }

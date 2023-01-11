@@ -1,10 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.io.IOException;
-
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.breakwater.IGetHandler;
-import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
@@ -14,8 +10,6 @@ import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,60 +25,45 @@ import jakarta.servlet.http.HttpServletResponse;
  * (if cached) -thumbnailUrl (string)
  * (if cached) -videoUrl (string)
  */
-public class GET_PostStruct implements IGetHandler
+public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
 	private final IEnvironment _environment;
-	private final String _xsrf;
 	
-	public GET_PostStruct(IEnvironment environment, String xsrf)
+	public GET_PostStruct(IEnvironment environment)
 	{
 		_environment = environment;
-		_xsrf = xsrf;
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		if (InteractiveHelpers.verifySafeRequest(_xsrf, request, response))
+		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
+		try (IReadingAccess access = StandardAccess.readAccess(_environment))
 		{
-			IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-			try (IReadingAccess access = StandardAccess.readAccess(_environment))
-			{
-				IpfsFile lastPublishedIndex = access.getLastRootElement();
-				IFolloweeReading followees = access.readableFolloweeData();
-				LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
-					try
-					{
-						return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followees);
-					}
-					catch (IpfsConnectionException | FailedDeserializationException e)
-					{
-						// We return null on error but log this.
-						e.printStackTrace();
-						return null;
-					}
-				});
-				JsonObject postStruct = JsonGenerationHelpers.postStruct(cache, postToResolve);
-				if (null != postStruct)
+			IpfsFile lastPublishedIndex = access.getLastRootElement();
+			IFolloweeReading followees = access.readableFolloweeData();
+			LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
+				try
 				{
-					response.setContentType("application/json");
-					response.setStatus(HttpServletResponse.SC_OK);
-					response.getWriter().print(postStruct.toString());
+					return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followees);
 				}
-				else
+				catch (IpfsConnectionException | FailedDeserializationException e)
 				{
-					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+					// We return null on error but log this.
+					e.printStackTrace();
+					return null;
 				}
-			}
-			catch (IpfsConnectionException e)
+			});
+			JsonObject postStruct = JsonGenerationHelpers.postStruct(cache, postToResolve);
+			if (null != postStruct)
 			{
-				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-				e.printStackTrace(response.getWriter());
+				response.setContentType("application/json");
+				response.setStatus(HttpServletResponse.SC_OK);
+				response.getWriter().print(postStruct.toString());
 			}
-			catch (UsageException | VersionException e)
+			else
 			{
-				// Not expected after start-up.
-				throw Assert.unexpected(e);
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
 		}
 	}
