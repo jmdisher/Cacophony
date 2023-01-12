@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -36,6 +35,10 @@ public class InteractiveServer
 
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
+		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
+		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
+		dispatcher.start();
+		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
@@ -43,15 +46,6 @@ public class InteractiveServer
 			prefs = access.readPrefs();
 			rootElement = access.getLastRootElement();
 		}
-		
-		// We will use a basic in-order dispatcher, shared by the HandoffConnectors.
-		Consumer<Runnable> dispatcher = new Consumer<Runnable>() {
-			@Override
-			public synchronized void accept(Runnable arg0)
-			{
-				arg0.run();
-			}
-		};
 		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
@@ -237,7 +231,9 @@ public class InteractiveServer
 		}
 		System.out.println("Shutting down server...");
 		server.stop();
-		System.out.println("Server shut down.  Shutting down background process...");
+		System.out.println("Shutting down connector dispatcher...");
+		dispatcher.shutdown();
+		System.out.println("Shutting down background process...");
 		background.shutdownProcess();
 		System.out.println("Background process shut down.");
 	}
