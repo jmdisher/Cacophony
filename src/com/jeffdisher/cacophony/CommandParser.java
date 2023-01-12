@@ -501,7 +501,7 @@ public class CommandParser
 			}
 			startIndex[0] = consumedIndex;
 			
-			return (!fail && (requiredCount == required.length) && ((null == _subType) || !subElements.isEmpty()))
+			return (!fail && (requiredCount == required.length))
 					? _factory.apply(required, optional, subElements)
 					: null
 			;
@@ -540,7 +540,17 @@ public class CommandParser
 				// We use index as in/out parameter here, hence the array.
 				int[] index = {0};
 				matched = pattern.parse(args, index);
-				if (null != matched)
+				// We are at the top-level, here, so we need to make sure that the input was completely consumed.
+				if (args.length != index[0])
+				{
+					// There seems to be something we couldn't parse at the end of the line, meaning this is an error.
+					errorStream.println("Extra data at end of command line.");
+					// (in this case, we may still parse something but can't determine that isn't enough until we return
+					// to here).
+					matched = null;
+					break;
+				}
+				else if (null != matched)
 				{
 					if (index[0] < args.length)
 					{

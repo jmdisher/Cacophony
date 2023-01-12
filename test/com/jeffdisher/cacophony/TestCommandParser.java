@@ -420,4 +420,26 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	public void testPublishNoAttachments() throws Throwable
+	{
+		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, capture);
+		Assert.assertNotNull(command);
+		Assert.assertEquals(0, outStream.size());
+	}
+
+	@Test
+	public void testIncompleteParse() throws Throwable
+	{
+		String[] foo = {"--canonicalizeKey", "--key", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F", "--extra", "should fail"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand command = CommandParser.parseArgs(foo, capture);
+		Assert.assertNull(command);
+		Assert.assertTrue(outStream.size() > 0);
+	}
 }
