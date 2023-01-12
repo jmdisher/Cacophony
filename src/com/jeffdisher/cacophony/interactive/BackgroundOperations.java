@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.PriorityQueue;
 
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -172,6 +173,34 @@ public class BackgroundOperations
 		// Note that we just update the instance variables but won't reschedule anything already in our system.
 		_republishIntervalMillis = republishIntervalMillis;
 		_followeeRefreshMillis = followeeRefreshMillis;
+	}
+
+	public synchronized boolean refreshFollowee(IpfsKey followeeKey)
+	{
+		Assert.assertTrue(null != followeeKey);
+		
+		// We will look for the followee and replace its entry in the scheduler with a last refresh time of 0L so it
+		// will be scheduled next.
+		boolean didFindFollowee = false;
+		Iterator<SchedulableFollowee> iter = _handoff_knownFollowees.iterator();
+		while (iter.hasNext())
+		{
+			SchedulableFollowee elt = iter.next();
+			if (elt.followee.equals(followeeKey))
+			{
+				// Remove this since we will re-add it.
+				iter.remove();
+				didFindFollowee = true;
+				break;
+			}
+		}
+		
+		if (didFindFollowee)
+		{
+			_handoff_knownFollowees.add(new SchedulableFollowee(followeeKey, 0L));
+			this.notifyAll();
+		}
+		return didFindFollowee;
 	}
 
 

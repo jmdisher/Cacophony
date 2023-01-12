@@ -300,6 +300,56 @@ public class TestBackgroundOperations
 		Assert.assertEquals(4, listener.ended);
 	}
 
+	@Test
+	public void requestFolloweeRefresh() throws Throwable
+	{
+		// Enqueue 2 followees, allow them both to refresh, then request a refresh for one of them and see that it
+		// happens immediately.
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		FuturePublish publish = new FuturePublish(F1);
+		publish.success();
+		
+		int runCount[] = new int[2];
+		Runnable refresher1 = () -> {
+			runCount[0] += 1;
+		};
+		Runnable refresher2 = () -> {
+			runCount[1] += 1;
+		};
+		TestOperations ops = new TestOperations();
+		TestListener listener = new TestListener();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		statusHandoff.registerListener(listener);
+		back.startProcess();
+		
+		// We will only bother with the publish once so run it now.
+		ops.returnOn(F1, publish);
+		
+		// Enqueue the first followee we want and wait for it and the publish to be consumed.
+		ops.returnFolloweeOn(K1, refresher1);
+		back.enqueueFolloweeRefresh(K1, 1L);
+		ops.waitForConsume();
+		
+		// Enqueue the other followee and wait for it to be consumed.
+		ops.returnFolloweeOn(K2, refresher2);
+		back.enqueueFolloweeRefresh(K2, 1L);
+		ops.waitForConsume();
+		
+		// Now, request a refresh on the second and wait for it to be consumed.
+		ops.returnFolloweeOn(K2, refresher2);
+		back.refreshFollowee(K2);
+		ops.waitForConsume();
+		
+		back.shutdownProcess();
+		
+		// We should see 3 refresh operations, with a start/end pair for each, and a pair for the publish.
+		Assert.assertEquals(1, runCount[0]);
+		Assert.assertEquals(2, runCount[1]);
+		Assert.assertEquals(4, listener.started);
+		Assert.assertEquals(4, listener.ended);
+	}
+
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{

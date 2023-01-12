@@ -26,6 +26,13 @@ function xsrfLoaded($scope)
 	API_getFollowedKeys().then(following => {
 		followingLoaded($scope, following);
 	});
+	
+	$scope.requestRefresh = function(elt) {
+		// This won't work correctly in offline mode but is only here temporarily, anyway.
+		// (it needs to be reconsidered in light of other update events)
+		REST.POST("/followee/refresh/" + elt.publicKey);
+		elt.isRefreshing = true;
+	}
 }
 function followingLoaded($scope, following)
 {
@@ -38,6 +45,7 @@ function followingLoaded($scope, following)
 				"name": elt["name"],
 				"description": elt["description"],
 				"userPicUrl": elt["userPicUrl"],
+				"isRefreshing": false,
 			};
 			processed.push(object);
 			$scope.$apply();
@@ -82,7 +90,8 @@ function followingLoaded($scope, following)
 				<h5 class="card-header"><a href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
 				<div class="card-body container row">
 					<div class="col-md-4">
-						<a href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
+						<a href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a><br />
+						<button class="btn btn-small btn-success" ng-click="requestRefresh(user)" ng-disabled="user.isRefreshing">Refresh</button>
 					</div>
 					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
