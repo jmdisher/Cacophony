@@ -302,6 +302,22 @@ public class WebSocketUtility implements WebSocketListener
 			WebSocketUtility utility = new WebSocketUtility(inputPipe, outputPipe);
 			utility.connect(uri, xsrf, protocol);
 			utility.waitForConnection();
+			
+			// If we have an output pipe, we want to just open and close it so that scripts wanting to use this
+			// interactively will know we have connected (since they may otherwise be racy).
+			if (null != outputPipe)
+			{
+				try
+				{
+					Files.write(outputPipe.toPath(), new byte[0], StandardOpenOption.APPEND);
+				}
+				catch (IOException e)
+				{
+					throw Assert.unexpected(e);
+				}
+			}
+			
+			// We can now run the actual operation.
 			if (sendMode)
 			{
 				utility.sendAllBinary(System.in);

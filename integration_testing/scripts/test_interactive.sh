@@ -76,6 +76,8 @@ STATUS_PID1=$!
 touch "$STATUS_OUTPUT.2"
 java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
 STATUS_PID2=$!
+# Wait for connect.
+cat "$STATUS_OUTPUT.1" > /dev/null
 
 echo "Get the default video config..."
 VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/videoConfig)
@@ -150,6 +152,9 @@ mkfifo "$EXISTING_INPUT"
 mkfifo "$EXISTING_OUTPUT"
 java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_INPUT" "$EXISTING_OUTPUT" &
 FAIL_PID=$!
+# Wait for connect.
+cat "$EXISTING_OUTPUT" > /dev/null
+
 # We should see the replay of the creation of inputBytes key.
 SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
 echo -n "-ACK" > "$EXISTING_INPUT"
@@ -184,6 +189,8 @@ mkfifo "$PROCESS_INPUT"
 mkfifo "$PROCESS_OUTPUT"
 java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
 SAMPLE_PID=$!
+# Wait for connect.
+cat "$PROCESS_OUTPUT" > /dev/null
 # We expect every message to be an "event" - we need to see the "create", zero or more "update", and then a single "delete".
 SAMPLE=$(cat "$PROCESS_OUTPUT")
 echo -n "-ACK" > "$PROCESS_INPUT"
