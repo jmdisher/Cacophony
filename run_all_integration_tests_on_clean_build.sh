@@ -8,14 +8,15 @@ echo -e "\033[34;40mBuilding with ant...\033[00m"
 ant
 checkPreviousCommand "ant"
 
+echo -e "\033[32;40mAnt build success!\033[0m"
+
 echo -e "\033[34;40mRunning integration tests...\033[00m"
-./integration_testing/scripts/test_simple_resolve.sh /mnt/data/ipfs/go-ipfs/ipfs integration_testing/resources/ ./build/Cacophony.jar
-checkPreviousCommand "test_simple_resolve.sh"
-./integration_testing/scripts/test_follower.sh /mnt/data/ipfs/go-ipfs/ipfs integration_testing/resources/ ./build/Cacophony.jar
-checkPreviousCommand "test_follower.sh"
-./integration_testing/scripts/test_publish.sh /mnt/data/ipfs/go-ipfs/ipfs integration_testing/resources/ ./build/Cacophony.jar
-checkPreviousCommand "test_publish.sh"
-./integration_testing/scripts/test_interactive.sh /mnt/data/ipfs/go-ipfs/ipfs integration_testing/resources/ ./build/Cacophony.jar
-checkPreviousCommand "test_interactive.sh"
+
+for ENTRY in `ls ./integration_testing/scripts/test_*.sh`
+do
+	echo -e "\033[34;40m$ENTRY /mnt/data/ipfs/go-ipfs/ipfs ./integration_testing/resources/ ./build/Cacophony.jar\033[00m"
+	"$ENTRY" "/mnt/data/ipfs/go-ipfs/ipfs" "./integration_testing/resources/" "./build/Cacophony.jar"
+	checkPreviousCommand "$ENTRY"
+done
 
 echo -e "\033[32;40mCOMPLETE SUCCESS!\033[0m"
