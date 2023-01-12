@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -11,10 +12,12 @@ import org.junit.Test;
 
 public class TestHandoffConnector
 {
+	private static final Consumer<Runnable> DISPATCHER = (Runnable task) -> task.run();
+
 	@Test
 	public void testNoListener() throws Throwable
 	{
-		HandoffConnector<String, String> connector = new HandoffConnector<>();
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		connector.create("one", "1 1");
 		connector.update("one", "1 2");
 		connector.create("two", "2 1");
@@ -24,7 +27,7 @@ public class TestHandoffConnector
 	@Test
 	public void testOneListener() throws Throwable
 	{
-		HandoffConnector<String, String> connector = new HandoffConnector<>();
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		connector.registerListener(listen1);
 		connector.create("one", "1 1");
@@ -40,7 +43,7 @@ public class TestHandoffConnector
 	@Test
 	public void testOneListenerAddRemove() throws Throwable
 	{
-		HandoffConnector<String, String> connector = new HandoffConnector<>();
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		connector.create("one", "1 1");
 		connector.registerListener(listen1);
@@ -58,7 +61,7 @@ public class TestHandoffConnector
 	@Test
 	public void testTwoListenersOneConstant() throws Throwable
 	{
-		HandoffConnector<String, String> connector = new HandoffConnector<>();
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		TestListener listen2 = new TestListener();
 		connector.registerListener(listen1);
@@ -83,7 +86,7 @@ public class TestHandoffConnector
 	@Test
 	public void testOneListenerForceDisconect() throws Throwable
 	{
-		HandoffConnector<String, String> connector = new HandoffConnector<>();
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		connector.registerListener(listen1);
 		connector.create("one", "1 1");
@@ -100,7 +103,7 @@ public class TestHandoffConnector
 	@Test
 	public void testOrderCheck() throws Throwable
 	{
-		HandoffConnector<String, String> connector = new HandoffConnector<>();
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		TestListener listen2 = new TestListener();
 		connector.registerListener(listen1);

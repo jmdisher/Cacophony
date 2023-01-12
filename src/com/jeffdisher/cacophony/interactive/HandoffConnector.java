@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -15,40 +16,58 @@ import com.jeffdisher.cacophony.utils.Assert;
  * The generic adapter which allows any number of listeners to listen for update events and connect/disconnect at any
  * time.  The general use-case for this is web socket listeners to relay information to the front-end and may connect/
  * disconnect at any time and in any number.
- * The class is fully synchronized, just as a short-hand for locking, since we don't block in here but the entire
- * interface is to be treated as atomic.
+ * Note that the actual calls to mutate internal state, as well as call out to listeners, are made via the given
+ * dispatcher.  While this dispatcher has a great deal of freedom in its implementation (inline, another thread, etc),
+ * it is required that it serializes all calls to Runnables from the same HandoffConnector.
  * The general idea is that all data change events can be reduced to a create/update/delete operation so we can cache
  * these simple projections of arbitrary data here.
- * Updates to the data are executed directly on the thread pushing the update, as is the passing-off of that data to
- * any listeners.  However, when new listeners attach, they are used to push the data back into the new connection from
- * the cache, directly.
  */
 public class HandoffConnector<K, V>
 {
+	private final Consumer<Runnable> _dispatcher;
+
+	// NOTE:  We only interact with the instance variables in the dispatcher's thread!
 	// The listeners which are attached to us - we will just use a HashSet, although technically this should be identity-based.
-	private final Set<IHandoffListener<K, V>> _listeners = new HashSet<>();
+	private final Set<IHandoffListener<K, V>> _listeners;
 	// The cache of data.
-	private final Map<K, V> _cache = new HashMap<>();
+	private final Map<K, V> _cache;
 	// The order in which the keys were created (since some representations want to preserve order).
-	private final List<K> _order = new ArrayList<>();
+	private final List<K> _order;
+
+	/**
+	 * Creates a new connector, executing all of its state mutations through the given dispatcher.
+	 * 
+	 * @param dispatcher Responsible for running the actions applied to this connector.  Must serialize all runnables
+	 * from a given connector.
+	 */
+	public HandoffConnector(Consumer<Runnable> dispatcher)
+	{
+		_dispatcher = dispatcher;
+		_listeners = new HashSet<>();
+		_cache = new HashMap<>();
+		_order = new ArrayList<>();
+	}
 
 	/**
 	 * Adds a listener to the internal listener set.  The listener MUST NOT already be in the set.
 	 * 
 	 * @param listener The listener to add.
 	 */
-	public synchronized void registerListener(IHandoffListener<K, V> listener)
+	public void registerListener(IHandoffListener<K, V> listener)
 	{
-		// Add to the set.
-		boolean didAdd = _listeners.add(listener);
-		Assert.assertTrue(didAdd);
-		
-		// Walk the list and relay the data we already have, in-order.
-		for (K key : _order)
+		_dispatcher.accept(() ->
 		{
-			V value = _cache.get(key);
-			listener.create(key, value);
-		}
+			// Add to the set.
+			boolean didAdd = _listeners.add(listener);
+			Assert.assertTrue(didAdd);
+			
+			// Walk the list and relay the data we already have, in-order.
+			for (K key : _order)
+			{
+				V value = _cache.get(key);
+				listener.create(key, value);
+			}
+		});
 	}
 
 	/**
@@ -56,10 +75,13 @@ public class HandoffConnector<K, V>
 	 * 
 	 * @param listener The listener to remove.
 	 */
-	public synchronized void unregisterListener(IHandoffListener<K, V> listener)
+	public void unregisterListener(IHandoffListener<K, V> listener)
 	{
-		boolean didRemove = _listeners.remove(listener);
-		Assert.assertTrue(didRemove);
+		_dispatcher.accept(() ->
+		{
+			boolean didRemove = _listeners.remove(listener);
+			Assert.assertTrue(didRemove);
+		});
 	}
 
 	/**
@@ -68,24 +90,27 @@ public class HandoffConnector<K, V>
 	 * @param key The key to create (MUST NOT already exist).
 	 * @param value The initial value for the key.
 	 */
-	public synchronized void create(K key, V value)
+	public void create(K key, V value)
 	{
-		V old = _cache.put(key, value);
-		// No over-write in this path.
-		Assert.assertTrue(null == old);
-		_order.add(key);
-		
-		// Tell everyone.
-		Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
-		while (iter.hasNext())
+		_dispatcher.accept(() ->
 		{
-			IHandoffListener<K, V> listener = iter.next();
-			boolean ok = listener.create(key, value);
-			if (!ok)
+			V old = _cache.put(key, value);
+			// No over-write in this path.
+			Assert.assertTrue(null == old);
+			_order.add(key);
+			
+			// Tell everyone.
+			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+			while (iter.hasNext())
 			{
-				iter.remove();
+				IHandoffListener<K, V> listener = iter.next();
+				boolean ok = listener.create(key, value);
+				if (!ok)
+				{
+					iter.remove();
+				}
 			}
-		}
+		});
 	}
 
 	/**
@@ -94,23 +119,26 @@ public class HandoffConnector<K, V>
 	 * @param key The key to update (MUST already exist).
 	 * @param value The new value for the key.
 	 */
-	public synchronized void update(K key, V value)
+	public void update(K key, V value)
 	{
-		V old = _cache.put(key, value);
-		// Must over-write in this path.
-		Assert.assertTrue(null != old);
-		
-		// Tell everyone.
-		Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
-		while (iter.hasNext())
+		_dispatcher.accept(() ->
 		{
-			IHandoffListener<K, V> listener = iter.next();
-			boolean ok = listener.update(key, value);
-			if (!ok)
+			V old = _cache.put(key, value);
+			// Must over-write in this path.
+			Assert.assertTrue(null != old);
+			
+			// Tell everyone.
+			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+			while (iter.hasNext())
 			{
-				iter.remove();
+				IHandoffListener<K, V> listener = iter.next();
+				boolean ok = listener.update(key, value);
+				if (!ok)
+				{
+					iter.remove();
+				}
 			}
-		}
+		});
 	}
 
 	/**
@@ -118,33 +146,35 @@ public class HandoffConnector<K, V>
 	 * 
 	 * @param key The key to remove (MUST already exist).
 	 */
-	public synchronized void destroy(K key)
+	public void destroy(K key)
 	{
-		V old = _cache.remove(key);
-		// Must remove.
-		Assert.assertTrue(null != old);
-		boolean didRemove = _order.remove(key);
-		// Must remove.
-		Assert.assertTrue(didRemove);
-		
-		// Tell everyone.
-		Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
-		while (iter.hasNext())
+		_dispatcher.accept(() ->
 		{
-			IHandoffListener<K, V> listener = iter.next();
-			boolean ok = listener.destroy(key);
-			if (!ok)
+			V old = _cache.remove(key);
+			// Must remove.
+			Assert.assertTrue(null != old);
+			boolean didRemove = _order.remove(key);
+			// Must remove.
+			Assert.assertTrue(didRemove);
+			
+			// Tell everyone.
+			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+			while (iter.hasNext())
 			{
-				iter.remove();
+				IHandoffListener<K, V> listener = iter.next();
+				boolean ok = listener.destroy(key);
+				if (!ok)
+				{
+					iter.remove();
+				}
 			}
-		}
+		});
 	}
 
 
 	/**
 	 * The general callback interface for listeners.
-	 * The methods are called on the thread which performed the data update, or the on the initial registering thread,
-	 * when initially registering a listener.
+	 * The methods are called via the dispatcher.
 	 * 
 	 * @param <K> The key type.
 	 * @param <V> The value type.

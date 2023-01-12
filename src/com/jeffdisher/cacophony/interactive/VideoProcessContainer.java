@@ -27,10 +27,10 @@ public class VideoProcessContainer
 	private int _draftId;
 	private VideoProcessor _processor;
 
-	public VideoProcessContainer(DraftManager manager)
+	public VideoProcessContainer(DraftManager manager, HandoffConnector<String, Long> connector)
 	{
 		_manager = manager;
-		_connector = new HandoffConnector<>();
+		_connector = connector;
 	}
 
 	public synchronized boolean startProcess(int draftId, String processCommand) throws FileNotFoundException, IOException

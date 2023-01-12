@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,13 +22,14 @@ public class TestBackgroundOperations
 	private static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	private static final IpfsKey K3 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
+	private static final Consumer<Runnable> DISPATCHER = (Runnable task) -> task.run();
 
 	@Test
 	public void noOperations() throws Throwable
 	{
 		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		TestOperations ops = new TestOperations();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		back.shutdownProcess();
@@ -39,7 +41,7 @@ public class TestBackgroundOperations
 		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
@@ -57,7 +59,7 @@ public class TestBackgroundOperations
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
@@ -82,7 +84,7 @@ public class TestBackgroundOperations
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
@@ -120,7 +122,7 @@ public class TestBackgroundOperations
 		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
@@ -153,7 +155,7 @@ public class TestBackgroundOperations
 			Assert.assertFalse(didRun[0]);
 			didRun[0] = true;
 		};
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
@@ -181,7 +183,7 @@ public class TestBackgroundOperations
 		};
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener);
 		back.startProcess();
@@ -231,7 +233,7 @@ public class TestBackgroundOperations
 			}
 			didRun[0] += 1;
 		};
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		ops.returnOn(F1, publishFirst);
@@ -272,7 +274,7 @@ public class TestBackgroundOperations
 		};
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener);
 		back.startProcess();
@@ -318,7 +320,7 @@ public class TestBackgroundOperations
 		};
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener);
 		back.startProcess();

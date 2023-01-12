@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -43,8 +44,17 @@ public class InteractiveServer
 			rootElement = access.getLastRootElement();
 		}
 		
+		// We will use a basic in-order dispatcher, shared by the HandoffConnectors.
+		Consumer<Runnable> dispatcher = new Consumer<Runnable>() {
+			@Override
+			public synchronized void accept(Runnable arg0)
+			{
+				arg0.run();
+			}
+		};
+		
 		// We will create a handoff connector for the status operations from the background operations.
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
 		BackgroundOperations background = new BackgroundOperations(environment, new BackgroundOperations.IOperationRunner()
 		{
@@ -135,7 +145,8 @@ public class InteractiveServer
 		background.startProcess();
 		
 		DraftManager manager = environment.getSharedDraftManager();
-		VideoProcessContainer videoProcessContainer = new VideoProcessContainer(manager);
+		HandoffConnector<String, Long> videoProcessingConnector = new HandoffConnector<>(dispatcher);
+		VideoProcessContainer videoProcessContainer = new VideoProcessContainer(manager, videoProcessingConnector);
 		
 		String forcedCommand = canChangeCommand
 				? null
