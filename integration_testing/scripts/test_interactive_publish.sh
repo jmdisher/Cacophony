@@ -51,11 +51,11 @@ echo "Pausing for startup..."
 sleep 5
 
 echo "Creating Cacophony instance..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
 echo "Start the interactive server and wait 5 seconds for it to bind the port..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
 SERVER_PID=$!
 sleep 5
 
@@ -71,10 +71,10 @@ echo "Now that we have verified that the server is up, start listening to status
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
 mkfifo "$STATUS_INPUT.1"
 mkfifo "$STATUS_OUTPUT.1"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT.1" "$STATUS_OUTPUT.1" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT.1" "$STATUS_OUTPUT.1" &
 STATUS_PID1=$!
 touch "$STATUS_OUTPUT.2"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
 STATUS_PID2=$!
 # Wait for connect.
 cat "$STATUS_OUTPUT.1" > /dev/null
@@ -120,7 +120,7 @@ DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -
 requireSubstring "$DRAFT" "\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15}"
 
 echo "Upload the video for the draft..."
-echo "aXbXcXdXe" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
+echo "aXbXcXdXe" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
 
 echo "Verify that we can cancel a video processing operation..."
 rm -f "$FAIL_PROCESS_FIFO"
@@ -128,7 +128,7 @@ mkfifo "$FAIL_PROCESS_FIFO"
 rm -f "$CANCEL_PROCESS_INPUT"
 mkfifo "$CANCEL_PROCESS_INPUT"
 # Note that the value of FAIL_PROCESS_FIFO is hard-coded in this process:  "%2Ftmp%2Ffail_fifo"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "$CANCEL_PROCESS_INPUT" "/dev/null" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "$CANCEL_PROCESS_INPUT" "/dev/null" &
 FAIL_PID=$!
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
@@ -150,7 +150,7 @@ fi
 echo "Do the re-open..."
 mkfifo "$EXISTING_INPUT"
 mkfifo "$EXISTING_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_INPUT" "$EXISTING_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_INPUT" "$EXISTING_OUTPUT" &
 FAIL_PID=$!
 # Wait for connect.
 cat "$EXISTING_OUTPUT" > /dev/null
@@ -187,7 +187,7 @@ requireSubstring "$DRAFT" ",\"originalVideo\":{\"mime\":\"video/webm\",\"height\
 echo "Process the uploaded video..."
 mkfifo "$PROCESS_INPUT"
 mkfifo "$PROCESS_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
 SAMPLE_PID=$!
 # Wait for connect.
 cat "$PROCESS_OUTPUT" > /dev/null
@@ -227,7 +227,7 @@ then
 fi
 
 echo "Upload some audio, as well..."
-echo "AUDIO_DATA" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$ID/ogg" audio
+echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$ID/ogg" audio
 ORIGINAL_AUDIO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/audio/$ID")
 if [ "AUDIO_DATA" != "$ORIGINAL_AUDIO" ];
 then
@@ -328,7 +328,7 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
-echo "AUDIO_DATA" | java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$PUBLISH_ID/ogg" audio
+echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$PUBLISH_ID/ogg" audio
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/AUDIO
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
 # We want to look for the second post so get field 4:  1 "2" 3 "4" 5
@@ -397,7 +397,7 @@ requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":4,\"value\":\"Pu
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Verify that we can see the published post in out list..."
-LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "New Draft - $PUBLISH_ID"
 
 

@@ -42,22 +42,22 @@ echo "Pausing for startup..."
 sleep 5
 
 echo "Create user1..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
 echo "Create user2..."
-CACOPHONY_STORAGE="$USER2" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
+CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 
 echo "Make user1 follow user2 and verify an empty stream..."
-RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --getPublicKey)
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
-CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC2"
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC2"
 checkPreviousCommand "startFollowing"
-LIST=$(CACOPHONY_STORAGE="$USER1" java -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC2")
+LIST=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC2")
 requireSubstring "$LIST" "Followee has 0 elements"
 
 echo "Start the interactive server, give it 5 seconds to bind the port, then verify we can load a page, and initialize the cookies and XSRF token..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --run &
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --run &
 SERVER_PID=$!
 sleep 5
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8000/")
@@ -68,7 +68,7 @@ XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 echo "Attach the status listener..."
 mkfifo "$STATUS_INPUT"
 mkfifo "$STATUS_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT" "$STATUS_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT" "$STATUS_OUTPUT" &
 STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$STATUS_OUTPUT" > /dev/null
@@ -89,7 +89,7 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$POST_LIST" "[]"
 
 echo "Make a post as user2..."
-CACOPHONY_STORAGE="$USER2" java -jar Cacophony.jar --publishToThisChannel --name "post" --description "no description"
+CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "post" --description "no description"
 checkPreviousCommand "publishToThisChannel"
 
 echo "Request a refresh of this user and wait for the event to show up in status, that it is complete, then also verify we see this element in the stream..."

@@ -36,7 +36,7 @@ echo "Pausing for startup..."
 sleep 5
 
 echo "Creating Cacophony instance..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
 echo "Create the 512 KiB file for testing..."
@@ -46,11 +46,11 @@ dd if=/dev/zero of="$TEST_FILE" bs=1K count=512
 checkPreviousCommand "dd"
 
 echo "Publishing test..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
 checkPreviousCommand "publishToThisChannel"
 
 echo "Make sure we see this in the list..."
-LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - application/octet-stream"
 
 echo "Create the second file..."
@@ -60,27 +60,27 @@ dd if=/dev/zero of="$TEST_FILE2" bs=1K count=1024
 checkPreviousCommand "dd"
 
 echo "Publishing second test..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --publishToThisChannel --name "test post 2" --description "this is a short-term entry" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE2"
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post 2" --description "this is a short-term entry" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE2"
 checkPreviousCommand "publishToThisChannel"
 
 echo "Make sure this new entry shows up in the list..."
-LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "QmVkbauSDEaMP4Tkq6Epm9uW75mWm136n81YH8fGtfwdHU - application/octet-stream"
 
 # Get the element CID.
 SECOND_CID=$(echo "$LISTING" | grep "test post 2" | cut -d ":" -f 1 | cut -d " " -f 2)
 
 echo "Add a third entry with no attachments..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --publishToThisChannel --name "test post 3" --description "minimal post"
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post 3" --description "minimal post"
 checkPreviousCommand "publishToThisChannel"
-LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "test post 3"
 
 echo "Make sure that we can remove the second entry from the stream..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --removeFromThisChannel --elementCid "$SECOND_CID"
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --removeFromThisChannel --elementCid "$SECOND_CID"
 
 echo "Make sure this new entry is no longer in the list..."
-LISTING=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 if [[ "$LISTING" =~ "$SECOND_CID" ]]; then
 	echo -e "\033[31;40m$SECOND_CID was not expected in $LISTING\033[00m"
 	exit 1
@@ -90,11 +90,11 @@ requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - ap
 requireSubstring "$LISTING" "test post 3"
 
 echo "Just run a republish to make sure nothing goes wrong..."
-CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --republish
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --republish
 checkPreviousCommand "republish"
 
 echo "Verify that the prefs look right..."
-PREFS=$(CACOPHONY_STORAGE="$USER1" java -jar "Cacophony.jar" --getGlobalPrefs)
+PREFS=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --getGlobalPrefs)
 requireSubstring "$PREFS" "Video preferred bounds: 1280 x 1280"
 requireSubstring "$PREFS" "Follower cache target size: 10.00 GB (10000000000 bytes)"
 
