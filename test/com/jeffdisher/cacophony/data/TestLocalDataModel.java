@@ -53,11 +53,9 @@ public class TestLocalDataModel
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
 		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
-		Assert.assertNotNull(access.readFollowIndex());
-		Assert.assertNotNull(access.readGlobalPinCache());
-		Assert.assertNotNull(access.readGlobalPrefs());
-		Assert.assertNotNull(access.readLocalIndex());
 		access.writeGlobalPrefs(PrefsData.defaultPrefs());
+		access.writeGlobalPinCache(PinCacheData.createEmpty());
+		access.writeFollowIndex(FolloweeData.createEmpty());
 		access.close();
 		
 		IReadOnlyLocalData reader = model.openForRead();
@@ -78,11 +76,9 @@ public class TestLocalDataModel
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
 		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
-		Assert.assertNotNull(access.readFollowIndex());
-		Assert.assertNotNull(access.readGlobalPinCache());
-		Assert.assertNotNull(access.readGlobalPrefs());
-		Assert.assertNotNull(access.readLocalIndex());
 		access.writeGlobalPrefs(PrefsData.defaultPrefs());
+		access.writeGlobalPinCache(PinCacheData.createEmpty());
+		access.writeFollowIndex(FolloweeData.createEmpty());
 		access.close();
 		
 		// Create a bunch of threads with a barrier to synchronize them inside the read lock.
@@ -136,11 +132,9 @@ public class TestLocalDataModel
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
 		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
-		Assert.assertNotNull(access.readFollowIndex());
-		Assert.assertNotNull(access.readGlobalPinCache());
-		Assert.assertNotNull(access.readGlobalPrefs());
-		Assert.assertNotNull(access.readLocalIndex());
 		access.writeGlobalPrefs(PrefsData.defaultPrefs());
+		access.writeGlobalPinCache(PinCacheData.createEmpty());
+		access.writeFollowIndex(FolloweeData.createEmpty());
 		access.close();
 		
 		// Create a bunch of threads with an atomic counter to verify that nobody is ever inside the write lock at the same time.

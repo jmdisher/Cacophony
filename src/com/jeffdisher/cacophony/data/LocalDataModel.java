@@ -51,6 +51,7 @@ public class LocalDataModel
 	private final IConfigFileSystem _fileSystem;
 	private final ReadWriteLock _readWriteLock;
 
+	private boolean _didLoadStorage;
 	private ChannelData _localIndex;
 	private PinCacheData _globalPinCache;
 	private FolloweeData _followIndex;
@@ -144,7 +145,11 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
-		_loadAllFiles();
+		if (!_didLoadStorage)
+		{
+			_loadAllFiles();
+			_didLoadStorage = true;
+		}
 		return LoadedStorage.openReadOnly(this, new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -169,7 +174,11 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();
-		_loadAllFiles();
+		if (!_didLoadStorage)
+		{
+			_loadAllFiles();
+			_didLoadStorage = true;
+		}
 		return LoadedStorage.openReadWrite(this, new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -190,11 +199,15 @@ public class LocalDataModel
 		boolean somethingUpdated = false;
 		if (null != updateLocalIndex)
 		{
+			// We can't change the instance - this is just to signify it may have changed.
+			Assert.assertTrue((null == _localIndex) || (_localIndex == updateLocalIndex));
 			_localIndex = updateLocalIndex;
 			somethingUpdated = true;
 		}
 		if (null != updateGlobalPinCache)
 		{
+			// We can't change the instance - this is just to signify it may have changed.
+			Assert.assertTrue((null == _globalPinCache) || (_globalPinCache == updateGlobalPinCache));
 			_globalPinCache = updateGlobalPinCache;
 			// Updating the _globalPinCache invalidates the _lazyFolloweeCache (this lock is redundant in this function
 			//  but is the right pattern).
@@ -216,11 +229,15 @@ public class LocalDataModel
 		}
 		if (null != updateFollowIndex)
 		{
+			// We can't change the instance - this is just to signify it may have changed.
+			Assert.assertTrue((null == _followIndex) || (_followIndex == updateFollowIndex));
 			_followIndex = updateFollowIndex;
 			somethingUpdated = true;
 		}
 		if (null != updateGlobalPrefs)
 		{
+			// We can't change the instance - this is just to signify it may have changed.
+			Assert.assertTrue((null == _globalPrefs) || (_globalPrefs == updateGlobalPrefs));
 			_globalPrefs = updateGlobalPrefs;
 			somethingUpdated = true;
 		}
@@ -265,6 +282,7 @@ public class LocalDataModel
 	 */
 	public void dropAllCaches()
 	{
+		_didLoadStorage = false;
 		_localIndex = null;
 		_globalPinCache = null;
 		_followIndex = null;
@@ -294,13 +312,6 @@ public class LocalDataModel
 				_globalPrefs = projections.prefs();
 				_globalPinCache = projections.pinCache();
 				_followIndex = projections.followee();
-			}
-			else
-			{
-				// We can't create a default _localIndex, so we will need to assume that we are creating a new channel.
-				_globalPrefs = PrefsData.defaultPrefs();
-				_globalPinCache = PinCacheData.createEmpty();
-				_followIndex = FolloweeData.createEmpty();
 			}
 		}
 		catch (IOException e)
@@ -387,6 +398,7 @@ public class LocalDataModel
 		}
 		
 		// Set the ivars.
+		_didLoadStorage = true;
 		_localIndex = channelData;
 		_globalPinCache = pinCacheData;
 		_followIndex = followeeData;
@@ -398,6 +410,15 @@ public class LocalDataModel
 
 	private void _flushStateToStream() throws IOException
 	{
+		// Make sure that the state was actually loaded or set.
+		// This is only not enforced by the loading mechanism in the case of a new channel, where all storage must be
+		// explicitly created.
+		Assert.assertTrue(_didLoadStorage);
+		Assert.assertTrue(null != _localIndex);
+		Assert.assertTrue(null != _globalPrefs);
+		Assert.assertTrue(null != _globalPinCache);
+		Assert.assertTrue(null != _followIndex);
+		
 		// We will first serialize to memory, before we re-write the on-disk file.
 		// This will protect us from bugs, but not power loss.
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
