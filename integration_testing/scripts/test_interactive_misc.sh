@@ -19,11 +19,14 @@ USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
 STATUS_OUTPUT=/tmp/status_output
 STATUS_INPUT=/tmp/status_input
+FOLLOWEE_OUTPUT=/tmp/followee_output
+FOLLOWEE_INPUT=/tmp/followee_input
 
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 rm -f "$STATUS_INPUT" "$STATUS_OUTPUT"
+rm -f "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT"
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -88,6 +91,16 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 
+echo "Attach the followee refresh WebSocket and verify followee state..."
+mkfifo "$FOLLOWEE_INPUT"
+mkfifo "$FOLLOWEE_OUTPUT"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/followee/refreshTime" "event_api" "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT" &
+FOLLOWEE_PID=$!
+cat "$FOLLOWEE_OUTPUT" > /dev/null
+SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
+echo -n "-ACK" > "$FOLLOWEE_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+
 echo "Make a post as user2..."
 CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "post" --description "no description"
 checkPreviousCommand "publishToThisChannel"
@@ -103,11 +116,18 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\"Qm"
 
+echo "Verify that we see the refresh in the followee socket..."
+SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+echo -n "-ACK" > "$FOLLOWEE_INPUT"
+echo -n "-WAIT" > "$FOLLOWEE_INPUT"
+
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT"
 wait $SERVER_PID
 echo -n "-WAIT" > "$STATUS_INPUT"
 wait $STATUS_PID
+wait $FOLLOWEE_PID
 
 kill $PID1
 kill $PID2

@@ -39,13 +39,15 @@ public class InteractiveServer
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
+		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			prefs = access.readPrefs();
 			rootElement = access.getLastRootElement();
+			access.writableFolloweeData().attachRefreshConnector(followeeRefreshConnector);
 		}
 		
 		// We will create a handoff connector for the status operations from the background operations.
@@ -193,6 +195,7 @@ public class InteractiveServer
 		
 		// We use a web socket for listening to updates of background process state.
 		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, xsrf, statusHandoff, stopLatch, background));
+		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
 		
 		// Prefs.
 		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment));
