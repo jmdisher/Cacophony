@@ -3,8 +3,9 @@ package com.jeffdisher.cacophony.interactive;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.interactive.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.utils.Assert;
 
 

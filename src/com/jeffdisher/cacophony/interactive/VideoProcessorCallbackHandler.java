@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import org.eclipse.jetty.websocket.api.Session;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.cacophony.interactive.HandoffConnector.IHandoffListener;
+import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
 
 
 /**

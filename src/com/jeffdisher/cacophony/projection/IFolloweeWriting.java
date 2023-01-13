@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.projection;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -56,4 +57,13 @@ public interface IFolloweeWriting extends IFolloweeReading
 	 * @param followeeKey The public key of the followee.
 	 */
 	void removeFollowee(IpfsKey followeeKey);
+
+	/**
+	 * Attaches the listener for followee refresh data updates.  This can be called at most once for any given instance.
+	 * Upon being called, the given followeeRefreshConnector will be populated with the current state of followee data
+	 * and will then be notified of refresh times whenever a followee is added/removed/refreshed.
+	 * 
+	 * @param followeeRefreshConnector The connector to notify of followee refreshes.
+	 */
+	void attachRefreshConnector(HandoffConnector<IpfsKey, Long> followeeRefreshConnector);
 }

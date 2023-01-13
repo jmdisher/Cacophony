@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.logic.HandoffConnector;
+
 
 public class TestHandoffConnector
 {

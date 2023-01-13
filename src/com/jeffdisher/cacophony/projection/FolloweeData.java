@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_AddFollowee;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_AddFolloweeRecord;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -65,6 +66,9 @@ public class FolloweeData implements IFolloweeWriting
 	private final Map<IpfsKey, Map<IpfsFile, FollowingCacheElement>> _elementsForLookup;
 	private final Map<IpfsKey, IpfsFile> _followeeLastIndices;
 	private final Map<IpfsKey, Long> _followeeLastFetchMillis;
+
+	// Only set in the cases of servers so it is bound late, but can only be bound once.
+	private HandoffConnector<IpfsKey, Long> _followeeRefreshConnector;
 
 	private FolloweeData(Map<IpfsKey, List<FollowingCacheElement>> followeeElements, Map<IpfsKey, IpfsFile> followeeLastIndices, Map<IpfsKey, Long> followeeLastFetchMillis)
 	{
@@ -212,6 +216,11 @@ public class FolloweeData implements IFolloweeWriting
 		Assert.assertTrue(null == match2);
 		Long match3 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
 		Assert.assertTrue(null == match3);
+		
+		if (null != _followeeRefreshConnector)
+		{
+			_followeeRefreshConnector.create(followeeKey, lastPollMillis);
+		}
 	}
 
 	@Override
@@ -221,6 +230,11 @@ public class FolloweeData implements IFolloweeWriting
 		Assert.assertTrue(null != match0);
 		Long match1 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
 		Assert.assertTrue(null != match1);
+		
+		if (null != _followeeRefreshConnector)
+		{
+			_followeeRefreshConnector.update(followeeKey, lastPollMillis);
+		}
 	}
 
 	@Override
@@ -236,5 +250,22 @@ public class FolloweeData implements IFolloweeWriting
 		Assert.assertTrue(null != match2);
 		Long match3 = _followeeLastFetchMillis.remove(followeeKey);
 		Assert.assertTrue(null != match3);
+		
+		if (null != _followeeRefreshConnector)
+		{
+			_followeeRefreshConnector.destroy(followeeKey);
+		}
+	}
+
+	@Override
+	public void attachRefreshConnector(HandoffConnector<IpfsKey, Long> followeeRefreshConnector)
+	{
+		Assert.assertTrue(null == _followeeRefreshConnector);
+		_followeeRefreshConnector = followeeRefreshConnector;
+		
+		for(Map.Entry<IpfsKey, Long> elt : _followeeLastFetchMillis.entrySet())
+		{
+			_followeeRefreshConnector.create(elt.getKey(), elt.getValue());
+		}
 	}
 }

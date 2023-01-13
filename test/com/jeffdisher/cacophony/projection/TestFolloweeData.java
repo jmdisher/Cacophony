@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,11 +15,12 @@ import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
-public class TestFollowData
+public class TestFolloweeData
 {
 	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
@@ -194,6 +196,55 @@ public class TestFollowData
 		Assert.assertArrayEquals(byteArray, byteArray2);
 		Assert.assertEquals(1, cachedEntries2.size());
 		Assert.assertEquals(F3, cachedEntries2.keySet().iterator().next());
+	}
+
+	@Test
+	public void listenForRefresh() throws Throwable
+	{
+		// We will run all callbacks inline so we will just use a map to observe the state.
+		Map<IpfsKey, Long> map = new HashMap<>();
+		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
+		
+		// Start with an existing followee to make sure it is observed in the map.
+		data.createNewFollowee(K1, F1, 1L);
+		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>((Runnable task) -> task.run());
+		connector.registerListener(new HandoffConnector.IHandoffListener<IpfsKey, Long>()
+		{
+			@Override
+			public boolean update(IpfsKey key, Long value)
+			{
+				Assert.assertNotNull(map.put(key, value));
+				return true;
+			}
+			@Override
+			public boolean destroy(IpfsKey key)
+			{
+				Assert.assertNotNull(map.remove(key));
+				return true;
+			}
+			@Override
+			public boolean create(IpfsKey key, Long value)
+			{
+				Assert.assertNull(map.put(key, value));
+				return true;
+			}
+		});
+		data.attachRefreshConnector(connector);
+		Assert.assertEquals(1, map.size());
+		Assert.assertEquals(1L, map.get(K1).longValue());
+		
+		// Add a second followee and update both of them to verify we see both updated values.
+		data.createNewFollowee(K2, F1, 2L);
+		data.updateExistingFollowee(K1, F2, 3L);
+		data.updateExistingFollowee(K2, F2, 4L);
+		Assert.assertEquals(2, map.size());
+		Assert.assertEquals(3L, map.get(K1).longValue());
+		Assert.assertEquals(4L, map.get(K2).longValue());
+		
+		// Remove them both and make sure the map is empty.
+		data.removeFollowee(K1);
+		data.removeFollowee(K2);
+		Assert.assertTrue(map.isEmpty());
 	}
 
 

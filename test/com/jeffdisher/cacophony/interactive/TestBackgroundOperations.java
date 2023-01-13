@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsFile;
