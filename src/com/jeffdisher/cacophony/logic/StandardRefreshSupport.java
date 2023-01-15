@@ -59,6 +59,11 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_environment.logToConsole(message);
 	}
 	@Override
+	public void newElementPinned(IpfsFile elementHash)
+	{
+		// We don't currently do anything with this information.
+	}
+	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
 		return _transaction.getSizeInBytes(cid);

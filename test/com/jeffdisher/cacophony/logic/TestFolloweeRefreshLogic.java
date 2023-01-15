@@ -55,6 +55,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -75,6 +76,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -95,6 +97,7 @@ public class TestFolloweeRefreshLogic
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -116,6 +119,7 @@ public class TestFolloweeRefreshLogic
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(1, result[0].combinedSizeBytes());
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Now, stop following.
 		originalElements = result;
@@ -125,6 +129,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -144,6 +149,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Now, add an element with no leaves and refresh.
 		IpfsFile oldIndex = index;
@@ -156,6 +162,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -175,6 +182,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Now, add an element with small leaves and refresh.
 		IpfsFile oldIndex = index;
@@ -187,6 +195,7 @@ public class TestFolloweeRefreshLogic
 		result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -206,6 +215,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Now, add an element with big leaves and refresh.
 		IpfsFile oldIndex = index;
@@ -220,6 +230,7 @@ public class TestFolloweeRefreshLogic
 		// NOTE:  Since there is only one element, it is currently allowed to overflow the cache.
 		// TODO:  Change this when we apply this limit.
 		Assert.assertEquals(16, result[0].combinedSizeBytes());
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -317,6 +328,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -336,6 +348,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Add 2 elements and refresh.
 		IpfsFile oldIndex = index;
@@ -351,6 +364,7 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(2, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
 		Assert.assertEquals(4, result[1].combinedSizeBytes());
+		Assert.assertEquals(2, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Remove the first element and add a new one, then refresh.
 		oldIndex = index;
@@ -365,6 +379,7 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(2, result.length);
 		Assert.assertEquals(4, result[0].combinedSizeBytes());
 		Assert.assertEquals(5, result[1].combinedSizeBytes());
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 		
 		// Verify that the removed elements have been deleted from the local data (will still be in upstream).
 		_verifyRecordDeleted(testSupport, data, record1);
@@ -464,6 +479,61 @@ public class TestFolloweeRefreshLogic
 		_commonSizeCheck(data, indexHash);
 	}
 
+	@Test
+	public void testBigElementAddRemove() throws Throwable
+	{
+		// Start following an empty user.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.videoEdgePixelMax = 1280;
+		prefs.followCacheTargetBytes = 5L;
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		FollowingCacheElement[] result = testSupport.getList();
+		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
+		
+		// Now, add an illegally-sized element and check that we don't try to pin it.
+		IpfsFile oldIndex = index;
+		byte[] raw = new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1];
+		IpfsFile rawHash = _fakeHash(raw);
+		data.put(rawHash, raw);
+		index = _addElementToStream(data, index, rawHash);
+		originalElements = result;
+		oldIndexElement = oldIndex;
+		newIndexElement = index;
+		currentCacheUsageInBytes = 0L;
+		// We don't add leaf-less entries to the followee index, since that would be redundant.
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
+		data.remove(rawHash);
+		
+		// Now, replace it with a valid element (with no leaves) and see that we do see this pin but also the unpin of the previous (vacuous unpin).
+		oldIndex = index;
+		index = _removeElementFromStream(data, index, rawHash);
+		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
+		originalElements = result;
+		oldIndexElement = oldIndex;
+		newIndexElement = index;
+		currentCacheUsageInBytes = 0L;
+		// We will end up trying to remove something we never pinned, due to the size, so set that in the support.
+		testSupport.nonPinnedElement = rawHash;
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
+		// Make sure we observed this non-pin action.
+		Assert.assertNull(testSupport.nonPinnedElement);
+	}
+
+
 	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
 		PrefsData prefs = PrefsData.defaultPrefs();
@@ -485,7 +555,6 @@ public class TestFolloweeRefreshLogic
 		}
 		Assert.assertTrue(didFail);
 	}
-
 
 	private static IpfsFile _buildEmptyUser(Map<IpfsFile, byte[]> data)
 	{
@@ -595,11 +664,13 @@ public class TestFolloweeRefreshLogic
 		StreamRecords records = GlobalData.deserializeRecords(data.get(recordsHash));
 		records.getRecord().add(recordHash.toSafeString());
 		byte[] serialized = GlobalData.serializeRecords(records);
+		Assert.assertNotNull(data.remove(recordsHash));
 		recordsHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(recordsHash, serialized));
 		
 		index.setRecords(recordsHash.toSafeString());
 		serialized = GlobalData.serializeIndex(index);
+		Assert.assertNotNull(data.remove(indexHash));
 		indexHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(indexHash, serialized));
 		return indexHash;
@@ -614,11 +685,13 @@ public class TestFolloweeRefreshLogic
 		List<String> recordList = records.getRecord();
 		Assert.assertTrue(recordList.remove(recordHash.toSafeString()));
 		byte[] serialized = GlobalData.serializeRecords(records);
+		Assert.assertNotNull(data.remove(recordsHash));
 		recordsHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(recordsHash, serialized));
 		
 		index.setRecords(recordsHash.toSafeString());
 		serialized = GlobalData.serializeIndex(index);
+		Assert.assertNotNull(data.remove(indexHash));
 		indexHash = _fakeHash(serialized);
 		Assert.assertNull(data.put(indexHash, serialized));
 		return indexHash;
@@ -671,6 +744,10 @@ public class TestFolloweeRefreshLogic
 		private final List<IpfsFile> _deferredFileUnpin = new ArrayList<>();
 		private final Map<IpfsFile, Integer> _metaDataPinCount = new HashMap<>();
 		private final Map<IpfsFile, Integer> _filePinCount = new HashMap<>();
+		private final List<IpfsFile> _newElementsPinned = new ArrayList<>();
+		
+		// Miscellaneous other checks.
+		public IpfsFile nonPinnedElement;
 		
 		public TestSupport(Map<IpfsFile, byte[]> upstreamData, FollowingCacheElement[] initial)
 		{
@@ -726,10 +803,21 @@ public class TestFolloweeRefreshLogic
 			// Return list.
 			return _list.toArray((int size) -> new FollowingCacheElement[size]);
 		}
+		public IpfsFile[] getAndClearNewElementsPinned()
+		{
+			IpfsFile[] array = _newElementsPinned.toArray((int size) -> new IpfsFile[size]);
+			_newElementsPinned.clear();
+			return array;
+		}
 		@Override
 		public void logMessage(String message)
 		{
 			System.out.println(message);
+		}
+		@Override
+		public void newElementPinned(IpfsFile elementHash)
+		{
+			_newElementsPinned.add(elementHash);
 		}
 		@Override
 		public FutureSize getSizeInBytes(IpfsFile cid)
@@ -779,7 +867,11 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public void deferredRemoveMetaDataFromFollowCache(IpfsFile cid)
 		{
-			_deferredMetaUnpin.add(cid);
+			// Note that we will not add this if we know it is one we are missing.
+			if (!cid.equals(this.nonPinnedElement))
+			{
+				_deferredMetaUnpin.add(cid);
+			}
 		}
 		@Override
 		public FuturePin addFileToFollowCache(IpfsFile cid)
@@ -879,8 +971,16 @@ public class TestFolloweeRefreshLogic
 					match = i;
 				}
 			}
-			Assert.assertTrue(match >= 0);
-			_list.remove(match);
+			if (match >= 0)
+			{
+				_list.remove(match);
+			}
+			else
+			{
+				// If we didn't find it, make sure this is one we know we didn't pin.
+				Assert.assertEquals(this.nonPinnedElement, elementHash);
+				this.nonPinnedElement = null;
+			}
 		}
 	}
 }

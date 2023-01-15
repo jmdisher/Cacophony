@@ -267,6 +267,8 @@ public class FolloweeRefreshLogic
 				// A connection exception here will cause refresh to fail.
 				data.futureElementPin.get();
 				data.futureElementPin = null;
+				// Report that we pinned it.
+				support.newElementPinned(data.elementCid);
 				// We pinned this so the read should be pretty-well instantaneous.
 				StreamRecord record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
@@ -511,18 +513,95 @@ public class FolloweeRefreshLogic
 	 */
 	public interface IRefreshSupport
 	{
+		/**
+		 * Logs an informational message.
+		 * 
+		 * @param message The message to log.
+		 */
 		void logMessage(String message);
+		/**
+		 * Called when a new record been pinned.  This may not be added to the cache, since it may have no leaves or
+		 * they may be too large, but the meta-data is now locally pinned.
+		 * 
+		 * @param elementHash The CID of the meta-data XML.
+		 */
+		void newElementPinned(IpfsFile elementHash);
+		/**
+		 * Requests the size of a CID entry, in bytes.  This CID may or may not be pinned.
+		 * 
+		 * @param cid The CID to check.
+		 * @return The future size response.
+		 */
 		FutureSize getSizeInBytes(IpfsFile cid);
+		/**
+		 * Requests that a piece of XML meta-data be pinned locally.  This could be the element or some other
+		 * intermediary data.
+		 * 
+		 * @param cid The CID of the meta-data XML.
+		 * @return The future pin response.
+		 */
 		FuturePin addMetaDataToFollowCache(IpfsFile cid);
+		/**
+		 * Requests that a piece of meta-data XML be unpinned locally.  Note that this may not have been previously
+		 * pinned it was too large.
+		 * This is assumed to be "deferred":  Only actually unpinned if the entire operation is a success.
+		 * 
+		 * @param cid The CID of the meta-data XML.
+		 */
 		void deferredRemoveMetaDataFromFollowCache(IpfsFile cid);
-		
+		/**
+		 * Requests that a leaf data file be pinned and added to the local cache.
+		 * 
+		 * @param cid The CID of the leaf data object.
+		 * @return The future pin response.
+		 */
 		FuturePin addFileToFollowCache(IpfsFile cid);
+		/**
+		 * Requests that a leaf data element be unpinned locally.  Note that this would have been pinned, previously.
+		 * This is assumed to be "deferred":  Only actually unpinned if the entire operation is a success.
+		 * 
+		 * @param cid The CID of the leaf data object.
+		 */
 		void deferredRemoveFileFromFollowCache(IpfsFile cid);
+		/**
+		 * Requests a read of data which is already pinned on the local node.
+		 * 
+		 * @param <R> The type of object to return.
+		 * @param file The CID of the data to read.
+		 * @param decoder A deserializer to convert the loaded bytes into the returned R type.
+		 * @return The future read response.
+		 */
 		<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
-		
+		/**
+		 * Returns the thumbnail image CID for a given elementHash which is already in the cache.
+		 * 
+		 * @param elementHash The CID of the element meta-data XML.
+		 * @return The CID of the thumbnail or null, if one wasn't cached.
+		 */
 		IpfsFile getImageForCachedElement(IpfsFile elementHash);
+		/**
+		 * Returns the leaf video CID for a given elementHash which is already in the cache.
+		 * 
+		 * @param elementHash The CID of the element meta-data XML.
+		 * @return The CID of the video or null, if one wasn't cached.
+		 */
 		IpfsFile getLeafForCachedElement(IpfsFile elementHash);
+		/**
+		 * Requests that an element be added to the cache.
+		 * 
+		 * @param elementHash The now-pinned meta-data XML CID.
+		 * @param imageHash The now-pinned image data (or null).
+		 * @param leafHash The now-pinned video data (or null).
+		 * @param combinedSizeBytes The combined size of both the image and video, in bytes.
+		 */
 		void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes);
+		/**
+		 * Called when a the meta-data of a previously-observed element has been enqueued for unpin and should be
+		 * dropped.
+		 * NOTE:  If this element was too big, we will never have seen a corresponding "newElementPinned" call.
+		 * 
+		 * @param elementHash The CID of the meta-data XML.
+		 */
 		void removeElementFromCache(IpfsFile elementHash);
 	}
 }
