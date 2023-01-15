@@ -36,8 +36,10 @@ public class PublishHelpers
 	 * @param description The description of the entry.
 	 * @param discussionUrl The discussion URL of the entry (could be null).
 	 * @param elements The list of elements we want to upload as attachments to this entry.
+	 * @param outRecordCid Stores the updated record CID into element 0 of this array.
 	 * @return The hash of the new index.
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
+	 * @throws FailedDeserializationException We failed to deserialized some of the loaded data.
 	 */
 	public static IpfsFile uploadFileAndUpdateTracking(IEnvironment environment
 			, IWritingAccess access
@@ -45,6 +47,7 @@ public class PublishHelpers
 			, String description
 			, String discussionUrl
 			, PublishElement[] elements
+			, IpfsFile[] outRecordCid
 	) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// Read the existing StreamIndex.
@@ -108,6 +111,7 @@ public class PublishHelpers
 		// (we may want more explicit control over this, in the future)
 		access.unpin(previousRoot);
 		access.unpin(previousRecords);
+		outRecordCid[0] = recordsHash;
 		return newRoot;
 	}
 

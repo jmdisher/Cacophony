@@ -104,6 +104,7 @@ public class InteractiveHelpers
 			, int draftId
 			, boolean shouldPublishVideo
 			, boolean shouldPublishAudio
+			, IpfsFile[] outRecordCid
 	) throws FileNotFoundException
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -171,7 +172,7 @@ public class InteractiveHelpers
 		IpfsFile newRoot;
 		try
 		{
-			newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), draft.discussionUrl(), subElements);
+			newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), draft.discussionUrl(), subElements, outRecordCid);
 		}
 		catch (IpfsConnectionException e)
 		{

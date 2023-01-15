@@ -30,9 +30,10 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IOperationLog log = environment.logOperation("Publish: " + this);
 		PublishHelpers.PublishElement[] openElements = openElementFiles(environment, _elements);
 		FuturePublish asyncPublish;
+		IpfsFile[] newElementContainer = new IpfsFile[1];
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
-			IpfsFile newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements);
+			IpfsFile newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements, newElementContainer);
 			asyncPublish = access.beginIndexPublish(newRoot);
 		}
 		finally
@@ -43,6 +44,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// We can now wait for the publish to complete, now that we have closed all the local state.
 		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 		
+		environment.logToConsole("New element: " + newElementContainer[0]);
 		log.finish("Publish completed!");
 	}
 

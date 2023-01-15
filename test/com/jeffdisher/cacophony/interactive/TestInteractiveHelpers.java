@@ -230,7 +230,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false);
+			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false, new IpfsFile[1]);
 			access.beginIndexPublish(newRoot);
 		}
 		
@@ -268,7 +268,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false);
+			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false, new IpfsFile[1]);
 			access.beginIndexPublish(newRoot);
 		}
 		
@@ -314,7 +314,7 @@ public class TestInteractiveHelpers
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, false);
+			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, false, new IpfsFile[1]);
 			access.beginIndexPublish(newRoot);
 		}
 		
@@ -370,7 +370,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, true);
+			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, true, new IpfsFile[1]);
 			access.beginIndexPublish(newRoot);
 		}
 		

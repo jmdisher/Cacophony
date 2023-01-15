@@ -48,6 +48,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 					, draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
+					, new IpfsFile[1]
 			);
 			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
