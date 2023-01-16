@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -23,15 +24,18 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
 	private final DraftManager _draftManager;
+	private final HandoffConnector<IpfsFile, Void> _handoffConnector;
 	
 	public POST_Raw_DraftPublish(IEnvironment environment
 			, BackgroundOperations backgroundOperations
 			, DraftManager draftManager
+			, HandoffConnector<IpfsFile, Void> handoffConnector
 	)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
 		_draftManager = draftManager;
+		_handoffConnector = handoffConnector;
 	}
 	
 	@Override
@@ -41,6 +45,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 		{
 			int draftId = Integer.parseInt(pathVariables[0]);
 			PublishType type = PublishType.valueOf(pathVariables[1]);
+			IpfsFile[] newElementContainer = new IpfsFile[1];
 			
 			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(_environment
 					, access
@@ -48,12 +53,13 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 					, draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
-					, new IpfsFile[1]
+					, newElementContainer
 			);
 			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
 			// The publish is something we can wait on, asynchronously, in a different call.
 			_backgroundOperations.requestPublish(newRoot);
+			_handoffConnector.create(newElementContainer[0], null);
 			
 			response.setStatus(HttpServletResponse.SC_OK);
 		}

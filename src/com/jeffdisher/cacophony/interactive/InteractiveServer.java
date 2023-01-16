@@ -199,7 +199,7 @@ public class InteractiveServer
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, manager));
+		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, manager, connectorsPerUser.get(ourPublicKey)));
 		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(environment, background));
 		
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));

@@ -25,6 +25,8 @@ PROCESS_INPUT=/tmp/process_input
 PROCESS_OUTPUT=/tmp/process_output
 EXISTING_INPUT=/tmp/existing_input
 EXISTING_OUTPUT=/tmp/existing_output
+ENTRIES_OUTPUT=/tmp/entries_output
+ENTRIES_INPUT=/tmp/entries_input
 
 rm -rf "$USER1"
 rm -rf "$USER2"
@@ -33,6 +35,7 @@ rm -f "$STATUS_OUTPUT.1" "$STATUS_OUTPUT.2"
 rm -f "$STATUS_INPUT.1"
 rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
 rm -f "$EXISTING_INPUT" "$EXISTING_OUTPUT"
+rm -f "$ENTRIES_INPUT" "$ENTRIES_OUTPUT"
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -94,6 +97,18 @@ then
 	echo "Expected failure"
 	exit 1
 fi
+
+echo "Check that we can read our public key"
+PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/publicKey")
+# (we only know that the key starts with "z".
+requireSubstring "$PUBLIC_KEY" "z"
+
+echo "Attach the followee post listener..."
+mkfifo "$ENTRIES_INPUT"
+mkfifo "$ENTRIES_OUTPUT"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
+ENTRIES_PID=$!
+cat "$ENTRIES_OUTPUT" > /dev/null
 
 echo "Create a new draft..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
@@ -282,6 +297,11 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 echo "Waiting for draft publish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/wait/publish
 
+echo "Verify that we see the new entry in the entry socket..."
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
+
 # We will verify that this is in the pipe we are reading from the WebSocket (note that we may sometimes see event "1" from the start-up publish, so just skip that one in this case).
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
@@ -299,11 +319,6 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null
 echo "Verify that it is not in the list..."
 DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
 requireSubstring "$DRAFTS" "[]"
-
-echo "Check that we can read our public key"
-PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET http://127.0.0.1:8000/publicKey)
-# (we only know that the key starts with "z".
-requireSubstring "$PUBLIC_KEY" "z"
 
 echo "Check the user data for this user"
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC_KEY")
@@ -343,6 +358,11 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Pu
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
+
+echo "Verify that we see the new entry in the entry socket..."
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
 
 echo "Check the list of followee keys for this user"
 FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followeeKeys")
@@ -385,8 +405,10 @@ wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"
 echo -n "-WAIT" > "$STATUS_INPUT.1"
+echo -n "-WAIT" > "$ENTRIES_INPUT"
 wait $STATUS_PID1
 wait $STATUS_PID2
+wait $ENTRIES_PID
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
 STATUS_DATA2=$(cat "$STATUS_OUTPUT.2")
 requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
