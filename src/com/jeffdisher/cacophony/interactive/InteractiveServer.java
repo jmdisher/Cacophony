@@ -84,7 +84,13 @@ public class InteractiveServer
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-					refresher = new ConcurrentFolloweeRefresher(environment, followeeKey, lastRoot, access.readPrefs(), false);
+					refresher = new ConcurrentFolloweeRefresher(environment
+							, followeeKey
+							, lastRoot
+							, access.readPrefs()
+							, null
+							, false
+					);
 					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION);
 				}
 				catch (IpfsConnectionException e)

@@ -33,6 +33,7 @@ public class ConcurrentFolloweeRefresher
 	private final IpfsKey _followeeKey;
 	private final IpfsFile _previousRoot;
 	private final PrefsData _prefs;
+	private final HandoffConnector<IpfsFile, Void> _connectorForUser;
 	private final boolean _isDelete;
 
 	private boolean _didSetup;
@@ -55,19 +56,28 @@ public class ConcurrentFolloweeRefresher
 	 * @param followeeKey The public key of the followee we want to refresh.
 	 * @param previousRoot The root (StreamIndex) CID from the last refresh (null if this is a start).
 	 * @param prefs The preferences object.
+	 * @param connectorForUser The connector for communicating records reachable from the followee's key.
 	 * @param isDelete True if we should be deleting this followee (removing all data instead of updating).
 	 */
 	public ConcurrentFolloweeRefresher(IEnvironment environment
 			, IpfsKey followeeKey
 			, IpfsFile previousRoot
 			, PrefsData prefs
+			, HandoffConnector<IpfsFile, Void> connectorForUser
 			, boolean isDelete
 	)
 	{
+		Assert.assertTrue(null != environment);
+		Assert.assertTrue(null != followeeKey);
+		// previousRoot can be null.
+		Assert.assertTrue(null != prefs);
+		// connectorForUser can be null.
+		
 		_environment = environment;
 		_followeeKey = followeeKey;
 		_previousRoot = previousRoot;
 		_prefs = prefs;
+		_connectorForUser = connectorForUser;
 		_isDelete = isDelete;
 	}
 
@@ -115,7 +125,12 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
 		
-		_refreshSupport = new StandardRefreshSupport(_environment, _transaction, _followeeKey, _cachedEntriesForFollowee);
+		_refreshSupport = new StandardRefreshSupport(_environment
+				, _transaction
+				, _followeeKey
+				, _cachedEntriesForFollowee
+				, _connectorForUser
+		);
 		boolean refreshWasSuccess = false;
 		try
 		{

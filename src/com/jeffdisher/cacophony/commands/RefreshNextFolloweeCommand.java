@@ -67,6 +67,7 @@ public record RefreshNextFolloweeCommand() implements ICommand
 				, publicKey
 				, lastRoot
 				, access.readPrefs()
+				, null
 				, false
 		);
 		

@@ -67,6 +67,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 				, _publicKey
 				, lastRoot
 				, access.readPrefs()
+				, null
 				, false
 		);
 		

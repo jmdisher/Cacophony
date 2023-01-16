@@ -61,6 +61,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 				, _publicKey
 				, lastRoot
 				, access.readPrefs()
+				, null
 				, true
 		);
 		

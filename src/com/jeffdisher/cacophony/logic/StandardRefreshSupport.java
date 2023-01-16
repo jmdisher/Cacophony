@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -26,16 +27,29 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
+	private final HandoffConnector<IpfsFile, Void> _connectorForUser;
 	
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 
-	public StandardRefreshSupport(IEnvironment environment, ConcurrentTransaction transaction, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee)
+	public StandardRefreshSupport(IEnvironment environment
+			, ConcurrentTransaction transaction
+			, IpfsKey followeeKey
+			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
+			, HandoffConnector<IpfsFile, Void> connectorForUser
+	)
 	{
+		Assert.assertTrue(null != environment);
+		Assert.assertTrue(null != transaction);
+		Assert.assertTrue(null != followeeKey);
+		Assert.assertTrue(null != cachedEntriesForFollowee);
+		// connectorForUser can be null.
+		
 		_environment = environment;
 		_transaction = transaction;
 		_followeeKey = followeeKey;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
+		_connectorForUser = connectorForUser;
 		
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
@@ -61,7 +75,11 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void newElementPinned(IpfsFile elementHash)
 	{
-		// We don't currently do anything with this information.
+		if (null != _connectorForUser)
+		{
+			// We want to record that we are aware of this, whether or not we are actually going to cache it.
+			_connectorForUser.create(elementHash, null);
+		}
 	}
 	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
@@ -120,5 +138,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public void removeElementFromCache(IpfsFile elementHash)
 	{
 		_elementsToRemoveFromCache.add(elementHash);
+		if (null != _connectorForUser)
+		{
+			// Even if this element wasn't in the cache, we are still saying it was removed.
+			_connectorForUser.destroy(elementHash);
+		}
 	}
 }
