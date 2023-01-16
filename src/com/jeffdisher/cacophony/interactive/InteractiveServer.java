@@ -1,6 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -8,6 +12,9 @@ import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
@@ -18,6 +25,7 @@ import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -36,18 +44,39 @@ public class InteractiveServer
 
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
 	{
+		System.out.println("Setting up initial state before starting server...");
+		
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
+		Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser;
+		IpfsKey ourPublicKey;
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			prefs = access.readPrefs();
+			ourPublicKey = access.getPublicKey();
 			rootElement = access.getLastRootElement();
-			access.writableFolloweeData().attachRefreshConnector(followeeRefreshConnector);
+			IFolloweeWriting followees = access.writableFolloweeData();
+			followees.attachRefreshConnector(followeeRefreshConnector);
+			
+			try
+			{
+				connectorsPerUser = _buildInitialHandoffs(access, dispatcher, ourPublicKey, rootElement, followees);
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This is a start-up failure.
+				throw e;
+			}
+			catch (FailedDeserializationException e)
+			{
+				// We already cached this data so this shouldn't happen.
+				throw Assert.unexpected(e);
+			}
 		}
 		
 		// We will create a handoff connector for the status operations from the background operations.
@@ -84,11 +113,14 @@ public class InteractiveServer
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(followeeKey);
+					// We must have a connector by this point since this is only called on refresh, not start follow.
+					HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
+					Assert.assertTrue(null != elementsUnknownForFollowee);
 					refresher = new ConcurrentFolloweeRefresher(environment
 							, followeeKey
 							, lastRoot
 							, access.readPrefs()
-							, null
+							, elementsUnknownForFollowee
 							, false
 					);
 					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION);
@@ -202,6 +234,7 @@ public class InteractiveServer
 		// We use a web socket for listening to updates of background process state.
 		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, xsrf, statusHandoff, stopLatch, background));
 		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
+		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(xsrf, connectorsPerUser));
 		
 		// Prefs.
 		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment));
@@ -246,6 +279,32 @@ public class InteractiveServer
 		System.out.println("Shutting down background process...");
 		background.shutdownProcess();
 		System.out.println("Background process shut down.");
+	}
+
+
+	private static Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _buildInitialHandoffs(IReadingAccess access, Consumer<Runnable> dispatcher, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
+	{
+		Map<IpfsKey, HandoffConnector<IpfsFile, Void>> map = new HashMap<>();
+		map.put(ourKey, _populateConnector(access, dispatcher, ourRoot));
+		for (IpfsKey followeeKey : followees.getAllKnownFollowees())
+		{
+			IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
+			map.put(followeeKey, _populateConnector(access, dispatcher, oneRoot));
+		}
+		return Collections.unmodifiableMap(map);
+	}
+
+	private static HandoffConnector<IpfsFile, Void> _populateConnector(IReadingAccess access, Consumer<Runnable> dispatcher, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
+	{
+		HandoffConnector<IpfsFile, Void> connector = new HandoffConnector<>(dispatcher);
+		StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		for (String raw : records.getRecord())
+		{
+			IpfsFile cid = IpfsFile.fromIpfsCid(raw);
+			connector.create(cid, null);
+		}
+		return connector;
 	}
 
 

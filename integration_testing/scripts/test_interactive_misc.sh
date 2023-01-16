@@ -21,12 +21,15 @@ STATUS_OUTPUT=/tmp/status_output
 STATUS_INPUT=/tmp/status_input
 FOLLOWEE_OUTPUT=/tmp/followee_output
 FOLLOWEE_INPUT=/tmp/followee_input
+ENTRIES_OUTPUT=/tmp/entries_output
+ENTRIES_INPUT=/tmp/entries_input
 
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 rm -f "$STATUS_INPUT" "$STATUS_OUTPUT"
 rm -f "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT"
+rm -f "$ENTRIES_INPUT" "$ENTRIES_OUTPUT"
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -76,6 +79,13 @@ STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$STATUS_OUTPUT" > /dev/null
 
+echo "Attach the followee post listener..."
+mkfifo "$ENTRIES_INPUT"
+mkfifo "$ENTRIES_OUTPUT"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC2" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
+ENTRIES_PID=$!
+cat "$ENTRIES_OUTPUT" > /dev/null
+
 echo "Request a refresh of user2 and wait for the event to show up in status, that it is complete, then also verify an empty stream..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
@@ -120,14 +130,22 @@ echo "Verify that we see the refresh in the followee socket..."
 SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
 echo -n "-ACK" > "$FOLLOWEE_INPUT"
-echo -n "-WAIT" > "$FOLLOWEE_INPUT"
+
+echo "Verify that we see the new entry in the entry socket..."
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
+
 
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT"
 wait $SERVER_PID
 echo -n "-WAIT" > "$STATUS_INPUT"
+echo -n "-WAIT" > "$FOLLOWEE_INPUT"
+echo -n "-WAIT" > "$ENTRIES_INPUT"
 wait $STATUS_PID
 wait $FOLLOWEE_PID
+wait $ENTRIES_PID
 
 kill $PID1
 kill $PID2
