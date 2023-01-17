@@ -14,5 +14,11 @@ var EVENTS_API = {
 		// Then we will close the socket so that the listener knows the server isn't running.
 		onSocketClose({reason:"offline mode"});
 	}) },
+	userEntries: function(userKey, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { setTimeout(function() {
+		// We just want to send back the list posts for this user.
+		DATA_userPosts[userKey].forEach(function(key) { onCreate(key, null); });
+		// Then we will close the socket so that the listener knows the server isn't running.
+		onSocketClose({reason:"offline mode"});
+	}) },
 };
 

@@ -67,5 +67,8 @@ var EVENTS_API = {
 	followeeRefresh: function(onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/followee/refreshTime", "event_api"
 		, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
 	); },
+	userEntries: function(userKey, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/user/entries/" + userKey, "event_api"
+		, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+	); },
 };
 
