@@ -394,11 +394,6 @@ public class TestBackgroundOperations
 			return runnable;
 		}
 		@Override
-		public void finishFolloweeRefresh(Runnable refresher)
-		{
-			// Do nothing.
-		}
-		@Override
 		public long currentTimeMillis()
 		{
 			return currentTimeMillis;

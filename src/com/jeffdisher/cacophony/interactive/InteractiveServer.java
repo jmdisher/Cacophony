@@ -136,29 +136,7 @@ public class InteractiveServer
 					// We don't expect these by this point.
 					throw Assert.unexpected(e);
 				}
-				return new RefreshWrapper(refresher);
-			}
-			@Override
-			public void finishFolloweeRefresh(Runnable refresher)
-			{
-				try (IWritingAccess access = StandardAccess.writeAccess(environment))
-				{
-					IFolloweeWriting followees = access.writableFolloweeData();
-					
-					long lastPollMillis = System.currentTimeMillis();
-					((RefreshWrapper)refresher).refresher.finishRefresh(access, followees, lastPollMillis);
-				}
-				catch (IpfsConnectionException e)
-				{
-					// This case, we just log.
-					// (we may want to re-request the publish attempt).
-					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
-				}
-				catch (UsageException | VersionException e)
-				{
-					// We don't expect these by this point.
-					throw Assert.unexpected(e);
-				}
+				return new RefreshWrapper(environment, refresher);
 			}
 			@Override
 			public long currentTimeMillis()
@@ -308,14 +286,41 @@ public class InteractiveServer
 	}
 
 
-	private static record RefreshWrapper(ConcurrentFolloweeRefresher refresher) implements Runnable
+	private static record RefreshWrapper(IEnvironment environment, ConcurrentFolloweeRefresher refresher) implements Runnable
 	{
 		@Override
 		public void run()
 		{
-			boolean didRefresh = this.refresher.runRefresh();
-			// (we just log the result)
-			System.out.println("Background refresh: " + didRefresh);
+			// Note that the "refresher" can be null if we were created after a connection error to the local daemon.
+			// In that case, just log the problem.
+			if (null != this.refresher)
+			{
+				boolean didRefresh = this.refresher.runRefresh();
+				// Write-back any update associated with this (success or fail - since we want to update the time).
+				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				{
+					IFolloweeWriting followees = access.writableFolloweeData();
+					
+					long lastPollMillis = System.currentTimeMillis();
+					this.refresher.finishRefresh(access, followees, lastPollMillis);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// This case, we just log.
+					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
+				}
+				catch (UsageException | VersionException e)
+				{
+					// We don't expect these by this point.
+					throw Assert.unexpected(e);
+				}
+				// (we just log the result)
+				this.environment.logToConsole("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));
+			}
+			else
+			{
+				this.environment.logToConsole("Background refresh skipped due to null refresher");
+			}
 		}
 	}
 }

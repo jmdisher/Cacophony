@@ -65,7 +65,6 @@ public class BackgroundOperations
 					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
 					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
 					refresher.run();
-					operations.finishFolloweeRefresh(refresher);
 					_connector.destroy(operation.followeeNumber);
 					_environment.logToConsole("Background end refresh: " + operation.followeeKey);
 				}
@@ -293,13 +292,32 @@ public class BackgroundOperations
 
 
 	/**
-	 * This is just here to make the testing more concise.
+	 * The interface for external capabilities to avoid this class becoming too reachy and to improve testing.
 	 */
 	public static interface IOperationRunner
 	{
+		/**
+		 * Requests that the publish of the given newRoot be started (completes asynchronously).
+		 * 
+		 * @param newRoot The new root to publish for this user's key.
+		 * @return The asynchronously-completing publish operation.
+		 */
 		FuturePublish startPublish(IpfsFile newRoot);
+		/**
+		 * Requests that an asynchronous refresh of the given followee be started.  The bulk of the work is expected to
+		 * be performed within the returned Runnable.
+		 * NOTE:  The reason why this start-run split is done is in order to improve reporting around server state.  The
+		 * start allows the creation of the refresh to begin so that it can be reported as running.  The runnable is
+		 * where any long-running or blocking operations should be performed.  Once the Runnable returns, the operation
+		 * is reported as complete.
+		 * 
+		 * @param followeeKey The public key of the followee to refresh.
+		 * @return The Runnable to perform the bulk of the represh operation.
+		 */
 		Runnable startFolloweeRefresh(IpfsKey followeeKey);
-		void finishFolloweeRefresh(Runnable refresher);
+		/**
+		 * @return Milliseconds since the Unix Epoch.
+		 */
 		long currentTimeMillis();
 	}
 
