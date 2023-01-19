@@ -136,6 +136,25 @@ SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
 
+echo "Test the add/remove of the followee..."
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+requireSubstring "$POST_LIST" "[\""
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/followees/$PUBLIC2"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+if [ "" != "$POST_LIST" ];
+then
+	exit 1
+fi
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/followees/$PUBLIC2"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+requireSubstring "$POST_LIST" "[\""
+SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
+echo -n "-ACK" > "$FOLLOWEE_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null}"
+SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
+echo -n "-ACK" > "$FOLLOWEE_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+
 
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT"

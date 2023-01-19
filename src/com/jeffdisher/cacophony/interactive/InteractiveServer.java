@@ -218,6 +218,10 @@ public class InteractiveServer
 		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment));
 		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, background));
 		
+		// General data updates.
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background));
+		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background));
+		
 		// Entry-points related to followee state changes.
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
 		

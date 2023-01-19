@@ -353,6 +353,52 @@ public class TestBackgroundOperations
 		Assert.assertEquals(4, listener.ended);
 	}
 
+	@Test
+	public void addRemoveFollowee() throws Throwable
+	{
+		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		FuturePublish publish = new FuturePublish(F1);
+		publish.success();
+		
+		int runCount[] = new int[1];
+		Runnable refresher = () -> {
+			runCount[0] += 1;
+		};
+		TestOperations ops = new TestOperations();
+		TestListener listener = new TestListener();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
+		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		statusHandoff.registerListener(listener);
+		back.startProcess();
+		
+		// We will only bother with the publish once so run it now.
+		ops.returnOn(F1, publish);
+		
+		// Enqueue the first followee we want and wait for it and the publish to be consumed.
+		ops.returnFolloweeOn(K1, refresher);
+		back.enqueueFolloweeRefresh(K1, 1L);
+		ops.waitForConsume();
+		
+		// Remove the followee, verify a second attempt to remove fails.
+		boolean didRemove = back.removeFollowee(K1);
+		Assert.assertTrue(didRemove);
+		didRemove = back.removeFollowee(K1);
+		Assert.assertFalse(didRemove);
+		
+		// Now, re-add the followee and make sure it runs.
+		ops.returnFolloweeOn(K1, refresher);
+		back.enqueueFolloweeRefresh(K1, 1L);
+		ops.waitForConsume();
+		
+		back.shutdownProcess();
+		
+		// We should see the refresh having run twice.
+		Assert.assertEquals(2, runCount[0]);
+		// There should be 3 operations:  1 publish and 2 refreshes.
+		Assert.assertEquals(3, listener.started);
+		Assert.assertEquals(3, listener.ended);
+	}
+
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{

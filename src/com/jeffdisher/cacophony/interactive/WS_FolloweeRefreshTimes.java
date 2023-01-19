@@ -10,7 +10,6 @@ import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -74,8 +73,8 @@ public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 		@Override
 		public boolean destroy(IpfsKey key)
 		{
-			// There shouldn't be any cases where this happens (yet).
-			throw Assert.unreachable();
+			// Happens when the followee is deleted from the FolloweeData.
+			return SocketEventHelpers.sendDelete(_endPoint, Json.value(key.toPublicKey()));
 		}
 	}
 }

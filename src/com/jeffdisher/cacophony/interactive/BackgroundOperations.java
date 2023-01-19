@@ -203,6 +203,34 @@ public class BackgroundOperations
 		return didFindFollowee;
 	}
 
+	/**
+	 * Removed the given followeeKey from internal tracking and scheduling.  The followee will not be refreshed after
+	 * this call returns although a refresh could be in-progress if it started before this.
+	 * 
+	 * @param followeeKey The key to remove.
+	 * @return True if the followee was found and removed from internal tracking.
+	 */
+	public synchronized boolean removeFollowee(IpfsKey followeeKey)
+	{
+		Assert.assertTrue(null != followeeKey);
+		
+		boolean didFindFollowee = false;
+		Iterator<SchedulableFollowee> iter = _handoff_knownFollowees.iterator();
+		while (iter.hasNext())
+		{
+			SchedulableFollowee elt = iter.next();
+			if (elt.followee.equals(followeeKey))
+			{
+				// Remove this since we will re-add it.
+				iter.remove();
+				didFindFollowee = true;
+				break;
+			}
+		}
+		// Note that we don't bother with notification since this won't make anything schedule earlier.
+		return didFindFollowee;
+	}
+
 
 	// Requests work to perform but also is responsible for the core scheduling operations - creating operations from the system described to us and the requests passed in from callers.
 	private synchronized RequestedOperation _background_consumeNextOperation(long currentTimeMillis)
