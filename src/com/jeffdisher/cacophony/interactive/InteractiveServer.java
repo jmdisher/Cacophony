@@ -94,9 +94,9 @@ public class InteractiveServer
 				}
 				catch (IpfsConnectionException e)
 				{
-					// This case, we just log.
-					// (we may want to re-request the publish attempt).
-					environment.logError("Error in background publish: " + e.getLocalizedMessage());
+					// We want to push this error through to the finish by synthesizing a publish.
+					publish = new FuturePublish(newRoot);
+					publish.failure(e);
 				}
 				catch (UsageException | VersionException e)
 				{

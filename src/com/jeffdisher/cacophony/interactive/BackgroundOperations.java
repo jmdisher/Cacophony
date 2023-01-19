@@ -300,7 +300,7 @@ public class BackgroundOperations
 		 * Requests that the publish of the given newRoot be started (completes asynchronously).
 		 * 
 		 * @param newRoot The new root to publish for this user's key.
-		 * @return The asynchronously-completing publish operation.
+		 * @return The asynchronously-completing publish operation (cannot be null).
 		 */
 		FuturePublish startPublish(IpfsFile newRoot);
 		/**
@@ -312,7 +312,7 @@ public class BackgroundOperations
 		 * is reported as complete.
 		 * 
 		 * @param followeeKey The public key of the followee to refresh.
-		 * @return The Runnable to perform the bulk of the represh operation.
+		 * @return The Runnable to perform the bulk of the refresh operation (cannot be null).
 		 */
 		Runnable startFolloweeRefresh(IpfsKey followeeKey);
 		/**
