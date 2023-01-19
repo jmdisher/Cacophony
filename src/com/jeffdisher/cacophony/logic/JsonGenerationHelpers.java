@@ -201,7 +201,7 @@ public class JsonGenerationHelpers
 		{
 			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 			StreamDescription description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
-			foundObject = _populateJsonForDescription(access, description);
+			foundObject = _populateJsonForDescription(description, access.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
 		}
 		return foundObject;
 	}
@@ -285,6 +285,11 @@ public class JsonGenerationHelpers
 		return new LocalRecordCache(dataElements);
 	}
 
+	public  static JsonObject populateJsonForUnknownDescription(StreamDescription description, String userPicUrl)
+	{
+		return _populateJsonForDescription(description, userPicUrl);
+	}
+
 
 	private static FutureKey<StreamIndex> _startLoad(IReadingAccess access, IpfsKey publicKey, IpfsFile indexRoot)
 	{
@@ -304,12 +309,12 @@ public class JsonGenerationHelpers
 		return descriptions;
 	}
 
-	private static JsonObject _populateJsonForDescription(IReadingAccess access, StreamDescription description)
+	private static JsonObject _populateJsonForDescription(StreamDescription description, String userPicUrl)
 	{
 		JsonObject thisUser = new JsonObject();
 		thisUser.set("name", description.getName());
 		thisUser.set("description", description.getDescription());
-		thisUser.set("userPicUrl", access.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
+		thisUser.set("userPicUrl", userPicUrl);
 		thisUser.set("email", description.getEmail());
 		thisUser.set("website", description.getWebsite());
 		return thisUser;
@@ -577,7 +582,8 @@ public class JsonGenerationHelpers
 		List<FutureKey<StreamDescription>> descriptions = _loadDescriptions(access, indices);
 		for (FutureKey<StreamDescription> future : descriptions)
 		{
-			JsonObject json = _populateJsonForDescription(access, future.future.get());
+			StreamDescription streamDescription = future.future.get();
+			JsonObject json = _populateJsonForDescription(streamDescription, access.getCachedUrl(IpfsFile.fromIpfsCid(streamDescription.getPicture())).toString());
 			dataUserInfo.set(future.publicKey.toPublicKey(), json);
 		}
 		return dataUserInfo;

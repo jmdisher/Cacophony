@@ -201,6 +201,13 @@ public class MockSingleNode implements IConnection
 		// Does nothing.
 	}
 
+	@Override
+	public String directFetchUrlRoot()
+	{
+		// We don't expect this in tests.
+		throw Assert.unreachable();
+	}
+
 
 	private byte[] _networkLoadData(IpfsFile file)
 	{

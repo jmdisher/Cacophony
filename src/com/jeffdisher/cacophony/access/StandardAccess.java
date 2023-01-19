@@ -256,6 +256,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 	{
+		Assert.assertTrue(null != keyToResolve);
 		return _scheduler.resolvePublicKey(keyToResolve);
 	}
 
@@ -404,5 +405,11 @@ public class StandardAccess implements IWritingAccess
 				_scheduler.unpin(pin);
 			}
 		}
+	}
+
+	@Override
+	public String getDirectFetchUrlRoot()
+	{
+		return _sharedConnection.directFetchUrlRoot();
 	}
 }

@@ -155,6 +155,12 @@ SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
 
+echo "Check asking for information about users, including invalid keys..."
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/unknownUser/BOGUS")
+requireSubstring "$USER_INFO" "Invalid key: BOGUS"
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/unknownUser/$PUBLIC2")
+requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null}"
+
 
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT"

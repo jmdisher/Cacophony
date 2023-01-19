@@ -125,6 +125,7 @@ public class IpfsConnection implements IConnection
 	@Override
 	public IpfsFile resolve(IpfsKey key) throws IpfsConnectionException
 	{
+		Assert.assertTrue(null != key);
 		try
 		{
 			String publishedPath = _defaultConnection.name.resolve(key.getMultihash());
@@ -162,14 +163,7 @@ public class IpfsConnection implements IConnection
 	@Override
 	public URL urlForDirectFetch(IpfsFile cid)
 	{
-		try
-		{
-			return new URL(_defaultConnection.protocol, _defaultConnection.host, _gatewayPort, "/ipfs/" + cid.toSafeString());
-		}
-		catch (MalformedURLException e)
-		{
-			throw Assert.unexpected(e);
-		}
+		return _urlForDirectFetch(cid.toSafeString());
 	}
 
 	@Override
@@ -238,6 +232,12 @@ public class IpfsConnection implements IConnection
 		}
 	}
 
+	@Override
+	public String directFetchUrlRoot()
+	{
+		return _urlForDirectFetch("").toString();
+	}
+
 
 	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException, AssertionError
 	{
@@ -260,6 +260,18 @@ public class IpfsConnection implements IConnection
 		{
 			// Unknown.
 			throw Assert.unexpected(t);
+		}
+	}
+
+	private URL _urlForDirectFetch(String fileName)
+	{
+		try
+		{
+			return new URL(_defaultConnection.protocol, _defaultConnection.host, _gatewayPort, "/ipfs/" + fileName);
+		}
+		catch (MalformedURLException e)
+		{
+			throw Assert.unexpected(e);
 		}
 	}
 }

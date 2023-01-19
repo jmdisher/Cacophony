@@ -127,6 +127,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	@Override
 	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 	{
+		Assert.assertTrue(null != keyToResolve);
 		FutureResolve future = new FutureResolve();
 		Runnable r = () -> {
 			IpfsFile resolved = _remote.resolvePublicKey(keyToResolve);

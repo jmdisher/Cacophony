@@ -127,6 +127,7 @@ public class RemoteActions
 	 */
 	public IpfsFile resolvePublicKey(IpfsKey keyToResolve)
 	{
+		Assert.assertTrue(null != keyToResolve);
 		IpfsFile found = null;
 		try
 		{

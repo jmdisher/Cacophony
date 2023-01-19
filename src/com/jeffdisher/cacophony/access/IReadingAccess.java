@@ -137,4 +137,12 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The new transaction.
 	 */
 	ConcurrentTransaction openConcurrentTransaction();
+
+	/**
+	 * Very similar to getCachedUrl() but is more like a config-level concern, as opposed to something which validates
+	 * the data.  An resource of unknown existence can be opened by appending its CID directly to this string.
+	 * 
+	 * @return The base URL component of resources on this IPFS node.
+	 */
+	String getDirectFetchUrlRoot();
 }

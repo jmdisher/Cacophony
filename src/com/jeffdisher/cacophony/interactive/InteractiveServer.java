@@ -234,6 +234,10 @@ public class InteractiveServer
 		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(environment));
 		validated.addGetHandler("/version", 0, new GET_Version());
 		
+		// Special interface for requesting information about other users.
+		// Note that we don't pin any of the information through this interface so it may fail or be slow.
+		validated.addGetHandler("/unknownUser", 1, new GET_UnknownUserInfo(environment));
+		
 		server.start();
 		if (null != forcedCommand)
 		{
