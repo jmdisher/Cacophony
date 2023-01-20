@@ -43,6 +43,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 			.catch((errorCode) => alert("Key is either invalid or could not be resolved.  Error code " + errorCode));
 	}
 	
+	$scope.startFollowing = function(publicKey)
+	{
+		// We will send the request and wait for the create to come in from the WebSocket.
+		$scope.inProgress = true;
+		REST.POST("/followees/" + publicKey)
+			.then((response) => {
+				$scope.inProgress = false;
+				$scope.unknownUser = null;
+				$scope.$apply();
+			});
+	}
+	
 	API_getXsrf().then(function() {
 		xsrfLoaded($scope)
 	});
@@ -61,7 +73,7 @@ function xsrfLoaded($scope)
 function beginPopulating($scope)
 {
 	let keyToObjectMap = {};
-	let processed = [];
+	$scope.following = [];
 	
 	// Listen to refresh updates.
 	EVENTS_API.followeeRefresh(
@@ -84,7 +96,7 @@ function beginPopulating($scope)
 				"readableRefreshTime": new Date(value).toLocaleString(),
 				"isRefreshing": false,
 			};
-			processed.push(object);
+			$scope.following.push(object);
 			keyToObjectMap[key] = object;
 			
 			API_getInfoForUser(key).then(elt => {
@@ -107,9 +119,9 @@ function beginPopulating($scope)
 		, function(key)
 		{
 			// Remove this from the list.
-			$scope.processed = $scope.processed.filter(function(elt)
+			$scope.following = $scope.following.filter(function(elt)
 			{
-				return (elt.key !== key);
+				return (elt.publicKey !== key);
 			});
 			keyToObjectMap[key] = undefined;
 			$scope.$apply();
@@ -121,8 +133,14 @@ function beginPopulating($scope)
 			$scope.$apply();
 		}
 	);
+	
+	$scope.stopFollowing = function(user)
+	{
+		// We will handle this like the refresh case and wait for the delete to come in on the WebSocket.
+		REST.DELETE("/followees/" + user.publicKey);
+		user.isRefreshing = true;
+	}
 
-	$scope.following = processed;
 	$scope.isConnected = false;
 	$scope.$apply();
 }
@@ -172,6 +190,7 @@ function beginPopulating($scope)
 						Description: <strong>{{unknownUser.description}}</strong><br />
 						Email: <span ng-show="{{null == unknownUser.email}}">(not provided)</span><span ng-show="{{null !== unknownUser.email}}"><a ng-href="mailto:{{unknownUser.email}}">{{unknownUser.email}}</a></span><br />
 						Website: <span ng-show="{{null == unknownUser.website}}">(not provided)</span><span ng-show="{{null !== unknownUser.website}}"><a ng-href="{{unknownUser.website}}">{{unknownUser.website}}</a></span><br />
+						<button class="btn btn-small btn-success" ng-click="startFollowing(unknownUser.publicKey)" ng-disabled="inProgress">Start Following User</button><br />
 					</div>
 				</div>
 			</div>
@@ -186,7 +205,8 @@ function beginPopulating($scope)
 					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<button class="btn btn-small btn-success" ng-click="requestRefresh(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Refresh</button>Updated: {{user.readableRefreshTime}}
+						<button class="btn btn-small btn-success" ng-click="requestRefresh(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Refresh</button>Updated: {{user.readableRefreshTime}}<br />
+						<button class="btn btn-small btn-danger" ng-click="stopFollowing(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Stop Following User</button><br />
 					</div>
 				</div>
 			</div>
