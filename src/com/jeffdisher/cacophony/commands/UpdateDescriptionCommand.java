@@ -7,9 +7,8 @@ import java.nio.file.Files;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -38,24 +37,18 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			IOperationLog log = environment.logOperation("Updating channel description...");
-			CleanupData cleanup = _runCore(environment, access);
-			
-			// By this point, we have completed the essential network operations (everything else is local state and network clean-up).
-			_runFinish(environment, access, cleanup);
+			_runCore(environment, access);
 			log.finish("Update completed!");
 		}
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException, FailedDeserializationException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException, FailedDeserializationException
 	{
-		// Read the existing StreamIndex.
-		IpfsFile rootToLoad = access.getLastRootElement();
-		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		ChannelModifier modifier = new ChannelModifier(access);
 		
 		// Read the existing description since we might be only partially updating it.
-		StreamDescription description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+		StreamDescription description = modifier.loadDescription();
 		
 		if (null != _name)
 		{
@@ -109,27 +102,15 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			}
 		}
 		
-		// Serialize and upload the description.
-		byte[] rawDescription = GlobalData.serializeDescription(description);
-		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawDescription), true);
+		// Update and commit the structure.
+		modifier.storeDescription(description);
+		environment.logToConsole("Saving new index...");
+		IpfsFile newRoot = modifier.commitNewRoot();
 		
-		// Update, save, and publish the new index.
-		index.setDescription(hashDescription.toSafeString());
-		environment.logToConsole("Saving and publishing new index");
-		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
+		environment.logToConsole("Publishing " + newRoot + "...");
 		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
-		return new CleanupData(asyncPublish, rootToLoad);
-	}
-
-	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
-	{
-		// Unpin the previous index.
-		access.unpin(data.oldRootHash);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-		CommandHelpers.commonWaitForPublish(environment, data.asyncPublish);
+		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 	}
-
-
-	private static record CleanupData(FuturePublish asyncPublish, IpfsFile oldRootHash) {}
 }
