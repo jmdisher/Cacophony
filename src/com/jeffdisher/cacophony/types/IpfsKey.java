@@ -39,6 +39,11 @@ public class IpfsKey implements Serializable
 		{
 			key = new IpfsKey(Cid.decode(keyAsString));
 		}
+		catch (IllegalStateException e)
+		{
+			// This happens if the prefix is confusing ("Unknown Multibase type").
+			key = null;
+		}
 		catch (Cid.CidEncodingException e)
 		{
 			key = null;

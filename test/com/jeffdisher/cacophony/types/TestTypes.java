@@ -128,4 +128,10 @@ public class TestTypes
 		object.add("newlines", "This is a new\nline.");
 		Assert.assertEquals("{\"newlines\":\"This is a new\\nline.\"}", object.toString());
 	}
+
+	@Test
+	public void testKeyPrefix()
+	{
+		Assert.assertNull(IpfsKey.fromPublicKey("hhhh"));
+	}
 }
