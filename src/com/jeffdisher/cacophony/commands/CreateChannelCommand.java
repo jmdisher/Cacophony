@@ -79,7 +79,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		description.setDescription("Description forthcoming");
 		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
 		Assert.assertTrue(null != pictureStream);
-		IpfsFile pictureHash = access.uploadAndPin(pictureStream, true);
+		IpfsFile pictureHash = access.uploadAndPin(pictureStream);
 		description.setPicture(pictureHash.toSafeString());
 		
 		StreamRecommendations recommendations = new StreamRecommendations();
@@ -91,9 +91,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
 		
-		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawDescription), true);
-		IpfsFile hashRecommendations = access.uploadAndPin(new ByteArrayInputStream(rawRecommendations), true);
-		IpfsFile hashRecords = access.uploadAndPin(new ByteArrayInputStream(rawRecords), true);
+		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawDescription));
+		IpfsFile hashRecommendations = access.uploadAndPin(new ByteArrayInputStream(rawRecommendations));
+		IpfsFile hashRecords = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 		
 		// Create the new local index.
 		StreamIndex streamIndex = new StreamIndex();

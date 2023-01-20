@@ -135,7 +135,7 @@ public class TestJsonGenerationHelpers
 			
 			followeeRecordFile = _storeEntry(access, "entry2", PUBLIC_KEY2);
 			// We want to create an oversized record to make sure that it is not in cached list.
-			IpfsFile oversizeRecordFile = access.uploadAndPin(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]), true);
+			IpfsFile oversizeRecordFile = access.uploadAndPin(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]));
 			
 			IFolloweeWriting followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
@@ -173,17 +173,17 @@ public class TestJsonGenerationHelpers
 			records.getRecord().add(record2.toSafeString());
 		}
 		byte[] data = GlobalData.serializeRecords(records);
-		IpfsFile recordsFile = access.uploadAndPin(new ByteArrayInputStream(data), true);
+		IpfsFile recordsFile = access.uploadAndPin(new ByteArrayInputStream(data));
 		StreamRecommendations recommendations = new StreamRecommendations();
 		data = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile recommendationsFile = access.uploadAndPin(new ByteArrayInputStream(data), true);
-		IpfsFile picFile = access.uploadAndPin(new ByteArrayInputStream(new byte[] { 1, 2, 3, 4, 5 }), true);
+		IpfsFile recommendationsFile = access.uploadAndPin(new ByteArrayInputStream(data));
+		IpfsFile picFile = access.uploadAndPin(new ByteArrayInputStream(new byte[] { 1, 2, 3, 4, 5 }));
 		StreamDescription description = new StreamDescription();
 		description.setName("name");
 		description.setDescription("description");
 		description.setPicture(picFile.toSafeString());
 		data = GlobalData.serializeDescription(description);
-		IpfsFile descriptionFile = access.uploadAndPin(new ByteArrayInputStream(data), true);
+		IpfsFile descriptionFile = access.uploadAndPin(new ByteArrayInputStream(data));
 		StreamIndex index = new StreamIndex();
 		index.setDescription(descriptionFile.toSafeString());
 		index.setRecommendations(recommendationsFile.toSafeString());
@@ -201,7 +201,7 @@ public class TestJsonGenerationHelpers
 		}
 		else
 		{
-			indexHash = access.uploadAndPin(new ByteArrayInputStream(GlobalData.serializeIndex(index)), true);
+			indexHash = access.uploadAndPin(new ByteArrayInputStream(GlobalData.serializeIndex(index)));
 		}
 		return indexHash;
 	}
@@ -215,6 +215,6 @@ public class TestJsonGenerationHelpers
 		record.setPublishedSecondsUtc(1L);
 		record.setPublisherKey(publisher.toPublicKey());
 		byte[] data = GlobalData.serializeRecord(record);
-		return access.uploadAndPin(new ByteArrayInputStream(data), true);
+		return access.uploadAndPin(new ByteArrayInputStream(data));
 	}
 }

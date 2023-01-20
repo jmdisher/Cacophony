@@ -218,7 +218,11 @@ public class DraftWrapper implements IDraftWrapper
 		{
 			try
 			{
-				stream = new ClosingInputStream(new FileInputStream(file), () -> tracking.readerCount -= 1);
+				stream = new ClosingInputStream(new FileInputStream(file), () -> {
+					tracking.readerCount -= 1;
+					// Make sure this didn't go negative.
+					Assert.assertTrue(tracking.readerCount >= 0);
+				});
 				tracking.readerCount += 1;
 			}
 			catch (FileNotFoundException e)
@@ -359,6 +363,7 @@ public class DraftWrapper implements IDraftWrapper
 	{
 		private final InputStream _stream;
 		private final Runnable _closeHandler;
+		private boolean _isClosed;
 		public ClosingInputStream(InputStream stream, Runnable closeHandler)
 		{
 			_stream = stream;
@@ -367,8 +372,13 @@ public class DraftWrapper implements IDraftWrapper
 		@Override
 		public void close() throws IOException
 		{
-			_internal_processNotifyHandler(_closeHandler);
-			_stream.close();
+			// Note that it is expected to be safe to close a stream multiple times so handle that case.
+			if (!_isClosed)
+			{
+				_internal_processNotifyHandler(_closeHandler);
+				_stream.close();
+				_isClosed = true;
+			}
 		}
 		@Override
 		public int read() throws IOException

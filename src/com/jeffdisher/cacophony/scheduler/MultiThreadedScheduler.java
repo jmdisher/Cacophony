@@ -72,7 +72,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
-	public FutureSave saveStream(InputStream stream, boolean shouldCloseStream)
+	public FutureSave saveStream(InputStream stream)
 	{
 		FutureSave future = new FutureSave();
 		Runnable r = () -> {
@@ -87,17 +87,14 @@ public class MultiThreadedScheduler implements INetworkScheduler
 			}
 			finally
 			{
-				if (shouldCloseStream)
+				try
 				{
-					try
-					{
-						stream.close();
-					}
-					catch (IOException e)
-					{
-						// We don't expect our streams to fail to close.
-						throw Assert.unexpected(e);
-					}
+					stream.close();
+				}
+				catch (IOException e)
+				{
+					// We don't expect our streams to fail to close.
+					throw Assert.unexpected(e);
 				}
 			}
 		};

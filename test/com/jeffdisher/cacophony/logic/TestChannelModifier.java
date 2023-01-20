@@ -188,7 +188,7 @@ public class TestChannelModifier
 
 	private static String _storeWithString(Access access, byte[] data) throws Throwable
 	{
-		return access.uploadAndPin(new ByteArrayInputStream(data), true).toSafeString();
+		return access.uploadAndPin(new ByteArrayInputStream(data)).toSafeString();
 	}
 
 	private static int _countPins(Access access)
@@ -307,16 +307,13 @@ public class TestChannelModifier
 			throw new RuntimeException("Not Called");
 		}
 		@Override
-		public IpfsFile uploadAndPin(InputStream dataToSave, boolean shouldCloseStream) throws IpfsConnectionException
+		public IpfsFile uploadAndPin(InputStream dataToSave) throws IpfsConnectionException
 		{
 			byte[] data = null;
 			try
 			{
 				data = dataToSave.readAllBytes();
-				if (shouldCloseStream)
-				{
-					dataToSave.close();
-				}
+				dataToSave.close();
 			}
 			catch (IOException e)
 			{

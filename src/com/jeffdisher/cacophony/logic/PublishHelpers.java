@@ -66,8 +66,9 @@ public class PublishHelpers
 		for (PublishElement elt : elements)
 		{
 			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
-			// Upload the file - we won't close the file here since the caller needs to handle cases where something could go wrong (and they gave us the file so they should close it).
-			IpfsFile uploaded = access.uploadAndPin(elt.fileData, false);
+			// Note that this call will close the file (since it is intended to drain it) but we will still close it in
+			// the caller, just to cover error cases before getting this far.
+			IpfsFile uploaded = access.uploadAndPin(elt.fileData);
 			
 			DataElement element = new DataElement();
 			element.setCid(uploaded.toSafeString());
@@ -94,13 +95,13 @@ public class PublishHelpers
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(rawRecord), true);
+		IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(rawRecord));
 		
 		records.getRecord().add(recordHash.toSafeString());
 		
 		// Save the updated records and index.
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords), true);
+		IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());

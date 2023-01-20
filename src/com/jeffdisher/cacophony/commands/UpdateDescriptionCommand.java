@@ -74,7 +74,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			{
 				throw new UsageException("Picture too big (is " + MiscHelpers.humanReadableBytes(rawData.length) + ", limit " + MiscHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
 			}
-			IpfsFile pictureHash = access.uploadAndPin(new ByteArrayInputStream(rawData), true);
+			IpfsFile pictureHash = access.uploadAndPin(new ByteArrayInputStream(rawData));
 			description.setPicture(pictureHash.toSafeString());
 		}
 		if (null != _email)

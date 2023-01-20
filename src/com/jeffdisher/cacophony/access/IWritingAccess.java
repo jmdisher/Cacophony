@@ -36,14 +36,14 @@ public interface IWritingAccess extends IReadingAccess
 	void writePrefs(PrefsData prefs);
 
 	/**
-	 * Uploads the data in dataToSave, recording that the file is pinned locally.
+	 * Uploads the data in dataToSave, recording that the file is pinned locally.  Closes the stream on success or
+	 * failure.
 	 * 
 	 * @param dataToSave The data stream to write to the server.
-	 * @param shouldCloseStream True if the helper should internally close this stream when done the upload.
 	 * @return The hash of the saved file.
 	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
 	 */
-	IpfsFile uploadAndPin(InputStream dataToSave, boolean shouldCloseStream) throws IpfsConnectionException;
+	IpfsFile uploadAndPin(InputStream dataToSave) throws IpfsConnectionException;
 
 	/**
 	 * Uploads the new StreamIndex and updates local tracking.

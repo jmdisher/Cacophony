@@ -155,7 +155,7 @@ public class ChannelModifier
 		if ((null != _recommendations) && _recommendations.needsUpdate)
 		{
 			byte[] data = GlobalData.serializeRecommendations(_recommendations.element);
-			cid = _access.uploadAndPin(new ByteArrayInputStream(data), true);
+			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_recommendations.originalCid);
 			_recommendations = null;
 		}
@@ -168,7 +168,7 @@ public class ChannelModifier
 		if ((null != _records) && _records.needsUpdate)
 		{
 			byte[] data = GlobalData.serializeRecords(_records.element);
-			cid = _access.uploadAndPin(new ByteArrayInputStream(data), true);
+			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_records.originalCid);
 			_records = null;
 		}
@@ -181,7 +181,7 @@ public class ChannelModifier
 		if ((null != _description) && _description.needsUpdate)
 		{
 			byte[] data = GlobalData.serializeDescription(_description.element);
-			cid = _access.uploadAndPin(new ByteArrayInputStream(data), true);
+			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_description.originalCid);
 			_description = null;
 		}

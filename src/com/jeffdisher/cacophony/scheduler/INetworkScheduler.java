@@ -25,13 +25,12 @@ public interface INetworkScheduler
 	<R> FutureRead<R> readData(IpfsFile file, DataDeserializer<R> decoder);
 
 	/**
-	 * Saves a stream of data to the network and returns the location.
+	 * Saves a stream of data to the network and returns the location.  Closes the stream on success or failure.
 	 * 
 	 * @param stream The source of the data to save.
-	 * @param shouldCloseStream True if the stream should be closed after the save completes (on success or failure).
 	 * @return The asynchronously-completed future.
 	 */
-	FutureSave saveStream(InputStream stream, boolean shouldCloseStream);
+	FutureSave saveStream(InputStream stream);
 
 	/**
 	 * Publishes the given indexHash for this channel's key.

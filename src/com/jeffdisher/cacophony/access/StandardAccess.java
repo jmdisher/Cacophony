@@ -297,9 +297,9 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public IpfsFile uploadAndPin(InputStream dataToSave, boolean shouldCloseStream) throws IpfsConnectionException
+	public IpfsFile uploadAndPin(InputStream dataToSave) throws IpfsConnectionException
 	{
-		FutureSave save = _scheduler.saveStream(dataToSave, shouldCloseStream);
+		FutureSave save = _scheduler.saveStream(dataToSave);
 		IpfsFile hash = save.get();
 		_pinCache.addRef(hash);
 		return hash;
@@ -309,7 +309,7 @@ public class StandardAccess implements IWritingAccess
 	public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _readWrite);
-		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)), true);
+		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)));
 		IpfsFile hash = save.get();
 		_pinCache.addRef(hash);
 		_channelData.setLastPublishedIndex(hash);

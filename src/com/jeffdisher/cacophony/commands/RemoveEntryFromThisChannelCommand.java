@@ -76,7 +76,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
 		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile newCid = access.uploadAndPin(new ByteArrayInputStream(rawRecords), true);
+		IpfsFile newCid = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");
 		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);

@@ -193,7 +193,7 @@ public class TestConcurrentTransaction
 			return read;
 		}
 		@Override
-		public FutureSave saveStream(InputStream stream, boolean shouldCloseStream)
+		public FutureSave saveStream(InputStream stream)
 		{
 			throw new AssertionError("Not in test");
 		}
