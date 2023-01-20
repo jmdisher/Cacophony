@@ -18,6 +18,31 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	$scope.unknownUserKey = "";
+	$scope.unknownUser = null;
+	$scope.inProgress = false;
+	
+	$scope.checkUnknownUser = function()
+	{
+		$scope.inProgress = true;
+		REST.GET("/unknownUser/" + $scope.unknownUserKey)
+			.then((response) => {
+				$scope.inProgress = false;
+				$scope.$apply();
+				if (!response.ok)
+				{
+					throw response.status;
+				}
+				return response.json();
+			})
+			.then((data) => {
+				$scope.unknownUser = data;
+				$scope.unknownUser.publicKey = $scope.unknownUserKey;
+				$scope.$apply();
+			})
+			.catch((errorCode) => alert("Key is either invalid or could not be resolved.  Error code " + errorCode));
+	}
+	
 	API_getXsrf().then(function() {
 		xsrfLoaded($scope)
 	});
@@ -132,6 +157,25 @@ function beginPopulating($scope)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
+			<div class="input-group mb-3">
+				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()" ng-disabled="inProgress">Check User</button>
+				<input type="text" class="form-control" ng-model="unknownUserKey" ng-disabled="inProgress" aria-label="User Public Key" aria-describedby="public-key">
+			</div>
+			<div class="card" ng-show="null !== unknownUser">
+				<h5 class="card-header">{{unknownUser.name}}</h5>
+				<div class="card-body container row">
+					<div class="col-md-4">
+						<img class="img-fluid" ng-src="{{unknownUser.userPicUrl}}" />
+					</div>
+					<div class="col-md-8">
+						Public Key: <strong>{{unknownUser.publicKey}}</strong><br />
+						Description: <strong>{{unknownUser.description}}</strong><br />
+						Email: <span ng-show="{{null == unknownUser.email}}">(not provided)</span><span ng-show="{{null !== unknownUser.email}}"><a ng-href="mailto:{{unknownUser.email}}">{{unknownUser.email}}</a></span><br />
+						Website: <span ng-show="{{null == unknownUser.website}}">(not provided)</span><span ng-show="{{null !== unknownUser.website}}"><a ng-href="{{unknownUser.website}}">{{unknownUser.website}}</a></span><br />
+					</div>
+				</div>
+			</div>
+			
 			<h3>Users you Follow</h3>
 			<div ng-repeat="user in following" class="card">
 				<h5 class="card-header"><a href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>

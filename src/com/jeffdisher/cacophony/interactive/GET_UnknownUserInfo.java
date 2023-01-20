@@ -38,7 +38,8 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
+		String rawKey = variables[0];
+		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
 		if (null != userToResolve)
 		{
 			// Since every step in this operation can be blocking, but we only need network access, we just user small
@@ -49,33 +50,42 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 				resolved = access.resolvePublicKey(userToResolve);
 			}
 			IpfsFile index = resolved.get();
-			FutureRead<StreamIndex> futureStreamIndex;
-			try (IReadingAccess access = StandardAccess.readAccess(_environment))
+			if (null != index)
 			{
-				futureStreamIndex = access.loadNotCached(index, (byte[] data) -> GlobalData.deserializeIndex(data));
+				FutureRead<StreamIndex> futureStreamIndex;
+				try (IReadingAccess access = StandardAccess.readAccess(_environment))
+				{
+					futureStreamIndex = access.loadNotCached(index, (byte[] data) -> GlobalData.deserializeIndex(data));
+				}
+				StreamIndex streamIndex = futureStreamIndex.get();
+				IpfsFile description = IpfsFile.fromIpfsCid(streamIndex.getDescription());
+				FutureRead<StreamDescription> futureStreamDescription;
+				String directFetchUrlRoot;
+				try (IReadingAccess access = StandardAccess.readAccess(_environment))
+				{
+					futureStreamDescription = access.loadNotCached(description, (byte[] data) -> GlobalData.deserializeDescription(data));
+					directFetchUrlRoot = access.getDirectFetchUrlRoot();
+				}
+				StreamDescription streamDescription = futureStreamDescription.get();
+				// Make sure that the picture is a valid CID before plumbing it through.
+				IpfsFile pictureCid = IpfsFile.fromIpfsCid(streamDescription.getPicture());
+				JsonObject userInfo = JsonGenerationHelpers.populateJsonForUnknownDescription(streamDescription, directFetchUrlRoot + pictureCid.toSafeString());
+				response.setContentType("application/json");
+				response.setStatus(HttpServletResponse.SC_OK);
+				response.getWriter().print(userInfo.toString());
 			}
-			StreamIndex streamIndex = futureStreamIndex.get();
-			IpfsFile description = IpfsFile.fromIpfsCid(streamIndex.getDescription());
-			FutureRead<StreamDescription> futureStreamDescription;
-			String directFetchUrlRoot;
-			try (IReadingAccess access = StandardAccess.readAccess(_environment))
+			else
 			{
-				futureStreamDescription = access.loadNotCached(description, (byte[] data) -> GlobalData.deserializeDescription(data));
-				directFetchUrlRoot = access.getDirectFetchUrlRoot();
+				// Key was valid but not found.
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+				response.getWriter().print("Key could not be resolved: " + rawKey);
 			}
-			StreamDescription streamDescription = futureStreamDescription.get();
-			// Make sure that the picture is a valid CID before plumbing it through.
-			IpfsFile pictureCid = IpfsFile.fromIpfsCid(streamDescription.getPicture());
-			JsonObject userInfo = JsonGenerationHelpers.populateJsonForUnknownDescription(streamDescription, directFetchUrlRoot + pictureCid.toSafeString());
-			response.setContentType("application/json");
-			response.setStatus(HttpServletResponse.SC_OK);
-			response.getWriter().print(userInfo.toString());
 		}
 		else
 		{
 			// This happens if the key is invalid.
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			response.getWriter().print("Invalid key: " + variables[0]);
+			response.getWriter().print("Invalid key: " + rawKey);
 		}
 	}
 }
