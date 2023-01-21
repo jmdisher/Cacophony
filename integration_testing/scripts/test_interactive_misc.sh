@@ -55,6 +55,8 @@ echo "Create user2..."
 CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 
 echo "Make user1 follow user2 and verify an empty stream..."
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --getPublicKey)
+PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC2"
@@ -160,6 +162,42 @@ USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$USER_INFO" "Invalid key: BOGUS"
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/unknownUser/$PUBLIC2")
 requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null}"
+
+echo "Check the manipulation of the recommended users"
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC1")
+requireSubstring "$RECOMMENDED_KEYS" "[]"
+# Add the other user.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8000/recommend/$PUBLIC2"
+checkPreviousCommand "add to recommended"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8000/recommend/$PUBLIC2"
+if [ $? != 22 ]; then
+	exit 1
+fi
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC1")
+requireSubstring "$RECOMMENDED_KEYS" "[\"$PUBLIC2\"]"
+# Wait for publish.
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\""
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\""
+# Remove.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/recommend/$PUBLIC2"
+checkPreviousCommand "remove from recommended"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/recommend/$PUBLIC2"
+if [ $? != 22 ]; then
+	exit 1
+fi
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC1")
+requireSubstring "$RECOMMENDED_KEYS" "[]"
+# Wait for publish.
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":5,\"value\""
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\""
 
 
 echo "Stop the server and wait for it to exit..."
