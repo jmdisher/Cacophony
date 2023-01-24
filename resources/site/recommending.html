@@ -17,6 +17,55 @@
 var GLOBAL_Application = angular.module('App', []);
 GLOBAL_Application.controller('AppController', function($scope)
 {
+	$scope.canChangeRecommendations = false;
+	$scope.unknownUserKey = "";
+	$scope.unknownUser = null;
+	$scope.inProgress = false;
+	
+	$scope.checkUnknownUser = function()
+	{
+		$scope.inProgress = true;
+		REST.GET("/unknownUser/" + $scope.unknownUserKey)
+			.then((response) => {
+				$scope.inProgress = false;
+				$scope.$apply();
+				if (!response.ok)
+				{
+					throw response.status;
+				}
+				return response.json();
+			})
+			.then((data) => {
+				$scope.unknownUser = data;
+				$scope.unknownUser.publicKey = $scope.unknownUserKey;
+				$scope.$apply();
+			})
+			.catch((errorCode) => alert("Key is either invalid or could not be resolved.  Error code " + errorCode));
+	}
+	
+	$scope.startRecommending = function(publicKey)
+	{
+		// We will send the request and then treat this like a new recommended key was loaded, on success.
+		REST.POST("/recommend/" + publicKey)
+			.then((response) => {
+				if (response.ok)
+				{
+					addKeyToList($scope.recommended, publicKey, function()
+					{
+						$scope.inProgress = false;
+						$scope.unknownUser = null;
+						$scope.$apply();
+					});
+				}
+				else
+				{
+					alert("Error recommending: " + publicKey);
+					$scope.inProgress = false;
+					$scope.$apply();
+				}
+			});
+	}
+	
 	API_getXsrf().then(function() {
 		xsrfLoaded($scope)
 	});
@@ -30,6 +79,8 @@ function xsrfLoaded($scope)
 	}
 	else
 	{
+		// This is typically how we end up viewing the home user so we can change recommendations.
+		$scope.canChangeRecommendations = true;
 		API_loadPublicKey().then(key => {
 			publicKeyLoaded($scope, key, true);
 		});
@@ -61,32 +112,65 @@ function userInfoForUserLoaded($scope, userInfo)
 }
 function recommendedUsersLoaded($scope, recommended)
 {
-	let processed = [];
+	$scope.recommended = [];
 	recommended.forEach(function(key) {
 		// Add empty objects to the array since we will replace them asynchronously.
-		let placeholder = {
-			"known": false,
-			"publicKey": key,
-		};
-		let nextIndex = processed.push(placeholder);
-		API_getInfoForUser(key).then(elt => {
-			if (undefined !== elt)
-			{
-				// We can't update the placeholder since the $apply() won't see nested updates so replace this.
-				let object = {
-					"known": true,
-					"publicKey": key,
-					"name": elt["name"],
-					"description": elt["description"],
-					"userPicUrl": elt["userPicUrl"],
-				};
-				processed[nextIndex - 1] = object;
-				$scope.$apply();
-			}
+		addKeyToList($scope.recommended, key, function()
+		{
+			$scope.$apply();
 		});
 	});
-	$scope.recommended = processed;
+	
+	$scope.stopRecommending = function(user)
+	{
+		// When the delete returns, remove them from the list.
+		REST.DELETE("/recommend/" + user.publicKey)
+			.then((response) => {
+				if (response.ok)
+				{
+					// Remove this from the list.
+					$scope.recommended = $scope.recommended.filter(function(elt)
+					{
+						return (elt.publicKey !== user.publicKey);
+					});
+				}
+				else
+				{
+					// Present an error.
+					alert("Failure deleting recommended user: " + user.publicKey);
+					user.isDeleting = false;
+				}
+				$scope.$apply();
+			})
+		;
+		user.isDeleting = true;
+	}
+	
 	$scope.$apply();
+}
+function addKeyToList(list, key, onPopulate)
+{
+	let placeholder = {
+		"known": false,
+		"publicKey": key,
+	};
+	let nextIndex = list.push(placeholder);
+	API_getInfoForUser(key).then(elt => {
+		if (undefined !== elt)
+		{
+			// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+			let object = {
+				"known": true,
+				"publicKey": key,
+				"name": elt["name"],
+				"description": elt["description"],
+				"userPicUrl": elt["userPicUrl"],
+				"isDeleting": false,
+			};
+			list[nextIndex - 1] = object;
+			onPopulate();
+		}
+	});
 }
 </script>
 
@@ -119,6 +203,26 @@ function recommendedUsersLoaded($scope, recommended)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
+			<div class="input-group mb-3" ng-show="canChangeRecommendations">
+				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()" ng-disabled="inProgress">Check User</button>
+				<input type="text" class="form-control" ng-model="unknownUserKey" ng-disabled="inProgress" aria-label="User Public Key" aria-describedby="public-key">
+			</div>
+			<div class="card" ng-show="null !== unknownUser">
+				<h5 class="card-header">{{unknownUser.name}}</h5>
+				<div class="card-body container row">
+					<div class="col-md-4">
+						<img class="img-fluid" ng-src="{{unknownUser.userPicUrl}}" />
+					</div>
+					<div class="col-md-8">
+						Public Key: <strong>{{unknownUser.publicKey}}</strong><br />
+						Description: <strong>{{unknownUser.description}}</strong><br />
+						Email: <span ng-show="{{null == unknownUser.email}}">(not provided)</span><span ng-show="{{null !== unknownUser.email}}"><a ng-href="mailto:{{unknownUser.email}}">{{unknownUser.email}}</a></span><br />
+						Website: <span ng-show="{{null == unknownUser.website}}">(not provided)</span><span ng-show="{{null !== unknownUser.website}}"><a ng-href="{{unknownUser.website}}">{{unknownUser.website}}</a></span><br />
+						<button class="btn btn-small btn-success" ng-click="startRecommending(unknownUser.publicKey)" ng-disabled="inProgress">Start Recommending User</button><br />
+					</div>
+				</div>
+			</div>
+			
 			<h3>Users Recommmended by <a ng-href="user.html?publicKey={{publicKey}}">{{thisUserName}}</a></h3>
 			<div ng-repeat="user in recommended" class="card">
 				<h5 class="card-header" ng-show="{{user.known}}"><a ng-href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
@@ -128,7 +232,8 @@ function recommendedUsersLoaded($scope, recommended)
 					</div>
 					<div class="col-md-8" ng-show="{{user.known}}">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
-						{{user.description}}
+						{{user.description}}<br />
+						<button class="btn btn-small btn-danger" ng-click="stopRecommending(user)" ng-show="canChangeRecommendations" ng-disabled="user.isDeleting">Stop Recommending User</button><br />
 					</div>
 					<div class="col-md-12" ng-hide="{{user.known}}">
 						Public key of unknown user: {{user.publicKey}}
