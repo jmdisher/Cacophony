@@ -24,6 +24,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
+	$scope.isHomeUser = false;
 	let keyArg = readGetVar("publicKey");
 	if (keyArg !== undefined)
 	{
@@ -32,17 +33,20 @@ function xsrfLoaded($scope)
 	else
 	{
 		API_loadPublicKey().then(key => {
+			$scope.isHomeUser = true;
 			publicKeyLoaded($scope, key, true);
 		});
 	}
+	$scope.deletePost = function(post)
+	{
+		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
+		post.isDeleting = true;
+		REST.DELETE("/post/" + post.elementHash);
+	}
 }
-function publicKeyLoaded($scope, publicKey, shouldApply)
+function publicKeyLoaded($scope, publicKey, isHomeUser)
 {
 	$scope.publicKey = publicKey;
-	if (shouldApply)
-	{
-		$scope.$apply();
-	}
 	API_getInfoForUser(publicKey).then(userInfo => {
 		userInfoForUserLoaded($scope, userInfo);
 	});
@@ -56,7 +60,7 @@ function publicKeyLoaded($scope, publicKey, shouldApply)
 		, function(hash, value)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
-			newHashAppeared($scope, hash);
+			newHashAppeared($scope, hash, isHomeUser);
 		}
 		// No Update.
 		, null
@@ -103,6 +107,7 @@ function newHashAppeared($scope, hash)
 			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
 			"name": elt["name"],
 			"description": description,
+			"isDeleting": false,
 		}
 		if (elt["cached"])
 		{
@@ -117,8 +122,11 @@ function newHashAppeared($scope, hash)
 }
 function oldHashRemoved($scope, key)
 {
-	let index = findIndex($scope.posts, key);
-	$scope.posts.splice(index, $scope.posts - index);
+	let index = $scope.posts.findIndex(function(currentValue, index, arr)
+	{
+		return currentValue.elementHash === key;
+	}, key);
+	$scope.posts.splice(index, 1);
 	$scope.$apply();
 }
 function findIndex(array, element)
@@ -185,7 +193,8 @@ function findIndex(array, element)
 					</div>
 					<div class="col-md-8">
 						<h5 class="card-title">{{post.readableDate}}</h5>
-						{{post.description}}
+						{{post.description}}<br />
+						<button class="btn btn-small btn-danger" ng-click="deletePost(post)" ng-show="isHomeUser" ng-disabled="post.isDeleting">Delete Post</button><br />
 					</div>
 				</div>
 			</div>
