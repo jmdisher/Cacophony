@@ -112,7 +112,7 @@ public class PublishHelpers
 		// (we may want more explicit control over this, in the future)
 		access.unpin(previousRoot);
 		access.unpin(previousRecords);
-		outRecordCid[0] = recordsHash;
+		outRecordCid[0] = recordHash;
 		return newRoot;
 	}
 

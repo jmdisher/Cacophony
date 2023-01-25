@@ -363,6 +363,11 @@ echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
+# Capture the record CID to verify it against the POST_ID from earlier:  1 "2-event" 3 "4-create" 5 "6-key" 7 "8-CID"
+EVENT_POST_ID=$(echo "$SAMPLE" | cut -d "\"" -f 8)
+if [ "$EVENT_POST_ID" != "$POST_ID" ]; then
+	exit 1
+fi
 
 echo "Check the list of followee keys for this user"
 FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followeeKeys")
