@@ -130,6 +130,15 @@ public class TestHandoffConnector
 		Assert.assertEquals("four", listen2.keyOrder.get(3));
 	}
 
+	@Test
+	public void testNullKeys() throws Throwable
+	{
+		HandoffConnector<String, Void> connector = new HandoffConnector<>(DISPATCHER);
+		connector.create("one", null);
+		connector.update("one", null);
+		connector.destroy("one");
+	}
+
 
 	private static class TestListener implements HandoffConnector.IHandoffListener<String, String>
 	{

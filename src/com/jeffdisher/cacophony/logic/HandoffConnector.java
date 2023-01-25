@@ -94,9 +94,9 @@ public class HandoffConnector<K, V>
 	{
 		_dispatcher.accept(() ->
 		{
-			V old = _cache.put(key, value);
 			// No over-write in this path.
-			Assert.assertTrue(null == old);
+			Assert.assertTrue(!_cache.containsKey(key));
+			_cache.put(key, value);
 			_order.add(key);
 			
 			// Tell everyone.
@@ -123,9 +123,9 @@ public class HandoffConnector<K, V>
 	{
 		_dispatcher.accept(() ->
 		{
-			V old = _cache.put(key, value);
-			// Must over-write in this path.
-			Assert.assertTrue(null != old);
+			// We expect the element to be in the map (but it may have a null value).
+			Assert.assertTrue(_cache.containsKey(key));
+			_cache.put(key, value);
 			
 			// Tell everyone.
 			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
@@ -150,9 +150,9 @@ public class HandoffConnector<K, V>
 	{
 		_dispatcher.accept(() ->
 		{
-			V old = _cache.remove(key);
-			// Must remove.
-			Assert.assertTrue(null != old);
+			// We expect the element to be in the map (but it may have a null value).
+			Assert.assertTrue(_cache.containsKey(key));
+			_cache.remove(key);
 			boolean didRemove = _order.remove(key);
 			// Must remove.
 			Assert.assertTrue(didRemove);
