@@ -172,6 +172,7 @@ public class InteractiveServer
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
 		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
 		
+		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, connectorsPerUser.get(ourPublicKey)));
 		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
 		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));

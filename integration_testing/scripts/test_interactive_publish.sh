@@ -399,6 +399,37 @@ STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
+echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+# Extract fields 2 and 4:  1 "2" 3 "4" 5
+POST_TO_DELETE=$(echo "$POST_LIST" | cut -d "\"" -f 2)
+POST_TO_KEEP=$(echo "$POST_LIST" | cut -d "\"" -f 4)
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/post/$POST_TO_DELETE"
+checkPreviousCommand "DELETE post"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/post/$POST_TO_DELETE" >& /dev/null
+# 400 bad request.
+if [ $? != 22 ]; then
+	exit 1
+fi
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP\"]"
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_KEEP" >& /dev/null
+checkPreviousCommand "read post"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_DELETE" >& /dev/null
+# 404 not found.
+if [ $? != 22 ]; then
+	exit 1
+fi
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null}"
+
 echo "Make sure that the core threads are still running..."
 JSTACK=$(jstack "$SERVER_PID")
 requireSubstring "$JSTACK" "Background Operations"
