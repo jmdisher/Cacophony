@@ -244,7 +244,16 @@ public class IpfsConnection implements IConnection
 		// For some reason, IPFS wraps java.net.SocketTimeoutException in RuntimeException, but we want to expose that here.
 		try
 		{
-			throw e.getCause();
+			// Note that sometimes this cause is null so just throw it in that case.
+			Throwable cause = e.getCause();
+			if (null != cause)
+			{
+				throw cause;
+			}
+			else
+			{
+				throw e;
+			}
 		}
 		catch (SocketTimeoutException timeout)
 		{
