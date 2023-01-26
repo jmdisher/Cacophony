@@ -46,6 +46,9 @@ function xsrfLoaded($scope)
 }
 function publicKeyLoaded($scope, publicKey, isHomeUser)
 {
+	let video_preview = document.getElementById("video_preview");
+	let canvas = document.getElementById("canvas");
+	
 	$scope.publicKey = publicKey;
 	API_getInfoForUser(publicKey).then(userInfo => {
 		userInfoForUserLoaded($scope, userInfo);
@@ -81,6 +84,23 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		$scope.editState = JSON.parse(JSON.stringify($scope.description));
 		$scope.editState.saveInProgress = false;
 		$scope.inEditMode = true;
+		$scope.editState.videoStream = null;
+		
+		// We will generalize this into always writing to a canvas to display image data, and always capturing the JPEG binary directly from there.
+		let imageObject = new Image();
+		imageObject.crossOrigin = "anonymous";
+		imageObject.onload = function()
+		{
+			canvas.width = imageObject.width;
+			canvas.height = imageObject.height;
+			let context = canvas.getContext("2d");
+			context.drawImage(imageObject, 0, 0);
+			canvas.toBlob(function(blob)
+			{
+				$scope.editState.imageData = blob;
+			}, "image/jpeg");
+		};
+		imageObject.src = $scope.editState.userPicUrl;
 	};
 	$scope.saveDataEdit = function()
 	{
@@ -102,9 +122,50 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		;
 		
 	};
+	$scope.saveUserPic = function()
+	{
+		$scope.editState.saveInProgress = true;
+		
+		REST.POST_withBinary("/userInfo/image", $scope.editState.imageData)
+			.then(result => result.text())
+			.then(function(newUrl) {
+				$scope.inEditMode = false;
+				$scope.description.userPicUrl = newUrl;
+				$scope.$apply();
+			})
+		;
+		
+	};
 	$scope.revertEdit = function()
 	{
 		$scope.inEditMode = false;
+	};
+	$scope.startCamera = function()
+	{
+		startCamera()
+			.then(result => {
+				// Just set the stream and setup the preview.
+				$scope.editState.videoStream = result;
+				video_preview.srcObject = result;
+				$scope.$apply();
+			}, error => {
+				alert(error);
+				$scope.$apply();
+			});
+	};
+	$scope.capturePicture = function()
+	{
+		capturePicture(canvas, video_preview, function(blob)
+		{
+			$scope.editState.imageData = blob;
+		});
+		stopCamera(video_preview, $scope.editState.videoStream);
+		$scope.editState.videoStream = null;
+	};
+	$scope.stopCamera = function()
+	{
+		stopCamera(video_preview, $scope.editState.videoStream);
+		$scope.editState.videoStream = null;
 	};
 	$scope.$apply();
 }
@@ -166,6 +227,26 @@ function findIndex(array, element)
 	{
 		return currentValue === element;
 	}, element);
+}
+function startCamera()
+{
+	// We just want the camera for capturing the user pic (so no audio).
+	return new Promise((resolve, reject) => {
+		let constraints = { video: true };
+		navigator.mediaDevices.getUserMedia(constraints).then(resolve, reject);
+	});
+}
+function capturePicture(canvas, video_preview, onBlobLoad)
+{
+	canvas.width = video_preview.videoWidth;
+	canvas.height = video_preview.videoHeight;
+	canvas.getContext('2d').drawImage(video_preview, 0, 0);
+	canvas.toBlob(onBlobLoad, "image/jpeg");
+}
+function stopCamera(video_preview, stream)
+{
+	video_preview.srcObject = null;
+	stream.getTracks().forEach(function(track) { track.stop(); });
 }
 </script>
 
@@ -231,8 +312,18 @@ function findIndex(array, element)
 					<span class="input-group-text">Website</span>
 					<input type="text" class="form-control" ng-model="editState.website" ng-disabled="editState.saveInProgress" aria-label="Website">
 				</div>
+				<div class="card card-body">
+					<canvas id="canvas" ng-show="null === editState.videoStream"></canvas><br />
+					<video id="video_preview" ng-show="null !== editState.videoStream" playsinline autoplay muted></video><br />
+					<div class="btn-group" role="group" aria-label="Camera">
+						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-enabled="null === editState.videoStream">Start Camera</button>
+						<button type="button" class="btn btn-success" ng-click="capturePicture()" ng-enabled="null !== editState.videoStream">Capture Picture</button>
+						<button type="button" class="btn btn-secondary" ng-click="stopCamera()" ng-enabled="null !== editState.videoStream">Stop Camera</button>
+					</div>
+				</div>
 				<div class="btn-group" role="group" aria-label="Save">
 					<button type="button" class="btn btn-primary" ng-click="saveDataEdit()" ng-disabled="editState.saveInProgress">Save Data Changes</button>
+					<button type="button" class="btn btn-primary" ng-click="saveUserPic()" ng-disabled="editState.saveInProgress">Save Picture</button>
 					<button type="button" class="btn btn-secondary" ng-click="revertEdit()" ng-disabled="editState.saveInProgress">Revert Changes</button>
 				</div>
 			</div>

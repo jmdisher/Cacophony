@@ -49,6 +49,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			access.unpin(oldImage);
 			
 			_background.requestPublish(newRoot);
+			response.getWriter().print(access.getCachedUrl(cid));
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
 	}
