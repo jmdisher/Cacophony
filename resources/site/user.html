@@ -75,6 +75,37 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		{
 		}
 	);
+	$scope.enterEditMode = function()
+	{
+		// Create the edit state copy.
+		$scope.editState = JSON.parse(JSON.stringify($scope.description));
+		$scope.editState.saveInProgress = false;
+		$scope.inEditMode = true;
+	};
+	$scope.saveDataEdit = function()
+	{
+		$scope.editState.saveInProgress = true;
+		
+		// These variable names are defined in POST_Form_UserInfo.java.
+		let variables = {
+			"NAME": $scope.editState.name,
+			"DESCRIPTION": $scope.editState.description,
+			"EMAIL": (null !== $scope.editState.email) ? $scope.editState.email : "",
+			"WEBSITE": (null !== $scope.editState.website) ? $scope.editState.website : "",
+		};
+		REST.POST_asForm("/userInfo/info", variables)
+			.then(function() {
+				$scope.description = $scope.editState;
+				$scope.inEditMode = false;
+				$scope.$apply();
+			})
+		;
+		
+	};
+	$scope.revertEdit = function()
+	{
+		$scope.inEditMode = false;
+	};
 	$scope.$apply();
 }
 function userInfoForUserLoaded($scope, userInfo)
@@ -167,7 +198,7 @@ function findIndex(array, element)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
-			<div class="row card">
+			<div class="row card" ng-show="!inEditMode">
 				<h5 class="card-header">{{description.name}}</h5>
 				<div class="card-body container row">
 					<div class="col-md-4">
@@ -176,10 +207,33 @@ function findIndex(array, element)
 					<div class="col-md-8">
 						Public Key: <strong>{{publicKey}}</strong><br />
 						Description: <strong>{{description.description}}</strong><br />
-						Email: <span ng-show="{{null == description.email}}">(not provided)</span><span ng-show="{{null != description.email}}"><a ng-href="mailto:{{description.email}}">{{description.email}}</a></span><br />
-						Website: <span ng-show="{{null == description.website}}">(not provided)</span><span ng-show="{{null != description.website}}"><a ng-href="{{description.website}}">{{description.website}}</a></span><br />
+						Email: <span ng-show="null === description.email">(not provided)</span><span ng-show="null !== description.email"><a ng-href="mailto:{{description.email}}">{{description.email}}</a></span><br />
+						Website: <span ng-show="null === description.website">(not provided)</span><span ng-show="null !== description.website"><a ng-href="{{description.website}}">{{description.website}}</a></span><br />
+						<button class="btn btn-primary" ng-click="enterEditMode()" ng-show="isHomeUser">Edit Info</button><br />
 						<a ng-href="recommending.html?publicKey={{publicKey}}">Recommended Users</a><br />
 					</div>
+				</div>
+			</div>
+			<div class="row card" ng-show="inEditMode">
+				<div class="input-group mb-3">
+					<span class="input-group-text">Name</span>
+					<input type="text" class="form-control" ng-model="editState.name" ng-disabled="editState.saveInProgress" aria-label="Name">
+				</div>
+				<div class="input-group mb-3">
+					<span class="input-group-text">Description</span>
+					<input type="text" class="form-control" ng-model="editState.description" ng-disabled="editState.saveInProgress" aria-label="Description">
+				</div>
+				<div class="input-group mb-3">
+					<span class="input-group-text">E-Mail address</span>
+					<input type="text" class="form-control" ng-model="editState.email" ng-disabled="editState.saveInProgress" aria-label="E-Mail address">
+				</div>
+				<div class="input-group mb-3">
+					<span class="input-group-text">Website</span>
+					<input type="text" class="form-control" ng-model="editState.website" ng-disabled="editState.saveInProgress" aria-label="Website">
+				</div>
+				<div class="btn-group" role="group" aria-label="Save">
+					<button type="button" class="btn btn-primary" ng-click="saveDataEdit()" ng-disabled="editState.saveInProgress">Save Data Changes</button>
+					<button type="button" class="btn btn-secondary" ng-click="revertEdit()" ng-disabled="editState.saveInProgress">Revert Changes</button>
 				</div>
 			</div>
 			<div ng-repeat="post in posts" class="row card">
