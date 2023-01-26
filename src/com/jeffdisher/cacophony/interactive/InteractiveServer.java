@@ -224,6 +224,8 @@ public class InteractiveServer
 		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background));
 		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, background));
 		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, background));
+		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, background));
+		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(environment, background));
 		
 		// Entry-points related to followee state changes.
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));

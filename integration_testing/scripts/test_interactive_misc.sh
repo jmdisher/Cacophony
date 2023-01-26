@@ -199,6 +199,31 @@ SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\""
 
+echo "Update description..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8000/userInfo/info"
+checkPreviousCommand "update description info"
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC1")
+requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":\"http://example.com\"}"
+# Wait for publish.
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":6,\"value\""
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":6,\"value\""
+
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8000/userInfo/image"
+checkPreviousCommand "update description image"
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC1")
+requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd\",\"email\":null,\"website\":\"http://example.com\"}"
+# Wait for publish.
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":7,\"value\""
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":7,\"value\""
+
 
 echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT"
