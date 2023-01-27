@@ -120,8 +120,36 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 				$scope.$apply();
 			})
 		;
-		
 	};
+	document.getElementById("pic_upload_selector").addEventListener("change", function(event)
+	{
+		let file = event.srcElement.files[0];
+		if (!file.type.startsWith('image/'))
+		{
+			// Drag and drop can bypass the "accept", it seems.
+			event.srcElement.value = null;
+		}
+		else
+		{
+			// We need to find the meta-data.
+			let img = new Image();
+			img.onload = function(event)
+			{
+				console.log("Got pic: " + img.width + " by " + img.height);
+				canvas.width = img.width;
+				canvas.height = img.height;
+				canvas.getContext('2d').drawImage(img, 0, 0);
+				canvas.toBlob(function(blob)
+				{
+					$scope.editState.imageData = blob;
+					$scope.$apply();
+				}, "image/jpeg");
+				$scope.$apply();
+			};
+			img.src = URL.createObjectURL(file);
+			event.srcElement.value = null;
+		}
+	});
 	$scope.saveUserPic = function()
 	{
 		$scope.editState.saveInProgress = true;
@@ -134,7 +162,6 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 				$scope.$apply();
 			})
 		;
-		
 	};
 	$scope.revertEdit = function()
 	{
@@ -315,6 +342,7 @@ function stopCamera(video_preview, stream)
 				<div class="card card-body">
 					<canvas id="canvas" ng-show="null === editState.videoStream"></canvas><br />
 					<video id="video_preview" ng-show="null !== editState.videoStream" playsinline autoplay muted></video><br />
+					Upload user pic from filesystem: <input type="file" accept="image/*" id="pic_upload_selector" /><br />
 					<div class="btn-group" role="group" aria-label="Camera">
 						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-enabled="null === editState.videoStream">Start Camera</button>
 						<button type="button" class="btn btn-success" ng-click="capturePicture()" ng-enabled="null !== editState.videoStream">Capture Picture</button>
