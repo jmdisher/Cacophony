@@ -198,6 +198,9 @@ public class TestRefreshNextFolloweeCommand
 		user3.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
+		// We introduce a delay so that the update doesn't happen in the same millisecond (we will wait 100).
+		Thread.sleep(100L);
+		
 		// We should be able to run this multiple times, without it causing problems.
 		IFolloweeReading followees = user.readFollowIndex();
 		IpfsKey nextKey = followees.getNextFolloweeToPoll();
