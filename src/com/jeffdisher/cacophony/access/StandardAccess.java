@@ -392,18 +392,12 @@ public class StandardAccess implements IWritingAccess
 				_pinCache.delRef(cid);
 			}
 			Assert.assertTrue(0 == countToChange);
-			if (!_pinCache.isPinned(cid))
-			{
-				_scheduler.unpin(cid);
-			}
+			_rationalizeUnpin(cid);
 		}
 		// Now, walk the set of false pins, requesting that the network unpin them if they aren't referenced.
 		for (IpfsFile pin : falsePins)
 		{
-			if (!_pinCache.isPinned(pin))
-			{
-				_scheduler.unpin(pin);
-			}
+			_rationalizeUnpin(pin);
 		}
 	}
 
@@ -411,5 +405,22 @@ public class StandardAccess implements IWritingAccess
 	public String getDirectFetchUrlRoot()
 	{
 		return _sharedConnection.directFetchUrlRoot();
+	}
+
+
+	private void _rationalizeUnpin(IpfsFile cid)
+	{
+		if (!_pinCache.isPinned(cid))
+		{
+			try
+			{
+				_scheduler.unpin(cid).get();
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This is non-fatal but a concern.
+				_environment.logError("Failed to unpin " + cid + ": " + e.getLocalizedMessage());
+			}
+		}
 	}
 }
