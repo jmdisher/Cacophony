@@ -8,6 +8,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -25,7 +27,7 @@ public class TestHtmlOutputCommand
 	@Test
 	public void testWithoutChannel() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		File parentDirectory = FOLDER.newFolder();
 		HtmlOutputCommand command = new HtmlOutputCommand(new File(parentDirectory, "output"));
@@ -41,7 +43,7 @@ public class TestHtmlOutputCommand
 	@Test
 	public void testWithBasicChannel() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		CreateChannelCommand createCommand = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
 		user1.runCommand(null, createCommand);
 		
@@ -67,7 +69,7 @@ public class TestHtmlOutputCommand
 	public void testWithLocalData() throws Throwable
 	{
 		// Create the single user.
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		CreateChannelCommand createCommand = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
 		user1.runCommand(null, createCommand);
 		
@@ -108,7 +110,7 @@ public class TestHtmlOutputCommand
 	public void testWithPartialElements() throws Throwable
 	{
 		// Create the single user.
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		CreateChannelCommand createCommand = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
 		user1.runCommand(null, createCommand);
 		

@@ -27,11 +27,6 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class MockUserNode
 {
-	public static void connectNodes(MockUserNode one, MockUserNode two)
-	{
-		MockSingleNode.connectPeers(one._sharedConnection, two._sharedConnection);
-	}
-
 	private static final String IPFS_HOST = "ipfsHost";
 
 	private final MockSingleNode _sharedConnection;
@@ -39,14 +34,10 @@ public class MockUserNode
 	private final MockConnectionFactory _factory;
 	private final StandardEnvironment _executor;
 
-	public MockUserNode(String keyName, IpfsKey key, MockUserNode upstreamUserNode)
+	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node)
 	{
-		_sharedConnection = new MockSingleNode();
+		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
-		if (null != upstreamUserNode)
-		{
-			MockSingleNode.connectPeers(_sharedConnection, upstreamUserNode._sharedConnection);
-		}
 		_fileSystem = new MemoryConfigFileSystem();
 		_factory = new MockConnectionFactory(_sharedConnection);
 		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, true);

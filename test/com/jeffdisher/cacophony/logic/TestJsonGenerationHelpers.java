@@ -29,6 +29,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -92,7 +93,8 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testBuildFolloweeCacheEmpty() throws Throwable
 	{
-		MockSingleNode remoteConnection = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		
@@ -120,7 +122,8 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testBuildFolloweeCacheWithEntries() throws Throwable
 	{
-		MockSingleNode remoteConnection = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
 		

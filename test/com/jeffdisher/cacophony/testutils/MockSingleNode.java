@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -45,17 +44,21 @@ public class MockSingleNode implements IConnection
 		return IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
 	}
 
-	public static void connectPeers(MockSingleNode one, MockSingleNode two)
+
+	private final Map<String, IpfsKey> _keys;
+	private final Map<IpfsKey, IpfsFile> _publications;
+	private final Map<IpfsFile, byte[]> _data;
+	private final MockSwarm _swarm;
+
+	public MockSingleNode(MockSwarm swarm)
 	{
-		one._peers.add(two);
-		two._peers.add(one);
+		_keys = new HashMap<>();
+		_publications = new HashMap<>();
+		_data = new HashMap<>();
+		_swarm = swarm;
+		
+		_swarm.registerInSwarm(this);
 	}
-
-
-	private final Map<String, IpfsKey> _keys = new HashMap<>();
-	private final Map<IpfsKey, IpfsFile> _publications = new HashMap<>();
-	private final Map<IpfsFile, byte[]> _data = new HashMap<>();
-	private final List<MockSingleNode> _peers = new ArrayList<>();
 
 	public void addNewKey(String keyName, IpfsKey key)
 	{
@@ -113,8 +116,7 @@ public class MockSingleNode implements IConnection
 	@Override
 	public byte[] loadData(IpfsFile file) throws IpfsConnectionException
 	{
-		byte[] data = _networkLoadData(file);
-		return data;
+		return _networkLoadData(file);
 	}
 
 	@Override
@@ -128,16 +130,13 @@ public class MockSingleNode implements IConnection
 	@Override
 	public IpfsFile resolve(IpfsKey key) throws IpfsConnectionException
 	{
-		IpfsFile file = _publications.get(key);
-		if (null == file)
+		IpfsFile file = null;
+		for (MockSingleNode node : _swarm.getNodes())
 		{
-			for (MockSingleNode node : _peers)
+			file = node._singleNodeResolve(key);
+			if (null != file)
 			{
-				file = node._publications.get(key);
-				if (null != file)
-				{
-					break;
-				}
+				break;
 			}
 		}
 		return file;
@@ -211,24 +210,25 @@ public class MockSingleNode implements IConnection
 
 	private byte[] _networkLoadData(IpfsFile file)
 	{
-		// We need to check both ourselves and our peers.
-		byte[] data = _localLoadData(file);
-		if (null == data)
+		byte[] data = null;
+		for (MockSingleNode node : _swarm.getNodes())
 		{
-			for (MockSingleNode node : _peers)
+			data = node._singleNodeLoadData(file);
+			if (null != data)
 			{
-				data = node._localLoadData(file);
-				if (null != data)
-				{
-					break;
-				}
+				break;
 			}
 		}
 		return data;
 	}
 
-	private byte[] _localLoadData(IpfsFile file)
+	private byte[] _singleNodeLoadData(IpfsFile file)
 	{
 		return _data.get(file);
+	}
+
+	private IpfsFile _singleNodeResolve(IpfsKey key) throws IpfsConnectionException
+	{
+		return _publications.get(key);
 	}
 }

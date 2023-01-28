@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -40,7 +41,7 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -63,8 +64,9 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user1);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -85,10 +87,10 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
-		MockUserNode.connectNodes(user, user2);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -121,10 +123,10 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
-		MockUserNode.connectNodes(user, user2);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -184,10 +186,10 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
-		MockUserNode.connectNodes(user, user2);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -243,10 +245,10 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, user2);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user3);
-		MockUserNode.connectNodes(user, user2);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -304,8 +306,9 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user2);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -341,9 +344,9 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, null);
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, user2);
-		MockUserNode.connectNodes(user, user2);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));

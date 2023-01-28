@@ -3,6 +3,8 @@ package com.jeffdisher.cacophony.commands;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -19,7 +21,7 @@ public class TestRepublishCommand
 	{
 		RepublishCommand command = new RepublishCommand();
 		
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));

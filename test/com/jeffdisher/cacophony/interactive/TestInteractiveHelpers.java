@@ -29,6 +29,7 @@ import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -213,7 +214,8 @@ public class TestInteractiveHelpers
 	{
 		// Make sure that the directory doesn't exist.
 		IConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "sub"));
-		MockSingleNode connection = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
 		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, true);
@@ -346,7 +348,8 @@ public class TestInteractiveHelpers
 	{
 		// Make sure that the directory doesn't exist.
 		IConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "sub"));
-		MockSingleNode connection = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
 		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, true);

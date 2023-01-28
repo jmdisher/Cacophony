@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -43,13 +44,14 @@ public class TestFollowUpdates
 	public void testFirstFetchOneElement() throws Throwable
 	{
 		// Node 1.
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm));
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, user1);
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -101,13 +103,14 @@ public class TestFollowUpdates
 	public void testStartStopFollow() throws Throwable
 	{
 		// Node 1.
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm));
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, user1);
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -163,13 +166,14 @@ public class TestFollowUpdates
 	public void testFetchMultipleSizes() throws Throwable
 	{
 		// Node 1.
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, null);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm));
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, user1);
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());

@@ -4,6 +4,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -17,7 +19,7 @@ public class TestSetGlobalPrefsCommand
 	@Test
 	public void testSetPrefs() throws Throwable
 	{
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));

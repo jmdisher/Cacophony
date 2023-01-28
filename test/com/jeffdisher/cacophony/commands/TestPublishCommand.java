@@ -14,6 +14,8 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -58,7 +60,7 @@ public class TestPublishCommand
 		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
 		PublishCommand command = new PublishCommand(name, "description", discussionUrl, elements);
 		
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, null);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));

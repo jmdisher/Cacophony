@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -34,8 +35,9 @@ public class TestCacheSaturation
 	@Test
 	public void testIncrementalAddingOneFollowee() throws Throwable
 	{
-		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
-		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
+		MockSwarm swarm = new MockSwarm();
+		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, swarm);
+		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, swarm);
 		
 		user0.createChannel(0);
 		user1.createChannel(1);
@@ -71,8 +73,9 @@ public class TestCacheSaturation
 	@Test
 	public void testIncrementalSaturationOneFollowee() throws Throwable
 	{
-		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
-		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
+		MockSwarm swarm = new MockSwarm();
+		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, swarm);
+		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, swarm);
 		
 		user0.createChannel(0);
 		user1.createChannel(1);
@@ -109,8 +112,9 @@ public class TestCacheSaturation
 	@Test
 	public void testInitialSaturationOneFollowee() throws Throwable
 	{
-		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, null);
-		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, user0);
+		MockSwarm swarm = new MockSwarm();
+		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, swarm);
+		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, swarm);
 		
 		user0.createChannel(0);
 		user1.createChannel(1);
@@ -139,12 +143,11 @@ public class TestCacheSaturation
 		private final IpfsKey _publicKey;
 		private final MockUserNode _user;
 		
-		public User(String keyName, IpfsKey publicKey, User upstreamUser)
+		public User(String keyName, IpfsKey publicKey, MockSwarm swarm)
 		{
-			MockUserNode peer = (null != upstreamUser) ? upstreamUser._user : null;
 			_keyName = keyName;
 			_publicKey = publicKey;
-			_user = new MockUserNode(keyName, publicKey, peer);
+			_user = new MockUserNode(keyName, publicKey, new MockSingleNode(swarm));
 		}
 		
 		public void createChannel(int userNumber) throws Throwable

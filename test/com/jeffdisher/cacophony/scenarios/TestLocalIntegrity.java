@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -34,7 +35,8 @@ public class TestLocalIntegrity
 	@Test
 	public void testInitialCreation() throws Throwable
 	{
-		MockSingleNode node = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
 		
@@ -53,7 +55,8 @@ public class TestLocalIntegrity
 	@Test
 	public void testPublishAndRemove() throws Throwable
 	{
-		MockSingleNode node = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
 		

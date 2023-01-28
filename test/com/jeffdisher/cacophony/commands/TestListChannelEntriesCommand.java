@@ -8,6 +8,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
@@ -25,7 +27,7 @@ public class TestListChannelEntriesCommand
 	@Test
 	public void testWithAndWithoutKey() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, null);
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -49,8 +51,9 @@ public class TestListChannelEntriesCommand
 	@Test
 	public void testCheckingOtherUser() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, null);
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, user1);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create the channels.
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
@@ -65,8 +68,9 @@ public class TestListChannelEntriesCommand
 	@Test
 	public void testNotCachedEntry() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, null);
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, user1);
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create the channels.
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));

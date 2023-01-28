@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -37,8 +38,9 @@ public class TestStartFollowingCommand
 	@Test
 	public void testUsage() throws Throwable
 	{
-		MockSingleNode remoteConnection = new MockSingleNode();
-		MockSingleNode sharedConnection = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode remoteConnection = new MockSingleNode(swarm);
+		MockSingleNode sharedConnection = new MockSingleNode(swarm);
 		_configureCluster(
 				new MockSingleNode[] { remoteConnection, sharedConnection}
 				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
@@ -89,8 +91,9 @@ public class TestStartFollowingCommand
 	@Test
 	public void testErrorSize() throws Throwable
 	{
-		MockSingleNode remoteConnection = new MockSingleNode();
-		MockSingleNode sharedConnection = new MockSingleNode();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode remoteConnection = new MockSingleNode(swarm);
+		MockSingleNode sharedConnection = new MockSingleNode(swarm);
 		_configureCluster(
 				new MockSingleNode[] { remoteConnection, sharedConnection}
 				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
@@ -140,7 +143,6 @@ public class TestStartFollowingCommand
 
 	private static void _configureCluster(MockSingleNode[] nodes, String[] keyNames, IpfsKey[] keys)
 	{
-		MockSingleNode.connectPeers(nodes[0], nodes[1]);
 		nodes[0].addNewKey(keyNames[0], keys[0]);
 		nodes[1].addNewKey(keyNames[1], keys[1]);
 	}
