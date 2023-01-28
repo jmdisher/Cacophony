@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -201,13 +202,25 @@ public class TestFolloweeData
 	@Test
 	public void listenForRefresh() throws Throwable
 	{
+		// The dispatcher is expected to lock-step execution, so we synchronize the call as a simple approach.
+		Consumer<Runnable> dispatcher = new Consumer<>() {
+			@Override
+			public void accept(Runnable arg0)
+			{
+				synchronized (this)
+				{
+					arg0.run();
+				}
+			}
+		};
+		
 		// We will run all callbacks inline so we will just use a map to observe the state.
 		Map<IpfsKey, Long> map = new HashMap<>();
 		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
 		
 		// Start with an existing followee to make sure it is observed in the map.
 		data.createNewFollowee(K1, F1, 1L);
-		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>((Runnable task) -> task.run());
+		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>(dispatcher);
 		connector.registerListener(new HandoffConnector.IHandoffListener<IpfsKey, Long>()
 		{
 			@Override

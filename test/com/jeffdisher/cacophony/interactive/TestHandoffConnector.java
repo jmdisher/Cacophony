@@ -14,7 +14,17 @@ import com.jeffdisher.cacophony.logic.HandoffConnector;
 
 public class TestHandoffConnector
 {
-	private static final Consumer<Runnable> DISPATCHER = (Runnable task) -> task.run();
+	// The dispatcher is expected to lock-step execution, so we synchronize the call as a simple approach.
+	private static final Consumer<Runnable> DISPATCHER = new Consumer<>() {
+		@Override
+		public void accept(Runnable arg0)
+		{
+			synchronized (this)
+			{
+				arg0.run();
+			}
+		}
+	};
 
 	@Test
 	public void testNoListener() throws Throwable

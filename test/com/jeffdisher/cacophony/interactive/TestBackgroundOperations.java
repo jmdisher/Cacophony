@@ -23,7 +23,17 @@ public class TestBackgroundOperations
 	private static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	private static final IpfsKey K3 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
-	private static final Consumer<Runnable> DISPATCHER = (Runnable task) -> task.run();
+	// The dispatcher is expected to lock-step execution, so we synchronize the call as a simple approach.
+	private static final Consumer<Runnable> DISPATCHER = new Consumer<>() {
+		@Override
+		public void accept(Runnable arg0)
+		{
+			synchronized (this)
+			{
+				arg0.run();
+			}
+		}
+	};
 
 	@Test
 	public void noOperations() throws Throwable
