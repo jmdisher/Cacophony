@@ -107,7 +107,9 @@ public class ConnectorDispatcher implements Consumer<Runnable>
 			}
 		}
 		Runnable toRun = null;
-		if (_keepRunning)
+		// We return a task even if we are shutting down, so long as it was already here, in order to make tests more deterministic.
+		// This may delay shutdown, slightly, but we will already fail to accept new Runnables after shut-down so this isn't big.
+		if (null != _nextTask)
 		{
 			toRun = _nextTask;
 			_nextTask = null;
