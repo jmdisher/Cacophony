@@ -155,4 +155,10 @@ public class StandardEnvironment implements IEnvironment
 	{
 		return _factory;
 	}
+
+	@Override
+	public long currentTimeMillis()
+	{
+		return System.currentTimeMillis();
+	}
 }

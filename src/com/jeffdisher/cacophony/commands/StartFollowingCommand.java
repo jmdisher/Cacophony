@@ -79,7 +79,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	private void _finish(IEnvironment environment, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
-		long lastPollMillis = System.currentTimeMillis();
+		long lastPollMillis = environment.currentTimeMillis();
 		refresher.finishRefresh(access, followees, lastPollMillis);
 	}
 }

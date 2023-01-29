@@ -68,7 +68,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 				try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
-					long lastPollMillis = System.currentTimeMillis();
+					long lastPollMillis = _environment.currentTimeMillis();
 					refresher.finishRefresh(access, followees, lastPollMillis);
 				}
 				finally

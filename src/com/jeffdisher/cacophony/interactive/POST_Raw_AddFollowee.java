@@ -64,7 +64,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 						: false
 				;
 				
-				long lastPollMillis = System.currentTimeMillis();
+				long lastPollMillis = _environment.currentTimeMillis();
 				try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();

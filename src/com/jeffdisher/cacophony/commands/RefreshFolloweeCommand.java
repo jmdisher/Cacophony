@@ -80,7 +80,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		
-		long lastPollMillis = System.currentTimeMillis();
+		long lastPollMillis = environment.currentTimeMillis();
 		refresher.finishRefresh(access, followees, lastPollMillis);
 	}
 }

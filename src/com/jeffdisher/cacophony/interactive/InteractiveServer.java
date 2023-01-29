@@ -174,7 +174,7 @@ public class InteractiveServer
 		
 		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, connectorsPerUser.get(ourPublicKey)));
 		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
-		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(manager));
+		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(environment, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
@@ -314,7 +314,7 @@ public class InteractiveServer
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					
-					long lastPollMillis = System.currentTimeMillis();
+					long lastPollMillis = environment.currentTimeMillis();
 					this.refresher.finishRefresh(access, followees, lastPollMillis);
 				}
 				catch (IpfsConnectionException e)

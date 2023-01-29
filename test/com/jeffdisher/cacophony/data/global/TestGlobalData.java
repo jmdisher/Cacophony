@@ -184,7 +184,7 @@ public class TestGlobalData {
 		record.setDescription("descriptoin");
 		record.setElements(array);
 		record.setPublisherKey("public key");
-		record.setPublishedSecondsUtc((int)(System.currentTimeMillis() / 1000));
+		record.setPublishedSecondsUtc(12345L);
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		StreamRecord didRead = GlobalData.deserializeRecord(rawRecord);
 		Assert.assertEquals("image", ((DataElement)(didRead.getElements().getElement().get(0))).getSpecial().value());

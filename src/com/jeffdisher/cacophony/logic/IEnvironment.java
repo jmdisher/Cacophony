@@ -65,4 +65,9 @@ public interface IEnvironment
 	 * @return The factory for creating new connections.
 	 */
 	IConnectionFactory getConnectionFactory();
+
+	/**
+	 * @return Milliseconds since the Unix Epoch.
+	 */
+	long currentTimeMillis();
 }
