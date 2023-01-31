@@ -138,11 +138,6 @@ public class InteractiveServer
 				}
 				return new RefreshWrapper(environment, refresher);
 			}
-			@Override
-			public long currentTimeMillis()
-			{
-				return System.currentTimeMillis();
-			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
 		// Load all the known followees into the background operations for background refresh.

@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.testutils.MockEnvironment;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -78,6 +79,7 @@ public class TestBackgroundOperations
 		back.requestPublish(F1);
 		ops.returnOn(F1, publish1);
 		publish1.success();
+		ops.waitForConsume();
 		back.requestPublish(F2);
 		ops.returnOn(F2, publish2);
 		publish2.success();
@@ -225,7 +227,7 @@ public class TestBackgroundOperations
 	@Test
 	public void sortingAssumptions() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		MockEnvironment env = new MockEnvironment();
 		// Just make sure that our understanding of the sorting Comparator is correct.
 		int didRun[] = new int[1];
 		TestOperations ops = new TestOperations();
@@ -275,7 +277,7 @@ public class TestBackgroundOperations
 		// Unfortunately, since this uses the actual monitor with a timed wait, we need to use some real delays for the test.
 		// While we could use an external monitor, it would complicate the code in the BackgroundOperations further, so we won't.
 		// The down-side to using this real delay should only be that the test could actually test nothing, if running too slowly (seems to not happen, in practice).
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		MockEnvironment env = new MockEnvironment();
 		// We will just use a single publish, and will repeat it, but it will always be left with success.
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
@@ -298,11 +300,10 @@ public class TestBackgroundOperations
 		ops.returnOn(F1, publish);
 		ops.waitForConsume();
 		
-		Thread.sleep(100);
+		// Allow time to progress - we are using 10 and 20 for the delays, so just skip it past that.
+		env.incrementTimeAndWaitForObservation(20L);
 		ops.returnOn(F1, publish);
 		ops.returnFolloweeOn(K1, refresher);
-		// Allow time to progress - we are using 10 and 20 for the delays, so just skip it past that.
-		ops.currentTimeMillis += 20L;
 		ops.waitForConsume();
 		
 		back.shutdownProcess();
@@ -318,7 +319,7 @@ public class TestBackgroundOperations
 	{
 		// Enqueue 2 followees, allow them both to refresh, then request a refresh for one of them and see that it
 		// happens immediately.
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		MockEnvironment env = new MockEnvironment();
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
 		
@@ -366,7 +367,7 @@ public class TestBackgroundOperations
 	@Test
 	public void addRemoveFollowee() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, false);
+		MockEnvironment env = new MockEnvironment();
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
 		
@@ -412,7 +413,6 @@ public class TestBackgroundOperations
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{
-		public long currentTimeMillis = 1000L;
 		private IpfsFile _match;
 		private FuturePublish _return;
 		private IpfsKey _expectedFolloweeKey;
@@ -448,11 +448,6 @@ public class TestBackgroundOperations
 			_refresher = null;
 			this.notifyAll();
 			return runnable;
-		}
-		@Override
-		public long currentTimeMillis()
-		{
-			return currentTimeMillis;
 		}
 		public synchronized void waitForConsume()
 		{

@@ -46,7 +46,7 @@ public class BackgroundOperations
 		_environment = environment;
 		_connector = connector;
 		_background = MiscHelpers.createThread(() -> {
-			RequestedOperation operation = _background_consumeNextOperation(operations.currentTimeMillis());
+			RequestedOperation operation = _background_consumeNextOperation(_environment.currentTimeMillis());
 			while (null != operation)
 			{
 				// If we have a publish operation, start that first, since that typically takes a long time.
@@ -75,7 +75,7 @@ public class BackgroundOperations
 					_connector.destroy(operation.publishNumber);
 					_environment.logToConsole("Background end publish: " + operation.publishTarget + ((null == error) ? " SUCCESS" : (" FAILED with " + error)));
 				}
-				operation = _background_consumeNextOperation(operations.currentTimeMillis());
+				operation = _background_consumeNextOperation(_environment.currentTimeMillis());
 			}
 		}, "Background Operations");
 		_republishIntervalMillis = republishIntervalMillis;
@@ -343,10 +343,6 @@ public class BackgroundOperations
 		 * @return The Runnable to perform the bulk of the refresh operation (cannot be null).
 		 */
 		Runnable startFolloweeRefresh(IpfsKey followeeKey);
-		/**
-		 * @return Milliseconds since the Unix Epoch.
-		 */
-		long currentTimeMillis();
 	}
 
 
