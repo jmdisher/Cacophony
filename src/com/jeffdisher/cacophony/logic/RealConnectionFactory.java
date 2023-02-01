@@ -17,6 +17,13 @@ public class RealConnectionFactory implements IConnectionFactory
 	// (this value isn't based on any solid science so it may change in the future).
 	private static final int LONG_READ_TIMEOUT_MILLIS = 30 * 60 * 1000;
 
+	private final Uploader _uploader;
+
+	public RealConnectionFactory(Uploader uploader)
+	{
+		_uploader = uploader;
+	}
+
 	@Override
 	public IConnection buildConnection(String ipfsHost) throws IpfsConnectionException
 	{
@@ -30,7 +37,7 @@ public class RealConnectionFactory implements IConnectionFactory
 			
 			MultiAddress addr = new MultiAddress(ipfsHost);
 			IPFS longWaitConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, LONG_READ_TIMEOUT_MILLIS, false);
-			return new IpfsConnection(defaultConnection, longWaitConnection, gatewayPort);
+			return new IpfsConnection(_uploader, defaultConnection, longWaitConnection, gatewayPort);
 		}
 		catch (IOException e)
 		{

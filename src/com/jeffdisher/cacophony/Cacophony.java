@@ -8,6 +8,7 @@ import java.nio.file.StandardOpenOption;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.Uploader;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -88,7 +89,17 @@ public class Cacophony {
 				File directory = _readCacophonyStorageDirectory();
 				// Enable verifications if the env var is set, at all.
 				boolean shouldEnableVerifications = (null != System.getenv(ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
-				StandardEnvironment executor = new StandardEnvironment(System.out, new RealConfigFileSystem(directory), new RealConnectionFactory(), shouldEnableVerifications);
+				Uploader uploader = new Uploader();
+				try
+				{
+					uploader.start();
+				}
+				catch (Exception e)
+				{
+					// We don't know how this would fail, here.
+					throw Assert.unexpected(e);
+				}
+				StandardEnvironment executor = new StandardEnvironment(System.out, new RealConfigFileSystem(directory), new RealConnectionFactory(uploader), shouldEnableVerifications);
 				// Make sure we get ownership of the lock file.
 				try (FileChannel lockFile = _lockFile(directory))
 				{
@@ -119,6 +130,15 @@ public class Cacophony {
 					System.exit(EXIT_SAFE_ERROR);
 				}
 				executor.shutdown();
+				try
+				{
+					uploader.stop();
+				}
+				catch (Exception e)
+				{
+					// We don't know how this would fail, here.
+					throw Assert.unexpected(e);
+				}
 			}
 			else
 			{

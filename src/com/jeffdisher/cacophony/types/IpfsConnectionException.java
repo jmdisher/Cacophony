@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.types;
 
-import java.io.IOException;
-
 
 /**
  * This exception is used when something unexpectedly bizarre happens with the IPFS connection.
@@ -14,7 +12,7 @@ public class IpfsConnectionException extends CacophonyException
 {
 	private static final long serialVersionUID = 1L;
 
-	public IpfsConnectionException(String action, Object context, IOException underlyingException)
+	public IpfsConnectionException(String action, Object context, Exception underlyingException)
 	{
 		super("IPFS Connection error while performing \"" + action + "\" with: " + context, underlyingException);
 	}

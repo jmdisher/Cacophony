@@ -8,6 +8,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -17,13 +19,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.api.IPFS;
 import io.ipfs.api.KeyInfo;
-import io.ipfs.api.MerkleNode;
-import io.ipfs.api.NamedStreamable;
-import io.ipfs.multihash.Multihash;
 
 
 public class IpfsConnection implements IConnection
 {
+	private final Uploader _uploader;
 	private final IPFS _defaultConnection;
 	private final IPFS _longWaitConnection;
 	private final int _gatewayPort;
@@ -33,12 +33,14 @@ public class IpfsConnection implements IConnection
 	 * Note that the underlying connections appear to be stateless, and so is this object, so concurrent connections are
 	 * safe and will function independently.
 	 * 
+	 * @param uploader The uploader to use for posting data streams to the IPFS.
 	 * @param defaultConnection The connection to use for most calls.
 	 * @param longWaitConnection The connection to use for slow calls (pin).
 	 * @param gatewayPort The port to use when building URLs to directly fetch a file from the IPFS daemon.
 	 */
-	public IpfsConnection(IPFS defaultConnection, IPFS longWaitConnection, int gatewayPort)
+	public IpfsConnection(Uploader uploader, IPFS defaultConnection, IPFS longWaitConnection, int gatewayPort)
 	{
+		_uploader = uploader;
 		_defaultConnection = defaultConnection;
 		_longWaitConnection = longWaitConnection;
 		_gatewayPort = gatewayPort;
@@ -66,21 +68,21 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			NamedStreamable.InputStreamWrapper wrapper = new NamedStreamable.InputStreamWrapper(dataStream);
-			
-			List<MerkleNode> nodes = _defaultConnection.add(wrapper);
-			// Even with larger files, this only returns a single element, so it isn't obvious why this is a list.
-			Assert.assertTrue(1 == nodes.size());
-			Multihash hash = nodes.get(0).hash;
-			
-			return new IpfsFile(hash);
+			return _uploader.uploadFileInline(_defaultConnection.host, _defaultConnection.port, dataStream);
 		}
-		catch (RuntimeException e)
+		catch (InterruptedException e)
 		{
-			throw _handleIpfsRuntimeException("store", "stream", e);
+			// We don't use interruption on common threads.
+			throw Assert.unexpected(e);
 		}
-		catch (IOException e)
+		catch (TimeoutException e)
 		{
+			// We will interpret this as an IPFS exception (since a network timeout would seem appropriate).
+			throw new IpfsConnectionException("store", "stream", e);
+		}
+		catch (ExecutionException e)
+		{
+			// We will interpret this as an IPFS exception since it isn't obvious why this happens (docs are poor).
 			throw new IpfsConnectionException("store", "stream", e);
 		}
 	}

@@ -236,6 +236,12 @@ wait $STATUS_PID
 wait $FOLLOWEE_PID
 wait $ENTRIES_PID
 
+echo "Check that our upload utility can handle large uploads..."
+# Create a 10 MiB file and upload it with an 8 MiB heap.
+dd if=/dev/zero of=/tmp/zero bs=1024 count=10240 &> /dev/null
+HASH=$(cat /tmp/zero | java -Xmx8m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.StreamUploader /ip4/127.0.0.1/tcp/5001)
+requireSubstring "$HASH" "QmZ34B7UQGcVB7Fp2ZVZnVmK2DgNs9rXTsXSQ66b5cAwYW"
+
 kill $PID1
 kill $PID2
 
