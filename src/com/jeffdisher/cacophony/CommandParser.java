@@ -39,7 +39,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class CommandParser
 {
-	public static final String ENV_VAR_CACOPHONY_KEY_NAME = "CACOPHONY_KEY_NAME";
 	public static final String DEFAULT_KEY_NAME = "Cacophony";
 
 	@java.lang.FunctionalInterface
@@ -79,7 +78,7 @@ public class CommandParser
 		CREATE_NEW_CHANNEL(true, "--createNewChannel", new String[] {"--ipfs"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String ipfs = required[0];
-			String keyName = System.getenv(ENV_VAR_CACOPHONY_KEY_NAME);
+			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
 			if (null == keyName)
 			{
 				keyName = DEFAULT_KEY_NAME;

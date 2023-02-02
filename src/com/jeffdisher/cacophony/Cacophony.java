@@ -19,9 +19,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
 public class Cacophony {
-	public static final String ENV_VAR_CACOPHONY_STORAGE = "CACOPHONY_STORAGE";
-	public static final String ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS = "CACOPHONY_ENABLE_VERIFICATIONS";
-
 	public static final String DEFAULT_STORAGE_DIRECTORY_NAME = ".cacophony";
 	// We use a lockfile with a name based on the config directory name.  Note that it can't be inside the directory
 	// since it may not exist yet at this level.  This has the side-effect of protecting against concurrent creation.
@@ -88,7 +85,7 @@ public class Cacophony {
 			{
 				File directory = _readCacophonyStorageDirectory();
 				// Enable verifications if the env var is set, at all.
-				boolean shouldEnableVerifications = (null != System.getenv(ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
+				boolean shouldEnableVerifications = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
 				Uploader uploader = new Uploader();
 				try
 				{
@@ -164,7 +161,7 @@ public class Cacophony {
 	{
 		// Note that we default to "~/.cacophony" unless they provide the CACOPHONY_STORAGE environment variable.
 		File storageDirectory = null;
-		String envVarStorage = System.getenv(ENV_VAR_CACOPHONY_STORAGE);
+		String envVarStorage = System.getenv(EnvVars.ENV_VAR_CACOPHONY_STORAGE);
 		if (null != envVarStorage)
 		{
 			storageDirectory = new File(envVarStorage);
