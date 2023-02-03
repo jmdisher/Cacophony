@@ -556,7 +556,7 @@ public class TestFolloweeRefreshLogic
 		Assert.assertTrue(didFail);
 	}
 
-	private static IpfsFile _buildEmptyUser(Map<IpfsFile, byte[]> data)
+	private static IpfsFile _buildEmptyUser(Map<IpfsFile, byte[]> data) throws SizeConstraintException
 	{
 		// We build a fake user.
 		byte[] userPic = new byte[] {'a','b','c'};
@@ -573,7 +573,7 @@ public class TestFolloweeRefreshLogic
 		return indexHash;
 	}
 
-	private static IpfsFile _store_StreamRecommendations(Map<IpfsFile, byte[]> data)
+	private static IpfsFile _store_StreamRecommendations(Map<IpfsFile, byte[]> data) throws SizeConstraintException
 	{
 		StreamRecommendations recommendations = new StreamRecommendations();
 		byte[] serialized = GlobalData.serializeRecommendations(recommendations);
@@ -582,7 +582,7 @@ public class TestFolloweeRefreshLogic
 		return recommendationsHash;
 	}
 
-	private static IpfsFile _store_StreamDescription(Map<IpfsFile, byte[]> data, IpfsFile userPicFile)
+	private static IpfsFile _store_StreamDescription(Map<IpfsFile, byte[]> data, IpfsFile userPicFile) throws SizeConstraintException
 	{
 		byte[] serialized;
 		StreamDescription description = new StreamDescription();
@@ -595,7 +595,7 @@ public class TestFolloweeRefreshLogic
 		return descriptionHash;
 	}
 
-	private static IpfsFile _store_StreamRecords(Map<IpfsFile, byte[]> data)
+	private static IpfsFile _store_StreamRecords(Map<IpfsFile, byte[]> data) throws SizeConstraintException
 	{
 		byte[] serialized;
 		StreamRecords records = new StreamRecords();
@@ -605,7 +605,7 @@ public class TestFolloweeRefreshLogic
 		return recordsHash;
 	}
 
-	private static IpfsFile _store_StreamIndex(Map<IpfsFile, byte[]> data, IpfsFile recommendationsHash, IpfsFile descriptionHash, IpfsFile recordsHash)
+	private static IpfsFile _store_StreamIndex(Map<IpfsFile, byte[]> data, IpfsFile recommendationsHash, IpfsFile descriptionHash, IpfsFile recordsHash) throws SizeConstraintException
 	{
 		byte[] serialized;
 		StreamIndex index = new StreamIndex();
@@ -619,7 +619,7 @@ public class TestFolloweeRefreshLogic
 		return indexHash;
 	}
 
-	private static IpfsFile _storeRecord(Map<IpfsFile, byte[]> data, String name, byte[] thumbnail, byte[] video)
+	private static IpfsFile _storeRecord(Map<IpfsFile, byte[]> data, String name, byte[] thumbnail, byte[] video) throws SizeConstraintException
 	{
 		// Create the record.
 		StreamRecord record = new StreamRecord();
@@ -656,7 +656,7 @@ public class TestFolloweeRefreshLogic
 		return recordHash;
 	}
 
-	private static IpfsFile _addElementToStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash) throws FailedDeserializationException
+	private static IpfsFile _addElementToStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash) throws FailedDeserializationException, SizeConstraintException
 	{
 		// Read the existing stream.
 		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));
@@ -676,7 +676,7 @@ public class TestFolloweeRefreshLogic
 		return indexHash;
 	}
 
-	private static IpfsFile _removeElementFromStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash) throws FailedDeserializationException
+	private static IpfsFile _removeElementFromStream(Map<IpfsFile, byte[]> data, IpfsFile indexHash, IpfsFile recordHash) throws FailedDeserializationException, SizeConstraintException
 	{
 		// Read the existing stream.
 		StreamIndex index = GlobalData.deserializeIndex(data.get(indexHash));

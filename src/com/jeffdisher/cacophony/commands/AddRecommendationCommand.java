@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -32,7 +33,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, FailedDeserializationException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
 	{
 		ChannelModifier modifier = new ChannelModifier(access);
 		

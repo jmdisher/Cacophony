@@ -33,6 +33,7 @@ import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -309,7 +310,17 @@ public class StandardAccess implements IWritingAccess
 	public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _readWrite);
-		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(GlobalData.serializeIndex(streamIndex)));
+		byte[] serializedIndex;
+		try
+		{
+			serializedIndex = GlobalData.serializeIndex(streamIndex);
+		}
+		catch (SizeConstraintException e)
+		{
+			// We created this as well-formed so it can't be this large.
+			throw Assert.unexpected(e);
+		}
+		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(serializedIndex));
 		IpfsFile hash = save.get();
 		_pinCache.addRef(hash);
 		_channelData.setLastPublishedIndex(hash);

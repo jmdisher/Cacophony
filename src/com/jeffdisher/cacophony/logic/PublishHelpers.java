@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -40,6 +41,7 @@ public class PublishHelpers
 	 * @return The hash of the new index.
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 * @throws FailedDeserializationException We failed to deserialized some of the loaded data.
+	 * @throws SizeConstraintException The meta-data tree serialized to be too large to store.
 	 */
 	public static IpfsFile uploadFileAndUpdateTracking(IEnvironment environment
 			, IWritingAccess access
@@ -48,7 +50,7 @@ public class PublishHelpers
 			, String discussionUrl
 			, PublishElement[] elements
 			, IpfsFile[] outRecordCid
-	) throws IpfsConnectionException, FailedDeserializationException
+	) throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
 	{
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = access.getPublicKey();

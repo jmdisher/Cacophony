@@ -33,6 +33,7 @@ import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -164,7 +165,7 @@ public class TestJsonGenerationHelpers
 	}
 
 
-	private static IpfsFile _storeNewIndex(IWritingAccess access, IpfsFile record1, IpfsFile record2, boolean shouldStoreAsIndex) throws IpfsConnectionException
+	private static IpfsFile _storeNewIndex(IWritingAccess access, IpfsFile record1, IpfsFile record2, boolean shouldStoreAsIndex) throws IpfsConnectionException, SizeConstraintException
 	{
 		StreamRecords records = new StreamRecords();
 		if (null != record1)
@@ -209,7 +210,7 @@ public class TestJsonGenerationHelpers
 		return indexHash;
 	}
 
-	private static IpfsFile _storeEntry(IWritingAccess access, String name, IpfsKey publisher) throws IpfsConnectionException
+	private static IpfsFile _storeEntry(IWritingAccess access, String name, IpfsKey publisher) throws IpfsConnectionException, SizeConstraintException
 	{
 		StreamRecord record = new StreamRecord();
 		record.setName(name);

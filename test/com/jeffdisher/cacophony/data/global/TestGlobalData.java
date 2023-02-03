@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.data.global;
 
-import java.io.IOException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,11 +12,14 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public class TestGlobalData {
 	@Test
-	public void testIndex1() throws IOException {
+	public void testIndex1() throws Throwable
+	{
 		StreamIndex index = new StreamIndex();
 		index.setDescription("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		index.setRecommendations("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
@@ -44,7 +45,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testRecords1() throws IOException {
+	public void testRecords1() throws Throwable
+	{
 		StreamRecords data = new StreamRecords();
 		data.getRecord().add("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 		byte[] serialized = GlobalData.serializeRecords(data);
@@ -67,7 +69,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testRecord1() throws IOException {
+	public void testRecord1() throws Throwable
+	{
 		StreamRecord record = new StreamRecord();
 		record.setDiscussion("URL");
 		record.setPublisherKey("public key goes here");
@@ -120,7 +123,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testDescription1() throws IOException {
+	public void testDescription1() throws Throwable
+	{
 		StreamDescription data = new StreamDescription();
 		data.setDescription("description");
 		data.setName("name");
@@ -149,7 +153,8 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testRecommendations1() throws IOException {
+	public void testRecommendations1() throws Throwable
+	{
 		StreamRecommendations data = new StreamRecommendations();
 		data.getUser().add("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 		byte[] serialized = GlobalData.serializeRecommendations(data);
@@ -171,7 +176,7 @@ public class TestGlobalData {
 	}
 
 	@Test
-	public void testPublishWithImage() throws FailedDeserializationException
+	public void testPublishWithImage() throws Throwable
 	{
 		DataElement element = new DataElement();
 		element.setCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
@@ -188,5 +193,33 @@ public class TestGlobalData {
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		StreamRecord didRead = GlobalData.deserializeRecord(rawRecord);
 		Assert.assertEquals("image", ((DataElement)(didRead.getElements().getElement().get(0))).getSpecial().value());
+	}
+
+	@Test
+	public void testPublishTooBig() throws Throwable
+	{
+		DataArray array = new DataArray();
+		StreamRecord record = new StreamRecord();
+		record.setName("name");
+		byte[] rawData = new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1];
+		for (int i = 0; i < SizeLimits.MAX_RECORD_SIZE_BYTES; ++i)
+		{
+			rawData[i] = 'X';
+		}
+		record.setDescription(new String(rawData));
+		record.setElements(array);
+		record.setPublisherKey("public key");
+		record.setPublishedSecondsUtc(12345L);
+		boolean didFail = false;
+		try
+		{
+			GlobalData.serializeRecord(record);
+			Assert.fail();
+		}
+		catch (SizeConstraintException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
 	}
 }

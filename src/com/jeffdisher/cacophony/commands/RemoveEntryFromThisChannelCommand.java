@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -75,7 +76,16 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		// Update the record list and stream index.
 		records.getRecord().remove(foundIndex);
-		byte[] rawRecords = GlobalData.serializeRecords(records);
+		byte[] rawRecords;
+		try
+		{
+			rawRecords = GlobalData.serializeRecords(records);
+		}
+		catch (SizeConstraintException e)
+		{
+			// We know that this can't fail here since we removed something after reading it.
+			throw Assert.unexpected(e);
+		}
 		IpfsFile newCid = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 		index.setRecords(newCid.toSafeString());
 		environment.logToConsole("Saving and publishing new index");

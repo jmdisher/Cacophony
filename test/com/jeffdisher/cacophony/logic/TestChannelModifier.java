@@ -34,6 +34,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 
 
 public class TestChannelModifier
@@ -329,7 +330,16 @@ public class TestChannelModifier
 		@Override
 		public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
 		{
-			byte[] data = GlobalData.serializeIndex(streamIndex);
+			byte[] data;
+			try
+			{
+				data = GlobalData.serializeIndex(streamIndex);
+			}
+			catch (SizeConstraintException e)
+			{
+				// We created this as well-formed so it can't be this large.
+				throw new AssertionError(e);
+			}
 			IpfsFile file = MockSingleNode.generateHash(data);
 			this.data.put(file, data);
 			int count = this.pins.containsKey(file) ? this.pins.get(file).intValue() : 0;

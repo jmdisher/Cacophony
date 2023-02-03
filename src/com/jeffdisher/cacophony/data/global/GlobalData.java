@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -49,7 +50,7 @@ public class GlobalData {
 		}
 	}
 
-	public static byte[] serializeIndex(StreamIndex index)
+	public static byte[] serializeIndex(StreamIndex index) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != index);
 		byte[] result = null;
@@ -67,7 +68,10 @@ public class GlobalData {
 		}
 		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
 		// spec needs to be updated to a new version, for everyone.
-		Assert.assertTrue(result.length <= SizeLimits.MAX_INDEX_SIZE_BYTES);
+		if (result.length > SizeLimits.MAX_INDEX_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("StreamIndex", result.length, SizeLimits.MAX_INDEX_SIZE_BYTES);
+		}
 		return result;
 	}
 
@@ -88,7 +92,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static byte[] serializeRecords(StreamRecords records)
+	public static byte[] serializeRecords(StreamRecords records) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != records);
 		byte[] result = null;
@@ -106,7 +110,10 @@ public class GlobalData {
 		}
 		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
 		// spec needs to be updated to a new version, for everyone.
-		Assert.assertTrue(result.length <= SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+		if (result.length > SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("StreamRecords", result.length, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+		}
 		return result;
 	}
 
@@ -127,7 +134,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static byte[] serializeRecord(StreamRecord record)
+	public static byte[] serializeRecord(StreamRecord record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
 		byte[] result = null;
@@ -145,7 +152,10 @@ public class GlobalData {
 		}
 		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
 		// spec needs to be updated to a new version, for everyone.
-		Assert.assertTrue(result.length <= SizeLimits.MAX_RECORD_SIZE_BYTES);
+		if (result.length > SizeLimits.MAX_RECORD_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("StreamRecord", result.length, SizeLimits.MAX_RECORD_SIZE_BYTES);
+		}
 		return result;
 	}
 
@@ -166,7 +176,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static byte[] serializeDescription(StreamDescription record)
+	public static byte[] serializeDescription(StreamDescription record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
 		byte[] result = null;
@@ -184,7 +194,10 @@ public class GlobalData {
 		}
 		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
 		// spec needs to be updated to a new version, for everyone.
-		Assert.assertTrue(result.length <= SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
+		if (result.length > SizeLimits.MAX_DESCRIPTION_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("StreamDescription", result.length, SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
+		}
 		return result;
 	}
 
@@ -205,7 +218,7 @@ public class GlobalData {
 		return result;
 	}
 
-	public static byte[] serializeRecommendations(StreamRecommendations record)
+	public static byte[] serializeRecommendations(StreamRecommendations record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
 		byte[] result = null;
@@ -223,7 +236,10 @@ public class GlobalData {
 		}
 		// If we exceed the size, we want to fail out since this means there is something wrong with the data or the
 		// spec needs to be updated to a new version, for everyone.
-		Assert.assertTrue(result.length <= SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+		if (result.length > SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("StreamRecommendations", result.length, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+		}
 		return result;
 	}
 

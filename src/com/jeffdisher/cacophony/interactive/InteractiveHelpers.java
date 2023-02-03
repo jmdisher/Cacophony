@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
@@ -182,7 +183,13 @@ public class InteractiveHelpers
 		}
 		catch (FailedDeserializationException e)
 		{
-			System.err.println("Publish command failed with due to a failed deserialization: " + e.getLocalizedMessage());
+			System.err.println("Publish command failed due to a failed deserialization: " + e.getLocalizedMessage());
+			e.printStackTrace();
+			throw Assert.unexpected(e);
+		}
+		catch (SizeConstraintException e)
+		{
+			System.err.println("Publish command failed due to an element being too large to store: " + e.getLocalizedMessage());
 			e.printStackTrace();
 			throw Assert.unexpected(e);
 		}

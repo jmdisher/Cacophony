@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -98,8 +99,9 @@ public class ChannelModifier
 	 * 
 	 * @return The new root of the channel structure (CID of the StreamIndex).
 	 * @throws IpfsConnectionException If there was a problem contacting the server.
+	 * @throws SizeConstraintException One of the elements in the tree serialized to be too large to store.
 	 */
-	public IpfsFile commitNewRoot() throws IpfsConnectionException
+	public IpfsFile commitNewRoot() throws IpfsConnectionException, SizeConstraintException
 	{
 		// For us to get this far, we must have at least loaded something.
 		Assert.assertTrue(null != _index);
@@ -149,7 +151,7 @@ public class ChannelModifier
 	}
 
 
-	private IpfsFile _writeUpdatedRecommendations(List<IpfsFile> toUnpin) throws IpfsConnectionException
+	private IpfsFile _writeUpdatedRecommendations(List<IpfsFile> toUnpin) throws IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile cid = null;
 		if ((null != _recommendations) && _recommendations.needsUpdate)
@@ -162,7 +164,7 @@ public class ChannelModifier
 		return cid;
 	}
 
-	private IpfsFile _writeUpdatedRecords(List<IpfsFile> toUnpin) throws IpfsConnectionException
+	private IpfsFile _writeUpdatedRecords(List<IpfsFile> toUnpin) throws IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile cid = null;
 		if ((null != _records) && _records.needsUpdate)
@@ -175,7 +177,7 @@ public class ChannelModifier
 		return cid;
 	}
 
-	private IpfsFile _writeUpdatedDescription(List<IpfsFile> toUnpin) throws IpfsConnectionException
+	private IpfsFile _writeUpdatedDescription(List<IpfsFile> toUnpin) throws IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile cid = null;
 		if ((null != _description) && _description.needsUpdate)
