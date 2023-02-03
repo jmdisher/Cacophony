@@ -45,6 +45,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			if (null != lastRoot)
 			{
 				environment.logToConsole("Following " + _channelPublicKey);
+				rootToLoad = lastRoot;
 				isCached = true;
 			}
 			else

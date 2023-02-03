@@ -71,6 +71,9 @@ requireSubstring "$LIST" "Following: $CANONICAL1"
 LIST=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$CANONICAL1")
 requireSubstring "$LIST" "Followee has 0 elements"
 
+DESCRIPTION_FOLLOWER=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
+requireSubstring "$DESCRIPTION_FOLLOWER" "-name: Unnamed"
+
 echo "Verify that the static HTML is generated"
 rm -rf "$STATIC2"
 CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --htmlOutput --directory "$STATIC2"
