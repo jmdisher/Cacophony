@@ -950,7 +950,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 				</div>
 				<div class="card card-body">
 					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
-					<textarea class="form-control" ng-model="selectedDraft.description" rows="4" maxlength="2000"></textarea><br />
+					Description (limited to 20000 characters):<br />
+					<textarea class="form-control" ng-model="selectedDraft.description" rows="12" maxlength="20000"></textarea><br />
 					Discussion URL: <button class="btn btn-primary" ng-click="selectedDraft.discussionUrl = ''" ng-show="null == selectedDraft.discussionUrl">Add Discussion URL</button>
 					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
 					<div class="btn-group" role="group">
