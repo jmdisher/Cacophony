@@ -38,7 +38,7 @@ public class MockUserNode
 	{
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
-		_fileSystem = new MemoryConfigFileSystem();
+		_fileSystem = new MemoryConfigFileSystem(null);
 		_factory = new MockConnectionFactory(_sharedConnection);
 		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, true);
 	}

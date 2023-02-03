@@ -16,7 +16,17 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class MemoryConfigFileSystem implements IConfigFileSystem
 {
+	private final File _draftsDirectoryOrNull;
 	private Map<String, byte[]> _data;
+
+	public MemoryConfigFileSystem(File draftsDirectoryOrNull)
+	{
+		_draftsDirectoryOrNull = draftsDirectoryOrNull;
+		if (null != _draftsDirectoryOrNull)
+		{
+			Assert.assertTrue(_draftsDirectoryOrNull.isDirectory());
+		}
+	}
 
 	@Override
 	public boolean createConfigDirectory()
@@ -81,7 +91,8 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	@Override
 	public File getDraftsTopLevelDirectory() throws IOException
 	{
-		// We don't call this in these tests.
-		throw Assert.unreachable();
+		// If we didn't give this a draft directory, we don't expect this method to be called.
+		Assert.assertTrue(null != _draftsDirectoryOrNull);
+		return _draftsDirectoryOrNull;
 	}
 }

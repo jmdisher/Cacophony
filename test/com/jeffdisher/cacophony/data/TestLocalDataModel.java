@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.data;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
@@ -12,7 +13,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
@@ -38,6 +41,9 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 public class TestLocalDataModel
 {
+	@ClassRule
+	public static TemporaryFolder FOLDER = new TemporaryFolder();
+
 	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
@@ -47,7 +53,7 @@ public class TestLocalDataModel
 	@Test
 	public void createAndReadEmpty() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		fileSystem.createConfigDirectory();
 		
 		LocalDataModel model = new LocalDataModel(fileSystem);
@@ -69,7 +75,7 @@ public class TestLocalDataModel
 	@Test
 	public void concurrentReaders() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		fileSystem.createConfigDirectory();
 		
 		// Create the model.
@@ -125,7 +131,7 @@ public class TestLocalDataModel
 	@Test
 	public void serializedWriters() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		fileSystem.createConfigDirectory();
 		
 		// Create the model.
@@ -199,7 +205,7 @@ public class TestLocalDataModel
 	@Test
 	public void basicOpcodeStream() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		fileSystem.createConfigDirectory();
 		
 		// Create the model with some minimal data.
@@ -224,7 +230,7 @@ public class TestLocalDataModel
 	@Test
 	public void fullOpcodeStream() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		fileSystem.createConfigDirectory();
 		
 		// Create the model with enough data to see positive opcode generated.
@@ -256,7 +262,7 @@ public class TestLocalDataModel
 	@Test
 	public void corruptData() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the directory with valid version but nothing else.
 		fileSystem.createConfigDirectory();
@@ -282,7 +288,7 @@ public class TestLocalDataModel
 	@Test
 	public void repairData() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the directory with valid version and index file but nothing else.
 		fileSystem.createConfigDirectory();
@@ -309,7 +315,7 @@ public class TestLocalDataModel
 	@Test
 	public void dataMigration() throws Throwable
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		fileSystem.createConfigDirectory();
 		
 		// Manually create the data, as it would appear in version 1, and make sure it migrates correctly.
@@ -370,6 +376,15 @@ public class TestLocalDataModel
 			Assert.assertNull(elt.leafHash());
 			Assert.assertEquals(3L, elt.combinedSizeBytes());
 		}
+	}
+
+	@Test
+	public void draftDirectory() throws Throwable
+	{
+		File input = FOLDER.newFolder();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(input);
+		File drafts = fileSystem.getDraftsTopLevelDirectory();
+		Assert.assertEquals(input, drafts);
 	}
 
 

@@ -96,7 +96,7 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), new MockConnectionFactory(remoteConnection), true);
 		
 		IpfsFile indexFile = null;
 		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
@@ -125,7 +125,7 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(remoteConnection), true);
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), new MockConnectionFactory(remoteConnection), true);
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;

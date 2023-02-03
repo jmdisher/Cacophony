@@ -83,7 +83,7 @@ public class DataDomain implements Closeable
 		them.addNewKey("key", theirKey);
 		MockConnectionFactory theirConnection = new MockConnectionFactory(them);
 		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
-				, new MemoryConfigFileSystem()
+				, new MemoryConfigFileSystem(null)
 				, theirConnection
 				, false
 		);
@@ -135,7 +135,7 @@ public class DataDomain implements Closeable
 		}
 		else
 		{
-			MemoryConfigFileSystem ourFileSystem = new MemoryConfigFileSystem();
+			MemoryConfigFileSystem ourFileSystem = new MemoryConfigFileSystem(null);
 			_uploaderOrNull = null;
 			MockSingleNode ourNode;
 			try

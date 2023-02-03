@@ -114,6 +114,6 @@ public class TestLocalIntegrity
 
 	private static IEnvironment _createSingleNode(IConnection serverData)
 	{
-		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(), new MockConnectionFactory(serverData), true);
+		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), new MockConnectionFactory(serverData), true);
 	}
 }
