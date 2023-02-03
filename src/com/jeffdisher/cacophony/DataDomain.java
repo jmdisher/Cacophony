@@ -44,9 +44,9 @@ public class DataDomain implements Closeable
 	public static DataDomain detectDataDomain()
 	{
 		// See if we are using the "fake" system (typically used in UI testing).
-		boolean shouldEnableFakeSystem = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM));
-		return shouldEnableFakeSystem
-				? _fakeDirectory()
+		String fakeDirectory = System.getenv(EnvVars.ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM);
+		return (null != fakeDirectory)
+				? _fakeDirectory(fakeDirectory)
 				: _realDirectory()
 		;
 	}
@@ -66,12 +66,14 @@ public class DataDomain implements Closeable
 			Assert.assertTrue(homeDirectory.exists());
 			storageDirectory = new File(homeDirectory, DEFAULT_STORAGE_DIRECTORY_NAME);
 		}
-		return new DataDomain(storageDirectory);
+		return new DataDomain(storageDirectory, null);
 	}
 
-	private static DataDomain _fakeDirectory()
+	private static DataDomain _fakeDirectory(String fakeDirectory)
 	{
-		return new DataDomain(null);
+		File directory = new File(fakeDirectory);
+		Assert.assertTrue(directory.isDirectory());
+		return new DataDomain(null, directory);
 	}
 
 	private static MockSingleNode _buildOurTestNode(MemoryConfigFileSystem ourFileSystem) throws CacophonyException
@@ -115,7 +117,7 @@ public class DataDomain implements Closeable
 	private final IConnectionFactory _connectionFactory;
 	private final IConfigFileSystem _fileSystem;
 
-	private DataDomain(File realDirectoryOrNull)
+	private DataDomain(File realDirectoryOrNull, File fakeDirectoryOrNull)
 	{
 		_realDirectoryOrNull = realDirectoryOrNull;
 		if (null != realDirectoryOrNull)
@@ -135,7 +137,8 @@ public class DataDomain implements Closeable
 		}
 		else
 		{
-			MemoryConfigFileSystem ourFileSystem = new MemoryConfigFileSystem(null);
+			Assert.assertTrue(null != fakeDirectoryOrNull);
+			MemoryConfigFileSystem ourFileSystem = new MemoryConfigFileSystem(fakeDirectoryOrNull);
 			_uploaderOrNull = null;
 			MockSingleNode ourNode;
 			try
