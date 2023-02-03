@@ -1,21 +1,39 @@
 package com.jeffdisher.cacophony;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 
+import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.StartFollowingCommand;
+import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
+import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.Uploader;
+import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
+import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
+/**
+ * This exists just as a way to abstract some of the details of how the storage directory is managed since
+ * ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM means that might be fully in-memory with a fake lock.
+ */
 public class DataDomain implements Closeable
 {
 	public static final String DEFAULT_STORAGE_DIRECTORY_NAME = ".cacophony";
@@ -25,7 +43,12 @@ public class DataDomain implements Closeable
 
 	public static DataDomain detectDataDomain()
 	{
-		return _realDirectory();
+		// See if we are using the "fake" system (typically used in UI testing).
+		boolean shouldEnableFakeSystem = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM));
+		return shouldEnableFakeSystem
+				? _fakeDirectory()
+				: _realDirectory()
+		;
 	}
 
 	private static DataDomain _realDirectory()
@@ -46,28 +69,87 @@ public class DataDomain implements Closeable
 		return new DataDomain(storageDirectory);
 	}
 
+	private static DataDomain _fakeDirectory()
+	{
+		return new DataDomain(null);
+	}
 
-	private final File _realDirectory;
-	private final Uploader _uploader;
+	private static MockSingleNode _buildOurTestNode(MemoryConfigFileSystem ourFileSystem) throws CacophonyException
+	{
+		// We will just make a basic system with 2 users.  This might expand in the future.
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode them = new MockSingleNode(swarm);
+		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
+		them.addNewKey("key", theirKey);
+		MockConnectionFactory theirConnection = new MockConnectionFactory(them);
+		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
+				, new MemoryConfigFileSystem()
+				, theirConnection
+				, false
+		);
+		new CreateChannelCommand("ipfs", "key").runInEnvironment(theirEnv);
+		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
+		new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
+		theirEnv.shutdown();
+		
+		MockSingleNode us = new MockSingleNode(swarm);
+		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
+		us.addNewKey("key", ourKey);
+		MockConnectionFactory ourConnection = new MockConnectionFactory(us);
+		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
+				, ourFileSystem
+				, ourConnection
+				, false
+		);
+		new CreateChannelCommand("ipfs", "key").runInEnvironment(ourEnv);
+		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
+		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
+		ourEnv.shutdown();
+		
+		return us;
+	}
+
+
+	private final File _realDirectoryOrNull;
+	private final Uploader _uploaderOrNull;
 	private final IConnectionFactory _connectionFactory;
 	private final IConfigFileSystem _fileSystem;
 
-	private DataDomain(File realDirectory)
+	private DataDomain(File realDirectoryOrNull)
 	{
-		Assert.assertTrue(null != realDirectory);
-		_realDirectory = realDirectory;
-		_uploader = new Uploader();
-		try
+		_realDirectoryOrNull = realDirectoryOrNull;
+		if (null != realDirectoryOrNull)
 		{
-			_uploader.start();
+			_uploaderOrNull = new Uploader();
+			try
+			{
+				_uploaderOrNull.start();
+			}
+			catch (Exception e)
+			{
+				// We don't know how this would fail, here.
+				throw Assert.unexpected(e);
+			}
+			_connectionFactory = new RealConnectionFactory(_uploaderOrNull);
+			_fileSystem = new RealConfigFileSystem(_realDirectoryOrNull);
 		}
-		catch (Exception e)
+		else
 		{
-			// We don't know how this would fail, here.
-			throw Assert.unexpected(e);
+			MemoryConfigFileSystem ourFileSystem = new MemoryConfigFileSystem();
+			_uploaderOrNull = null;
+			MockSingleNode ourNode;
+			try
+			{
+				ourNode = _buildOurTestNode(ourFileSystem);
+			}
+			catch (CacophonyException e)
+			{
+				// We don't expect this error when building test cluster.
+				throw Assert.unexpected(e);
+			}
+			_connectionFactory = new MockConnectionFactory(ourNode);
+			_fileSystem = ourFileSystem;
 		}
-		_connectionFactory = new RealConnectionFactory(_uploader);
-		_fileSystem = new RealConfigFileSystem(_realDirectory);
 	}
 
 	public IConnectionFactory getConnectionFactory()
@@ -82,21 +164,27 @@ public class DataDomain implements Closeable
 
 	public Lock lock() throws UsageException
 	{
-		FileChannel lockedChannel = _lockFile(_realDirectory);
+		FileChannel lockedChannel = (null != _realDirectoryOrNull)
+				? _lockFile(_realDirectoryOrNull)
+				: null
+		;
 		return new Lock(lockedChannel);
 	}
 
 	@Override
 	public void close()
 	{
-		try
+		if (null != _uploaderOrNull)
 		{
-			_uploader.stop();
-		}
-		catch (Exception e)
-		{
-			// We don't know how this would fail, here.
-			throw Assert.unexpected(e);
+			try
+			{
+				_uploaderOrNull.stop();
+			}
+			catch (Exception e)
+			{
+				// We don't know how this would fail, here.
+				throw Assert.unexpected(e);
+			}
 		}
 	}
 

@@ -22,4 +22,11 @@ public class EnvVars
 	 * The name of the key used for this user.  Defaults to "Cacophony" is not set.
 	 */
 	public static final String ENV_VAR_CACOPHONY_KEY_NAME = "CACOPHONY_KEY_NAME";
+
+	/**
+	 * Set to enable the in-memory "fake" IPFS network and local data store.  This is done to make certain kinds of
+	 * testing more reliable and lighter-weight.
+	 * When enabled, neither the real IPFS network nor the on-disk data store will be used.
+	 */
+	public static final String ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM = "CACOPHONY_ENABLE_FAKE_SYSTEM";
 }
