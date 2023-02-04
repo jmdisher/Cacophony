@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
+import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.CacophonyException;
 
@@ -20,7 +21,7 @@ public record CleanCacheCommand() implements ICommand
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			// First, we want to shrink the local cache.
-			CommandHelpers.shrinkCacheToFitInPrefs(environment, access, 1.0);
+			CommandHelpers.shrinkCacheToFitInPrefs(environment, access, ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION);
 			
 			// Even if that didn't do anything, we still want to request that the IPFS node GC.
 			access.requestIpfsGc();

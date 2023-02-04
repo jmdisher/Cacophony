@@ -4,16 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.Pair;
 
 
@@ -22,53 +18,6 @@ import com.jeffdisher.cacophony.utils.Pair;
  */
 public class CacheHelpers
 {
-	// We currently want to make sure the cache is at most 90% full before caching a new channel.
-	private static final double CACHE_MAX_MULTIPLIER_PRE_NEW_CHANNEL = 0.90;
-
-	public static void chooseAndFetchLeafSizes(INetworkScheduler scheduler, int videoEdgePixelMax, RawElementData element) throws IpfsConnectionException
-	{
-		// We will go through the elements, looking for the special image and the last, largest video element no larger than our resolution limit.
-		IpfsFile imageHash = null;
-		IpfsFile leafHash = null;
-		int biggestEdge = 0;
-		for (DataElement elt : element.record.getElements().getElement())
-		{
-			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-			if (null != elt.getSpecial())
-			{
-				Assert.assertTrue(null == imageHash);
-				imageHash = eltCid;
-			}
-			else if ((elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
-			{
-				biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
-				leafHash = eltCid;
-			}
-		}
-		if (null != imageHash)
-		{
-			element.thumbnailHash = imageHash;
-			element.thumbnailSizeFuture = scheduler.getSizeInBytes(imageHash);
-		}
-		if (null != leafHash)
-		{
-			element.leafHash = leafHash;
-			element.leafSizeFuture = scheduler.getSizeInBytes(leafHash);
-		}
-	}
-
-	/**
-	 * Returns a reduced cache size we should target to shrink down the stored data before we proceed to cache a new
-	 * channel.
-	 * 
-	 * @param prefs The GlobalPrefs object.
-	 * @return The reduced cache size, in bytes, we should target.
-	 */
-	public static long getTargetCacheSizeBeforeNewChannel(GlobalPrefs prefs)
-	{
-		return (long) (CACHE_MAX_MULTIPLIER_PRE_NEW_CHANNEL * (double)prefs.followCacheTargetBytes());
-	}
-
 	/**
 	 * Sums all the element data in the given followIndex.
 	 * 
