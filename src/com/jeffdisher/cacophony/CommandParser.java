@@ -227,10 +227,12 @@ public class CommandParser
 		{
 			return new GetGlobalPrefsCommand();
 		}),
-		RUN(true, "--run", new String[0], new String[] {"--overrideCommand", "--commandSelection"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		RUN(true, "--run", new String[0], new String[] {"--overrideCommand", "--commandSelection", "--port"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String overrideCommand = optional[0];
 			String commandSelection = optional[1];
+			// The default port is 8000.
+			int port = _parseAsInt(optional[2], 8000);
 			RunCommand.CommandSelectionMode mode = RunCommand.CommandSelectionMode.STRICT;
 			if (null != commandSelection)
 			{
@@ -245,7 +247,7 @@ public class CommandParser
 					throw new UsageException("--commandSelecton must be STRICT (default) or DANGEROUS");
 				}
 			}
-			return new RunCommand(overrideCommand, mode);
+			return new RunCommand(overrideCommand, mode, port);
 		}),
 		CLEAN_CACHE(true, "--cleanCache", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

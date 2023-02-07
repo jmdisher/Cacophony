@@ -65,18 +65,18 @@ LIST=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --listFollowee
 requireSubstring "$LIST" "Followee has 0 elements"
 
 echo "Start the interactive server, give it 5 seconds to bind the port, then verify we can load a page, and initialize the cookies and XSRF token..."
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --run &
+CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
 sleep 5
-INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8000/")
+INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8001/")
 requireSubstring "$INDEX" "Cacophony - Static Index"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/cookie
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/cookie
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Attach the status listener..."
 mkfifo "$STATUS_INPUT"
 mkfifo "$STATUS_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT" "$STATUS_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/backgroundStatus" "event_api" "$STATUS_INPUT" "$STATUS_OUTPUT" &
 STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$STATUS_OUTPUT" > /dev/null
@@ -84,12 +84,12 @@ cat "$STATUS_OUTPUT" > /dev/null
 echo "Attach the followee post listener..."
 mkfifo "$ENTRIES_INPUT"
 mkfifo "$ENTRIES_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC2" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/user/entries/$PUBLIC2" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
 ENTRIES_PID=$!
 cat "$ENTRIES_OUTPUT" > /dev/null
 
 echo "Request a refresh of user2 and wait for the event to show up in status, that it is complete, then also verify an empty stream..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/followee/refresh/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 while [ "$SAMPLE" != "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}" ]
@@ -100,13 +100,13 @@ done
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 
 echo "Attach the followee refresh WebSocket and verify followee state..."
 mkfifo "$FOLLOWEE_INPUT"
 mkfifo "$FOLLOWEE_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/followee/refreshTime" "event_api" "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT" &
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/refreshTime" "event_api" "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT" &
 FOLLOWEE_PID=$!
 cat "$FOLLOWEE_OUTPUT" > /dev/null
 SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
@@ -118,14 +118,14 @@ CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --publishToThisChanne
 checkPreviousCommand "publishToThisChannel"
 
 echo "Request a refresh of this user and wait for the event to show up in status, that it is complete, then also verify we see this element in the stream..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/followee/refresh/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\"Qm"
 
 echo "Verify that we see the refresh in the followee socket..."
@@ -139,16 +139,16 @@ echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
 
 echo "Test the add/remove of the followee..."
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/followees/$PUBLIC2"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8001/followees/$PUBLIC2"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 if [ "" != "$POST_LIST" ];
 then
 	exit 1
 fi
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/followees/$PUBLIC2"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC2")
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""
 SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_INPUT"
@@ -158,22 +158,22 @@ echo -n "-ACK" > "$FOLLOWEE_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
 
 echo "Check asking for information about users, including invalid keys..."
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/unknownUser/BOGUS")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/unknownUser/BOGUS")
 requireSubstring "$USER_INFO" "Invalid key: BOGUS"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/unknownUser/$PUBLIC2")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/unknownUser/$PUBLIC2")
 requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null}"
 
 echo "Check the manipulation of the recommended users"
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC1")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[]"
 # Add the other user.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8000/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/recommend/$PUBLIC2"
 checkPreviousCommand "add to recommended"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8000/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/recommend/$PUBLIC2"
 if [ $? != 22 ]; then
 	exit 1
 fi
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC1")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[\"$PUBLIC2\"]"
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
@@ -183,13 +183,13 @@ SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\""
 # Remove.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/recommend/$PUBLIC2"
 checkPreviousCommand "remove from recommended"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/recommend/$PUBLIC2"
 if [ $? != 22 ]; then
 	exit 1
 fi
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC1")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[]"
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
@@ -200,9 +200,9 @@ echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\""
 
 echo "Update description..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8000/userInfo/info"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8001/userInfo/info"
 checkPreviousCommand "update description info"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC1")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/userInfo/$PUBLIC1")
 requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":\"http://example.com\"}"
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
@@ -212,10 +212,10 @@ SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":6,\"value\""
 
-NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8000/userInfo/image")
+NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8001/userInfo/image")
 checkPreviousCommand "update description image"
 requireSubstring "$NEW_URL" "http://127.0.0.1:8080/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC1")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/userInfo/$PUBLIC1")
 requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd\",\"email\":null,\"website\":\"http://example.com\"}"
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")

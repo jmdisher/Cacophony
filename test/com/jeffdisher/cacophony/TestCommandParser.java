@@ -442,4 +442,14 @@ public class TestCommandParser
 		Assert.assertNull(command);
 		Assert.assertTrue(outStream.size() > 0);
 	}
+
+	@Test(expected = UsageException.class)
+	public void testBogusPort() throws Throwable
+	{
+		String[] args = {"--run", "--port", "asdf"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		// We expect this to throw the UsageException.
+		CommandParser.parseArgs(args, capture);
+	}
 }

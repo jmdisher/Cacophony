@@ -10,7 +10,7 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 /**
  * This is the command for running the interactive web server.
  */
-public record RunCommand(String _overrideCommand, CommandSelectionMode _commandSelectionMode) implements ICommand
+public record RunCommand(String _overrideCommand, CommandSelectionMode _commandSelectionMode, int _port) implements ICommand
 {
 	public enum CommandSelectionMode
 	{
@@ -27,12 +27,11 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		Resource staticResource = Resource.newClassPathResource("resources/site/");
-		int port = 8000;
 		boolean canChangeCommand = (CommandSelectionMode.DANGEROUS == _commandSelectionMode);
 		String processingCommand = (null != _overrideCommand)
 			? _overrideCommand
 			: DEFAULT_COMMAND
 		;
-		InteractiveServer.runServerUntilStop(environment, staticResource, port, processingCommand, canChangeCommand);
+		InteractiveServer.runServerUntilStop(environment, staticResource, _port, processingCommand, canChangeCommand);
 	}
 }
