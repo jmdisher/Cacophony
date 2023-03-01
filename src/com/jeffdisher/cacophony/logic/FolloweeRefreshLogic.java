@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -317,8 +318,7 @@ public class FolloweeRefreshLogic
 				if (bothLoaded)
 				{
 					CacheAlgorithm.Candidate<RawElementData> candidate = new CacheAlgorithm.Candidate<RawElementData>(byteSize, data);
-					// NOTE:  The last element in the list is the most recent, so we want to prioritize that.
-					candidates.add(0, candidate);
+					candidates.add(candidate);
 				}
 			}
 			newRecordsBeingProcessedCalculatingLeaves = null;
@@ -343,8 +343,7 @@ public class FolloweeRefreshLogic
 					support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
 					data.futureLeafPin = support.addFileToFollowCache(data.leafHash);
 				}
-				// NOTE:  finalSelection has the latest elements at the front but we ideally want them at the back (not required by is an order which makes more sense).
-				candidatesBeingPinned.add(0, data);
+				candidatesBeingPinned.add(data);
 			}
 			
 			// Finally, walk the records whose leaves we pinned and build FollowingCacheElement instances for each.
@@ -415,22 +414,32 @@ public class FolloweeRefreshLogic
 		}
 	}
 
-	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(PrefsData prefs, long currentCacheUsageInBytes, List<CacheAlgorithm.Candidate<RawElementData>> candidates)
+	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(PrefsData prefs, long currentCacheUsageInBytes, List<CacheAlgorithm.Candidate<RawElementData>> oldestFirstCandidates)
 	{
+		// NOTE:  The list we are given and the list we return should be in the order of how they are specified in the
+		// user's meta-data entry, but those are oldest-first.  Since our cache algorithm favours earlier elements, and
+		// we want those to be the newest elements, we need to reverse the list of candidates and then reverse the list
+		// selected.
+		List<CacheAlgorithm.Candidate<RawElementData>> newestFirstCandidates = new ArrayList<>(oldestFirstCandidates);
+		Collections.reverse(newestFirstCandidates);
+		
 		// NOTE:  We always want to add the newest element whether this is a new followee or a refreshed one, so handle that as a special case.
 		// Also remember that we need to add this size to the cache since it counts as already being selected.
 		// TODO:  Refactor this special logic into some kind of pluggable "cache strategy" for more reliable testing and more exotic performance considerations.
 		long effectiveCacheUsedBytes = currentCacheUsageInBytes;
 		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = new ArrayList<>();
-		if (candidates.size() > 0)
+		if (newestFirstCandidates.size() > 0)
 		{
-			CacheAlgorithm.Candidate<RawElementData> firstElement = candidates.remove(0);
+			CacheAlgorithm.Candidate<RawElementData> firstElement = newestFirstCandidates.remove(0);
 			effectiveCacheUsedBytes += firstElement.byteSize();
 			finalSelection.add(firstElement);
 		}
 		CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes, effectiveCacheUsedBytes);
-		List<CacheAlgorithm.Candidate<RawElementData>> selected = algorithm.toAddInNewAddition(candidates);
-		finalSelection.addAll(selected);
+		List<CacheAlgorithm.Candidate<RawElementData>> newestFirstSelected = algorithm.toAddInNewAddition(newestFirstCandidates);
+		finalSelection.addAll(newestFirstSelected);
+		
+		// Reverse the final selection since we want it to be in the canonical oldest-first order.
+		Collections.reverse(finalSelection);
 		return finalSelection;
 	}
 

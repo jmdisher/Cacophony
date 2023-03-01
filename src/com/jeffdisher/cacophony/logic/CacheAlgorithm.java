@@ -84,8 +84,10 @@ public class CacheAlgorithm
 	}
 
 	/**
-	 * Called when a new channel is to be cached.  The implementation will walk candidatesList, returning a subset which
-	 * should be added to the cache.  The algorithm favours the entries at the beginning of the list for selection.
+	 * Called when a new channel is to be cached or new candidates need to be considered for an existing channel.  The
+	 * implementation will walk candidatesList, returning a subset which should be added to the cache.  The algorithm
+	 * favours the entries at the beginning of the list for selection.  The returned list will include the subset to
+	 * cache in the same relative order they were provided.
 	 * Note that the cache must be cleaned before adding this list or it may not add anything as it will not overflow.
 	 * 
 	 * @param candidatesList The list of Candidates to consider for adding to the cache.
