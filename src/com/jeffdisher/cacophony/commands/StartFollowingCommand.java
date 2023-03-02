@@ -30,7 +30,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		// Run the actual refresh.
 		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh()
+				? refresher.runRefresh(null)
 				: false
 		;
 		
@@ -67,7 +67,6 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 				, _publicKey
 				, lastRoot
 				, access.readPrefs()
-				, null
 				, false
 		);
 		

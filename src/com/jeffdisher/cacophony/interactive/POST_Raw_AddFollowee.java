@@ -47,7 +47,6 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 							, userToAdd
 							, lastRoot
 							, access.readPrefs()
-							, null
 							, false
 					);
 					
@@ -60,7 +59,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 			{
 				// Run the actual refresh.
 				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh()
+						? refresher.runRefresh(null)
 						: false
 				;
 				

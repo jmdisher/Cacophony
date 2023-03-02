@@ -36,7 +36,7 @@ public record RefreshNextFolloweeCommand() implements ICommand
 		
 		// Run the actual refresh.
 		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh()
+				? refresher.runRefresh(null)
 				: false
 		;
 		
@@ -67,7 +67,6 @@ public record RefreshNextFolloweeCommand() implements ICommand
 				, publicKey
 				, lastRoot
 				, access.readPrefs()
-				, null
 				, false
 		);
 		

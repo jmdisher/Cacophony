@@ -48,7 +48,6 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 							, userToRemove
 							, lastRoot
 							, access.readPrefs()
-							, null
 							, true
 					);
 					
@@ -61,7 +60,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 			{
 				// Run the actual refresh.
 				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh()
+						? refresher.runRefresh(null)
 						: false
 				;
 				

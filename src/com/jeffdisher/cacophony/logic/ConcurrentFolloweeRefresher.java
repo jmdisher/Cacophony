@@ -33,7 +33,6 @@ public class ConcurrentFolloweeRefresher
 	private final IpfsKey _followeeKey;
 	private final IpfsFile _previousRoot;
 	private final PrefsData _prefs;
-	private final HandoffConnector<IpfsFile, Void> _connectorForUser;
 	private final boolean _isDelete;
 
 	private boolean _didSetup;
@@ -56,14 +55,12 @@ public class ConcurrentFolloweeRefresher
 	 * @param followeeKey The public key of the followee we want to refresh.
 	 * @param previousRoot The root (StreamIndex) CID from the last refresh (null if this is a start).
 	 * @param prefs The preferences object.
-	 * @param connectorForUser The connector for communicating records reachable from the followee's key.
 	 * @param isDelete True if we should be deleting this followee (removing all data instead of updating).
 	 */
 	public ConcurrentFolloweeRefresher(IEnvironment environment
 			, IpfsKey followeeKey
 			, IpfsFile previousRoot
 			, PrefsData prefs
-			, HandoffConnector<IpfsFile, Void> connectorForUser
 			, boolean isDelete
 	)
 	{
@@ -71,13 +68,11 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(null != followeeKey);
 		// previousRoot can be null.
 		Assert.assertTrue(null != prefs);
-		// connectorForUser can be null.
 		
 		_environment = environment;
 		_followeeKey = followeeKey;
 		_previousRoot = previousRoot;
 		_prefs = prefs;
-		_connectorForUser = connectorForUser;
 		_isDelete = isDelete;
 	}
 
@@ -117,10 +112,11 @@ public class ConcurrentFolloweeRefresher
 	 * Step 2:  Run the actual refresh of the followee.  Note that this happens without holding the access token, as it
 	 * runs on its internal state snapshot from the setup and using a concurrent transaction created at that time.
 	 * 
+	 * @param connectorForUser The connector for communicating records reachable from the followee's key.
 	 * @return True if the refresh was a success, false if an error prevented it from completing (finishRefresh must be
 	 * called no matter the return value).
 	 */
-	public boolean runRefresh()
+	public boolean runRefresh(HandoffConnector<IpfsFile, Void> connectorForUser)
 	{
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
@@ -129,7 +125,7 @@ public class ConcurrentFolloweeRefresher
 				, _transaction
 				, _followeeKey
 				, _cachedEntriesForFollowee
-				, _connectorForUser
+				, connectorForUser
 		);
 		boolean refreshWasSuccess = false;
 		try

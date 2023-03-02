@@ -113,14 +113,10 @@ public class InteractiveServer
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-					// We must have a connector by this point since this is only called on refresh, not start follow.
-					HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
-					Assert.assertTrue(null != elementsUnknownForFollowee);
 					refresher = new ConcurrentFolloweeRefresher(environment
 							, followeeKey
 							, lastRoot
 							, access.readPrefs()
-							, elementsUnknownForFollowee
 							, false
 					);
 					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION);
@@ -136,7 +132,10 @@ public class InteractiveServer
 					// We don't expect these by this point.
 					throw Assert.unexpected(e);
 				}
-				return new RefreshWrapper(environment, refresher);
+				// We must have a connector by this point since this is only called on refresh, not start follow.
+				HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
+				Assert.assertTrue(null != elementsUnknownForFollowee);
+				return new RefreshWrapper(environment, refresher, elementsUnknownForFollowee);
 			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
@@ -294,7 +293,7 @@ public class InteractiveServer
 	}
 
 
-	private static record RefreshWrapper(IEnvironment environment, ConcurrentFolloweeRefresher refresher) implements Runnable
+	private static record RefreshWrapper(IEnvironment environment, ConcurrentFolloweeRefresher refresher, HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee) implements Runnable
 	{
 		@Override
 		public void run()
@@ -303,7 +302,8 @@ public class InteractiveServer
 			// In that case, just log the problem.
 			if (null != this.refresher)
 			{
-				boolean didRefresh = this.refresher.runRefresh();
+				Assert.assertTrue(null != elementsUnknownForFollowee);
+				boolean didRefresh = this.refresher.runRefresh(elementsUnknownForFollowee);
 				// Write-back any update associated with this (success or fail - since we want to update the time).
 				try (IWritingAccess access = StandardAccess.writeAccess(environment))
 				{
