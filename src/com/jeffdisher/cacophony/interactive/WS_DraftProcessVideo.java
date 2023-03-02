@@ -99,6 +99,10 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 						// This can only fail in the case where the command immediately failed before we ran this next
 						// line - we don't expect to see this and would like to study it if it happens.
 						Assert.assertTrue(didAttach);
+						
+						// Set a 1-day idle timeout, just to avoid this dropping on slower systems while waiting for the
+						// processing to finish the last bit of input (since we don't see progress in those last few seconds).
+						session.setIdleTimeout(Duration.ofDays(1));
 					}
 					else
 					{
@@ -115,9 +119,6 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 					// This happened if we failed to run the processor.
 					session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + _processCommand + "\"");
 				}
-				// Set a 1-day idle timeout, just to avoid this dropping on slower systems while waiting for the
-				// processing to finish the last bit of input (since we don't see progress in those last few seconds).
-				session.setIdleTimeout(Duration.ofDays(1));
 			}
 		}
 	}

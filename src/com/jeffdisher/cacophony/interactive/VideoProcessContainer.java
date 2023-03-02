@@ -34,14 +34,24 @@ public class VideoProcessContainer
 		_connector = connector;
 	}
 
-	public synchronized boolean startProcess(int draftId, String processCommand) throws FileNotFoundException, IOException
+	public synchronized boolean startProcess(int draftId, String processCommand) throws IOException
 	{
 		boolean didStart = false;
 		if (null == _processor)
 		{
 			_draftId = draftId;
+			// We want to create the KEY_INPUT_BYTES before the process starts but it might also fail in starting the process so handle that case and delete it, in that case.
 			_connector.create(KEY_INPUT_BYTES, 0L);
-			_processor = InteractiveHelpers.openVideoProcessor(new Handler(), _manager, _draftId, processCommand);
+			try
+			{
+				_processor = InteractiveHelpers.openVideoProcessor(new Handler(), _manager, _draftId, processCommand);
+			}
+			catch (IOException e)
+			{
+				// This is a failed start, so clear the input from the connector (avoids duplicate create on second attempt).
+				_connector.destroy(KEY_INPUT_BYTES);
+				throw e;
+			}
 			didStart = true;
 		}
 		return didStart;

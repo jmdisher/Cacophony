@@ -67,7 +67,18 @@ public class ExternalStreamProcessor
 	public void start(InputStream originalVideo, OutputStream processedVideo, Consumer<Long> progressCallback, Consumer<String> errorCallback, Consumer<Long> doneCallback) throws IOException
 	{
 		// Always odd that Process names these to match the types, but not what the streams are...
-		Process process = new ProcessBuilder(_commandAndArgs).start();
+		Process process;
+		try
+		{
+			process = new ProcessBuilder(_commandAndArgs).start();
+		}
+		catch (IOException e)
+		{
+			// The caller still expects us to close the IO streams, even if we failed to start the process.
+			originalVideo.close();
+			processedVideo.close();
+			throw e;
+		}
 		
 		// The _inputProcessor copies the input bytes from the original file into the pipe to the background process.
 		// NOTE:  This is where we interrupt the process (allowing a somewhat more predictable shutdown order while

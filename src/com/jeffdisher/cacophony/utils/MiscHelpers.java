@@ -83,7 +83,8 @@ public class MiscHelpers
 			}
 			catch (Throwable t)
 			{
-				t.printStackTrace();
+				System.err.println("Uncaught throwable on " + name + ": " + t.getLocalizedMessage());
+				t.printStackTrace(System.err);
 			}
 		};
 		return new Thread(reportingRunnable, name);

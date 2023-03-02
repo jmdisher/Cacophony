@@ -199,6 +199,17 @@ echo "Verify that the draft shows no processed video..."
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" ",\"originalVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":10},\"processedVideo\":null,\"audio\":null}"
 
+echo "Verify that we can make sense of the error when the command isn't found (the default is ffmpeg, which not everyone has)..."
+mkfifo "$PROCESS_INPUT"
+mkfifo "$PROCESS_OUTPUT"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/bogusProgramName" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
+SAMPLE_PID=$!
+# Wait for connect and then wait for disconnect - that is what happens on the error (there will be no events).
+cat "$PROCESS_OUTPUT" > /dev/null
+echo -n "-WAIT" > "$PROCESS_INPUT"
+wait $SAMPLE_PID
+rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
+
 echo "Process the uploaded video..."
 mkfifo "$PROCESS_INPUT"
 mkfifo "$PROCESS_OUTPUT"
