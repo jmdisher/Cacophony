@@ -1,8 +1,11 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.util.Map;
+
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -22,11 +25,13 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
+	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
 
-	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations)
+	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
+		_connectorsPerUser = connectorsPerUser;
 	}
 
 	@Override
@@ -60,7 +65,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 			{
 				// Run the actual refresh.
 				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh(null)
+						? refresher.runRefresh(_connectorsPerUser.get(userToRemove))
 						: false
 				;
 				
@@ -76,7 +81,11 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 					Assert.assertTrue(didRefresh);
 					boolean didRemove = _backgroundOperations.removeFollowee(userToRemove);
 					// This removal could only fail as a result of racy calls to this end-point.
-					if (!didRemove)
+					if (didRemove)
+					{
+						_connectorsPerUser.remove(userToRemove);
+					}
+					else
 					{
 						_environment.logError("Followee failed to be removed: " + userToRemove);
 					}

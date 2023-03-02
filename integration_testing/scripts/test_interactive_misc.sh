@@ -54,15 +54,11 @@ checkPreviousCommand "createNewChannel"
 echo "Create user2..."
 CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 
-echo "Make user1 follow user2 and verify an empty stream..."
+# Get the public keys for both users.
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC2"
-checkPreviousCommand "startFollowing"
-LIST=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC2")
-requireSubstring "$LIST" "Followee has 0 elements"
 
 echo "Start the interactive server, give it 5 seconds to bind the port, then verify we can load a page, and initialize the cookies and XSRF token..."
 CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
@@ -80,6 +76,11 @@ java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.
 STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$STATUS_OUTPUT" > /dev/null
+
+echo "Make user1 follow user2 and verify an empty stream..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+requireSubstring "$POST_LIST" "[]"
 
 echo "Attach the followee post listener..."
 mkfifo "$ENTRIES_INPUT"
@@ -147,6 +148,11 @@ if [ "" != "$POST_LIST" ];
 then
 	exit 1
 fi
+# We should observe the delete of this record since we stopped following.
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
+
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""

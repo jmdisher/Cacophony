@@ -1,8 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
@@ -50,7 +49,8 @@ public class InteractiveServer
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
-		Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser;
+		// We use a ConcurrentHashMap since the connectors can be mutated on different threads (start following while reading another user, etc).
+		Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser = new ConcurrentHashMap<>();
 		IpfsKey ourPublicKey;
 		
 		PrefsData prefs = null;
@@ -65,7 +65,7 @@ public class InteractiveServer
 			
 			try
 			{
-				connectorsPerUser = _buildInitialHandoffs(access, dispatcher, ourPublicKey, rootElement, followees);
+				_populateInitialHandoffs(access, connectorsPerUser, dispatcher, ourPublicKey, rootElement, followees);
 			}
 			catch (IpfsConnectionException e)
 			{
@@ -214,8 +214,8 @@ public class InteractiveServer
 		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, background));
 		
 		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background));
-		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background));
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, connectorsPerUser, dispatcher));
+		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, connectorsPerUser));
 		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, background));
 		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, background));
 		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, background));
@@ -267,21 +267,22 @@ public class InteractiveServer
 	}
 
 
-	private static Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _buildInitialHandoffs(IReadingAccess access, Consumer<Runnable> dispatcher, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateInitialHandoffs(IReadingAccess access, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> followeeConnectors, Consumer<Runnable> dispatcher, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
 	{
-		Map<IpfsKey, HandoffConnector<IpfsFile, Void>> map = new HashMap<>();
-		map.put(ourKey, _populateConnector(access, dispatcher, ourRoot));
+		HandoffConnector<IpfsFile, Void> ourConnector = new HandoffConnector<>(dispatcher);
+		followeeConnectors.put(ourKey, ourConnector);
+		_populateConnector(access, ourConnector, ourRoot);
 		for (IpfsKey followeeKey : followees.getAllKnownFollowees())
 		{
+			HandoffConnector<IpfsFile, Void> oneConnector = new HandoffConnector<>(dispatcher);
+			followeeConnectors.put(followeeKey, oneConnector);
 			IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-			map.put(followeeKey, _populateConnector(access, dispatcher, oneRoot));
+			_populateConnector(access, oneConnector, oneRoot);
 		}
-		return Collections.unmodifiableMap(map);
 	}
 
-	private static HandoffConnector<IpfsFile, Void> _populateConnector(IReadingAccess access, Consumer<Runnable> dispatcher, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateConnector(IReadingAccess access, HandoffConnector<IpfsFile, Void> connector, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
 	{
-		HandoffConnector<IpfsFile, Void> connector = new HandoffConnector<>(dispatcher);
 		StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		for (String raw : records.getRecord())
@@ -289,7 +290,6 @@ public class InteractiveServer
 			IpfsFile cid = IpfsFile.fromIpfsCid(raw);
 			connector.create(cid, null);
 		}
-		return connector;
 	}
 
 

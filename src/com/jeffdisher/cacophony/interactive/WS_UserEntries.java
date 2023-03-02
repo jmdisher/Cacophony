@@ -41,6 +41,7 @@ public class WS_UserEntries implements IWebSocketFactory
 	private class Listener implements WebSocketListener, HandoffConnector.IHandoffListener<IpfsFile, Void>
 	{
 		private final IpfsKey _key;
+		private HandoffConnector<IpfsFile, Void> _userConnector;
 		private RemoteEndpoint _endPoint;
 		
 		public Listener(IpfsKey key)
@@ -50,7 +51,10 @@ public class WS_UserEntries implements IWebSocketFactory
 		@Override
 		public void onWebSocketClose(int statusCode, String reason)
 		{
-			_entryConnector.get(_key).unregisterListener(this);
+			if (null != _userConnector)
+			{
+				_userConnector.unregisterListener(this);
+			}
 		}
 		
 		@Override
@@ -58,11 +62,20 @@ public class WS_UserEntries implements IWebSocketFactory
 		{
 			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
 			{
-				_endPoint = session.getRemote();
-				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-				_entryConnector.get(_key).registerListener(this);
-				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
-				session.setIdleTimeout(Duration.ofDays(1));
+				_userConnector = _entryConnector.get(_key);
+				if (null != _userConnector)
+				{
+					_endPoint = session.getRemote();
+					// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
+					_userConnector.registerListener(this);
+					// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
+					session.setIdleTimeout(Duration.ofDays(1));
+				}
+				else
+				{
+					// This is an error - we don't know about this user.
+					session.close();
+				}
 			}
 		}
 		

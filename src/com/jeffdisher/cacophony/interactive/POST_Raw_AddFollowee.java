@@ -1,8 +1,12 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.util.Map;
+import java.util.function.Consumer;
+
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -21,11 +25,15 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
+	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
+	private final Consumer<Runnable> _connectorDispatcher;
 
-	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations)
+	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
+		_connectorsPerUser = connectorsPerUser;
+		_connectorDispatcher = connectorDispatcher;
 	}
 
 	@Override
@@ -57,9 +65,13 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 			
 			if (!isAlreadyFollowed)
 			{
+				// Create the connector.
+				HandoffConnector<IpfsFile, Void> followeeConnector = new HandoffConnector<>(_connectorDispatcher);
+				_connectorsPerUser.put(userToAdd, followeeConnector);
+				
 				// Run the actual refresh.
 				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh(null)
+						? refresher.runRefresh(followeeConnector)
 						: false
 				;
 				
