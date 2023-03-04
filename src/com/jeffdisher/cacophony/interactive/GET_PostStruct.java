@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -45,7 +46,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 			LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
 				try
 				{
-					return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followees);
+					return LocalRecordCacheBuilder.buildFolloweeCache(access, lastPublishedIndex, followees);
 				}
 				catch (IpfsConnectionException | FailedDeserializationException e)
 				{

@@ -110,7 +110,7 @@ public class TestJsonGenerationHelpers
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, indexFile, followIndex);
+			recordCache = LocalRecordCacheBuilder.buildFolloweeCache(access, indexFile, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -153,7 +153,7 @@ public class TestJsonGenerationHelpers
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			recordCache = JsonGenerationHelpers.buildFolloweeCache(access, publishedIndex, followIndex);
+			recordCache = LocalRecordCacheBuilder.buildFolloweeCache(access, publishedIndex, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).

@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -85,7 +86,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 		LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
 			try
 			{
-				return JsonGenerationHelpers.buildFolloweeCache(access, lastPublishedIndex, followees);
+				return LocalRecordCacheBuilder.buildFolloweeCache(access, lastPublishedIndex, followees);
 			}
 			catch (IpfsConnectionException | FailedDeserializationException e)
 			{
