@@ -79,7 +79,8 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 				try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
-					refresher.finishRefresh(access, followees, lastPollMillis);
+					// TODO: Pass in LocalRecordCache.
+					refresher.finishRefresh(access, null, followees, lastPollMillis);
 				}
 				finally
 				{

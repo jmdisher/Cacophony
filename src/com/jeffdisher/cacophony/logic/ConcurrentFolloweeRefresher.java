@@ -7,6 +7,7 @@ import java.util.Set;
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
@@ -195,10 +196,12 @@ public class ConcurrentFolloweeRefresher
 	 * rationalizing, any cached state against the authoritative access object.
 	 * 
 	 * @param access System write access.
+	 * @param recordCache The local cache which should be updated in response to finishing this refresh (can be null).
 	 * @param followees The followees structure to update.
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
 	 */
 	public void finishRefresh(IWritingAccess access
+			, LocalRecordCache recordCache
 			, IFolloweeWriting followees
 			, long currentTimeMillis
 	)
@@ -229,6 +232,11 @@ public class ConcurrentFolloweeRefresher
 				// Update existing record.
 				_refreshSupport.commitFolloweeChanges(followees);
 				followees.updateExistingFollowee(_followeeKey, _newRoot, currentTimeMillis);
+			}
+			// The record cache is null in cases where this is a one-off operation and there is no cache.
+			if (null != recordCache)
+			{
+				_refreshSupport.commitLocalCacheUpdates(recordCache);
 			}
 			_transaction.commit(resolver);
 		}

@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
@@ -135,7 +136,8 @@ public class InteractiveServer
 				// We must have a connector by this point since this is only called on refresh, not start follow.
 				HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
 				Assert.assertTrue(null != elementsUnknownForFollowee);
-				return new RefreshWrapper(environment, refresher, elementsUnknownForFollowee);
+				// TODO: Pass in LocalRecordCache.
+				return new RefreshWrapper(environment, null, refresher, elementsUnknownForFollowee);
 			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
@@ -293,7 +295,7 @@ public class InteractiveServer
 	}
 
 
-	private static record RefreshWrapper(IEnvironment environment, ConcurrentFolloweeRefresher refresher, HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee) implements Runnable
+	private static record RefreshWrapper(IEnvironment environment, LocalRecordCache localRecordCache, ConcurrentFolloweeRefresher refresher, HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee) implements Runnable
 	{
 		@Override
 		public void run()
@@ -310,7 +312,7 @@ public class InteractiveServer
 					IFolloweeWriting followees = access.writableFolloweeData();
 					
 					long lastPollMillis = environment.currentTimeMillis();
-					this.refresher.finishRefresh(access, followees, lastPollMillis);
+					this.refresher.finishRefresh(access, localRecordCache, followees, lastPollMillis);
 				}
 				catch (IpfsConnectionException e)
 				{

@@ -73,7 +73,8 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					long lastPollMillis = _environment.currentTimeMillis();
-					refresher.finishRefresh(access, followees, lastPollMillis);
+					// TODO: Pass in LocalRecordCache.
+					refresher.finishRefresh(access, null, followees, lastPollMillis);
 				}
 				finally
 				{

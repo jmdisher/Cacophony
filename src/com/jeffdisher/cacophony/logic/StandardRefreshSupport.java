@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -65,6 +66,16 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		{
 			followees.addElement(_followeeKey, elt);
 		}
+	}
+
+	/**
+	 * Called on successful followee refresh to write-back changes to the recordCache.
+	 * 
+	 * @param recordCache The cache to update.
+	 */
+	public void commitLocalCacheUpdates(LocalRecordCache recordCache)
+	{
+		// TODO: Implement.
 	}
 
 	@Override
