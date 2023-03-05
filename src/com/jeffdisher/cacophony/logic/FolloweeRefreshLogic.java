@@ -268,12 +268,12 @@ public class FolloweeRefreshLogic
 				// A connection exception here will cause refresh to fail.
 				data.futureElementPin.get();
 				data.futureElementPin = null;
-				// Report that we pinned it.
-				support.newElementPinned(data.elementCid);
 				// We pinned this so the read should be pretty-well instantaneous.
-				StreamRecord record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
+				data.record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
+				// Report that we pinned it.
+				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussion(), data.record.getElements().getElement().size());
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
-				_selectLeavesForElement(support, data, record, prefs.videoEdgePixelMax);
+				_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
 				newRecordsBeingProcessedCalculatingLeaves.add(data);
 			}
 			newRecordsBeingProcessedSizeChecked = null;
@@ -396,7 +396,7 @@ public class FolloweeRefreshLogic
 					{
 						support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
 					}
-					support.addElementToCache(data.elementCid, data.thumbnailHash, data.leafHash, data.thumbnailSizeBytes + data.leafSizeBytes);
+					support.addElementToCache(data.elementCid, data.thumbnailHash, data.audioLeafHash, data.videoLeafHash, data.videoEdgeSize, data.thumbnailSizeBytes + data.leafSizeBytes);
 				}
 				else
 				{
@@ -486,6 +486,9 @@ public class FolloweeRefreshLogic
 			}
 		}
 		// We will prefer the video leaf, if available (although we don't currently have a use-case where there would be both).
+		data.videoLeafHash = videoHash;
+		data.videoEdgeSize = biggestEdge;
+		data.audioLeafHash = audioHash;
 		IpfsFile leafHash = (null != videoHash) ? videoHash : audioHash;
 		if (null != imageHash)
 		{
@@ -533,8 +536,13 @@ public class FolloweeRefreshLogic
 		 * they may be too large, but the meta-data is now locally pinned.
 		 * 
 		 * @param elementHash The CID of the meta-data XML.
+		 * @param name The name of post.
+		 * @param description The description of the post.
+		 * @param publishedSecondsUtc The publish time of the post.
+		 * @param discussionUrl The discussion URL of the post (maybe null).
+		 * @param leafReferenceCount The number of attached leaves (thumbnail, audio, videos, etc).
 		 */
-		void newElementPinned(IpfsFile elementHash);
+		void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount);
 		/**
 		 * Requests the size of a CID entry, in bytes.  This CID may or may not be pinned.
 		 * 
@@ -600,10 +608,12 @@ public class FolloweeRefreshLogic
 		 * 
 		 * @param elementHash The now-pinned meta-data XML CID.
 		 * @param imageHash The now-pinned image data (or null).
-		 * @param leafHash The now-pinned video data (or null).
+		 * @param audioLeaf The now-pinned audio data (or null).
+		 * @param videoLeaf The now-pinned video data (or null).
+		 * @param videoEdgeSize The edge size of the video (0 if null).
 		 * @param combinedSizeBytes The combined size of both the image and video, in bytes.
 		 */
-		void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes);
+		void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes);
 		/**
 		 * Called when a the meta-data of a previously-observed element has been enqueued for unpin and should be
 		 * dropped.

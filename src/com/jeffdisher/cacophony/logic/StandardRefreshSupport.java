@@ -73,7 +73,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_environment.logToConsole(message);
 	}
 	@Override
-	public void newElementPinned(IpfsFile elementHash)
+	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount)
 	{
 		if (null != _connectorForUser)
 		{
@@ -130,8 +130,9 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		;
 	}
 	@Override
-	public void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)
+	public void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
 	{
+		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 	}
 	@Override

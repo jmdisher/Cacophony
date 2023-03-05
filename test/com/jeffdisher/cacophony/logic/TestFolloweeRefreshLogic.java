@@ -815,7 +815,7 @@ public class TestFolloweeRefreshLogic
 			System.out.println(message);
 		}
 		@Override
-		public void newElementPinned(IpfsFile elementHash)
+		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount)
 		{
 			_newElementsPinned.add(elementHash);
 		}
@@ -955,8 +955,9 @@ public class TestFolloweeRefreshLogic
 			;
 		}
 		@Override
-		public void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)
+		public void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
 		{
+			IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 			_list.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 		}
 		@Override

@@ -30,4 +30,9 @@ public class RawElementData
 	public long leafSizeBytes;
 	public FuturePin futureThumbnailPin;
 	public FuturePin futureLeafPin;
+	
+	// We will only have one of these leaves set, and it is stored in leafHash, so these redundant cases are just for more detailed uses.
+	public IpfsFile videoLeafHash;
+	public int videoEdgeSize;
+	public IpfsFile audioLeafHash;
 }
