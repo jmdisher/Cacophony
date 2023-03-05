@@ -4,10 +4,14 @@ import java.util.Iterator;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.record.DataElement;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -57,8 +61,23 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 				
 				if (didRemove)
 				{
+					// The ChannelModified updates the interior elements but not the leaf StreamRecord nodes or leaves.
+					// This means we need to read the dead record from the network, and unpin it and any leaves, manually.
+					// Start the read, do the update and commit new root before proceeding.
+					FutureRead<StreamRecord> deadRecordFuture = access.loadCached(postHashToRemove, (byte[] data) -> GlobalData.deserializeRecord(data));
+					
+					// Update the channel structure, unpinning dropped data.
 					modifier.storeRecords(records);
 					IpfsFile newRoot = modifier.commitNewRoot();
+					
+					// Now, unpin this data and update the LocalRecordCache.
+					StreamRecord deadRecord = deadRecordFuture.get();
+					for (DataElement leaf : deadRecord.getElements().getElement())
+					{
+						IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+						access.unpin(leafCid);
+					}
+					access.unpin(postHashToRemove);
 					
 					// Delete the entry for anyone listening.
 					_handoffConnector.destroy(postHashToRemove);
