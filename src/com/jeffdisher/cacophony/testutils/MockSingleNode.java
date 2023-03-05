@@ -203,8 +203,7 @@ public class MockSingleNode implements IConnection
 	@Override
 	public String directFetchUrlRoot()
 	{
-		// We don't expect this in tests.
-		throw Assert.unreachable();
+		return "http://test/";
 	}
 
 

@@ -54,25 +54,25 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testPostStructNotCached() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", false, null, null, null)));
-		JsonObject data = JsonGenerationHelpers.postStruct(cache, FILE1);
+		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element(false, "string", "description", 1L, "discussionUrl", null, null, null)));
+		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
 		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":false}", data.toString());
 	}
 
 	@Test
 	public void testPostStructCached() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", true, "url1", "url2", null)));
-		JsonObject data = JsonGenerationHelpers.postStruct(cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url1\",\"videoUrl\":\"url2\",\"audioUrl\":null}", data.toString());
+		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element(true, "string", "description", 1L, "discussionUrl", IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG"), IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC"), null)));
+		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\",\"audioUrl\":null}", data.toString());
 	}
 
 	@Test
 	public void testPostStructCachedAudio() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element("string", "description", 1L, "discussionUrl", true, "url1", null, "audio URL")));
-		JsonObject data = JsonGenerationHelpers.postStruct(cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url1\",\"videoUrl\":null,\"audioUrl\":\"audio URL\"}", data.toString());
+		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element(true, "string", "description", 1L, "discussionUrl", IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG"), null, IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC"))));
+		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":null,\"audioUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\"}", data.toString());
 	}
 
 	@Test
@@ -116,7 +116,7 @@ public class TestJsonGenerationHelpers
 		// This should have zero entries.
 		Assert.assertTrue(recordCache.getKeys().isEmpty());
 		// Make sure that we fail to look something up.
-		JsonObject object = JsonGenerationHelpers.postStruct(recordCache, FILE1);
+		JsonObject object = JsonGenerationHelpers.postStruct(null, recordCache, FILE1);
 		Assert.assertNull(object);
 	}
 
@@ -158,9 +158,9 @@ public class TestJsonGenerationHelpers
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
 		Assert.assertEquals(2, recordCache.getKeys().size());
-		JsonObject object = JsonGenerationHelpers.postStruct(recordCache, recordFile);
+		JsonObject object = JsonGenerationHelpers.postStruct("url/", recordCache, recordFile);
 		Assert.assertEquals("entry1", object.get("name").asString());
-		object = JsonGenerationHelpers.postStruct(recordCache, followeeRecordFile);
+		object = JsonGenerationHelpers.postStruct("url/", recordCache, followeeRecordFile);
 		Assert.assertEquals("entry2", object.get("name").asString());
 	}
 

@@ -130,27 +130,7 @@ public class LocalRecordCacheBuilder
 			}
 		}
 		
-		String thumbnailUrl = null;
-		String videoUrl = null;
-		String audioUrl = null;
-		if (isCached)
-		{
-			// However we found these, they are expected to be in the cache and they should be locally pinned.
-			// Note that we can have at most one thumbnail and one video but both are optional and there could be an entry with neither.
-			if (null != thumbnailCid)
-			{
-				thumbnailUrl = access.getCachedUrl(thumbnailCid).toString();
-			}
-			if (null != videoCid)
-			{
-				videoUrl = access.getCachedUrl(videoCid).toString();
-			}
-			if (null != audioCid)
-			{
-				audioUrl = access.getCachedUrl(audioCid).toString();
-			}
-		}
-		return new LocalRecordCache.Element(record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), isCached, thumbnailUrl, videoUrl, audioUrl);
+		return new LocalRecordCache.Element(isCached, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), thumbnailCid, videoCid, audioCid);
 	}
 
 	private static IpfsFile _findThumbnail(List<DataElement> elements)

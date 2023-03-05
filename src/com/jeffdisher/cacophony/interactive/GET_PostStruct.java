@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * -discussionUrl (string)
  * (if cached) -thumbnailUrl (string)
  * (if cached) -videoUrl (string)
+ * (if cached) -audioUrl (string)
  */
 public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
@@ -55,7 +56,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 					return null;
 				}
 			});
-			JsonObject postStruct = JsonGenerationHelpers.postStruct(cache, postToResolve);
+			JsonObject postStruct = JsonGenerationHelpers.postStruct(access.getDirectFetchUrlRoot(), cache, postToResolve);
 			if (null != postStruct)
 			{
 				response.setContentType("application/json");

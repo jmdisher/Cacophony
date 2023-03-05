@@ -60,7 +60,7 @@ public class JsonGenerationHelpers
 		generatedStream.println();
 		
 		// DATA_elements.
-		JsonObject dataElements = _dumpCacheToJson(cache);
+		JsonObject dataElements = _dumpCacheToJson(access.getDirectFetchUrlRoot(), cache);
 		generatedStream.println("var DATA_elements = " + dataElements.toString());
 		generatedStream.println();
 		
@@ -237,15 +237,16 @@ public class JsonGenerationHelpers
 	 * Returns a JSON struct for the given postToResolve or null if it is unknown.
 	 * NOTE:  This will only resolve stream elements this user posted or which was posted by a followee.
 	 * 
+	 * @param baseUrl The base URL to which CIDs can be appending to make a direct URL to the resource.
 	 * @param cache The cache containing all the data we should be able to resolve.
 	 * @param postToResolve The StreamRecord to resolve.
 	 * @return The JSON representation of this post or null, if we don't know it.
 	 */
-	public static JsonObject postStruct(LocalRecordCache cache, IpfsFile postToResolve)
+	public static JsonObject postStruct(String baseUrl, LocalRecordCache cache, IpfsFile postToResolve)
 	{
 		LocalRecordCache.Element element = cache.get(postToResolve);
 		return (null != element)
-				? _formatAsPostStruct(element)
+				? _formatAsPostStruct(baseUrl, element)
 				: null
 		;
 	}
@@ -307,14 +308,14 @@ public class JsonGenerationHelpers
 		return recordsList;
 	}
 
-	private static JsonObject _dumpCacheToJson(LocalRecordCache cache)
+	private static JsonObject _dumpCacheToJson(String baseUrl, LocalRecordCache cache)
 	{
 		JsonObject object = new JsonObject();
 		Set<IpfsFile> elements = cache.getKeys();
 		for (IpfsFile file : elements)
 		{
 			LocalRecordCache.Element element = cache.get(file);
-			JsonObject thisElt = _formatAsPostStruct(element);
+			JsonObject thisElt = _formatAsPostStruct(baseUrl, element);
 			object.set(file.toSafeString(), thisElt);
 		}
 		return object;
@@ -418,7 +419,7 @@ public class JsonGenerationHelpers
 		return indexToLoad;
 	}
 
-	private static JsonObject _formatAsPostStruct(LocalRecordCache.Element element)
+	private static JsonObject _formatAsPostStruct(String baseUrl, LocalRecordCache.Element element)
 	{
 		JsonObject thisElt = new JsonObject();
 		thisElt.set("name", element.name());
@@ -428,11 +429,19 @@ public class JsonGenerationHelpers
 		thisElt.set("cached", element.isCached());
 		if (element.isCached())
 		{
-			thisElt.set("thumbnailUrl", element.thumbnailUrl());
-			thisElt.set("videoUrl", element.videoUrl());
-			thisElt.set("audioUrl", element.audioUrl());
+			thisElt.set("thumbnailUrl", _urlOrNull(baseUrl, element.thumbnailCid()));
+			thisElt.set("videoUrl", _urlOrNull(baseUrl, element.videoCid()));
+			thisElt.set("audioUrl", _urlOrNull(baseUrl, element.audioCid()));
 		}
 		return thisElt;
+	}
+
+	private static String _urlOrNull(String baseUrl, IpfsFile cid)
+	{
+		return (null != cid)
+				? (baseUrl + cid.toSafeString())
+				: null
+		;
 	}
 
 

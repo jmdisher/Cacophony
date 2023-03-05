@@ -51,8 +51,17 @@ public class LocalRecordCache
 
 	/**
 	 * A description of the data we have cached for a given StreamRecord.
+	 * This is the version of the data which is considered valid for external consumption as it avoids internal details.
 	 */
-	public static record Element(String name, String description, long publishedSecondsUtc, String discussionUrl, boolean isCached, String thumbnailUrl, String videoUrl, String audioUrl)
+	public static record Element(boolean isCached
+			, String name
+			, String description
+			, long publishedSecondsUtc
+			, String discussionUrl
+			, IpfsFile thumbnailCid
+			, IpfsFile videoCid
+			, IpfsFile audioCid
+	)
 	{
 	}
 }
