@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -49,7 +48,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 				{
 					return LocalRecordCacheBuilder.buildFolloweeCache(access, lastPublishedIndex, followees);
 				}
-				catch (IpfsConnectionException | FailedDeserializationException e)
+				catch (IpfsConnectionException e)
 				{
 					// We return null on error but log this.
 					e.printStackTrace();

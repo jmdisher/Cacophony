@@ -88,7 +88,7 @@ public record HtmlOutputCommand(File _directory) implements ICommand
 			{
 				return LocalRecordCacheBuilder.buildFolloweeCache(access, lastPublishedIndex, followees);
 			}
-			catch (IpfsConnectionException | FailedDeserializationException e)
+			catch (IpfsConnectionException e)
 			{
 				// We return null on error but log this.
 				e.printStackTrace();

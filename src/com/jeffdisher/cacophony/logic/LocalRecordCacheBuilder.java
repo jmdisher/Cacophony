@@ -33,32 +33,121 @@ public class LocalRecordCacheBuilder
 	/**
 	 * Builds a LocalRecordCache by walking the information on the local node, referenced by the local user's
 	 * lastPublishedIndex and the data cached for followees.
+	 * The algorithm attempts to minimize the impact of corrupt data within followees, meaning it will still return
+	 * partial data, even if some of that couldn't be interpreted.
 	 * 
 	 * @param access Read-access to the network and data structures.
 	 * @param lastPublishedIndex The local user's last published root index.
 	 * @param followees The information cached about the followees.
 	 * @return The record cache.
 	 * @throws IpfsConnectionException There was a problem accessing the local node.
-	 * @throws FailedDeserializationException Data fetched from the network couldn't be interpreted as meta-data.
 	 */
-	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
+	public static LocalRecordCache buildFolloweeCache(IReadingAccess access, IpfsFile lastPublishedIndex, IFolloweeReading followees) throws IpfsConnectionException
 	{
-		IpfsKey ourPublicKey = access.getPublicKey();
-		List<FutureKey<StreamIndex>> indices = _loadStreamIndicesNoKey(access, ourPublicKey, lastPublishedIndex, followees);
-		List<FutureKey<StreamRecords>> streamRecords = _loadRecords(access, indices);
+		// First, fetch the local user.
+		FutureRead<StreamIndex> localUserIndex = access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data));
 		
-		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
-		for (FutureKey<StreamRecords> elt : streamRecords)
+		// Now, fetch the followees.
+		List<FutureKey<StreamIndex>> followeeIndices = new ArrayList<>();
+		for(IpfsKey followee : followees.getAllKnownFollowees())
 		{
-			IpfsKey followeeKey = elt.publicKey();
-			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = followees.snapshotAllElementsForFollowee(followeeKey);
-			_populateElementMapFromUserRoot(access, dataElements, elementsCachedForUser, elt.future().get());
+			followeeIndices.add(new FutureKey<>(followee, access.loadCached(followees.getLastFetchedRootForFollowee(followee), (byte[] data) -> GlobalData.deserializeIndex(data))));
 		}
+		
+		// Load the records underneath all of these.
+		FutureRead<StreamRecords> localUserRecords;
+		try
+		{
+			localUserRecords = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We can't see this for data we posted.
+			throw Assert.unexpected(e);
+		}
+		
+		// ...and the followees.
+		List<FutureKey<StreamRecords>> followeeRecords = new ArrayList<>();
+		for (FutureKey<StreamIndex> future : followeeIndices)
+		{
+			StreamIndex index;
+			try
+			{
+				index = future.future.get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// In this case, we just want to skip this user.
+				index = null;
+			}
+			if (null != index)
+			{
+				FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+				followeeRecords.add(new FutureKey<>(future.publicKey, records));
+			}
+		}
+		
+		// Now that the data is accessible, create the cache and populate it.
+		Map<IpfsFile, LocalRecordCache.Element> dataElements = new HashMap<>();
+		StreamRecords localStreamRecords;
+		try
+		{
+			localStreamRecords = localUserRecords.get();
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We can't see this for data we posted.
+			throw Assert.unexpected(e);
+		}
+		_populateElementMapFromLocalUserRoot(access, dataElements, localStreamRecords);
+		
+		for (FutureKey<StreamRecords> future : followeeRecords)
+		{
+			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = followees.snapshotAllElementsForFollowee(future.publicKey);
+			StreamRecords followeeRecordsElt;
+			try
+			{
+				followeeRecordsElt = future.future.get();
+			}
+			catch (FailedDeserializationException e1)
+			{
+				// We will just skip this user.
+				System.err.println("WARNING:  Deserialization error building cache for followee: " + future.publicKey);
+				followeeRecordsElt = null;
+			}
+			if (null != followeeRecordsElt)
+			{
+				_populateElementMapFromFolloweeUserRoot(access, dataElements, elementsCachedForUser, followeeRecordsElt);
+			}
+		}
+		
 		return new LocalRecordCache(dataElements);
 	}
 
 
-	private static void _populateElementMapFromUserRoot(IReadingAccess access, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateElementMapFromLocalUserRoot(IReadingAccess access, Map<IpfsFile, LocalRecordCache.Element> elementMap, StreamRecords records) throws IpfsConnectionException
+	{
+		// Everything is always cached for the local user.
+		List<String> rawCids = records.getRecord();
+		List<FutureRead<StreamRecord>> loads = new ArrayList<>();
+		for (String rawCid : rawCids)
+		{
+			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
+			// Since we posted this, we know it is a valid size.
+			Assert.assertTrue(access.getSizeInBytes(cid).get() < SizeLimits.MAX_RECORD_SIZE_BYTES);
+			FutureRead<StreamRecord> future = access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+			loads.add(future);
+		}
+		Iterator<String> cidIterator = rawCids.iterator();
+		for (FutureRead<StreamRecord> future : loads)
+		{
+			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
+			LocalRecordCache.Element elt = _fetchDataForLocalUserElement(access, future, cid);
+			elementMap.put(cid, elt);
+		}
+	}
+
+	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, Map<IpfsFile, LocalRecordCache.Element> elementMap, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -79,43 +168,97 @@ public class LocalRecordCacheBuilder
 		for (FutureRead<StreamRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
-			LocalRecordCache.Element thisElt = _fetchDataForElement(access, elementsCachedForUser, future, cid);
-			elementMap.put(cid, thisElt);
+			try
+			{
+				LocalRecordCache.Element elt = _fetchDataForFolloweeElement(access, elementsCachedForUser, future, cid);
+				elementMap.put(cid, elt);
+			}
+			catch (FailedDeserializationException e)
+			{
+				// We will just skip this element.
+				System.err.println("WARNING:  Deserialization error building cache in element: " + cid);
+			}
 		}
 	}
 
-	private static LocalRecordCache.Element _fetchDataForElement(IReadingAccess access, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
+	private static LocalRecordCache.Element _fetchDataForLocalUserElement(IReadingAccess access, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
+	{
+		StreamRecord record;
+		try
+		{
+			record = future.get();
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We can't see this for data we posted.
+			throw Assert.unexpected(e);
+		}
+		
+		IpfsFile thumbnailCid = null;
+		IpfsFile videoCid = null;
+		int largestEdge = 0;
+		IpfsFile audioCid = null;
+		List<DataElement> elements = record.getElements().getElement();
+		for (DataElement leaf : elements)
+		{
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (ElementSpecialType.IMAGE == leaf.getSpecial())
+			{
+				// This is the thumbnail.
+				thumbnailCid = leafCid;
+			}
+			else if (leaf.getMime().startsWith("video/"))
+			{
+				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+				if (maxEdge > largestEdge)
+				{
+					// We want to report the largest video
+					videoCid = leafCid;
+					largestEdge = maxEdge;
+				}
+			}
+			else if (leaf.getMime().startsWith("audio/"))
+			{
+				audioCid = leafCid;
+			}
+		}
+		
+		// Local user elements are always considered cached.
+		boolean isCached = true;
+		return new LocalRecordCache.Element(isCached, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), thumbnailCid, videoCid, audioCid);
+	}
+
+	private static LocalRecordCache.Element _fetchDataForFolloweeElement(IReadingAccess access, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
 	{
 		StreamRecord record = future.get();
-		
-		boolean isLocalUser = (null == elementsCachedForUser);
-		boolean isCachedFollowee = !isLocalUser && elementsCachedForUser.containsKey(cid);
-		// In either of these cases, we will have the data cached.
-		boolean isCached = (isLocalUser || isCachedFollowee);
 		
 		IpfsFile thumbnailCid = null;
 		IpfsFile videoCid = null;
 		IpfsFile audioCid = null;
-		if (isLocalUser)
+		List<DataElement> elements = record.getElements().getElement();
+		
+		// If this is a followee, then check for the appropriate leaves.
+		// (note that we want to double-count with local user, if both - since the pin cache will do that).
+		FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
+		if (null != cachedElement)
 		{
-			// In the local case, we want to look at the rest of the record and figure out what makes most sense since all entries will be pinned.
-			List<DataElement> elements = record.getElements().getElement();
-			thumbnailCid = _findThumbnail(elements);
-			videoCid = _findLargestVideo(elements);
-			audioCid = _findAudio(elements);
-		}
-		else if (isCachedFollowee)
-		{
-			// If this case, we will use whatever is in the followee cache, since that is what we pinned, but we need to look at the record to see if the leaf element is video or audio.
-			FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
 			thumbnailCid = cachedElement.imageHash();
-			List<DataElement> elements = record.getElements().getElement();
 			IpfsFile leafCid = cachedElement.leafHash();
 			if (null != leafCid)
 			{
 				String leafMime = _findMimeForLeaf(elements, leafCid);
 				if (leafMime.startsWith("video/"))
 				{
+					// We want to record the size so go find it.
+					int maxEdge = 0;
+					for (DataElement leaf : elements)
+					{
+						if (leafCid.equals(IpfsFile.fromIpfsCid(leaf.getCid())))
+						{
+							maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+						}
+					}
+					Assert.assertTrue(maxEdge > 0);
 					videoCid = leafCid;
 				}
 				else if (leafMime.startsWith("audio/"))
@@ -130,56 +273,9 @@ public class LocalRecordCacheBuilder
 			}
 		}
 		
+		// Followee entries are considered cached if we have a record for it or there are no leaves.
+		boolean isCached = ((null != cachedElement) || (0 == elements.size()));
 		return new LocalRecordCache.Element(isCached, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), thumbnailCid, videoCid, audioCid);
-	}
-
-	private static IpfsFile _findThumbnail(List<DataElement> elements)
-	{
-		IpfsFile thumbnailCid = null;
-		for (DataElement leaf : elements)
-		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			if (ElementSpecialType.IMAGE == leaf.getSpecial())
-			{
-				thumbnailCid = leafCid;
-				break;
-			}
-		}
-		return thumbnailCid;
-	}
-
-	private static IpfsFile _findLargestVideo(List<DataElement> elements)
-	{
-		IpfsFile videoCid = null;
-		int largestEdge = 0;
-		for (DataElement leaf : elements)
-		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			if (leaf.getMime().startsWith("video/"))
-			{
-				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-				if (maxEdge > largestEdge)
-				{
-					videoCid = leafCid;
-				}
-			}
-		}
-		return videoCid;
-	}
-
-	private static IpfsFile _findAudio(List<DataElement> elements)
-	{
-		IpfsFile audioCid = null;
-		for (DataElement leaf : elements)
-		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			if (leaf.getMime().startsWith("audio/"))
-			{
-				audioCid = leafCid;
-				break;
-			}
-		}
-		return audioCid;
 	}
 
 	private static String _findMimeForLeaf(List<DataElement> elements, IpfsFile target)
@@ -195,29 +291,6 @@ public class LocalRecordCacheBuilder
 		}
 		Assert.assertTrue(null != mime);
 		return mime;
-	}
-
-	private static List<FutureKey<StreamIndex>> _loadStreamIndicesNoKey(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees)
-	{
-		List<FutureKey<StreamIndex>> indices = new ArrayList<>();
-		indices.add(new FutureKey<>(ourPublicKey, access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data))));
-		for(IpfsKey followee : followees.getAllKnownFollowees())
-		{
-			indices.add(new FutureKey<>(followee, access.loadCached(followees.getLastFetchedRootForFollowee(followee), (byte[] data) -> GlobalData.deserializeIndex(data))));
-		}
-		return indices;
-	}
-
-	private static List<FutureKey<StreamRecords>> _loadRecords(IReadingAccess access, List<FutureKey<StreamIndex>> list) throws IpfsConnectionException, FailedDeserializationException
-	{
-		List<FutureKey<StreamRecords>> recordsList = new ArrayList<>();
-		for (FutureKey<StreamIndex> future : list)
-		{
-			StreamIndex index = future.future.get();
-			FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
-			recordsList.add(new FutureKey<StreamRecords>(future.publicKey, records));
-		}
-		return recordsList;
 	}
 
 
