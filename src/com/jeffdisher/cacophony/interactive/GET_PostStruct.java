@@ -6,9 +6,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
-import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,10 +26,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
 	private final IEnvironment _environment;
+	private final LocalRecordCache _recordCache;
 	
-	public GET_PostStruct(IEnvironment environment)
+	public GET_PostStruct(IEnvironment environment, LocalRecordCache recordCache)
 	{
 		_environment = environment;
+		_recordCache = recordCache;
 	}
 	
 	@Override
@@ -41,21 +40,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
 		try (IReadingAccess access = StandardAccess.readAccess(_environment))
 		{
-			IpfsFile lastPublishedIndex = access.getLastRootElement();
-			IFolloweeReading followees = access.readableFolloweeData();
-			LocalRecordCache cache = access.lazilyLoadFolloweeCache(() -> {
-				try
-				{
-					return LocalRecordCacheBuilder.buildFolloweeCache(access, lastPublishedIndex, followees);
-				}
-				catch (IpfsConnectionException e)
-				{
-					// We return null on error but log this.
-					e.printStackTrace();
-					return null;
-				}
-			});
-			JsonObject postStruct = JsonGenerationHelpers.postStruct(access.getDirectFetchUrlRoot(), cache, postToResolve);
+			JsonObject postStruct = JsonGenerationHelpers.postStruct(access.getDirectFetchUrlRoot(), _recordCache, postToResolve);
 			if (null != postStruct)
 			{
 				response.setContentType("application/json");

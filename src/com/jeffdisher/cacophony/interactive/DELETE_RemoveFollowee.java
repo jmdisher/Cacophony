@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -25,12 +26,14 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
+	private final LocalRecordCache _recordCache;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
 
-	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser)
+	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
+		_recordCache = recordCache;
 		_connectorsPerUser = connectorsPerUser;
 	}
 
@@ -73,8 +76,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					long lastPollMillis = _environment.currentTimeMillis();
-					// TODO: Pass in LocalRecordCache.
-					refresher.finishRefresh(access, null, followees, lastPollMillis);
+					refresher.finishRefresh(access, _recordCache, followees, lastPollMillis);
 				}
 				finally
 				{

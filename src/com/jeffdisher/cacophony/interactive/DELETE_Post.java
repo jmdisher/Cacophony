@@ -6,8 +6,10 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
+import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -26,12 +28,14 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
+	private final LocalRecordCache _recordCache;
 	private final HandoffConnector<IpfsFile, Void> _handoffConnector;
 
-	public DELETE_Post(IEnvironment environment, BackgroundOperations backgroundOperations, HandoffConnector<IpfsFile, Void> handoffConnector)
+	public DELETE_Post(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, HandoffConnector<IpfsFile, Void> handoffConnector)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
+		_recordCache = recordCache;
 		_handoffConnector = handoffConnector;
 	}
 
@@ -75,8 +79,23 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 					for (DataElement leaf : deadRecord.getElements().getElement())
 					{
 						IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+						if (ElementSpecialType.IMAGE == leaf.getSpecial())
+						{
+							// This is the thumbnail.
+							_recordCache.recordThumbnailReleased(postHashToRemove, leafCid);
+						}
+						else if (leaf.getMime().startsWith("video/"))
+						{
+							int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+							_recordCache.recordVideoReleased(postHashToRemove, leafCid, maxEdge);
+						}
+						else if (leaf.getMime().startsWith("audio/"))
+						{
+							_recordCache.recordAudioReleased(postHashToRemove, leafCid);
+						}
 						access.unpin(leafCid);
 					}
+					_recordCache.recordMetaDataReleased(postHashToRemove);
 					access.unpin(postHashToRemove);
 					
 					// Delete the entry for anyone listening.

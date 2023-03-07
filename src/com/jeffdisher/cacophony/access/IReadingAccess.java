@@ -1,9 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
 import java.net.URL;
-import java.util.function.Supplier;
 
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -34,19 +32,6 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return A reference to the restricted read-only interface to the followee data projection.
 	 */
 	IFolloweeReading readableFolloweeData();
-
-	/**
-	 * Returns a reference to the record cache, lazily constructing it if need be.
-	 * NOTE:  This is in the read-only interface since, even though it technically modifies the state of the object when
-	 * it performs the lazy creation of the cache.  This is acceptable since it doesn't modify on-disk or network state
-	 * and is technically an optimization (everything would work the same way if it generated the cache on every call).
-	 * To explain further, the cache is only created by one calling thread and persists until the FolloweeIndex is
-	 * modified, at which point it is invalidated and must be recreated by a later caller.
-	 * 
-	 * @param cacheGenerator The cache generation helper.
-	 * @return The shared read-only followee cache instance.
-	 */
-	LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator);
 
 	/**
 	 * Checks if the given file is tracked in the local pin cache.

@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -40,6 +39,8 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public class TestJsonGenerationHelpers
 {
 	public static final IpfsFile FILE1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
+	public static final IpfsFile FILE2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
+	public static final IpfsFile FILE3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
@@ -54,15 +55,28 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testPostStructNotCached() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element(false, "string", "description", 1L, "discussionUrl", null, null, null)));
+		LocalRecordCache cache = new LocalRecordCache();
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 1);
 		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
 		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":false}", data.toString());
 	}
 
 	@Test
+	public void testPostStructImplicitCached() throws Throwable
+	{
+		LocalRecordCache cache = new LocalRecordCache();
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 0);
+		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}", data.toString());
+	}
+
+	@Test
 	public void testPostStructCached() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element(true, "string", "description", 1L, "discussionUrl", IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG"), IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC"), null)));
+		LocalRecordCache cache = new LocalRecordCache();
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 2);
+		cache.recordThumbnailPinned(FILE1, FILE2);
+		cache.recordVideoPinned(FILE1, FILE3, 100);
 		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
 		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\",\"audioUrl\":null}", data.toString());
 	}
@@ -70,7 +84,10 @@ public class TestJsonGenerationHelpers
 	@Test
 	public void testPostStructCachedAudio() throws Throwable
 	{
-		LocalRecordCache cache = new LocalRecordCache(Map.of(FILE1, new LocalRecordCache.Element(true, "string", "description", 1L, "discussionUrl", IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG"), null, IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC"))));
+		LocalRecordCache cache = new LocalRecordCache();
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 2);
+		cache.recordThumbnailPinned(FILE1, FILE2);
+		cache.recordAudioPinned(FILE1, FILE3);
 		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
 		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":null,\"audioUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\"}", data.toString());
 	}
@@ -110,7 +127,7 @@ public class TestJsonGenerationHelpers
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			recordCache = LocalRecordCacheBuilder.buildFolloweeCache(access, indexFile, followIndex);
+			recordCache = LocalRecordCacheBuilder.buildInitializedRecordCache(access, indexFile, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -153,7 +170,7 @@ public class TestJsonGenerationHelpers
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			recordCache = LocalRecordCacheBuilder.buildFolloweeCache(access, publishedIndex, followIndex);
+			recordCache = LocalRecordCacheBuilder.buildInitializedRecordCache(access, indexFile, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).

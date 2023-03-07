@@ -8,12 +8,9 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
@@ -57,9 +54,6 @@ public class LocalDataModel
 	private FolloweeData _followIndex;
 	private PrefsData _globalPrefs;
 
-	private final ReentrantLock _cacheLock;
-	private LocalRecordCache _lazyFolloweeCache;
-
 	/**
 	 * Loads the initial state of the data model from disk.  If the constructor returns without exception, then the
 	 * local data model has been loaded and no more read-only operations related to it will run against storage.
@@ -70,9 +64,6 @@ public class LocalDataModel
 	{
 		_fileSystem = fileSystem;
 		_readWriteLock = new ReentrantReadWriteLock();
-		
-		// Setup the lock we will use to gate access to, and creation of, the lazy followee cache.
-		_cacheLock = new ReentrantLock();
 	}
 
 	/**
@@ -209,22 +200,6 @@ public class LocalDataModel
 			// We can't change the instance - this is just to signify it may have changed.
 			Assert.assertTrue((null == _globalPinCache) || (_globalPinCache == updateGlobalPinCache));
 			_globalPinCache = updateGlobalPinCache;
-			// Updating the _globalPinCache invalidates the _lazyFolloweeCache (this lock is redundant in this function
-			//  but is the right pattern).
-			// NOTE:  This isn't done on _followIndex since the cases where it changes in ways which would break the 
-			//  cache are also the cases where _globalPinCache is changed.  Beyond that, changes to this local stream
-			//  will NOT change _followIndex but do change _globalPinCache and should invalidate the cache.
-			// The only times where this will be extraneous are when the pin cache changes are only for unrelated
-			//  meta-data.
-			_cacheLock.lock();
-			try
-			{
-				_lazyFolloweeCache = null;
-			}
-			finally
-			{
-				_cacheLock.unlock();
-			}
 			somethingUpdated = true;
 		}
 		if (null != updateFollowIndex)
@@ -258,24 +233,6 @@ public class LocalDataModel
 		lock.lock.unlock();
 	}
 
-	public LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator)
-	{
-		_cacheLock.lock();
-		try
-		{
-			if (null == _lazyFolloweeCache)
-			{
-				_lazyFolloweeCache = cacheGenerator.get();
-			}
-			// Note that this can still be null if there was a connection error during generation.
-			return _lazyFolloweeCache;
-		}
-		finally
-		{
-			_cacheLock.unlock();
-		}
-	}
-
 	/**
 	 * Drops all the internal caches, forcing them to be lazily reloaded when next needed.  The only real reason for
 	 * this is for unit tests which may run into problems due to accidentally shared state.
@@ -287,16 +244,6 @@ public class LocalDataModel
 		_globalPinCache = null;
 		_followIndex = null;
 		_globalPrefs = null;
-		
-		_cacheLock.lock();
-		try
-		{
-			_lazyFolloweeCache = null;
-		}
-		finally
-		{
-			_cacheLock.unlock();
-		}
 	}
 
 
@@ -364,8 +311,6 @@ public class LocalDataModel
 		{
 			try (pinStream)
 			{
-				// We shouldn't have a followee cache, yet, so no need to lock and invalidate.
-				Assert.assertTrue(null == _lazyFolloweeCache);
 				pinCacheData = PinCacheData.buildOnCache(GlobalPinCache.fromStream(pinStream));
 			}
 			Assert.assertTrue(null != pinCacheData);

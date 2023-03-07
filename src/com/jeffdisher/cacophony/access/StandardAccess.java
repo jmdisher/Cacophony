@@ -5,14 +5,12 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -188,13 +186,6 @@ public class StandardAccess implements IWritingAccess
 	public IFolloweeReading readableFolloweeData()
 	{
 		return _followeeData;
-	}
-
-	@Override
-	public LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator)
-	{
-		// NOTE:  The underlying data store actually manages the locking around this generation so we can just defer to it.
-		return _readOnly.lazilyLoadFolloweeCache(cacheGenerator);
 	}
 
 	@Override

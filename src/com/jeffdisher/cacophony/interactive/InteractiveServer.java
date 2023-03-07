@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -56,6 +57,7 @@ public class InteractiveServer
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
+		LocalRecordCache localRecordCache;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			prefs = access.readPrefs();
@@ -78,6 +80,7 @@ public class InteractiveServer
 				// We already cached this data so this shouldn't happen.
 				throw Assert.unexpected(e);
 			}
+			localRecordCache = LocalRecordCacheBuilder.buildInitializedRecordCache(access, rootElement, followees);
 		}
 		
 		// We will create a handoff connector for the status operations from the background operations.
@@ -136,8 +139,7 @@ public class InteractiveServer
 				// We must have a connector by this point since this is only called on refresh, not start follow.
 				HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
 				Assert.assertTrue(null != elementsUnknownForFollowee);
-				// TODO: Pass in LocalRecordCache.
-				return new RefreshWrapper(environment, null, refresher, elementsUnknownForFollowee);
+				return new RefreshWrapper(environment, localRecordCache, refresher, elementsUnknownForFollowee);
 			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
@@ -168,13 +170,13 @@ public class InteractiveServer
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
 		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
 		
-		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, connectorsPerUser.get(ourPublicKey)));
+		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, localRecordCache, connectorsPerUser.get(ourPublicKey)));
 		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
 		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(environment, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, manager, connectorsPerUser.get(ourPublicKey)));
+		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, localRecordCache, manager, connectorsPerUser.get(ourPublicKey)));
 		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(environment, background));
 		
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
@@ -216,8 +218,8 @@ public class InteractiveServer
 		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, background));
 		
 		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, connectorsPerUser, dispatcher));
-		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, connectorsPerUser));
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, localRecordCache, connectorsPerUser, dispatcher));
+		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, localRecordCache, connectorsPerUser));
 		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, background));
 		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, background));
 		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, background));
@@ -231,7 +233,7 @@ public class InteractiveServer
 		validated.addGetHandler("/userInfo", 1, new GET_UserInfo(environment));
 		validated.addGetHandler("/postHashes", 1, new GET_PostHashes(environment));
 		validated.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(environment));
-		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(environment));
+		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(environment, localRecordCache));
 		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(environment));
 		validated.addGetHandler("/version", 0, new GET_Version());
 		

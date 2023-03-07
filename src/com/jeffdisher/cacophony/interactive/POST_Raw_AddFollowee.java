@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -25,13 +26,15 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
+	private final LocalRecordCache _recordCache;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
 	private final Consumer<Runnable> _connectorDispatcher;
 
-	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
+	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
+		_recordCache = recordCache;
 		_connectorsPerUser = connectorsPerUser;
 		_connectorDispatcher = connectorDispatcher;
 	}
@@ -79,8 +82,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 				try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
-					// TODO: Pass in LocalRecordCache.
-					refresher.finishRefresh(access, null, followees, lastPollMillis);
+					refresher.finishRefresh(access, _recordCache, followees, lastPollMillis);
 				}
 				finally
 				{

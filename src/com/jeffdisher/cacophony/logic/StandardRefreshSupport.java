@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
@@ -32,6 +33,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
+	private final List<Consumer<LocalRecordCache>> _localRecordCacheUpdates;
 
 	public StandardRefreshSupport(IEnvironment environment
 			, ConcurrentTransaction transaction
@@ -54,6 +56,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
+		_localRecordCacheUpdates = new ArrayList<>();
 	}
 
 	public void commitFolloweeChanges(IFolloweeWriting followees)
@@ -75,7 +78,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	 */
 	public void commitLocalCacheUpdates(LocalRecordCache recordCache)
 	{
-		// TODO: Implement.
+		for (Consumer<LocalRecordCache> consumer : _localRecordCacheUpdates)
+		{
+			consumer.accept(recordCache);
+		}
 	}
 
 	@Override
@@ -91,6 +97,9 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			// We want to record that we are aware of this, whether or not we are actually going to cache it.
 			_connectorForUser.create(elementHash, null);
 		}
+		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
+			cache.recordMetaDataPinned(elementHash, name, description, publishedSecondsUtc, discussionUrl, leafReferenceCount);
+		});
 	}
 	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
@@ -145,6 +154,17 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	{
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
+		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
+			cache.recordThumbnailPinned(elementHash, imageHash);
+			if (null != audioLeaf)
+			{
+				cache.recordAudioPinned(elementHash, audioLeaf);
+			}
+			if (null != videoLeaf)
+			{
+				cache.recordVideoPinned(elementHash, videoLeaf, videoEdgeSize);
+			}
+		});
 	}
 	@Override
 	public void removeElementFromCache(IpfsFile elementHash)
@@ -155,5 +175,8 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			// Even if this element wasn't in the cache, we are still saying it was removed.
 			_connectorForUser.destroy(elementHash);
 		}
+		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
+			cache.recordMetaDataReleased(elementHash);
+		});
 	}
 }

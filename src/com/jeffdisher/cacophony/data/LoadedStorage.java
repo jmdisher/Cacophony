@@ -1,8 +1,5 @@
 package com.jeffdisher.cacophony.data;
 
-import java.util.function.Supplier;
-
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
@@ -136,11 +133,5 @@ public class LoadedStorage implements IReadWriteLocalData
 		Assert.assertTrue(null != _writeLock);
 		_followIndex = followIndex;
 		_changed_followIndex = true;
-	}
-
-	@Override
-	public LocalRecordCache lazilyLoadFolloweeCache(Supplier<LocalRecordCache> cacheGenerator)
-	{
-		return _dataModel.lazilyLoadFolloweeCache(cacheGenerator);
 	}
 }
