@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.interactive;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -80,7 +79,7 @@ public class WS_DraftExistingVideo implements IWebSocketFactory
 				else
 				{
 					// There is no active process so just close this.
-					session.close(CloseStatus.SERVER_ERROR, "No process running");
+					session.close(WebSocketCodes.NOT_FOUND, "No process running");
 				}
 			}
 		}

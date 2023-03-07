@@ -6,7 +6,6 @@ import java.time.Duration;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -106,18 +105,18 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 					}
 					else
 					{
-						session.close(CloseStatus.SERVER_ERROR, "Already running");
+						session.close(WebSocketCodes.ALREADY_STARTED, "Already running");
 					}
 				}
 				catch (FileNotFoundException e)
 				{
 					// This happens in the case where the draft doesn't exist.
-					session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+					session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
 				}
 				catch (IOException e)
 				{
 					// This happened if we failed to run the processor.
-					session.close(CloseStatus.SERVER_ERROR, "Failed to run processing program: \"" + _processCommand + "\"");
+					session.close(WebSocketCodes.FAILED_TO_START, "Failed to run processing program: \"" + _processCommand + "\"");
 				}
 			}
 		}

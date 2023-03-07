@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
@@ -403,14 +402,14 @@ public class InteractiveHelpers
 			{
 				isSafe = false;
 				System.err.println("Invalid XSRF: \"" + value + "\"");
-				session.close(CloseStatus.SERVER_ERROR, "Invalid XSRF");
+				session.close(WebSocketCodes.SECURITY_FAILED, "Invalid XSRF");
 			}
 		}
 		else
 		{
 			isSafe = false;
 			System.err.println("Invalid IP: " + ip);
-			session.close(CloseStatus.SERVER_ERROR, "Invalid IP");
+			session.close(WebSocketCodes.SECURITY_FAILED, "Invalid IP");
 		}
 		return isSafe;
 	}

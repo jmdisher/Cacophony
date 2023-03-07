@@ -73,8 +73,7 @@ public class WS_UserEntries implements IWebSocketFactory
 				}
 				else
 				{
-					// This is an error - we don't know about this user.
-					session.close();
+					session.close(WebSocketCodes.NOT_FOUND, "User not known");
 				}
 			}
 		}

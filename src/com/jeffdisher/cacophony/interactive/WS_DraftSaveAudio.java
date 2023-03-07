@@ -5,7 +5,6 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.DraftManager;
@@ -91,7 +90,7 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 				else
 				{
 					// This happens in the case where the draft doesn't exist.
-					session.close(CloseStatus.SERVER_ERROR, "Draft does not exist");
+					session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
 				}
 			}
 		}

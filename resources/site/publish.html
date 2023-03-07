@@ -314,10 +314,10 @@ function onProcessingKeyDelete(key)
 	// We don't need to track the deletion.
 }
 
-function onProcessingSocketClose(scope, processed_review, event)
+function onProcessingSocketClose(scope, processed_review, event, ignoreError)
 {
-	// Note that scope.videoState.finalProcessed will be -1 if this was a failure but 0 if we found no active processor when this closed so we don't want to override in that case.
-	if (0 !== scope.videoState.finalProcessed)
+	let isSuccess = (1000 === event.code);
+	if (isSuccess)
 	{
 		scope.selectedDraft.processedVideo = {
 			height: scope.videoConfig.height,
@@ -329,6 +329,12 @@ function onProcessingSocketClose(scope, processed_review, event)
 	scope.videoState.processingSocket = null;
 	scope.videoState.finalProcessed = 0;
 	scope.$apply();
+	// We will allow errors, and just ignore them, in the case where this was invoked for an existing processing operation, since there might not be one.
+	// Otherwise, we want to report that something odd happened.
+	if (!isSuccess && !ignoreError)
+	{
+		alert(event.reason);
+	}
 }
 
 
@@ -385,7 +391,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			// onDelete
 			, onProcessingKeyDelete
 			// onSocketClose
-			, function(event) { onProcessingSocketClose($scope, processed_review, event); }
+			, function(event) { onProcessingSocketClose($scope, processed_review, event, true); }
 		);
 	}
 	$scope.createNewDraft = function()
@@ -499,7 +505,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			// onDelete
 			, onProcessingKeyDelete
 			// onSocketClose
-			, function(event) { onProcessingSocketClose($scope, processed_review, event); }
+			, function(event) { onProcessingSocketClose($scope, processed_review, event, false); }
 		);
 	}
 	$scope.stopProcessing = function()

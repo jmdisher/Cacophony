@@ -6,7 +6,6 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
@@ -29,8 +28,6 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class WS_BackgroundStatus implements IWebSocketFactory
 {
-	// WebSocket close codes in the range 4000-4999 are "private" and are for use in non-registered applications so we just use 4000 as our "invalid command" opcode.
-	public final static int WS_CLOSE_INVALID_COMMAND = 4000;
 	public final static String COMMAND_STOP = "COMMAND_STOP";
 	public final static String COMMAND_REPUBLISH = "COMMAND_REPUBLISH";
 
@@ -106,7 +103,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 				catch (IpfsConnectionException e)
 				{
 					// This error probably means serious issues so close the socket.
-					_session.close(CloseStatus.SERVER_ERROR, e.getLocalizedMessage());
+					_session.close(WebSocketCodes.IPFS_CONNECTION_ERROR, e.getLocalizedMessage());
 				}
 				if (null != root)
 				{
@@ -116,7 +113,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 			else
 			{
 				// This is unknown, so close the socket with an error.
-				_session.close(WS_CLOSE_INVALID_COMMAND, "Invalid command");
+				_session.close(WebSocketCodes.INVALID_COMMAND, "Invalid command");
 			}
 		}
 		
