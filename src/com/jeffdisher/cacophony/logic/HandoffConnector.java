@@ -33,6 +33,8 @@ public class HandoffConnector<K, V>
 	private final Map<K, V> _cache;
 	// The order in which the keys were created (since some representations want to preserve order).
 	private final List<K> _order;
+	// A "special" string can be set in the connector for relaying out-of-band meta-data, but this is kept very simple.
+	private String _special;
 
 	/**
 	 * Creates a new connector, executing all of its state mutations through the given dispatcher.
@@ -60,6 +62,12 @@ public class HandoffConnector<K, V>
 			// Add to the set.
 			boolean didAdd = _listeners.add(listener);
 			Assert.assertTrue(didAdd);
+			
+			// Set the special, if not null.
+			if (null != _special)
+			{
+				listener.specialChanged(_special);
+			}
 			
 			// Walk the list and relay the data we already have, in-order.
 			for (K key : _order)
@@ -171,6 +179,31 @@ public class HandoffConnector<K, V>
 		});
 	}
 
+	public void setSpecial(String special)
+	{
+		_dispatcher.accept(() ->
+		{
+			// Just set it, if it changed.
+			boolean isSame = (_special == special) || ((null != _special) && _special.equals(special));
+			if (!isSame)
+			{
+				_special = special;
+				
+				// Tell everyone.
+				Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+				while (iter.hasNext())
+				{
+					IHandoffListener<K, V> listener = iter.next();
+					boolean ok = listener.specialChanged(_special);
+					if (!ok)
+					{
+						iter.remove();
+					}
+				}
+			}
+		});
+	}
+
 
 	/**
 	 * The general callback interface for listeners.
@@ -206,5 +239,13 @@ public class HandoffConnector<K, V>
 		 * @return True if this was successful or false to unregister the target.
 		 */
 		boolean destroy(K key);
+		
+		/**
+		 * Called when the special out-of-band string is changed.
+		 * 
+		 * @param special The new value of the special.
+		 * @return True if this was successful or false to unregister the target.
+		 */
+		boolean specialChanged(String special);
 	}
 }

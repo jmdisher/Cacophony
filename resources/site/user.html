@@ -73,6 +73,12 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 			// Remove this from the list.
 			oldHashRemoved($scope, hash);
 		}
+		// Special
+		, function(string)
+		{
+			// Do nothing.
+			console.log("Unhandled special: " + string);
+		}
 		// Close.
 		, function(event)
 		{

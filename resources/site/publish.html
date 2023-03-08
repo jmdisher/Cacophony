@@ -390,6 +390,12 @@ GLOBAL_Application.controller('AppController', function($scope)
 			, function(key, value) {onProcessingKeyUpdate($scope.selectedDraft, processing_progress_bar, key, value); }
 			// onDelete
 			, onProcessingKeyDelete
+			// Special
+			, function(string)
+			{
+				// Do nothing.
+				console.log("Unhandled special: " + string);
+			}
 			// onSocketClose
 			, function(event) { onProcessingSocketClose($scope, processed_review, event, true); }
 		);
@@ -504,6 +510,12 @@ GLOBAL_Application.controller('AppController', function($scope)
 			, function(key, value) {onProcessingKeyUpdate($scope.selectedDraft, processing_progress_bar, key, value); }
 			// onDelete
 			, onProcessingKeyDelete
+			// Special
+			, function(string)
+			{
+				// Do nothing.
+				console.log("Unhandled special: " + string);
+			}
 			// onSocketClose
 			, function(event) { onProcessingSocketClose($scope, processed_review, event, false); }
 		);

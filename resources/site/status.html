@@ -62,6 +62,12 @@ GLOBAL_Application.controller('AppController', function($scope)
 				});
 				$scope.$apply();
 			}
+			// Special
+			, function(string)
+			{
+				// Do nothing.
+				console.log("Unhandled special: " + string);
+			}
 			// Close.
 			, function(event)
 			{

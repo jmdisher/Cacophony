@@ -4,6 +4,7 @@ import org.eclipse.jetty.websocket.api.Session;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -42,5 +43,12 @@ public class VideoProcessorCallbackHandler implements IHandoffListener<String, L
 			_session.close();
 		}
 		return didSend;
+	}
+
+	@Override
+	public boolean specialChanged(String special)
+	{
+		// This case doesn't use meta-data.
+		throw Assert.unreachable();
 	}
 }

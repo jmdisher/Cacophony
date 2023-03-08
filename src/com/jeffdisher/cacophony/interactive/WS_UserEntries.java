@@ -98,5 +98,12 @@ public class WS_UserEntries implements IWebSocketFactory
 			// Removed.
 			return SocketEventHelpers.sendDelete(_endPoint, Json.value(key.toSafeString()));
 		}
+		
+		@Override
+		public boolean specialChanged(String special)
+		{
+			// This case doesn't use meta-data.
+			throw Assert.unreachable();
+		}
 	}
 }

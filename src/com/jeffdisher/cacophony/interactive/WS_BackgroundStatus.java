@@ -135,5 +135,12 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 		{
 			return SocketEventHelpers.sendDelete(_endPoint, Json.value(key));
 		}
+		
+		@Override
+		public boolean specialChanged(String special)
+		{
+			// This case doesn't use meta-data.
+			throw Assert.unreachable();
+		}
 	}
 }

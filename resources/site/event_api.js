@@ -9,9 +9,11 @@
 //	-updates an existing key with the given value
 // -onDelete(key)
 //	-deletes the given existing key
+// -onSpecial(string)
+//  -called when the special string changes
 // -onSocketClose(event)
 //	-not part of our event API but called with the closing event when the socket connection drops
-function createWebSocketStateEventListener(url, protocol, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose)
+function createWebSocketStateEventListener(url, protocol, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose)
 {
 	let socket = new WebSocket(url, protocol);
 	socket.onopen = function()
@@ -35,6 +37,10 @@ function createWebSocketStateEventListener(url, protocol, onSocketOpen, onCreate
 		{
 			onDelete(object.key);
 		}
+		else if ('special' === object.event)
+		{
+			onSpecial(object.key);
+		}
 		else
 		{
 			console.log("unknown event type: " + object.event);
@@ -51,24 +57,24 @@ function createWebSocketStateEventListener(url, protocol, onSocketOpen, onCreate
 // To namespace these, since we can't use _actual_ module semantics (since a file with this name is exported for both http and file - file can't use modules for some bogus reason), we will attach these methods to an object for export.
 // This also gives us a single point where we can associate the URL and protocol name to the definitions in InteractiveServer.java.
 var EVENTS_API = {
-	backgroundStatus: function(onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/backgroundStatus", "event_api"
-		, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+	backgroundStatus: function(onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/backgroundStatus", "event_api"
+		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
-	processVideo: function(id, command, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) {
+	processVideo: function(id, command, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) {
 		let url = "ws://127.0.0.1:8000/draft/processVideo/" + id + "/" + encodeURIComponent(command);
 		return createWebSocketStateEventListener(url, "event_api"
-			, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+			, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
-	existingVideo: function(id, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) {
+	existingVideo: function(id, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) {
 		let url = "ws://127.0.0.1:8000/draft/existingVideo/" + id;
 		return createWebSocketStateEventListener(url, "event_api"
-			, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+			, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
-	followeeRefresh: function(onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/followee/refreshTime", "event_api"
-		, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+	followeeRefresh: function(onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/followee/refreshTime", "event_api"
+		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
-	userEntries: function(userKey, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/user/entries/" + userKey, "event_api"
-		, onSocketOpen, onCreate, onUpdate, onDelete, onSocketClose
+	userEntries: function(userKey, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/user/entries/" + userKey, "event_api"
+		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
 };
 

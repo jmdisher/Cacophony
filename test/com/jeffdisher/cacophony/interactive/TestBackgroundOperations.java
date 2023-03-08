@@ -501,5 +501,10 @@ public class TestBackgroundOperations
 			this.ended += 1;
 			return true;
 		}
+		@Override
+		public boolean specialChanged(String special)
+		{
+			throw new AssertionError("Not used");
+		}
 	}
 }

@@ -241,6 +241,11 @@ public class TestFolloweeData
 				Assert.assertNull(map.put(key, value));
 				return true;
 			}
+			@Override
+			public boolean specialChanged(String special)
+			{
+				throw new AssertionError("Not used");
+			}
 		});
 		data.attachRefreshConnector(connector);
 		Assert.assertEquals(1, map.size());

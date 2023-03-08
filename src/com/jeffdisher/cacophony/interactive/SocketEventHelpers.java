@@ -21,6 +21,7 @@ public class SocketEventHelpers
 	public static final String EVENT_CREATE = "create";
 	public static final String EVENT_UPDATE = "update";
 	public static final String EVENT_DELETE = "delete";
+	public static final String EVENT_SPECIAL = "special";
 	public static final String KEY = "key";
 	public static final String VALUE = "value";
 
@@ -37,6 +38,11 @@ public class SocketEventHelpers
 	public static boolean sendDelete(RemoteEndpoint endpoint, JsonValue key)
 	{
 		return _sendCommon(endpoint, EVENT_DELETE, key, Json.NULL);
+	}
+
+	public static boolean sendSpecial(RemoteEndpoint endpoint, JsonValue special)
+	{
+		return _sendCommon(endpoint, EVENT_SPECIAL, special, Json.NULL);
 	}
 
 

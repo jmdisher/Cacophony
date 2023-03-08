@@ -126,6 +126,12 @@ function beginPopulating($scope)
 			keyToObjectMap[key] = undefined;
 			$scope.$apply();
 		}
+		// Special
+		, function(string)
+		{
+			// Do nothing.
+			console.log("Unhandled special: " + string);
+		}
 		// Close.
 		, function(event)
 		{

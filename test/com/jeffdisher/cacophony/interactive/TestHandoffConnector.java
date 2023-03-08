@@ -149,11 +149,40 @@ public class TestHandoffConnector
 		connector.destroy("one");
 	}
 
+	@Test
+	public void testSpecial() throws Throwable
+	{
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
+		TestListener listen1 = new TestListener();
+		TestListener listen2 = new TestListener();
+		connector.registerListener(listen1);
+		connector.create("one", "1 1");
+		connector.create("two", "2 1");
+		connector.setSpecial("special");
+		// This redundant update should not appear.
+		connector.setSpecial("special");
+		connector.registerListener(listen2);
+		connector.update("two", "2 2");
+		connector.unregisterListener(listen1);
+		connector.setSpecial(null);
+		
+		Assert.assertEquals(2, listen1.keyOrder.size());
+		Assert.assertEquals("one", listen1.keyOrder.get(0));
+		Assert.assertEquals("two", listen1.keyOrder.get(1));
+		Assert.assertEquals("special", listen1.special);
+		
+		Assert.assertEquals(2, listen2.keyOrder.size());
+		Assert.assertEquals("one", listen2.keyOrder.get(0));
+		Assert.assertEquals("two", listen2.keyOrder.get(1));
+		Assert.assertNull(listen2.special);
+	}
+
 
 	private static class TestListener implements HandoffConnector.IHandoffListener<String, String>
 	{
 		public Map<String, String> map = new HashMap<>();
 		public List<String> keyOrder = new ArrayList<>();
+		public String special = null;
 		public boolean fail = false;
 		
 		@Override
@@ -187,6 +216,13 @@ public class TestHandoffConnector
 				boolean didRemove = keyOrder.remove(key);
 				Assert.assertTrue(didRemove);
 			}
+			return !fail;
+		}
+		@Override
+		public boolean specialChanged(String special)
+		{
+			Assert.assertNotEquals(this.special, special);
+			this.special = special;
 			return !fail;
 		}
 	}

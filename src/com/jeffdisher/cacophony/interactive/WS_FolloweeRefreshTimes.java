@@ -10,6 +10,7 @@ import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -75,6 +76,13 @@ public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 		{
 			// Happens when the followee is deleted from the FolloweeData.
 			return SocketEventHelpers.sendDelete(_endPoint, Json.value(key.toPublicKey()));
+		}
+		
+		@Override
+		public boolean specialChanged(String special)
+		{
+			// This case doesn't use meta-data.
+			throw Assert.unreachable();
 		}
 	}
 }
