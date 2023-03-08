@@ -54,6 +54,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		userInfoForUserLoaded($scope, userInfo);
 	});
 	$scope.posts = [];
+	$scope.specialString = null;
 	EVENTS_API.userEntries(publicKey
 		// Socket open.
 		, function(socket)
@@ -76,8 +77,9 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		// Special
 		, function(string)
 		{
-			// Do nothing.
-			console.log("Unhandled special: " + string);
+			// This normally is used when refreshing.
+			$scope.specialString = string;
+			$scope.$apply();
 		}
 		// Close.
 		, function(event)
@@ -361,6 +363,7 @@ function stopCamera(video_preview, stream)
 					<button type="button" class="btn btn-secondary" ng-click="revertEdit()" ng-disabled="editState.saveInProgress">Revert Changes</button>
 				</div>
 			</div>
+			<h3 ng-show="null !== specialString">{{specialString}}</h3>
 			<div ng-repeat="post in posts" class="row card">
 				<h5 class="card-header">{{post.name}}</h5>
 				<div class="card-body container row">

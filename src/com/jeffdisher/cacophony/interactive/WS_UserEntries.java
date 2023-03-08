@@ -102,8 +102,8 @@ public class WS_UserEntries implements IWebSocketFactory
 		@Override
 		public boolean specialChanged(String special)
 		{
-			// This case doesn't use meta-data.
-			throw Assert.unreachable();
+			// This is used when describing that the refresh is running.
+			return SocketEventHelpers.sendSpecial(_endPoint, Json.value(special));
 		}
 	}
 }

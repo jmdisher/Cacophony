@@ -122,6 +122,10 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
 		
+		if (null != connectorForUser)
+		{
+			connectorForUser.setSpecial("Refreshing");
+		}
 		_refreshSupport = new StandardRefreshSupport(_environment
 				, _transaction
 				, _followeeKey
@@ -185,6 +189,10 @@ public class ConcurrentFolloweeRefresher
 			_environment.logToConsole("Followee data appears to be corrupt: " + e.getLocalizedMessage());
 			_environment.logToConsole("Refresh aborted and will be retried in the future");
 			refreshWasSuccess = false;
+		}
+		if (null != connectorForUser)
+		{
+			connectorForUser.setSpecial(null);
 		}
 		_didRun = true;
 		_isSuccess = refreshWasSuccess;

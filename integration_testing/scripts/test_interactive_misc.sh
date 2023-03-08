@@ -135,9 +135,20 @@ requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\"
 echo -n "-ACK" > "$FOLLOWEE_INPUT"
 
 echo "Verify that we see the new entry in the entry socket..."
+# Note that we may see multiple attempts to refresh, depending on when we attached this socket, but will always just see one create in the last attempt.
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null}"
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+while [[ ! "$SAMPLE" =~ "{\"event\":\"create\",\"key\":" ]]
+do
+	SAMPLE=$(cat "$ENTRIES_OUTPUT")
+	echo -n "-ACK" > "$ENTRIES_INPUT"
+done
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null}"
 
 echo "Test the add/remove of the followee..."
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
@@ -151,7 +162,13 @@ fi
 # We should observe the delete of this record since we stopped following.
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null}"
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null}"
 
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
