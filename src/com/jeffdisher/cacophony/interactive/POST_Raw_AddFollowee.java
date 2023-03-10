@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -54,49 +55,55 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 				isAlreadyFollowed = (null != lastRoot);
 				if (!isAlreadyFollowed)
 				{
-					refresher = new ConcurrentFolloweeRefresher(_environment
-							, userToAdd
-							, lastRoot
-							, access.readPrefs()
-							, false
-					);
+					// First, start the follow.
+					IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logToConsole(message), access, userToAdd);
 					
-					// Clean the cache and setup state for the refresh.
-					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+					// If that worked, save back the followee and request a refresh.
+					if (null != hackedRoot)
+					{
+						// Create the new followee record, saying we never refreshed it (since this is only a hacked element).
+						followees.createNewFollowee(userToAdd, hackedRoot, 0L);
+						
+						refresher = new ConcurrentFolloweeRefresher(_environment
+								, userToAdd
+								, hackedRoot
+								, access.readPrefs()
+								, false
+						);
+						
+						// Clean the cache and setup state for the refresh.
+						refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+					}
 				}
 			}
 			
 			if (!isAlreadyFollowed)
 			{
-				// Create the connector.
-				HandoffConnector<IpfsFile, Void> followeeConnector = new HandoffConnector<>(_connectorDispatcher);
-				_connectorsPerUser.put(userToAdd, followeeConnector);
-				
-				// Run the actual refresh.
-				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh(followeeConnector)
-						: false
-				;
-				
-				long lastPollMillis = _environment.currentTimeMillis();
-				try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+				if (null != refresher)
 				{
-					IFolloweeWriting followees = access.writableFolloweeData();
-					refresher.finishRefresh(access, _recordCache, followees, lastPollMillis);
-				}
-				finally
-				{
-					if (didRefresh)
+					// Create the connector.
+					HandoffConnector<IpfsFile, Void> followeeConnector = new HandoffConnector<>(_connectorDispatcher);
+					_connectorsPerUser.put(userToAdd, followeeConnector);
+					
+					// Run the actual refresh - even if this fails, we will still proceed since we added the followee.
+					refresher.runRefresh(followeeConnector);
+					long lastPollMillis = _environment.currentTimeMillis();
+					try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+					{
+						IFolloweeWriting followees = access.writableFolloweeData();
+						refresher.finishRefresh(access, _recordCache, followees, lastPollMillis);
+					}
+					finally
 					{
 						// Add this to the background operations so it will be refreshed again.
 						_backgroundOperations.enqueueFolloweeRefresh(userToAdd, lastPollMillis);
 						response.setStatus(HttpServletResponse.SC_OK);
 					}
-					else
-					{
-						// We don't know who this is.
-						response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-					}
+				}
+				else
+				{
+					// We don't know who this is.
+					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 				}
 			}
 			else

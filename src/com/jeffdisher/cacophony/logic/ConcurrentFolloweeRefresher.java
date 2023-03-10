@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,7 +66,7 @@ public class ConcurrentFolloweeRefresher
 	{
 		Assert.assertTrue(null != environment);
 		Assert.assertTrue(null != followeeKey);
-		// previousRoot can be null.
+		Assert.assertTrue(null != previousRoot);
 		Assert.assertTrue(null != prefs);
 		
 		_environment = environment;
@@ -96,10 +95,7 @@ public class ConcurrentFolloweeRefresher
 		
 		CommandHelpers.shrinkCacheToFitInPrefs(_environment, access, fullnessFraction);
 		_transaction = access.openConcurrentTransaction();
-		_cachedEntriesForFollowee = (null != _previousRoot)
-				? followees.snapshotAllElementsForFollowee(_followeeKey)
-				: Collections.emptyMap()
-		;
+		_cachedEntriesForFollowee = followees.snapshotAllElementsForFollowee(_followeeKey);
 		Assert.assertTrue(null != _cachedEntriesForFollowee);
 		_currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
 		_keyResolve = _isDelete
@@ -168,14 +164,7 @@ public class ConcurrentFolloweeRefresher
 		catch (IpfsConnectionException e)
 		{
 			_environment.logToConsole("Network failure in refresh: " + e.getLocalizedMessage());
-			if (null == _previousRoot)
-			{
-				_environment.logToConsole("Initial follow aborted and will need to be manually retried in the future");
-			}
-			else
-			{
-				_environment.logToConsole("Refresh aborted and will be retried in the future");
-			}
+			_environment.logToConsole("Refresh aborted and will be retried in the future");
 			refreshWasSuccess = false;
 		}
 		catch (SizeConstraintException e)
@@ -229,12 +218,6 @@ public class ConcurrentFolloweeRefresher
 				_refreshSupport.commitFolloweeChanges(followees);
 				followees.removeFollowee(_followeeKey);
 			}
-			else if (null == _previousRoot)
-			{
-				// Create the new record.
-				followees.createNewFollowee(_followeeKey, _newRoot, currentTimeMillis);
-				_refreshSupport.commitFolloweeChanges(followees);
-			}
 			else
 			{
 				// Update existing record.
@@ -250,11 +233,8 @@ public class ConcurrentFolloweeRefresher
 		}
 		else
 		{
-			if (null != _previousRoot)
-			{
-				// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
-				followees.updateExistingFollowee(_followeeKey, _previousRoot, currentTimeMillis);
-			}
+			// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
+			followees.updateExistingFollowee(_followeeKey, _previousRoot, currentTimeMillis);
 			_transaction.rollback(resolver);
 		}
 		_didFinish = true;

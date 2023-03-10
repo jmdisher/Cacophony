@@ -89,7 +89,11 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "h
 # Verify that we see the new followee reference created in the follow refresh time socket.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0}"
+# NOTE:  Adding a new following emits the "create" and the "update" since it the followee is added and _then_ populated.
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 # Verify that the post list is empty.
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
@@ -182,7 +186,11 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0}"
+# NOTE:  Adding a new following emits the "create" and the "update" since it the followee is added and _then_ populated.
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""

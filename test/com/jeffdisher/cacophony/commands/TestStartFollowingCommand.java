@@ -114,7 +114,7 @@ public class TestStartFollowingCommand
 		executor.shutdown();
 		
 		// Check for the error message.
-		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Refresh aborted and will be retried in the future"));
+		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Follow aborted and will be retried in the future"));
 		
 		// Check that the data shows nobody being followed.
 		LocalDataModel model = new LocalDataModel(filesystem);

@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -34,20 +35,20 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		if (didRefresh)
 		{
-			_finish(environment, access, refresher);
-		}
-		finally
-		{
-			if (didRefresh)
+			try (IWritingAccess access = StandardAccess.writeAccess(environment))
+			{
+				_finish(environment, access, refresher);
+			}
+			finally
 			{
 				log.finish("Follow successful!");
 			}
-			else
-			{
-				log.finish("Follow failed!");
-			}
+		}
+		else
+		{
+			log.finish("Follow failed!");
 		}
 	}
 
@@ -63,15 +64,28 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			throw new UsageException("Already following public key: " + _publicKey.toPublicKey());
 		}
 		
-		ConcurrentFolloweeRefresher refresher = new ConcurrentFolloweeRefresher(environment
-				, _publicKey
-				, lastRoot
-				, access.readPrefs()
-				, false
-		);
+		// First, start the follow.
+		IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> environment.logToConsole(message), access, _publicKey);
 		
-		// Clean the cache and setup state for the refresh.
-		refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+		// Proceed to a normal refresh if this worked.
+		ConcurrentFolloweeRefresher refresher = null;
+		if (null != hackedRoot)
+		{
+			// Save this initial followee state.
+			followees.createNewFollowee(_publicKey, hackedRoot, environment.currentTimeMillis());
+			
+			// Now, proceed as a normal refresh of an existing followee.
+			refresher = new ConcurrentFolloweeRefresher(environment
+					, _publicKey
+					, hackedRoot
+					, access.readPrefs()
+					, false
+			);
+			
+			// Clean the cache and setup state for the refresh.
+			refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+		}
+		
 		return refresher;
 	}
 

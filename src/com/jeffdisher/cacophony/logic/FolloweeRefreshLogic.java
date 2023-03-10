@@ -51,16 +51,17 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public class FolloweeRefreshLogic
 {
 	/**
-	 * Performs a refresh of the cached elements referenced by the given indices.  It can be used to start following,
-	 * refresh an existing followee, and stop following a given user.
+	 * Performs a refresh of the cached elements referenced by the given indices.  It can only be used on existing
+	 * followees, to either refresh them or delete them.  For new cases, startFollowing() must be called first.
 	 * 
 	 * @param support The interface of external requirements used by the algorithm.
 	 * @param prefs The preferences object (used for leaf selection and cache limit checks).
-	 * @param oldIndexElement The previous index of the user, from the last refresh attempt.
+	 * @param oldIndexElement The previous index of the user, from the last refresh attempt (cannot be null).
 	 * @param newIndexElement The new index of the user, to be used for this refresh attempt.
 	 * @param currentCacheUsageInBytes The current cache occupancy.
 	 * @throws IpfsConnectionException If there is a failure to fetch a meta-data element (means an abort).
 	 * @throws SizeConstraintException If a meta-data element is too big for our limits (means an abort).
+	 * @throws FailedDeserializationException Meta-data was considered invalid and couldn't be parsed (means an abort).
 	 */
 	public static void refreshFollowee(IRefreshSupport support
 			, PrefsData prefs
@@ -69,19 +70,15 @@ public class FolloweeRefreshLogic
 			, long currentCacheUsageInBytes
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
-		// Note that only the roots can be null (at most one).
-		// Even the existingRecord will be non-null, even if nothing is in it.
+		// Note that only the new root can be null.
 		Assert.assertTrue(null != support);
 		Assert.assertTrue(null != prefs);
-		Assert.assertTrue((null != oldIndexElement) || (null != newIndexElement));
+		Assert.assertTrue(null != oldIndexElement);
 		
 		// Check if the root changed.
-		if ((null == oldIndexElement) || !oldIndexElement.equals(newIndexElement))
+		if (!oldIndexElement.equals(newIndexElement))
 		{
-			if (null != oldIndexElement)
-			{
-				support.deferredRemoveMetaDataFromFollowCache(oldIndexElement);
-			}
+			support.deferredRemoveMetaDataFromFollowCache(oldIndexElement);
 			if (null != newIndexElement)
 			{
 				// Make sure that this isn't too big.
@@ -105,6 +102,62 @@ public class FolloweeRefreshLogic
 			IpfsFile newRecordsElement = _cidOrNull(newIndex.getRecords());
 			_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
 		}
+	}
+
+	/**
+	 * Handles the case when a new followee is being added to the followee set, for the first time.  This only validates
+	 * the core meta-data and caches their description and recommendation information, ignoring their record list and
+	 * uploading a fake empty list so that this "first refresh" can complete very quickly.
+	 * This allows a new followee to be added quickly, while the long-running refresh operation can be handled in a more
+	 * forgiving path.
+	 * 
+	 * @param support The interface of external requirements used by the algorithm.
+	 * @param newIndexElement The new index of the user, to be used for this refresh attempt.
+	 * @return The "fake" index element CID created to allow this to complete quickly.
+	 * @throws IpfsConnectionException If there is a failure to fetch a meta-data element (means an abort).
+	 * @throws SizeConstraintException If a meta-data element is too big for our limits (means an abort).
+	 * @throws FailedDeserializationException Meta-data was considered invalid and couldn't be parsed (means an abort).
+	 */
+	public static IpfsFile startFollowing(IStartSupport support
+			, IpfsFile newIndexElement
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
+	{
+		// Note that only the roots can be null (at most one).
+		// Even the existingRecord will be non-null, even if nothing is in it.
+		Assert.assertTrue(null != support);
+		Assert.assertTrue(null != newIndexElement);
+		
+		// Load the root element - we will NOT cache this, since we are going to use a hacked variant.
+		_checkSizeInline(support, "index", newIndexElement, SizeLimits.MAX_INDEX_SIZE_BYTES);
+		StreamIndex newIndex = support.loadNotCached(newIndexElement, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		
+		// Load the description.
+		IpfsFile newDescriptionElement = _cidOrNull(newIndex.getDescription());
+		_checkSizeInline(support, "description", newDescriptionElement, SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
+		support.addMetaDataToFollowCache(newDescriptionElement).get();
+		StreamDescription newDescription = support.loadCached(newDescriptionElement, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+		IpfsFile userPicCid = IpfsFile.fromIpfsCid(newDescription.getPicture());
+		_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
+		support.addMetaDataToFollowCache(userPicCid).get();
+		
+		// Load the recommendations.
+		IpfsFile newRecommendationsElement = _cidOrNull(newIndex.getRecommendations());
+		_checkSizeInline(support, "recommendations", newRecommendationsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+		support.addMetaDataToFollowCache(newRecommendationsElement).get();
+		StreamRecommendations newRecommendations = support.loadCached(newRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+		Assert.assertTrue(null != newRecommendations);
+		
+		// (we ignore the records element and create a fake one - this allows the expensive part of the refresh to be decoupled from the initial follow).
+		StreamRecords fakeRecords = new StreamRecords();
+		IpfsFile fakeRecordsCid = support.uploadNewData(GlobalData.serializeRecords(fakeRecords));
+		StreamIndex fakeIndex = new StreamIndex();
+		fakeIndex.setVersion(1);
+		fakeIndex.setDescription(newDescriptionElement.toSafeString());
+		fakeIndex.setRecommendations(newRecommendationsElement.toSafeString());
+		fakeIndex.setRecords(fakeRecordsCid.toSafeString());
+		IpfsFile fakeIndexCid = support.uploadNewData(GlobalData.serializeIndex(fakeIndex));
+		
+		return fakeIndexCid;
 	}
 
 
@@ -510,7 +563,7 @@ public class FolloweeRefreshLogic
 		;
 	}
 
-	private static void _checkSizeInline(IRefreshSupport support, String context, IpfsFile element, long sizeLimit) throws IpfsConnectionException, SizeConstraintException
+	private static void _checkSizeInline(_ICommonSupport support, String context, IpfsFile element, long sizeLimit) throws IpfsConnectionException, SizeConstraintException
 	{
 		long size = support.getSizeInBytes(element).get();
 		if (size > sizeLimit)
@@ -519,11 +572,8 @@ public class FolloweeRefreshLogic
 		}
 	}
 
-	/**
-	 * The interface required for external callers to this class.
-	 * This just exists to make the external requirements clearer and to make tests simpler.
-	 */
-	public interface IRefreshSupport
+
+	private interface _ICommonSupport
 	{
 		/**
 		 * Logs an informational message.
@@ -531,6 +581,21 @@ public class FolloweeRefreshLogic
 		 * @param message The message to log.
 		 */
 		void logMessage(String message);
+		/**
+		 * Requests the size of a CID entry, in bytes.  This CID may or may not be pinned.
+		 * 
+		 * @param cid The CID to check.
+		 * @return The future size response.
+		 */
+		FutureSize getSizeInBytes(IpfsFile cid);
+	}
+
+	/**
+	 * The interface required for external callers to this class.
+	 * This just exists to make the external requirements clearer and to make tests simpler.
+	 */
+	public interface IRefreshSupport extends _ICommonSupport
+	{
 		/**
 		 * Called when a new record been pinned.  This may not be added to the cache, since it may have no leaves or
 		 * they may be too large, but the meta-data is now locally pinned.
@@ -543,13 +608,6 @@ public class FolloweeRefreshLogic
 		 * @param leafReferenceCount The number of attached leaves (thumbnail, audio, videos, etc).
 		 */
 		void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount);
-		/**
-		 * Requests the size of a CID entry, in bytes.  This CID may or may not be pinned.
-		 * 
-		 * @param cid The CID to check.
-		 * @return The future size response.
-		 */
-		FutureSize getSizeInBytes(IpfsFile cid);
 		/**
 		 * Requests that a piece of XML meta-data be pinned locally.  This could be the element or some other
 		 * intermediary data.
@@ -622,5 +680,40 @@ public class FolloweeRefreshLogic
 		 * @param elementHash The CID of the meta-data XML.
 		 */
 		void removeElementFromCache(IpfsFile elementHash);
+	}
+
+	/**
+	 * The interface required for external callers to this class.
+	 * This just exists to make the external requirements clearer and to make tests simpler.
+	 */
+	public interface IStartSupport extends _ICommonSupport
+	{
+		/**
+		 * Requests that a piece of XML meta-data be pinned locally.  This could be the element or some other
+		 * intermediary data.
+		 * 
+		 * @param cid The CID of the meta-data XML.
+		 * @return The future pin response.
+		 */
+		FuturePin addMetaDataToFollowCache(IpfsFile cid);
+		/**
+		 * Requests a read of data which is already pinned on the local node.
+		 * 
+		 * @param <R> The type of object to return.
+		 * @param file The CID of the data to read.
+		 * @param decoder A deserializer to convert the loaded bytes into the returned R type.
+		 * @return The future read response.
+		 */
+		<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
+		/**
+		 * Requests a read of data which is not known to be pinned on the local node.
+		 * 
+		 * @param <R> The type of object to return.
+		 * @param file The CID of the data to read.
+		 * @param decoder A deserializer to convert the loaded bytes into the returned R type.
+		 * @return The future read response.
+		 */
+		<R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder);
+		IpfsFile uploadNewData(byte[] data) throws IpfsConnectionException;
 	}
 }
