@@ -19,8 +19,8 @@ USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
 STATUS_OUTPUT=/tmp/status_output
 STATUS_INPUT=/tmp/status_input
-FOLLOWEE_OUTPUT=/tmp/followee_output
-FOLLOWEE_INPUT=/tmp/followee_input
+FOLLOWEE_REFRESH_OUTPUT=/tmp/followee_refresh_output
+FOLLOWEE_REFRESH_INPUT=/tmp/followee_refresh_input
 ENTRIES_OUTPUT=/tmp/entries_output
 ENTRIES_INPUT=/tmp/entries_input
 
@@ -28,7 +28,7 @@ rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 rm -f "$STATUS_INPUT" "$STATUS_OUTPUT"
-rm -f "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT"
+rm -f "$FOLLOWEE_REFRESH_INPUT" "$FOLLOWEE_REFRESH_OUTPUT"
 rm -f "$ENTRIES_INPUT" "$ENTRIES_OUTPUT"
 
 
@@ -77,8 +77,20 @@ STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$STATUS_OUTPUT" > /dev/null
 
+echo "Attach the followee refresh WebSocket..."
+mkfifo "$FOLLOWEE_REFRESH_INPUT"
+mkfifo "$FOLLOWEE_REFRESH_OUTPUT"
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/refreshTime" "event_api" "$FOLLOWEE_REFRESH_INPUT" "$FOLLOWEE_REFRESH_OUTPUT" &
+FOLLOWEE_REFRESH_PID=$!
+cat "$FOLLOWEE_REFRESH_OUTPUT" > /dev/null
+
 echo "Make user1 follow user2 and verify an empty stream..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+# Verify that we see the new followee reference created in the follow refresh time socket.
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+# Verify that the post list is empty.
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 
@@ -103,16 +115,10 @@ echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
-
-echo "Attach the followee refresh WebSocket and verify followee state..."
-mkfifo "$FOLLOWEE_INPUT"
-mkfifo "$FOLLOWEE_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/refreshTime" "event_api" "$FOLLOWEE_INPUT" "$FOLLOWEE_OUTPUT" &
-FOLLOWEE_PID=$!
-cat "$FOLLOWEE_OUTPUT" > /dev/null
-SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
-echo -n "-ACK" > "$FOLLOWEE_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+# We should also see this update the refresh time.
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 
 echo "Make a post as user2..."
 CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "post" --description "no description"
@@ -130,12 +136,11 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$POST_LIST" "[\"Qm"
 
 echo "Verify that we see the refresh in the followee socket..."
-SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
-echo -n "-ACK" > "$FOLLOWEE_INPUT"
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 
 echo "Verify that we see the new entry in the entry socket..."
-# Note that we may see multiple attempts to refresh, depending on when we attached this socket, but will always just see one create in the last attempt.
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null}"
@@ -169,16 +174,18 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null}"
+# We should also see the followee deleted from the refresh output.
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null}"
 
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
+echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""
-SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
-echo -n "-ACK" > "$FOLLOWEE_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null}"
-SAMPLE=$(cat "$FOLLOWEE_OUTPUT")
-echo -n "-ACK" > "$FOLLOWEE_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
 
 echo "Check asking for information about users, including invalid keys..."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/unknownUser/BOGUS")
@@ -253,10 +260,10 @@ echo "Stop the server and wait for it to exit..."
 echo -n "COMMAND_STOP" > "$STATUS_INPUT"
 wait $SERVER_PID
 echo -n "-WAIT" > "$STATUS_INPUT"
-echo -n "-WAIT" > "$FOLLOWEE_INPUT"
+echo -n "-WAIT" > "$FOLLOWEE_REFRESH_INPUT"
 echo -n "-WAIT" > "$ENTRIES_INPUT"
 wait $STATUS_PID
-wait $FOLLOWEE_PID
+wait $FOLLOWEE_REFRESH_PID
 wait $ENTRIES_PID
 
 echo "Check that our upload utility can handle large uploads..."

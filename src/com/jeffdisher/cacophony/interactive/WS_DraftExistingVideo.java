@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Tries to connect to an existing video processing command.
+ * Output is identical to WS_DraftProcessVideo, once the connection is established.
  */
 public class WS_DraftExistingVideo implements IWebSocketFactory
 {

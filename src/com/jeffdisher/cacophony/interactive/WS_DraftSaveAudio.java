@@ -14,6 +14,8 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Opens an audio save web socket for the given draft ID.
+ * Receives binary payloads from the client which are interpreted as the binary stream for the audio.
+ * Sends nothing.
  */
 public class WS_DraftSaveAudio implements IWebSocketFactory
 {

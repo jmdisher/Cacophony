@@ -13,6 +13,15 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Opens a video processing web socket for the given draft ID and command.
+ * Receives a command:
+ * -COMMAND_CANCEL_PROCESSING - stops the video processing.
+ * Messages:
+ * -create key("inputBytes") -> value(bytes_sent_to_process)
+ * -create key("outputBytes") -> value(bytes_received_from_process)
+ * -update key("inputBytes") -> value(bytes_sent_to_process)
+ * -delete key("inputBytes")
+ * -delete key("outputBytes")
+ * -NO special
  */
 public class WS_DraftProcessVideo implements IWebSocketFactory
 {

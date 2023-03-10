@@ -22,9 +22,14 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Just listens to updates to background operations.
- * WARNING:  This assumes that there is only a single client at a time, such that creating a new one will effectively
- * invalidate a previous one and closing any of them will invalidate them all.  This is something we should eventually
- * fix but it doesn't really matter to our use-case so it will be deferred in case we make other changes.
+ * Receives messages for commands to run:
+ * -COMMAND_STOP - tells the server to shut down
+ * -COMMAND_REPUBLISH - tells the server to republish this user's root element
+ * Messages:
+ * -create key(action_id) -> value(action_description)
+ * -NO update
+ * -delete key(action_id)
+ * -NO special
  */
 public class WS_BackgroundStatus implements IWebSocketFactory
 {

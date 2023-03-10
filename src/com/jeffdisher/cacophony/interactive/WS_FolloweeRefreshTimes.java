@@ -15,6 +15,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Just listens to updates to followee refresh events to report the refresh time.
+ * Messages:
+ * -create key(public_key) -> value(refresh_time_millis)
+ * -update key(public_key) -> value(refresh_time_millis)
+ * -delete key(public_key)
+ * -NO special
  */
 public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 {

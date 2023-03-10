@@ -14,6 +14,8 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Opens a video save web socket for the given draft ID.
+ * Receives binary payloads from the client which are interpreted as the binary stream for the original video.
+ * Sends nothing.
  */
 public class WS_DraftSaveVideo implements IWebSocketFactory
 {

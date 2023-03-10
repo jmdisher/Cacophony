@@ -18,6 +18,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * Just listens to updates to the list of cached entries for a given user, reporting the added/removed record CIDs.
  * The user is identified by public key and can be either a followee or the home user.
+ * Messages:
+ * -create key(record_cid) -> value(null)
+ * -NO update
+ * -delete key(record_cid)
+ * -special is set when the refresh for this user is active, set null when complete
  */
 public class WS_UserEntries implements IWebSocketFactory
 {
