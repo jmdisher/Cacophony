@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -20,22 +20,20 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Requests that the given followee key be added to the list of followed users.
- * Returns synchronously, but may be slow as it needs to find the followee.  Returns 200 on success, 404 if the followee
- * is not found, 400 if the given key is invalid.
+ * The actual refresh runs asynchronously, but looking up and adding the base meta-data for the followee is done
+ * synchronously.  Returns 200 on success, 404 if the followee is not found, 400 if the given key is invalid.
  */
 public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
-	private final LocalRecordCache _recordCache;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
 	private final Consumer<Runnable> _connectorDispatcher;
 
-	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
+	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
-		_recordCache = recordCache;
 		_connectorsPerUser = connectorsPerUser;
 		_connectorDispatcher = connectorDispatcher;
 	}
@@ -46,8 +44,8 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		IpfsKey userToAdd = IpfsKey.fromPublicKey(pathVariables[0]);
 		if (null != userToAdd)
 		{
-			ConcurrentFolloweeRefresher refresher = null;
 			boolean isAlreadyFollowed = false;
+			boolean didAddFollowee = false;
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
 				IFolloweeWriting followees = access.writableFolloweeData();
@@ -64,41 +62,28 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 						// Create the new followee record, saying we never refreshed it (since this is only a hacked element).
 						followees.createNewFollowee(userToAdd, hackedRoot, 0L);
 						
-						refresher = new ConcurrentFolloweeRefresher(_environment
-								, userToAdd
-								, hackedRoot
-								, access.readPrefs()
-								, false
-						);
+						// Create the connector.
+						HandoffConnector<IpfsFile, Void> followeeConnector = new HandoffConnector<>(_connectorDispatcher);
+						_connectorsPerUser.put(userToAdd, followeeConnector);
 						
-						// Clean the cache and setup state for the refresh.
-						refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+						// NOTE:  The refresh will happen soon, but not immediately, so this cache clear might not be optimal.
+						// (Not a big problem since it is just best-efforts, anyway).
+						CommandHelpers.shrinkCacheToFitInPrefs(_environment, access, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
+						
+						// Add this to the background operations to be refreshed next.
+						_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
+						
+						didAddFollowee = true;
 					}
 				}
 			}
 			
 			if (!isAlreadyFollowed)
 			{
-				if (null != refresher)
+				if (didAddFollowee)
 				{
-					// Create the connector.
-					HandoffConnector<IpfsFile, Void> followeeConnector = new HandoffConnector<>(_connectorDispatcher);
-					_connectorsPerUser.put(userToAdd, followeeConnector);
-					
-					// Run the actual refresh - even if this fails, we will still proceed since we added the followee.
-					refresher.runRefresh(followeeConnector);
-					long lastPollMillis = _environment.currentTimeMillis();
-					try (IWritingAccess access = StandardAccess.writeAccess(_environment))
-					{
-						IFolloweeWriting followees = access.writableFolloweeData();
-						refresher.finishRefresh(access, _recordCache, followees, lastPollMillis);
-					}
-					finally
-					{
-						// Add this to the background operations so it will be refreshed again.
-						_backgroundOperations.enqueueFolloweeRefresh(userToAdd, lastPollMillis);
-						response.setStatus(HttpServletResponse.SC_OK);
-					}
+					// Complete success - although the follow refresh will happen in the background.
+					response.setStatus(HttpServletResponse.SC_OK);
 				}
 				else
 				{

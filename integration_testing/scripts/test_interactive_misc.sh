@@ -90,7 +90,14 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "h
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0}"
-# NOTE:  Adding a new following emits the "create" and the "update" since it the followee is added and _then_ populated.
+# Note that we need to wait for the refresh to finish, since it is now asynchronous.
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
+# The followee refresh should similarly show that this has completed.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
@@ -109,14 +116,10 @@ echo "Request a refresh of user2 and wait for the event to show up in status, th
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-while [ "$SAMPLE" != "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}" ]
-do
-	SAMPLE=$(cat "$STATUS_OUTPUT")
-	echo -n "-ACK" > "$STATUS_INPUT"
-done
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 # We should also see this update the refresh time.
@@ -132,10 +135,10 @@ echo "Request a refresh of this user and wait for the event to show up in status
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\":null}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\"Qm"
 
@@ -184,10 +187,18 @@ echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null}"
 
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+# Note that we need to wait for the refresh to finish, since it is now asynchronous.
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":5,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+SAMPLE=$(cat "$STATUS_OUTPUT")
+echo -n "-ACK" > "$STATUS_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\":null}"
+# Similarly, we need to read the refresh from the followee output.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0}"
-# NOTE:  Adding a new following emits the "create" and the "update" since it the followee is added and _then_ populated.
+# We also want to wait for the refresh to complete, asynchronously.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
@@ -216,10 +227,10 @@ requireSubstring "$RECOMMENDED_KEYS" "[\"$PUBLIC2\"]"
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":6,\"value\""
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":6,\"value\""
 # Remove.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/recommend/$PUBLIC2"
 checkPreviousCommand "remove from recommended"
@@ -232,10 +243,10 @@ requireSubstring "$RECOMMENDED_KEYS" "[]"
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":5,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":7,\"value\""
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":7,\"value\""
 
 echo "Update description..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8001/userInfo/info"
@@ -245,10 +256,10 @@ requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My descripti
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":6,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":8,\"value\""
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":6,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":8,\"value\""
 
 NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8001/userInfo/image")
 checkPreviousCommand "update description image"
@@ -258,10 +269,10 @@ requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My descripti
 # Wait for publish.
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":7,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":9,\"value\""
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":7,\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":9,\"value\""
 
 
 echo "Stop the server and wait for it to exit..."
