@@ -258,7 +258,7 @@ public class TestSimpleFolloweeStarter
 			Assert.assertTrue(this.data.containsKey(cid));
 			Assert.assertFalse(this.pins.containsKey(cid));
 			this.pins.put(cid, 1);
-			FuturePin pin = new FuturePin();
+			FuturePin pin = new FuturePin(cid);
 			pin.success();
 			return pin;
 		}

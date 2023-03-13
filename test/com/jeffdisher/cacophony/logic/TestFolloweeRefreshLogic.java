@@ -840,7 +840,7 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public FuturePin addMetaDataToFollowCache(IpfsFile cid)
 		{
-			FuturePin future = new FuturePin();
+			FuturePin future = new FuturePin(cid);
 			if (_data.containsKey(cid))
 			{
 				Assert.assertTrue(_metaDataPinCount.containsKey(cid));
@@ -876,7 +876,7 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public FuturePin addFileToFollowCache(IpfsFile cid)
 		{
-			FuturePin future = new FuturePin();
+			FuturePin future = new FuturePin(cid);
 			if (_data.containsKey(cid))
 			{
 				Assert.assertTrue(_filePinCount.containsKey(cid));

@@ -332,7 +332,7 @@ public class StandardAccess implements IWritingAccess
 		else
 		{
 			// If we decided that this was already pinned, just return an already completed pin.
-			pin = new FuturePin();
+			pin = new FuturePin(cid);
 			pin.success();
 		}
 		return pin;

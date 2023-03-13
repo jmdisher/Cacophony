@@ -170,7 +170,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	@Override
 	public FuturePin pin(IpfsFile cid)
 	{
-		FuturePin future = new FuturePin();
+		FuturePin future = new FuturePin(cid);
 		Runnable r = () -> {
 			try
 			{

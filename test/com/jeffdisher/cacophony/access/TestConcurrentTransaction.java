@@ -226,7 +226,7 @@ public class TestConcurrentTransaction
 		{
 			Assert.assertFalse(this.pinned.contains(cid));
 			this.pinned.add(cid);
-			FuturePin pin = new FuturePin();
+			FuturePin pin = new FuturePin(cid);
 			pin.success();
 			return pin;
 		}

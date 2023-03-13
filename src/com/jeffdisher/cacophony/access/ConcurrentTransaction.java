@@ -68,7 +68,7 @@ public class ConcurrentTransaction
 		if (_existingPin.contains(cid) || (modifiedCount > 0))
 		{
 			// If this is something pinned before the transaction started, or during the transaction, just fake the operation.
-			result = new FuturePin();
+			result = new FuturePin(cid);
 			result.success();
 		}
 		else
