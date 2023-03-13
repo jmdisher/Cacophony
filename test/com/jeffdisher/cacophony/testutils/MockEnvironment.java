@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -37,7 +36,7 @@ public class MockEnvironment implements IEnvironment
 	}
 
 	@Override
-	public INetworkScheduler getSharedScheduler(IConnection ipfs, String keyName) throws IpfsConnectionException
+	public INetworkScheduler getSharedScheduler(IConnection ipfs)
 	{
 		// Not used in test.
 		throw Assert.unreachable();

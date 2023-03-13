@@ -103,11 +103,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
-	public FuturePublish publishIndex(IpfsFile indexHash)
+	public FuturePublish publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
 	{
 		FuturePublish future = new FuturePublish(indexHash);
 		Runnable r = () -> {
-			IpfsConnectionException error = _remote.publishIndex(indexHash);
+			IpfsConnectionException error = _remote.publishIndex(keyName, publicKey, indexHash);
 			if (null == error)
 			{
 				future.success();
@@ -158,13 +158,6 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		};
 		_queue.enqueue(r);
 		return future;
-	}
-
-	@Override
-	public IpfsKey getPublicKey()
-	{
-		// This is just a wrapper since we don't want RemoteActions exposed.
-		return _remote.getPublicKey();
 	}
 
 	@Override

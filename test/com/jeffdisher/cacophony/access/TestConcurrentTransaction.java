@@ -198,7 +198,7 @@ public class TestConcurrentTransaction
 			throw new AssertionError("Not in test");
 		}
 		@Override
-		public FuturePublish publishIndex(IpfsFile indexHash)
+		public FuturePublish publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
 		{
 			throw new AssertionError("Not in test");
 		}
@@ -215,11 +215,6 @@ public class TestConcurrentTransaction
 			size.success(this.nextSize);
 			this.nextSize = 0L;
 			return size;
-		}
-		@Override
-		public IpfsKey getPublicKey()
-		{
-			throw new AssertionError("Not in test");
 		}
 		@Override
 		public FuturePin pin(IpfsFile cid)

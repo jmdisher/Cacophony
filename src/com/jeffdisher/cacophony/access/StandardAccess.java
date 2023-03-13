@@ -145,9 +145,26 @@ public class StandardAccess implements IWritingAccess
 		}
 	}
 
+	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
+	{
+		IpfsKey publicKey = null;
+		for (IConnection.Key info : ipfs.getKeys())
+		{
+			if (keyName.equals(info.name()))
+			{
+				Assert.assertTrue(null == publicKey);
+				publicKey = info.key();
+			}
+		}
+		Assert.assertTrue(null != publicKey);
+		return publicKey;
+	}
+
 
 	private final IEnvironment _environment;
 	private final IConnection _sharedConnection;
+	private final String _keyName;
+	private final IpfsKey _publicKey;
 	private final INetworkScheduler _scheduler;
 	private final IReadOnlyLocalData _readOnly;
 	private final IReadWriteLocalData _readWrite;
@@ -168,11 +185,17 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != localIndex);
 		IConnection connection = environment.getConnectionFactory().buildConnection(localIndex.ipfsHost());
 		Assert.assertTrue(null != connection);
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection, localIndex.keyName());
+		String keyName = localIndex.keyName();
+		Assert.assertTrue(null != keyName);
+		IpfsKey publicKey = _publicKeyForName(connection, keyName);
+		Assert.assertTrue(null != publicKey);
+		INetworkScheduler scheduler = environment.getSharedScheduler(connection);
 		Assert.assertTrue(null != scheduler);
 		
 		_environment = environment;
 		_sharedConnection = connection;
+		_keyName = keyName;
+		_publicKey = publicKey;
 		_scheduler = scheduler;
 		_readOnly = readOnly;
 		_readWrite = readWrite;
@@ -242,7 +265,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IpfsKey getPublicKey()
 	{
-		return _scheduler.getPublicKey();
+		return _publicKey;
 	}
 
 	@Override
@@ -262,7 +285,7 @@ public class StandardAccess implements IWritingAccess
 	public FuturePublish republishIndex()
 	{
 		IpfsFile lastRoot = _channelData.lastPublishedIndex();
-		return _scheduler.publishIndex(lastRoot);
+		return _scheduler.publishIndex(_keyName, _publicKey, lastRoot);
 	}
 
 	@Override
@@ -352,7 +375,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public FuturePublish beginIndexPublish(IpfsFile indexRoot)
 	{
-		return _scheduler.publishIndex(indexRoot);
+		return _scheduler.publishIndex(_keyName, _publicKey, indexRoot);
 	}
 
 	@Override

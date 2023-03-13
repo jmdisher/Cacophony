@@ -11,44 +11,22 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class RemoteActions
 {
 	/**
-	 * Loads a RemoteActions abstraction using the given executor, loaded from the given ILocalActions abstraction.
+	 * Loads a RemoteActions abstraction on top of the given IConnection.
 	 * 
 	 * @param ipfs The IPFS connection.
-	 * @param keyName The name of the key to use when publishing updates.
 	 * @return The abstraction over the remote actions.
-	 * @throws IpfsConnectionException Something went wrong interacting with the remote server when attaching.
 	 */
-	public static RemoteActions loadIpfsConfig(IConnection ipfs, String keyName) throws IpfsConnectionException
+	public static RemoteActions loadIpfsConfig(IConnection ipfs)
 	{
-		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(ipfs, keyName, publicKey);
-	}
-
-	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
-	{
-		IpfsKey publicKey = null;
-		for (IConnection.Key info : ipfs.getKeys())
-		{
-			if (keyName.equals(info.name()))
-			{
-				Assert.assertTrue(null == publicKey);
-				publicKey = info.key();
-			}
-		}
-		Assert.assertTrue(null != publicKey);
-		return publicKey;
+		return new RemoteActions(ipfs);
 	}
 
 
 	private final IConnection _ipfs;
-	private final String _keyName;
-	private final IpfsKey _publicKey;
 
-	private RemoteActions(IConnection ipfs, String keyName, IpfsKey publicKey)
+	private RemoteActions(IConnection ipfs)
 	{
 		_ipfs = ipfs;
-		_keyName = keyName;
-		_publicKey = publicKey;
 	}
 
 	public IpfsFile saveStream(InputStream stream) throws IpfsConnectionException
@@ -61,29 +39,28 @@ public class RemoteActions
 		return _ipfs.loadData(indexHash);
 	}
 
-	public IpfsKey getPublicKey()
-	{
-		return _publicKey;
-	}
-
 	/**
 	 * Publishes the given indexHash for this channel's public key.
 	 * Note that this can easily fail since IPNS publication is often is very slow.  The failure is considered "safe"
 	 * and is only logged, instead of throwing an exception.  The caller can check if it did work based on the return
 	 * value.
 	 * 
+	 * @param keyName The name of the key, as known to the IPFS node.
+	 * @param publicKey The actual public key of this user (used for validation).
 	 * @param indexHash The index to publish for this channel's public key.
 	 * @return The exception encountered when attempting to publish, null if the publish was a success.
 	 */
-	public IpfsConnectionException publishIndex(IpfsFile indexHash)
+	public IpfsConnectionException publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
 	{
 		Assert.assertTrue(null != _ipfs);
-		Assert.assertTrue(null != _keyName);
+		Assert.assertTrue(null != keyName);
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != indexHash);
 		
 		IpfsConnectionException error = null;
 		try
 		{
-			_ipfs.publish(_keyName, indexHash);
+			_ipfs.publish(keyName, indexHash);
 			error = null;
 		}
 		catch (IpfsConnectionException e)
@@ -97,7 +74,7 @@ public class RemoteActions
 			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
 			try
 			{
-				IpfsFile published = _ipfs.resolve(_publicKey);
+				IpfsFile published = _ipfs.resolve(publicKey);
 				if (published.toSafeString().equals(indexHash.toSafeString()))
 				{
 					// Even if there was a timeout error, the correct answer is there so it may have completed asynchronously.

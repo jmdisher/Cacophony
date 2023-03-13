@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 
 
 /**
@@ -35,11 +34,9 @@ public interface IEnvironment
 	 * concurrent commands.
 	 * 
 	 * @param ipfs The IPFS connection to use if the scheduler is being lazily constructed.
-	 * @param keyName The channel's key name to use if the scheduler is being lazily constructed.
 	 * @return The shared network scheduler instance.
-	 * @throws IpfsConnectionException If there was an error creating the scheduler.
 	 */
-	INetworkScheduler getSharedScheduler(IConnection ipfs, String keyName) throws IpfsConnectionException;
+	INetworkScheduler getSharedScheduler(IConnection ipfs);
 
 	/**
 	 * Returns a shared DraftManager instance, lazily creating it if needed, on top of the environment's filesystem's

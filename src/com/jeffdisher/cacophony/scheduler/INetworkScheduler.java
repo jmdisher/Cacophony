@@ -35,10 +35,12 @@ public interface INetworkScheduler
 	/**
 	 * Publishes the given indexHash for this channel's key.
 	 * 
+	 * @param keyName The name of the key, as known to the IPFS node.
+	 * @param publicKey The actual public key of this user (used for validation).
 	 * @param indexHash The file to publish.
 	 * @return The asynchronously-completed future.
 	 */
-	FuturePublish publishIndex(IpfsFile indexHash);
+	FuturePublish publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash);
 
 	/**
 	 * Resolves the given keyToResolve as a public key to see the file it has published.
@@ -55,13 +57,6 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureSize getSizeInBytes(IpfsFile cid);
-
-	/**
-	 * This method returns immediately as the underlying network connection eagerly resolves this at startup.
-	 * 
-	 * @return The public key for this channel.
-	 */
-	IpfsKey getPublicKey();
 
 	/**
 	 * Pins the given cid on the node.

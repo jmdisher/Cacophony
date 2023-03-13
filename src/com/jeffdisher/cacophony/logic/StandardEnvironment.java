@@ -8,7 +8,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -77,7 +76,7 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
-	public INetworkScheduler getSharedScheduler(IConnection ipfs, String keyName) throws IpfsConnectionException
+	public INetworkScheduler getSharedScheduler(IConnection ipfs)
 	{
 		INetworkScheduler scheduler = null;
 		_internalLock.lock();
@@ -85,7 +84,7 @@ public class StandardEnvironment implements IEnvironment
 		{
 			if (null == _lazySharedScheduler)
 			{
-				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(ipfs, keyName), THREAD_COUNT);
+				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(ipfs), THREAD_COUNT);
 			}
 			scheduler = _lazySharedScheduler;
 		}
