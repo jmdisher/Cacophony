@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.commands.ListChannelEntriesCommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
+import com.jeffdisher.cacophony.commands.RebroadcastCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RefreshNextFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
@@ -191,6 +192,11 @@ public class CommandParser
 		{
 			File directory = new File(required[0]);
 			return new HtmlOutputCommand(directory);
+		}),
+		REBROADCAST(true, "--rebroadcast", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			IpfsFile elementCid = _parseAsFile(required[0]);
+			return new RebroadcastCommand(elementCid);
 		}),
 		
 		// Methods to manage local state.

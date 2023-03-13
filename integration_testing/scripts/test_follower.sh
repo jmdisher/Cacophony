@@ -119,6 +119,8 @@ REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --re
 requireSubstring "$REFRESH_OUTPUT" "Not pruning cache since 2.62 MB (2621440 bytes) is below target of 9.00 GB (9000000000 bytes)"
 LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
 requireSubstring "$LIST_OUTPUT" "(image: (none), leaf: Qm"
+# Capture the element we can rebroadcast.
+ELEMENT_TO_REBROADCAST=$(echo "$LIST_OUTPUT" | head -2 | tail -1 | cut -d ' ' -f 3)
 
 echo "Make sure that cleaning cache won't do anything..."
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --cleanCache)
@@ -158,6 +160,12 @@ CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --stopFollowing --pub
 checkPreviousCommand "stopFollowing"
 CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowees
 checkPreviousCommand "listFollowees"
+
+echo "Rebroadcast one of the elements from the followee and verify that we can see it in our list..."
+CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --rebroadcast --elementCid "$ELEMENT_TO_REBROADCAST"
+checkPreviousCommand "Rebroadcast"
+LISTING=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar "Cacophony.jar" --listChannel)
+requireSubstring "$LISTING" "$ELEMENT_TO_REBROADCAST"
 
 kill $PID1
 kill $PID2

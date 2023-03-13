@@ -174,16 +174,18 @@ public class MockSingleNode implements IConnection
 		Assert.assertTrue(!_data.containsKey(cid));
 		// Find the data.
 		byte[] data = _networkLoadData(cid);
-		// For now, we will assert that we found this, although we should test cases where it isn't found.
-		Assert.assertTrue(null != data);
+		// If we don't see the data, we will synthesize the exception the user would normally see (it would appear as a timeout).
+		if (null == data)
+		{
+			throw new IpfsConnectionException("pin", cid, null);
+		}
 		_data.put(cid, data);
 	}
 
 	@Override
 	public void rm(IpfsFile cid) throws IpfsConnectionException
 	{
-		// If we were told to unpin this, we must already have it locally.
-		Assert.assertTrue(_data.containsKey(cid));
+		// Note that we will treat the cases where this wasn't found as benign.
 		_data.remove(cid);
 	}
 
