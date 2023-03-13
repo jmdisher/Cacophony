@@ -40,7 +40,7 @@ public class MockUserNode
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(null);
 		_factory = new MockConnectionFactory(_sharedConnection);
-		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, true);
+		_executor = new StandardEnvironment(System.out, _fileSystem, _factory);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -63,7 +63,7 @@ public class MockUserNode
 		boolean isNew = false;
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory, true);
+			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory);
 			isNew = true;
 		}
 		command.runInEnvironment(executor);

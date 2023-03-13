@@ -72,10 +72,8 @@ public class Cacophony {
 			if (null != command)
 			{
 				DataDomain dataDirectoryWrapper = DataDomain.detectDataDomain();
-				// Enable verifications if the env var is set, at all.
-				boolean shouldEnableVerifications = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_ENABLE_VERIFICATIONS));
 				IConnectionFactory connectionFactory = dataDirectoryWrapper.getConnectionFactory();
-				StandardEnvironment executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory, shouldEnableVerifications);
+				StandardEnvironment executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory);
 				// Make sure we get ownership of the lock file.
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{

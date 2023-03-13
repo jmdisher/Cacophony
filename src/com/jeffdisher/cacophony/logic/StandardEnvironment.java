@@ -27,20 +27,18 @@ public class StandardEnvironment implements IEnvironment
 	private final IConfigFileSystem _fileSystem;
 	private final LocalDataModel _sharedDataModel;
 	private final IConnectionFactory _factory;
-	private final boolean _shouldEnableVerifications;
 	private int _nextOperationCounter;
 	private boolean _errorOccurred;
 	private INetworkScheduler _lazySharedScheduler;
 	private DraftManager _lazySharedDraftManager;
 
-	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, boolean shouldEnableVerifications)
+	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory)
 	{
 		_internalLock = new ReentrantLock();
 		_stream = stream;
 		_fileSystem = fileSystem;
 		_sharedDataModel = new LocalDataModel(fileSystem);
 		_factory = factory;
-		_shouldEnableVerifications = shouldEnableVerifications;
 		_nextOperationCounter = 0;
 	}
 
@@ -87,7 +85,7 @@ public class StandardEnvironment implements IEnvironment
 		{
 			if (null == _lazySharedScheduler)
 			{
-				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(ipfs, keyName, _shouldEnableVerifications), THREAD_COUNT);
+				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(ipfs, keyName), THREAD_COUNT);
 			}
 			scheduler = _lazySharedScheduler;
 		}

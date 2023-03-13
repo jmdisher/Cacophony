@@ -15,14 +15,13 @@ public class RemoteActions
 	 * 
 	 * @param ipfs The IPFS connection.
 	 * @param keyName The name of the key to use when publishing updates.
-	 * @param shouldEnableVerifications True if additional publish verifications should be applied.
 	 * @return The abstraction over the remote actions.
 	 * @throws IpfsConnectionException Something went wrong interacting with the remote server when attaching.
 	 */
-	public static RemoteActions loadIpfsConfig(IConnection ipfs, String keyName, boolean shouldEnableVerifications) throws IpfsConnectionException
+	public static RemoteActions loadIpfsConfig(IConnection ipfs, String keyName) throws IpfsConnectionException
 	{
 		IpfsKey publicKey = _publicKeyForName(ipfs, keyName);
-		return new RemoteActions(ipfs, keyName, publicKey, shouldEnableVerifications);
+		return new RemoteActions(ipfs, keyName, publicKey);
 	}
 
 	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
@@ -44,14 +43,12 @@ public class RemoteActions
 	private final IConnection _ipfs;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
-	private final boolean _shouldEnableVerifications;
 
-	private RemoteActions(IConnection ipfs, String keyName, IpfsKey publicKey, boolean shouldEnableVerifications)
+	private RemoteActions(IConnection ipfs, String keyName, IpfsKey publicKey)
 	{
 		_ipfs = ipfs;
 		_keyName = keyName;
 		_publicKey = publicKey;
-		_shouldEnableVerifications = shouldEnableVerifications;
 	}
 
 	public IpfsFile saveStream(InputStream stream) throws IpfsConnectionException
@@ -95,7 +92,7 @@ public class RemoteActions
 		}
 		
 		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
-		if ((null != error) || _shouldEnableVerifications)
+		if (null != error)
 		{
 			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
 			try
@@ -109,10 +106,7 @@ public class RemoteActions
 			}
 			catch (IpfsConnectionException e)
 			{
-				if (null == error)
-				{
-					error = e;
-				}
+				// We will ignore this since we want the original exception.
 			}
 		}
 		return error;

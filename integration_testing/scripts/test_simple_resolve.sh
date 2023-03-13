@@ -2,7 +2,6 @@
 
 BASEDIR=$(dirname $0)
 source "$BASEDIR/utils.sh"
-export CACOPHONY_ENABLE_VERIFICATIONS=1
 
 
 # START.

@@ -87,7 +87,6 @@ public class DataDomain implements Closeable
 		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, new MemoryConfigFileSystem(null)
 				, theirConnection
-				, false
 		);
 		new CreateChannelCommand("ipfs", "key").runInEnvironment(theirEnv);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
@@ -101,7 +100,6 @@ public class DataDomain implements Closeable
 		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, ourFileSystem
 				, ourConnection
-				, false
 		);
 		new CreateChannelCommand("ipfs", "key").runInEnvironment(ourEnv);
 		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
