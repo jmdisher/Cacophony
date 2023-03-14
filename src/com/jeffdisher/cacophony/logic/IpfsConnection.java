@@ -105,22 +105,44 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public void publish(String keyName, IpfsFile file) throws IpfsConnectionException
+	public void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException
 	{
+		Assert.assertTrue(null != keyName);
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != file);
+		
+		IpfsConnectionException error = null;
 		try
 		{
-			Map<?,?> map = _defaultConnection.name.publish(file.getMultihash(), Optional.of(keyName));
-			String value = (String) map.get("Value");
-			String index58 = file.toSafeString();
-			Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
+			_initialPublish(keyName, file);
+			error = null;
 		}
-		catch (RuntimeException e)
+		catch (IpfsConnectionException e)
 		{
-			throw _handleIpfsRuntimeException("publish", file, e);
+			error = e;
 		}
-		catch (IOException e)
+		
+		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
+		if (null != error)
 		{
-			throw new IpfsConnectionException("publish", file, e);
+			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
+			try
+			{
+				IpfsFile published = _resolve(publicKey);
+				if (published.equals(file))
+				{
+					// Even if there was a timeout error, the correct answer is there so it may have completed asynchronously.
+					error = null;
+				}
+			}
+			catch (IpfsConnectionException e)
+			{
+				// We will ignore this since we want the original exception.
+			}
+		}
+		if (null != error)
+		{
+			throw error;
 		}
 	}
 
@@ -128,20 +150,7 @@ public class IpfsConnection implements IConnection
 	public IpfsFile resolve(IpfsKey key) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != key);
-		try
-		{
-			String publishedPath = _defaultConnection.name.resolve(key.getMultihash());
-			String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
-			return IpfsFile.fromIpfsCid(published);
-		}
-		catch (RuntimeException e)
-		{
-			throw _handleIpfsRuntimeException("resolve", key, e);
-		}
-		catch (IOException e)
-		{
-			throw new IpfsConnectionException("resolve", key, e);
-		}
+		return _resolve(key);
 	}
 
 	@Override
@@ -283,6 +292,44 @@ public class IpfsConnection implements IConnection
 		catch (MalformedURLException e)
 		{
 			throw Assert.unexpected(e);
+		}
+	}
+
+	private IpfsFile _resolve(IpfsKey key) throws IpfsConnectionException, AssertionError
+	{
+		Assert.assertTrue(null != key);
+		try
+		{
+			String publishedPath = _defaultConnection.name.resolve(key.getMultihash());
+			String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
+			return IpfsFile.fromIpfsCid(published);
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException("resolve", key, e);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException("resolve", key, e);
+		}
+	}
+
+	private void _initialPublish(String keyName, IpfsFile file) throws IpfsConnectionException
+	{
+		try
+		{
+			Map<?,?> map = _defaultConnection.name.publish(file.getMultihash(), Optional.of(keyName));
+			String value = (String) map.get("Value");
+			String index58 = file.toSafeString();
+			Assert.assertTrue(value.substring(value.lastIndexOf("/") + 1).equals(index58));
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException("publish", file, e);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException("publish", file, e);
 		}
 	}
 }

@@ -76,6 +76,11 @@ requireSubstring "$DESCRIPTION" "name: NAME2"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION" "name: NAME1"
 
+echo "Verify that the answer for something which should not exist makes sense..."
+# Redirect error since it logs the exception.
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV 2> /dev/null)
+requireSubstring "$DESCRIPTION" "NOT following IpfsKey(z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV)"
+
 kill $PID1
 kill $PID2
 

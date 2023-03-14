@@ -41,76 +41,34 @@ public class RemoteActions
 
 	/**
 	 * Publishes the given indexHash for this channel's public key.
-	 * Note that this can easily fail since IPNS publication is often is very slow.  The failure is considered "safe"
-	 * and is only logged, instead of throwing an exception.  The caller can check if it did work based on the return
-	 * value.
+	 * Note that this can easily fail since IPNS publication is often is very slow.  As a result, a failure here is
+	 * generally "safe".
 	 * 
 	 * @param keyName The name of the key, as known to the IPFS node.
 	 * @param publicKey The actual public key of this user (used for validation).
 	 * @param indexHash The index to publish for this channel's public key.
-	 * @return The exception encountered when attempting to publish, null if the publish was a success.
+	 * @throws IpfsConnectionException If an error was encountered when attempting to publish.
 	 */
-	public IpfsConnectionException publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
+	public void publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _ipfs);
 		Assert.assertTrue(null != keyName);
 		Assert.assertTrue(null != publicKey);
 		Assert.assertTrue(null != indexHash);
 		
-		IpfsConnectionException error = null;
-		try
-		{
-			_ipfs.publish(keyName, indexHash);
-			error = null;
-		}
-		catch (IpfsConnectionException e)
-		{
-			error = e;
-		}
-		
-		// We sometimes get an odd RuntimeException "IOException contacting IPFS daemon" so we will consider this a success if we can at least resolve the name to what we expected.
-		if (null != error)
-		{
-			// If we never got a normal success from the publish, we will at least still claim to have succeeded if the key has been updated on the local node.
-			try
-			{
-				IpfsFile published = _ipfs.resolve(publicKey);
-				if (published.toSafeString().equals(indexHash.toSafeString()))
-				{
-					// Even if there was a timeout error, the correct answer is there so it may have completed asynchronously.
-					error = null;
-				}
-			}
-			catch (IpfsConnectionException e)
-			{
-				// We will ignore this since we want the original exception.
-			}
-		}
-		return error;
+		_ipfs.publish(keyName, publicKey, indexHash);
 	}
 
 	/**
-	 * Returns the file published by the given key or null if the key is unknown or some other network error occurred
-	 * contacting the IPFS node.
+	 * Returns the file published by the given key.
 	 * 
 	 * @param keyToResolve The public key to resolve.
-	 * @return The published file or null, if the key isn't found.
+	 * @return The published file (throws exception on failed resolution of well-formed key).
 	 */
-	public IpfsFile resolvePublicKey(IpfsKey keyToResolve)
+	public IpfsFile resolvePublicKey(IpfsKey keyToResolve) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != keyToResolve);
-		IpfsFile found = null;
-		try
-		{
-			found = _ipfs.resolve(keyToResolve);
-		}
-		catch (IpfsConnectionException e)
-		{
-			// Unfortunately, this resolve will only fail with IOException for the cases of failed key resolution as
-			// well as more general network problems.
-			found = null;
-		}
-		return found;
+		return _ipfs.resolve(keyToResolve);
 	}
 
 	public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException

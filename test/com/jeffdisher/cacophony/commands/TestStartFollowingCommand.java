@@ -69,7 +69,7 @@ public class TestStartFollowingCommand
 		originalRootData.setRecords(originalRecordsCid.toSafeString());
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
-		remoteConnection.publish(REMOTE_KEY_NAME, originalRoot);
+		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
 		command.runInEnvironment(executor);
 		
 		// Verify the states that should have changed.
@@ -100,7 +100,7 @@ public class TestStartFollowingCommand
 				, new IpfsKey[] { REMOTE_PUBLIC_KEY, PUBLIC_KEY}
 		);
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]));
-		remoteConnection.publish(REMOTE_KEY_NAME, originalRoot);
+		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.

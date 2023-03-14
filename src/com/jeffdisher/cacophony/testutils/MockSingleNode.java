@@ -120,7 +120,7 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
-	public void publish(String keyName, IpfsFile file) throws IpfsConnectionException
+	public void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException
 	{
 		IpfsKey key = _keys.get(keyName);
 		Assert.assertTrue(null != key);
@@ -138,6 +138,11 @@ public class MockSingleNode implements IConnection
 			{
 				break;
 			}
+		}
+		// We are expected to only fail with exception, never null.
+		if (null == file)
+		{
+			throw new IpfsConnectionException("resolve", key, null);
 		}
 		return file;
 	}

@@ -24,7 +24,7 @@ public interface IConnection
 
 	byte[] loadData(IpfsFile file) throws IpfsConnectionException;
 
-	void publish(String keyName, IpfsFile file) throws IpfsConnectionException;
+	void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException;
 
 	IpfsFile resolve(IpfsKey key) throws IpfsConnectionException;
 

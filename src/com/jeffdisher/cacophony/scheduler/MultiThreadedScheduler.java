@@ -107,14 +107,14 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	{
 		FuturePublish future = new FuturePublish(indexHash);
 		Runnable r = () -> {
-			IpfsConnectionException error = _remote.publishIndex(keyName, publicKey, indexHash);
-			if (null == error)
+			try
 			{
+				_remote.publishIndex(keyName, publicKey, indexHash);
 				future.success();
 			}
-			else
+			catch (IpfsConnectionException e)
 			{
-				future.failure(error);
+				future.failure(e);
 			}
 		};
 		_queue.enqueue(r);
@@ -127,12 +127,14 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Assert.assertTrue(null != keyToResolve);
 		FutureResolve future = new FutureResolve();
 		Runnable r = () -> {
-			IpfsFile resolved = _remote.resolvePublicKey(keyToResolve);
-			if (null != resolved)
+			try
 			{
+				IpfsFile resolved = _remote.resolvePublicKey(keyToResolve);
+				// This should only fail with an exception.
+				Assert.assertTrue(null != resolved);
 				future.success(resolved);
 			}
-			else
+			catch (IpfsConnectionException e)
 			{
 				future.failure();
 			}
