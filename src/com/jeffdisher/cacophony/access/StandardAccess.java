@@ -179,6 +179,8 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != followeeData);
 		ChannelData localIndex = readOnly.readLocalIndex();
 		Assert.assertTrue(null != localIndex);
+		// Make sure that these match, just to make sure there are no mistakes while we transition to ignoring this in the data store.
+		Assert.assertTrue(environment.getIpfsConnectString().equals(localIndex.ipfsHost()));
 		IConnection connection = environment.getConnectionFactory().buildConnection(localIndex.ipfsHost());
 		Assert.assertTrue(null != connection);
 		String keyName = localIndex.keyName();

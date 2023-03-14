@@ -35,40 +35,40 @@ echo "Pausing for startup..."
 sleep 5
 
 echo "Creating Cacophony instance1..."
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
 echo "Creating Cacophony instance2..."
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 checkPreviousCommand "createNewChannel"
 
 echo "Reading public key for instance1..."
-RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --getPublicKey)
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 checkPreviousCommand "getPublicKey"
 # Parse this from the human-readable string.
 PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 echo "Key is \"$PUBLIC1\""
 
 echo "Reading public key for instance2..."
-RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --getPublicKey)
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 checkPreviousCommand "getPublicKey"
 # Parse this from the human-readable string.
 PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 echo "Key is \"$PUBLIC2\""
 
 echo "Make key 2 follow key 1"
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC1"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "startFollowing"
 
 echo "List followees"
-CANONICAL1=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")
-LIST=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowees)
+CANONICAL1=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")
+LIST=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowees)
 requireSubstring "$LIST" "Following: $CANONICAL1"
 
-LIST=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$CANONICAL1")
+LIST=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$CANONICAL1")
 requireSubstring "$LIST" "Followee has 0 elements"
 
-DESCRIPTION_FOLLOWER=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
+DESCRIPTION_FOLLOWER=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION_FOLLOWER" "-name: Unnamed"
 
 # Post an update and refresh to make sure that the follower sees the update and can re-render the HTML output
@@ -83,11 +83,11 @@ dd if=/dev/zero of="$VIDEO_FILE" bs=1K count=2048
 checkPreviousCommand "dd video"
 
 echo "Publishing post..."
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --publishSingleVideo --name "basic post" --description "no description" --thumbnailJpeg "$IMAGE_FILE" --videoFile "$VIDEO_FILE" --videoMime "video/webm" --videoHeight 640 --videoWidth 480
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --publishSingleVideo --name "basic post" --description "no description" --thumbnailJpeg "$IMAGE_FILE" --videoFile "$VIDEO_FILE" --videoMime "video/webm" --videoHeight 640 --videoWidth 480
 checkPreviousCommand "publishSingleVideo"
 
 echo "Refresh followee"
-REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
+REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
 requireSubstring "$REFRESH_OUTPUT" "-thumbnail 524.29 kB (524288 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "-leaf 2.10 MB (2097152 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "<1 Refresh successful!"
@@ -97,45 +97,45 @@ AUDIO_FILE="/tmp/audio_file"
 rm -f "$AUDIO_FILE"
 dd if=/dev/zero of="$AUDIO_FILE" bs=1K count=256
 checkPreviousCommand "dd audio"
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "audio post" --description "this includes audio" --element --mime "audio/ogg" --file "$AUDIO_FILE"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "audio post" --description "this includes audio" --element --mime "audio/ogg" --file "$AUDIO_FILE"
 checkPreviousCommand "publishToThisChannel"
-REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
+REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
 requireSubstring "$REFRESH_OUTPUT" "Not pruning cache since 2.62 MB (2621440 bytes) is below target of 9.00 GB (9000000000 bytes)"
-LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
+LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
 requireSubstring "$LIST_OUTPUT" "(image: (none), leaf: Qm"
 # Capture the element we can rebroadcast.
 ELEMENT_TO_REBROADCAST=$(echo "$LIST_OUTPUT" | head -2 | tail -1 | cut -d ' ' -f 3)
 
 echo "Make sure that cleaning cache won't do anything..."
-CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --cleanCache)
+CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --cleanCache)
 requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 2.88 MB (2883584 bytes) is below target of 10.00 GB (10000000000 bytes)"
 
 echo "Verify that we can refresh the \"next\" followee, and that we do correctly try this only user..."
-REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee)
+REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee)
 requireSubstring "$REFRESH_NEXT_OUTPUT" "Refreshing followee IpfsKey($PUBLIC1)"
-REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee 2>&1)
+REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee 2>&1)
 requireSubstring "$REFRESH_NEXT_OUTPUT" "Usage error in running command: Not following any users"
 
 echo "Shrink the cache and force a cache cleaning to verify it doesn't break anything..."
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --followCacheTargetBytes 2000000
-CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --cleanCache)
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --followCacheTargetBytes 2000000
+CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --cleanCache)
 requireSubstring "$CLEAN_OUTPUT" "Pruning cache to 2.00 MB (2000000 bytes) from current size of 2.88 MB (2883584 bytes)"
 # The second clean attempt should change nothing but report the remaining audio entry or nothing at all (since there is randomness in the eviction - it should at least be satisfed).
-CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --cleanCache)
+CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --cleanCache)
 # The size remaining here is either 262144 bytes or 0 bytes, depending on the order of eviction decisions, so we don't check that part of the line.
 requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since "
 requireSubstring "$CLEAN_OUTPUT" " is below target of 2.00 MB (2000000 bytes)"
 
 echo "Stop following and verify it is no longer in the list"
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --stopFollowing --publicKey "$PUBLIC1"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --stopFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "stopFollowing"
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --listFollowees
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowees
 checkPreviousCommand "listFollowees"
 
 echo "Rebroadcast one of the elements from the followee and verify that we can see it in our list..."
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --rebroadcast --elementCid "$ELEMENT_TO_REBROADCAST"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --rebroadcast --elementCid "$ELEMENT_TO_REBROADCAST"
 checkPreviousCommand "Rebroadcast"
-LISTING=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "$ELEMENT_TO_REBROADCAST"
 
 kill $PID1

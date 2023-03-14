@@ -39,7 +39,7 @@ REPO1=$(getIpfsRepoPath 1)
 PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel1"
 
 echo "Creating key on node 2..."
@@ -47,38 +47,38 @@ REPO2=$(getIpfsRepoPath 2)
 PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
 echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
-CACOPHONY_STORAGE="$USER2" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
 checkPreviousCommand "createNewChannel2"
 
 echo "Verify that we can set the prefs..."
-PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --edgeMaxPixels 1280 --followCacheTargetBytes 50M)
+PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --edgeMaxPixels 1280 --followCacheTargetBytes 50M)
 requireSubstring "$PREFS_OUTPUT" "Updated prefs!"
 
 echo "Verify that the puplic key is correct..."
-PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --getPublicKey)
+PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 # Note that the output we get from --getPublicKey is our canonicalized base58 whereas the key gen we have is base36, so canonicalize it, first.
-CANONICAL1=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")
+CANONICAL1=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")
 requireSubstring "$PUBLIC_KEY_OUTPUT" "Public Key (other users can follow you with this): $CANONICAL1"
 
 echo "Verify that they can each resolve each other..."
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: Unnamed"
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION" "name: Unnamed"
 
 echo "Update the names and make sure that they both see each others' updates..."
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME1"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME1"
 checkPreviousCommand "updateDescription1"
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME2"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME2"
 checkPreviousCommand "updateDescription2"
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: NAME2"
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION" "name: NAME1"
 
 echo "Verify that the answer for something which should not exist makes sense..."
 # Redirect error since it logs the exception.
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV 2> /dev/null)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV 2> /dev/null)
 requireSubstring "$DESCRIPTION" "NOT following IpfsKey(z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV)"
 
 kill $PID1

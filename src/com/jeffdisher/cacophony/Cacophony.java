@@ -26,6 +26,12 @@ public class Cacophony {
 	private static final int EXIT_COMPLETE_ERROR = 3;
 
 	/**
+	 * The default IPFS API server connect string.
+	 * This can be found in IPFS daemon startup output:  "API server listening on /ip4/127.0.0.1/tcp/5001".
+	 */
+	private static final String DEFAULT_IPFS_CONNECT = "/ip4/127.0.0.1/tcp/5001";
+
+	/**
 	 * Argument modes:
 	 * "--createNewChannel" Used to create a new empty channel for this local key.
 	 * "--updateDescription" Changes the description of the local channel.
@@ -73,7 +79,12 @@ public class Cacophony {
 			{
 				DataDomain dataDirectoryWrapper = DataDomain.detectDataDomain();
 				IConnectionFactory connectionFactory = dataDirectoryWrapper.getConnectionFactory();
-				StandardEnvironment executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory);
+				String ipfsConnectString = System.getenv(EnvVars.ENV_VAR_CACOPHONY_IPFS_CONNECT);
+				if (null == ipfsConnectString)
+				{
+					ipfsConnectString = DEFAULT_IPFS_CONNECT;
+				}
+				StandardEnvironment executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory, ipfsConnectString);
 				// Make sure we get ownership of the lock file.
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{

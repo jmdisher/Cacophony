@@ -64,6 +64,11 @@ public interface IEnvironment
 	IConnectionFactory getConnectionFactory();
 
 	/**
+	 * @return The IPFS API server connect string (usually "/ip4/127.0.0.1/tcp/5001").
+	 */
+	String getIpfsConnectString();
+
+	/**
 	 * @return Milliseconds since the Unix Epoch.
 	 */
 	long currentTimeMillis();

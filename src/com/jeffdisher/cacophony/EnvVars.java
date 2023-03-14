@@ -24,4 +24,10 @@ public class EnvVars
 	 * When enabled, neither the real IPFS network nor the on-disk data store will be used.
 	 */
 	public static final String ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM = "CACOPHONY_ENABLE_FAKE_SYSTEM";
+
+	/**
+	 * Set to the IPFS connect string for accessing the IPFS API server (of the form "/ip4/127.0.0.1/tcp/5001").  If not
+	 * set, a default will be assumed (which should work for nearly all non-testing use-cases).
+	 */
+	public static final String ENV_VAR_CACOPHONY_IPFS_CONNECT = "CACOPHONY_IPFS_CONNECT";
 }

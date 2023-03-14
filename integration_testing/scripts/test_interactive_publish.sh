@@ -53,11 +53,11 @@ echo "Pausing for startup..."
 sleep 5
 
 echo "Creating Cacophony instance..."
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
 echo "Start the interactive server and wait 5 seconds for it to bind the port..."
-CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
 SERVER_PID=$!
 sleep 5
 
@@ -465,7 +465,7 @@ requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":4,\"value\":\"Pu
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Verify that we can see the published post in out list..."
-LISTING=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar "Cacophony.jar" --listChannel)
+LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "New Draft - $PUBLISH_ID"
 
 

@@ -80,6 +80,8 @@ public class DataDomain implements Closeable
 	{
 		// We will just make a basic system with 2 users.  This might expand in the future.
 		MockSwarm swarm = new MockSwarm();
+		// Just use the normal default IPFS connect.
+		String ipfsConnectString = "/ip4/127.0.0.1/tcp/5001";
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey("key", theirKey);
@@ -87,8 +89,9 @@ public class DataDomain implements Closeable
 		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, new MemoryConfigFileSystem(null)
 				, theirConnection
+				, ipfsConnectString
 		);
-		new CreateChannelCommand("ipfs", "key").runInEnvironment(theirEnv);
+		new CreateChannelCommand(ipfsConnectString, "key").runInEnvironment(theirEnv);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
 		new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
 		theirEnv.shutdown();
@@ -100,8 +103,9 @@ public class DataDomain implements Closeable
 		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, ourFileSystem
 				, ourConnection
+				, ipfsConnectString
 		);
-		new CreateChannelCommand("ipfs", "key").runInEnvironment(ourEnv);
+		new CreateChannelCommand(ipfsConnectString, "key").runInEnvironment(ourEnv);
 		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
 		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
 		ourEnv.shutdown();
