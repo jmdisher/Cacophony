@@ -24,8 +24,24 @@ public interface IConnection
 
 	byte[] loadData(IpfsFile file) throws IpfsConnectionException;
 
+	/**
+	 * Publishes the given file for this channel's public key.
+	 * Note that this can easily fail since IPNS publication is often is very slow.  As a result, a failure here is
+	 * generally "safe".
+	 * 
+	 * @param keyName The name of the key, as known to the IPFS node.
+	 * @param publicKey The actual public key of this user (used for validation).
+	 * @param file The file to publish for this channel's public key.
+	 * @throws IpfsConnectionException If an error was encountered when attempting to publish.
+	 */
 	void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException;
 
+	/**
+	 * Returns the file published by the given key.
+	 * 
+	 * @param key The public key to resolve.
+	 * @return The published file (throws exception on failed resolution of well-formed key).
+	 */
 	IpfsFile resolve(IpfsKey key) throws IpfsConnectionException;
 
 	long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException;

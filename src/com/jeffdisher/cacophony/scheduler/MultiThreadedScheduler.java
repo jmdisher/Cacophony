@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.scheduler;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.jeffdisher.cacophony.logic.RemoteActions;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -18,13 +18,13 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
  */
 public class MultiThreadedScheduler implements INetworkScheduler
 {
-	private final RemoteActions _remote;
+	private final IConnection _ipfs;
 	private final WorkQueue _queue;
 	private final Thread[] _threads;
 
-	public MultiThreadedScheduler(RemoteActions actions, int threadCount)
+	public MultiThreadedScheduler(IConnection ipfs, int threadCount)
 	{
-		_remote = actions;
+		_ipfs = ipfs;
 		_queue = new WorkQueue();
 		_threads = new Thread[threadCount];
 		for (int i = 0; i < threadCount; ++i)
@@ -55,7 +55,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				byte[] data = _remote.readData(file);
+				byte[] data = _ipfs.loadData(file);
 				future.success(decoder.apply(data));
 			}
 			catch (IpfsConnectionException e)
@@ -78,7 +78,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				IpfsFile file = _remote.saveStream(stream);
+				IpfsFile file = _ipfs.storeData(stream);
 				future.success(file);
 			}
 			catch (IpfsConnectionException e)
@@ -109,7 +109,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				_remote.publishIndex(keyName, publicKey, indexHash);
+				_ipfs.publish(keyName, publicKey, indexHash);
 				future.success();
 			}
 			catch (IpfsConnectionException e)
@@ -129,7 +129,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				IpfsFile resolved = _remote.resolvePublicKey(keyToResolve);
+				IpfsFile resolved = _ipfs.resolve(keyToResolve);
 				// This should only fail with an exception.
 				Assert.assertTrue(null != resolved);
 				future.success(resolved);
@@ -150,7 +150,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				long sizeInBytes = _remote.getSizeInBytes(cid);
+				long sizeInBytes = _ipfs.getSizeInBytes(cid);
 				future.success(sizeInBytes);
 			}
 			catch (IpfsConnectionException e)
@@ -169,7 +169,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				_remote.pin(cid);
+				_ipfs.pin(cid);
 				future.success();
 			}
 			catch (IpfsConnectionException e)
@@ -188,7 +188,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		Runnable r = () -> {
 			try
 			{
-				_remote.unpin(cid);
+				_ipfs.rm(cid);
 				future.success();
 			}
 			catch (IpfsConnectionException e)

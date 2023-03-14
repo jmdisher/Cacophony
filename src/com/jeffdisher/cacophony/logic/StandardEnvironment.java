@@ -84,7 +84,7 @@ public class StandardEnvironment implements IEnvironment
 		{
 			if (null == _lazySharedScheduler)
 			{
-				_lazySharedScheduler = new MultiThreadedScheduler(RemoteActions.loadIpfsConfig(ipfs), THREAD_COUNT);
+				_lazySharedScheduler = new MultiThreadedScheduler(ipfs, THREAD_COUNT);
 			}
 			scheduler = _lazySharedScheduler;
 		}
