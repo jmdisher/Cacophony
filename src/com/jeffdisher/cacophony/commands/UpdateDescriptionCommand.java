@@ -27,6 +27,12 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return true;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
 	{
 		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));

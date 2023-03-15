@@ -17,6 +17,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return false;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		Assert.assertTrue(null != _publicKey);

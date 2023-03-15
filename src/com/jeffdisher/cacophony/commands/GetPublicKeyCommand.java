@@ -9,6 +9,12 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 public record GetPublicKeyCommand() implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return true;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))

@@ -27,6 +27,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return true;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		Assert.assertTrue(null != ipfs);

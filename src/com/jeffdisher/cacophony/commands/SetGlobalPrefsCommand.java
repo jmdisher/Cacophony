@@ -13,6 +13,12 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, long _republishIntervalMillis, long _followeeRefreshMillis) implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return false;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))

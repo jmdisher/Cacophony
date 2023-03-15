@@ -12,6 +12,12 @@ import com.jeffdisher.cacophony.types.CacophonyException;
  */
 public record RunCommand(String _overrideCommand, CommandSelectionMode _commandSelectionMode, int _port) implements ICommand
 {
+	@Override
+	public boolean requiresKey()
+	{
+		return true;
+	}
+
 	public enum CommandSelectionMode
 	{
 		// Strict mode means that the command given (default or on command-line) is the only one which can be used (ignores front-end).

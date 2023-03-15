@@ -183,10 +183,15 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(environment.getIpfsConnectString().equals(localIndex.ipfsHost()));
 		IConnection connection = environment.getConnectionFactory().buildConnection(localIndex.ipfsHost());
 		Assert.assertTrue(null != connection);
-		String keyName = localIndex.keyName();
-		Assert.assertTrue(null != keyName);
-		IpfsKey publicKey = _publicKeyForName(connection, keyName);
-		Assert.assertTrue(null != publicKey);
+		// Make sure that the public key matches (in the cases where it is required.
+		String keyName = environment.getKeyName();
+		IpfsKey publicKey = null;
+		if (null != keyName)
+		{
+			Assert.assertTrue(keyName.equals(localIndex.keyName()));
+			publicKey = _publicKeyForName(connection, keyName);
+			Assert.assertTrue(null != publicKey);
+		}
 		INetworkScheduler scheduler = environment.getSharedScheduler(connection);
 		Assert.assertTrue(null != scheduler);
 		

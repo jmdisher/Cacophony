@@ -16,6 +16,12 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 public record CleanCacheCommand() implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return false;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))

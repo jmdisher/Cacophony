@@ -69,6 +69,11 @@ public interface IEnvironment
 	String getIpfsConnectString();
 
 	/**
+	 * @return The name used to identify the signing key for publication on the local IPFS node (usually "Cacophony").
+	 */
+	String getKeyName();
+
+	/**
 	 * @return Milliseconds since the Unix Epoch.
 	 */
 	long currentTimeMillis();

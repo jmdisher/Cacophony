@@ -17,6 +17,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshNextFolloweeCommand() implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return false;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		IOperationLog log = null;

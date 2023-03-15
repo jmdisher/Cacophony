@@ -27,12 +27,13 @@ public class StandardEnvironment implements IEnvironment
 	private final LocalDataModel _sharedDataModel;
 	private final IConnectionFactory _factory;
 	private final String _ipfsConnectString;
+	private final String _keyName;
 	private int _nextOperationCounter;
 	private boolean _errorOccurred;
 	private INetworkScheduler _lazySharedScheduler;
 	private DraftManager _lazySharedDraftManager;
 
-	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectString)
+	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectString, String keyName)
 	{
 		_internalLock = new ReentrantLock();
 		_stream = stream;
@@ -40,6 +41,7 @@ public class StandardEnvironment implements IEnvironment
 		_sharedDataModel = new LocalDataModel(fileSystem);
 		_factory = factory;
 		_ipfsConnectString = ipfsConnectString;
+		_keyName = keyName;
 		_nextOperationCounter = 0;
 	}
 
@@ -162,6 +164,12 @@ public class StandardEnvironment implements IEnvironment
 	public String getIpfsConnectString()
 	{
 		return _ipfsConnectString;
+	}
+
+	@Override
+	public String getKeyName()
+	{
+		return _keyName;
 	}
 
 	@Override

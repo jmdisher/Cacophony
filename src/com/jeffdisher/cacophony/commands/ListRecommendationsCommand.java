@@ -20,6 +20,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
+	public boolean requiresKey()
+	{
+		return false;
+	}
+
+	@Override
 	public void runInEnvironment(IEnvironment environment) throws CacophonyException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))

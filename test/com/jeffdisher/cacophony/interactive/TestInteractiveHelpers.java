@@ -218,7 +218,7 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
-		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, IPFS_HOST);
+		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, IPFS_HOST, KEY_NAME);
 		
 		// First, create a channel so the channel is set up.
 		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);
@@ -352,7 +352,7 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
-		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, IPFS_HOST);
+		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, IPFS_HOST, KEY_NAME);
 		
 		// First, create a channel so the channel is set up.
 		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);

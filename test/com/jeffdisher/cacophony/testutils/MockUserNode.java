@@ -28,6 +28,7 @@ public class MockUserNode
 {
 	private static final String IPFS_HOST = "ipfsHost";
 
+	private final String _localKeyName;
 	private final MockSingleNode _sharedConnection;
 	private final MemoryConfigFileSystem _fileSystem;
 	private final MockConnectionFactory _factory;
@@ -35,11 +36,12 @@ public class MockUserNode
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node)
 	{
+		_localKeyName = keyName;
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(null);
 		_factory = new MockConnectionFactory(_sharedConnection);
-		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, IPFS_HOST);
+		_executor = new StandardEnvironment(System.out, _fileSystem, _factory, IPFS_HOST, keyName);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
@@ -49,7 +51,7 @@ public class MockUserNode
 		stream.write(userPicData);
 		stream.close();
 		
-		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, keyName);
+		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, _localKeyName);
 		createChannel.runInEnvironment(_executor);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic, null, null);
 		updateDescription.runInEnvironment(_executor);
@@ -62,7 +64,7 @@ public class MockUserNode
 		boolean isNew = false;
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory, IPFS_HOST);
+			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _factory, IPFS_HOST, _localKeyName);
 			isNew = true;
 		}
 		command.runInEnvironment(executor);

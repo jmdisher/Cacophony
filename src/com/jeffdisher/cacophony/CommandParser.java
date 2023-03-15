@@ -31,6 +31,7 @@ import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -215,8 +216,18 @@ public class CommandParser
 		{
 			// This is just a utility function to make detecting keys in integration scripts more reliable.
 			IpfsKey channelPublicKey = _parseAsKey(required[0]);
-			return (IEnvironment environment) -> {
-				System.out.println(channelPublicKey.toPublicKey());
+			return new ICommand()
+			{
+				@Override
+				public boolean requiresKey()
+				{
+					return false;
+				}
+				@Override
+				public void runInEnvironment(IEnvironment environment) throws CacophonyException
+				{
+					System.out.println(channelPublicKey.toPublicKey());
+				}
 			};
 		}),
 		GET_PUBLIC_KEY(true, "--getPublicKey", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->

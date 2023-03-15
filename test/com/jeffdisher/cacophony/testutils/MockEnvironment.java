@@ -78,6 +78,13 @@ public class MockEnvironment implements IEnvironment
 	}
 
 	@Override
+	public String getKeyName()
+	{
+		// Not used in test.
+		throw Assert.unreachable();
+	}
+
+	@Override
 	public synchronized long currentTimeMillis()
 	{
 		long millis = this.currentTimeMillis;

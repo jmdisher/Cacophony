@@ -55,7 +55,7 @@ PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1
 requireSubstring "$PREFS_OUTPUT" "Updated prefs!"
 
 echo "Verify that the puplic key is correct..."
-PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey)
+PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --getPublicKey)
 # Note that the output we get from --getPublicKey is our canonicalized base58 whereas the key gen we have is base36, so canonicalize it, first.
 CANONICAL1=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")
 requireSubstring "$PUBLIC_KEY_OUTPUT" "Public Key (other users can follow you with this): $CANONICAL1"
@@ -67,9 +67,9 @@ DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/
 requireSubstring "$DESCRIPTION" "name: Unnamed"
 
 echo "Update the names and make sure that they both see each others' updates..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME1"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME1"
 checkPreviousCommand "updateDescription1"
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME2"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME2"
 checkPreviousCommand "updateDescription2"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "name: NAME2"

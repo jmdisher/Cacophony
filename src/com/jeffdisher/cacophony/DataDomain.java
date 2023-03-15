@@ -82,30 +82,33 @@ public class DataDomain implements Closeable
 		MockSwarm swarm = new MockSwarm();
 		// Just use the normal default IPFS connect.
 		String ipfsConnectString = "/ip4/127.0.0.1/tcp/5001";
+		String keyName = "Cacophony";
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
-		them.addNewKey("key", theirKey);
+		them.addNewKey(keyName, theirKey);
 		MockConnectionFactory theirConnection = new MockConnectionFactory(them);
 		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, new MemoryConfigFileSystem(null)
 				, theirConnection
 				, ipfsConnectString
+				, keyName
 		);
-		new CreateChannelCommand(ipfsConnectString, "key").runInEnvironment(theirEnv);
+		new CreateChannelCommand(ipfsConnectString, keyName).runInEnvironment(theirEnv);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
 		new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
 		theirEnv.shutdown();
 		
 		MockSingleNode us = new MockSingleNode(swarm);
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
-		us.addNewKey("key", ourKey);
+		us.addNewKey(keyName, ourKey);
 		MockConnectionFactory ourConnection = new MockConnectionFactory(us);
 		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, ourFileSystem
 				, ourConnection
 				, ipfsConnectString
+				, keyName
 		);
-		new CreateChannelCommand(ipfsConnectString, "key").runInEnvironment(ourEnv);
+		new CreateChannelCommand(ipfsConnectString, keyName).runInEnvironment(ourEnv);
 		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
 		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
 		ourEnv.shutdown();
