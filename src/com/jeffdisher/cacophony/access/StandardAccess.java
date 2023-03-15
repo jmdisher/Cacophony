@@ -122,7 +122,7 @@ public class StandardAccess implements IWritingAccess
 			throw new UsageException("Config already exists");
 		}
 		// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
-		IConnection connection = environment.getConnectionFactory().buildConnection(ipfsConnectionString);
+		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
 		
 		boolean didCreate = fileSystem.createConfigDirectory();
@@ -181,7 +181,7 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != localIndex);
 		// Make sure that these match, just to make sure there are no mistakes while we transition to ignoring this in the data store.
 		Assert.assertTrue(environment.getIpfsConnectString().equals(localIndex.ipfsHost()));
-		IConnection connection = environment.getConnectionFactory().buildConnection(localIndex.ipfsHost());
+		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
 		// Make sure that the public key matches (in the cases where it is required.
 		String keyName = environment.getKeyName();
@@ -192,7 +192,7 @@ public class StandardAccess implements IWritingAccess
 			publicKey = _publicKeyForName(connection, keyName);
 			Assert.assertTrue(null != publicKey);
 		}
-		INetworkScheduler scheduler = environment.getSharedScheduler(connection);
+		INetworkScheduler scheduler = environment.getSharedScheduler();
 		Assert.assertTrue(null != scheduler);
 		
 		_environment = environment;

@@ -86,10 +86,9 @@ public class DataDomain implements Closeable
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey(keyName, theirKey);
-		MockConnectionFactory theirConnection = new MockConnectionFactory(them);
 		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, new MemoryConfigFileSystem(null)
-				, theirConnection
+				, them
 				, ipfsConnectString
 				, keyName
 		);
@@ -101,10 +100,9 @@ public class DataDomain implements Closeable
 		MockSingleNode us = new MockSingleNode(swarm);
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
-		MockConnectionFactory ourConnection = new MockConnectionFactory(us);
 		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, ourFileSystem
-				, ourConnection
+				, us
 				, ipfsConnectString
 				, keyName
 		);

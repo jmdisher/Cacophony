@@ -93,10 +93,11 @@ public class Cacophony {
 						keyName = CommandParser.DEFAULT_KEY_NAME;
 					}
 				}
-				StandardEnvironment executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory, ipfsConnectString, keyName);
 				// Make sure we get ownership of the lock file.
+				StandardEnvironment executor = null;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
+					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory.buildConnection(ipfsConnectString), ipfsConnectString, keyName);
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
@@ -118,12 +119,15 @@ public class Cacophony {
 					e.printStackTrace();
 					System.exit(EXIT_COMPLETE_ERROR);
 				}
-				if (executor.didErrorOccur())
+				if (null != executor)
 				{
-					// This is a "safe" error, meaning that the command completed successfully but some kind of clean-up may have failed, resulting in manual intervention steps being logged.
-					System.exit(EXIT_SAFE_ERROR);
+					if (executor.didErrorOccur())
+					{
+						// This is a "safe" error, meaning that the command completed successfully but some kind of clean-up may have failed, resulting in manual intervention steps being logged.
+						System.exit(EXIT_SAFE_ERROR);
+					}
+					executor.shutdown();
 				}
-				executor.shutdown();
 				dataDirectoryWrapper.close();
 			}
 			else

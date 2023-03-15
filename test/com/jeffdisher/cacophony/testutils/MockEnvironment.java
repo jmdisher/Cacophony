@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -36,7 +35,7 @@ public class MockEnvironment implements IEnvironment
 	}
 
 	@Override
-	public INetworkScheduler getSharedScheduler(IConnection ipfs)
+	public INetworkScheduler getSharedScheduler()
 	{
 		// Not used in test.
 		throw Assert.unreachable();
@@ -64,7 +63,7 @@ public class MockEnvironment implements IEnvironment
 	}
 
 	@Override
-	public IConnectionFactory getConnectionFactory()
+	public IConnection getConnection()
 	{
 		// Not used in test.
 		throw Assert.unreachable();

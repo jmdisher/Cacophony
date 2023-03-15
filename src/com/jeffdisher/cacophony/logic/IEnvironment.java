@@ -29,14 +29,11 @@ public interface IEnvironment
 	void logError(String message);
 
 	/**
-	 * Returns the shared scheduler for network operations, lazily creating it if it doesn't yet exist.
-	 * Note that the scheduler is lazily created but long-lived and shared by potentially multiple threads and
-	 * concurrent commands.
+	 * Returns the shared scheduler for network operations.
 	 * 
-	 * @param ipfs The IPFS connection to use if the scheduler is being lazily constructed.
 	 * @return The shared network scheduler instance.
 	 */
-	INetworkScheduler getSharedScheduler(IConnection ipfs);
+	INetworkScheduler getSharedScheduler();
 
 	/**
 	 * Returns a shared DraftManager instance, lazily creating it if needed, on top of the environment's filesystem's
@@ -59,9 +56,9 @@ public interface IEnvironment
 	IConfigFileSystem getConfigFileSystem();
 
 	/**
-	 * @return The factory for creating new connections.
+	 * @return The lower-level IPFS connection object (getSharedScheduler() is usually more appropriate).
 	 */
-	IConnectionFactory getConnectionFactory();
+	IConnection getConnection();
 
 	/**
 	 * @return The IPFS API server connect string (usually "/ip4/127.0.0.1/tcp/5001").

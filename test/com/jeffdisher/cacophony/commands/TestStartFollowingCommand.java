@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
-import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -49,7 +48,7 @@ public class TestStartFollowingCommand
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), new MockConnectionFactory(sharedConnection), IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), sharedConnection, IPFS_HOST, KEY_NAME);
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
@@ -106,7 +105,7 @@ public class TestStartFollowingCommand
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem filesystem = new MemoryConfigFileSystem(null);
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(outputStream), filesystem, new MockConnectionFactory(sharedConnection), IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(outputStream), filesystem, sharedConnection, IPFS_HOST, KEY_NAME);
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
@@ -128,7 +127,7 @@ public class TestStartFollowingCommand
 	public void testMissingConfig() throws Throwable
 	{
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), new MockConnectionFactory(null), IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), null, IPFS_HOST, KEY_NAME);
 		
 		// We expect this to fail since there is no LocalIndex.
 		try {

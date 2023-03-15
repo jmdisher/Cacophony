@@ -27,7 +27,6 @@ import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -217,8 +216,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
-		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, IPFS_HOST, KEY_NAME);
+		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connection, IPFS_HOST, KEY_NAME);
 		
 		// First, create a channel so the channel is set up.
 		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);
@@ -351,8 +349,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		MockConnectionFactory connectionFactory = new MockConnectionFactory(connection);
-		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connectionFactory, IPFS_HOST, KEY_NAME);
+		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connection, IPFS_HOST, KEY_NAME);
 		
 		// First, create a channel so the channel is set up.
 		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);

@@ -17,7 +17,6 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
-import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -114,6 +113,6 @@ public class TestLocalIntegrity
 
 	private static IEnvironment _createSingleNode(IConnection serverData)
 	{
-		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), new MockConnectionFactory(serverData), "ipfs", KEY_NAME1);
+		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), serverData, "ipfs", KEY_NAME1);
 	}
 }

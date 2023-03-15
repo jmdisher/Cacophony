@@ -25,21 +25,22 @@ public class StandardEnvironment implements IEnvironment
 	private final PrintStream _stream;
 	private final IConfigFileSystem _fileSystem;
 	private final LocalDataModel _sharedDataModel;
-	private final IConnectionFactory _factory;
+	private final IConnection _connection;
+	private final MultiThreadedScheduler _scheduler;
 	private final String _ipfsConnectString;
 	private final String _keyName;
 	private int _nextOperationCounter;
 	private boolean _errorOccurred;
-	private INetworkScheduler _lazySharedScheduler;
 	private DraftManager _lazySharedDraftManager;
 
-	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnectionFactory factory, String ipfsConnectString, String keyName)
+	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnection connection, String ipfsConnectString, String keyName)
 	{
 		_internalLock = new ReentrantLock();
 		_stream = stream;
 		_fileSystem = fileSystem;
 		_sharedDataModel = new LocalDataModel(fileSystem);
-		_factory = factory;
+		_connection = connection;
+		_scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
 		_ipfsConnectString = ipfsConnectString;
 		_keyName = keyName;
 		_nextOperationCounter = 0;
@@ -80,23 +81,9 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
-	public INetworkScheduler getSharedScheduler(IConnection ipfs)
+	public INetworkScheduler getSharedScheduler()
 	{
-		INetworkScheduler scheduler = null;
-		_internalLock.lock();
-		try
-		{
-			if (null == _lazySharedScheduler)
-			{
-				_lazySharedScheduler = new MultiThreadedScheduler(ipfs, THREAD_COUNT);
-			}
-			scheduler = _lazySharedScheduler;
-		}
-		finally
-		{
-			_internalLock.unlock();
-		}
-		return scheduler;
+		return _scheduler;
 	}
 
 	/**
@@ -141,11 +128,7 @@ public class StandardEnvironment implements IEnvironment
 	public void shutdown()
 	{
 		_sharedDataModel.dropAllCaches();
-		if (null != _lazySharedScheduler)
-		{
-			_lazySharedScheduler.shutdown();
-			_lazySharedScheduler = null;
-		}
+		_scheduler.shutdown();
 	}
 
 	@Override
@@ -155,9 +138,9 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
-	public IConnectionFactory getConnectionFactory()
+	public IConnection getConnection()
 	{
-		return _factory;
+		return _connection;
 	}
 
 	@Override

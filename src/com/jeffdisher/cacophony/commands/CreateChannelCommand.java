@@ -60,7 +60,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 
 	private void _setupKey(IEnvironment environment) throws IpfsConnectionException, SizeConstraintException, UsageException
 	{
-		IConnection connection = environment.getConnectionFactory().buildConnection(ipfs);
+		IConnection connection = environment.getConnection();
 		
 		// Check to see if this key exists.
 		List<IConnection.Key> keys = connection.getKeys();
