@@ -65,16 +65,9 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		// Check to see if this key exists.
 		List<IConnection.Key> keys = connection.getKeys();
 		boolean keyExists = keys.stream().anyMatch((k) -> k.name().equals(keyName));
-		if (keyExists)
-		{
-			environment.logToConsole("Using existing key: \"" + keyName + "\"");
-		}
-		else
-		{
-			IOperationLog keyLog = environment.logOperation("Key \"" + keyName + "\" not found.  Generating...");
-			IConnection.Key key = connection.generateKey(keyName);
-			keyLog.finish("Public key \"" + key.key() + "\" generated with name: \"" + key.name() + "\"");
-		}
+		// The key now ALWAYS exists since we create it in the pre-command phase.
+		Assert.assertTrue(keyExists);
+		environment.logToConsole("Using existing key: \"" + keyName + "\"");
 	}
 
 	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException

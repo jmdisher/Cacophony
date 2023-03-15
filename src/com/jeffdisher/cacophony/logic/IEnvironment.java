@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -67,8 +68,14 @@ public interface IEnvironment
 
 	/**
 	 * @return The name used to identify the signing key for publication on the local IPFS node (usually "Cacophony").
+	 * Value is null if the command doesn't require a key.
 	 */
 	String getKeyName();
+
+	/**
+	 * @return The public key of this user (null if the key isn't required for this command).
+	 */
+	IpfsKey getPublicKey();
 
 	/**
 	 * @return Milliseconds since the Unix Epoch.

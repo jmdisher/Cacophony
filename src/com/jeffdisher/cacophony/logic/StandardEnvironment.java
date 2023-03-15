@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -29,11 +30,18 @@ public class StandardEnvironment implements IEnvironment
 	private final MultiThreadedScheduler _scheduler;
 	private final String _ipfsConnectString;
 	private final String _keyName;
+	private final IpfsKey _publicKey;
 	private int _nextOperationCounter;
 	private boolean _errorOccurred;
 	private DraftManager _lazySharedDraftManager;
 
-	public StandardEnvironment(PrintStream stream, IConfigFileSystem fileSystem, IConnection connection, String ipfsConnectString, String keyName)
+	public StandardEnvironment(PrintStream stream
+			, IConfigFileSystem fileSystem
+			, IConnection connection
+			, String ipfsConnectString
+			, String keyName
+			, IpfsKey publicKey
+	)
 	{
 		_internalLock = new ReentrantLock();
 		_stream = stream;
@@ -43,6 +51,7 @@ public class StandardEnvironment implements IEnvironment
 		_scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
 		_ipfsConnectString = ipfsConnectString;
 		_keyName = keyName;
+		_publicKey = publicKey;
 		_nextOperationCounter = 0;
 	}
 
@@ -153,6 +162,12 @@ public class StandardEnvironment implements IEnvironment
 	public String getKeyName()
 	{
 		return _keyName;
+	}
+
+	@Override
+	public IpfsKey getPublicKey()
+	{
+		return _publicKey;
 	}
 
 	@Override

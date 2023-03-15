@@ -141,21 +141,6 @@ public class StandardAccess implements IWritingAccess
 		}
 	}
 
-	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
-	{
-		IpfsKey publicKey = null;
-		for (IConnection.Key info : ipfs.getKeys())
-		{
-			if (keyName.equals(info.name()))
-			{
-				Assert.assertTrue(null == publicKey);
-				publicKey = info.key();
-			}
-		}
-		Assert.assertTrue(null != publicKey);
-		return publicKey;
-	}
-
 
 	private final IEnvironment _environment;
 	private final IConnection _sharedConnection;
@@ -189,7 +174,7 @@ public class StandardAccess implements IWritingAccess
 		if (null != keyName)
 		{
 			Assert.assertTrue(keyName.equals(localIndex.keyName()));
-			publicKey = _publicKeyForName(connection, keyName);
+			publicKey = environment.getPublicKey();
 			Assert.assertTrue(null != publicKey);
 		}
 		INetworkScheduler scheduler = environment.getSharedScheduler();

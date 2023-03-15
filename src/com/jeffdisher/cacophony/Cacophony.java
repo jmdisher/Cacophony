@@ -4,10 +4,13 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
@@ -97,7 +100,12 @@ public class Cacophony {
 				StandardEnvironment executor = null;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
-					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connectionFactory.buildConnection(ipfsConnectString), ipfsConnectString, keyName);
+					IConnection connection = connectionFactory.buildConnection(ipfsConnectString);
+					IpfsKey publicKey = (null != keyName)
+							? _publicKeyForName(connection, keyName)
+							: null
+					;
+					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connection, ipfsConnectString, keyName, publicKey);
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
@@ -148,5 +156,26 @@ public class Cacophony {
 		System.err.println("\tStorage directory defaults to ~/.cacophony unless overridden with CACOPHONY_STORAGE env var");
 		CommandParser.printUsage(System.err);
 		System.exit(EXIT_STATIC_ERROR);
+	}
+
+	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
+	{
+		IpfsKey publicKey = null;
+		// First, see if the key exists.
+		for (IConnection.Key info : ipfs.getKeys())
+		{
+			if (keyName.equals(info.name()))
+			{
+				Assert.assertTrue(null == publicKey);
+				publicKey = info.key();
+			}
+		}
+		// If not, create it now.
+		if (null == publicKey)
+		{
+			publicKey = ipfs.generateKey(keyName).key();
+		}
+		Assert.assertTrue(null != publicKey);
+		return publicKey;
 	}
 }

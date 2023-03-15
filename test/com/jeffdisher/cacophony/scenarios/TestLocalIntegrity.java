@@ -113,6 +113,6 @@ public class TestLocalIntegrity
 
 	private static IEnvironment _createSingleNode(IConnection serverData)
 	{
-		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), serverData, "ipfs", KEY_NAME1);
+		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), serverData, "ipfs", KEY_NAME1, PUBLIC_KEY1);
 	}
 }
