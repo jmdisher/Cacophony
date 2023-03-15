@@ -31,7 +31,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -43,7 +42,7 @@ public class InteractiveServer
 	// The common WebSocket protocol name for all front-end pages which use event_api.js.
 	public  static final String EVENT_API_PROTOCOL = "event_api";
 
-	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, VersionException, IpfsConnectionException
+	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, IpfsConnectionException
 	{
 		System.out.println("Setting up initial state before starting server...");
 		
@@ -102,7 +101,7 @@ public class InteractiveServer
 					publish = new FuturePublish(newRoot);
 					publish.failure(e);
 				}
-				catch (UsageException | VersionException e)
+				catch (UsageException e)
 				{
 					// We don't expect these by this point.
 					throw Assert.unexpected(e);
@@ -131,7 +130,7 @@ public class InteractiveServer
 					// (we may want to re-request the publish attempt).
 					environment.logError("Error in background refresh start: " + e.getLocalizedMessage());
 				}
-				catch (UsageException | VersionException e)
+				catch (UsageException e)
 				{
 					// We don't expect these by this point.
 					throw Assert.unexpected(e);
@@ -321,7 +320,7 @@ public class InteractiveServer
 					// This case, we just log.
 					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
 				}
-				catch (UsageException | VersionException e)
+				catch (UsageException e)
 				{
 					// We don't expect these by this point.
 					throw Assert.unexpected(e);

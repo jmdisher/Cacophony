@@ -35,7 +35,6 @@ import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
@@ -107,10 +106,6 @@ public class TestLocalDataModel
 				{
 					Assert.fail();
 				}
-				catch (VersionException e)
-				{
-					Assert.fail();
-				}
 				reader.close();
 			}, "TestLocalDataModel thread #" + i);
 		}
@@ -165,15 +160,7 @@ public class TestLocalDataModel
 					Assert.fail();
 				}
 				// Now, fight over the write lock.
-				IReadWriteLocalData writer = null;
-				try
-				{
-					writer = model.openForWrite();
-				}
-				catch (VersionException e1)
-				{
-					Assert.fail();
-				}
+				IReadWriteLocalData writer = model.openForWrite();
 				// When we get the lock, increment the counter to make sure nobody else is here, and wait for a small amount of time.
 				Assert.assertTrue(owner.compareAndSet(null, Thread.currentThread()));
 				try
@@ -388,7 +375,7 @@ public class TestLocalDataModel
 	}
 
 
-	private byte[] _serializeModelToOpcodes(LocalDataModel model) throws IOException, VersionException
+	private byte[] _serializeModelToOpcodes(LocalDataModel model) throws IOException
 	{
 		byte[] serialized = null;
 		try (IReadOnlyLocalData access = model.openForRead())

@@ -22,7 +22,6 @@ import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -130,9 +129,8 @@ public class LocalDataModel
 	 * before this is closed.
 	 * 
 	 * @return The interface for issuing read-only operations against the storage.
-	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public IReadOnlyLocalData openForRead() throws VersionException
+	public IReadOnlyLocalData openForRead()
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
@@ -159,9 +157,8 @@ public class LocalDataModel
 	 * operations can begin before this is closed.
 	 * 
 	 * @return The interface for issuing read-write operations against the storage.
-	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public IReadWriteLocalData openForWrite() throws VersionException
+	public IReadWriteLocalData openForWrite()
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();

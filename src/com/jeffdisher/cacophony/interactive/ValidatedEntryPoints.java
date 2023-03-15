@@ -8,10 +8,9 @@ import com.jeffdisher.breakwater.IPostFormHandler;
 import com.jeffdisher.breakwater.IPostRawHandler;
 import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.breakwater.StringMultiMap;
-import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -133,7 +132,7 @@ public class ValidatedEntryPoints
 				// Note that some timeouts may also end up here but we ideally want to handle those in a different way.
 				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			}
-			catch (UsageException | VersionException e)
+			catch (UsageException e)
 			{
 				// Not expected after start-up.
 				throw Assert.unexpected(e);

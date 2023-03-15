@@ -16,7 +16,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -100,7 +99,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 				{
 					root = access.getLastRootElement();
 				}
-				catch (UsageException | VersionException e)
+				catch (UsageException e)
 				{
 					// Not expected after startup.
 					throw Assert.unexpected(e);

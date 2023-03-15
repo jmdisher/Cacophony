@@ -33,7 +33,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -59,10 +58,9 @@ public class StandardAccess implements IWritingAccess
 	 * @param environment The environment.
 	 * @return The read access interface.
 	 * @throws UsageException If the config directory is missing.
-	 * @throws VersionException The version file is missing or an unknown version.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(IEnvironment environment) throws UsageException, VersionException, IpfsConnectionException
+	public static IReadingAccess readAccess(IEnvironment environment) throws UsageException, IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
@@ -84,10 +82,9 @@ public class StandardAccess implements IWritingAccess
 	 * @param environment The environment.
 	 * @return The write access interface.
 	 * @throws UsageException If the config directory is missing.
-	 * @throws VersionException The version file is missing or an unknown version.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(IEnvironment environment) throws UsageException, VersionException, IpfsConnectionException
+	public static IWritingAccess writeAccess(IEnvironment environment) throws UsageException, IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
@@ -112,9 +109,8 @@ public class StandardAccess implements IWritingAccess
 	 * @param keyName The name of the key to use for publishing.
 	 * @throws UsageException If the config directory already exists or couldn't be created.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
-	 * @throws VersionException If the version file was an unknown number or was missing when data exists.
 	 */
-	public static void createNewChannelConfig(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException, VersionException
+	public static void createNewChannelConfig(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
