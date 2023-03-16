@@ -9,6 +9,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
@@ -39,6 +40,7 @@ public class TestLocalIntegrity
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
 		
+		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand("ipfs", KEY_NAME1);
 		createChannel.runInEnvironment(env);
 		
@@ -59,6 +61,7 @@ public class TestLocalIntegrity
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
 		
+		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand("ipfs", KEY_NAME1);
 		createChannel.runInEnvironment(env);
 		

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony;
 
 import java.io.IOException;
 
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -106,6 +107,8 @@ public class Cacophony {
 							: null
 					;
 					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connection, ipfsConnectString, keyName, publicKey);
+					// Make sure that we create an empty storage directory, if we don't already have one - we ignore whether or not this worked.
+					StandardAccess.createNewChannelConfig(executor, ipfsConnectString, keyName);
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).

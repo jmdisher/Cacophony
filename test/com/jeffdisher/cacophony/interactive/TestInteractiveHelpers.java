@@ -219,6 +219,7 @@ public class TestInteractiveHelpers
 		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connection, IPFS_HOST, KEY_NAME, PUBLIC_KEY);
 		
 		// First, create a channel so the channel is set up.
+		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
 		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);
 		
 		// Now, create a basic draft.
@@ -352,6 +353,7 @@ public class TestInteractiveHelpers
 		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connection, IPFS_HOST, KEY_NAME, PUBLIC_KEY);
 		
 		// First, create a channel so the channel is set up.
+		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
 		new CreateChannelCommand(IPFS_HOST, KEY_NAME).runInEnvironment(env);
 		
 		// Now, create a draft and attach audio.

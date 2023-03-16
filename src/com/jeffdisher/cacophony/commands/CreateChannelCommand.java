@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -38,18 +39,22 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);
 		
+		// Make sure that we aren't going to over-write an existing structure.
+		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		{
+			if (null != access.getLastRootElement())
+			{
+				throw new UsageException("Channel already exists for the IPFS key named: \"" + keyName + "\"");
+			}
+		}
+		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
 		IOperationLog setupLog = environment.logOperation("Verifying IPFS and setting up public key called \"" + keyName + "\"");
 		_setupKey(environment);
 		setupLog.finish("Key setup done!");
 		
-		// By this point, the key should be set up for us so we can just start using it.
-		IOperationLog log = environment.logOperation("Creating new channel configuration...");
-		StandardAccess.createNewChannelConfig(environment, ipfs, keyName);
-		log.finish("Config ready!");
-		
-		log = environment.logOperation("Creating initial channel state...");
+		IOperationLog log = environment.logOperation("Creating initial channel state...");
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			_runCore(environment, access);

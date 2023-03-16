@@ -101,44 +101,48 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	/**
-	 * Creates a new channel storage.
+	 * Creates a new on-disk data location for our data.  This is expected to be tried on most launches, sometimes with
+	 * incomplete data, so it will just return false and do nothing if there already seems to be data present.
 	 * 
 	 * @param environment The environment.
 	 * @param ipfsConnectionString The IPFS connection string from daemon startup (the "/ip4/127.0.0.1/tcp/5001" from
 	 * "API server listening on /ip4/127.0.0.1/tcp/5001").
-	 * @param keyName The name of the key to use for publishing.
-	 * @throws UsageException If the config directory already exists or couldn't be created.
+	 * @param keyName The name of the key to use for publishing (may be null if this wasn't provided).
+	 * @return True if the config was created with default data or false if it wasn't touched as it already existed.
+	 * @throws UsageException If the config directory couldn't be created.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static void createNewChannelConfig(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
+	public static boolean createNewChannelConfig(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
 	{
+		boolean didCreate = false;
+		
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
 		
 		// First, make sure it doesn't already exist.
 		boolean doesExist = fileSystem.doesConfigDirectoryExist();
-		if (doesExist)
+		if (!doesExist)
 		{
-			throw new UsageException("Config already exists");
+			// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
+			IConnection connection = environment.getConnection();
+			Assert.assertTrue(null != connection);
+			
+			didCreate = fileSystem.createConfigDirectory();
+			if (!didCreate)
+			{
+				throw new UsageException("Failed to create config directory");
+			}
+			// Create the instance and populate it with default files.
+			LocalDataModel dataModel = environment.getSharedDataModel();
+			try (IReadWriteLocalData writing = dataModel.openForWrite())
+			{
+				writing.writeLocalIndex(ChannelData.create(ipfsConnectionString, keyName));
+				writing.writeGlobalPrefs(PrefsData.defaultPrefs());
+				writing.writeGlobalPinCache(PinCacheData.createEmpty());
+				writing.writeFollowIndex(FolloweeData.createEmpty());
+			}
 		}
-		// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
-		IConnection connection = environment.getConnection();
-		Assert.assertTrue(null != connection);
-		
-		boolean didCreate = fileSystem.createConfigDirectory();
-		if (!didCreate)
-		{
-			throw new UsageException("Failed to create config directory");
-		}
-		// Create the instance and populate it with default files.
-		LocalDataModel dataModel = environment.getSharedDataModel();
-		try (IReadWriteLocalData writing = dataModel.openForWrite())
-		{
-			writing.writeLocalIndex(ChannelData.create(ipfsConnectionString, keyName));
-			writing.writeGlobalPrefs(PrefsData.defaultPrefs());
-			writing.writeGlobalPinCache(PinCacheData.createEmpty());
-			writing.writeFollowIndex(FolloweeData.createEmpty());
-		}
+		return didCreate;
 	}
 
 
@@ -162,18 +166,17 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != pinCache);
 		FolloweeData followeeData = readOnly.readFollowIndex();
 		Assert.assertTrue(null != followeeData);
+		
+		// Note that we only use the lastPublishedIndex from ChannelData.
+		// TODO:  Remove this with the next storage version number change.
 		ChannelData localIndex = readOnly.readLocalIndex();
 		Assert.assertTrue(null != localIndex);
-		// Make sure that these match, just to make sure there are no mistakes while we transition to ignoring this in the data store.
-		Assert.assertTrue(environment.getIpfsConnectString().equals(localIndex.ipfsHost()));
 		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
-		// Make sure that the public key matches (in the cases where it is required.
 		String keyName = environment.getKeyName();
 		IpfsKey publicKey = null;
 		if (null != keyName)
 		{
-			Assert.assertTrue(keyName.equals(localIndex.keyName()));
 			publicKey = environment.getPublicKey();
 			Assert.assertTrue(null != publicKey);
 		}

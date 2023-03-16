@@ -20,6 +20,7 @@ public class TestRunCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		RunCommand command = new RunCommand(null, RunCommand.CommandSelectionMode.STRICT, 8000);
+		user1.createEmptyConfig(KEY_NAME);
 		try
 		{
 			user1.runCommand(null, command);

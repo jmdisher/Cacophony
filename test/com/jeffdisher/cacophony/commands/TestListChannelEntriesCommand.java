@@ -30,6 +30,7 @@ public class TestListChannelEntriesCommand
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
+		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Check that we can list entries with null key.
@@ -56,7 +57,9 @@ public class TestListChannelEntriesCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create the channels.
+		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Check that we can ask about someone we aren't following who does exist.
@@ -73,7 +76,9 @@ public class TestListChannelEntriesCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
 		
 		// Create the channels.
+		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Make an entry with no leaves and one with a big leaf.

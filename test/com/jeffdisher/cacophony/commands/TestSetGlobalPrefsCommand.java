@@ -22,6 +22,7 @@ public class TestSetGlobalPrefsCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
+		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
 		
 		// Verify initial update.

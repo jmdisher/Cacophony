@@ -44,8 +44,15 @@ public class MockUserNode
 		_executor = new StandardEnvironment(System.out, _fileSystem, _sharedConnection, IPFS_HOST, keyName, key);
 	}
 
+	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
+	{
+		StandardAccess.createNewChannelConfig(_executor, IPFS_HOST, keyName);
+	}
+
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
 	{
+		StandardAccess.createNewChannelConfig(_executor, IPFS_HOST, keyName);
+		
 		File userPic = File.createTempFile("cacophony", "test");
 		FileOutputStream stream = new FileOutputStream(userPic);
 		stream.write(userPicData);

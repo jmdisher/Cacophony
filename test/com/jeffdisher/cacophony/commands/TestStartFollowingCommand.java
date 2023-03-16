@@ -22,7 +22,6 @@ import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -121,22 +120,6 @@ public class TestStartFollowingCommand
 		{
 			Assert.assertTrue(access.readFollowIndex().getAllKnownFollowees().isEmpty());
 		}
-	}
-
-	@Test
-	public void testMissingConfig() throws Throwable
-	{
-		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), null, IPFS_HOST, KEY_NAME, PUBLIC_KEY);
-		
-		// We expect this to fail since there is no LocalIndex.
-		try {
-			command.runInEnvironment(executor);
-			Assert.fail();
-		} catch (UsageException e) {
-			// Expected.
-		}
-		executor.shutdown();
 	}
 
 
