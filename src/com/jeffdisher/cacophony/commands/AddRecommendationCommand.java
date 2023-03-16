@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -32,6 +33,10 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
+			if (null == access.getLastRootElement())
+			{
+				throw new UsageException("Channel must first be created with --createNewChannel");
+			}
 			IOperationLog log = environment.logOperation("Adding recommendation " + _channelPublicKey + "...");
 			 _runCore(environment, access);
 			log.finish("Now recommending: " + _channelPublicKey);

@@ -11,40 +11,17 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
-public class TestRepublishCommand
+public class TestRemoveEntryFromThisChannelCommand
 {
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-
-	@Test
-	public void testRepublishAfterNew() throws Throwable
-	{
-		RepublishCommand command = new RepublishCommand();
-		
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
-		
-		// We need to create the channel first so we will just use the command to do that.
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
-		
-		// Verify initial update.
-		IpfsFile update1 = user.getLastRootElement();
-		Assert.assertNotNull(update1);
-		
-		// Now, run the refresh command.
-		user.runCommand(null, command);
-		
-		// Verify nothing changed.
-		IpfsFile update2 = user.getLastRootElement();
-		Assert.assertEquals(update1, update2);
-		user.shutdown();
-	}
+	private static final IpfsFile MISC_FILE = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 
 	@Test
 	public void testMissingChannel() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
-		RepublishCommand command = new RepublishCommand();
+		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(MISC_FILE);
 		try
 		{
 			user1.runCommand(null, command);

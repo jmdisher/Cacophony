@@ -43,6 +43,10 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
+			if (null == access.getLastRootElement())
+			{
+				throw new UsageException("Channel must first be created with --createNewChannel");
+			}
 			IOperationLog log = environment.logOperation("Updating channel description...");
 			_runCore(environment, access);
 			log.finish("Update completed!");

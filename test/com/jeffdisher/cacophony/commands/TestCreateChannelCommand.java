@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestCreateChannelCommand
@@ -52,5 +53,22 @@ public class TestCreateChannelCommand
 		Assert.assertTrue(user1.isPinnedLocally(descriptionCid));
 		Assert.assertTrue(user1.isPinnedLocally(recommendationsCid));
 		user1.shutdown();
+	}
+
+	@Test
+	public void testDuplicateFailure() throws Throwable
+	{
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
+		user1.runCommand(null, command);
+		try
+		{
+			user1.runCommand(null, command);
+			Assert.fail();
+		}
+		catch (UsageException e)
+		{
+			// Expected.
+		}
 	}
 }

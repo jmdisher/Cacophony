@@ -29,6 +29,10 @@ public record RepublishCommand() implements ICommand
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
+			if (null == access.getLastRootElement())
+			{
+				throw new UsageException("Channel must first be created with --createNewChannel");
+			}
 			_runCore(environment, access);
 		}
 	}

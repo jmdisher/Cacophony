@@ -43,6 +43,10 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 		
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
+			if (null == access.getLastRootElement())
+			{
+				throw new UsageException("Channel must first be created with --createNewChannel");
+			}
 			// First, load our existing stream to make sure that this isn't a duplicate.
 			IpfsFile previousRoot = access.getLastRootElement();
 			Assert.assertTrue(null != previousRoot);

@@ -29,6 +29,7 @@ public class TestRebroadcastCommand
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
+	private static final IpfsFile MISC_FILE = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 
 
 	@Test
@@ -202,5 +203,21 @@ public class TestRebroadcastCommand
 		
 		user2.shutdown();
 		user.shutdown();
+	}
+
+	@Test
+	public void testMissingChannel() throws Throwable
+	{
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		RebroadcastCommand command = new RebroadcastCommand(MISC_FILE);
+		try
+		{
+			user1.runCommand(null, command);
+			Assert.fail();
+		}
+		catch (UsageException e)
+		{
+			// Expected.
+		}
 	}
 }

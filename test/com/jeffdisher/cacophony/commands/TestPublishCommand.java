@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestPublishCommand
@@ -47,6 +48,22 @@ public class TestPublishCommand
 		String mime = "text/plain";
 		String fileContents = "Testing\n";
 		_commonTestOnePublish(name, discussionUrl, mime, fileContents);
+	}
+
+	@Test
+	public void testMissingChannel() throws Throwable
+	{
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		PublishCommand command = new PublishCommand("name", "description", null, new ElementSubCommand[0]);
+		try
+		{
+			user1.runCommand(null, command);
+			Assert.fail();
+		}
+		catch (UsageException e)
+		{
+			// Expected.
+		}
 	}
 
 

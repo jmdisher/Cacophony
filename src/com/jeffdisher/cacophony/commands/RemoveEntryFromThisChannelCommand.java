@@ -38,6 +38,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
+			if (null == access.getLastRootElement())
+			{
+				throw new UsageException("Channel must first be created with --createNewChannel");
+			}
 			IOperationLog log = environment.logOperation("Removing entry " + _elementCid + " from channel...");
 			CleanupData cleanup = _runCore(environment, access);
 			

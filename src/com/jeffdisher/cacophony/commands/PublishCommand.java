@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -39,6 +40,10 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IpfsFile[] newElementContainer = new IpfsFile[1];
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
+			if (null == access.getLastRootElement())
+			{
+				throw new UsageException("Channel must first be created with --createNewChannel");
+			}
 			IpfsFile newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements, newElementContainer);
 			asyncPublish = access.beginIndexPublish(newRoot);
 		}
