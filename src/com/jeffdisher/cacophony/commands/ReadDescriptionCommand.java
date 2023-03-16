@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
-import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -35,7 +34,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException, FailedDeserializationException
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		

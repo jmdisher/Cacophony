@@ -9,8 +9,6 @@ import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -53,11 +51,6 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 		{
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			e.printStackTrace(response.getWriter());
-		}
-		catch (UsageException e)
-		{
-			// Not expected after start-up.
-			throw Assert.unexpected(e);
 		}
 	}
 }

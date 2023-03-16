@@ -54,22 +54,21 @@ public class StandardAccess implements IWritingAccess
 {
 	/**
 	 * Requests read access.
+	 * Note that this assumes that the config directory has already been created and is valid (see
+	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
 	 * 
 	 * @param environment The environment.
 	 * @return The read access interface.
-	 * @throws UsageException If the config directory is missing.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(IEnvironment environment) throws UsageException, IpfsConnectionException
+	public static IReadingAccess readAccess(IEnvironment environment) throws IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
 		
 		boolean doesExist = fileSystem.doesConfigDirectoryExist();
-		if (!doesExist)
-		{
-			throw new UsageException("Config doesn't exist");
-		}
+		// Should have been created earlier in the run.
+		Assert.assertTrue(doesExist);
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
@@ -78,22 +77,21 @@ public class StandardAccess implements IWritingAccess
 
 	/**
 	 * Requests write access.
+	 * Note that this assumes that the config directory has already been created and is valid (see
+	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
 	 * 
 	 * @param environment The environment.
 	 * @return The write access interface.
-	 * @throws UsageException If the config directory is missing.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(IEnvironment environment) throws UsageException, IpfsConnectionException
+	public static IWritingAccess writeAccess(IEnvironment environment) throws IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
 		
 		boolean doesExist = fileSystem.doesConfigDirectoryExist();
-		if (!doesExist)
-		{
-			throw new UsageException("Config doesn't exist");
-		}
+		// Should have been created earlier in the run.
+		Assert.assertTrue(doesExist);
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		

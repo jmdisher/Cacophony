@@ -63,7 +63,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	}
 
 
-	private void _setupKey(IEnvironment environment) throws IpfsConnectionException, SizeConstraintException, UsageException
+	private void _setupKey(IEnvironment environment) throws IpfsConnectionException, SizeConstraintException
 	{
 		IConnection connection = environment.getConnection();
 		
@@ -75,7 +75,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		environment.logToConsole("Using existing key: \"" + keyName + "\"");
 	}
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();

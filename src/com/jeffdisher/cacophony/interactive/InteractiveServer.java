@@ -30,7 +30,6 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -42,7 +41,7 @@ public class InteractiveServer
 	// The common WebSocket protocol name for all front-end pages which use event_api.js.
 	public  static final String EVENT_API_PROTOCOL = "event_api";
 
-	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws UsageException, IpfsConnectionException
+	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
 		System.out.println("Setting up initial state before starting server...");
 		
@@ -101,11 +100,6 @@ public class InteractiveServer
 					publish = new FuturePublish(newRoot);
 					publish.failure(e);
 				}
-				catch (UsageException e)
-				{
-					// We don't expect these by this point.
-					throw Assert.unexpected(e);
-				}
 				return publish;
 			}
 			@Override
@@ -129,11 +123,6 @@ public class InteractiveServer
 					// This case, we just log.
 					// (we may want to re-request the publish attempt).
 					environment.logError("Error in background refresh start: " + e.getLocalizedMessage());
-				}
-				catch (UsageException e)
-				{
-					// We don't expect these by this point.
-					throw Assert.unexpected(e);
 				}
 				// We must have a connector by this point since this is only called on refresh, not start follow.
 				HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
@@ -319,11 +308,6 @@ public class InteractiveServer
 				{
 					// This case, we just log.
 					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
-				}
-				catch (UsageException e)
-				{
-					// We don't expect these by this point.
-					throw Assert.unexpected(e);
 				}
 				// (we just log the result)
 				this.environment.logToConsole("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));

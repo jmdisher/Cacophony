@@ -9,7 +9,6 @@ import com.jeffdisher.breakwater.IPostRawHandler;
 import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -131,11 +130,6 @@ public class ValidatedEntryPoints
 				// Failures in contacting the IPFS server will just be considered an internal error, for now.
 				// Note that some timeouts may also end up here but we ideally want to handle those in a different way.
 				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			}
-			catch (UsageException e)
-			{
-				// Not expected after start-up.
-				throw Assert.unexpected(e);
 			}
 			catch (IOException e)
 			{

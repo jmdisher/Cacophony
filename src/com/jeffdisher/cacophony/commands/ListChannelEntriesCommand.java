@@ -20,7 +20,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
-import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -42,7 +41,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException, FailedDeserializationException
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		

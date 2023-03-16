@@ -91,7 +91,7 @@ public class MockUserNode
 		return _sharedConnection.resolve(key);
 	}
 
-	public IpfsFile getLastRootElement() throws UsageException, IpfsConnectionException
+	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
 		try (IReadingAccess reading = StandardAccess.readAccess(_executor))
 		{
@@ -104,7 +104,7 @@ public class MockUserNode
 		return _sharedConnection.isPinned(file);
 	}
 
-	public boolean isInPinCache(IpfsFile file) throws UsageException, IpfsConnectionException
+	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
 		IReadingAccess reading = StandardAccess.readAccess(_executor);
 		boolean isPinned = reading.isInPinCached(file);
@@ -112,7 +112,7 @@ public class MockUserNode
 		return isPinned;
 	}
 
-	public PrefsData readPrefs() throws UsageException, IpfsConnectionException
+	public PrefsData readPrefs() throws IpfsConnectionException
 	{
 		IReadingAccess reading = StandardAccess.readAccess(_executor);
 		PrefsData prefs = reading.readPrefs();
@@ -120,7 +120,7 @@ public class MockUserNode
 		return prefs;
 	}
 
-	public IFolloweeReading readFollowIndex() throws UsageException, IpfsConnectionException
+	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
 		try (IWritingAccess writing = StandardAccess.writeAccess(_executor))

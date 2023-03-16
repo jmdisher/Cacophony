@@ -38,7 +38,7 @@ public record RepublishCommand() implements ICommand
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, KeyException
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException
 	{
 		// Get the previously posted index hash.
 		IpfsFile indexHash = access.getLastRootElement();
