@@ -299,17 +299,6 @@ public class TestCommandParser
 	}
 
 	@Test
-	public void testHtmlOutput() throws Throwable
-	{
-		String[] foo = {"--htmlOutput", "--directory", "/tmp"};
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
-		Assert.assertNotNull(command);
-		Assert.assertTrue(0 == outStream.size());
-	}
-
-	@Test
 	public void testSingleVideo() throws Throwable
 	{
 		File tempFile = FOLDER.newFile();

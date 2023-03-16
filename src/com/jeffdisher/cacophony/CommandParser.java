@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.GetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.GetPublicKeyCommand;
-import com.jeffdisher.cacophony.commands.HtmlOutputCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
@@ -187,11 +186,6 @@ public class CommandParser
 		REPUBLISH(true, "--republish", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			return new RepublishCommand();
-		}),
-		HTML_OUTPUT(true, "--htmlOutput", new String[] {"--directory"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
-		{
-			File directory = new File(required[0]);
-			return new HtmlOutputCommand(directory);
 		}),
 		REBROADCAST(true, "--rebroadcast", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{

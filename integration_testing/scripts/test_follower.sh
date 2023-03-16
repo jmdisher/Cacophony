@@ -16,8 +16,6 @@ PATH_TO_JAR="$3"
 USER1=/tmp/user1
 USER2=/tmp/user2
 
-STATIC2=/tmp/static2
-
 rm -rf "$USER1"
 rm -rf "$USER2"
 
@@ -73,19 +71,6 @@ requireSubstring "$LIST" "Followee has 0 elements"
 DESCRIPTION_FOLLOWER=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION_FOLLOWER" "-name: Unnamed"
 
-echo "Verify that the static HTML is generated"
-rm -rf "$STATIC2"
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --htmlOutput --directory "$STATIC2"
-checkPreviousCommand "htmlOutput"
-checkFileExists "$STATIC2/index.html"
-checkFileExists "$STATIC2/prefs.html"
-checkFileExists "$STATIC2/utils.js"
-checkFileExists "$STATIC2/user.html"
-checkFileExists "$STATIC2/play.html"
-checkFileExists "$STATIC2/recommending.html"
-checkFileExists "$STATIC2/following.html"
-checkFileExists "$STATIC2/generated_db.js"
-
 # Post an update and refresh to make sure that the follower sees the update and can re-render the HTML output
 echo "Generate test files"
 IMAGE_FILE="/tmp/image_file"
@@ -124,19 +109,6 @@ ELEMENT_TO_REBROADCAST=$(echo "$LIST_OUTPUT" | head -2 | tail -1 | cut -d ' ' -f
 echo "Make sure that cleaning cache won't do anything..."
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --cleanCache)
 requireSubstring "$CLEAN_OUTPUT" "Not pruning cache since 2.88 MB (2883584 bytes) is below target of 10.00 GB (10000000000 bytes)"
-
-echo "Regenerate the static HTML"
-rm -rf "$STATIC2"
-CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --htmlOutput --directory "$STATIC2"
-checkPreviousCommand "htmlOutput"
-checkFileExists "$STATIC2/index.html"
-checkFileExists "$STATIC2/prefs.html"
-checkFileExists "$STATIC2/utils.js"
-checkFileExists "$STATIC2/user.html"
-checkFileExists "$STATIC2/play.html"
-checkFileExists "$STATIC2/recommending.html"
-checkFileExists "$STATIC2/following.html"
-checkFileExists "$STATIC2/generated_db.js"
 
 echo "Verify that we can refresh the \"next\" followee, and that we do correctly try this only user..."
 REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee)
