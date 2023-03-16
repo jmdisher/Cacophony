@@ -48,7 +48,7 @@ public class FutureSave
 	public synchronized void success(IpfsFile file)
 	{
 		_file = file;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -59,6 +59,6 @@ public class FutureSave
 	public synchronized void failure(IpfsConnectionException exception)
 	{
 		_exception = exception;
-		this.notify();
+		this.notifyAll();
 	}
 }

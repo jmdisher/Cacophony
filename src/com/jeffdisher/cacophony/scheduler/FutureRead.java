@@ -55,7 +55,7 @@ public class FutureRead<D>
 	public synchronized void success(D data)
 	{
 		_data = data;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class FutureRead<D>
 	public synchronized void failureInConnection(IpfsConnectionException exception)
 	{
 		_connectionException = exception;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -77,6 +77,6 @@ public class FutureRead<D>
 	public synchronized void failureInDecoding(FailedDeserializationException exception)
 	{
 		_decodingException = exception;
-		this.notify();
+		this.notifyAll();
 	}
 }

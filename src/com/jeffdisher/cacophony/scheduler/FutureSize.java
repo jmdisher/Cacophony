@@ -48,7 +48,7 @@ public class FutureSize
 	{
 		Assert.assertTrue(sizeInBytes >= 0L);
 		_sizeInBytes = sizeInBytes;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -59,6 +59,6 @@ public class FutureSize
 	public synchronized void failure(IpfsConnectionException exception)
 	{
 		_exception = exception;
-		this.notify();
+		this.notifyAll();
 	}
 }

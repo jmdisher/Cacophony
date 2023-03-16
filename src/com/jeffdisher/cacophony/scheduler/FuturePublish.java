@@ -58,7 +58,7 @@ public class FuturePublish
 	public synchronized void success()
 	{
 		_didSucceed = true;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -69,6 +69,6 @@ public class FuturePublish
 	public synchronized void failure(IpfsConnectionException exception)
 	{
 		_exception = exception;
-		this.notify();
+		this.notifyAll();
 	}
 }

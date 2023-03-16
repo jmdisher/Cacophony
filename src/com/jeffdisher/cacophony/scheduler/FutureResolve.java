@@ -42,7 +42,7 @@ public class FutureResolve
 	public synchronized void success(IpfsFile file)
 	{
 		_file = file;
-		this.notify();
+		this.notifyAll();
 	}
 
 	/**
@@ -51,6 +51,6 @@ public class FutureResolve
 	public synchronized void failure()
 	{
 		_didFail = true;
-		this.notify();
+		this.notifyAll();
 	}
 }
