@@ -6,7 +6,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.interactive.InteractiveServer;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -33,7 +33,7 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	private static final String DEFAULT_COMMAND = "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -";
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{

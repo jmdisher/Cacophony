@@ -14,7 +14,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -32,7 +31,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _elementCid);
 		

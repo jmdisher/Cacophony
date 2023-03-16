@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -33,7 +32,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
 	{
 		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));
 		if (null != _picturePath)

@@ -13,9 +13,10 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
-import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -29,7 +30,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
 	{
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);

@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -23,7 +22,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException, IpfsConnectionException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _publicKey);
 		

@@ -5,7 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 
 
 /**
@@ -22,7 +22,7 @@ public record CleanCacheCommand() implements ICommand
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{

@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -29,7 +28,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _followeeKey);
 		

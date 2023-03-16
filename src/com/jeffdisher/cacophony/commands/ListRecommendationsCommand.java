@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,7 +24,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{

@@ -4,9 +4,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.PrefsData;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -19,7 +17,7 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, 
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
@@ -28,7 +26,7 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, 
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException, UsageException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws UsageException
 	{
 		PrefsData prefs = access.readPrefs();
 		boolean didChange = false;

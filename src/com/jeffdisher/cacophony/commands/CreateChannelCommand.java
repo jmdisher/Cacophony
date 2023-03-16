@@ -17,7 +17,6 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -34,7 +33,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);
@@ -63,7 +62,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	}
 
 
-	private void _setupKey(IEnvironment environment) throws IpfsConnectionException, SizeConstraintException
+	private void _setupKey(IEnvironment environment) throws IpfsConnectionException
 	{
 		IConnection connection = environment.getConnection();
 		

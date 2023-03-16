@@ -4,10 +4,8 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
-import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -25,7 +23,7 @@ public record RepublishCommand() implements ICommand
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws CacophonyException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
@@ -38,7 +36,7 @@ public record RepublishCommand() implements ICommand
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException
+	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException
 	{
 		// Get the previously posted index hash.
 		IpfsFile indexHash = access.getLastRootElement();
