@@ -206,7 +206,7 @@ public class LocalRecordCacheBuilder
 		}
 		
 		List<DataElement> elements = record.getElements().getElement();
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), elements.size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), elements.size());
 		
 		// If this is a local user, state that all the files are cached.
 		for (DataElement leaf : elements)
@@ -234,7 +234,7 @@ public class LocalRecordCacheBuilder
 		StreamRecord record = future.get();
 		List<DataElement> elements = record.getElements().getElement();
 		
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), elements.size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), elements.size());
 		
 		// If this is a followee, then check for the appropriate leaves.
 		// (note that we want to double-count with local user, if both - since the pin cache will do that).

@@ -815,7 +815,7 @@ public class TestFolloweeRefreshLogic
 			System.out.println(message);
 		}
 		@Override
-		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount)
+		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)
 		{
 			_newElementsPinned.add(elementHash);
 		}

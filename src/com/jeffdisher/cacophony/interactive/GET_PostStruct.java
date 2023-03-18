@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * -description (string)
  * -publishedSecondsUts (long)
  * -discussionUrl (string)
+ * -publisherKey (string)
  * (if cached) -thumbnailUrl (string)
  * (if cached) -videoUrl (string)
  * (if cached) -audioUrl (string)

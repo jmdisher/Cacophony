@@ -55,40 +55,40 @@ public class TestJsonGenerationHelpers
 	public void testPostStructNotCached() throws Throwable
 	{
 		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 1);
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 1);
 		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":false}", data.toString());
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":false}", data.toString());
 	}
 
 	@Test
 	public void testPostStructImplicitCached() throws Throwable
 	{
 		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 0);
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 0);
 		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}", data.toString());
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}", data.toString());
 	}
 
 	@Test
 	public void testPostStructCached() throws Throwable
 	{
 		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 2);
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 2);
 		cache.recordThumbnailPinned(FILE1, FILE2);
 		cache.recordVideoPinned(FILE1, FILE3, 100);
 		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\",\"audioUrl\":null}", data.toString());
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\",\"audioUrl\":null}", data.toString());
 	}
 
 	@Test
 	public void testPostStructCachedAudio() throws Throwable
 	{
 		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", 2);
+		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 2);
 		cache.recordThumbnailPinned(FILE1, FILE2);
 		cache.recordAudioPinned(FILE1, FILE3);
 		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":null,\"audioUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\"}", data.toString());
+		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":null,\"audioUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\"}", data.toString());
 	}
 
 	@Test

@@ -50,6 +50,7 @@ public class LocalRecordCache
 					, internal.description
 					, internal.publishedSecondsUtc
 					, internal.discussionUrl
+					, internal.publisherKey
 					, internal.thumbnail
 					, internal.largestVideo()
 					, internal.audio
@@ -67,9 +68,10 @@ public class LocalRecordCache
 	 * @param description The description.
 	 * @param publishedSecondsUtc The publish time.
 	 * @param discussionUrl The discussion URL (can be null).
+	 * @param publisherKey The key of the element publisher.
 	 * @param leafElementCount The number of leaf elements referenced.
 	 */
-	public synchronized void recordMetaDataPinned(IpfsFile cid, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafElementCount)
+	public synchronized void recordMetaDataPinned(IpfsFile cid, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafElementCount)
 	{
 		int refCount = 0;
 		IpfsFile thumbnail = null;
@@ -97,6 +99,7 @@ public class LocalRecordCache
 				, description
 				, publishedSecondsUtc
 				, discussionUrl
+				, publisherKey
 				, leafElementCount
 				, thumbnail
 				, thumbnailRef
@@ -126,6 +129,7 @@ public class LocalRecordCache
 					, previous.description
 					, previous.publishedSecondsUtc
 					, previous.discussionUrl
+					, previous.publisherKey
 					, previous.leafElementCount
 					, previous.thumbnail
 					, previous.thumbnailRef
@@ -163,6 +167,7 @@ public class LocalRecordCache
 				, previous.description
 				, previous.publishedSecondsUtc
 				, previous.discussionUrl
+				, previous.publisherKey
 				, previous.leafElementCount
 				, thumbnail
 				, thumbnailRef
@@ -199,6 +204,7 @@ public class LocalRecordCache
 				, previous.description
 				, previous.publishedSecondsUtc
 				, previous.discussionUrl
+				, previous.publisherKey
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -235,6 +241,7 @@ public class LocalRecordCache
 				, previous.description
 				, previous.publishedSecondsUtc
 				, previous.discussionUrl
+				, previous.publisherKey
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -268,6 +275,7 @@ public class LocalRecordCache
 				, previous.description
 				, previous.publishedSecondsUtc
 				, previous.discussionUrl
+				, previous.publisherKey
 				, previous.leafElementCount
 				, (thumbnailRef > 0) ? previous.thumbnail : null
 				, thumbnailRef
@@ -301,6 +309,7 @@ public class LocalRecordCache
 				, previous.description
 				, previous.publishedSecondsUtc
 				, previous.discussionUrl
+				, previous.publisherKey
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -351,6 +360,7 @@ public class LocalRecordCache
 				, previous.description
 				, previous.publishedSecondsUtc
 				, previous.discussionUrl
+				, previous.publisherKey
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -370,6 +380,7 @@ public class LocalRecordCache
 			, String description
 			, long publishedSecondsUtc
 			, String discussionUrl
+			, String publisherKey
 			, IpfsFile thumbnailCid
 			, IpfsFile videoCid
 			, IpfsFile audioCid
@@ -386,6 +397,7 @@ public class LocalRecordCache
 			, String description
 			, long publishedSecondsUtc
 			, String discussionUrl
+			, String publisherKey
 			, int leafElementCount
 			, IpfsFile thumbnail
 			, int thumbnailRef

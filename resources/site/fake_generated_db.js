@@ -38,6 +38,7 @@ var DATA_elements = {
 		"description": "just a test",
 		"publishedSecondsUtc": 1000,
 		"discussionUrl" : null,
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JF": {
 		"cached": true,
@@ -47,6 +48,7 @@ var DATA_elements = {
 		"thumbnailUrl": "http://localhost:8080/ipfs/QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1Ju",
 		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
 		"discussionUrl" : "http://example.com/1",
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1J6": {
 		"cached": true,
@@ -56,6 +58,7 @@ var DATA_elements = {
 		"thumbnailUrl": "http://localhost:8080/ipfs/QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1Ju",
 		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
 		"discussionUrl" : "http://example.com/2",
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JD": {
 		"cached": true,
@@ -65,6 +68,7 @@ var DATA_elements = {
 		"thumbnailUrl": null,
 		"videoUrl": "http://localhost:8080/ipfs/QmScitMGZ1FU7EzCkp8nTzadFTtneLpJLP5pBqEq3Uh536",
 		"discussionUrl" : null,
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JJ": {
 		"cached": true,
@@ -74,6 +78,7 @@ var DATA_elements = {
 		"thumbnailUrl": "http://localhost:8080/ipfs/QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1Ju",
 		"videoUrl": null,
 		"discussionUrl" : "http://example.com/3",
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZ1JA": {
 		"cached": true,
@@ -83,6 +88,7 @@ var DATA_elements = {
 		"thumbnailUrl": null,
 		"videoUrl": null,
 		"discussionUrl" : null,
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141",
 	},
 	"QmfJTCrjmcJjscXsyRxUX1woatdSucvJp7CJgfDUGZZZZZ": {
 		"cached": true,
@@ -92,6 +98,7 @@ var DATA_elements = {
 		"thumbnailUrl": null,
 		"videoUrl": null,
 		"discussionUrl" : "http://example.com/4",
+		"publisherKey": "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F",
 	},
 };
 var DATA_userPosts = {

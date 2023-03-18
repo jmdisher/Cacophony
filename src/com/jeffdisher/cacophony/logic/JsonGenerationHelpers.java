@@ -172,6 +172,7 @@ public class JsonGenerationHelpers
 		thisElt.set("description", element.description());
 		thisElt.set("publishedSecondsUtc", element.publishedSecondsUtc());
 		thisElt.set("discussionUrl", element.discussionUrl());
+		thisElt.set("publisherKey", element.publisherKey());
 		thisElt.set("cached", element.isCached());
 		if (element.isCached())
 		{

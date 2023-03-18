@@ -90,7 +90,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_environment.logToConsole(message);
 	}
 	@Override
-	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount)
+	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)
 	{
 		if (null != _connectorForUser)
 		{
@@ -98,7 +98,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			_connectorForUser.create(elementHash, null);
 		}
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
-			cache.recordMetaDataPinned(elementHash, name, description, publishedSecondsUtc, discussionUrl, leafReferenceCount);
+			cache.recordMetaDataPinned(elementHash, name, description, publishedSecondsUtc, discussionUrl, publisherKey, leafReferenceCount);
 		});
 	}
 	@Override

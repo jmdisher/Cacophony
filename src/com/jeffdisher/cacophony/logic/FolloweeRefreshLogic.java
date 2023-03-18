@@ -324,7 +324,7 @@ public class FolloweeRefreshLogic
 				// We pinned this so the read should be pretty-well instantaneous.
 				data.record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 				// Report that we pinned it.
-				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussion(), data.record.getElements().getElement().size());
+				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussion(), data.record.getPublisherKey(), data.record.getElements().getElement().size());
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
 				_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
 				newRecordsBeingProcessedCalculatingLeaves.add(data);
@@ -605,9 +605,10 @@ public class FolloweeRefreshLogic
 		 * @param description The description of the post.
 		 * @param publishedSecondsUtc The publish time of the post.
 		 * @param discussionUrl The discussion URL of the post (maybe null).
+		 * @param publisherKey The key of the element publisher.
 		 * @param leafReferenceCount The number of attached leaves (thumbnail, audio, videos, etc).
 		 */
-		void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, int leafReferenceCount);
+		void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount);
 		/**
 		 * Requests that a piece of XML meta-data be pinned locally.  This could be the element or some other
 		 * intermediary data.
