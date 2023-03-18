@@ -4,10 +4,10 @@ import java.io.FileNotFoundException;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.types.IpfsFile;
 

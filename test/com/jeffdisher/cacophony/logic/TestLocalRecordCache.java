@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v1;
+package com.jeffdisher.cacophony.logic;
 
 import org.junit.Assert;
 import org.junit.Test;

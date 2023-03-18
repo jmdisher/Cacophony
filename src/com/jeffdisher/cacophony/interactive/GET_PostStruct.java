@@ -3,9 +3,9 @@ package com.jeffdisher.cacophony.interactive;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;

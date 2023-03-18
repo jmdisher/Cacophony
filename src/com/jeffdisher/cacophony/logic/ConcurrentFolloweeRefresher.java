@@ -6,7 +6,6 @@ import java.util.Set;
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;

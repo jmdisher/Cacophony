@@ -9,7 +9,6 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;

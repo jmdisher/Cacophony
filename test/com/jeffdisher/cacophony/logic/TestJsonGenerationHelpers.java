@@ -19,7 +19,6 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;

@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v1.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
