@@ -55,7 +55,7 @@ public class InteractiveServer
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
-		LocalRecordCache localRecordCache;
+		LocalRecordCache localRecordCache = new LocalRecordCache();
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			prefs = access.readPrefs();
@@ -78,7 +78,8 @@ public class InteractiveServer
 				// We already cached this data so this shouldn't happen.
 				throw Assert.unexpected(e);
 			}
-			localRecordCache = LocalRecordCacheBuilder.buildInitializedRecordCache(access, rootElement, followees);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, ourPublicKey, rootElement);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, followees);
 		}
 		
 		// We will create a handoff connector for the status operations from the background operations.

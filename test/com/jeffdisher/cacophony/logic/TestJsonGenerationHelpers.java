@@ -121,11 +121,12 @@ public class TestJsonGenerationHelpers
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
 		
-		LocalRecordCache recordCache = null;
+		LocalRecordCache recordCache = new LocalRecordCache();
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			recordCache = LocalRecordCacheBuilder.buildInitializedRecordCache(access, indexFile, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, access.getPublicKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -162,13 +163,14 @@ public class TestJsonGenerationHelpers
 			followIndex.addElement(PUBLIC_KEY2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
 		}
 		
-		LocalRecordCache recordCache = null;
+		LocalRecordCache recordCache = new LocalRecordCache();
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			recordCache = LocalRecordCacheBuilder.buildInitializedRecordCache(access, indexFile, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, access.getPublicKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
