@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
+import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
@@ -33,12 +34,14 @@ public class LocalRecordCacheBuilder
 	 * 
 	 * @param access Read-access to the network and data structures.
 	 * @param recordCache The record cache to populate with the reachable records.
+	 * @param userInfoCache The user info cache to populate from the followees and this user.
 	 * @param ourPublicKey The public key of the local user.
 	 * @param lastPublishedIndex The local user's last published root index.
 	 * @throws IpfsConnectionException There was a problem accessing the local node.
 	 */
 	public static void populateInitialCacheForLocalUser(IReadingAccess access
 			, LocalRecordCache recordCache
+			, LocalUserInfoCache userInfoCache
 			, IpfsKey ourPublicKey
 			, IpfsFile lastPublishedIndex
 	) throws IpfsConnectionException
@@ -48,9 +51,11 @@ public class LocalRecordCacheBuilder
 		
 		// Load the records and info underneath all of these.
 		FutureRead<StreamRecords> localUserRecords;
+		FutureRead<StreamDescription> localUserDescription;
 		try
 		{
 			localUserRecords = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			localUserDescription = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
 		}
 		catch (FailedDeserializationException e)
 		{
@@ -60,9 +65,11 @@ public class LocalRecordCacheBuilder
 		
 		// Now that the data is accessible, populate the cache.
 		StreamRecords localStreamRecords;
+		StreamDescription localStreamDescription;
 		try
 		{
 			localStreamRecords = localUserRecords.get();
+			localStreamDescription = localUserDescription.get();
 		}
 		catch (FailedDeserializationException e)
 		{
@@ -70,6 +77,7 @@ public class LocalRecordCacheBuilder
 			throw Assert.unexpected(e);
 		}
 		_populateElementMapFromLocalUserRoot(access, recordCache, localStreamRecords);
+		_populateUserInfoFromDescription(userInfoCache, ourPublicKey, localStreamDescription);
 	}
 
 	/**
@@ -79,11 +87,13 @@ public class LocalRecordCacheBuilder
 	 * 
 	 * @param access Read-access to the network and data structures.
 	 * @param recordCache The record cache to populate with the reachable records.
+	 * @param userInfoCache The user info cache to populate from the followees and this user.
 	 * @param followees The information cached about the followees.
 	 * @throws IpfsConnectionException There was a problem accessing the local node.
 	 */
 	public static void populateInitialCacheForFollowees(IReadingAccess access
 			, LocalRecordCache recordCache
+			, LocalUserInfoCache userInfoCache
 			, IFolloweeReading followees
 	) throws IpfsConnectionException
 	{
@@ -94,8 +104,9 @@ public class LocalRecordCacheBuilder
 			followeeIndices.add(new FutureKey<>(followee, access.loadCached(followees.getLastFetchedRootForFollowee(followee), (byte[] data) -> GlobalData.deserializeIndex(data))));
 		}
 		
-		// Load the records underneath all of these.
+		// Load the records and info underneath all of these.
 		List<FutureKey<StreamRecords>> followeeRecords = new ArrayList<>();
+		List<FutureKey<StreamDescription>> followeeDescriptions = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : followeeIndices)
 		{
 			StreamIndex index;
@@ -112,6 +123,8 @@ public class LocalRecordCacheBuilder
 			{
 				FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
 				followeeRecords.add(new FutureKey<>(future.publicKey, records));
+				FutureRead<StreamDescription> description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
+				followeeDescriptions.add(new FutureKey<>(future.publicKey, description));
 			}
 		}
 		
@@ -133,6 +146,24 @@ public class LocalRecordCacheBuilder
 			if (null != followeeRecordsElt)
 			{
 				_populateElementMapFromFolloweeUserRoot(access, recordCache, elementsCachedForUser, followeeRecordsElt);
+			}
+		}
+		for (FutureKey<StreamDescription> future : followeeDescriptions)
+		{
+			StreamDescription description;
+			try
+			{
+				description = future.future.get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// We will just skip this user.
+				System.err.println("WARNING:  Deserialization error building cache for followee: " + future.publicKey);
+				description = null;
+			}
+			if (null != description)
+			{
+				_populateUserInfoFromDescription(userInfoCache, future.publicKey, description);
 			}
 		}
 	}
@@ -304,6 +335,17 @@ public class LocalRecordCacheBuilder
 		}
 		Assert.assertTrue(null != mime);
 		return mime;
+	}
+
+	private static void _populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, StreamDescription description)
+	{
+		cache.setUserInfo(key
+				, description.getName()
+				, description.getDescription()
+				, IpfsFile.fromIpfsCid(description.getPicture())
+				, description.getEmail()
+				, description.getWebsite()
+		);
 	}
 
 

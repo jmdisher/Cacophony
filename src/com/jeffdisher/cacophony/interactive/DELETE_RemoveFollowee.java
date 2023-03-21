@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -27,13 +28,15 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
+	private final LocalUserInfoCache _userInfoCache;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
 
-	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser)
+	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
+		_userInfoCache = userInfoCache;
 		_connectorsPerUser = connectorsPerUser;
 	}
 
@@ -76,7 +79,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					long lastPollMillis = _environment.currentTimeMillis();
-					refresher.finishRefresh(access, _recordCache, followees, lastPollMillis);
+					refresher.finishRefresh(access, _recordCache, _userInfoCache, followees, lastPollMillis);
 				}
 				finally
 				{
@@ -87,6 +90,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 					if (didRemove)
 					{
 						_connectorsPerUser.remove(userToRemove);
+						_userInfoCache.removeUser(userToRemove);
 					}
 					else
 					{

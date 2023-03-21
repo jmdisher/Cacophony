@@ -6,7 +6,9 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,11 +30,13 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 
 	private final IEnvironment _environment;
 	private final BackgroundOperations _background;
+	private final LocalUserInfoCache _userInfoCache;
 
-	public POST_Form_UserInfo(IEnvironment environment, BackgroundOperations background)
+	public POST_Form_UserInfo(IEnvironment environment, BackgroundOperations background, LocalUserInfoCache userInfoCache)
 	{
 		_environment = environment;
 		_background = background;
+		_userInfoCache = userInfoCache;
 	}
 
 	@Override
@@ -54,10 +58,11 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 				&& !description.isEmpty()
 		)
 		{
+			StreamDescription streamDescription;
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
 				ChannelModifier modifier = new ChannelModifier(access);
-				StreamDescription streamDescription = modifier.loadDescription();
+				streamDescription = modifier.loadDescription();
 				streamDescription.setName(name);
 				streamDescription.setDescription(description);
 				streamDescription.setEmail(email.isEmpty() ? null : email);
@@ -68,6 +73,16 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 				_background.requestPublish(newRoot);
 				response.setStatus(HttpServletResponse.SC_OK);
 			}
+			
+			// We also want to write this back to the user info cache.
+			IpfsKey key = _environment.getPublicKey();
+			_userInfoCache.setUserInfo(key
+					, streamDescription.getName()
+					, streamDescription.getDescription()
+					, IpfsFile.fromIpfsCid(streamDescription.getPicture())
+					, streamDescription.getEmail()
+					, streamDescription.getWebsite()
+			);
 		}
 		else
 		{

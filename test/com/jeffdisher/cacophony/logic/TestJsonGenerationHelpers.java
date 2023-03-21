@@ -122,11 +122,12 @@ public class TestJsonGenerationHelpers
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
+		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, access.getPublicKey(), indexFile);
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, access.getPublicKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -164,13 +165,14 @@ public class TestJsonGenerationHelpers
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
+		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		try (IReadingAccess access = StandardAccess.readAccess(executor))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, access.getPublicKey(), indexFile);
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, access.getPublicKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).

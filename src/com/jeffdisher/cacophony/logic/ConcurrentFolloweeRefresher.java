@@ -193,11 +193,13 @@ public class ConcurrentFolloweeRefresher
 	 * 
 	 * @param access System write access.
 	 * @param recordCache The local cache which should be updated in response to finishing this refresh (can be null).
+	 * @param userInfoCache The user info cache which should be updated in response to finishing this refresh (can be null).
 	 * @param followees The followees structure to update.
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
 	 */
 	public void finishRefresh(IWritingAccess access
 			, LocalRecordCache recordCache
+			, LocalUserInfoCache userInfoCache
 			, IFolloweeWriting followees
 			, long currentTimeMillis
 	)
@@ -226,7 +228,7 @@ public class ConcurrentFolloweeRefresher
 			// The record cache is null in cases where this is a one-off operation and there is no cache.
 			if (null != recordCache)
 			{
-				_refreshSupport.commitLocalCacheUpdates(recordCache);
+				_refreshSupport.commitLocalCacheUpdates(recordCache, userInfoCache);
 			}
 			_transaction.commit(resolver);
 		}

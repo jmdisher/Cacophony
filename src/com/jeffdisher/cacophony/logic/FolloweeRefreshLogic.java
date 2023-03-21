@@ -189,6 +189,9 @@ public class FolloweeRefreshLogic
 				IpfsFile userPicCid = IpfsFile.fromIpfsCid(newDescription.getPicture());
 				_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
 				support.addMetaDataToFollowCache(userPicCid).get();
+				
+				// Notify the support that this user is either new or has changed its description.
+				support.followeeDescriptionNewOrUpdated(newDescription.getName(), newDescription.getDescription(), userPicCid, newDescription.getEmail(), newDescription.getWebsite());
 			}
 		}
 	}
@@ -596,6 +599,22 @@ public class FolloweeRefreshLogic
 	 */
 	public interface IRefreshSupport extends _ICommonSupport
 	{
+		/**
+		 * Called when a new followee is being added or an existing followee's user description is updated, so we can
+		 * populate any caches.
+		 * 
+		 * @param name The name.
+		 * @param description The description.
+		 * @param userPicCid The CID of their user picture.
+		 * @param emailOrNull Their E-Mail address (can be null).
+		 * @param websiteOrNull Their website (can be null).
+		 */
+		void followeeDescriptionNewOrUpdated(String name
+				, String description
+				, IpfsFile userPicCid
+				, String emailOrNull
+				, String websiteOrNull
+		);
 		/**
 		 * Called when a new record been pinned.  This may not be added to the cache, since it may have no leaves or
 		 * they may be too large, but the meta-data is now locally pinned.

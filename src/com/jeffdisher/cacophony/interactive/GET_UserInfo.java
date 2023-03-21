@@ -5,9 +5,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
-import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,37 +23,39 @@ import jakarta.servlet.http.HttpServletResponse;
 public class GET_UserInfo implements ValidatedEntryPoints.GET
 {
 	private final IEnvironment _environment;
+	private final LocalUserInfoCache _userInfoCache;
 	
-	public GET_UserInfo(IEnvironment environment)
+	public GET_UserInfo(IEnvironment environment, LocalUserInfoCache userInfoCache)
 	{
 		_environment = environment;
+		_userInfoCache = userInfoCache;
 	}
 	
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
-		try (IReadingAccess access = StandardAccess.readAccess(_environment))
+		
+		// This entry-point (as compared to GET_UnknownUserInfo) is intended for use with already-known users so we will
+		// only consult the cache.
+		// First, we see if we can satisfy this request from the cache.
+		LocalUserInfoCache.Element cached = _userInfoCache.getUserInfo(userToResolve);
+		if (null != cached)
 		{
-			IpfsKey publicKey = access.getPublicKey();
-			IpfsFile lastPublishedIndex = access.getLastRootElement();
-			IFolloweeReading followees = access.readableFolloweeData();
-			JsonObject userInfo = JsonGenerationHelpers.userInfo(access, publicKey, lastPublishedIndex, followees, userToResolve);
-			if (null != userInfo)
+			// While this picture CID _should_ be cached, it is possible that it isn't, since this cache is allowed to contain stale and non-cached data references.
+			String directFetchUrlRoot;
+			try (IReadingAccess access = StandardAccess.readAccess(_environment))
 			{
-				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(userInfo.toString());
+				directFetchUrlRoot = access.getDirectFetchUrlRoot();
 			}
-			else
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-			}
+			JsonObject userInfo = JsonGenerationHelpers.populateJsonForCachedDescription(cached, directFetchUrlRoot + cached.userPicCid().toSafeString());
+			response.setContentType("application/json");
+			response.setStatus(HttpServletResponse.SC_OK);
+			response.getWriter().print(userInfo.toString());
 		}
-		catch (FailedDeserializationException e)
+		else
 		{
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			e.printStackTrace(response.getWriter());
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
 }

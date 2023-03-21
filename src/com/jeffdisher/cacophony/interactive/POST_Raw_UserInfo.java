@@ -7,7 +7,9 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,11 +24,13 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _background;
+	private final LocalUserInfoCache _userInfoCache;
 
-	public POST_Raw_UserInfo(IEnvironment environment, BackgroundOperations background)
+	public POST_Raw_UserInfo(IEnvironment environment, BackgroundOperations background, LocalUserInfoCache userInfoCache)
 	{
 		_environment = environment;
 		_background = background;
+		_userInfoCache = userInfoCache;
 	}
 
 	@Override
@@ -34,13 +38,14 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 	{
 		InputStream input = request.getInputStream();
 		
+		StreamDescription streamDescription;
 		try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 		{
 			// We will upload the image, even though it probably didn't change, but unpinning will at least balance the counting.
 			IpfsFile cid = access.uploadAndPin(input);
 			
 			ChannelModifier modifier = new ChannelModifier(access);
-			StreamDescription streamDescription = modifier.loadDescription();
+			streamDescription = modifier.loadDescription();
 			IpfsFile oldImage = IpfsFile.fromIpfsCid(streamDescription.getPicture());
 			streamDescription.setPicture(cid.toSafeString());
 			modifier.storeDescription(streamDescription);
@@ -52,5 +57,15 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			response.getWriter().print(access.getCachedUrl(cid));
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
+		
+		// We also want to write this back to the user info cache.
+		IpfsKey key = _environment.getPublicKey();
+		_userInfoCache.setUserInfo(key
+				, streamDescription.getName()
+				, streamDescription.getDescription()
+				, IpfsFile.fromIpfsCid(streamDescription.getPicture())
+				, streamDescription.getEmail()
+				, streamDescription.getWebsite()
+		);
 	}
 }

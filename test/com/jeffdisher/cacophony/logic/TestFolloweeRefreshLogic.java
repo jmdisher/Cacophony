@@ -815,6 +815,11 @@ public class TestFolloweeRefreshLogic
 			System.out.println(message);
 		}
 		@Override
+		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
+		{
+			throw new AssertionError("Not called in test");
+		}
+		@Override
 		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)
 		{
 			_newElementsPinned.add(elementHash);

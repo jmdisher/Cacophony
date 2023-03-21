@@ -110,15 +110,35 @@ public class JsonGenerationHelpers
 		return _populateJsonForDescription(description, userPicUrl);
 	}
 
+	public  static JsonObject populateJsonForCachedDescription(LocalUserInfoCache.Element element, String userPicUrl)
+	{
+		return _populateJsonForDataElements(element.name()
+				, element.description()
+				, userPicUrl
+				, element.emailOrNull()
+				, element.websiteOrNull()
+		);
+	}
+
 
 	private static JsonObject _populateJsonForDescription(StreamDescription description, String userPicUrl)
 	{
+		return _populateJsonForDataElements(description.getName()
+				, description.getDescription()
+				, userPicUrl
+				, description.getEmail()
+				, description.getWebsite()
+		);
+	}
+
+	private static JsonObject _populateJsonForDataElements(String name, String description, String userPicUrl, String emailOrNull, String websiteOrNull)
+	{
 		JsonObject thisUser = new JsonObject();
-		thisUser.set("name", description.getName());
-		thisUser.set("description", description.getDescription());
+		thisUser.set("name", name);
+		thisUser.set("description", description);
 		thisUser.set("userPicUrl", userPicUrl);
-		thisUser.set("email", description.getEmail());
-		thisUser.set("website", description.getWebsite());
+		thisUser.set("email", emailOrNull);
+		thisUser.set("website", websiteOrNull);
 		return thisUser;
 	}
 

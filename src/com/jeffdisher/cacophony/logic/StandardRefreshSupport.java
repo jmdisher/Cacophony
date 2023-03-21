@@ -33,6 +33,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 	private final List<Consumer<LocalRecordCache>> _localRecordCacheUpdates;
+	private final List<Consumer<LocalUserInfoCache>> _userInfoCacheUpdates;
 
 	public StandardRefreshSupport(IEnvironment environment
 			, ConcurrentTransaction transaction
@@ -56,6 +57,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
 		_localRecordCacheUpdates = new ArrayList<>();
+		_userInfoCacheUpdates = new ArrayList<>();
 	}
 
 	public void commitFolloweeChanges(IFolloweeWriting followees)
@@ -74,12 +76,17 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	 * Called on successful followee refresh to write-back changes to the recordCache.
 	 * 
 	 * @param recordCache The cache to update.
+	 * @param userInfoCache The user info cache to update.
 	 */
-	public void commitLocalCacheUpdates(LocalRecordCache recordCache)
+	public void commitLocalCacheUpdates(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache)
 	{
 		for (Consumer<LocalRecordCache> consumer : _localRecordCacheUpdates)
 		{
 			consumer.accept(recordCache);
+		}
+		for (Consumer<LocalUserInfoCache> consumer : _userInfoCacheUpdates)
+		{
+			consumer.accept(userInfoCache);
 		}
 	}
 
@@ -87,6 +94,13 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public void logMessage(String message)
 	{
 		_environment.logToConsole(message);
+	}
+	@Override
+	public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
+	{
+		_userInfoCacheUpdates.add((LocalUserInfoCache userInfoCache) -> {
+			userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull);
+		});
 	}
 	@Override
 	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)

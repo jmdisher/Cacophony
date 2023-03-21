@@ -85,6 +85,6 @@ public record RefreshNextFolloweeCommand() implements ICommand
 		IFolloweeWriting followees = access.writableFolloweeData();
 		
 		long lastPollMillis = environment.currentTimeMillis();
-		refresher.finishRefresh(access, null, followees, lastPollMillis);
+		refresher.finishRefresh(access, null, null, followees, lastPollMillis);
 	}
 }
