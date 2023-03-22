@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -14,7 +15,6 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -31,7 +31,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
@@ -51,18 +51,18 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	}
 
 
-	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException, FailedDeserializationException
+	private CleanupData _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
 		// The general idea here is that we want to unpin all data elements associated with this, but only after we update the record stream and channel index (since broken data will cause issues for followers).
 		
 		// Read the existing StreamIndex.
 		IpfsFile rootToLoad = access.getLastRootElement();
 		Assert.assertTrue(null != rootToLoad);
-		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = ActionHelpers.unwrap(access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)));
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		IpfsFile previousRecords = IpfsFile.fromIpfsCid(index.getRecords());
-		StreamRecords records = access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		StreamRecords records = ActionHelpers.unwrap(access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)));
 		
 		// Make sure that we actually have the record.
 		boolean didFind = false;
@@ -103,13 +103,13 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		return new CleanupData(asyncPublish, rootToLoad, previousRecords);
 	}
 
-	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException, FailedDeserializationException
+	private void _runFinish(IEnvironment environment, IWritingAccess access, CleanupData data) throws IpfsConnectionException
 	{
 		// Unpin the entries (we need to unpin them all since we own them so we added them all).
 		StreamRecord record = null;
 		try
 		{
-			record = access.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
+			record = ActionHelpers.unwrap(access.loadCached(_elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)));
 		}
 		catch (IpfsConnectionException e)
 		{

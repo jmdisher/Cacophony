@@ -7,16 +7,15 @@ import java.nio.file.Files;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
@@ -32,7 +31,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));
 		if (null != _picturePath)
@@ -53,12 +52,12 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
 		ChannelModifier modifier = new ChannelModifier(access);
 		
 		// Read the existing description since we might be only partially updating it.
-		StreamDescription description = modifier.loadDescription();
+		StreamDescription description = ActionHelpers.readDescription(modifier);
 		
 		if (null != _name)
 		{
@@ -115,7 +114,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		// Update and commit the structure.
 		modifier.storeDescription(description);
 		environment.logToConsole("Saving new index...");
-		IpfsFile newRoot = modifier.commitNewRoot();
+		IpfsFile newRoot = ActionHelpers.commitNewRoot(modifier);
 		
 		environment.logToConsole("Publishing " + newRoot + "...");
 		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);

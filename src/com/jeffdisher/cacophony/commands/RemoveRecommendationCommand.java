@@ -2,17 +2,16 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -26,7 +25,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _channelPublicKey);
 		
@@ -43,12 +42,12 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
 		ChannelModifier modifier = new ChannelModifier(access);
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = modifier.loadRecommendations();
+		StreamRecommendations recommendations = ActionHelpers.readRecommendations(modifier);
 		
 		// Verify that they are already in the list.
 		Assert.assertTrue(recommendations.getUser().contains(_channelPublicKey.toPublicKey()));
@@ -59,7 +58,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		// Update and commit the structure.
 		modifier.storeRecommendations(recommendations);
 		environment.logToConsole("Saving new index...");
-		IpfsFile newRoot = modifier.commitNewRoot();
+		IpfsFile newRoot = ActionHelpers.commitNewRoot(modifier);
 		
 		environment.logToConsole("Publishing " + newRoot + "...");
 		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
