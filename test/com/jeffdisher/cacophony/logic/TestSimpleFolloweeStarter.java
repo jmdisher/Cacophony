@@ -62,7 +62,7 @@ public class TestSimpleFolloweeStarter
 		
 		access.oneKey = K1;
 		access.oneRoot = root;
-		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, K1);
+		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, K1);
 		Assert.assertEquals(EXPECTED_FAKE, file);
 		// We expect that an extra 2 elements were uploaded (the fake StreamRecords and the fake StreamIndex).
 		Assert.assertEquals(8, access.data.size());

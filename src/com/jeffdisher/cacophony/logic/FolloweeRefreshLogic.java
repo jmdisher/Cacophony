@@ -147,6 +147,9 @@ public class FolloweeRefreshLogic
 		StreamRecommendations newRecommendations = support.loadCached(newRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		Assert.assertTrue(null != newRecommendations);
 		
+		// Notify the support that this user is either new or has changed its description.
+		support.followeeDescriptionNewOrUpdated(newDescription.getName(), newDescription.getDescription(), userPicCid, newDescription.getEmail(), newDescription.getWebsite());
+		
 		// (we ignore the records element and create a fake one - this allows the expensive part of the refresh to be decoupled from the initial follow).
 		StreamRecords fakeRecords = new StreamRecords();
 		IpfsFile fakeRecordsCid = support.uploadNewData(GlobalData.serializeRecords(fakeRecords));
@@ -591,14 +594,6 @@ public class FolloweeRefreshLogic
 		 * @return The future size response.
 		 */
 		FutureSize getSizeInBytes(IpfsFile cid);
-	}
-
-	/**
-	 * The interface required for external callers to this class.
-	 * This just exists to make the external requirements clearer and to make tests simpler.
-	 */
-	public interface IRefreshSupport extends _ICommonSupport
-	{
 		/**
 		 * Called when a new followee is being added or an existing followee's user description is updated, so we can
 		 * populate any caches.
@@ -615,6 +610,14 @@ public class FolloweeRefreshLogic
 				, String emailOrNull
 				, String websiteOrNull
 		);
+	}
+
+	/**
+	 * The interface required for external callers to this class.
+	 * This just exists to make the external requirements clearer and to make tests simpler.
+	 */
+	public interface IRefreshSupport extends _ICommonSupport
+	{
 		/**
 		 * Called when a new record been pinned.  This may not be added to the cache, since it may have no leaves or
 		 * they may be too large, but the meta-data is now locally pinned.

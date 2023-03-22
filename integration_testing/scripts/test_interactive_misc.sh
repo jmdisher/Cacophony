@@ -104,6 +104,11 @@ echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 
+echo "Verify that we can read the followee data from the cache..."
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/userInfo/$PUBLIC2")
+# We always know the default state of the info so just verify it.
+requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null}"
+
 echo "Attach the followee post listener..."
 mkfifo "$ENTRIES_INPUT"
 mkfifo "$ENTRIES_OUTPUT"

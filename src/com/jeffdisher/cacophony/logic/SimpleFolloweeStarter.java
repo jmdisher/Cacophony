@@ -33,13 +33,14 @@ public class SimpleFolloweeStarter
 	 * 
 	 * @param logger A consumer which logs the messages it is given.
 	 * @param access The writing access to the network.
+	 * @param userInfoCache The cache which will be updated with the initial user description (can be null).
 	 * @param followeeKey The public key of the followee to look up.
 	 * @return The root of the new "fake" meta-data tree for this user or null if something went wrong.
 	 */
-	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, IpfsKey followeeKey)
+	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey)
 	{
 		IpfsFile actualRoot = access.resolvePublicKey(followeeKey).get();
-		StartSupport support = new StartSupport(logger, access);
+		StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
 		
 		// Run the operation, bearing in mind that we need to handle errors, internally.
 		IpfsFile hackedRoot = null;
@@ -74,11 +75,15 @@ public class SimpleFolloweeStarter
 	{
 		private final Consumer<String> _logger;
 		private final IWritingAccess _access;
+		private final LocalUserInfoCache _userInfoCache;
+		private final IpfsKey _followeeKey;
 		
-		public StartSupport(Consumer<String> logger, IWritingAccess access)
+		public StartSupport(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey)
 		{
 			_logger = logger;
 			_access = access;
+			_userInfoCache = userInfoCache;
+			_followeeKey = followeeKey;
 		}
 		
 		@Override
@@ -90,6 +95,15 @@ public class SimpleFolloweeStarter
 		public FutureSize getSizeInBytes(IpfsFile cid)
 		{
 			return _access.getSizeInBytes(cid);
+		}
+		@Override
+		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
+		{
+			// Note that the info cache is only used in interactive mode, so it might be null.
+			if (null != _userInfoCache)
+			{
+				_userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull);
+			}
 		}
 		@Override
 		public FuturePin addMetaDataToFollowCache(IpfsFile cid)

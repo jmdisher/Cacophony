@@ -70,7 +70,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		}
 		
 		// First, start the follow.
-		IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> environment.logToConsole(message), access, _publicKey);
+		IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> environment.logToConsole(message), access, null, _publicKey);
 		
 		// Proceed to a normal refresh if this worked.
 		ConcurrentFolloweeRefresher refresher = null;

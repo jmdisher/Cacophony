@@ -52,6 +52,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -73,6 +74,7 @@ public class TestFolloweeRefreshLogic
 		// We don't add leaf-less entries to the followee index, since that would be redundant.
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -93,6 +95,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
@@ -115,6 +118,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
@@ -146,6 +150,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -179,6 +184,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -212,6 +218,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -289,6 +296,8 @@ public class TestFolloweeRefreshLogic
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
 			IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+			// If the start was a success, we should see the name.
+			Assert.assertEquals("name", testSupport.lastName);
 			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (IpfsConnectionException e)
@@ -325,6 +334,7 @@ public class TestFolloweeRefreshLogic
 		// We expect that this will succeed, since it isn't a meta-data failure, but we will decide NOT to cache this element.
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -345,6 +355,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -493,6 +504,7 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -547,6 +559,8 @@ public class TestFolloweeRefreshLogic
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
 			IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+			// If the start was a success, we should see the name.
+			Assert.assertEquals("name", testSupport.lastName);
 			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (SizeConstraintException e)
@@ -748,6 +762,7 @@ public class TestFolloweeRefreshLogic
 		
 		// Miscellaneous other checks.
 		public IpfsFile nonPinnedElement;
+		public String lastName;
 		
 		public TestSupport(Map<IpfsFile, byte[]> upstreamData, FollowingCacheElement[] initial)
 		{
@@ -817,7 +832,7 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
 		{
-			throw new AssertionError("Not called in test");
+			this.lastName = name;
 		}
 		@Override
 		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)

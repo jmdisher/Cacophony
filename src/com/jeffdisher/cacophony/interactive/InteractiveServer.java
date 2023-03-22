@@ -209,7 +209,7 @@ public class InteractiveServer
 		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, background));
 		
 		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, connectorsPerUser, dispatcher));
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, userInfoCache, connectorsPerUser, dispatcher));
 		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, localRecordCache, userInfoCache, connectorsPerUser));
 		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, background));
 		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, background));

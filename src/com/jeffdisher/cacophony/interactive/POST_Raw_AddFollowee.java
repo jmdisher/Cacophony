@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -27,13 +28,15 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
+	private final LocalUserInfoCache _userInfoCache;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
 	private final Consumer<Runnable> _connectorDispatcher;
 
-	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
+	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalUserInfoCache userInfoCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
+		_userInfoCache = userInfoCache;
 		_connectorsPerUser = connectorsPerUser;
 		_connectorDispatcher = connectorDispatcher;
 	}
@@ -54,7 +57,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 				if (!isAlreadyFollowed)
 				{
 					// First, start the follow.
-					IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logToConsole(message), access, userToAdd);
+					IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logToConsole(message), access, _userInfoCache, userToAdd);
 					
 					// If that worked, save back the followee and request a refresh.
 					if (null != hackedRoot)
