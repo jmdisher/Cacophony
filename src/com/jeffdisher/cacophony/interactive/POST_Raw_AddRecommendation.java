@@ -2,8 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.actions.AddRecommendation;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -36,21 +35,7 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 			IpfsFile newRoot = null;
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
-				ChannelModifier modifier = new ChannelModifier(access);
-				
-				// Read the existing recommendations list.
-				StreamRecommendations recommendations = modifier.loadRecommendations();
-				
-				// Verify that we didn't already add them.
-				if (!recommendations.getUser().contains(userToAdd.toPublicKey()))
-				{
-					// Add the new channel.
-					recommendations.getUser().add(userToAdd.toPublicKey());
-					
-					// Update and commit the structure.
-					modifier.storeRecommendations(recommendations);
-					newRoot = modifier.commitNewRoot();
-				}
+				newRoot = AddRecommendation.run(access, userToAdd);
 			}
 			if (null != newRoot)
 			{
