@@ -64,7 +64,15 @@ public class MockUserNode
 		updateDescription.runInEnvironment(_executor);
 	}
 
-	public void runCommand(OutputStream captureStream, ICommand command) throws Throwable
+	/**
+	 * Runs the given command on this mock node.
+	 * 
+	 * @param captureStream The stream to use to override the logging output (can be null).
+	 * @param command The command to run.
+	 * @return True on success, false if the command failed.
+	 * @throws Throwable Something went wrong which wasn't just a simple failed command.
+	 */
+	public boolean runCommand(OutputStream captureStream, ICommand command) throws Throwable
 	{
 		StandardEnvironment executor = _executor;
 		// See if we want to override the output capture.
@@ -79,6 +87,7 @@ public class MockUserNode
 		{
 			executor.shutdown();
 		}
+		return !executor.didErrorOccur();
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException

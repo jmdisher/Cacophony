@@ -1,7 +1,9 @@
 package com.jeffdisher.cacophony.actions;
 
+import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -99,6 +101,19 @@ public class ActionHelpers
 		catch (FailedDeserializationException e)
 		{
 			// This is for deserializing the local channel so the error isn't expected.
+			throw Assert.unexpected(e);
+		}
+	}
+
+	public static byte[] serializeRecord(StreamRecord record)
+	{
+		try
+		{
+			return GlobalData.serializeRecord(record);
+		}
+		catch (SizeConstraintException e)
+		{
+			// This would be a static error we should be handling on a higher level so ending up here would be a bug.
 			throw Assert.unexpected(e);
 		}
 	}

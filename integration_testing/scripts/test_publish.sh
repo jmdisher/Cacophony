@@ -75,6 +75,12 @@ checkPreviousCommand "publishToThisChannel"
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "test post 3"
 
+echo "Edit the second post to make sure it is replaced, inline..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --editPost --elementCid "$SECOND_CID" --name "updated post 2"
+LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
+requireSubstring "$LISTING" "updated post 2"
+SECOND_CID=$(echo "$LISTING" | grep "updated post 2" | cut -d ":" -f 1 | cut -d " " -f 2)
+
 echo "Make sure that we can remove the second entry from the stream..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --removeFromThisChannel --elementCid "$SECOND_CID"
 

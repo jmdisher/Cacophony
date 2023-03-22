@@ -8,6 +8,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CleanCacheCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.EditPostCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.GetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.GetPublicKeyCommand;
@@ -191,6 +192,18 @@ public class CommandParser
 		{
 			IpfsFile elementCid = _parseAsFile(required[0]);
 			return new RebroadcastCommand(elementCid);
+		}),
+		EDIT_POST(true, "--editPost", new String[] {"--elementCid"}, new String[] {"--name", "--description", "--discussionUrl"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			IpfsFile elementCid = _parseAsFile(required[0]);
+			String name = optional[0];
+			String description = optional[1];
+			String discussionUrl = optional[2];
+			if ((null == name) && (null == description) && (null == discussionUrl))
+			{
+				throw new UsageException("--editPost requires at least a single subargument");
+			}
+			return new EditPostCommand(elementCid, name, description, discussionUrl);
 		}),
 		
 		// Methods to manage local state.
