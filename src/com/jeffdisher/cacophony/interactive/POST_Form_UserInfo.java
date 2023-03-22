@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.actions.UpdateDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -61,14 +61,9 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 			StreamDescription streamDescription;
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
-				ChannelModifier modifier = new ChannelModifier(access);
-				streamDescription = modifier.loadDescription();
-				streamDescription.setName(name);
-				streamDescription.setDescription(description);
-				streamDescription.setEmail(email.isEmpty() ? null : email);
-				streamDescription.setWebsite(website.isEmpty() ? null : website);
-				modifier.storeDescription(streamDescription);
-				IpfsFile newRoot = modifier.commitNewRoot();
+				UpdateDescription.Result result = UpdateDescription.run(access, name, description, null, email, website);
+				IpfsFile newRoot = result.newRoot();
+				streamDescription = result.updatedStreamDescription();
 				
 				_background.requestPublish(newRoot);
 				response.setStatus(HttpServletResponse.SC_OK);

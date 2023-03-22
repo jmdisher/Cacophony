@@ -4,8 +4,8 @@ import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.actions.UpdateDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -41,20 +41,12 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 		StreamDescription streamDescription;
 		try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 		{
-			// We will upload the image, even though it probably didn't change, but unpinning will at least balance the counting.
-			IpfsFile cid = access.uploadAndPin(input);
-			
-			ChannelModifier modifier = new ChannelModifier(access);
-			streamDescription = modifier.loadDescription();
-			IpfsFile oldImage = IpfsFile.fromIpfsCid(streamDescription.getPicture());
-			streamDescription.setPicture(cid.toSafeString());
-			modifier.storeDescription(streamDescription);
-			
-			IpfsFile newRoot = modifier.commitNewRoot();
-			access.unpin(oldImage);
+			UpdateDescription.Result result = UpdateDescription.run(access, null, null, input, null, null);
+			IpfsFile newRoot = result.newRoot();
+			streamDescription = result.updatedStreamDescription();
 			
 			_background.requestPublish(newRoot);
-			response.getWriter().print(access.getCachedUrl(cid));
+			response.getWriter().print(access.getCachedUrl(result.uploadedPictureCid()));
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
 		

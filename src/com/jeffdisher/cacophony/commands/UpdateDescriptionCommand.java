@@ -1,15 +1,12 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.ActionHelpers;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.actions.UpdateDescription;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -18,8 +15,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
-import com.jeffdisher.cacophony.utils.MiscHelpers;
-import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
@@ -54,67 +49,19 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 
 	private void _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
 	{
-		ChannelModifier modifier = new ChannelModifier(access);
-		
-		// Read the existing description since we might be only partially updating it.
-		StreamDescription description = ActionHelpers.readDescription(modifier);
-		
-		if (null != _name)
+		FileInputStream pictureStream;
+		try
 		{
-			description.setName(_name);
+			pictureStream = (null != _picturePath)
+					? new FileInputStream(_picturePath)
+					: null;
 		}
-		if (null != _description)
+		catch (FileNotFoundException e)
 		{
-			description.setDescription(_description);
+			throw new UsageException("Unable to load picture: " + _picturePath.toPath());
 		}
-		if (null != _picturePath)
-		{
-			// Upload the picture.
-			byte[] rawData;
-			try
-			{
-				rawData = Files.readAllBytes(_picturePath.toPath());
-			}
-			catch (IOException e)
-			{
-				throw new UsageException("Unable to load picture: " + _picturePath.toPath());
-			}
-			if (rawData.length > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
-			{
-				throw new UsageException("Picture too big (is " + MiscHelpers.humanReadableBytes(rawData.length) + ", limit " + MiscHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
-			}
-			IpfsFile pictureHash = access.uploadAndPin(new ByteArrayInputStream(rawData));
-			description.setPicture(pictureHash.toSafeString());
-		}
-		if (null != _email)
-		{
-			// Since email is optional, we will treat an empty string as "remove".
-			if (0 == _email.length())
-			{
-				description.setEmail(null);
-			}
-			else
-			{
-				description.setEmail(_email);
-			}
-		}
-		if (null != _website)
-		{
-			// Since website is optional, we will treat an empty string as "remove".
-			if (0 == _website.length())
-			{
-				description.setWebsite(null);
-			}
-			else
-			{
-				description.setWebsite(_website);
-			}
-		}
-		
-		// Update and commit the structure.
-		modifier.storeDescription(description);
-		environment.logToConsole("Saving new index...");
-		IpfsFile newRoot = ActionHelpers.commitNewRoot(modifier);
+		UpdateDescription.Result result = UpdateDescription.run(access, _name, _description, pictureStream, _email, _website);
+		IpfsFile newRoot = result.newRoot();
 		
 		environment.logToConsole("Publishing " + newRoot + "...");
 		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
