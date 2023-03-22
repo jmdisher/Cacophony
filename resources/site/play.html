@@ -36,7 +36,15 @@ function postWasLoaded($scope, elt)
 	$scope.discussionHost = null;
 	if (null !== $scope.discussionUrl)
 	{
-		$scope.discussionHost = new URL($scope.discussionUrl).hostname;
+		// If this is an invalid URL, we don't want to break the page.
+		try
+		{
+			$scope.discussionHost = new URL($scope.discussionUrl).hostname;
+		}
+		catch (e)
+		{
+			$scope.discussionHost = "(invalid URL)";
+		}
 	}
 	$scope.cached = elt["cached"];
 	
