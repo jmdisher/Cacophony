@@ -40,6 +40,7 @@ public class EditEntry
 		StreamRecords records = ActionHelpers.readRecords(modifier);
 		List<String> recordList = records.getRecord();
 		IpfsFile newRoot = null;
+		IpfsFile newEltCid = null;
 		StreamRecord record = null;
 		if (recordList.contains(postToEdit.toSafeString()))
 		{
@@ -64,7 +65,7 @@ public class EditEntry
 					record.setDiscussion(discussionUrl);
 				}
 			}
-			IpfsFile newEltCid = access.uploadAndPin(new ByteArrayInputStream(ActionHelpers.serializeRecord(record)));
+			newEltCid = access.uploadAndPin(new ByteArrayInputStream(ActionHelpers.serializeRecord(record)));
 			
 			int index = recordList.indexOf(postToEdit.toSafeString());
 			recordList.remove(index);
@@ -75,13 +76,13 @@ public class EditEntry
 			access.unpin(postToEdit);
 		}
 		return (null != newRoot)
-				? new Result(newRoot, record)
+				? new Result(newRoot, newEltCid, record)
 				: null
 		;
 	}
 
 
-	public static record Result(IpfsFile newRoot, StreamRecord newRecord)
+	public static record Result(IpfsFile newRoot, IpfsFile newRecordCid, StreamRecord newRecord)
 	{
 	}
 }

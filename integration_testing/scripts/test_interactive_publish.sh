@@ -348,6 +348,26 @@ POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 2)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
 
+echo "Edit the post and make sure that we see the updates in both sockets and the post list..."
+OLD_POST_ID="$POST_ID"
+POST_ID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Edit%20Title&DESCRIPTION=Has%20Changed" http://127.0.0.1:8000/editPost/$POST_ID)
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
+POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
+requireSubstring "$POST_STRUCT" "{\"name\":\"Edit Title\",\"description\":\"Has Changed\",\"publishedSecondsUtc\":"
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$OLD_POST_ID\",\"value\":null}"
+SAMPLE=$(cat "$ENTRIES_OUTPUT")
+echo -n "-ACK" > "$ENTRIES_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$POST_ID\",\"value\":null}"
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
+echo -n "-ACK" > "$STATUS_INPUT.1"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
+
 echo "Create an audio post, publish it, and make sure we can see it..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
 # We need to parse out the ID (look for '{"id":2107961294,')
@@ -364,10 +384,10 @@ requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":tr
 # Check that we see this in the output events.
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
@@ -404,10 +424,10 @@ echo "Test that we can request another republish..."
 echo -n "COMMAND_REPUBLISH" > "$STATUS_INPUT.1"
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 
 echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
@@ -425,10 +445,10 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP\"]"
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_KEEP" >& /dev/null
 checkPreviousCommand "read post"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_DELETE" >& /dev/null
