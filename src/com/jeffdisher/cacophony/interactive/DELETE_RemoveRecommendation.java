@@ -2,8 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.actions.RemoveRecommendation;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -36,21 +35,7 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 			IpfsFile newRoot = null;
 			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
 			{
-				ChannelModifier modifier = new ChannelModifier(access);
-				
-				// Read the existing recommendations list.
-				StreamRecommendations recommendations = modifier.loadRecommendations();
-				
-				// Verify that they are already in the list.
-				if (recommendations.getUser().contains(userToRemove.toPublicKey()))
-				{
-					// Remove the channel.
-					recommendations.getUser().remove(userToRemove.toPublicKey());
-					
-					// Update and commit the structure.
-					modifier.storeRecommendations(recommendations);
-					newRoot = modifier.commitNewRoot();
-				}
+				newRoot = RemoveRecommendation.run(access, userToRemove);
 			}
 			if (null != newRoot)
 			{

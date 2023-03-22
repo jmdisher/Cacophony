@@ -2,9 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.ActionHelpers;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.actions.RemoveRecommendation;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
@@ -44,26 +42,18 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 
 	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
-		ChannelModifier modifier = new ChannelModifier(access);
-		
-		// Read the existing recommendations list.
-		StreamRecommendations recommendations = ActionHelpers.readRecommendations(modifier);
-		
-		// Verify that they are already in the list.
-		Assert.assertTrue(recommendations.getUser().contains(_channelPublicKey.toPublicKey()));
-		
-		// Remove the channel.
-		recommendations.getUser().remove(_channelPublicKey.toPublicKey());
-		
-		// Update and commit the structure.
-		modifier.storeRecommendations(recommendations);
-		environment.logToConsole("Saving new index...");
-		IpfsFile newRoot = ActionHelpers.commitNewRoot(modifier);
-		
-		environment.logToConsole("Publishing " + newRoot + "...");
-		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
-		
-		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		IpfsFile newRoot = RemoveRecommendation.run(access, _channelPublicKey);
+		if (null != newRoot)
+		{
+			environment.logToConsole("Publishing " + newRoot + "...");
+			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
+			
+			// See if the publish actually succeeded (we still want to update our local state, even if it failed).
+			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		}
+		else
+		{
+			environment.logError("User was NOT recommended");
+		}
 	}
 }
