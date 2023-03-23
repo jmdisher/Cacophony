@@ -63,10 +63,10 @@ public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 		}
 		
 		@Override
-		public boolean create(IpfsKey key, Long value)
+		public boolean create(IpfsKey key, Long value, boolean isNewest)
 		{
 			// Initial value.
-			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key.toPublicKey()), Json.value(value));
+			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key.toPublicKey()), Json.value(value), isNewest);
 		}
 		
 		@Override

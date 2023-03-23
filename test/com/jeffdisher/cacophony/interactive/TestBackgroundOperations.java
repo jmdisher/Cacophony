@@ -483,7 +483,7 @@ public class TestBackgroundOperations
 		public int ended = 0;
 		
 		@Override
-		public boolean create(Integer key, String value)
+		public boolean create(Integer key, String value, boolean isNewest)
 		{
 			this.started += 1;
 			return true;

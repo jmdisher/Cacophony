@@ -21,9 +21,9 @@ public class VideoProcessorCallbackHandler implements IHandoffListener<String, L
 	}
 
 	@Override
-	public boolean create(String key, Long value)
+	public boolean create(String key, Long value, boolean isNewest)
 	{
-		return SocketEventHelpers.sendCreate(_session.getRemote(), Json.value(key), Json.value(value.longValue()));
+		return SocketEventHelpers.sendCreate(_session.getRemote(), Json.value(key), Json.value(value.longValue()), isNewest);
 	}
 
 	@Override

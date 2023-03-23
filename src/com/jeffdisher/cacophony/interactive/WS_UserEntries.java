@@ -84,10 +84,10 @@ public class WS_UserEntries implements IWebSocketFactory
 		}
 		
 		@Override
-		public boolean create(IpfsFile key, Void value)
+		public boolean create(IpfsFile key, Void value, boolean isNewest)
 		{
 			// Added.
-			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key.toSafeString()), Json.NULL);
+			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key.toSafeString()), Json.NULL, isNewest);
 		}
 		
 		@Override

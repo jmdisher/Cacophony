@@ -236,7 +236,7 @@ public class TestFolloweeData
 				return true;
 			}
 			@Override
-			public boolean create(IpfsKey key, Long value)
+			public boolean create(IpfsKey key, Long value, boolean isNewest)
 			{
 				Assert.assertNull(map.put(key, value));
 				return true;

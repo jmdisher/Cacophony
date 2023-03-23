@@ -73,7 +73,7 @@ public class HandoffConnector<K, V>
 			for (K key : _order)
 			{
 				V value = _cache.get(key);
-				listener.create(key, value);
+				listener.create(key, value, true);
 			}
 		});
 	}
@@ -112,7 +112,7 @@ public class HandoffConnector<K, V>
 			while (iter.hasNext())
 			{
 				IHandoffListener<K, V> listener = iter.next();
-				boolean ok = listener.create(key, value);
+				boolean ok = listener.create(key, value, true);
 				if (!ok)
 				{
 					iter.remove();
@@ -219,9 +219,10 @@ public class HandoffConnector<K, V>
 		 * 
 		 * @param key The key being created.
 		 * @param value The initial value.
+		 * @param isNewest True if this entry should be considered the most recent (otherwise, consider it the oldest).
 		 * @return True if this was successful or false to unregister the target.
 		 */
-		boolean create(K key, V value);
+		boolean create(K key, V value, boolean isNewest);
 		
 		/**
 		 * Called when a key is modified after creation.

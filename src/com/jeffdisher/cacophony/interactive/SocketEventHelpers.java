@@ -26,9 +26,9 @@ public class SocketEventHelpers
 	public static final String VALUE = "value";
 	public static final String IS_NEWEST = "isNewest";
 
-	public static boolean sendCreate(RemoteEndpoint endpoint, JsonValue key, JsonValue value)
+	public static boolean sendCreate(RemoteEndpoint endpoint, JsonValue key, JsonValue value, boolean isNewest)
 	{
-		return _sendCommon(endpoint, EVENT_CREATE, key, value, true);
+		return _sendCommon(endpoint, EVENT_CREATE, key, value, isNewest);
 	}
 
 	public static boolean sendUpdate(RemoteEndpoint endpoint, JsonValue key, JsonValue value)

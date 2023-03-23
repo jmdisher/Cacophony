@@ -116,9 +116,9 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 		}
 		
 		@Override
-		public boolean create(Integer key, String value)
+		public boolean create(Integer key, String value, boolean isNewest)
 		{
-			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key), Json.value(value));
+			return SocketEventHelpers.sendCreate(_endPoint, Json.value(key), Json.value(value), isNewest);
 		}
 		
 		@Override

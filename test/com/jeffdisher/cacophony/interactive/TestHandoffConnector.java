@@ -186,12 +186,14 @@ public class TestHandoffConnector
 		public boolean fail = false;
 		
 		@Override
-		public boolean create(String key, String value)
+		public boolean create(String key, String value, boolean isNewest)
 		{
 			if (!fail)
 			{
 				String old = map.put(key, value);
 				Assert.assertNull(old);
+				// This test assumes that these arrive in-order.
+				Assert.assertTrue(isNewest);
 				keyOrder.add(key);
 			}
 			return !fail;
