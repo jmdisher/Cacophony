@@ -56,7 +56,7 @@ public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 			{
 				_endPoint = session.getRemote();
 				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-				_followeeRefreshConnector.registerListener(this);
+				_followeeRefreshConnector.registerListener(this, 0);
 				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
 				session.setIdleTimeout(Duration.ofDays(1));
 			}

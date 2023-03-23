@@ -96,7 +96,14 @@ function beginPopulating($scope)
 				"readableRefreshTime": new Date(value).toLocaleString(),
 				"isRefreshing": false,
 			};
-			$scope.following.push(object);
+			if (isNewest)
+			{
+				$scope.following.push(object);
+			}
+			else
+			{
+				$scope.following.unshift(object);
+			}
 			keyToObjectMap[key] = object;
 			
 			API_getInfoForUser(key).then(elt => {

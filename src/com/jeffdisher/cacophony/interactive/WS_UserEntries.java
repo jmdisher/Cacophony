@@ -26,6 +26,9 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class WS_UserEntries implements IWebSocketFactory
 {
+	// We will start by just sending them the last 10 entries.
+	private static final int START_ENTRY_LIMIT = 10;
+
 	private final String _xsrf;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _entryConnector;
 	
@@ -72,7 +75,7 @@ public class WS_UserEntries implements IWebSocketFactory
 				{
 					_endPoint = session.getRemote();
 					// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-					_userConnector.registerListener(this);
+					_userConnector.registerListener(this, START_ENTRY_LIMIT);
 					// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
 					session.setIdleTimeout(Duration.ofDays(1));
 				}

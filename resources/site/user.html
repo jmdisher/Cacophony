@@ -64,7 +64,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		, function(hash, value, isNewest)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
-			newHashAppeared($scope, hash, isHomeUser);
+			newHashAppeared($scope, hash, isNewest);
 		}
 		// No Update.
 		, null
@@ -209,7 +209,7 @@ function userInfoForUserLoaded($scope, userInfo)
 	$scope.description = userInfo;
 	$scope.$apply();
 }
-function newHashAppeared($scope, hash)
+function newHashAppeared($scope, hash, isNewest)
 {
 	// Add empty objects to the array since we will replace them asynchronously.
 	let placeholder = {
@@ -218,7 +218,14 @@ function newHashAppeared($scope, hash)
 		"name": "Loading...",
 	};
 	// We want to build this backward so that the most recent additions are at the top of the screen.
-	$scope.posts.unshift(placeholder);
+	if (isNewest)
+	{
+		$scope.posts.unshift(placeholder);
+	}
+	else
+	{
+		$scope.posts.push(placeholder);
+	}
 	API_getPost(hash).then(elt => {
 		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
 		let description = elt["description"];

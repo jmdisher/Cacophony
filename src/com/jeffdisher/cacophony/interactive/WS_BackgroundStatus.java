@@ -75,7 +75,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 				_session = session;
 				_endPoint = session.getRemote();
 				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-				_statusHandoff.registerListener(this);
+				_statusHandoff.registerListener(this, 0);
 				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
 				session.setIdleTimeout(Duration.ofDays(1));
 			}

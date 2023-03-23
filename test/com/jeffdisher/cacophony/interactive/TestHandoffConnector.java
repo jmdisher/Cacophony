@@ -41,7 +41,7 @@ public class TestHandoffConnector
 	{
 		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
-		connector.registerListener(listen1);
+		connector.registerListener(listen1, 0);
 		connector.create("one", "1 1");
 		connector.update("one", "1 2");
 		connector.create("two", "2 1");
@@ -58,7 +58,7 @@ public class TestHandoffConnector
 		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		connector.create("one", "1 1");
-		connector.registerListener(listen1);
+		connector.registerListener(listen1, 0);
 		connector.update("one", "1 2");
 		connector.create("two", "2 1");
 		connector.unregisterListener(listen1);
@@ -76,9 +76,9 @@ public class TestHandoffConnector
 		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		TestListener listen2 = new TestListener();
-		connector.registerListener(listen1);
+		connector.registerListener(listen1, 0);
 		connector.create("one", "1 1");
-		connector.registerListener(listen2);
+		connector.registerListener(listen2, 0);
 		connector.update("one", "1 2");
 		connector.create("two", "2 1");
 		connector.unregisterListener(listen2);
@@ -100,7 +100,7 @@ public class TestHandoffConnector
 	{
 		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
-		connector.registerListener(listen1);
+		connector.registerListener(listen1, 0);
 		connector.create("one", "1 1");
 		connector.update("one", "1 2");
 		listen1.fail = true;
@@ -118,11 +118,11 @@ public class TestHandoffConnector
 		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		TestListener listen2 = new TestListener();
-		connector.registerListener(listen1);
+		connector.registerListener(listen1, 0);
 		connector.create("one", "1 1");
 		connector.create("two", "2 1");
 		connector.create("three", "3 1");
-		connector.registerListener(listen2);
+		connector.registerListener(listen2, 0);
 		connector.update("two", "2 2");
 		connector.update("one", "1 2");
 		connector.unregisterListener(listen1);
@@ -155,13 +155,13 @@ public class TestHandoffConnector
 		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
 		TestListener listen1 = new TestListener();
 		TestListener listen2 = new TestListener();
-		connector.registerListener(listen1);
+		connector.registerListener(listen1, 0);
 		connector.create("one", "1 1");
 		connector.create("two", "2 1");
 		connector.setSpecial("special");
 		// This redundant update should not appear.
 		connector.setSpecial("special");
-		connector.registerListener(listen2);
+		connector.registerListener(listen2, 0);
 		connector.update("two", "2 2");
 		connector.unregisterListener(listen1);
 		connector.setSpecial(null);
@@ -175,6 +175,41 @@ public class TestHandoffConnector
 		Assert.assertEquals("one", listen2.keyOrder.get(0));
 		Assert.assertEquals("two", listen2.keyOrder.get(1));
 		Assert.assertNull(listen2.special);
+	}
+
+	@Test
+	public void testBidirectionOrder() throws Throwable
+	{
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
+		TestListener listen1 = new TestListener();
+		TestListener listen2 = new TestListener();
+		connector.registerListener(listen1, 3);
+		connector.create("one", "1 1");
+		connector.create("two", "2 1");
+		connector.create("three", "3 1");
+		connector.create("four", "4 1");
+		connector.create("five", "5 1");
+		connector.registerListener(listen2, 3);
+		connector.update("two", "2 2");
+		connector.update("one", "1 2");
+		connector.create("six", "6 1");
+		connector.unregisterListener(listen1);
+		
+		Assert.assertEquals(6, listen1.keyOrder.size());
+		Assert.assertEquals("one", listen1.keyOrder.get(0));
+		Assert.assertEquals("two", listen1.keyOrder.get(1));
+		Assert.assertEquals("three", listen1.keyOrder.get(2));
+		Assert.assertEquals("four", listen1.keyOrder.get(3));
+		Assert.assertEquals("five", listen1.keyOrder.get(4));
+		Assert.assertEquals("six", listen1.keyOrder.get(5));
+		
+		Assert.assertEquals(6, listen2.keyOrder.size());
+		Assert.assertEquals("one", listen2.keyOrder.get(0));
+		Assert.assertEquals("two", listen2.keyOrder.get(1));
+		Assert.assertEquals("three", listen2.keyOrder.get(2));
+		Assert.assertEquals("four", listen2.keyOrder.get(3));
+		Assert.assertEquals("five", listen2.keyOrder.get(4));
+		Assert.assertEquals("six", listen2.keyOrder.get(5));
 	}
 
 
@@ -192,9 +227,14 @@ public class TestHandoffConnector
 			{
 				String old = map.put(key, value);
 				Assert.assertNull(old);
-				// This test assumes that these arrive in-order.
-				Assert.assertTrue(isNewest);
-				keyOrder.add(key);
+				if (isNewest)
+				{
+					keyOrder.add(key);
+				}
+				else
+				{
+					keyOrder.add(0, key);
+				}
 			}
 			return !fail;
 		}

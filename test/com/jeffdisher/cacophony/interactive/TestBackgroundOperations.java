@@ -101,7 +101,7 @@ public class TestBackgroundOperations
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
-		statusHandoff.registerListener(beforeListener);
+		statusHandoff.registerListener(beforeListener, 0);
 		
 		// Enqueue the one which may or may not be seen, then wait to set its success until we have set all the others.
 		back.requestPublish(F1);
@@ -120,7 +120,7 @@ public class TestBackgroundOperations
 		back.shutdownProcess();
 		
 		TestListener afterListener = new TestListener();
-		statusHandoff.registerListener(afterListener);
+		statusHandoff.registerListener(afterListener, 0);
 		// The capture from the start should see 2 of each event but the one at the end should see none, since everything should be done.
 		Assert.assertEquals(2, beforeListener.started);
 		Assert.assertEquals(2, beforeListener.ended);
@@ -146,7 +146,7 @@ public class TestBackgroundOperations
 		
 		// We can now install the listener and see all the events, since we know it didn't yet succeed.
 		TestListener listener = new TestListener();
-		statusHandoff.registerListener(listener);
+		statusHandoff.registerListener(listener, 0);
 		// Now, allow it to succeed.
 		publishFirst.success();
 		
@@ -198,7 +198,7 @@ public class TestBackgroundOperations
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
-		statusHandoff.registerListener(listener);
+		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
@@ -289,7 +289,7 @@ public class TestBackgroundOperations
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
-		statusHandoff.registerListener(listener);
+		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
 		// Enqueue a followee refresh.
@@ -334,7 +334,7 @@ public class TestBackgroundOperations
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
-		statusHandoff.registerListener(listener);
+		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
 		// We will only bother with the publish once so run it now.
@@ -379,7 +379,7 @@ public class TestBackgroundOperations
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
-		statusHandoff.registerListener(listener);
+		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
 		// We will only bother with the publish once so run it now.

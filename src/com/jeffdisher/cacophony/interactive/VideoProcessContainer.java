@@ -62,7 +62,7 @@ public class VideoProcessContainer
 		boolean didConnect = false;
 		if ((null != _processor) && (_draftId == draftId))
 		{
-			_connector.registerListener(listener);
+			_connector.registerListener(listener, 0);
 			didConnect = true;
 		}
 		return didConnect;

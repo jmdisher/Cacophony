@@ -44,10 +44,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 			, function(key, value, isNewest)
 			{
 				// This is a create so just add it to the list.
-				$scope.states.push({
+				let oneState = {
 					number: key,
 					description: value,
-				});
+				};
+				if (isNewest)
+				{
+					$scope.states.push(oneState);
+				}
+				else
+				{
+					$scope.states.unshift(oneState);
+				}
 				$scope.$apply();
 			}
 			// No update.

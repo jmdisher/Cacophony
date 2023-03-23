@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -54,8 +55,9 @@ public class HandoffConnector<K, V>
 	 * Adds a listener to the internal listener set.  The listener MUST NOT already be in the set.
 	 * 
 	 * @param listener The listener to add.
+	 * @param limit If greater than 0, the events will be sent from newest to oldest, only up to this many.
 	 */
-	public void registerListener(IHandoffListener<K, V> listener)
+	public void registerListener(IHandoffListener<K, V> listener, int limit)
 	{
 		_dispatcher.accept(() ->
 		{
@@ -69,11 +71,26 @@ public class HandoffConnector<K, V>
 				listener.specialChanged(_special);
 			}
 			
-			// Walk the list and relay the data we already have, in-order.
-			for (K key : _order)
+			if (limit > 0)
 			{
-				V value = _cache.get(key);
-				listener.create(key, value, true);
+				// TODO:  Implement this limit once we start tracking what events this listener has seen to filter update/delete.
+				// For now, this is just so we can get some basic testing of this bidirection order, in the front-end.
+				List<K> reversed = new ArrayList<>(_order);
+				Collections.reverse(reversed);
+				for (K key : reversed)
+				{
+					V value = _cache.get(key);
+					listener.create(key, value, false);
+				}
+			}
+			else
+			{
+				// We want everything so just walk the list, in-order.
+				for (K key : _order)
+				{
+					V value = _cache.get(key);
+					listener.create(key, value, true);
+				}
 			}
 		});
 	}

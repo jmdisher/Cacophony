@@ -246,7 +246,7 @@ public class TestFolloweeData
 			{
 				throw new AssertionError("Not used");
 			}
-		});
+		}, 0);
 		data.attachRefreshConnector(connector);
 		Assert.assertEquals(1, map.size());
 		Assert.assertEquals(1L, map.get(K1).longValue());
