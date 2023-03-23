@@ -75,7 +75,7 @@ echo -n "-ACK" > "$STATUS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile(Qm"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null,\"isNewest\":false}"
 
 mkfifo "$ENTRIES_INPUT"
 mkfifo "$ENTRIES_OUTPUT"

@@ -85,7 +85,7 @@ function beginPopulating($scope)
 			$scope.$apply();
 		}
 		// Create.
-		, function(key, value)
+		, function(key, value, isNewest)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
 			let object = {

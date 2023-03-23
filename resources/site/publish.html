@@ -385,7 +385,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			// onSocketOpen
 			, onProcessingSocketOpen
 			// onCreate
-			, function(key, value) { onProcessingKeyCreate($scope.videoState, key, value); }
+			, function(key, value, isNewest) { onProcessingKeyCreate($scope.videoState, key, value); }
 			// onUpdate
 			, function(key, value) {onProcessingKeyUpdate($scope.selectedDraft, processing_progress_bar, key, value); }
 			// onDelete
@@ -505,7 +505,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 			// onSocketOpen
 			, onProcessingSocketOpen
 			// onCreate
-			, function(key, value) { onProcessingKeyCreate($scope.videoState, key, value); }
+			, function(key, value, isNewest) { onProcessingKeyCreate($scope.videoState, key, value); }
 			// onUpdate
 			, function(key, value) {onProcessingKeyUpdate($scope.selectedDraft, processing_progress_bar, key, value); }
 			// onDelete

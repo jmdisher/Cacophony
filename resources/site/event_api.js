@@ -3,8 +3,9 @@
 // The events are structured as such, expressed in terms of how the given callbacks will receive data (note that key and value types are use-case specific):
 // -onSocketOpen(socket)
 //	-not part of our event API but called with the socket when the connection opens
-// -onCreate(key, value)
+// -onCreate(key, value, isNewest)
 //	-creates a new key with the given value
+//  -isNewest means that this key is should be treated as the most recently added, otherwise it should be treated as the oldest
 // -onUpdate(key, value)
 //	-updates an existing key with the given value
 // -onDelete(key)
@@ -27,7 +28,8 @@ function createWebSocketStateEventListener(url, protocol, onSocketOpen, onCreate
 		let object = JSON.parse(event.data);
 		if ('create' === object.event)
 		{
-			onCreate(object.key, object.value);
+			// Note that the "isNewest" is attached to all of these event objects but it is only meaningful for "create".
+			onCreate(object.key, object.value, object.isNewest);
 		}
 		else if ('update' === object.event)
 		{

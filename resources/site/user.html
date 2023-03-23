@@ -61,7 +61,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		{
 		}
 		// Create.
-		, function(hash, value)
+		, function(hash, value, isNewest)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
 			newHashAppeared($scope, hash, isHomeUser);

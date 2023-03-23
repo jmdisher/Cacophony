@@ -41,7 +41,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.$apply();
 			}
 			// Create.
-			, function(key, value)
+			, function(key, value, isNewest)
 			{
 				// This is a create so just add it to the list.
 				$scope.states.push({

@@ -88,14 +88,14 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "h
 # Verify that we see the new followee reference created in the follow refresh time socket.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0,\"isNewest\":true}"
 # Note that we need to wait for the refresh to finish, since it is now asynchronous.
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey($PUBLIC2)\",\"isNewest\":true}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null,\"isNewest\":false}"
 # The followee refresh should similarly show that this has completed.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
@@ -120,10 +120,10 @@ echo "Request a refresh of user2 and wait for the event to show up in status, th
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh IpfsKey($PUBLIC2)\",\"isNewest\":true}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 # We should also see this update the refresh time.
@@ -139,10 +139,10 @@ echo "Request a refresh of this user and wait for the event to show up in status
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followee/refresh/$PUBLIC2"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\":\"Refresh IpfsKey($PUBLIC2)\",\"isNewest\":true}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\"Qm"
 
@@ -154,7 +154,7 @@ echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
 echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null,\"isNewest\":false}"
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
 while [[ ! "$SAMPLE" =~ "{\"event\":\"create\",\"key\":" ]]
@@ -164,7 +164,7 @@ do
 done
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null,\"isNewest\":false}"
 
 echo "Test the add/remove of the followee..."
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
@@ -178,30 +178,30 @@ fi
 # We should observe the delete of this record since we stopped following.
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null,\"isNewest\":false}"
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null,\"isNewest\":false}"
 # We should also see the followee deleted from the refresh output.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null,\"isNewest\":false}"
 
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
 # Note that we need to wait for the refresh to finish, since it is now asynchronous.
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":5,\"value\":\"Refresh IpfsKey($PUBLIC2)\"}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":5,\"value\":\"Refresh IpfsKey($PUBLIC2)\",\"isNewest\":true}"
 SAMPLE=$(cat "$STATUS_OUTPUT")
 echo -n "-ACK" > "$STATUS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\":null,\"isNewest\":false}"
 # Similarly, we need to read the refresh from the followee output.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 echo -n "-ACK" > "$FOLLOWEE_REFRESH_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0,\"isNewest\":true}"
 # We also want to wait for the refresh to complete, asynchronously.
 SAMPLE=$(cat "$FOLLOWEE_REFRESH_OUTPUT")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"

@@ -179,13 +179,13 @@ echo -n "COMMAND_CANCEL_PROCESSING" > "$EXISTING_INPUT"
 # We should see this force-stop as a delete of that input bytes key followed by a create and delete pair of the output bytes set to -1.
 SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
 echo -n "-ACK" > "$EXISTING_INPUT"
-requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null}"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null,\"isNewest\":false}"
 SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
 echo -n "-ACK" > "$EXISTING_INPUT"
-requireSubstring "$SINGLE_EVENT" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":-1}"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":-1,\"isNewest\":true}"
 SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
 echo -n "-ACK" > "$EXISTING_INPUT"
-requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null}"
+requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null,\"isNewest\":false}"
 # Verify that the process has terminated.
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 0 ]; then
@@ -222,7 +222,7 @@ echo -n "-ACK" > "$PROCESS_INPUT"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"inputBytes\",\"value\":"
 SAMPLE=$(cat "$PROCESS_OUTPUT")
 echo -n "-ACK" > "$PROCESS_INPUT"
-while [ "$SAMPLE" != "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null}" ]
+while [ "$SAMPLE" != "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null,\"isNewest\":false}" ]
 do
 	requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"inputBytes\",\"value\":"
 	SAMPLE=$(cat "$PROCESS_OUTPUT")
@@ -231,10 +231,10 @@ done
 # At the end, we see the final update with processed size (2 bytes - "c\n").
 SAMPLE=$(cat "$PROCESS_OUTPUT")
 echo -n "-ACK" > "$PROCESS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":2}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":2,\"isNewest\":true}"
 SAMPLE=$(cat "$PROCESS_OUTPUT")
 echo -n "-ACK" > "$PROCESS_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null,\"isNewest\":false}"
 echo -n "-WAIT" > "$PROCESS_INPUT"
 wait $SAMPLE_PID
 
@@ -357,16 +357,16 @@ POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$POST_STRUCT" "{\"name\":\"Edit Title\",\"description\":\"Has Changed\",\"publishedSecondsUtc\":"
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$OLD_POST_ID\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$OLD_POST_ID\",\"value\":null,\"isNewest\":false}"
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$POST_ID\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$POST_ID\",\"value\":null,\"isNewest\":true}"
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null}"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
 
 echo "Create an audio post, publish it, and make sure we can see it..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
@@ -458,7 +458,7 @@ if [ $? != 22 ]; then
 fi
 SAMPLE=$(cat "$ENTRIES_OUTPUT")
 echo -n "-ACK" > "$ENTRIES_INPUT"
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null}"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null,\"isNewest\":false}"
 
 echo "Make sure that the core threads are still running..."
 JSTACK=$(jstack "$SERVER_PID")
