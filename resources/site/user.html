@@ -48,6 +48,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 {
 	let video_preview = document.getElementById("video_preview");
 	let canvas = document.getElementById("canvas");
+	let entrySocket = null;
 	
 	$scope.publicKey = publicKey;
 	API_getInfoForUser(publicKey).then(userInfo => {
@@ -55,10 +56,14 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 	});
 	$scope.posts = [];
 	$scope.specialString = null;
+	// We will only enable the scroll back once we see some backward entries being loaded (the initial load) so that it stays enabled if there is nothing.
+	$scope.allowScrollBack = false;
 	EVENTS_API.userEntries(publicKey
 		// Socket open.
 		, function(socket)
 		{
+			// We will hold on to the socket so we can use it to request a scroll back.
+			entrySocket = socket;
 		}
 		// Create.
 		, function(hash, value, isNewest)
@@ -202,6 +207,12 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		stopCamera(video_preview, $scope.editState.videoStream);
 		$scope.editState.videoStream = null;
 	};
+	$scope.loadMoreEntries = function()
+	{
+		// We will disable the scoll back until some older entries are loaded.
+		$scope.allowScrollBack = false;
+		entrySocket.send("COMMAND_SCROLL_BACK");
+	}
 	$scope.$apply();
 }
 function userInfoForUserLoaded($scope, userInfo)
@@ -225,6 +236,8 @@ function newHashAppeared($scope, hash, isNewest)
 	else
 	{
 		$scope.posts.push(placeholder);
+		// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
+		$scope.allowScrollBack = true;
 	}
 	API_getPost(hash).then(elt => {
 		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
@@ -390,6 +403,7 @@ function stopCamera(video_preview, stream)
 					</div>
 				</div>
 			</div>
+			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 	</div>
 </div>

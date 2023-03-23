@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ public class HandoffConnector<K, V>
 
 	// NOTE:  We only interact with the instance variables in the dispatcher's thread!
 	// The listeners which are attached to us - we will just use a HashSet, although technically this should be identity-based.
-	private final Set<IHandoffListener<K, V>> _listeners;
+	private final IdentityHashMap<IHandoffListener<K, V>, ListenerState<K, V>> _listeners;
 	// The cache of data.
 	private final Map<K, V> _cache;
 	// The order in which the keys were created (since some representations want to preserve order).
@@ -46,7 +47,7 @@ public class HandoffConnector<K, V>
 	public HandoffConnector(Consumer<Runnable> dispatcher)
 	{
 		_dispatcher = dispatcher;
-		_listeners = new HashSet<>();
+		_listeners = new IdentityHashMap<>();
 		_cache = new HashMap<>();
 		_order = new ArrayList<>();
 	}
@@ -62,8 +63,8 @@ public class HandoffConnector<K, V>
 		_dispatcher.accept(() ->
 		{
 			// Add to the set.
-			boolean didAdd = _listeners.add(listener);
-			Assert.assertTrue(didAdd);
+			// (do a quick check that there are no duplicates).
+			Assert.assertTrue(!_listeners.containsKey(listener));
 			
 			// Set the special, if not null.
 			if (null != _special)
@@ -71,25 +72,38 @@ public class HandoffConnector<K, V>
 				listener.specialChanged(_special);
 			}
 			
+			ListenerState<K, V> state = new ListenerState<>(listener);
+			_listeners.put(listener, state);
 			if (limit > 0)
 			{
-				// TODO:  Implement this limit once we start tracking what events this listener has seen to filter update/delete.
-				// For now, this is just so we can get some basic testing of this bidirection order, in the front-end.
 				List<K> reversed = new ArrayList<>(_order);
 				Collections.reverse(reversed);
+				int elementsSent = 0;
 				for (K key : reversed)
 				{
 					V value = _cache.get(key);
 					listener.create(key, value, false);
+					state.keysSent.add(key);
+					state.oldestKeySent = key;
+					elementsSent += 1;
+					if (elementsSent == limit)
+					{
+						break;
+					}
 				}
 			}
 			else
 			{
 				// We want everything so just walk the list, in-order.
-				for (K key : _order)
+				if (!_order.isEmpty())
 				{
-					V value = _cache.get(key);
-					listener.create(key, value, true);
+					state.oldestKeySent = _order.get(0);
+					for (K key : _order)
+					{
+						V value = _cache.get(key);
+						listener.create(key, value, true);
+						state.keysSent.add(key);
+					}
 				}
 			}
 		});
@@ -104,8 +118,7 @@ public class HandoffConnector<K, V>
 	{
 		_dispatcher.accept(() ->
 		{
-			boolean didRemove = _listeners.remove(listener);
-			Assert.assertTrue(didRemove);
+			Assert.assertTrue(null != _listeners.remove(listener));
 		});
 	}
 
@@ -125,12 +138,17 @@ public class HandoffConnector<K, V>
 			_order.add(key);
 			
 			// Tell everyone.
-			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+			Iterator<ListenerState<K, V>> iter = _listeners.values().iterator();
 			while (iter.hasNext())
 			{
-				IHandoffListener<K, V> listener = iter.next();
-				boolean ok = listener.create(key, value, true);
-				if (!ok)
+				ListenerState<K, V> listenerState = iter.next();
+				boolean ok = listenerState.listener.create(key, value, true);
+				if (ok)
+				{
+					// Record that this listener knows about this key.
+					listenerState.keysSent.add(key);
+				}
+				else
 				{
 					iter.remove();
 				}
@@ -153,14 +171,18 @@ public class HandoffConnector<K, V>
 			_cache.put(key, value);
 			
 			// Tell everyone.
-			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+			Iterator<ListenerState<K, V>> iter = _listeners.values().iterator();
 			while (iter.hasNext())
 			{
-				IHandoffListener<K, V> listener = iter.next();
-				boolean ok = listener.update(key, value);
-				if (!ok)
+				ListenerState<K, V> listenerState = iter.next();
+				// We only want to send this if this listener has actually seen this create.
+				if (listenerState.keysSent.contains(key))
 				{
-					iter.remove();
+					boolean ok = listenerState.listener.update(key, value);
+					if (!ok)
+					{
+						iter.remove();
+					}
 				}
 			}
 		});
@@ -178,19 +200,36 @@ public class HandoffConnector<K, V>
 			// We expect the element to be in the map (but it may have a null value).
 			Assert.assertTrue(_cache.containsKey(key));
 			_cache.remove(key);
-			boolean didRemove = _order.remove(key);
+			// Capture the more recent key than this one, in case any listeners need their oldest key bumped up.
+			int indexToRemove = _order.indexOf(key);
+			K moreRecentKey = ((indexToRemove + 1) < _order.size())
+					? _order.get(indexToRemove + 1)
+					: null
+			;
+			boolean didRemove = (null != _order.remove(indexToRemove));
 			// Must remove.
 			Assert.assertTrue(didRemove);
 			
 			// Tell everyone.
-			Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+			Iterator<ListenerState<K, V>> iter = _listeners.values().iterator();
+			
 			while (iter.hasNext())
 			{
-				IHandoffListener<K, V> listener = iter.next();
-				boolean ok = listener.destroy(key);
-				if (!ok)
+				ListenerState<K, V> listenerState = iter.next();
+				// We only want to send this if this listener has actually seen this create.
+				if (listenerState.keysSent.contains(key))
 				{
-					iter.remove();
+					boolean ok = listenerState.listener.destroy(key);
+					if (!ok)
+					{
+						iter.remove();
+					}
+					// We also need to update the state of the listener's keys.
+					listenerState.keysSent.remove(key);
+					if (key.equals(listenerState.oldestKeySent))
+					{
+						listenerState.oldestKeySent = moreRecentKey;
+					}
 				}
 			}
 		});
@@ -207,7 +246,7 @@ public class HandoffConnector<K, V>
 				_special = special;
 				
 				// Tell everyone.
-				Iterator<IHandoffListener<K, V>> iter = _listeners.iterator();
+				Iterator<IHandoffListener<K, V>> iter = _listeners.keySet().iterator();
 				while (iter.hasNext())
 				{
 					IHandoffListener<K, V> listener = iter.next();
@@ -216,6 +255,49 @@ public class HandoffConnector<K, V>
 					{
 						iter.remove();
 					}
+				}
+			}
+		});
+	}
+
+	/**
+	 * Walks backward through the list of in-order keys, sending the create calls for up to the next elementToRequest
+	 * keys preceding the last one sent.
+	 * 
+	 * @param listener The listener to notify.
+	 * @param elementsToRequest The maximum number of creates to send.
+	 */
+	public void requestOlderElements(IHandoffListener<K, V> listener, int elementsToRequest)
+	{
+		Assert.assertTrue(elementsToRequest > 0);
+		_dispatcher.accept(() ->
+		{
+			ListenerState<K, V> state = _listeners.get(listener);
+			List<K> reversed = new ArrayList<>(_order);
+			Collections.reverse(reversed);
+			
+			boolean didFind = (null == state.oldestKeySent);
+			int elementsSent = 0;
+			for (K key : reversed)
+			{
+				if (didFind)
+				{
+					V value = _cache.get(key);
+					listener.create(key, value, false);
+					elementsSent += 1;
+					
+					// Update state.
+					state.keysSent.add(key);
+					state.oldestKeySent = key;
+					
+					if (elementsSent == elementsToRequest)
+					{
+						break;
+					}
+				}
+				else
+				{
+					didFind = state.oldestKeySent.equals(key);
 				}
 			}
 		});
@@ -265,5 +347,19 @@ public class HandoffConnector<K, V>
 		 * @return True if this was successful or false to unregister the target.
 		 */
 		boolean specialChanged(String special);
+	}
+
+
+	private static class ListenerState<K, V>
+	{
+		public final IHandoffListener<K, V> listener;
+		public final Set<K> keysSent;
+		public K oldestKeySent;
+		
+		public ListenerState(IHandoffListener<K, V> listener)
+		{
+			this.listener = listener;
+			this.keysSent = new HashSet<>();
+		}
 	}
 }

@@ -202,14 +202,44 @@ public class TestHandoffConnector
 		Assert.assertEquals("four", listen1.keyOrder.get(3));
 		Assert.assertEquals("five", listen1.keyOrder.get(4));
 		Assert.assertEquals("six", listen1.keyOrder.get(5));
+		Assert.assertEquals("1 2", listen1.map.get("one"));
 		
-		Assert.assertEquals(6, listen2.keyOrder.size());
-		Assert.assertEquals("one", listen2.keyOrder.get(0));
-		Assert.assertEquals("two", listen2.keyOrder.get(1));
-		Assert.assertEquals("three", listen2.keyOrder.get(2));
-		Assert.assertEquals("four", listen2.keyOrder.get(3));
-		Assert.assertEquals("five", listen2.keyOrder.get(4));
-		Assert.assertEquals("six", listen2.keyOrder.get(5));
+		Assert.assertEquals(4, listen2.keyOrder.size());
+		Assert.assertEquals("three", listen2.keyOrder.get(0));
+		Assert.assertEquals("four", listen2.keyOrder.get(1));
+		Assert.assertEquals("five", listen2.keyOrder.get(2));
+		Assert.assertEquals("six", listen2.keyOrder.get(3));
+	}
+
+	@Test
+	public void testScrollBack() throws Throwable
+	{
+		HandoffConnector<String, String> connector = new HandoffConnector<>(DISPATCHER);
+		TestListener listen1 = new TestListener();
+		connector.create("one", "1 1");
+		connector.create("two", "2 1");
+		connector.create("three", "3 1");
+		connector.create("four", "4 1");
+		connector.create("five", "5 1");
+		connector.registerListener(listen1, 2);
+		Assert.assertEquals(2, listen1.keyOrder.size());
+		Assert.assertEquals("four", listen1.keyOrder.get(0));
+		Assert.assertEquals("five", listen1.keyOrder.get(1));
+		
+		connector.destroy("four");
+		Assert.assertEquals(1, listen1.keyOrder.size());
+		connector.update("one", "1 2");
+		connector.create("six", "6 1");
+		Assert.assertEquals(2, listen1.keyOrder.size());
+		
+		connector.requestOlderElements(listen1, 2);
+		Assert.assertEquals(4, listen1.keyOrder.size());
+		Assert.assertEquals("two", listen1.keyOrder.get(0));
+		Assert.assertEquals("three", listen1.keyOrder.get(1));
+		Assert.assertEquals("five", listen1.keyOrder.get(2));
+		Assert.assertEquals("six", listen1.keyOrder.get(3));
+		
+		connector.unregisterListener(listen1);
 	}
 
 

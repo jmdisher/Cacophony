@@ -28,6 +28,8 @@ public class WS_UserEntries implements IWebSocketFactory
 {
 	// We will start by just sending them the last 10 entries.
 	private static final int START_ENTRY_LIMIT = 10;
+	// We use this command to request we scroll back further.
+	private static final String COMMAND_SCROLL_BACK = "COMMAND_SCROLL_BACK";
 
 	private final String _xsrf;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _entryConnector;
@@ -84,6 +86,14 @@ public class WS_UserEntries implements IWebSocketFactory
 					session.close(WebSocketCodes.NOT_FOUND, "User not known");
 				}
 			}
+		}
+		
+		@Override
+		public void onWebSocketText(String message)
+		{
+			// We only have a single command so anything else would be a static feature mismatch.
+			Assert.assertTrue(COMMAND_SCROLL_BACK.equals(message));
+			_userConnector.requestOlderElements(this, START_ENTRY_LIMIT);
 		}
 		
 		@Override
