@@ -125,7 +125,7 @@ DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter 
 requireSubstring "$DRAFTS" "\"title\":\"New Draft - $ID\""
 
 echo "Update the title, description, then thumbnail..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "title=Updated%20Title&description=" http://127.0.0.1:8000/draft/$ID
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Updated%20Title&DESCRIPTION=" http://127.0.0.1:8000/draft/$ID
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" "\"title\":\"Updated Title\""
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" http://127.0.0.1:8000/draft/thumb/$ID/5/6/jpeg
@@ -262,7 +262,7 @@ fi
 
 echo "Verify that the draft information is correct..."
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
-requireSubstring "$DRAFT" "\"title\":\"Updated Title\",\"description\":\"\",\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15},\"discussionUrl\":null,\"originalVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":10},\"processedVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":2},\"audio\":{\"mime\":\"audio/ogg\",\"height\":0,\"width\":0,\"byteSize\":11}}"
+requireSubstring "$DRAFT" "\"title\":\"Updated Title\",\"description\":\"\",\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15},\"discussionUrl\":\"\",\"originalVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":10},\"processedVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":2},\"audio\":{\"mime\":\"audio/ogg\",\"height\":0,\"width\":0,\"byteSize\":11}}"
 
 echo "Verify that we can delete the individual draft files..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/draft/originalVideo/$ID"

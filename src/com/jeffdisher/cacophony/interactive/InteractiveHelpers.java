@@ -82,6 +82,17 @@ public class InteractiveHelpers
 		}
 		return loaded;
 	}
+	/**
+	 * Updates a single draft.  Any of parameters being non-null will mean we will update them (discussionUrl is a
+	 * special-case where empty string will mean "remove").
+	 * 
+	 * @param draftManager The manager.
+	 * @param draftId The draft ID.
+	 * @param title The new title, if not null.
+	 * @param description The new description, if not null.
+	 * @param discussionUrl The new discussion URL, if not null (empty means "remove").
+	 * @return The newly updated draft, null if it wasn't found.
+	 */
 	public static Draft updateDraftText(DraftManager draftManager, int draftId, String title, String description, String discussionUrl)
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -89,8 +100,21 @@ public class InteractiveHelpers
 		if (null != wrapper)
 		{
 			finalDraft = wrapper.updateDraftUnderLock((Draft oldDraft) ->
-				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), title, description, discussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio())
-			);
+			{
+				String newTitle = (null != title)
+						? title
+						: oldDraft.title()
+				;
+				String newDescription = (null != description)
+						? description
+						: oldDraft.description()
+				;
+				String newDiscussionUrl = (null != discussionUrl)
+						? (discussionUrl.isEmpty() ? null : discussionUrl)
+						: oldDraft.discussionUrl()
+				;
+				return new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), newTitle, newDescription, newDiscussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
+			});
 		}
 		return finalDraft;
 	}
@@ -172,7 +196,13 @@ public class InteractiveHelpers
 		IpfsFile newRoot;
 		try
 		{
-			newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), draft.discussionUrl(), subElements, outRecordCid);
+			// The draft can have empty strings or null (only due to old versions) for discussionURL but we want to pass null in those cases to not attach it.
+			String discussionUrl = draft.discussionUrl();
+			if ((null != discussionUrl) && discussionUrl.isEmpty())
+			{
+				discussionUrl = null;
+			}
+			newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), discussionUrl, subElements, outRecordCid);
 		}
 		catch (IpfsConnectionException e)
 		{

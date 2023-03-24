@@ -249,13 +249,10 @@ function postUpdatedThumbnail(canvas, captureVideo, selectedDraft, width, height
 function saveDraft(selectedDraft)
 {
 	let variables = {
-		"title": selectedDraft.title,
-		"description": selectedDraft.description,
+		"NAME": selectedDraft.title,
+		"DESCRIPTION": selectedDraft.description,
+		"DISCUSSION_URL": selectedDraft.discussionUrl,
 	};
-	if (null != selectedDraft.discussionUrl)
-	{
-		variables["discussionUrl"] = selectedDraft.discussionUrl;
-	}
 	return REST.POST_asForm("/draft/" + selectedDraft.id, variables);
 }
 
@@ -970,8 +967,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
 					Description (limited to 20000 characters):<br />
 					<textarea class="form-control" ng-model="selectedDraft.description" rows="12" maxlength="20000"></textarea><br />
-					Discussion URL: <button class="btn btn-primary" ng-click="selectedDraft.discussionUrl = ''" ng-show="null == selectedDraft.discussionUrl">Add Discussion URL</button>
-					<input type="text" class="form-control" ng-model="selectedDraft.discussionUrl" ng-show="null != selectedDraft.discussionUrl"></input><br />
+					Discussion URL:
+					<input type="text" class="form-control" placeholder="(no link)" ng-model="selectedDraft.discussionUrl"></input><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
 						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress">Publish without video</button>

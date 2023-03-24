@@ -11,6 +11,8 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * Draft represents a not-yet-published post to a Cacophony stream.
  * It uses Java serialization for on-disk storage and JSON for its wire encoding for the web interface.
+ * Note that the  title, description, and discussionUrl are never null but _can_ be empty strings (which, in the case of
+ * discussionUrl, means "no link").
  */
 public record Draft(int id
 		, long publishedSecondsUtc
@@ -23,6 +25,12 @@ public record Draft(int id
 		, SizedElement audio
 ) implements Serializable
 {
+	/**
+	 * This is currently only used in testing but may be used in place of Java Serialization, at some point.
+	 * 
+	 * @param json The JSON object.
+	 * @return The new Draft instance.
+	 */
 	public static Draft fromJson(JsonObject json)
 	{
 		// We just assert that this is well-formed, to make the rest of the stack easier to debug.
@@ -35,6 +43,7 @@ public record Draft(int id
 		String description = json.getString("description", null);
 		Assert.assertTrue(null != description);
 		String discussionUrl = json.getString("discussionUrl", null);
+		Assert.assertTrue(null != discussionUrl);
 		SizedElement thumbnail = _getElementOrNull(json, "thumbnail");
 		SizedElement originalVideo = _getElementOrNull(json, "originalVideo");
 		SizedElement processedVideo = _getElementOrNull(json, "processedVideo");
@@ -61,7 +70,8 @@ public record Draft(int id
 			.add("title", title)
 			.add("description", description)
 			.add("thumbnail", (null != thumbnail) ? thumbnail.toJson() : Json.NULL)
-			.add("discussionUrl", (null != discussionUrl) ? Json.value(discussionUrl) : Json.NULL)
+			// We will manually ensure that the URL is non-null since some older data models may still exist with a null value.
+			.add("discussionUrl", Json.value((null != discussionUrl) ? discussionUrl : ""))
 			.add("originalVideo", (null != originalVideo) ? originalVideo.toJson() : Json.NULL)
 			.add("processedVideo", (null != processedVideo) ? processedVideo.toJson() : Json.NULL)
 			.add("audio", (null != audio) ? audio.toJson() : Json.NULL)

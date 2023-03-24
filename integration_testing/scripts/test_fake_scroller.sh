@@ -45,7 +45,7 @@ do
 	ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 	PUBLISH_ID=$(echo $ID_PARSE)
 	# The draft initial contents are currently being initialized from the time so make sure we change it.
-	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "title=Post%20$N&description=" http://127.0.0.1:8000/draft/$PUBLISH_ID
+	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Post%20$N" http://127.0.0.1:8000/draft/$PUBLISH_ID
 	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/TEXT_ONLY
 done
 

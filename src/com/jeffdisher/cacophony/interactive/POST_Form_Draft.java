@@ -12,9 +12,17 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Updates the given draft with the included data and returns 200 on success or 404 if not found.
+ * Variables (at least one of these must be provided but a missing variable means "no change"):
+ * -"NAME": The new name (cannot be empty - technically allowed but not good UI).
+ * -"DESCRIPTION": The new description (cannot be empty - technically allowed but not good UI).
+ * -"DISCUSSION_URL": The new discussion URL (an empty string will be interpreted as "remove").
  */
 public class POST_Form_Draft implements ValidatedEntryPoints.POST_Form
 {
+	public static final String VAR_NAME = "NAME";
+	public static final String VAR_DESCRIPTION = "DESCRIPTION";
+	public static final String VAR_DISCUSSION_URL = "DISCUSSION_URL";
+
 	private final DraftManager _draftManager;
 	
 	public POST_Form_Draft(DraftManager draftManager)
@@ -26,15 +34,13 @@ public class POST_Form_Draft implements ValidatedEntryPoints.POST_Form
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
 	{
 		int draftId = Integer.parseInt(pathVariables[0]);
-		String title = formVariables.getIfSingle("title");
-		String description = formVariables.getIfSingle("description");
-		// Note that the discussion URL can be null - empty strings should be made null.
-		String discussionUrl = formVariables.getIfSingle("discussionUrl");
-		if ((null != discussionUrl) && discussionUrl.isEmpty())
-		{
-			discussionUrl = null;
-		}
-		if ((null != title) && !title.isEmpty() && (null != description))
+		String title = formVariables.getIfSingle(VAR_NAME);
+		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
+		String discussionUrl = formVariables.getIfSingle(VAR_DISCUSSION_URL);
+		if ((null != title)
+				|| (null != description)
+				|| (null != discussionUrl)
+		)
 		{
 			Draft written = InteractiveHelpers.updateDraftText(_draftManager, draftId, title, description, discussionUrl);
 			if (null != written)
