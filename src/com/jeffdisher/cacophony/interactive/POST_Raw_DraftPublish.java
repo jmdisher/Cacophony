@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
+import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,21 +51,20 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 		{
 			int draftId = Integer.parseInt(pathVariables[0]);
 			PublishType type = PublishType.valueOf(pathVariables[1]);
-			IpfsFile[] newElementContainer = new IpfsFile[1];
 			
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(_environment
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(_environment
 					, access
 					, _draftManager
 					, draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
-					, newElementContainer
 			);
 			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
 			// The publish is something we can wait on, asynchronously, in a different call.
-			_backgroundOperations.requestPublish(newRoot);
-			_handoffConnector.create(newElementContainer[0], null);
+			_backgroundOperations.requestPublish(result.newIndexRoot());
+			IpfsFile newElement = result.newRecordCid();
+			_handoffConnector.create(newElement, null);
 			
 			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
 			// bit odd, since we could have updated this during the publish operation, but that would have required some
@@ -72,7 +72,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// verify that the assumptions around this are consistent.
 			// In the future, we may want to refactor this so that it can be more elegantly updated as the network read
 			// seems wrong.
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, _recordCache, newElementContainer[0]);
+			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, _recordCache, newElement);
 			
 			response.setStatus(HttpServletResponse.SC_OK);
 		}

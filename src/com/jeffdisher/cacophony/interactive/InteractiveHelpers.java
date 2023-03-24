@@ -16,9 +16,7 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
@@ -122,13 +120,12 @@ public class InteractiveHelpers
 	{
 		return draftManager.deleteExistingDraft(draftId);
 	}
-	public static IpfsFile postExistingDraft(IEnvironment environment
+	public static PublishHelpers.PublishResult postExistingDraft(IEnvironment environment
 			, IWritingAccess access
 			, DraftManager draftManager
 			, int draftId
 			, boolean shouldPublishVideo
 			, boolean shouldPublishAudio
-			, IpfsFile[] outRecordCid
 	) throws FileNotFoundException
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -193,7 +190,7 @@ public class InteractiveHelpers
 			index += 1;
 		}
 		
-		IpfsFile newRoot;
+		PublishHelpers.PublishResult result;
 		try
 		{
 			// The draft can have empty strings or null (only due to old versions) for discussionURL but we want to pass null in those cases to not attach it.
@@ -202,17 +199,11 @@ public class InteractiveHelpers
 			{
 				discussionUrl = null;
 			}
-			newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), discussionUrl, subElements, outRecordCid);
+			result = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), discussionUrl, subElements);
 		}
 		catch (IpfsConnectionException e)
 		{
 			System.err.println("Publish command failed with IpfsConnectionException: " + e.getLocalizedMessage());
-			e.printStackTrace();
-			throw Assert.unexpected(e);
-		}
-		catch (FailedDeserializationException e)
-		{
-			System.err.println("Publish command failed due to a failed deserialization: " + e.getLocalizedMessage());
 			e.printStackTrace();
 			throw Assert.unexpected(e);
 		}
@@ -227,7 +218,7 @@ public class InteractiveHelpers
 			closeElementFiles(environment, subElements);
 		}
 		
-		return newRoot;
+		return result;
 	}
 
 	// --- Methods related to thumbnails.

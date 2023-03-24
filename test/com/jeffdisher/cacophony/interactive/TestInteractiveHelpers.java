@@ -25,6 +25,7 @@ import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
+import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
@@ -231,8 +232,8 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false, new IpfsFile[1]);
-			access.beginIndexPublish(newRoot);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false);
+			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
 		// Verify the data is on the node.
@@ -269,8 +270,8 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false, new IpfsFile[1]);
-			access.beginIndexPublish(newRoot);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false);
+			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
 		// Verify that we see both.
@@ -315,8 +316,8 @@ public class TestInteractiveHelpers
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, false, new IpfsFile[1]);
-			access.beginIndexPublish(newRoot);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, false);
+			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
 		// Verify that the new entry has no attachments.
@@ -372,8 +373,8 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(env))
 		{
-			IpfsFile newRoot = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, true, new IpfsFile[1]);
-			access.beginIndexPublish(newRoot);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, true);
+			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
 		// Verify the data is on the node.

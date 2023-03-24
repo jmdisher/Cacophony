@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -30,7 +29,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);
@@ -38,15 +37,16 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IOperationLog log = environment.logOperation("Publish: " + this);
 		PublishHelpers.PublishElement[] openElements = openElementFiles(environment, _elements);
 		FuturePublish asyncPublish;
-		IpfsFile[] newElementContainer = new IpfsFile[1];
+		IpfsFile newElement = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			if (null == access.getLastRootElement())
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IpfsFile newRoot = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements, newElementContainer);
-			asyncPublish = access.beginIndexPublish(newRoot);
+			PublishHelpers.PublishResult result = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements);
+			asyncPublish = access.beginIndexPublish(result.newIndexRoot());
+			newElement = result.newRecordCid();
 		}
 		finally
 		{
@@ -56,7 +56,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// We can now wait for the publish to complete, now that we have closed all the local state.
 		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 		
-		environment.logToConsole("New element: " + newElementContainer[0]);
+		environment.logToConsole("New element: " + newElement);
 		log.finish("Publish completed!");
 	}
 

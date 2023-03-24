@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -14,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
+import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -37,31 +39,28 @@ public class PublishHelpers
 	 * @param description The description of the entry.
 	 * @param discussionUrl The discussion URL of the entry (could be null).
 	 * @param elements The list of elements we want to upload as attachments to this entry.
-	 * @param outRecordCid Stores the updated record CID into element 0 of this array.
-	 * @return The hash of the new index.
+	 * @return The result of the publish.
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
-	 * @throws FailedDeserializationException We failed to deserialized some of the loaded data.
 	 * @throws SizeConstraintException The meta-data tree serialized to be too large to store.
 	 */
-	public static IpfsFile uploadFileAndUpdateTracking(IEnvironment environment
+	public static PublishResult uploadFileAndUpdateTracking(IEnvironment environment
 			, IWritingAccess access
 			, String name
 			, String description
 			, String discussionUrl
 			, PublishElement[] elements
-			, IpfsFile[] outRecordCid
-	) throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Read the existing StreamIndex.
 		IpfsKey publicKey = access.getPublicKey();
 		
 		IpfsFile previousRoot = access.getLastRootElement();
 		Assert.assertTrue(null != previousRoot);
-		StreamIndex index = access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		StreamIndex index = _safeRead(access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)));
 		
 		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
 		IpfsFile previousRecords = IpfsFile.fromIpfsCid(index.getRecords());
-		StreamRecords records = access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		StreamRecords records = _safeRead(access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)));
 		
 		// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
 		DataArray array = new DataArray();
@@ -99,7 +98,14 @@ public class PublishHelpers
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(rawRecord));
 		
-		records.getRecord().add(recordHash.toSafeString());
+		List<String> recordCids = records.getRecord();
+		String newRecordCid = recordHash.toSafeString();
+		// This assertion is just to avoid some corner-cases which can happen in testing but have no obvious meaning in real usage.
+		// This can happen when 2 posts are made before the time has advanced.
+		// While the record list is allowed to contain duplicates, this is usually just the result of a test running too quickly or being otherwise incorrect.
+		// (We could make this into an actual error case if it were meaningful).
+		Assert.assertTrue(!recordCids.contains(newRecordCid));
+		recordCids.add(newRecordCid);
 		
 		// Save the updated records and index.
 		byte[] rawRecords = GlobalData.serializeRecords(records);
@@ -114,8 +120,7 @@ public class PublishHelpers
 		// (we may want more explicit control over this, in the future)
 		access.unpin(previousRoot);
 		access.unpin(previousRecords);
-		outRecordCid[0] = recordHash;
-		return newRoot;
+		return new PublishResult(newRoot, recordHash);
 	}
 
 
@@ -125,6 +130,25 @@ public class PublishHelpers
 		return now.toEpochSecond();
 	}
 
+	private static <R> R _safeRead(FutureRead<R> future) throws IpfsConnectionException
+	{
+		try
+		{
+			return future.get();
+		}
+		catch (IpfsConnectionException e)
+		{
+			throw e;
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We call this for local user data so we can't fail to deserialize.
+			throw Assert.unexpected(e);
+		}
+	}
+
 
 	public static record PublishElement(String mime, InputStream fileData, int height, int width, boolean isSpecialImage) {}
+
+	public static record PublishResult(IpfsFile newIndexRoot, IpfsFile newRecordCid) {}
 }
