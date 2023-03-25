@@ -26,6 +26,7 @@ function xsrfLoaded($scope)
 	let entrySocket = null;
 	
 	$scope.posts = [];
+	$scope.userNameMap = {};
 	// We will only enable the scroll back once we see some backward entries being loaded (the initial load) so that it stays enabled if there is nothing.
 	$scope.allowScrollBack = false;
 	EVENTS_API.combinedEntries(
@@ -71,6 +72,7 @@ function newHashAppeared($scope, hash, isNewest)
 		"cached": false,
 		"elementHash": hash,
 		"name": "Loading...",
+		"publisherKey": null,
 	};
 	// We want to build this backward so that the most recent additions are at the top of the screen.
 	if (isNewest)
@@ -91,12 +93,24 @@ function newHashAppeared($scope, hash, isNewest)
 			// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
 			description = description.slice(0, 130) + "...";
 		}
+		// See if we have the name for this user.
+		let publisherKey = elt["publisherKey"];
+		if (undefined === $scope.userNameMap[publisherKey])
+		{
+			// Put the placeholder in the name map and start this load.
+			$scope.userNameMap[publisherKey] = "(Loading name...)";
+			API_getInfoForUser(publisherKey).then(userInfo => {
+				$scope.userNameMap[publisherKey] = userInfo["name"];
+				$scope.$apply();
+			});
+		}
 		// We can't update the placeholder since the $apply() won't see nested updates so replace this.
 		let object = {
 			"cached": elt["cached"],
 			"elementHash": hash,
 			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
 			"name": elt["name"],
+			"publisherKey": elt["publisherKey"],
 			"description": description,
 			"isDeleting": false,
 		}
@@ -159,7 +173,7 @@ function findIndex(array, element)
 		</div>
 		<div class="col-md-9">
 			<div ng-repeat="post in posts" class="row card">
-				<h5 class="card-header">{{post.name}}</h5>
+				<h5 class="card-header">{{post.name}} (Posted by <a href="user.html?publicKey={{post.publisherKey}}">{{userNameMap[post.publisherKey]}}</a> on {{post.readableDate}})</h5>
 				<div class="card-body container row">
 					<div class="col-md-4" ng-show="{{post.cached}}">
 						<a href="play.html?elt={{post.elementHash}}"><img class="img-fluid" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
@@ -168,7 +182,6 @@ function findIndex(array, element)
 						<a href="play.html?elt={{post.elementHash}}">(not cached)</a>
 					</div>
 					<div class="col-md-8">
-						<h5 class="card-title">{{post.readableDate}}</h5>
 						{{post.description}}<br />
 					</div>
 				</div>
