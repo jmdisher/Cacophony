@@ -39,6 +39,8 @@ public class InteractiveServer
 {
 	// The common WebSocket protocol name for all front-end pages which use event_api.js.
 	public  static final String EVENT_API_PROTOCOL = "event_api";
+	// The number of most recent entries, for each user, which will be added to the combined list.
+	public static final int PER_USER_COMBINED_START_SIZE = 10;
 
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
@@ -62,7 +64,7 @@ public class InteractiveServer
 			rootElement = access.getLastRootElement();
 			IFolloweeWriting followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
-			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher);
+			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher, PER_USER_COMBINED_START_SIZE);
 			
 			try
 			{
@@ -80,7 +82,9 @@ public class InteractiveServer
 			}
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, ourPublicKey, rootElement);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, followees);
-			entryRegistry = entryRegistryBuilder.buildRegistry(ourPublicKey);
+			entryRegistry = entryRegistryBuilder.buildRegistry(ourPublicKey
+					, (IpfsFile elementHash) -> access.loadCached(elementHash, (byte[] data) -> GlobalData.deserializeRecord(data))
+			);
 		}
 		
 		// We will create a handoff connector for the status operations from the background operations.
