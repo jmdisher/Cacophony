@@ -21,6 +21,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 {
 	$scope.socket = null;
 	$scope.states = [];
+	
 	$scope.stopServer = function()
 	{
 		$scope.socket.send("COMMAND_STOP");
@@ -30,63 +31,70 @@ GLOBAL_Application.controller('AppController', function($scope)
 		$scope.socket.send("COMMAND_REPUBLISH");
 	}
 	
-	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
-		// Now that we have the XSRF, open the status event WebSocket.
-		EVENTS_API.backgroundStatus(
-			// Socket open.
-			function(socket)
-			{
-				$scope.socket = socket;
-				$scope.$apply();
-			}
-			// Create.
-			, function(key, value, isNewest)
-			{
-				// This is a create so just add it to the list.
-				let oneState = {
-					number: key,
-					description: value,
-				};
-				if (isNewest)
-				{
-					$scope.states.push(oneState);
-				}
-				else
-				{
-					$scope.states.unshift(oneState);
-				}
-				$scope.$apply();
-			}
-			// No update.
-			, null
-			// Delete.
-			, function(key)
-			{
-				// Remove this from the list.
-				$scope.states = $scope.states.filter(function(elt)
-				{
-					return (elt.number !== key);
-				});
-				$scope.$apply();
-			}
-			// Special
-			, function(string)
-			{
-				// Do nothing.
-				console.log("Unhandled special: " + string);
-			}
-			// Close.
-			, function(event)
-			{
-				$scope.socket = null;
-				$scope.states = [];
-				$scope.$apply();
-			}
-		);
+		xsrfLoaded($scope)
 	});
 });
-
+function xsrfLoaded($scope)
+{
+	API_getVersion().then(version => {
+		$scope.hash = version["hash"];
+		$scope.version = version["version"];
+		$scope.$apply();
+	});
+	
+	EVENTS_API.backgroundStatus(
+		// Socket open.
+		function(socket)
+		{
+			$scope.socket = socket;
+			$scope.$apply();
+		}
+		// Create.
+		, function(key, value, isNewest)
+		{
+			// This is a create so just add it to the list.
+			let oneState = {
+				number: key,
+				description: value,
+			};
+			if (isNewest)
+			{
+				$scope.states.push(oneState);
+			}
+			else
+			{
+				$scope.states.unshift(oneState);
+			}
+			$scope.$apply();
+		}
+		// No update.
+		, null
+		// Delete.
+		, function(key)
+		{
+			// Remove this from the list.
+			$scope.states = $scope.states.filter(function(elt)
+			{
+				return (elt.number !== key);
+			});
+			$scope.$apply();
+		}
+		// Special
+		, function(string)
+		{
+			// Do nothing.
+			console.log("Unhandled special: " + string);
+		}
+		// Close.
+		, function(event)
+		{
+			$scope.socket = null;
+			$scope.states = [];
+			$scope.$apply();
+		}
+	);
+}
 </script>
 
 	<title>Cacophony - Server Status</title>
@@ -118,6 +126,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
+			<div class="card card-body">
+				Welcome to Cacophony {{version}} (build hash: {{hash}}).
+			</div>
 			<div class="row card card-body">
 				<span class="badge text-bg-success" ng-show="null !== socket">Server Online</span>
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>

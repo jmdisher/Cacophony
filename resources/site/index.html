@@ -22,11 +22,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	API_getVersion().then(version => {
-		$scope.hash = version["hash"];
-		$scope.version = version["version"];
-		$scope.$apply();
-	});
 }
 </script>
 
@@ -60,7 +55,7 @@ function xsrfLoaded($scope)
 		</div>
 		<div class="col-md-9">
 			<div class="card card-body">
-				Welcome to Cacophony {{version}} (build hash: {{hash}}).
+				Cacophony running.
 			</div>
 		</div>
 	</div>
