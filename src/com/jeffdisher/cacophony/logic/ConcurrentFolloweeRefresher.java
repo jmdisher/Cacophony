@@ -108,24 +108,24 @@ public class ConcurrentFolloweeRefresher
 	 * Step 2:  Run the actual refresh of the followee.  Note that this happens without holding the access token, as it
 	 * runs on its internal state snapshot from the setup and using a concurrent transaction created at that time.
 	 * 
-	 * @param connectorForUser The connector for communicating records reachable from the followee's key.
+	 * @param entryRegistry The registry of connectors for communicating records reachable from a followee's key.
 	 * @return True if the refresh was a success, false if an error prevented it from completing (finishRefresh must be
 	 * called no matter the return value).
 	 */
-	public boolean runRefresh(HandoffConnector<IpfsFile, Void> connectorForUser)
+	public boolean runRefresh(EntryCacheRegistry entryRegistry)
 	{
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
 		
-		if (null != connectorForUser)
+		if (null != entryRegistry)
 		{
-			connectorForUser.setSpecial("Refreshing");
+			entryRegistry.setSpecial(_followeeKey, "Refreshing");
 		}
 		_refreshSupport = new StandardRefreshSupport(_environment
 				, _transaction
 				, _followeeKey
 				, _cachedEntriesForFollowee
-				, connectorForUser
+				, entryRegistry
 		);
 		boolean refreshWasSuccess = false;
 		try
@@ -178,9 +178,9 @@ public class ConcurrentFolloweeRefresher
 			_environment.logToConsole("Refresh aborted and will be retried in the future");
 			refreshWasSuccess = false;
 		}
-		if (null != connectorForUser)
+		if (null != entryRegistry)
 		{
-			connectorForUser.setSpecial(null);
+			entryRegistry.setSpecial(_followeeKey, null);
 		}
 		_didRun = true;
 		_isSuccess = refreshWasSuccess;

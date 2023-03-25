@@ -1,13 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.util.Map;
-import java.util.function.Consumer;
-
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
-import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
@@ -29,16 +26,18 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalUserInfoCache _userInfoCache;
-	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
-	private final Consumer<Runnable> _connectorDispatcher;
+	private final EntryCacheRegistry _entryRegistry;
 
-	public POST_Raw_AddFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalUserInfoCache userInfoCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser, Consumer<Runnable> connectorDispatcher)
+	public POST_Raw_AddFollowee(IEnvironment environment
+			, BackgroundOperations backgroundOperations
+			, LocalUserInfoCache userInfoCache
+			, EntryCacheRegistry entryRegistry
+	)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
 		_userInfoCache = userInfoCache;
-		_connectorsPerUser = connectorsPerUser;
-		_connectorDispatcher = connectorDispatcher;
+		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -66,8 +65,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 						followees.createNewFollowee(userToAdd, hackedRoot, 0L);
 						
 						// Create the connector.
-						HandoffConnector<IpfsFile, Void> followeeConnector = new HandoffConnector<>(_connectorDispatcher);
-						_connectorsPerUser.put(userToAdd, followeeConnector);
+						_entryRegistry.createNewFollowee(userToAdd);
 						
 						// NOTE:  The refresh will happen soon, but not immediately, so this cache clear might not be optimal.
 						// (Not a big problem since it is just best-efforts, anyway).

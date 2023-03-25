@@ -9,7 +9,7 @@ import com.jeffdisher.cacophony.actions.EditEntry;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -36,18 +36,18 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	private final IEnvironment _environment;
 	private final BackgroundOperations _background;
 	private final LocalRecordCache _recordCache;
-	private final HandoffConnector<IpfsFile, Void> _handoffConnector;
+	private final EntryCacheRegistry _entryRegistry;
 
 	public POST_Form_EditPost(IEnvironment environment
 			, BackgroundOperations background
 			, LocalRecordCache recordCache
-			, HandoffConnector<IpfsFile, Void> handoffConnector
+			, EntryCacheRegistry entryRegistry
 	)
 	{
 		_environment = environment;
 		_background = background;
 		_recordCache = recordCache;
-		_handoffConnector = handoffConnector;
+		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -70,9 +70,9 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 				if (null != result)
 				{
 					// Delete the old entry and add the new one.
-					_handoffConnector.destroy(eltCid);
+					_entryRegistry.removeLocalElement(eltCid);
 					IpfsFile newEltCid = result.newRecordCid();
-					_handoffConnector.create(newEltCid, null);
+					_entryRegistry.addLocalElement(newEltCid);
 					
 					// Account for the change of the CID in the record cache.  Even though we don't change the leaf
 					// data, we still need to technically "move" them to the new record CID.

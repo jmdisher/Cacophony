@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.time.Duration;
-import java.util.Map;
 
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -9,6 +8,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -32,12 +32,12 @@ public class WS_UserEntries implements IWebSocketFactory
 	private static final String COMMAND_SCROLL_BACK = "COMMAND_SCROLL_BACK";
 
 	private final String _xsrf;
-	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _entryConnector;
+	private final EntryCacheRegistry _entryRegistry;
 	
-	public WS_UserEntries(String xsrf, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> entryConnector)
+	public WS_UserEntries(String xsrf, EntryCacheRegistry entryRegistry)
 	{
 		_xsrf = xsrf;
-		_entryConnector = entryConnector;
+		_entryRegistry = entryRegistry;
 	}
 	
 	@Override
@@ -72,7 +72,7 @@ public class WS_UserEntries implements IWebSocketFactory
 		{
 			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
 			{
-				_userConnector = _entryConnector.get(_key);
+				_userConnector = _entryRegistry.getReadOnlyConnector(_key);
 				if (null != _userConnector)
 				{
 					_endPoint = session.getRemote();

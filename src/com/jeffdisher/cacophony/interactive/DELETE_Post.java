@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveEntry;
-import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -20,14 +20,14 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 	private final IEnvironment _environment;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
-	private final HandoffConnector<IpfsFile, Void> _handoffConnector;
+	private final EntryCacheRegistry _entryRegistry;
 
-	public DELETE_Post(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, HandoffConnector<IpfsFile, Void> handoffConnector)
+	public DELETE_Post(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, EntryCacheRegistry entryRegistry)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
-		_handoffConnector = handoffConnector;
+		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -42,7 +42,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 				if (null != newRoot)
 				{
 					// Delete the entry for anyone listening.
-					_handoffConnector.destroy(postHashToRemove);
+					_entryRegistry.removeLocalElement(postHashToRemove);
 					
 					// Request a republish.
 					_backgroundOperations.requestPublish(newRoot);

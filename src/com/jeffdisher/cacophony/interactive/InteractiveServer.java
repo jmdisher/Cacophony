@@ -1,9 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -17,6 +14,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -50,14 +48,13 @@ public class InteractiveServer
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
-		// We use a ConcurrentHashMap since the connectors can be mutated on different threads (start following while reading another user, etc).
-		Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser = new ConcurrentHashMap<>();
 		IpfsKey ourPublicKey;
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
 		LocalRecordCache localRecordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
+		EntryCacheRegistry entryRegistry;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			prefs = access.readPrefs();
@@ -65,10 +62,11 @@ public class InteractiveServer
 			rootElement = access.getLastRootElement();
 			IFolloweeWriting followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
+			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher);
 			
 			try
 			{
-				_populateInitialHandoffs(access, connectorsPerUser, dispatcher, ourPublicKey, rootElement, followees);
+				_populateInitialHandoffs(access, entryRegistryBuilder, ourPublicKey, rootElement, followees);
 			}
 			catch (IpfsConnectionException e)
 			{
@@ -82,6 +80,7 @@ public class InteractiveServer
 			}
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, ourPublicKey, rootElement);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, followees);
+			entryRegistry = entryRegistryBuilder.buildRegistry(ourPublicKey);
 		}
 		
 		// We will create a handoff connector for the status operations from the background operations.
@@ -128,9 +127,7 @@ public class InteractiveServer
 					environment.logError("Error in background refresh start: " + e.getLocalizedMessage());
 				}
 				// We must have a connector by this point since this is only called on refresh, not start follow.
-				HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee = connectorsPerUser.get(followeeKey);
-				Assert.assertTrue(null != elementsUnknownForFollowee);
-				return new RefreshWrapper(environment, localRecordCache, userInfoCache, refresher, elementsUnknownForFollowee);
+				return new RefreshWrapper(environment, localRecordCache, userInfoCache, refresher, entryRegistry);
 			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
@@ -161,13 +158,13 @@ public class InteractiveServer
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
 		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
 		
-		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, localRecordCache, connectorsPerUser.get(ourPublicKey)));
+		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, localRecordCache, entryRegistry));
 		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
 		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(environment, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, localRecordCache, manager, connectorsPerUser.get(ourPublicKey)));
+		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, localRecordCache, manager, entryRegistry));
 		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(environment, background));
 		
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
@@ -202,20 +199,20 @@ public class InteractiveServer
 		// We use a web socket for listening to updates of background process state.
 		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, xsrf, statusHandoff, stopLatch, background));
 		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
-		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(xsrf, connectorsPerUser));
+		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(xsrf, entryRegistry));
 		
 		// Prefs.
 		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment));
 		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, background));
 		
 		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, userInfoCache, connectorsPerUser, dispatcher));
-		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, localRecordCache, userInfoCache, connectorsPerUser));
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, userInfoCache, entryRegistry));
+		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, localRecordCache, userInfoCache, entryRegistry));
 		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, background));
 		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, background));
 		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, background, userInfoCache));
 		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(environment, background, userInfoCache));
-		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(environment, background, localRecordCache, connectorsPerUser.get(ourPublicKey)));
+		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(environment, background, localRecordCache, entryRegistry));
 		
 		// Entry-points related to followee state changes.
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
@@ -263,33 +260,36 @@ public class InteractiveServer
 	}
 
 
-	private static void _populateInitialHandoffs(IReadingAccess access, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> followeeConnectors, Consumer<Runnable> dispatcher, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateInitialHandoffs(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
 	{
-		HandoffConnector<IpfsFile, Void> ourConnector = new HandoffConnector<>(dispatcher);
-		followeeConnectors.put(ourKey, ourConnector);
-		_populateConnector(access, ourConnector, ourRoot);
+		entryRegistryBuilder.createConnector(ourKey);
+		_populateConnector(access, entryRegistryBuilder, ourKey, ourRoot);
 		for (IpfsKey followeeKey : followees.getAllKnownFollowees())
 		{
-			HandoffConnector<IpfsFile, Void> oneConnector = new HandoffConnector<>(dispatcher);
-			followeeConnectors.put(followeeKey, oneConnector);
+			entryRegistryBuilder.createConnector(followeeKey);
 			IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-			_populateConnector(access, oneConnector, oneRoot);
+			_populateConnector(access, entryRegistryBuilder, followeeKey, oneRoot);
 		}
 	}
 
-	private static void _populateConnector(IReadingAccess access, HandoffConnector<IpfsFile, Void> connector, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
 	{
 		StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		for (String raw : records.getRecord())
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(raw);
-			connector.create(cid, null);
+			entryRegistryBuilder.addToUser(key, cid);
 		}
 	}
 
 
-	private static record RefreshWrapper(IEnvironment environment, LocalRecordCache localRecordCache, LocalUserInfoCache userInfoCache, ConcurrentFolloweeRefresher refresher, HandoffConnector<IpfsFile, Void> elementsUnknownForFollowee) implements Runnable
+	private static record RefreshWrapper(IEnvironment environment
+			, LocalRecordCache localRecordCache
+			, LocalUserInfoCache userInfoCache
+			, ConcurrentFolloweeRefresher refresher
+			, EntryCacheRegistry entryRegistry
+	) implements Runnable
 	{
 		@Override
 		public void run()
@@ -298,8 +298,7 @@ public class InteractiveServer
 			// In that case, just log the problem.
 			if (null != this.refresher)
 			{
-				Assert.assertTrue(null != elementsUnknownForFollowee);
-				boolean didRefresh = this.refresher.runRefresh(elementsUnknownForFollowee);
+				boolean didRefresh = this.refresher.runRefresh(entryRegistry);
 				// Write-back any update associated with this (success or fail - since we want to update the time).
 				try (IWritingAccess access = StandardAccess.writeAccess(environment))
 				{

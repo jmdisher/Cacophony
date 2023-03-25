@@ -5,7 +5,7 @@ import java.io.FileNotFoundException;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
@@ -28,20 +28,20 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
 	private final DraftManager _draftManager;
-	private final HandoffConnector<IpfsFile, Void> _handoffConnector;
+	private final EntryCacheRegistry _entryRegistry;
 	
 	public POST_Raw_DraftPublish(IEnvironment environment
 			, BackgroundOperations backgroundOperations
 			, LocalRecordCache recordCache
 			, DraftManager draftManager
-			, HandoffConnector<IpfsFile, Void> handoffConnector
+			, EntryCacheRegistry entryRegistry
 	)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
 		_draftManager = draftManager;
-		_handoffConnector = handoffConnector;
+		_entryRegistry = entryRegistry;
 	}
 	
 	@Override
@@ -64,7 +64,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// The publish is something we can wait on, asynchronously, in a different call.
 			_backgroundOperations.requestPublish(result.newIndexRoot());
 			IpfsFile newElement = result.newRecordCid();
-			_handoffConnector.create(newElement, null);
+			_entryRegistry.addLocalElement(newElement);
 			
 			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
 			// bit odd, since we could have updated this during the publish operation, but that would have required some

@@ -28,7 +28,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
-	private final HandoffConnector<IpfsFile, Void> _connectorForUser;
+	private final EntryCacheRegistry _entryRegistry;
 	
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
@@ -39,7 +39,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
-			, HandoffConnector<IpfsFile, Void> connectorForUser
+			, EntryCacheRegistry entryRegistry
 	)
 	{
 		Assert.assertTrue(null != environment);
@@ -52,7 +52,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_transaction = transaction;
 		_followeeKey = followeeKey;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
-		_connectorForUser = connectorForUser;
+		_entryRegistry = entryRegistry;
 		
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
@@ -105,10 +105,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)
 	{
-		if (null != _connectorForUser)
+		if (null != _entryRegistry)
 		{
 			// We want to record that we are aware of this, whether or not we are actually going to cache it.
-			_connectorForUser.create(elementHash, null);
+			_entryRegistry.addFolloweeElement(_followeeKey, elementHash);
 		}
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
 			cache.recordMetaDataPinned(elementHash, name, description, publishedSecondsUtc, discussionUrl, publisherKey, leafReferenceCount);
@@ -183,10 +183,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public void removeElementFromCache(IpfsFile elementHash)
 	{
 		_elementsToRemoveFromCache.add(elementHash);
-		if (null != _connectorForUser)
+		if (null != _entryRegistry)
 		{
 			// Even if this element wasn't in the cache, we are still saying it was removed.
-			_connectorForUser.destroy(elementHash);
+			_entryRegistry.removeFolloweeElement(_followeeKey, elementHash);
 		}
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
 			cache.recordMetaDataReleased(elementHash);

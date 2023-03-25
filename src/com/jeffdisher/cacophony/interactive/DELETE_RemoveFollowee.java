@@ -1,11 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.util.Map;
-
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
-import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
@@ -29,15 +27,20 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
 	private final LocalUserInfoCache _userInfoCache;
-	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _connectorsPerUser;
+	private final EntryCacheRegistry _entryRegistry;
 
-	public DELETE_RemoveFollowee(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, Map<IpfsKey, HandoffConnector<IpfsFile, Void>> connectorsPerUser)
+	public DELETE_RemoveFollowee(IEnvironment environment
+			, BackgroundOperations backgroundOperations
+			, LocalRecordCache recordCache
+			, LocalUserInfoCache userInfoCache
+			, EntryCacheRegistry entryRegistry
+	)
 	{
 		_environment = environment;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
 		_userInfoCache = userInfoCache;
-		_connectorsPerUser = connectorsPerUser;
+		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -71,7 +74,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 			{
 				// Run the actual refresh.
 				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh(_connectorsPerUser.get(userToRemove))
+						? refresher.runRefresh(_entryRegistry)
 						: false
 				;
 				
@@ -89,7 +92,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 					// This removal could only fail as a result of racy calls to this end-point.
 					if (didRemove)
 					{
-						_connectorsPerUser.remove(userToRemove);
+						_entryRegistry.removeFollowee(userToRemove);
 						_userInfoCache.removeUser(userToRemove);
 					}
 					else
