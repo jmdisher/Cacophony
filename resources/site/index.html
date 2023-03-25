@@ -11,6 +11,7 @@
 
 <script src="./rest.js" type="text/javascript"></script>
 <script src="./generated_db.js" type="text/javascript"></script>
+<script src="./event_api.js" type="text/javascript"></script>
 <script type="text/javascript">
 // We will create an Angular controller and populate it with data from generated_db.js.
 var GLOBAL_Application = angular.module('App', []);
@@ -22,6 +23,109 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
+	let entrySocket = null;
+	
+	$scope.posts = [];
+	// We will only enable the scroll back once we see some backward entries being loaded (the initial load) so that it stays enabled if there is nothing.
+	$scope.allowScrollBack = false;
+	EVENTS_API.combinedEntries(
+		// Socket open.
+		function(socket)
+		{
+			// We will hold on to the socket so we can use it to request a scroll back.
+			entrySocket = socket;
+		}
+		// Create.
+		, function(hash, value, isNewest)
+		{
+			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
+			newHashAppeared($scope, hash, isNewest);
+		}
+		// No Update.
+		, null
+		// Delete.
+		, function(hash)
+		{
+			// Remove this from the list.
+			oldHashRemoved($scope, hash);
+		}
+		// No Special.
+		, null
+		// Close.
+		, function(event)
+		{
+		}
+	);
+	$scope.loadMoreEntries = function()
+	{
+		// We will disable the scoll back until some older entries are loaded.
+		$scope.allowScrollBack = false;
+		entrySocket.send("COMMAND_SCROLL_BACK");
+	}
+	$scope.$apply();
+}
+function newHashAppeared($scope, hash, isNewest)
+{
+	// Add empty objects to the array since we will replace them asynchronously.
+	let placeholder = {
+		"cached": false,
+		"elementHash": hash,
+		"name": "Loading...",
+	};
+	// We want to build this backward so that the most recent additions are at the top of the screen.
+	if (isNewest)
+	{
+		$scope.posts.unshift(placeholder);
+	}
+	else
+	{
+		$scope.posts.push(placeholder);
+		// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
+		$scope.allowScrollBack = true;
+	}
+	API_getPost(hash).then(elt => {
+		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
+		let description = elt["description"];
+		if (description.length > 135)
+		{
+			// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
+			description = description.slice(0, 130) + "...";
+		}
+		// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+		let object = {
+			"cached": elt["cached"],
+			"elementHash": hash,
+			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
+			"name": elt["name"],
+			"description": description,
+			"isDeleting": false,
+		}
+		if (elt["cached"])
+		{
+			object["thumbnailUrl"] = elt["thumbnailUrl"];
+		}
+		// We need to replace the index due to the earlier mention of $apply.
+		let index = findIndex($scope.posts, placeholder);
+		$scope.posts[index] = object;
+		$scope.$apply();
+	});
+	$scope.$apply();
+}
+function oldHashRemoved($scope, key)
+{
+	let index = $scope.posts.findIndex(function(currentValue, index, arr)
+	{
+		return currentValue.elementHash === key;
+	}, key);
+	$scope.posts.splice(index, 1);
+	$scope.$apply();
+}
+function findIndex(array, element)
+{
+	return array.findIndex(function(currentValue, index, arr)
+	{
+		return currentValue === element;
+	}, element);
 }
 </script>
 
@@ -54,9 +158,22 @@ function xsrfLoaded($scope)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
-			<div class="card card-body">
-				Cacophony running.
+			<div ng-repeat="post in posts" class="row card">
+				<h5 class="card-header">{{post.name}}</h5>
+				<div class="card-body container row">
+					<div class="col-md-4" ng-show="{{post.cached}}">
+						<a href="play.html?elt={{post.elementHash}}"><img class="img-fluid" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
+					</div>
+					<div class="col-md-4" ng-hide="{{post.cached}}">
+						<a href="play.html?elt={{post.elementHash}}">(not cached)</a>
+					</div>
+					<div class="col-md-8">
+						<h5 class="card-title">{{post.readableDate}}</h5>
+						{{post.description}}<br />
+					</div>
+				</div>
 			</div>
+			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 	</div>
 </div>

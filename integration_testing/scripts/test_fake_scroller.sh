@@ -16,10 +16,13 @@ PATH_TO_JAR="$3"
 COOKIES1=/tmp/cookies1
 ENTRIES_OUTPUT=/tmp/entries_output
 ENTRIES_INPUT=/tmp/entries_input
+COMBINED_OUTPUT=/tmp/combined_output
+COMBINED_INPUT=/tmp/combined_input
 DRAFTS_DIR=/tmp/drafts
 
 rm -f "$COOKIES1"
 rm -f "$ENTRIES_OUTPUT" "$ENTRIES_INPUT"
+rm -f "$COMBINED_OUTPUT" "$COMBINED_INPUT"
 rm -rf "$DRAFTS_DIR"
 
 
@@ -75,11 +78,45 @@ do
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
+echo "Connect the combined socket and do a similar verification..."
+mkfifo "$COMBINED_INPUT"
+mkfifo "$COMBINED_OUTPUT"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$COMBINED_INPUT" "$COMBINED_OUTPUT" &
+COMBINED_PID=$!
+cat "$COMBINED_OUTPUT" > /dev/null
+
+# Similarly, we should see the last 10.
+for N in {12..3}; 
+do
+	SAMPLE=$(cat "$COMBINED_OUTPUT")
+	echo -n "-ACK" > "$COMBINED_INPUT"
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
+	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+done
+
+# Scroll back and see the others (they will all be present since we haven't restarted - the combined per-user limit only applies to start-up).
+echo -n "COMMAND_SCROLL_BACK" > "$COMBINED_INPUT"
+for N in {2..1}; 
+do
+	SAMPLE=$(cat "$COMBINED_OUTPUT")
+	echo -n "-ACK" > "$COMBINED_INPUT"
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
+	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+done
+# Note that this will also see the fake entry for the "other user" so read that, too.
+SAMPLE=$(cat "$COMBINED_OUTPUT")
+echo -n "-ACK" > "$COMBINED_INPUT"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
+requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+
+
 echo "We will just kill the background process instead of creating the status socket."
 kill "$SERVER_PID"
 wait $SERVER_PID
 echo -n "-WAIT" > "$ENTRIES_INPUT"
 wait $ENTRIES_PID
+echo -n "-WAIT" > "$COMBINED_INPUT"
+wait $COMBINED_PID
 
 
 echo -e "\033[32;40mSUCCESS!\033[0m"

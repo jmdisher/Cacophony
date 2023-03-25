@@ -204,6 +204,7 @@ public class InteractiveServer
 		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, xsrf, statusHandoff, stopLatch, background));
 		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
 		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(xsrf, entryRegistry));
+		server.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(xsrf, entryRegistry));
 		
 		// Prefs.
 		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment));

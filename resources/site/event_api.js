@@ -78,5 +78,8 @@ var EVENTS_API = {
 	userEntries: function(userKey, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/user/entries/" + userKey, "event_api"
 		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
+	combinedEntries: function(onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/combined/entries", "event_api"
+		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
+	); },
 };
 
