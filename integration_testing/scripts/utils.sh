@@ -73,18 +73,16 @@ function setupIpfsInstance()
 
 # Starts up an IPFS instance in the background.  Args:
 # 1) path_to_ipfs
-# 2) path_to_resources
-# 3) instance_number
+# 2) instance_number
 # Returns PID of background process via variable RET (MUST not be invoked as a sub-shell since it starts a background process).
 function startIpfsInstance()
 {
-	if [ $# -ne 3 ]; then
-		echo "Missing arguments: path_to_ipfs path_to_resources instance_number"
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: path_to_ipfs instance_number"
 		exit 1
 	fi
 	PATH_TO_IPFS="$1"
-	RESOURCES="$2"
-	INSTANCE_NUMBER="$3"
+	INSTANCE_NUMBER="$2"
 	
 	REPO_PATH=$(getIpfsRepoPath "$INSTANCE_NUMBER")
 	IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" daemon &

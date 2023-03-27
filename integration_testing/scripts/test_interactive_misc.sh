@@ -36,10 +36,10 @@ cp "$PATH_TO_JAR" Cacophony.jar
 
 setupIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 1
 setupIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 2
-startIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 1
+startIpfsInstance "$PATH_TO_IPFS" 1
 PID1=$RET
 echo "Daemon 1: $PID1"
-startIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 2
+startIpfsInstance "$PATH_TO_IPFS" 2
 PID2=$RET
 echo "Daemon 2: $PID2"
 
