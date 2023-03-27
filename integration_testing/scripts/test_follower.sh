@@ -75,13 +75,9 @@ requireSubstring "$DESCRIPTION_FOLLOWER" "-name: Unnamed"
 # Post an update and refresh to make sure that the follower sees the update and can re-render the HTML output
 echo "Generate test files"
 IMAGE_FILE="/tmp/image_file"
-rm -f "$IMAGE_FILE"
-dd if=/dev/zero of="$IMAGE_FILE" bs=1K count=512
-checkPreviousCommand "dd image"
+createBinaryFile "$IMAGE_FILE" 512
 VIDEO_FILE="/tmp/video_file"
-rm -f "$VIDEO_FILE"
-dd if=/dev/zero of="$VIDEO_FILE" bs=1K count=2048
-checkPreviousCommand "dd video"
+createBinaryFile "$VIDEO_FILE" 2048
 
 echo "Publishing post..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --publishSingleVideo --name "basic post" --description "no description" --thumbnailJpeg "$IMAGE_FILE" --videoFile "$VIDEO_FILE" --videoMime "video/webm" --videoHeight 640 --videoWidth 480
@@ -95,9 +91,7 @@ requireSubstring "$REFRESH_OUTPUT" "<1 Refresh successful!"
 
 echo "Publish a post with an audio attachment, refresh the follower, and verify that we can see this..."
 AUDIO_FILE="/tmp/audio_file"
-rm -f "$AUDIO_FILE"
-dd if=/dev/zero of="$AUDIO_FILE" bs=1K count=256
-checkPreviousCommand "dd audio"
+createBinaryFile "$AUDIO_FILE" 256
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "audio post" --description "this includes audio" --element --mime "audio/ogg" --file "$AUDIO_FILE"
 checkPreviousCommand "publishToThisChannel"
 REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")

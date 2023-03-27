@@ -155,3 +155,20 @@ function waitForCacophonyStart()
 	done
 }
 
+# Creates a zero-file with the given size.  Args:
+# 1) file path
+# 2) size in KiB
+function createBinaryFile()
+{
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: file_path size_in_KiB"
+		exit 1
+	fi
+	FILE_PATH="$1"
+	SIZE_IN_KIB="$2"
+	
+	rm -f "$FILE_PATH"
+	dd if=/dev/zero of="$FILE_PATH" bs=1K count=$SIZE_IN_KIB >& /dev/null
+	checkPreviousCommand "dd"
+}
+

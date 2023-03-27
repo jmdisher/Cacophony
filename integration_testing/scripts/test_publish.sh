@@ -41,9 +41,7 @@ checkPreviousCommand "createNewChannel"
 
 echo "Create the 512 KiB file for testing..."
 TEST_FILE="/tmp/zero_file"
-rm -f "$TEST_FILE"
-dd if=/dev/zero of="$TEST_FILE" bs=1K count=512
-checkPreviousCommand "dd"
+createBinaryFile "$TEST_FILE" 512
 
 echo "Publishing test..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
@@ -55,9 +53,7 @@ requireSubstring "$LISTING" "QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW - ap
 
 echo "Create the second file..."
 TEST_FILE2="/tmp/zero_file2"
-rm -f "$TEST_FILE2"
-dd if=/dev/zero of="$TEST_FILE2" bs=1K count=1024
-checkPreviousCommand "dd"
+createBinaryFile "$TEST_FILE2" 1024
 
 echo "Publishing second test..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post 2" --description "this is a short-term entry" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE2"
