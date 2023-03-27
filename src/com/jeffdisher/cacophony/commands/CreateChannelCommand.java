@@ -33,7 +33,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	}
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, SizeConstraintException
+	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);
@@ -74,7 +74,7 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		environment.logToConsole("Using existing key: \"" + keyName + "\"");
 	}
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, SizeConstraintException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
@@ -90,9 +90,38 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 		StreamRecords records = new StreamRecords();
 		
 		// Save these.
-		byte[] rawDescription = GlobalData.serializeDescription(description);
-		byte[] rawRecommendations = GlobalData.serializeRecommendations(recommendations);
-		byte[] rawRecords = GlobalData.serializeRecords(records);
+		byte[] rawDescription;
+		try
+		{
+			rawDescription = GlobalData.serializeDescription(description);
+		}
+		catch (SizeConstraintException e)
+		{
+			// This is default so it can't happen.
+			throw Assert.unexpected(e);
+		}
+		
+		byte[] rawRecommendations;
+		try
+		{
+			rawRecommendations = GlobalData.serializeRecommendations(recommendations);
+		}
+		catch (SizeConstraintException e)
+		{
+			// This is empty so it can't happen.
+			throw Assert.unexpected(e);
+		}
+		
+		byte[] rawRecords;
+		try
+		{
+			rawRecords = GlobalData.serializeRecords(records);
+		}
+		catch (SizeConstraintException e)
+		{
+			// This is empty so it can't happen.
+			throw Assert.unexpected(e);
+		}
 		
 		IpfsFile hashDescription = access.uploadAndPin(new ByteArrayInputStream(rawDescription));
 		IpfsFile hashRecommendations = access.uploadAndPin(new ByteArrayInputStream(rawRecommendations));
