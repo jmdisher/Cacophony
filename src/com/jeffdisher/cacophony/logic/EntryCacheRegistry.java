@@ -3,8 +3,10 @@ package com.jeffdisher.cacophony.logic;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -32,6 +34,7 @@ public class EntryCacheRegistry
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
 	private final HandoffConnector<IpfsFile, Void> _combinedConnector;
 	private final Map<IpfsFile, Integer> _combinedRefCounts;
+	private final Map<IpfsFile, Integer> _spilledRefCounts;
 
 	private EntryCacheRegistry(Consumer<Runnable> dispatcher
 			, IpfsKey localUserKey
@@ -39,6 +42,7 @@ public class EntryCacheRegistry
 			, HandoffConnector<IpfsFile, Void>> perUserConnectors
 			, HandoffConnector<IpfsFile, Void> combinedConnector
 			, Map<IpfsFile, Integer> combinedRefCounts
+			, Map<IpfsFile, Integer> spilledRefCounts
 	)
 	{
 		_dispatcher = dispatcher;
@@ -46,6 +50,7 @@ public class EntryCacheRegistry
 		_perUserConnectors = perUserConnectors;
 		_combinedConnector = combinedConnector;
 		_combinedRefCounts = combinedRefCounts;
+		_spilledRefCounts = spilledRefCounts;
 	}
 
 	/**
@@ -151,27 +156,59 @@ public class EntryCacheRegistry
 
 	private void _addCombined(IpfsFile elt)
 	{
-		if (!_combinedRefCounts.containsKey(elt))
+		// This may be (1) something we previously spilled, (2) something we already have referenced, or (3) something new.
+		int refCount = 0;
+		boolean shouldCreate = false;
+		if (_spilledRefCounts.containsKey(elt))
 		{
-			_combinedRefCounts.put(elt, 0);
+			// Move this into the combined count and add 1.
+			refCount = _spilledRefCounts.remove(elt);
+			shouldCreate = true;
+		}
+		else if (_combinedRefCounts.containsKey(elt))
+		{
+			// We don't need to create anything, just increment the count.
+			refCount = _combinedRefCounts.get(elt);
+		}
+		else
+		{
+			// New, so we will need to notify.
+			shouldCreate = true;
+		}
+		_combinedRefCounts.put(elt, refCount + 1);
+		if (shouldCreate)
+		{
 			_combinedConnector.create(elt, null);
 		}
-		_combinedRefCounts.put(elt, _combinedRefCounts.get(elt) + 1);
 	}
 
 	private void _removeCombined(IpfsFile elt)
 	{
-		int refCount = _combinedRefCounts.get(elt);
-		Assert.assertTrue(refCount > 0);
-		refCount -= 1;
-		if (0 == refCount)
+		// This may be (1) something we previously spilled or (2) something we already have referenced.
+		if (_spilledRefCounts.containsKey(elt))
 		{
-			_combinedRefCounts.remove(elt);
-			_combinedConnector.destroy(elt);
+			// Just update the count but don't notify.
+			int refCount = _spilledRefCounts.remove(elt);
+			refCount -= 1;
+			if (refCount > 0)
+			{
+				_spilledRefCounts.put(elt, refCount);
+			}
 		}
 		else
 		{
-			_combinedRefCounts.put(elt, refCount);
+			Assert.assertTrue(_combinedRefCounts.containsKey(elt));
+			// Decrement the count and notify if 0.
+			int refCount = _combinedRefCounts.remove(elt);
+			refCount -= 1;
+			if (refCount > 0)
+			{
+				_combinedRefCounts.put(elt, refCount);
+			}
+			else
+			{
+				_combinedConnector.destroy(elt);
+			}
 		}
 	}
 
@@ -185,6 +222,7 @@ public class EntryCacheRegistry
 		private final Consumer<Runnable> _dispatcher;
 		private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
 		private final Map<IpfsKey, List<IpfsFile>> _entriesToCombinePerUser;
+		private final Map<IpfsFile, Integer> _spilledRefCount;
 		private final int _toCachePerUser;
 		private boolean _done;
 		
@@ -200,6 +238,7 @@ public class EntryCacheRegistry
 			_dispatcher = dispatcher;
 			_perUserConnectors = new HashMap<>();
 			_entriesToCombinePerUser = new HashMap<>();
+			_spilledRefCount = new HashMap<>();
 			_toCachePerUser = toCachePerUser;
 		}
 		
@@ -232,7 +271,10 @@ public class EntryCacheRegistry
 			combine.add(elementCid);
 			if (combine.size() > _toCachePerUser)
 			{
-				combine.remove(0);
+				// We will remove this from the list we want to check in the network, but we still need to make sure we properly refcount it for the combined list, in case it is deleted.
+				IpfsFile spilled = combine.remove(0);
+				int refCount = _spilledRefCount.getOrDefault(spilled, 0);
+				_spilledRefCount.put(spilled, refCount + 1);
 			}
 		}
 		
@@ -252,18 +294,20 @@ public class EntryCacheRegistry
 			Assert.assertTrue(!_done);
 			Assert.assertTrue(_perUserConnectors.containsKey(localUserKey));
 			// Walk the lists for user, combine them in one map with reference count (since there could be duplicates).
-			Map<IpfsFile, Integer> elementsToCombine = new HashMap<>();
+			Set<IpfsFile> elementsToCombine = new HashSet<>();
+			Map<IpfsFile, Integer> combinedRefCounts = new HashMap<>();
 			for (List<IpfsFile> combine : _entriesToCombinePerUser.values())
 			{
 				for (IpfsFile elt : combine)
 				{
-					int count = elementsToCombine.getOrDefault(elt, 0);
-					elementsToCombine.put(elt, count + 1);
+					elementsToCombine.add(elt);
+					int count = combinedRefCounts.getOrDefault(elt, 0);
+					combinedRefCounts.put(elt, count + 1);
 				}
 			}
 			// Now, look these up and sort them by published time.
 			List<Partial1> partials1 = new ArrayList<>();
-			for (IpfsFile elt : elementsToCombine.keySet())
+			for (IpfsFile elt : elementsToCombine)
 			{
 				FutureRead<StreamRecord> future = recordLoader.apply(elt);
 				partials1.add(new Partial1(elt, future));
@@ -296,7 +340,7 @@ public class EntryCacheRegistry
 			// We set the _done flag just to avoid errors of the builder still being in use.
 			// While it could be used to produce multiple registries, we don't use it that way so any further use is an error we want to catch.
 			_done = true;
-			return new EntryCacheRegistry(_dispatcher, localUserKey, _perUserConnectors, combinedConnector, elementsToCombine);
+			return new EntryCacheRegistry(_dispatcher, localUserKey, _perUserConnectors, combinedConnector, combinedRefCounts, _spilledRefCount);
 		}
 	}
 

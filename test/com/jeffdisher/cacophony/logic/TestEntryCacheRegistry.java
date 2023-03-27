@@ -266,6 +266,71 @@ public class TestEntryCacheRegistry
 		Assert.assertEquals(7, combined.deleteCount);
 	}
 
+	@Test
+	public void fullRefcountDelete() throws Throwable
+	{
+		// Preload the data with an overflow of elements and make sure that removing the spilled elements, later, doesn't break the refcount processing for the combined list.
+		int combinedPreload = 2;
+		IpfsFile[] list = new IpfsFile[20];
+		FakeAccess access = new FakeAccess();
+		for (int i = 0; i < list.length; ++i)
+		{
+			list[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
+			access.storeRecord(list[i], i);
+		}
+		
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), combinedPreload);
+		builder.createConnector(K1);
+		for (int i = 0; i < list.length; ++i)
+		{
+			builder.addToUser(K1, list[i]);
+		}
+		builder.createConnector(K2);
+		for (int i = 0; i < 5; ++i)
+		{
+			builder.addToUser(K2, list[i]);
+		}
+		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		registry.addFolloweeElement(K2, list[5]);
+		
+		FakeListener local1 = new FakeListener();
+		FakeListener followee1 = new FakeListener();
+		FakeListener combined1 = new FakeListener();
+		registry.getReadOnlyConnector(K1).registerListener(local1, 0);
+		registry.getReadOnlyConnector(K2).registerListener(followee1, 0);
+		registry.getCombinedConnector().registerListener(combined1, 0);
+		Assert.assertEquals(6, followee1.keysInOrder.size());
+		Assert.assertEquals(20, local1.keysInOrder.size());
+		Assert.assertEquals((2 * combinedPreload) + 1, combined1.keysInOrder.size());
+		// Verify that these are the most recent.
+		Assert.assertEquals(list[3], combined1.keysInOrder.get(0));
+		Assert.assertEquals(list[4], combined1.keysInOrder.get(1));
+		Assert.assertEquals(list[18], combined1.keysInOrder.get(2));
+		Assert.assertEquals(list[19], combined1.keysInOrder.get(3));
+		Assert.assertEquals(list[5], combined1.keysInOrder.get(4));
+		registry.getReadOnlyConnector(K1).unregisterListener(local1);
+		registry.getReadOnlyConnector(K2).unregisterListener(followee1);
+		registry.getCombinedConnector().unregisterListener(combined1);
+		
+		// Now, remove everything.
+		for (int i = 0; i < list.length; ++i)
+		{
+			registry.removeLocalElement(list[i]);
+			if (i < 6)
+			{
+				registry.removeFolloweeElement(K2, list[i]);
+			}
+		}
+		registry.removeFollowee(K2);
+		
+		FakeListener local2 = new FakeListener();
+		FakeListener combined2 = new FakeListener();
+		registry.getReadOnlyConnector(K1).registerListener(local2, 0);
+		registry.getCombinedConnector().registerListener(combined2, 0);
+		Assert.assertEquals(0, local2.keysInOrder.size());
+		Assert.assertEquals(0, combined2.keysInOrder.size());
+	}
+
 
 	private static class FakeListener implements IHandoffListener<IpfsFile, Void>
 	{
