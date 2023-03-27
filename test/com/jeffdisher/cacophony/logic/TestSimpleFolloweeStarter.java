@@ -70,6 +70,17 @@ public class TestSimpleFolloweeStarter
 		Assert.assertEquals(5, access.pins.values().size());
 	}
 
+	@Test
+	public void testFailedResolve() throws Throwable
+	{
+		Access access = new Access();
+		access.oneKey = K1;
+		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, K1);
+		Assert.assertNull(file);
+		Assert.assertEquals(0, access.data.size());
+		Assert.assertEquals(0, access.pins.values().size());
+	}
+
 
 	private static IpfsFile _populateWithOneElement(Access access) throws Throwable
 	{
@@ -188,7 +199,14 @@ public class TestSimpleFolloweeStarter
 		{
 			Assert.assertEquals(this.oneKey, keyToResolve);
 			FutureResolve resolve = new FutureResolve();
-			resolve.success(this.oneRoot);
+			if (null != this.oneRoot)
+			{
+				resolve.success(this.oneRoot);
+			}
+			else
+			{
+				resolve.failure();
+			}
 			return resolve;
 		}
 		@Override

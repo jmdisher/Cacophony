@@ -40,32 +40,39 @@ public class SimpleFolloweeStarter
 	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey)
 	{
 		IpfsFile actualRoot = access.resolvePublicKey(followeeKey).get();
-		StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
-		
-		// Run the operation, bearing in mind that we need to handle errors, internally.
 		IpfsFile hackedRoot = null;
-		try
+		if (null != actualRoot)
 		{
-			hackedRoot = FolloweeRefreshLogic.startFollowing(support, actualRoot);
-			// This should only fail with an exception.
-			Assert.assertTrue(null != hackedRoot);
+			StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
+			
+			// Run the operation, bearing in mind that we need to handle errors, internally.
+			try
+			{
+				hackedRoot = FolloweeRefreshLogic.startFollowing(support, actualRoot);
+				// This should only fail with an exception.
+				Assert.assertTrue(null != hackedRoot);
+			}
+			catch (IpfsConnectionException e)
+			{
+				logger.accept("Network error contacting IPFS node:  " + e.getLocalizedMessage());
+			}
+			catch (SizeConstraintException e)
+			{
+				logger.accept("Followee meta-data element too big (probably wrong file published):  " + e.getLocalizedMessage());
+			}
+			catch (FailedDeserializationException e)
+			{
+				logger.accept("Followee data appears to be corrupt:  " + e.getLocalizedMessage());
+			}
+			
+			if (null == hackedRoot)
+			{
+				logger.accept("Follow aborted and will be retried in the future");
+			}
 		}
-		catch (IpfsConnectionException e)
+		else
 		{
-			logger.accept("Network error contacting IPFS node:  " + e.getLocalizedMessage());
-		}
-		catch (SizeConstraintException e)
-		{
-			logger.accept("Followee meta-data element too big (probably wrong file published):  " + e.getLocalizedMessage());
-		}
-		catch (FailedDeserializationException e)
-		{
-			logger.accept("Followee data appears to be corrupt:  " + e.getLocalizedMessage());
-		}
-		
-		if (null == hackedRoot)
-		{
-			logger.accept("Follow aborted and will be retried in the future");
+			logger.accept("Failed to resolve the key of the user so the follow wasn't attempted");
 		}
 		return hackedRoot;
 	}
