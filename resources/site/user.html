@@ -390,9 +390,12 @@ function stopCamera(video_preview, stream)
 					</div>
 					<div class="col-md-8">
 						{{post.description}}<br />
-						<div class="btn-group" role="group">
-							<button class="btn btn-small btn-danger" ng-click="deletePost(post)" ng-show="isHomeUser" ng-disabled="post.isDeleting">Delete Post</button>
-							<a class="btn btn-small btn-warning" ng-href="/basic_edit.html?elt={{post.elementHash}}" ng-show="isHomeUser">Edit Post</a>
+						<div class="btn-group" role="group" ng-show="isHomeUser">
+							<div class="btn-group">
+								<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="post.isDeleting">Delete Post</button>
+								<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deletePost(post)">Confirm</a></li></ul>
+							</div>
+							<a class="btn btn-small btn-warning" ng-href="/basic_edit.html?elt={{post.elementHash}}">Edit Post</a>
 						</div>
 					</div>
 				</div>

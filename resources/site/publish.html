@@ -846,7 +846,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 			<em ng-show="null == drafts">Loading drafts...</em>
 			<div class="row" ng-show="null != drafts">Drafts ({{drafts.length}}):<br />
 				<ul>
-					<li ng-repeat="draft in drafts"><button class="btn btn-sm btn-danger" ng-click="deleteDraft(draft)">Delete</button> <a ng-click="selectDraft(draft)">{{draft.title}}</a></li>
+					<li ng-repeat="draft in drafts">
+						<div class="btn-group">
+							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Delete</button>
+							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteDraft(draft)">Confirm</a></li></ul>
+						</div>
+						<a ng-click="selectDraft(draft)">{{draft.title}}</a>
+					</li>
 				</ul>
 			</div>
 		</div>
