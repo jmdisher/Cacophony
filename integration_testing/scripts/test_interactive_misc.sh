@@ -60,10 +60,10 @@ PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
 
-echo "Start the interactive server, give it 5 seconds to bind the port, then verify we can load a page, and initialize the cookies and XSRF token..."
+echo "Start the interactive server, verify we can load a page, and initialize the cookies and XSRF token..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
-sleep 5
+waitForCacophonyStart 8001
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8001/")
 requireSubstring "$INDEX" "Cacophony - Static Index"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/cookie

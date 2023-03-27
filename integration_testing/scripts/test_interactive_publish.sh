@@ -57,10 +57,10 @@ echo "Creating Cacophony instance..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
 checkPreviousCommand "createNewChannel"
 
-echo "Start the interactive server and wait 5 seconds for it to bind the port..."
+echo "Start the interactive server..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
 SERVER_PID=$!
-sleep 5
+waitForCacophonyStart 8000
 
 echo "Make sure that we can access static files..."
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8000/")

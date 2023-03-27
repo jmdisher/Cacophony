@@ -125,3 +125,33 @@ function waitForIpfsStart()
 	done
 }
 
+# Waits for the interactive Cacophony server on the given port to start.  Args:
+# 1) port
+function waitForCacophonyStart()
+{
+	if [ $# -ne 1 ]; then
+		echo "Missing arguments: port"
+		exit 1
+	fi
+	PORT="$1"
+	
+	RET=1
+	ATTEMPTS=1
+	while [[ "$RET" != 0 ]]
+	do
+		# This command will return 0 if running, but return 7 if the daemon isn't yet listening.
+		curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:$PORT/" >& /dev/null
+		RET=$?
+		
+		# We only want to try this each second for 30 seconds - more than that and something is probably wrong (this is usually within 1 second).
+		if [[ "$RET" != 0 ]]; then
+			if [[ "$ATTEMPTS" == 30 ]]; then
+				echo "Instance failed to respond after 30 seconds"
+				exit 1
+			else
+				sleep 1
+			fi
+		fi
+	done
+}
+
