@@ -44,7 +44,8 @@ PID2=$RET
 echo "Daemon 2: $PID2"
 
 echo "Pausing for startup..."
-sleep 5
+waitForIpfsStart "$PATH_TO_IPFS" 1
+waitForIpfsStart "$PATH_TO_IPFS" 2
 
 echo "Create user1..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001

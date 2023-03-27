@@ -32,7 +32,8 @@ PID2=$RET
 echo "Daemon 2: $PID2"
 
 echo "Pausing for startup..."
-sleep 5
+waitForIpfsStart "$PATH_TO_IPFS" 1
+waitForIpfsStart "$PATH_TO_IPFS" 2
 
 echo "Creating key on node 1..."
 REPO1=$(getIpfsRepoPath 1)

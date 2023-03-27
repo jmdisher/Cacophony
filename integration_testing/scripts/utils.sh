@@ -89,3 +89,39 @@ function startIpfsInstance()
 	RET="$!"
 }
 
+# Waits for the given IPFS instance to respond to the API port.  Args:
+# 1) path_to_ipfs
+# 2) instance_number
+function waitForIpfsStart()
+{
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: path_to_ipfs instance_number"
+		exit 1
+	fi
+	PATH_TO_IPFS="$1"
+	INSTANCE_NUMBER="$2"
+	
+	REPO_PATH=$(getIpfsRepoPath "$INSTANCE_NUMBER")
+	
+	RET=1
+	ATTEMPTS=1
+	while [[ "$RET" != 0 ]]
+	do
+		# We can't use an IPFS command since it may grab the repo lock before the actual daemon does so we will use curl to see if it is running (we just need to sleeze the port number).
+		# This command will return 0 with "Permanently moved" if running, but return 7 if the daemon isn't yet listening.
+		PORT="500$INSTANCE_NUMBER"
+		curl -XGET http://127.0.0.1:$PORT/api/v0 >& /dev/null
+		RET=$?
+		
+		# We only want to try this each second for 30 seconds - more than that and something is probably wrong (5 is usually overkill for our isolated tests).
+		if [[ "$RET" != 0 ]]; then
+			if [[ "$ATTEMPTS" == 30 ]]; then
+				echo "Instance failed to respond after 30 seconds"
+				exit 1
+			else
+				sleep 1
+			fi
+		fi
+	done
+}
+
