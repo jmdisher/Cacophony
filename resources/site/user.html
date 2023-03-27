@@ -28,7 +28,7 @@ function xsrfLoaded($scope)
 	$scope.isHomeUser = false;
 	let keyArg = readGetVar("publicKey");
 	API_loadPublicKey().then(key => {
-		$scope.isHomeUser = (key === keyArg);
+		$scope.isHomeUser = (undefined === keyArg) || (key === keyArg);
 		let keyWeAreUsing = (keyArg !== undefined) ? keyArg : key;
 		publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
 	});
