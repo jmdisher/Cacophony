@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.ListChannelEntriesCommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.QuickstartCommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RebroadcastCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
@@ -304,6 +305,20 @@ public class CommandParser
 					new ElementSubCommand(videoMime, videoFile, videoHeight, videoWidth, false),
 			};
 			return new PublishCommand(name, description, discussionUrl, elements);
+		}),
+		QUICKSTART(true, "--quickstart"
+				, new String[0]
+				, new String[] {"--ipfs", "--name"}
+				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		{
+			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
+			if (null == keyName)
+			{
+				keyName = DEFAULT_KEY_NAME;
+			}
+			String ipfs = optional[0];
+			String name = optional[1];
+			return new QuickstartCommand(keyName, ipfs, name);
 		}),
 		;
 		
