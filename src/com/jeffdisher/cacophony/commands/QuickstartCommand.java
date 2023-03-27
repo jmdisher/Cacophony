@@ -13,13 +13,8 @@ import com.jeffdisher.cacophony.utils.Assert;
  * It is just to get things up and running quickly but this may be removed in the future, since it requires hard-coded
  * data and is inflexible.
  */
-public record QuickstartCommand(String _keyName, String _optionalIpfsConnectString, String _optionalChannelName) implements ICommand
+public record QuickstartCommand(String _keyName, String _optionalChannelName) implements ICommand
 {
-	/**
-	 * This is the default API gateway connection used by IPFS.  This can be changed in the IPFS config but this will be
-	 * the common case.
-	 */
-	private static final String DEFAULT_IPFS_CONNECT_STRING = "/ip4/127.0.0.1/tcp/5001";
 	/**
 	 * This is the Cacophony "demo channel" public key.
 	 * Putting this in the code is not ideal since it is a real-world data value, but this command is only meant to be a
@@ -38,15 +33,11 @@ public record QuickstartCommand(String _keyName, String _optionalIpfsConnectStri
 	{
 		// Only the keyName must be provided as the other parameters are optional.
 		Assert.assertTrue(null != _keyName);
-		String ipfsConnectString = (null != _optionalIpfsConnectString)
-				? _optionalIpfsConnectString
-				: DEFAULT_IPFS_CONNECT_STRING
-		;
 		
 		// We need to create the channel, no matter what else we plan to do.
 		// This will throw UsageException if the channel already exists.
 		IEnvironment.IOperationLog log = environment.logOperation("Quickstart:  Creating channel...");
-		CreateChannelCommand createCommand = new CreateChannelCommand(ipfsConnectString, _keyName);
+		CreateChannelCommand createCommand = new CreateChannelCommand(_keyName);
 		createCommand.runInEnvironment(environment);
 		log.finish("Done!");
 		

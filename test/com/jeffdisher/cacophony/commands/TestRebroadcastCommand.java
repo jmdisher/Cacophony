@@ -25,7 +25,6 @@ public class TestRebroadcastCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
@@ -41,11 +40,11 @@ public class TestRebroadcastCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
 		// Publish something we can copy.
@@ -88,10 +87,10 @@ public class TestRebroadcastCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Publish something we can copy.
 		File fakeVideo = FOLDER.newFile();
@@ -131,7 +130,7 @@ public class TestRebroadcastCommand
 		
 		// Create the channel and publish an entry.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		File fakeVideo = FOLDER.newFile();
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
@@ -173,10 +172,10 @@ public class TestRebroadcastCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Publish something we can copy.
 		File fakeVideo = FOLDER.newFile();

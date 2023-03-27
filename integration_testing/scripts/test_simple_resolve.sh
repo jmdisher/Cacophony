@@ -40,7 +40,7 @@ REPO1=$(getIpfsRepoPath 1)
 PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
 echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel1"
 
 echo "Creating key on node 2..."
@@ -48,7 +48,7 @@ REPO2=$(getIpfsRepoPath 2)
 PUBLIC2=$(IPFS_PATH="$REPO2" $PATH_TO_IPFS key gen test2)
 echo "Key is $PUBLIC2"
 echo "Attaching Cacophony instance2 to this key..."
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5002
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel2"
 
 echo "Verify that we can set the prefs..."

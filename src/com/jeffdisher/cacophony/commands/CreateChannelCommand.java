@@ -24,7 +24,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record CreateChannelCommand(String ipfs, String keyName) implements ICommand
+public record CreateChannelCommand(String keyName) implements ICommand
 {
 	@Override
 	public boolean requiresKey()
@@ -35,7 +35,6 @@ public record CreateChannelCommand(String ipfs, String keyName) implements IComm
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue(null != ipfs);
 		Assert.assertTrue(null != keyName);
 		
 		// Make sure that we aren't going to over-write an existing structure.

@@ -41,7 +41,7 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node);
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
-		CreateChannelCommand createChannel = new CreateChannelCommand("ipfs", KEY_NAME1);
+		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInEnvironment(env);
 		
 		// We expect 5 keys in the storage:
@@ -62,7 +62,7 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node);
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
-		CreateChannelCommand createChannel = new CreateChannelCommand("ipfs", KEY_NAME1);
+		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInEnvironment(env);
 		
 		// We expect the normal 5.

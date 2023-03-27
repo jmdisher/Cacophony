@@ -58,7 +58,7 @@ public class MockUserNode
 		stream.write(userPicData);
 		stream.close();
 		
-		CreateChannelCommand createChannel = new CreateChannelCommand(IPFS_HOST, _localKeyName);
+		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
 		createChannel.runInEnvironment(_executor);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic, null, null);
 		updateDescription.runInEnvironment(_executor);

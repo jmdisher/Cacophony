@@ -95,7 +95,7 @@ public class DataDomain implements Closeable
 				, theirKey
 		);
 		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
-		new CreateChannelCommand(ipfsConnectString, keyName).runInEnvironment(theirEnv);
+		new CreateChannelCommand(keyName).runInEnvironment(theirEnv);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
 		new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
 		theirEnv.shutdown();
@@ -111,7 +111,7 @@ public class DataDomain implements Closeable
 				, ourKey
 		);
 		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
-		new CreateChannelCommand(ipfsConnectString, keyName).runInEnvironment(ourEnv);
+		new CreateChannelCommand(keyName).runInEnvironment(ourEnv);
 		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
 		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
 		ourEnv.shutdown();

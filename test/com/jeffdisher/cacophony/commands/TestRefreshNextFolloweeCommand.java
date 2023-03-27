@@ -30,7 +30,6 @@ public class TestRefreshNextFolloweeCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
@@ -45,7 +44,7 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		boolean didThrow = false;
 		try
@@ -71,11 +70,11 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add a followee.
 		user1.createEmptyConfig(KEY_NAME);
-		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
 		// We should be able to run this multiple times, without it causing problems.
@@ -97,14 +96,14 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
-		user3.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
@@ -136,14 +135,14 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
-		user3.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
@@ -202,14 +201,14 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
-		user3.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We introduce a delay so that the update doesn't happen in the same millisecond (we will wait 100).
@@ -264,14 +263,14 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
-		user3.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
@@ -327,11 +326,11 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add a followee.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
 		// Run the command once and make sure that the followee key exists.
@@ -367,11 +366,11 @@ public class TestRefreshNextFolloweeCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followee.
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
 		// We should be able to run this multiple times, without it causing problems.

@@ -75,7 +75,7 @@ public class TestCommandParser
 	@Test
 	public void testCreateNewChannel() throws Throwable
 	{
-		String[] foo = {"--createNewChannel", "--ipfs", "/ip4/127.0.0.1/tcp/5001"};
+		String[] foo = {"--createNewChannel"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand command = CommandParser.parseArgs(foo, capture);

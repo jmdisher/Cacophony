@@ -77,15 +77,17 @@ public class CommandParser
 		}),
 		
 		// Methods to manage this channel.
-		CREATE_NEW_CHANNEL(true, "--createNewChannel", new String[] {"--ipfs"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		CREATE_NEW_CHANNEL(true, "--createNewChannel"
+				, new String[0]
+				, new String[0]
+				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
-			String ipfs = required[0];
 			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
 			if (null == keyName)
 			{
 				keyName = DEFAULT_KEY_NAME;
 			}
-			return new CreateChannelCommand(ipfs, keyName);
+			return new CreateChannelCommand(keyName);
 		}),
 		UPDATE_DESCRIPTION(true, "--updateDescription", new String[0], new String[] {"--name", "--description", "--pictureFile", "--email", "--website"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
@@ -308,7 +310,7 @@ public class CommandParser
 		}),
 		QUICKSTART(true, "--quickstart"
 				, new String[0]
-				, new String[] {"--ipfs", "--name"}
+				, new String[] {"--name"}
 				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
 		{
 			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
@@ -316,9 +318,8 @@ public class CommandParser
 			{
 				keyName = DEFAULT_KEY_NAME;
 			}
-			String ipfs = optional[0];
-			String name = optional[1];
-			return new QuickstartCommand(keyName, ipfs, name);
+			String name = optional[0];
+			return new QuickstartCommand(keyName, name);
 		}),
 		;
 		

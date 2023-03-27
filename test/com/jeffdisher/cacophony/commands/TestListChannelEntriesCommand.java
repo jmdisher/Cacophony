@@ -19,7 +19,6 @@ public class TestListChannelEntriesCommand
 {
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
@@ -31,7 +30,7 @@ public class TestListChannelEntriesCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user1.createEmptyConfig(KEY_NAME);
-		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Check that we can list entries with null key.
 		user1.runCommand(null, new ListChannelEntriesCommand(null));
@@ -58,9 +57,9 @@ public class TestListChannelEntriesCommand
 		
 		// Create the channels.
 		user1.createEmptyConfig(KEY_NAME);
-		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Check that we can ask about someone we aren't following who does exist.
 		user2.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY1));
@@ -77,9 +76,9 @@ public class TestListChannelEntriesCommand
 		
 		// Create the channels.
 		user1.createEmptyConfig(KEY_NAME);
-		user1.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user2.createEmptyConfig(KEY_NAME);
-		user2.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Make an entry with no leaves and one with a big leaf.
 		user1.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[0]));

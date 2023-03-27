@@ -36,7 +36,7 @@ waitForIpfsStart "$PATH_TO_IPFS" 1
 waitForIpfsStart "$PATH_TO_IPFS" 2
 
 echo "Creating Cacophony instance..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --createNewChannel --ipfs /ip4/127.0.0.1/tcp/5001
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --createNewChannel
 checkPreviousCommand "createNewChannel"
 
 echo "Create the 512 KiB file for testing..."

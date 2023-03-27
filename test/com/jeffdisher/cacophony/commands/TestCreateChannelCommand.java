@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.types.UsageException;
 
 public class TestCreateChannelCommand
 {
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
@@ -26,7 +25,7 @@ public class TestCreateChannelCommand
 	public void testUsage() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
-		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
+		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
 		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, command);
 		
@@ -60,7 +59,7 @@ public class TestCreateChannelCommand
 	public void testDuplicateFailure() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
-		CreateChannelCommand command = new CreateChannelCommand(IPFS_HOST, KEY_NAME);
+		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
 		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, command);
 		try

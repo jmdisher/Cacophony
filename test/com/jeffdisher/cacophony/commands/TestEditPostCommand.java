@@ -27,7 +27,6 @@ public class TestEditPostCommand
 {
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsFile FAKE_ELT = IpfsFile.fromIpfsCid("QmdKwHjDNCDbZWUTu5fAceQMLmDhnpoRcHGNYW3rurJ1ef");
@@ -110,7 +109,7 @@ public class TestEditPostCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		boolean didPass = user.runCommand(null, new CreateChannelCommand(IPFS_HOST, KEY_NAME));
+		boolean didPass = user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		Assert.assertTrue(didPass);
 		
 		// Now, run the publish command.
