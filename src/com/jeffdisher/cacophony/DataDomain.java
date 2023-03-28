@@ -90,7 +90,6 @@ public class DataDomain implements Closeable
 		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, new MemoryConfigFileSystem(null)
 				, them
-				, ipfsConnectString
 				, keyName
 				, theirKey
 		);
@@ -106,7 +105,6 @@ public class DataDomain implements Closeable
 		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
 				, ourFileSystem
 				, us
-				, ipfsConnectString
 				, keyName
 				, ourKey
 		);

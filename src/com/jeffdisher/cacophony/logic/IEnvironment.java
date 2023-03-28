@@ -62,11 +62,6 @@ public interface IEnvironment
 	IConnection getConnection();
 
 	/**
-	 * @return The IPFS API server connect string (usually "/ip4/127.0.0.1/tcp/5001").
-	 */
-	String getIpfsConnectString();
-
-	/**
 	 * @return The name used to identify the signing key for publication on the local IPFS node (usually "Cacophony").
 	 * Value is null if the command doesn't require a key.
 	 */

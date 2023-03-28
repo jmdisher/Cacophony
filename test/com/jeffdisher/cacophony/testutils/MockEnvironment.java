@@ -71,13 +71,6 @@ public class MockEnvironment implements IEnvironment
 	}
 
 	@Override
-	public String getIpfsConnectString()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
 	public String getKeyName()
 	{
 		// Not used in test.

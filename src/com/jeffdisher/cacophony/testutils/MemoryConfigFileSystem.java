@@ -83,12 +83,6 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
-	public String getDirectoryForReporting()
-	{
-		return "SYNTHETIC";
-	}
-
-	@Override
 	public File getDraftsTopLevelDirectory() throws IOException
 	{
 		// If we didn't give this a draft directory, we don't expect this method to be called.

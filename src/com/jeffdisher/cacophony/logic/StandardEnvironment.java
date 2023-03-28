@@ -28,7 +28,6 @@ public class StandardEnvironment implements IEnvironment
 	private final LocalDataModel _sharedDataModel;
 	private final IConnection _connection;
 	private final MultiThreadedScheduler _scheduler;
-	private final String _ipfsConnectString;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
 	private int _nextOperationCounter;
@@ -38,7 +37,6 @@ public class StandardEnvironment implements IEnvironment
 	public StandardEnvironment(PrintStream stream
 			, IConfigFileSystem fileSystem
 			, IConnection connection
-			, String ipfsConnectString
 			, String keyName
 			, IpfsKey publicKey
 	)
@@ -49,7 +47,6 @@ public class StandardEnvironment implements IEnvironment
 		_sharedDataModel = new LocalDataModel(fileSystem);
 		_connection = connection;
 		_scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
-		_ipfsConnectString = ipfsConnectString;
 		_keyName = keyName;
 		_publicKey = publicKey;
 		_nextOperationCounter = 0;
@@ -150,12 +147,6 @@ public class StandardEnvironment implements IEnvironment
 	public IConnection getConnection()
 	{
 		return _connection;
-	}
-
-	@Override
-	public String getIpfsConnectString()
-	{
-		return _ipfsConnectString;
 	}
 
 	@Override

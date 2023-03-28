@@ -106,7 +106,7 @@ public class Cacophony {
 							? _publicKeyForName(connection, keyName)
 							: null
 					;
-					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connection, ipfsConnectString, keyName, publicKey);
+					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
 					// Make sure that we create an empty storage directory, if we don't already have one - we ignore whether or not this worked.
 					StandardAccess.createNewChannelConfig(executor, ipfsConnectString, keyName);
 					// Verify that the storage is consistent, before we start.

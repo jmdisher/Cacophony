@@ -69,12 +69,6 @@ public class RealConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
-	public String getDirectoryForReporting()
-	{
-		return _directory.getAbsolutePath();
-	}
-
-	@Override
 	public File getDraftsTopLevelDirectory() throws IOException
 	{
 		File draftsDirectory = new File(_directory, DRAFTS_DIRECTORY_NAME);

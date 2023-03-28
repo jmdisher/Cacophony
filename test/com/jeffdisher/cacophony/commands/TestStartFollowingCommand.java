@@ -47,7 +47,7 @@ public class TestStartFollowingCommand
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), sharedConnection, IPFS_HOST, KEY_NAME, PUBLIC_KEY);
+		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), sharedConnection, KEY_NAME, PUBLIC_KEY);
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
@@ -104,7 +104,7 @@ public class TestStartFollowingCommand
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem filesystem = new MemoryConfigFileSystem(null);
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(outputStream), filesystem, sharedConnection, IPFS_HOST, KEY_NAME, PUBLIC_KEY);
+		StandardEnvironment executor = new StandardEnvironment(new PrintStream(outputStream), filesystem, sharedConnection, KEY_NAME, PUBLIC_KEY);
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		

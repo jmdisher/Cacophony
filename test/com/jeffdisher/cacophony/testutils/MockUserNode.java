@@ -41,7 +41,7 @@ public class MockUserNode
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(null);
-		_executor = new StandardEnvironment(System.out, _fileSystem, _sharedConnection, IPFS_HOST, keyName, key);
+		_executor = new StandardEnvironment(System.out, _fileSystem, _sharedConnection, keyName, key);
 	}
 
 	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
@@ -79,7 +79,7 @@ public class MockUserNode
 		boolean isNew = false;
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _sharedConnection, IPFS_HOST, _localKeyName, _publicKey);
+			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _sharedConnection, _localKeyName, _publicKey);
 			isNew = true;
 		}
 		command.runInEnvironment(executor);

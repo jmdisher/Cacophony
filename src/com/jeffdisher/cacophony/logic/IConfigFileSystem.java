@@ -46,11 +46,6 @@ public interface IConfigFileSystem
 	OutputStream writeConfigFile(String fileName);
 
 	/**
-	 * @return The config directory, only used for error reporting.
-	 */
-	String getDirectoryForReporting();
-
-	/**
 	 * This is a pretty low-level call since the drafts can meaningful use a storage abstraction as they are just a few
 	 * large files.  The DraftManager is responsible for owning and managing the contents of this directory.
 	 * This directory will exist as a directory on-disk or IOException will be thrown.
