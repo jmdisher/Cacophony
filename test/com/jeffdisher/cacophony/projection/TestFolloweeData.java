@@ -50,7 +50,7 @@ public class TestFolloweeData
 	public void addSingleFollowee() throws Throwable
 	{
 		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
-		data.createNewFollowee(K1, F1, 1L);
+		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
 		
@@ -84,7 +84,7 @@ public class TestFolloweeData
 	public void addRemoveSingleFollowee() throws Throwable
 	{
 		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
-		data.createNewFollowee(K1, F1, 1L);
+		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
 		
@@ -120,10 +120,11 @@ public class TestFolloweeData
 	public void addTwoFollowees() throws Throwable
 	{
 		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
-		data.createNewFollowee(K1, F1, 1L);
+		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
-		data.createNewFollowee(K2, F1, 3L);
+		data.createNewFollowee(K2, F1);
+		data.updateExistingFollowee(K2, F1, 3L);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = data.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(2, data.getAllKnownFollowees().size());
@@ -153,7 +154,7 @@ public class TestFolloweeData
 	public void addRemoveElements() throws Throwable
 	{
 		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
-		data.createNewFollowee(K1, F1, 1L);
+		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.addElement(K1, new FollowingCacheElement(F2, F3, null, 6));
 		data.addElement(K1, new FollowingCacheElement(F3, null, null, 0));
@@ -219,7 +220,8 @@ public class TestFolloweeData
 		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
 		
 		// Start with an existing followee to make sure it is observed in the map.
-		data.createNewFollowee(K1, F1, 1L);
+		data.createNewFollowee(K1, F1);
+		data.updateExistingFollowee(K1, F1, 1L);
 		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>(dispatcher);
 		connector.registerListener(new HandoffConnector.IHandoffListener<IpfsKey, Long>()
 		{
@@ -252,7 +254,7 @@ public class TestFolloweeData
 		Assert.assertEquals(1L, map.get(K1).longValue());
 		
 		// Add a second followee and update both of them to verify we see both updated values.
-		data.createNewFollowee(K2, F1, 2L);
+		data.createNewFollowee(K2, F1);
 		data.updateExistingFollowee(K1, F2, 3L);
 		data.updateExistingFollowee(K2, F2, 4L);
 		Assert.assertEquals(2, map.size());
@@ -298,7 +300,11 @@ public class TestFolloweeData
 			@Override
 			public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
 			{
-				latest.createNewFollowee(followeeKey, indexRoot, lastPollMillis);
+				latest.createNewFollowee(followeeKey, indexRoot);
+				if (lastPollMillis > 0L)
+				{
+					latest.updateExistingFollowee(followeeKey, indexRoot, lastPollMillis);
+				}
 			}
 			@Override
 			public void addElement(IpfsKey followeeKey, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)

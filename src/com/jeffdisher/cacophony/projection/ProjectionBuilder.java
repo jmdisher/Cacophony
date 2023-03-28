@@ -87,7 +87,12 @@ public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 	@Override
 	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
 	{
-		_followees.createNewFollowee(followeeKey, indexRoot, lastPollMillis);
+		_followees.createNewFollowee(followeeKey, indexRoot);
+		// If this has a non-zero time, update the update time.
+		if (lastPollMillis > 0L)
+		{
+			_followees.updateExistingFollowee(followeeKey, indexRoot, lastPollMillis);
+		}
 	}
 
 	@Override

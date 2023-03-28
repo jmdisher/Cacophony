@@ -160,8 +160,9 @@ public class TestJsonGenerationHelpers
 			
 			IFolloweeWriting followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
-			followIndex.createNewFollowee(PUBLIC_KEY2, followeeIndexFile, 1L);
+			followIndex.createNewFollowee(PUBLIC_KEY2, followeeIndexFile);
 			followIndex.addElement(PUBLIC_KEY2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
+			followIndex.updateExistingFollowee(PUBLIC_KEY2, followeeIndexFile, 1L);
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();

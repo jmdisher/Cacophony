@@ -227,8 +227,9 @@ public class TestLocalDataModel
 			access.writeLocalIndex(ChannelData.create("host", "key"));
 			access.writeGlobalPrefs(PrefsData.defaultPrefs());
 			FolloweeData followees = FolloweeData.createEmpty();
-			followees.createNewFollowee(K1, F1, 1L);
+			followees.createNewFollowee(K1, F1);
 			followees.addElement(K1, new FollowingCacheElement(F1, F2, null, 5L));
+			followees.updateExistingFollowee(K1, F1, 1L);
 			access.writeFollowIndex(followees);
 			PinCacheData pinCache = PinCacheData.createEmpty();
 			pinCache.addRef(F1);

@@ -62,7 +62,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 					if (null != hackedRoot)
 					{
 						// Create the new followee record, saying we never refreshed it (since this is only a hacked element).
-						followees.createNewFollowee(userToAdd, hackedRoot, 0L);
+						followees.createNewFollowee(userToAdd, hackedRoot);
 						
 						// Create the connector.
 						_entryRegistry.createNewFollowee(userToAdd);

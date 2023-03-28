@@ -76,6 +76,7 @@ public class TestRefreshNextFolloweeCommand
 		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		
 		// We should be able to run this multiple times, without it causing problems.
 		user.runCommand(null, command);
@@ -102,9 +103,11 @@ public class TestRefreshNextFolloweeCommand
 		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
 		IFolloweeReading followees = user.readFollowIndex();
@@ -141,9 +144,11 @@ public class TestRefreshNextFolloweeCommand
 		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
 		IFolloweeReading followees = user.readFollowIndex();
@@ -207,9 +212,11 @@ public class TestRefreshNextFolloweeCommand
 		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
 		
 		// We introduce a delay so that the update doesn't happen in the same millisecond (we will wait 100).
 		Thread.sleep(100L);
@@ -269,9 +276,11 @@ public class TestRefreshNextFolloweeCommand
 		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
 		
 		// We should be able to run this multiple times, without it causing problems.
 		IFolloweeReading followees = user.readFollowIndex();
@@ -332,6 +341,7 @@ public class TestRefreshNextFolloweeCommand
 		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		
 		// Run the command once and make sure that the followee key exists.
 		user.runCommand(null, command);
@@ -372,6 +382,7 @@ public class TestRefreshNextFolloweeCommand
 		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
 		
 		// We should be able to run this multiple times, without it causing problems.
 		IFolloweeReading followees = user.readFollowIndex();

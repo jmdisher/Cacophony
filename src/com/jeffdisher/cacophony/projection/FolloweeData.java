@@ -206,26 +206,29 @@ public class FolloweeData implements IFolloweeWriting
 	}
 
 	@Override
-	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
+	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot)
 	{
+		long lastPollMillisForFreshFollow = 0L;
 		List<FollowingCacheElement> match0 = _followeeElements.put(followeeKey, new ArrayList<>());
 		Assert.assertTrue(null == match0);
 		Map<IpfsFile, FollowingCacheElement> match1 = _elementsForLookup.put(followeeKey, new HashMap<>());
 		Assert.assertTrue(null == match1);
 		IpfsFile match2 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null == match2);
-		Long match3 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
+		Long match3 = _followeeLastFetchMillis.put(followeeKey, lastPollMillisForFreshFollow);
 		Assert.assertTrue(null == match3);
 		
 		if (null != _followeeRefreshConnector)
 		{
-			_followeeRefreshConnector.create(followeeKey, lastPollMillis);
+			_followeeRefreshConnector.create(followeeKey, lastPollMillisForFreshFollow);
 		}
 	}
 
 	@Override
 	public void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
 	{
+		// We expect that any actual update uses a non-zero time (since that is effectively the "never updated" value).
+		Assert.assertTrue(lastPollMillis > 0L);
 		IpfsFile match0 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null != match0);
 		Long match1 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);

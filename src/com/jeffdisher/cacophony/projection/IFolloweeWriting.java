@@ -37,9 +37,8 @@ public interface IFolloweeWriting extends IFolloweeReading
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param indexRoot The initial StreamIndex CID.
-	 * @param lastPollMillis The current time.
 	 */
-	void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis);
+	void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot);
 
 	/**
 	 * Updates an existing followee's record.  Assumes that the followee already exists.

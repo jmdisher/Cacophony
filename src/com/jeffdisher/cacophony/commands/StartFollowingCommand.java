@@ -40,7 +40,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			if (null != hackedRoot)
 			{
 				// Save this initial followee state.
-				followees.createNewFollowee(_publicKey, hackedRoot, environment.currentTimeMillis());
+				followees.createNewFollowee(_publicKey, hackedRoot);
 				didRefresh = true;
 			}
 		}
