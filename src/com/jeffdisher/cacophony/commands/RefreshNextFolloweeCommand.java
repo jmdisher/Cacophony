@@ -70,7 +70,7 @@ public record RefreshNextFolloweeCommand() implements ICommand
 		);
 		
 		// Clean the cache and setup state for the refresh.
-		refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION);
+		refresher.setupRefresh(access, followees);
 		return refresher;
 	}
 

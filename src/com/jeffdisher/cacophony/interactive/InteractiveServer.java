@@ -122,7 +122,7 @@ public class InteractiveServer
 							, access.readPrefs()
 							, false
 					);
-					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION);
+					refresher.setupRefresh(access, followees);
 				}
 				catch (IpfsConnectionException e)
 				{

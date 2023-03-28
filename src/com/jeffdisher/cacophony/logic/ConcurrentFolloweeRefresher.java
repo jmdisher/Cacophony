@@ -81,17 +81,26 @@ public class ConcurrentFolloweeRefresher
 	 * 
 	 * @param access System write access.
 	 * @param followees The followees structure.
-	 * @param fullnessFraction The fraction of cache fullness we want to prune the cache to (1.0 means default limit,
-	 * 0.5 means 50% of limit).
 	 * @throws IpfsConnectionException There was a failure unpinning during the cache cleaning operation.
 	 */
 	public void setupRefresh(IWritingAccess access
 			, IFolloweeWriting followees
-			, double fullnessFraction
 	) throws IpfsConnectionException
 	{
 		Assert.assertTrue(!_didSetup);
 		
+		// We only want to shrink the cache if this isn't a delete (in that case, we will just make sure it isn't overflowing).
+		double fullnessFraction = ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION;
+		if (!_isDelete)
+		{
+			// If this followee hasn't been refreshed before, that means it was only just added and its data hasn't been
+			// fetched, so we want to make extra room in the cache.
+			boolean isFirstRefresh = (0L == followees.getLastPollMillisForFollowee(_followeeKey));
+			fullnessFraction = isFirstRefresh
+					? ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION
+					: ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION
+			;
+		}
 		CommandHelpers.shrinkCacheToFitInPrefs(_environment, access, fullnessFraction);
 		_transaction = access.openConcurrentTransaction();
 		_cachedEntriesForFollowee = followees.snapshotAllElementsForFollowee(_followeeKey);

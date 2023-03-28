@@ -66,7 +66,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 					);
 					
 					// Clean the cache and setup state for the refresh.
-					refresher.setupRefresh(access, followees, ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION);
+					refresher.setupRefresh(access, followees);
 				}
 			}
 			
