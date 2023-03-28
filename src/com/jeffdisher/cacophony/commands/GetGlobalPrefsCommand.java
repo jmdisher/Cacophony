@@ -11,12 +11,6 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
 public record GetGlobalPrefsCommand() implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return false;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))

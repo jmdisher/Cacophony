@@ -9,10 +9,5 @@ import com.jeffdisher.cacophony.types.CacophonyException;
  */
 public interface ICommand
 {
-	/**
-	 * @return True if this command requires the public key name to be specified.
-	 */
-	boolean requiresKey();
-
 	void runInEnvironment(IEnvironment environment) throws CacophonyException;
 }

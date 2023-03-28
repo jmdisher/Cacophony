@@ -16,12 +16,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record EditPostCommand(IpfsFile _postToEdit, String _name, String _description, String _discussionUrl) implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return true;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue((null != _name) || (null != _description) || (null != _discussionUrl));

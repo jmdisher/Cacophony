@@ -22,12 +22,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return false;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _followeeKey);

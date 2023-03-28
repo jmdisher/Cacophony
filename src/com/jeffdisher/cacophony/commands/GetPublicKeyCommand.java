@@ -9,12 +9,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 public record GetPublicKeyCommand() implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return true;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))

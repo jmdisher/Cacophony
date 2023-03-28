@@ -234,11 +234,6 @@ public class CommandParser
 			return new ICommand()
 			{
 				@Override
-				public boolean requiresKey()
-				{
-					return false;
-				}
-				@Override
 				public void runInEnvironment(IEnvironment environment)
 				{
 					System.out.println(channelPublicKey.toPublicKey());

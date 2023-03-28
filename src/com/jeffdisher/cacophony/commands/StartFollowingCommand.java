@@ -17,12 +17,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return false;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _publicKey);

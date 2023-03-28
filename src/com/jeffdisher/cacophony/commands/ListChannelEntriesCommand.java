@@ -25,12 +25,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return false;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))

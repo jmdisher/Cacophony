@@ -63,12 +63,12 @@ public interface IEnvironment
 
 	/**
 	 * @return The name used to identify the signing key for publication on the local IPFS node (usually "Cacophony").
-	 * Value is null if the command doesn't require a key.
+	 * This value is never null.
 	 */
 	String getKeyName();
 
 	/**
-	 * @return The public key of this user (null if the key isn't required for this command).
+	 * @return The public key of this user.  This value is never null.
 	 */
 	IpfsKey getPublicKey();
 

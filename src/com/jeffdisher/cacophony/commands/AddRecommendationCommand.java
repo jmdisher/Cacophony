@@ -17,12 +17,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return true;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _channelPublicKey);

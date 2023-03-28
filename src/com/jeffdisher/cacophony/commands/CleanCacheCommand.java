@@ -16,12 +16,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 public record CleanCacheCommand() implements ICommand
 {
 	@Override
-	public boolean requiresKey()
-	{
-		return false;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))

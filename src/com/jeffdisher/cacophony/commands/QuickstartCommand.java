@@ -23,12 +23,6 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 	private static final IpfsKey DEMO_CHANNEL_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnJ6qSdFeWsMDaivGJPPCVx8jiopn9jK7aUThhuQjhERku");
 
 	@Override
-	public boolean requiresKey()
-	{
-		return true;
-	}
-
-	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		// Only the keyName must be provided as the other parameters are optional.

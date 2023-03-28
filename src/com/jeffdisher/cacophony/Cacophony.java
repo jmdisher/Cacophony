@@ -88,24 +88,18 @@ public class Cacophony {
 				{
 					ipfsConnectString = DEFAULT_IPFS_CONNECT;
 				}
-				String keyName = null;
-				if (command.requiresKey())
+				String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
+				if (null == keyName)
 				{
-					keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
-					if (null == keyName)
-					{
-						keyName = CommandParser.DEFAULT_KEY_NAME;
-					}
+					keyName = CommandParser.DEFAULT_KEY_NAME;
 				}
+				
 				// Make sure we get ownership of the lock file.
 				StandardEnvironment executor = null;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
 					IConnection connection = connectionFactory.buildConnection(ipfsConnectString);
-					IpfsKey publicKey = (null != keyName)
-							? _publicKeyForName(connection, keyName)
-							: null
-					;
+					IpfsKey publicKey = _publicKeyForName(connection, keyName);
 					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
 					// Make sure that we create an empty storage directory, if we don't already have one - we ignore whether or not this worked.
 					StandardAccess.createNewChannelConfig(executor, ipfsConnectString, keyName);
