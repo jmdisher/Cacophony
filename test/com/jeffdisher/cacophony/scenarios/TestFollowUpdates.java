@@ -75,6 +75,10 @@ public class TestFollowUpdates
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
 		user2.runCommand(null, startFollowingCommand);
+		// (for version 2.1, start follow doesn't fetch the data)
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(PUBLIC_KEY1);
+		user2.runCommand(null, initialRefresh);
+		
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
@@ -128,6 +132,10 @@ public class TestFollowUpdates
 		// User2:  Follow and verify the data is loaded.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
 		user2.runCommand(null, startFollowingCommand);
+		// (for version 2.1, start follow doesn't fetch the data)
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(PUBLIC_KEY1);
+		user2.runCommand(null, initialRefresh);
+		
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
 		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
@@ -184,6 +192,9 @@ public class TestFollowUpdates
 		// Start following before the upload so we can refresh on each update, meaning we will get both with no eviction or change of not caching.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
 		user2.runCommand(null, startFollowingCommand);
+		// (for version 2.1, start follow doesn't fetch the data)
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(PUBLIC_KEY1);
+		user2.runCommand(null, initialRefresh);
 		
 		// Upload 2 elements with multiple sizes.
 		// Note that we need to refresh after each one to make sure it actually caches both (otherwise, it will randomly skip older entries to avoid over-filling the cache).

@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
@@ -112,6 +113,8 @@ public class DataDomain implements Closeable
 		new CreateChannelCommand(keyName).runInEnvironment(ourEnv);
 		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
 		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
+		// (for version 2.1, start follow doesn't fetch the data)
+		new RefreshFolloweeCommand(theirKey).runInEnvironment(ourEnv);
 		ourEnv.shutdown();
 		
 		return us;

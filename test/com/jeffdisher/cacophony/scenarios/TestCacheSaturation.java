@@ -163,6 +163,9 @@ public class TestCacheSaturation
 		{
 			StartFollowingCommand startFollowingCommand = new StartFollowingCommand(followee._publicKey);
 			_user.runCommand(null, startFollowingCommand);
+			// (for version 2.1, start follow doesn't fetch the data)
+			RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(followee._publicKey);
+			_user.runCommand(null, initialRefresh);
 		}
 		
 		public void publish(String name, byte[] thumbnail, byte[] video) throws Throwable
