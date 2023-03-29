@@ -8,6 +8,7 @@ import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -19,10 +20,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand
+public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, SizeConstraintException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);
@@ -51,6 +52,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		log.logOperation("New element: " + newElement);
 		log.logFinish("Publish completed!");
+		return None.NONE;
 	}
 
 

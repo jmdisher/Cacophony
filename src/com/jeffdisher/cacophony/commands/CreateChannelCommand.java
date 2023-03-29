@@ -7,6 +7,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -23,10 +24,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record CreateChannelCommand(String keyName) implements ICommand
+public record CreateChannelCommand(String keyName) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != keyName);
 		
@@ -51,6 +52,7 @@ public record CreateChannelCommand(String keyName) implements ICommand
 			_runCore(environment, access);
 		}
 		log.logFinish("Initial state published to Cacophony!");
+		return None.NONE;
 	}
 
 

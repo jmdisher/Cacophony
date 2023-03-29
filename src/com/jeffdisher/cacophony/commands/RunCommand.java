@@ -4,6 +4,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.interactive.InteractiveServer;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -13,7 +14,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 /**
  * This is the command for running the interactive web server.
  */
-public record RunCommand(String _overrideCommand, CommandSelectionMode _commandSelectionMode, int _port) implements ICommand
+public record RunCommand(String _overrideCommand, CommandSelectionMode _commandSelectionMode, int _port) implements ICommand<None>
 {
 	public enum CommandSelectionMode
 	{
@@ -27,7 +28,7 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	private static final String DEFAULT_COMMAND = "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -";
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
@@ -43,5 +44,6 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 			: DEFAULT_COMMAND
 		;
 		InteractiveServer.runServerUntilStop(environment, staticResource, _port, processingCommand, canChangeCommand);
+		return None.NONE;
 	}
 }

@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.UpdateDescription;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -16,10 +17,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand
+public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));
 		if (null != _picturePath)
@@ -37,6 +38,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			_runCore(environment, access);
 			log.logFinish("Update completed!");
 		}
+		return None.NONE;
 	}
 
 

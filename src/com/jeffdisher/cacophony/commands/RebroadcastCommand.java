@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
@@ -28,10 +29,10 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Since this effectively acts as though this post, typically from a different user, was posted by this user, the record
  * and all leaf elements it references will be pinned.
  */
-public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
+public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
@@ -101,6 +102,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 				}
 			}
 		}
+		return None.NONE;
 	}
 
 

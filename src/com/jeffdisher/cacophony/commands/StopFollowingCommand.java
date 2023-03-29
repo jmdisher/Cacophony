@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -12,10 +13,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
+public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
@@ -43,6 +44,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 			// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 			log.logFinish("Cleanup complete.  No longer following " + _publicKey);
 		}
+		return None.NONE;
 	}
 
 

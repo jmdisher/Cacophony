@@ -37,7 +37,7 @@ public class TestCommandParser
 		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath()};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertEquals(0, outStream.size());
 	}
@@ -52,7 +52,7 @@ public class TestCommandParser
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertEquals(0, outStream.size());
 		Assert.assertTrue(command instanceof PublishCommand);
@@ -67,7 +67,7 @@ public class TestCommandParser
 		String[] foo = {"--publishToThisChannel", "--name"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNull(command);
 		Assert.assertTrue(outStream.size() > 0);
 	}
@@ -78,7 +78,7 @@ public class TestCommandParser
 		String[] foo = {"--createNewChannel"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -89,7 +89,7 @@ public class TestCommandParser
 		String[] foo = {"--readDescription"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -100,7 +100,7 @@ public class TestCommandParser
 		String[] foo = {"--readDescription", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -112,7 +112,7 @@ public class TestCommandParser
 		String[] foo = {"--updateDescription", "--name", "name", "--description", "description", "--pictureFile", tempFile.getAbsolutePath()};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -123,7 +123,7 @@ public class TestCommandParser
 		String[] foo = {"--listChannel", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -134,7 +134,7 @@ public class TestCommandParser
 		String[] foo = {"--removeFromThisChannel", "--elementCid", "QmRntQodp7qHb3PwS8GkcaKXfeELJymB4H5D8rBfoEwq8J"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -150,7 +150,7 @@ public class TestCommandParser
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -181,7 +181,7 @@ public class TestCommandParser
 		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5g"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 		SetGlobalPrefsCommand safe = (SetGlobalPrefsCommand) command;
@@ -194,7 +194,7 @@ public class TestCommandParser
 		String[] foo = {"--publishToThisChannel", "--name", "name", "--mime", "image/jpeg", "--file", "/tmp/fake", "--special", "image"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNull(command);
 		Assert.assertTrue(outStream.size() > 0);
 	}
@@ -205,7 +205,7 @@ public class TestCommandParser
 		String[] foo = {"--startFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -216,7 +216,7 @@ public class TestCommandParser
 		String[] foo = {"--stopFollowing", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -227,7 +227,7 @@ public class TestCommandParser
 		String[] foo = {"--listFollowees"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -238,7 +238,7 @@ public class TestCommandParser
 		String[] foo = {"--listFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -249,7 +249,7 @@ public class TestCommandParser
 		String[] foo = {"--listRecommendations"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -260,7 +260,7 @@ public class TestCommandParser
 		String[] foo = {"--listRecommendations", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -271,7 +271,7 @@ public class TestCommandParser
 		String[] foo = {"--addRecommendation", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -282,7 +282,7 @@ public class TestCommandParser
 		String[] foo = {"--removeRecommendation", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -293,7 +293,7 @@ public class TestCommandParser
 		String[] foo = {"--republish"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -308,7 +308,7 @@ public class TestCommandParser
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertEquals(0, outStream.size());
 		Assert.assertTrue(command instanceof PublishCommand);
@@ -326,7 +326,7 @@ public class TestCommandParser
 		String[] foo = {"--getPublicKey"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -337,7 +337,7 @@ public class TestCommandParser
 		String[] foo = {"no-command", "no-arg"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNull(command);
 		Assert.assertEquals(0, outStream.size());
 	}
@@ -348,7 +348,7 @@ public class TestCommandParser
 		String[] foo = {"--refreshFollowee", "--publicKey", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -359,7 +359,7 @@ public class TestCommandParser
 		String[] foo = {"--refreshNextFollowee"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -370,7 +370,7 @@ public class TestCommandParser
 		String[] foo = {"--getGlobalPrefs"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -382,9 +382,9 @@ public class TestCommandParser
 		String[] args2 = {"--run", "--overrideCommand", "command", "--commandSelection", "STRICT"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command1 = CommandParser.parseArgs(args1, capture);
+		ICommand<?> command1 = CommandParser.parseArgs(args1, capture);
 		Assert.assertNotNull(command1);
-		ICommand command2 = CommandParser.parseArgs(args2, capture);
+		ICommand<?> command2 = CommandParser.parseArgs(args2, capture);
 		Assert.assertNotNull(command2);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -405,7 +405,7 @@ public class TestCommandParser
 		String[] args = {"--cleanCache"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(args, capture);
+		ICommand<?> command = CommandParser.parseArgs(args, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
@@ -416,7 +416,7 @@ public class TestCommandParser
 		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertEquals(0, outStream.size());
 	}
@@ -427,7 +427,7 @@ public class TestCommandParser
 		String[] foo = {"--canonicalizeKey", "--key", "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F", "--extra", "should fail"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
-		ICommand command = CommandParser.parseArgs(foo, capture);
+		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNull(command);
 		Assert.assertTrue(outStream.size() > 0);
 	}

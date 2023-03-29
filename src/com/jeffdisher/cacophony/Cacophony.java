@@ -69,7 +69,7 @@ public class Cacophony {
 	public static void main(String[] args) throws IOException {
 		if (args.length > 0)
 		{
-			ICommand command = null;
+			ICommand<?> command = null;
 			try
 			{
 				command = CommandParser.parseArgs(args, System.err);

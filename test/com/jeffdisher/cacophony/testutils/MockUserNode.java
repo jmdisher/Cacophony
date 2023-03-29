@@ -72,7 +72,7 @@ public class MockUserNode
 	 * @return True on success, false if the command failed.
 	 * @throws Throwable Something went wrong which wasn't just a simple failed command.
 	 */
-	public boolean runCommand(OutputStream captureStream, ICommand command) throws Throwable
+	public boolean runCommand(OutputStream captureStream, ICommand<?> command) throws Throwable
 	{
 		StandardEnvironment executor = _executor;
 		// See if we want to override the output capture.

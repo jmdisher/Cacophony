@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -13,7 +14,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * It is just to get things up and running quickly but this may be removed in the future, since it requires hard-coded
  * data and is inflexible.
  */
-public record QuickstartCommand(String _keyName, String _optionalChannelName) implements ICommand
+public record QuickstartCommand(String _keyName, String _optionalChannelName) implements ICommand<None>
 {
 	/**
 	 * This is the Cacophony "demo channel" public key.
@@ -23,7 +24,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 	private static final IpfsKey DEMO_CHANNEL_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnJ6qSdFeWsMDaivGJPPCVx8jiopn9jK7aUThhuQjhERku");
 
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		// Only the keyName must be provided as the other parameters are optional.
 		Assert.assertTrue(null != _keyName);
@@ -51,5 +52,6 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		log.logFinish("Done!");
 		
 		environment.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
+		return None.NONE;
 	}
 }

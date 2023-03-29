@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
@@ -15,15 +16,16 @@ import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
+public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
 			_runCore(environment, access);
 		}
+		return None.NONE;
 	}
 
 

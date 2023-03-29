@@ -6,12 +6,12 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record ElementSubCommand(String mime, File filePath, int height, int width, boolean isSpecialImage) implements ICommand
+public record ElementSubCommand(String mime, File filePath, int height, int width, boolean isSpecialImage) implements ICommand<ICommand.Result>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment)
+	public ICommand.Result runInEnvironment(IEnvironment environment)
 	{
 		// This is not supposed to be actually called.
-		Assert.unreachable();
+		throw Assert.unreachable();
 	}
 }

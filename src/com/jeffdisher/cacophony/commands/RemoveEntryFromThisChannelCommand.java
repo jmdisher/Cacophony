@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveEntry;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -12,10 +13,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand
+public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
@@ -31,5 +32,6 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 			log.logFinish("Entry removed: " + _elementCid);
 		}
+		return None.NONE;
 	}
 }

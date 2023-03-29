@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
@@ -19,10 +20,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand
+public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _followeeKey);
 		
@@ -30,6 +31,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 		{
 			_runCore(environment, access);
 		}
+		return None.NONE;
 	}
 
 	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, FailedDeserializationException

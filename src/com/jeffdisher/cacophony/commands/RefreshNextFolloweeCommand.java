@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -12,10 +13,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record RefreshNextFolloweeCommand() implements ICommand
+public record RefreshNextFolloweeCommand() implements ICommand<None>
 {
 	@Override
-	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		IEnvironment.IOperationLog log;
 		ConcurrentFolloweeRefresher refresher = null;
@@ -53,6 +54,7 @@ public record RefreshNextFolloweeCommand() implements ICommand
 				log.logFinish("Refresh failed!");
 			}
 		}
+		return None.NONE;
 	}
 
 

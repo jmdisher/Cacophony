@@ -31,6 +31,7 @@ import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -46,12 +47,12 @@ public class CommandParser
 	@java.lang.FunctionalInterface
 	private static interface IParseFunction
 	{
-		public ICommand apply(String[] required, String[] optional, List<ICommand> subElements) throws UsageException;
+		public ICommand<?> apply(String[] required, String[] optional, List<ICommand<?>> subElements) throws UsageException;
 	}
 	private static enum ArgPattern
 	{
 		// Sub-element side args (these are always assumed to have one or more potential instances).
-		ELEMENT(false, "--element", new String[] {"--mime", "--file"}, new String[] {"--height", "--width", "--special"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		ELEMENT(false, "--element", new String[] {"--mime", "--file"}, new String[] {"--height", "--width", "--special"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String mime = required[0];
 			File filePath = new File(required[1]);
@@ -80,7 +81,7 @@ public class CommandParser
 		CREATE_NEW_CHANNEL(true, "--createNewChannel"
 				, new String[0]
 				, new String[0]
-				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+				, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
 			if (null == keyName)
@@ -89,7 +90,7 @@ public class CommandParser
 			}
 			return new CreateChannelCommand(keyName);
 		}),
-		UPDATE_DESCRIPTION(true, "--updateDescription", new String[0], new String[] {"--name", "--description", "--pictureFile", "--email", "--website"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		UPDATE_DESCRIPTION(true, "--updateDescription", new String[0], new String[] {"--name", "--description", "--pictureFile", "--email", "--website"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String name = optional[0];
 			String description = optional[1];
@@ -109,7 +110,7 @@ public class CommandParser
 			}
 			return new UpdateDescriptionCommand(name, description, picturePath, email, website);
 		}),
-		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String rawKey = optional[0];
 			IpfsKey channelPublicKey = (null != rawKey)
@@ -118,17 +119,17 @@ public class CommandParser
 			;
 			return new ReadDescriptionCommand(channelPublicKey);
 		}),
-		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		ADD_RECOMMENDATION(true, "--addRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey channelPublicKey = _parseAsKey(required[0]);
 			return new AddRecommendationCommand(channelPublicKey);
 		}),
-		REMOVE_RECOMMENDATION(true, "--removeRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REMOVE_RECOMMENDATION(true, "--removeRecommendation", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey channelPublicKey = _parseAsKey(required[0]);
 			return new RemoveRecommendationCommand(channelPublicKey);
 		}),
-		LIST_RECOMMENDATIONS(true, "--listRecommendations", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		LIST_RECOMMENDATIONS(true, "--listRecommendations", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey publicKey = (null != optional[0])
 					? _parseAsKey(optional[0])
@@ -136,7 +137,7 @@ public class CommandParser
 			;
 			return new ListRecommendationsCommand(publicKey);
 		}),
-		PUBLISH_TO_THIS_CHANNEL(true, "--publishToThisChannel", new String[] {"--name", "--description"}, new String[] {"--discussionUrl"}, ELEMENT, (String[] required, String[] optional, List<ICommand> subElements) ->
+		PUBLISH_TO_THIS_CHANNEL(true, "--publishToThisChannel", new String[] {"--name", "--description"}, new String[] {"--discussionUrl"}, ELEMENT, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String name = required[0];
 			String description = required[1];
@@ -145,7 +146,7 @@ public class CommandParser
 			elements = subElements.toArray(elements);
 			return new PublishCommand(name, description, discussionUrl, elements);
 		}),
-		LIST_THIS_CHANNEL(true, "--listChannel", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		LIST_THIS_CHANNEL(true, "--listChannel", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String rawKey = optional[0];
 			IpfsKey channelPublicKey = (null != rawKey)
@@ -154,49 +155,49 @@ public class CommandParser
 			;
 			return new ListChannelEntriesCommand(channelPublicKey);
 		}),
-		REMOVE_FROM_THIS_CHANNEL(true, "--removeFromThisChannel", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REMOVE_FROM_THIS_CHANNEL(true, "--removeFromThisChannel", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsFile elementCid = _parseAsFile(required[0]);
 			return new RemoveEntryFromThisChannelCommand(elementCid);
 		}),
-		START_FOLLOWING(true, "--startFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		START_FOLLOWING(true, "--startFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey publicKey = _parseAsKey(required[0]);
 			return new StartFollowingCommand(publicKey);
 		}),
-		STOP_FOLLOWING(true, "--stopFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		STOP_FOLLOWING(true, "--stopFollowing", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey publicKey = _parseAsKey(required[0]);
 			return new StopFollowingCommand(publicKey);
 		}),
-		LIST_FOLLOWEES(true, "--listFollowees", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		LIST_FOLLOWEES(true, "--listFollowees", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new ListFolloweesCommand();
 		}),
-		LIST_CACHED_ELEMENTS_FOR_FOLLOWEE(true, "--listFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		LIST_CACHED_ELEMENTS_FOR_FOLLOWEE(true, "--listFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey followeeKey = _parseAsKey(required[0]);
 			return new ListCachedElementsForFolloweeCommand(followeeKey);
 		}),
-		REFRESH_FOLLOWEE(true, "--refreshFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REFRESH_FOLLOWEE(true, "--refreshFollowee", new String[] {"--publicKey"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsKey followeeKey = _parseAsKey(required[0]);
 			return new RefreshFolloweeCommand(followeeKey);
 		}),
-		REFRESH_NEXT_FOLLOWEE(true, "--refreshNextFollowee", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REFRESH_NEXT_FOLLOWEE(true, "--refreshNextFollowee", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new RefreshNextFolloweeCommand();
 		}),
-		REPUBLISH(true, "--republish", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REPUBLISH(true, "--republish", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new RepublishCommand();
 		}),
-		REBROADCAST(true, "--rebroadcast", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		REBROADCAST(true, "--rebroadcast", new String[] {"--elementCid"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsFile elementCid = _parseAsFile(required[0]);
 			return new RebroadcastCommand(elementCid);
 		}),
-		EDIT_POST(true, "--editPost", new String[] {"--elementCid"}, new String[] {"--name", "--description", "--discussionUrl"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		EDIT_POST(true, "--editPost", new String[] {"--elementCid"}, new String[] {"--name", "--description", "--discussionUrl"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsFile elementCid = _parseAsFile(required[0]);
 			String name = optional[0];
@@ -215,7 +216,7 @@ public class CommandParser
 				, "--followCacheTargetBytes"
 				, "--republishIntervalMillis"
 				, "--followeeRefreshMillis"
-				}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+				}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			int edgeMaxPixels = _parseAsInt(optional[0], 0);
 			long followCacheTargetBytes = _parseAsStorageNumber(optional[1], 0L);
@@ -227,28 +228,29 @@ public class CommandParser
 					, followeeRefreshMillis
 			);
 		}),
-		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		CANONICALIZE_KEY(true, "--canonicalizeKey", new String[] {"--key"}, new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			// This is just a utility function to make detecting keys in integration scripts more reliable.
 			IpfsKey channelPublicKey = _parseAsKey(required[0]);
-			return new ICommand()
+			return new ICommand<None>()
 			{
 				@Override
-				public void runInEnvironment(IEnvironment environment)
+				public None runInEnvironment(IEnvironment environment)
 				{
 					System.out.println(channelPublicKey.toPublicKey());
+					return None.NONE;
 				}
 			};
 		}),
-		GET_PUBLIC_KEY(true, "--getPublicKey", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		GET_PUBLIC_KEY(true, "--getPublicKey", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new GetPublicKeyCommand();
 		}),
-		GET_GLOBAL_PREFS(true, "--getGlobalPrefs", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		GET_GLOBAL_PREFS(true, "--getGlobalPrefs", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new GetGlobalPrefsCommand();
 		}),
-		RUN(true, "--run", new String[0], new String[] {"--overrideCommand", "--commandSelection", "--port"}, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		RUN(true, "--run", new String[0], new String[] {"--overrideCommand", "--commandSelection", "--port"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String overrideCommand = optional[0];
 			String commandSelection = optional[1];
@@ -270,7 +272,7 @@ public class CommandParser
 			}
 			return new RunCommand(overrideCommand, mode, port);
 		}),
-		CLEAN_CACHE(true, "--cleanCache", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand> subElements) ->
+		CLEAN_CACHE(true, "--cleanCache", new String[0], new String[0], null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new CleanCacheCommand();
 		}),
@@ -279,7 +281,7 @@ public class CommandParser
 		PUBLISH_SINGLE_VIDEO(true, "--publishSingleVideo"
 				, new String[] {"--name", "--description", "--thumbnailJpeg", "--videoFile", "--videoMime", "--videoHeight", "--videoWidth"}
 				, new String[] {"--discussionUrl"}
-				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+				, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String name = required[0];
 			String description = required[1];
@@ -306,7 +308,7 @@ public class CommandParser
 		QUICKSTART(true, "--quickstart"
 				, new String[0]
 				, new String[] {"--name"}
-				, null, (String[] required, String[] optional, List<ICommand> subElements) ->
+				, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{
 			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
 			if (null == keyName)
@@ -458,7 +460,7 @@ public class CommandParser
 			return _topLevel && (arg.equals(_name));
 		}
 		
-		private ICommand parse(String[] args, int[] startIndex) throws UsageException
+		private ICommand<?> parse(String[] args, int[] startIndex) throws UsageException
 		{
 			// We need to convert the entire input to a command, update the startIndex in/out parameter once we have processed all of our known options.
 			// We can return null if we fail at any point, and the top-level will fail.
@@ -469,7 +471,7 @@ public class CommandParser
 			
 			String[] required = new String[_params.length];
 			String[] optional = new String[_optionalParams.length];
-			List<ICommand> subElements = new ArrayList<>();
+			List<ICommand<?>> subElements = new ArrayList<>();
 			int requiredCount = 0;
 			
 			boolean keepRunning = true;
@@ -515,7 +517,7 @@ public class CommandParser
 				if (!keepRunning && (null != _subType) && _subType._name.equals(next))
 				{
 					int[] sub = new int[] {scanIndex};
-					ICommand subCommand = _subType.parse(args, sub);
+					ICommand<?> subCommand = _subType.parse(args, sub);
 					if (null != subCommand)
 					{
 						scanIndex = sub[0];
@@ -562,12 +564,12 @@ public class CommandParser
 		}
 	}
 
-	public static ICommand parseArgs(String[] args, PrintStream errorStream) throws UsageException
+	public static ICommand<?> parseArgs(String[] args, PrintStream errorStream) throws UsageException
 	{
 		// We assume that we only get this far is we have args.
 		Assert.assertTrue(args.length > 0);
 		
-		ICommand matched = null;
+		ICommand<?> matched = null;
 		for (ArgPattern pattern : ArgPattern.values())
 		{
 			if (pattern.isValid(args[0]))
