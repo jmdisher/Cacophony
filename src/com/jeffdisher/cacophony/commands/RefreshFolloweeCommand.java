@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -20,7 +19,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		IOperationLog log = environment.logOperation("Refreshing followee " + _publicKey + "...");
+		IEnvironment.IOperationLog log = environment.logStart("Refreshing followee " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
@@ -41,11 +40,11 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand
 		{
 			if (didRefresh)
 			{
-				log.finish("Refresh successful!");
+				log.logFinish("Refresh successful!");
 			}
 			else
 			{
-				log.finish("Refresh failed!");
+				log.logFinish("Refresh failed!");
 			}
 		}
 	}

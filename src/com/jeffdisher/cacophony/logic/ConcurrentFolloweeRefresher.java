@@ -137,6 +137,7 @@ public class ConcurrentFolloweeRefresher
 				, entryRegistry
 		);
 		boolean refreshWasSuccess = false;
+		IEnvironment.IOperationLog log = _environment.logStart("Starting concurrent refresh: " + _followeeKey);
 		try
 		{
 			if (_isDelete)
@@ -164,28 +165,36 @@ public class ConcurrentFolloweeRefresher
 				}
 				else
 				{
-					_environment.logToConsole("Failed to resolve key: " + _followeeKey);
+					log.logOperation("Failed to resolve key: " + _followeeKey);
 					refreshWasSuccess = false;
 				}
 			}
 		}
 		catch (IpfsConnectionException e)
 		{
-			_environment.logToConsole("Network failure in refresh: " + e.getLocalizedMessage());
-			_environment.logToConsole("Refresh aborted and will be retried in the future");
+			log.logOperation("Network failure in refresh: " + e.getLocalizedMessage());
 			refreshWasSuccess = false;
 		}
 		catch (SizeConstraintException e)
 		{
-			_environment.logToConsole("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
-			_environment.logToConsole("Refresh aborted and will be retried in the future");
+			log.logOperation("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
 			refreshWasSuccess = false;
 		}
 		catch (FailedDeserializationException e)
 		{
-			_environment.logToConsole("Followee data appears to be corrupt: " + e.getLocalizedMessage());
-			_environment.logToConsole("Refresh aborted and will be retried in the future");
+			log.logOperation("Followee data appears to be corrupt: " + e.getLocalizedMessage());
 			refreshWasSuccess = false;
+		}
+		finally
+		{
+			if (refreshWasSuccess)
+			{
+				log.logFinish("Refresh success");
+			}
+			else
+			{
+				log.logFinish("Refresh aborted and will be retried in the future");
+			}
 		}
 		if (null != entryRegistry)
 		{

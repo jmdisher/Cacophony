@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -20,7 +19,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		IOperationLog log = environment.logOperation("Cleaning up to stop following " + _publicKey + "...");
+		IEnvironment.IOperationLog log = environment.logStart("Cleaning up to stop following " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
@@ -42,7 +41,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand
 			// There is no real way to fail at this refresh since we are just dropping things.
 			Assert.assertTrue(didRefresh);
 			// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
-			log.finish("Cleanup complete.  No longer following " + _publicKey);
+			log.logFinish("Cleanup complete.  No longer following " + _publicKey);
 		}
 	}
 

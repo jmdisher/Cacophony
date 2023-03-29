@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveEntry;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -26,11 +25,11 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IOperationLog log = environment.logOperation("Removing entry " + _elementCid + " from channel...");
+			IEnvironment.IOperationLog log = environment.logStart("Removing entry " + _elementCid + " from channel...");
 			IpfsFile newRoot = RemoveEntry.run(access, null, _elementCid);
 			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
-			log.finish("Entry removed: " + _elementCid);
+			log.logFinish("Entry removed: " + _elementCid);
 		}
 	}
 }

@@ -44,7 +44,7 @@ public class InteractiveServer
 
 	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
-		System.out.println("Setting up initial state before starting server...");
+		environment.logVerbose("Setting up initial state before starting server...");
 		
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
@@ -318,11 +318,11 @@ public class InteractiveServer
 					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
 				}
 				// (we just log the result)
-				this.environment.logToConsole("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));
+				this.environment.logVerbose("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));
 			}
 			else
 			{
-				this.environment.logToConsole("Background refresh skipped due to null refresher");
+				this.environment.logVerbose("Background refresh skipped due to null refresher");
 			}
 		}
 	}

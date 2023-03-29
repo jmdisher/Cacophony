@@ -9,7 +9,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.UpdateDescription;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -34,9 +33,9 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IOperationLog log = environment.logOperation("Updating channel description...");
+			IEnvironment.IOperationLog log = environment.logStart("Updating channel description...");
 			_runCore(environment, access);
-			log.finish("Update completed!");
+			log.logFinish("Update completed!");
 		}
 	}
 
@@ -57,7 +56,7 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 		UpdateDescription.Result result = UpdateDescription.run(access, _name, _description, pictureStream, _email, _website);
 		IpfsFile newRoot = result.newRoot();
 		
-		environment.logToConsole("Publishing " + newRoot + "...");
+		environment.logVerbose("Publishing " + newRoot + "...");
 		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 		
 		// See if the publish actually succeeded (we still want to update our local state, even if it failed).

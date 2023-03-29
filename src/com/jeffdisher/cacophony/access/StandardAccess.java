@@ -227,7 +227,7 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != file);
 		if (_pinCache.isPinned(file))
 		{
-			_environment.logToConsole("WARNING!  Not expected in cache:  " + file);
+			_environment.logVerbose("WARNING!  Not expected in cache:  " + file);
 		}
 		return _scheduler.readData(file, decoder);
 	}

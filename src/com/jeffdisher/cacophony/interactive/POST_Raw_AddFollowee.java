@@ -56,7 +56,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 				if (!isAlreadyFollowed)
 				{
 					// First, start the follow.
-					IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logToConsole(message), access, _userInfoCache, userToAdd);
+					IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logVerbose(message), access, _userInfoCache, userToAdd);
 					
 					// If that worked, save back the followee and request a refresh.
 					if (null != hackedRoot)

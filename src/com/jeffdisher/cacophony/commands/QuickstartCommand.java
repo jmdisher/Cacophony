@@ -30,26 +30,26 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		
 		// We need to create the channel, no matter what else we plan to do.
 		// This will throw UsageException if the channel already exists.
-		IEnvironment.IOperationLog log = environment.logOperation("Quickstart:  Creating channel...");
+		IEnvironment.IOperationLog log = environment.logStart("Quickstart:  Creating channel...");
 		CreateChannelCommand createCommand = new CreateChannelCommand(_keyName);
 		createCommand.runInEnvironment(environment);
-		log.finish("Done!");
+		log.logFinish("Done!");
 		
 		// We optionally want to update the channel description (just the name, using this path).
 		if (null != _optionalChannelName)
 		{
-			log = environment.logOperation("Quickstart:  Setting channel name...");
+			log = environment.logStart("Quickstart:  Setting channel name...");
 			UpdateDescriptionCommand updateCommand = new UpdateDescriptionCommand(_optionalChannelName, null, null, null, null);
 			updateCommand.runInEnvironment(environment);
-			log.finish("Done!");
+			log.logFinish("Done!");
 		}
 		
 		// Now, follow the demo channel.
-		log = environment.logOperation("Quickstart:  Following demo channel (this could take several minutes)...");
+		log = environment.logStart("Quickstart:  Following demo channel (this could take several minutes)...");
 		StartFollowingCommand followCommand = new StartFollowingCommand(DEMO_CHANNEL_PUBLIC_KEY);
 		followCommand.runInEnvironment(environment);
-		log.finish("Done!");
+		log.logFinish("Done!");
 		
-		environment.logToConsole("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
+		environment.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
 	}
 }

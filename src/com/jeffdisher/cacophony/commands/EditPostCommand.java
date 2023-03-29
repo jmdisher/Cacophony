@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.EditEntry;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -26,14 +25,14 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IOperationLog log = environment.logOperation("Editing post: " + _postToEdit);
+			IEnvironment.IOperationLog log = environment.logStart("Editing post: " + _postToEdit);
 			EditEntry.Result result = EditEntry.run(access, _postToEdit, _name, _description, _discussionUrl);
 			if (null != result)
 			{
-				environment.logToConsole("Publishing " + result.newRoot() + "...");
+				environment.logVerbose("Publishing " + result.newRoot() + "...");
 				FuturePublish asyncPublish = access.beginIndexPublish(result.newRoot());
 				CommandHelpers.commonWaitForPublish(environment, asyncPublish);
-				log.finish("Update completed!");
+				log.logFinish("Update completed!");
 			}
 			else
 			{

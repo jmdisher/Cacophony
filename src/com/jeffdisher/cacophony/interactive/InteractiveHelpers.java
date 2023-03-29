@@ -191,6 +191,7 @@ public class InteractiveHelpers
 		}
 		
 		PublishHelpers.PublishResult result;
+		IEnvironment.IOperationLog log = environment.logStart("Publishing draft");
 		try
 		{
 			// The draft can have empty strings or null (only due to old versions) for discussionURL but we want to pass null in those cases to not attach it.
@@ -199,18 +200,21 @@ public class InteractiveHelpers
 			{
 				discussionUrl = null;
 			}
-			result = PublishHelpers.uploadFileAndUpdateTracking(environment, access, draft.title(), draft.description(), discussionUrl, subElements);
+			result = PublishHelpers.uploadFileAndUpdateTracking(log, access, draft.title(), draft.description(), discussionUrl, subElements);
+			log.logFinish("Publish success!");
 		}
 		catch (IpfsConnectionException e)
 		{
-			System.err.println("Publish command failed with IpfsConnectionException: " + e.getLocalizedMessage());
+			log.logFinish("Publish command failed with IpfsConnectionException: " + e.getLocalizedMessage());
 			e.printStackTrace();
+			// TODO:  Determine how to best handle a failure here.
 			throw Assert.unexpected(e);
 		}
 		catch (SizeConstraintException e)
 		{
-			System.err.println("Publish command failed due to an element being too large to store: " + e.getLocalizedMessage());
+			log.logFinish("Publish command failed due to an element being too large to store: " + e.getLocalizedMessage());
 			e.printStackTrace();
+			// This really shouldn't happen - it would mean that we were missing a static limit somewhere in the code.
 			throw Assert.unexpected(e);
 		}
 		finally

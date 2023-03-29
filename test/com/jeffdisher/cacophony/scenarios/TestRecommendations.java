@@ -43,7 +43,11 @@ public class TestRecommendations
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
 		ListRecommendationsCommand listCommand = new ListRecommendationsCommand(null);
 		user1.runCommand(captureStream, listCommand);
-		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n\t" + PUBLIC_KEY2.toPublicKey() + "\n", new String(captureStream.toByteArray()));
+		Assert.assertEquals(">1 Recommendations of z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141:\n"
+			+ "=1= 	z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142\n"
+			+ "<1< \n"
+			, new String(captureStream.toByteArray())
+		);
 		
 		// Remove the recommendation.
 		RemoveRecommendationCommand removeCommand = new RemoveRecommendationCommand(PUBLIC_KEY2);
@@ -53,7 +57,9 @@ public class TestRecommendations
 		captureStream = new ByteArrayOutputStream();
 		listCommand = new ListRecommendationsCommand(null);
 		user1.runCommand(captureStream, listCommand);
-		Assert.assertEquals("Recommendations of " + PUBLIC_KEY1.toPublicKey() + "\n", new String(captureStream.toByteArray()));
+		Assert.assertEquals(">1 Recommendations of z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141:\n"
+				+ "<1< \n"
+				, new String(captureStream.toByteArray()));
 		user1.shutdown();
 	}
 

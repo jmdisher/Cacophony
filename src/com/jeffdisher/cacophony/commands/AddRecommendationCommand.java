@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.AddRecommendation;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -27,9 +26,9 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IOperationLog log = environment.logOperation("Adding recommendation " + _channelPublicKey + "...");
+			IEnvironment.IOperationLog log = environment.logStart("Adding recommendation " + _channelPublicKey + "...");
 			 _runCore(environment, access);
-			log.finish("Now recommending: " + _channelPublicKey);
+			log.logFinish("Now recommending: " + _channelPublicKey);
 		}
 	}
 
@@ -40,7 +39,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		
 		if (null != newRoot)
 		{
-			environment.logToConsole("Publishing " + newRoot + "...");
+			environment.logVerbose("Publishing " + newRoot + "...");
 			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 			
 			// See if the publish actually succeeded (we still want to update our local state, even if it failed).

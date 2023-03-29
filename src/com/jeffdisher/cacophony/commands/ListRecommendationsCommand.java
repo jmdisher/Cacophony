@@ -42,12 +42,12 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			rootToLoad = followees.getLastFetchedRootForFollowee(_publicKey);
 			if (null != rootToLoad)
 			{
-				environment.logToConsole("Following " + _publicKey);
+				environment.logVerbose("Following " + _publicKey);
 				isCached = true;
 			}
 			else
 			{
-				environment.logToConsole("NOT following " + _publicKey);
+				environment.logVerbose("NOT following " + _publicKey);
 				rootToLoad = access.resolvePublicKey(_publicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -77,10 +77,11 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		).get();
 		
 		// Walk the recommendations and print their keys to the console.
-		environment.logToConsole("Recommendations of " + publicKey.toPublicKey());
+		IEnvironment.IOperationLog log = environment.logStart("Recommendations of " + publicKey.toPublicKey() + ":");
 		for (String rawKey : recommendations.getUser())
 		{
-			environment.logToConsole("\t" + rawKey);
+			log.logOperation("\t" + rawKey);
 		}
+		log.logFinish("");
 	}
 }

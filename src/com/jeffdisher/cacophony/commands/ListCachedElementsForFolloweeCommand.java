@@ -44,7 +44,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 			StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			List<String> recordList = records.getRecord();
-			environment.logToConsole("Followee has " + recordList.size() + " elements");
+			IEnvironment.IOperationLog log = environment.logStart("Followee has " + recordList.size() + " elements:");
 			for(String elementCid : recordList)
 			{
 				FollowingCacheElement element = cachedElements.get(IpfsFile.fromIpfsCid(elementCid));
@@ -65,8 +65,9 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 				{
 					suffix = "(not cached)";
 				}
-				environment.logToConsole("Element CID: " + elementCid + " " + suffix);
+				log.logOperation("Element CID: " + elementCid + " " + suffix);
 			}
+			log.logFinish("");
 		}
 		else
 		{

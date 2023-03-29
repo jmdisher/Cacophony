@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -38,13 +37,13 @@ public record RepublishCommand() implements ICommand
 		Assert.assertTrue(null != indexHash);
 		
 		// Republish the index.
-		IOperationLog log = environment.logOperation("Republishing index (" + access.getPublicKey() + " -> " + indexHash + ")...");
+		IEnvironment.IOperationLog log = environment.logStart("Republishing index (" + access.getPublicKey() + " -> " + indexHash + ")...");
 		IpfsConnectionException error = access.republishIndex().get();
 		// If we failed to publish, that should be considered an error for this command, since this is all it does.
 		if (null != error)
 		{
 			throw error;
 		}
-		log.finish("Republish completed!");
+		log.logFinish("Republish completed!");
 	}
 }

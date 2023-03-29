@@ -50,10 +50,11 @@ public class BackgroundOperations
 			while (null != operation)
 			{
 				// If we have a publish operation, start that first, since that typically takes a long time.
+				IEnvironment.IOperationLog publishLog = null;
 				FuturePublish publish = null;
 				if (null != operation.publishTarget)
 				{
-					_environment.logToConsole("Background start publish: " + operation.publishTarget);
+					publishLog = _environment.logStart("Background start publish: " + operation.publishTarget);
 					publish = operations.startPublish(operation.publishTarget);
 					Assert.assertTrue(null != publish);
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
@@ -61,19 +62,19 @@ public class BackgroundOperations
 				// If we have a followee to refresh, do that work.
 				if (null != operation.followeeKey)
 				{
-					_environment.logToConsole("Background start refresh: " + operation.followeeKey);
+					IEnvironment.IOperationLog log = _environment.logStart("Background start refresh: " + operation.followeeKey);
 					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
 					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
 					refresher.run();
 					_connector.destroy(operation.followeeNumber);
-					_environment.logToConsole("Background end refresh: " + operation.followeeKey);
+					log.logFinish("Background end refresh: " + operation.followeeKey);
 				}
 				// Now, we can wait for the publish before we go back for more work.
 				if (null != publish)
 				{
 					IpfsConnectionException error = publish.get();
 					_connector.destroy(operation.publishNumber);
-					_environment.logToConsole("Background end publish: " + operation.publishTarget + ((null == error) ? " SUCCESS" : (" FAILED with " + error)));
+					publishLog.logFinish("Background end publish: " + operation.publishTarget + ((null == error) ? " SUCCESS" : (" FAILED with " + error)));
 				}
 				operation = _background_consumeNextOperation(_environment.currentTimeMillis());
 			}

@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, long _republishIntervalMillis, long _followeeRefreshMillis) implements ICommand
@@ -48,7 +49,10 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, 
 		if (didChange)
 		{
 			access.writePrefs(prefs);
-			environment.logToConsole("Updated prefs!");
+			IEnvironment.IOperationLog log = environment.logStart("Preferences:");
+			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
+			log.logOperation("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			log.logFinish("Update saved");
 		}
 		else
 		{

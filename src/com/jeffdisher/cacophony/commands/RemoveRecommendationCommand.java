@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveRecommendation;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -27,9 +26,9 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IOperationLog log = environment.logOperation("Removing recommendation " + _channelPublicKey + "...");
+			IEnvironment.IOperationLog log = environment.logStart("Removing recommendation " + _channelPublicKey + "...");
 			_runCore(environment, access);
-			log.finish("No longer recommending: " + _channelPublicKey);
+			log.logFinish("No longer recommending: " + _channelPublicKey);
 		}
 	}
 
@@ -39,7 +38,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		IpfsFile newRoot = RemoveRecommendation.run(access, _channelPublicKey);
 		if (null != newRoot)
 		{
-			environment.logToConsole("Publishing " + newRoot + "...");
+			environment.logVerbose("Publishing " + newRoot + "...");
 			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 			
 			// See if the publish actually succeeded (we still want to update our local state, even if it failed).

@@ -106,17 +106,17 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 
 	private boolean _pinReachableData(IEnvironment environment, IWritingAccess access, StreamRecord record) throws IpfsConnectionException
 	{
-		environment.logToConsole("Pinning StreamRecord " + _elementCid);
+		IEnvironment.IOperationLog log = environment.logStart("Pinning StreamRecord " + _elementCid);
 		List<FuturePin> pins = new ArrayList<>();
 		pins.add(access.pin(_elementCid));
 		for (DataElement elt : record.getElements().getElement())
 		{
 			IpfsFile file = IpfsFile.fromIpfsCid(elt.getCid());
-			environment.logToConsole("Pinning leaf " + file);
+			log.logOperation("Pinning leaf " + file);
 			pins.add(access.pin(file));
 		}
 		boolean isSuccess = true;
-		environment.logToConsole("Waiting for pins...");
+		log.logVerbose("Waiting for pins...");
 		for (FuturePin pin : pins)
 		{
 			try
@@ -129,8 +129,13 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 				isSuccess = false;
 			}
 		}
-		if (!isSuccess)
+		if (isSuccess)
 		{
+			log.logFinish("Pin success!");
+		}
+		else
+		{
+			log.logFinish("Pin failure!");
 			// We failed to pin something, so we want to unpin everything, so we don't leak in this path (although this is still just best-efforts).
 			for (FuturePin pin : pins)
 			{
@@ -143,7 +148,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 	private void _updateStreamAndPublish(IEnvironment environment, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError
 	{
 		// If we get this far, that means that everything is pinned so this becomes a normal post operation.
-		environment.logToConsole("Publishing to your stream...");
+		IEnvironment.IOperationLog log = environment.logStart("Publishing to your stream...");
 		try
 		{
 			// Fetch and update the data.
@@ -153,7 +158,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 			byte[] rawRecords = GlobalData.serializeRecords(records);
 			IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 			index.setRecords(recordsHash.toSafeString());
-			environment.logToConsole("Saving and publishing new index");
+			environment.logVerbose("Saving and publishing new index");
 			IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
 			
 			// Unpin the old meta-data.
@@ -163,7 +168,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand
 			// Publish new root.
 			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
-			environment.logToConsole("Rebroadcast complete!");
+			log.logFinish("Rebroadcast complete!");
 		}
 		catch (IpfsConnectionException e)
 		{

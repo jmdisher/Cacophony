@@ -27,10 +27,10 @@ public class POST_Raw_WaitPublish implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 	{
-		IEnvironment.IOperationLog log = _environment.logOperation("Waiting for publish to complete...");
+		IEnvironment.IOperationLog log = _environment.logStart("Waiting for publish to complete...");
 		// We can now wait for the publish to complete, now that we have closed all the local state.
 		_backgroundOperations.waitForPendingPublish();
-		log.finish("Done!");
+		log.logFinish("Done!");
 		
 		response.setStatus(HttpServletResponse.SC_OK);
 	}

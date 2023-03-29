@@ -56,9 +56,9 @@ CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java
 
 # Get the public keys for both users.
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey)
-PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
+PUBLIC1=$(echo $RESULT_STRING | cut -d " " -f 14)
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --getPublicKey)
-PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
+PUBLIC2=$(echo $RESULT_STRING | cut -d " " -f 14)
 
 echo "Start the interactive server, verify we can load a page, and initialize the cookies and XSRF token..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &

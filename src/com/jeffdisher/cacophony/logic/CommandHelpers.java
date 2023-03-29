@@ -23,15 +23,15 @@ public class CommandHelpers
 	 */
 	public static void commonWaitForPublish(IEnvironment environment, FuturePublish asyncPublish)
 	{
-		StandardEnvironment.IOperationLog log = environment.logOperation("Waiting for publish " + asyncPublish.getIndexHash());
+		StandardEnvironment.IOperationLog log = environment.logStart("Waiting for publish " + asyncPublish.getIndexHash());
 		IpfsConnectionException error = asyncPublish.get();
 		if (null == error)
 		{
-			log.finish("Success!");
+			log.logFinish("Success!");
 		}
 		else
 		{
-			log.finish("Failed: " + error.getLocalizedMessage());
+			log.logFinish("Failed: " + error.getLocalizedMessage());
 			environment.logError("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + asyncPublish.getIndexHash());
 		}
 	}
@@ -47,7 +47,7 @@ public class CommandHelpers
 	 */
 	public static void shrinkCacheToFitInPrefs(IEnvironment environment, IWritingAccess access, double fullnessFraction) throws IpfsConnectionException
 	{
-		IOperationLog log = environment.logOperation("Checking is cache requires shrinking...");
+		IOperationLog log = environment.logStart("Checking is cache requires shrinking...");
 		IFolloweeWriting followees = access.writableFolloweeData();
 		PrefsData prefs = access.readPrefs();
 		
@@ -56,15 +56,15 @@ public class CommandHelpers
 			long targetSizeBytes = (long)(prefs.followCacheTargetBytes * fullnessFraction);
 			if (currentCacheSizeBytes > targetSizeBytes)
 			{
-				environment.logToConsole("Pruning cache to " + MiscHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
+				log.logOperation("Pruning cache to " + MiscHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
 				long bytesToAdd = 0L;
 				CacheHelpers.pruneCacheIfNeeded(access, followees, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
 			}
 			else
 			{
-				environment.logToConsole("Not pruning cache since " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + MiscHelpers.humanReadableBytes(targetSizeBytes));
+				log.logOperation("Not pruning cache since " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + MiscHelpers.humanReadableBytes(targetSizeBytes));
 			}
 		}
-		log.finish("Cache clean finished without issue");
+		log.logFinish("Cache clean finished without issue");
 	}
 }

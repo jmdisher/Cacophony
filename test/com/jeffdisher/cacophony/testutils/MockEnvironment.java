@@ -16,18 +16,16 @@ public class MockEnvironment implements IEnvironment
 	private boolean timeObserved = false;
 
 	@Override
-	public void logToConsole(String message)
+	public void logVerbose(String message)
 	{
+		// Ignored in tests.
 	}
 
 	@Override
-	public IOperationLog logOperation(String openingMessage)
+	public IOperationLog logStart(String openingMessage)
 	{
-		return new IOperationLog() {
-			@Override
-			public void finish(String finishMessage)
-			{
-			}};
+		// We will generally just ignore logs in this mock environment.
+		return new NestedLog();
 	}
 
 	@Override
@@ -109,6 +107,28 @@ public class MockEnvironment implements IEnvironment
 		while (!this.timeObserved)
 		{
 			this.wait();
+		}
+	}
+
+
+	private static class NestedLog implements IOperationLog
+	{
+		@Override
+		public IOperationLog logStart(String openingMessage)
+		{
+			return new NestedLog();
+		}
+		@Override
+		public void logOperation(String message)
+		{
+		}
+		@Override
+		public void logFinish(String finishMessage)
+		{
+		}
+		@Override
+		public void logVerbose(String message)
+		{
 		}
 	}
 }

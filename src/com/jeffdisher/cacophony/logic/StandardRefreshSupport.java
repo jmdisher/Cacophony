@@ -93,7 +93,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void logMessage(String message)
 	{
-		_environment.logToConsole(message);
+		_environment.logVerbose(message);
 	}
 	@Override
 	public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)

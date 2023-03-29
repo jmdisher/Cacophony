@@ -15,9 +15,11 @@ public record GetGlobalPrefsCommand() implements ICommand
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
+			IEnvironment.IOperationLog log = environment.logStart("Preferences:");
 			PrefsData prefs = access.readPrefs();
-			environment.logToConsole("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
-			environment.logToConsole("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
+			log.logOperation("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			log.logFinish("");
 		}
 	}
 }

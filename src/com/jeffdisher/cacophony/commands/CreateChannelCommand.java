@@ -15,7 +15,6 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -42,16 +41,16 @@ public record CreateChannelCommand(String keyName) implements ICommand
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
-		IOperationLog setupLog = environment.logOperation("Verifying IPFS and setting up public key called \"" + keyName + "\"");
+		IEnvironment.IOperationLog setupLog = environment.logStart("Verifying IPFS and setting up public key called \"" + keyName + "\"");
 		_setupKey(environment);
-		setupLog.finish("Key setup done!");
+		setupLog.logFinish("Key setup done!");
 		
-		IOperationLog log = environment.logOperation("Creating initial channel state...");
+		IEnvironment.IOperationLog log = environment.logStart("Creating initial channel state...");
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			_runCore(environment, access);
 		}
-		log.finish("Initial state published to Cacophony!");
+		log.logFinish("Initial state published to Cacophony!");
 	}
 
 
@@ -64,7 +63,7 @@ public record CreateChannelCommand(String keyName) implements ICommand
 		boolean keyExists = keys.stream().anyMatch((k) -> k.name().equals(keyName));
 		// The key now ALWAYS exists since we create it in the pre-command phase.
 		Assert.assertTrue(keyExists);
-		environment.logToConsole("Using existing key: \"" + keyName + "\"");
+		environment.logVerbose("Using existing key: \"" + keyName + "\"");
 	}
 
 	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException

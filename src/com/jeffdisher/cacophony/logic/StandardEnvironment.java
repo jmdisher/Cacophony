@@ -53,9 +53,10 @@ public class StandardEnvironment implements IEnvironment
 	}
 
 	@Override
-	public void logToConsole(String message)
+	public void logVerbose(String message)
 	{
-		_stream.println(message);
+		// For now, we will always just log verbose.
+		_stream.println("* " + message);
 	}
 
 	/**
@@ -66,12 +67,13 @@ public class StandardEnvironment implements IEnvironment
 	 * @return An object which can receive the log message for when this is finished.
 	 */
 	@Override
-	public IOperationLog logOperation(String openingMessage)
+	public IOperationLog logStart(String openingMessage)
 	{
 		int operationNumber = _nextOperationCounter + 1;
 		_nextOperationCounter += 1;
-		_stream.println(">" + operationNumber + " " + openingMessage);
-		return (finishMessage) -> _stream.println("<" + operationNumber + " " + finishMessage);
+		String prefix = "" + operationNumber;
+		_stream.println(">" + prefix + " " + openingMessage);
+		return new NestedLog(prefix);
 	}
 
 	@Override
@@ -166,4 +168,40 @@ public class StandardEnvironment implements IEnvironment
 	{
 		return System.currentTimeMillis();
 	}
+
+
+	private class NestedLog implements IOperationLog
+	{
+		private final String _prefix;
+		private int _nextNumber;
+		public NestedLog(String prefix)
+		{
+			_prefix = prefix;
+			_nextNumber = 0;
+		}
+		@Override
+		public IOperationLog logStart(String openingMessage)
+		{
+			int operationNumber = _nextNumber + 1;
+			_nextNumber += 1;
+			String prefix = _prefix + "." + operationNumber;
+			_stream.println(">" + prefix + "> " + openingMessage);
+			return new NestedLog(prefix);
+		}
+		@Override
+		public void logOperation(String message)
+		{
+			_stream.println("=" + _prefix + "= " + message);
+		}
+		@Override
+		public void logFinish(String finishMessage)
+		{
+			_stream.println("<" + _prefix + "< " + finishMessage);
+		}
+		@Override
+		public void logVerbose(String message)
+		{
+			_stream.println("*" + _prefix + "* " + message);
+		}
+	};
 }

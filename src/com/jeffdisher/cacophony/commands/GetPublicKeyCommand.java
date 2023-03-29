@@ -13,7 +13,9 @@ public record GetPublicKeyCommand() implements ICommand
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(environment))
 		{
-			environment.logToConsole("Public Key (other users can follow you with this): " + access.getPublicKey().toPublicKey());
+			IEnvironment.IOperationLog log = environment.logStart("Public Key:");
+			log.logOperation("Public Key (other users can follow you with this): " + access.getPublicKey().toPublicKey());
+			log.logFinish("");
 		}
 	}
 }

@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -18,7 +17,7 @@ public record RefreshNextFolloweeCommand() implements ICommand
 	@Override
 	public void runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
-		IOperationLog log = null;
+		IEnvironment.IOperationLog log;
 		ConcurrentFolloweeRefresher refresher = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
@@ -29,7 +28,7 @@ public record RefreshNextFolloweeCommand() implements ICommand
 			{
 				throw new UsageException("Not following any users");
 			}
-			log = environment.logOperation("Refreshing followee " + publicKey + "...");
+			log = environment.logStart("Refreshing followee " + publicKey + "...");
 			refresher = _setup(environment, access, followees, publicKey);
 		}
 		
@@ -47,11 +46,11 @@ public record RefreshNextFolloweeCommand() implements ICommand
 		{
 			if (didRefresh)
 			{
-				log.finish("Refresh successful!");
+				log.logFinish("Refresh successful!");
 			}
 			else
 			{
-				log.finish("Refresh failed!");
+				log.logFinish("Refresh failed!");
 			}
 		}
 	}

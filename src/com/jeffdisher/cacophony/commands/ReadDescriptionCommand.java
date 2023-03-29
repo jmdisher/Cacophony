@@ -42,13 +42,13 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_channelPublicKey);
 			if (null != lastRoot)
 			{
-				environment.logToConsole("Following " + _channelPublicKey);
+				environment.logVerbose("Following " + _channelPublicKey);
 				rootToLoad = lastRoot;
 				isCached = true;
 			}
 			else
 			{
-				environment.logToConsole("NOT following " + _channelPublicKey);
+				environment.logVerbose("NOT following " + _channelPublicKey);
 				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -74,9 +74,11 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 				? access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
 				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
 		).get();
-		environment.logToConsole("Channel public key: " + publicKey);
-		environment.logToConsole("-name: " + description.getName());
-		environment.logToConsole("-description: " + description.getDescription());
-		environment.logToConsole("-picture: " + description.getPicture());
+		IEnvironment.IOperationLog log = environment.logStart("Channel public key: " + publicKey);
+		log.logOperation("Channel public key: " + publicKey);
+		log.logOperation("-name: " + description.getName());
+		log.logOperation("-description: " + description.getDescription());
+		log.logOperation("-picture: " + description.getPicture());
+		log.logFinish("");
 	}
 }

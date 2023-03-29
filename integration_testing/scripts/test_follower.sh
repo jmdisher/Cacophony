@@ -47,14 +47,14 @@ echo "Reading public key for instance1..."
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 checkPreviousCommand "getPublicKey"
 # Parse this from the human-readable string.
-PUBLIC1=$(echo "$RESULT_STRING" | cut -d " " -f 10)
+PUBLIC1=$(echo $RESULT_STRING | cut -d " " -f 14)
 echo "Key is \"$PUBLIC1\""
 
 echo "Reading public key for instance2..."
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --getPublicKey)
 checkPreviousCommand "getPublicKey"
 # Parse this from the human-readable string.
-PUBLIC2=$(echo "$RESULT_STRING" | cut -d " " -f 10)
+PUBLIC2=$(echo $RESULT_STRING | cut -d " " -f 14)
 echo "Key is \"$PUBLIC2\""
 
 echo "Make key 2 follow key 1"
@@ -89,7 +89,7 @@ echo "Refresh followee"
 REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
 requireSubstring "$REFRESH_OUTPUT" "-thumbnail 524.29 kB (524288 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "-leaf 2.10 MB (2097152 bytes)"
-requireSubstring "$REFRESH_OUTPUT" "<1 Refresh successful!"
+requireSubstring "$REFRESH_OUTPUT" "<1< Refresh successful!"
 
 echo "Publish a post with an audio attachment, refresh the follower, and verify that we can see this..."
 AUDIO_FILE="/tmp/audio_file"
@@ -101,7 +101,7 @@ requireSubstring "$REFRESH_OUTPUT" "Not pruning cache since 2.62 MB (2621440 byt
 LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
 requireSubstring "$LIST_OUTPUT" "(image: (none), leaf: Qm"
 # Capture the element we can rebroadcast.
-ELEMENT_TO_REBROADCAST=$(echo "$LIST_OUTPUT" | head -2 | tail -1 | cut -d ' ' -f 3)
+ELEMENT_TO_REBROADCAST=$(echo "$LIST_OUTPUT" | head -2 | tail -1 | cut -d ' ' -f 4)
 
 echo "Make sure that cleaning cache won't do anything..."
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --cleanCache)

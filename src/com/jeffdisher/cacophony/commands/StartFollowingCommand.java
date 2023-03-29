@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -20,7 +19,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		IOperationLog log = environment.logOperation("Attempting to follow " + _publicKey + "...");
+		IEnvironment.IOperationLog log = environment.logStart("Attempting to follow " + _publicKey + "...");
 		boolean didRefresh = false;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
@@ -34,7 +33,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 			}
 			
 			// First, start the follow.
-			IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> environment.logToConsole(message), access, null, _publicKey);
+			IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> log.logOperation(message), access, null, _publicKey);
 			
 			// If this worked, we will store this temporary root value.  We will do the initial data element refresh only when requested.
 			if (null != hackedRoot)
@@ -47,11 +46,11 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand
 		
 		if (didRefresh)
 		{
-			log.finish("Follow successful!  Run --refreshFollowee to fetch entries for this user.");
+			log.logFinish("Follow successful!  Run --refreshFollowee to fetch entries for this user.");
 		}
 		else
 		{
-			log.finish("Follow failed!");
+			log.logFinish("Follow failed!");
 		}
 	}
 }

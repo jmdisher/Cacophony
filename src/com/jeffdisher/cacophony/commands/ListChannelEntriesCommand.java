@@ -46,12 +46,12 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			rootToLoad = followees.getLastFetchedRootForFollowee(_channelPublicKey);
 			if (null != rootToLoad)
 			{
-				environment.logToConsole("Following " + _channelPublicKey);
+				environment.logVerbose("Following " + _channelPublicKey);
 				isCached = true;
 			}
 			else
 			{
-				environment.logToConsole("NOT following " + _channelPublicKey);
+				environment.logVerbose("NOT following " + _channelPublicKey);
 				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -86,16 +86,19 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		}
 		
 		// Walk the elements, reading each element.
+		IEnvironment.IOperationLog log = environment.logStart("Found " + asyncRecords.size() + " records:");
 		for (AsyncRecord asyncRecord : asyncRecords)
 		{
 			StreamRecord record = asyncRecord.future.get();
-			environment.logToConsole("element " + asyncRecord.recordCid + ": " + record.getName());
+			IEnvironment.IOperationLog log2 = log.logStart("element " + asyncRecord.recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{
-				environment.logToConsole("\t" + element.getCid() + " - " + element.getMime());
+				log2.logOperation("\t" + element.getCid() + " - " + element.getMime());
 			}
+			log2.logFinish("");
 		}
+		log.logFinish("");
 	}
 
 

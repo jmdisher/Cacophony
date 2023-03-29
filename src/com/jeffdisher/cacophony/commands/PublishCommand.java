@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -28,7 +27,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);
 		
-		IOperationLog log = environment.logOperation("Publish: " + this);
+		IEnvironment.IOperationLog log = environment.logStart("Publish: " + this);
 		PublishHelpers.PublishElement[] openElements = openElementFiles(environment, _elements);
 		FuturePublish asyncPublish;
 		IpfsFile newElement = null;
@@ -38,7 +37,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			PublishHelpers.PublishResult result = PublishHelpers.uploadFileAndUpdateTracking(environment, access, _name, _description, _discussionUrl, openElements);
+			PublishHelpers.PublishResult result = PublishHelpers.uploadFileAndUpdateTracking(log, access, _name, _description, _discussionUrl, openElements);
 			asyncPublish = access.beginIndexPublish(result.newIndexRoot());
 			newElement = result.newRecordCid();
 		}
@@ -50,8 +49,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// We can now wait for the publish to complete, now that we have closed all the local state.
 		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 		
-		environment.logToConsole("New element: " + newElement);
-		log.finish("Publish completed!");
+		log.logOperation("New element: " + newElement);
+		log.logFinish("Publish completed!");
 	}
 
 

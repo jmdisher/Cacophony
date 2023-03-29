@@ -53,7 +53,7 @@ checkPreviousCommand "createNewChannel2"
 
 echo "Verify that we can set the prefs..."
 PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --edgeMaxPixels 1280 --followCacheTargetBytes 50M)
-requireSubstring "$PREFS_OUTPUT" "Updated prefs!"
+requireSubstring "$PREFS_OUTPUT" "Update saved"
 
 echo "Verify that the puplic key is correct..."
 PUBLIC_KEY_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --getPublicKey)

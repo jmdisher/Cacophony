@@ -33,7 +33,7 @@ public class PublishHelpers
 	/**
 	 * Upload the given files, create the record entry for the new post, append it to the record stream.
 	 * 
-	 * @param environment Used for logging.
+	 * @param callerLog Used for logging.
 	 * @param access The local data store.
 	 * @param name The name of the entry.
 	 * @param description The description of the entry.
@@ -43,7 +43,7 @@ public class PublishHelpers
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 * @throws SizeConstraintException The meta-data tree serialized to be too large to store.
 	 */
-	public static PublishResult uploadFileAndUpdateTracking(IEnvironment environment
+	public static PublishResult uploadFileAndUpdateTracking(IEnvironment.IOperationLog callerLog
 			, IWritingAccess access
 			, String name
 			, String description
@@ -66,7 +66,7 @@ public class PublishHelpers
 		DataArray array = new DataArray();
 		for (PublishElement elt : elements)
 		{
-			IOperationLog eltLog = environment.logOperation("-Element: " + elt);
+			IOperationLog eltLog = callerLog.logStart("-Element: " + elt);
 			// Note that this call will close the file (since it is intended to drain it) but we will still close it in
 			// the caller, just to cover error cases before getting this far.
 			IpfsFile uploaded = access.uploadAndPin(elt.fileData);
@@ -81,7 +81,7 @@ public class PublishHelpers
 				element.setSpecial(ElementSpecialType.IMAGE);
 			}
 			array.getElement().add(element);
-			eltLog.finish("-Done!");
+			eltLog.logFinish("-Done!");
 		}
 		
 		StreamRecord record = new StreamRecord();
@@ -113,7 +113,7 @@ public class PublishHelpers
 		
 		// Update, save, and publish the new index.
 		index.setRecords(recordsHash.toSafeString());
-		environment.logToConsole("Saving and publishing new index");
+		callerLog.logVerbose("Saving and publishing new index");
 		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
 		
 		// Now that the new index has been uploaded, we can unpin the previous root and records.
