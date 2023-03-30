@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestEditPostCommand
@@ -81,7 +82,16 @@ public class TestEditPostCommand
 		
 		// Edit the post.
 		String newName = "updated name";
-		boolean didPass = user.runCommand(null, new EditPostCommand(FAKE_ELT, newName, null, null));
+		boolean didPass = false;
+		try
+		{
+			user.runCommand(null, new EditPostCommand(FAKE_ELT, newName, null, null));
+			didPass = true;
+		}
+		catch (UsageException e)
+		{
+			didPass = false;
+		}
 		Assert.assertFalse(didPass);
 		
 		// Verify that the edit did NOT happen.

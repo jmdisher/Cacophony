@@ -28,6 +28,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			}
 			IEnvironment.IOperationLog log = environment.logStart("Removing entry " + _elementCid + " from channel...");
 			IpfsFile newRoot = RemoveEntry.run(access, null, _elementCid);
+			if (null == newRoot)
+			{
+				throw new UsageException("Unknown post");
+			}
 			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 			log.logFinish("Entry removed: " + _elementCid);

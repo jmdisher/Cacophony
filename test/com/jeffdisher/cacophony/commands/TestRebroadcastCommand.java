@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -200,7 +201,18 @@ public class TestRebroadcastCommand
 		StreamRecord recordToExamine = GlobalData.deserializeRecord(user2.loadDataFromNode(recordToRebroadcast));
 		IpfsFile elementToDelete = IpfsFile.fromIpfsCid(recordToExamine.getElements().getElement().get(0).getCid());
 		user2.deleteFile(elementToDelete);
-		user.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
+		
+		// We should see an IPFS connection exception since we will timeout looking for an element.
+		boolean didFail = false;
+		try
+		{
+			user.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
+		}
+		catch (IpfsConnectionException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
 		
 		// Verify that we didn't change anything, as the rebroadcast would fail.
 		Assert.assertEquals(initialRoot, user.resolveKeyOnNode(PUBLIC_KEY));

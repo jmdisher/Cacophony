@@ -37,7 +37,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			}
 			else
 			{
-				environment.logError("Entry is not in our stream: " + _postToEdit);
+				throw new UsageException("Entry is not in our stream: " + _postToEdit);
 			}
 		}
 		return None.NONE;

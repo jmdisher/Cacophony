@@ -35,7 +35,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
 	{
 		IpfsFile newRoot = RemoveRecommendation.run(access, _channelPublicKey);
 		if (null != newRoot)
@@ -48,7 +48,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		}
 		else
 		{
-			environment.logError("User was NOT recommended");
+			throw new UsageException("User was NOT recommended");
 		}
 	}
 }

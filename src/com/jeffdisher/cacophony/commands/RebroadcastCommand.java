@@ -32,7 +32,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
@@ -74,39 +74,16 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			}
 			
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
-			StreamRecord record = null;
-			try
-			{
-				record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
-			}
-			catch (IpfsConnectionException e)
-			{
-				environment.logError("Failed to load " + _elementCid + " from the network: " + e.getLocalizedMessage());
-			}
-			catch (FailedDeserializationException e)
-			{
-				environment.logError("Post " + _elementCid + " exists but is NOT readable as a StreamRecord: " + e.getLocalizedMessage());
-			}
-			if (null != record)
-			{
-				// The record makes sense so pin it and everything it references.
-				boolean didPinAll = _pinReachableData(environment, access, record);
-				
-				if (didPinAll)
-				{
-					_updateStreamAndPublish(environment, access, previousRoot, index, previousRecords, records);
-				}
-				else
-				{
-					environment.logError("Failed to pin the record elements so rebroadcast aborted!");
-				}
-			}
+			StreamRecord record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+			// The record makes sense so pin it and everything it references (will throw on error).
+			_pinReachableData(environment, access, record);
+			_updateStreamAndPublish(environment, access, previousRoot, index, previousRecords, records);
 		}
 		return None.NONE;
 	}
 
 
-	private boolean _pinReachableData(IEnvironment environment, IWritingAccess access, StreamRecord record) throws IpfsConnectionException
+	private void _pinReachableData(IEnvironment environment, IWritingAccess access, StreamRecord record) throws IpfsConnectionException
 	{
 		IEnvironment.IOperationLog log = environment.logStart("Pinning StreamRecord " + _elementCid);
 		List<FuturePin> pins = new ArrayList<>();
@@ -117,7 +94,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			log.logOperation("Pinning leaf " + file);
 			pins.add(access.pin(file));
 		}
-		boolean isSuccess = true;
+		IpfsConnectionException pinException = null;
 		log.logVerbose("Waiting for pins...");
 		for (FuturePin pin : pins)
 		{
@@ -128,10 +105,11 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			catch (IpfsConnectionException e)
 			{
 				environment.logError("Failed to pin " + pin.cid + ": " + e.getLocalizedMessage());
-				isSuccess = false;
+				// We will just take any one of these exceptions and re-throw it.
+				pinException = e;
 			}
 		}
-		if (isSuccess)
+		if (null == pinException)
 		{
 			log.logFinish("Pin success!");
 		}
@@ -143,8 +121,8 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			{
 				access.unpin(pin.cid);
 			}
+			throw pinException;
 		}
-		return isSuccess;
 	}
 
 	private void _updateStreamAndPublish(IEnvironment environment, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError

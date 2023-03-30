@@ -35,7 +35,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	}
 
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
+	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
 	{
 		IpfsFile newRoot = AddRecommendation.run(access, _channelPublicKey);
 		
@@ -49,7 +49,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		}
 		else
 		{
-			environment.logError("User was already recommended");
+			throw new UsageException("User was ALREADY recommended");
 		}
 	}
 }
