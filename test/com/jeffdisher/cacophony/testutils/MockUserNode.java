@@ -59,9 +59,11 @@ public class MockUserNode
 		stream.close();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
-		createChannel.runInEnvironment(_executor);
+		ICommand.Result result = createChannel.runInEnvironment(_executor);
+		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic, null, null);
-		updateDescription.runInEnvironment(_executor);
+		result = updateDescription.runInEnvironment(_executor);
+		_handleResult(result);
 	}
 
 	/**
@@ -82,7 +84,8 @@ public class MockUserNode
 			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _sharedConnection, _localKeyName, _publicKey);
 			isNew = true;
 		}
-		command.runInEnvironment(executor);
+		ICommand.Result result = command.runInEnvironment(executor);
+		_handleResult(result);
 		if (isNew)
 		{
 			executor.shutdown();
@@ -158,5 +161,15 @@ public class MockUserNode
 	public void timeoutKey(IpfsKey publicKey)
 	{
 		_sharedConnection.timeoutKey(publicKey);
+	}
+
+
+	private void _handleResult(ICommand.Result result) throws IpfsConnectionException
+	{
+		IpfsFile rootToPublish = result.getIndexToPublish();
+		if (null != rootToPublish)
+		{
+			_sharedConnection.publish(_localKeyName, _publicKey, rootToPublish);
+		}
 	}
 }

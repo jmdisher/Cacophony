@@ -2,13 +2,17 @@ package com.jeffdisher.cacophony;
 
 import java.io.IOException;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -106,7 +110,13 @@ public class Cacophony {
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
-					command.runInEnvironment(executor);
+					ICommand.Result result = command.runInEnvironment(executor);
+					
+					boolean didPublish = _handleResult(executor, result);
+					if (!didPublish)
+					{
+						System.err.println("WARNING:  Update succeeded but publish failed so it will need to be retried");
+					}
 				}
 				catch (UsageException e)
 				{
@@ -174,5 +184,34 @@ public class Cacophony {
 		}
 		Assert.assertTrue(null != publicKey);
 		return publicKey;
+	}
+
+	private static boolean _handleResult(StandardEnvironment environment, ICommand.Result result)
+	{
+		boolean didPublish = false;
+		// If there is a new root, publish it.
+		IpfsFile newRoot = result.getIndexToPublish();
+		if (null != newRoot)
+		{
+			try (IWritingAccess access = StandardAccess.writeAccess(environment))
+			{
+				environment.logVerbose("Publishing " + newRoot + "...");
+				FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
+				
+				// See if the publish actually succeeded (we still want to update our local state, even if it failed).
+				CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+				didPublish = true;
+			}
+			catch (IpfsConnectionException e)
+			{
+				// If this happens, we will just report the warning that we couldn't publish.
+			}
+		}
+		else
+		{
+			// We don't need to publish so we will say this was ok.
+			didPublish = true;
+		}
+		return didPublish;
 	}
 }

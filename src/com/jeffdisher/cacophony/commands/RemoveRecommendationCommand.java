@@ -3,10 +3,8 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveRecommendation;
-import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
+import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -14,13 +12,14 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand<None>
+public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand<ChangedRoot>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _channelPublicKey);
 		
+		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			if (null == access.getLastRootElement())
@@ -28,27 +27,13 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
 			IEnvironment.IOperationLog log = environment.logStart("Removing recommendation " + _channelPublicKey + "...");
-			_runCore(environment, access);
+			newRoot = RemoveRecommendation.run(access, _channelPublicKey);
+			if (null == newRoot)
+			{
+				throw new UsageException("User was NOT recommended");
+			}
 			log.logFinish("No longer recommending: " + _channelPublicKey);
 		}
-		return None.NONE;
-	}
-
-
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
-	{
-		IpfsFile newRoot = RemoveRecommendation.run(access, _channelPublicKey);
-		if (null != newRoot)
-		{
-			environment.logVerbose("Publishing " + newRoot + "...");
-			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
-			
-			// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
-		}
-		else
-		{
-			throw new UsageException("User was NOT recommended");
-		}
+		return new ChangedRoot(newRoot);
 	}
 }

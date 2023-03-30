@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -14,7 +14,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * It is just to get things up and running quickly but this may be removed in the future, since it requires hard-coded
  * data and is inflexible.
  */
-public record QuickstartCommand(String _keyName, String _optionalChannelName) implements ICommand<None>
+public record QuickstartCommand(String _keyName, String _optionalChannelName) implements ICommand<ChangedRoot>
 {
 	/**
 	 * This is the Cacophony "demo channel" public key.
@@ -24,7 +24,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 	private static final IpfsKey DEMO_CHANNEL_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnJ6qSdFeWsMDaivGJPPCVx8jiopn9jK7aUThhuQjhERku");
 
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		// Only the keyName must be provided as the other parameters are optional.
 		Assert.assertTrue(null != _keyName);
@@ -33,7 +33,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		// This will throw UsageException if the channel already exists.
 		IEnvironment.IOperationLog log = environment.logStart("Quickstart:  Creating channel...");
 		CreateChannelCommand createCommand = new CreateChannelCommand(_keyName);
-		createCommand.runInEnvironment(environment);
+		ChangedRoot finalResult = createCommand.runInEnvironment(environment);
 		log.logFinish("Done!");
 		
 		// We optionally want to update the channel description (just the name, using this path).
@@ -41,7 +41,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		{
 			log = environment.logStart("Quickstart:  Setting channel name...");
 			UpdateDescriptionCommand updateCommand = new UpdateDescriptionCommand(_optionalChannelName, null, null, null, null);
-			updateCommand.runInEnvironment(environment);
+			finalResult = updateCommand.runInEnvironment(environment);
 			log.logFinish("Done!");
 		}
 		
@@ -52,6 +52,6 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		log.logFinish("Done!");
 		
 		environment.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
-		return None.NONE;
+		return finalResult;
 	}
 }

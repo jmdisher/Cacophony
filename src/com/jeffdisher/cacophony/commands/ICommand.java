@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 /**
@@ -25,5 +26,14 @@ public interface ICommand<T extends ICommand.Result>
 	 */
 	public interface Result
 	{
+		/**
+		 * Implemented by commands which modify the local user's index root so that the caller of the command can manage
+		 * the publication.
+		 * Note that the command is responsible for uploading this and saving it to local storage.  They just don't need
+		 * to perform the publish.
+		 * 
+		 * @return The updated index the command wishes to publish (can be null).
+		 */
+		IpfsFile getIndexToPublish();
 	}
 }

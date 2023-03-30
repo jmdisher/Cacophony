@@ -6,16 +6,14 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -29,13 +27,14 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Since this effectively acts as though this post, typically from a different user, was posted by this user, the record
  * and all leaf elements it references will be pinned.
  */
-public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
+public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
+		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
 			if (null == access.getLastRootElement())
@@ -77,9 +76,9 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			StreamRecord record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			// The record makes sense so pin it and everything it references (will throw on error).
 			_pinReachableData(environment, access, record);
-			_updateStreamAndPublish(environment, access, previousRoot, index, previousRecords, records);
+			newRoot = _updateStreamAndPublish(environment, access, previousRoot, index, previousRecords, records);
 		}
-		return None.NONE;
+		return new ChangedRoot(newRoot);
 	}
 
 
@@ -125,10 +124,11 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 		}
 	}
 
-	private void _updateStreamAndPublish(IEnvironment environment, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError
+	private IpfsFile _updateStreamAndPublish(IEnvironment environment, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError
 	{
 		// If we get this far, that means that everything is pinned so this becomes a normal post operation.
 		IEnvironment.IOperationLog log = environment.logStart("Publishing to your stream...");
+		IpfsFile newRoot;
 		try
 		{
 			// Fetch and update the data.
@@ -139,15 +139,11 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 			index.setRecords(recordsHash.toSafeString());
 			environment.logVerbose("Saving and publishing new index");
-			IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
+			newRoot = access.uploadIndexAndUpdateTracking(index);
 			
 			// Unpin the old meta-data.
 			access.unpin(previousRoot);
 			access.unpin(previousRecords);
-			
-			// Publish new root.
-			FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
-			CommandHelpers.commonWaitForPublish(environment, asyncPublish);
 			log.logFinish("Rebroadcast complete!");
 		}
 		catch (IpfsConnectionException e)
@@ -160,5 +156,6 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<None>
 			// This would require a change to the spec.
 			throw Assert.unexpected(e);
 		}
+		return newRoot;
 	}
 }

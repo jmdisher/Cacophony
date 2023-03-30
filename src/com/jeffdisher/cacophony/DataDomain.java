@@ -12,6 +12,7 @@ import java.nio.file.StandardOpenOption;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
@@ -27,6 +28,7 @@ import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -97,7 +99,9 @@ public class DataDomain implements Closeable
 		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInEnvironment(theirEnv);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
-		new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
+		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
+		IpfsFile newRoot = result.getIndexToPublish();
+		them.publish(keyName, theirKey, newRoot);
 		theirEnv.shutdown();
 		
 		MockSingleNode us = new MockSingleNode(swarm);
@@ -111,7 +115,8 @@ public class DataDomain implements Closeable
 		);
 		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInEnvironment(ourEnv);
-		new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
+		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
+		us.publish(keyName, ourKey, newRoot);
 		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
 		// (for version 2.1, start follow doesn't fetch the data)
 		new RefreshFolloweeCommand(theirKey).runInEnvironment(ourEnv);

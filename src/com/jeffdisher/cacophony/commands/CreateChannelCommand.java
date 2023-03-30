@@ -7,16 +7,14 @@ import java.util.List;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -24,10 +22,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record CreateChannelCommand(String keyName) implements ICommand<None>
+public record CreateChannelCommand(String keyName) implements ICommand<ChangedRoot>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != keyName);
 		
@@ -47,12 +45,13 @@ public record CreateChannelCommand(String keyName) implements ICommand<None>
 		setupLog.logFinish("Key setup done!");
 		
 		IEnvironment.IOperationLog log = environment.logStart("Creating initial channel state...");
+		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
 		{
-			_runCore(environment, access);
+			newRoot = _runCore(environment, access);
 		}
 		log.logFinish("Initial state published to Cacophony!");
-		return None.NONE;
+		return new ChangedRoot(newRoot);
 	}
 
 
@@ -68,7 +67,7 @@ public record CreateChannelCommand(String keyName) implements ICommand<None>
 		environment.logVerbose("Using existing key: \"" + keyName + "\"");
 	}
 
-	private void _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
+	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{
 		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
@@ -128,10 +127,6 @@ public record CreateChannelCommand(String keyName) implements ICommand<None>
 		streamIndex.setRecommendations(hashRecommendations.toSafeString());
 		streamIndex.setRecords(hashRecords.toSafeString());
 		
-		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(streamIndex);
-		FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
-		
-		// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-		CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+		return access.uploadIndexAndUpdateTracking(streamIndex);
 	}
 }

@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.commands.results;
 
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 /**
@@ -12,5 +13,11 @@ public class None implements ICommand.Result
 
 	private None()
 	{
+	}
+
+	@Override
+	public IpfsFile getIndexToPublish()
+	{
+		return null;
 	}
 }
