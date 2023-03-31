@@ -33,6 +33,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
 
 
 public class TestSimpleFolloweeStarter
@@ -70,15 +71,13 @@ public class TestSimpleFolloweeStarter
 		Assert.assertEquals(5, access.pins.values().size());
 	}
 
-	@Test
+	@Test(expected=KeyException.class)
 	public void testFailedResolve() throws Throwable
 	{
 		Access access = new Access();
 		access.oneKey = K1;
-		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, K1);
-		Assert.assertNull(file);
-		Assert.assertEquals(0, access.data.size());
-		Assert.assertEquals(0, access.pins.values().size());
+		SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, K1);
+		Assert.fail();
 	}
 
 

@@ -12,6 +12,8 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -35,9 +37,12 @@ public class SimpleFolloweeStarter
 	 * @param access The writing access to the network.
 	 * @param userInfoCache The cache which will be updated with the initial user description (can be null).
 	 * @param followeeKey The public key of the followee to look up.
-	 * @return The root of the new "fake" meta-data tree for this user or null if something went wrong.
+	 * @return The root of the new "fake" meta-data tree for this user (never null).
+	 * @throws IpfsConnectionException There was a network error when reading/writing the data.
+	 * @throws ProtocolDataException The target user's data was malformed or broke protocol.
+	 * @throws KeyException The user couldn't be found.
 	 */
-	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey)
+	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
 		IpfsFile actualRoot = access.resolvePublicKey(followeeKey).get();
 		IpfsFile hackedRoot = null;
@@ -55,24 +60,23 @@ public class SimpleFolloweeStarter
 			catch (IpfsConnectionException e)
 			{
 				logger.accept("Network error contacting IPFS node:  " + e.getLocalizedMessage());
+				throw e;
 			}
 			catch (SizeConstraintException e)
 			{
 				logger.accept("Followee meta-data element too big (probably wrong file published):  " + e.getLocalizedMessage());
+				throw e;
 			}
 			catch (FailedDeserializationException e)
 			{
 				logger.accept("Followee data appears to be corrupt:  " + e.getLocalizedMessage());
-			}
-			
-			if (null == hackedRoot)
-			{
-				logger.accept("Follow aborted and will be retried in the future");
+				throw e;
 			}
 		}
 		else
 		{
 			logger.accept("Failed to resolve the key of the user so the follow wasn't attempted");
+			throw new KeyException("Key could not be resolved");
 		}
 		return hackedRoot;
 	}

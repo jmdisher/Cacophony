@@ -4,6 +4,8 @@ import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -48,7 +50,19 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		// Now, follow the demo channel.
 		log = environment.logStart("Quickstart:  Following demo channel (this could take several minutes)...");
 		StartFollowingCommand followCommand = new StartFollowingCommand(DEMO_CHANNEL_PUBLIC_KEY);
-		followCommand.runInEnvironment(environment);
+		try
+		{
+			followCommand.runInEnvironment(environment);
+		}
+		catch (ProtocolDataException e)
+		{
+			// We don't expect this to happen since the demo channel should be well-formed.  This could be a future version, though.
+			log.logOperation("WARNING:  Demo channel data was invalid.  You may need to update to a later version.");
+		}
+		catch (KeyException e)
+		{
+			log.logOperation("WARNING:  Demo channel could not be found.  It has not been added to your followee list.");
+		}
 		log.logFinish("Done!");
 		
 		environment.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");

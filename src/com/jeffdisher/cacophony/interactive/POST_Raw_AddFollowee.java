@@ -7,8 +7,12 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -54,7 +58,17 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 				if (!isAlreadyFollowed)
 				{
 					// First, start the follow.
-					IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logVerbose(message), access, _userInfoCache, userToAdd);
+					IpfsFile hackedRoot;
+					try
+					{
+						hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logVerbose(message), access, _userInfoCache, userToAdd);
+						Assert.assertTrue(null != hackedRoot);
+					}
+					catch (IpfsConnectionException | ProtocolDataException | KeyException e)
+					{
+						// For now, we won't do anything special with these - we just interpret them as failures to add.
+						hackedRoot = null;
+					}
 					
 					// If that worked, save back the followee and request a refresh.
 					if (null != hackedRoot)

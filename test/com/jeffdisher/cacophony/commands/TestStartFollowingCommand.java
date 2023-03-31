@@ -22,6 +22,7 @@ import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -108,11 +109,20 @@ public class TestStartFollowingCommand
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
-		command.runInEnvironment(executor);
+		boolean didFail = false;
+		try
+		{
+			command.runInEnvironment(executor);
+		}
+		catch (ProtocolDataException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
 		executor.shutdown();
 		
 		// Check for the error message.
-		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Follow aborted and will be retried in the future"));
+		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Followee meta-data element too big (probably wrong file published):  Size limit broken: index was 1025 but is limited to 1024"));
 		
 		// Check that the data shows nobody being followed.
 		LocalDataModel model = new LocalDataModel(filesystem);

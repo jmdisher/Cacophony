@@ -9,6 +9,8 @@ import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -16,7 +18,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
@@ -34,15 +36,14 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 			}
 			
 			// First, start the follow.
+			// Note that this will throw exceptions on failure and never return null.
 			IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> log.logOperation(message), access, null, _publicKey);
 			
+			Assert.assertTrue(null != hackedRoot);
 			// If this worked, we will store this temporary root value.  We will do the initial data element refresh only when requested.
-			if (null != hackedRoot)
-			{
-				// Save this initial followee state.
-				followees.createNewFollowee(_publicKey, hackedRoot);
-				didRefresh = true;
-			}
+			// Save this initial followee state.
+			followees.createNewFollowee(_publicKey, hackedRoot);
+			didRefresh = true;
 		}
 		
 		if (didRefresh)
