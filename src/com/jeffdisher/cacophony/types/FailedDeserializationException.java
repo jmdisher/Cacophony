@@ -5,7 +5,7 @@ package com.jeffdisher.cacophony.types;
  * This exception is used in the case where a piece of meta-data couldn't be decoded since it appeared to be malformed.
  * This typically means that the wrong kind of data was referenced.
  */
-public class FailedDeserializationException extends CacophonyException
+public class FailedDeserializationException extends ProtocolDataException
 {
 	private static final long serialVersionUID = 1L;
 
