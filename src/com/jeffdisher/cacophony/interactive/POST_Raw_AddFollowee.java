@@ -2,8 +2,6 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.logic.CommandHelpers;
-import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
@@ -66,10 +64,6 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 						
 						// Create the connector.
 						_entryRegistry.createNewFollowee(userToAdd);
-						
-						// NOTE:  The refresh will happen soon, but not immediately, so this cache clear might not be optimal.
-						// (Not a big problem since it is just best-efforts, anyway).
-						CommandHelpers.shrinkCacheToFitInPrefs(_environment, access, ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION);
 						
 						// Add this to the background operations to be refreshed next.
 						_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
