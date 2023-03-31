@@ -1,6 +1,8 @@
 package com.jeffdisher.cacophony;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,11 +106,19 @@ public class CommandParser
 			{
 				throw new UsageException("--updateDescription requires at least a single subargument");
 			}
-			if ((null != picturePath) && !picturePath.isFile())
+			FileInputStream pictureStream = null;
+			if (null != picturePath)
 			{
-				throw new UsageException("File not found: " + picturePath);
+				try
+				{
+					pictureStream = new FileInputStream(picturePath);
+				}
+				catch (FileNotFoundException e)
+				{
+					throw new UsageException("File not found: " + picturePath);
+				}
 			}
-			return new UpdateDescriptionCommand(name, description, picturePath, email, website);
+			return new UpdateDescriptionCommand(name, description, pictureStream, email, website);
 		}),
 		READ_DESCRIPTION(true, "--readDescription", new String[0], new String[] {"--publicKey"}, null, (String[] required, String[] optional, List<ICommand<?>> subElements) ->
 		{

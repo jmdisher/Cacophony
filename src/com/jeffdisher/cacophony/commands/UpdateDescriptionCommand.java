@@ -1,8 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -15,16 +14,17 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record UpdateDescriptionCommand(String _name, String _description, File _picturePath, String _email, String _website) implements ICommand<ChangedRoot>
+/**
+ * The command which updates the description elements of the local user's channel.
+ * NOTE:  The _pictureStream, if not null, will be closed by this command, during runInEnvironment, so the caller can
+ * relinguish ownership of it.
+ */
+public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website) implements ICommand<ChangedRoot>
 {
 	@Override
 	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue((null != _name) || (null != _description) || (null != _picturePath) || (null != _email) || (null != _website));
-		if (null != _picturePath)
-		{
-			Assert.assertTrue(_picturePath.isFile());
-		}
+		Assert.assertTrue((null != _name) || (null != _description) || (null != _pictureStream) || (null != _email) || (null != _website));
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
@@ -34,27 +34,26 @@ public record UpdateDescriptionCommand(String _name, String _description, File _
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
 			IEnvironment.IOperationLog log = environment.logStart("Updating channel description...");
-			newRoot = _runCore(environment, access);
+			UpdateDescription.Result result = UpdateDescription.run(access, _name, _description, _pictureStream, _email, _website);
+			newRoot = result.newRoot();
 			log.logFinish("Update completed!");
 		}
+		finally
+		{
+			// We took ownership of the stream so close it.
+			if (null != _pictureStream)
+			{
+				try
+				{
+					_pictureStream.close();
+				}
+				catch (IOException e)
+				{
+					// We will just log and ignore this since it shouldn't happen but we would want to know about it.
+					environment.logError(e.getLocalizedMessage());
+				}
+			}
+		}
 		return new ChangedRoot(newRoot);
-	}
-
-
-	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access) throws UsageException, IpfsConnectionException
-	{
-		FileInputStream pictureStream;
-		try
-		{
-			pictureStream = (null != _picturePath)
-					? new FileInputStream(_picturePath)
-					: null;
-		}
-		catch (FileNotFoundException e)
-		{
-			throw new UsageException("Unable to load picture: " + _picturePath.toPath());
-		}
-		UpdateDescription.Result result = UpdateDescription.run(access, _name, _description, pictureStream, _email, _website);
-		return result.newRoot();
 	}
 }

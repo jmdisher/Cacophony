@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.testutils;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
@@ -53,15 +52,12 @@ public class MockUserNode
 	{
 		StandardAccess.createNewChannelConfig(_executor, IPFS_HOST, keyName);
 		
-		File userPic = File.createTempFile("cacophony", "test");
-		FileOutputStream stream = new FileOutputStream(userPic);
-		stream.write(userPicData);
-		stream.close();
+		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
 		ICommand.Result result = createChannel.runInEnvironment(_executor);
 		_handleResult(result);
-		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, userPic, null, null);
+		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
 		result = updateDescription.runInEnvironment(_executor);
 		_handleResult(result);
 	}
