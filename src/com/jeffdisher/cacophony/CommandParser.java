@@ -102,10 +102,6 @@ public class CommandParser
 			;
 			String email = optional[3];
 			String website = optional[4];
-			if ((null == name) && (null == description) && (null == picturePath) && (null == email) && (null == website))
-			{
-				throw new UsageException("--updateDescription requires at least a single subargument");
-			}
 			FileInputStream pictureStream = null;
 			if (null != picturePath)
 			{
@@ -213,10 +209,6 @@ public class CommandParser
 			String name = optional[0];
 			String description = optional[1];
 			String discussionUrl = optional[2];
-			if ((null == name) && (null == description) && (null == discussionUrl))
-			{
-				throw new UsageException("--editPost requires at least a single subargument");
-			}
 			return new EditPostCommand(elementCid, name, description, discussionUrl);
 		}),
 		

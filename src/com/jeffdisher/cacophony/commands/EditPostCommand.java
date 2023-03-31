@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record EditPostCommand(IpfsFile _postToEdit, String _name, String _description, String _discussionUrl) implements ICommand<ChangedRoot>
@@ -16,7 +15,10 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 	@Override
 	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue((null != _name) || (null != _description) || (null != _discussionUrl));
+		if ((null == _name) && (null == _description) && (null == _discussionUrl))
+		{
+			throw new UsageException("At least one field must be being changed");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))

@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -24,7 +23,20 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	@Override
 	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue((null != _name) || (null != _description) || (null != _pictureStream) || (null != _email) || (null != _website));
+		// All of the parameters are optional but at least one of them must be provided (null means "unchanged field").
+		if ((null == _name) && (null == _description) && (null == _pictureStream) && (null == _email) && (null == _website))
+		{
+			throw new UsageException("At least one field must be being changed");
+		}
+		// These elements must also be non-empty.
+		if ((null != _name) && _name.isEmpty())
+		{
+			throw new UsageException("Name must be non-empty.");
+		}
+		if ((null != _description) && _description.isEmpty())
+		{
+			throw new UsageException("Description must be non-empty.");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(environment))
