@@ -32,7 +32,10 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 	@Override
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
-		Assert.assertTrue(null != _elementCid);
+		if (null == _elementCid)
+		{
+			throw new UsageException("Element CID must be provided");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))

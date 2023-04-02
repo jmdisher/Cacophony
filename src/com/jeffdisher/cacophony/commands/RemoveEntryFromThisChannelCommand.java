@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
@@ -16,7 +15,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	@Override
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue(null != _elementCid);
+		if (null == _elementCid)
+		{
+			throw new UsageException("Element CID must be provided");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))

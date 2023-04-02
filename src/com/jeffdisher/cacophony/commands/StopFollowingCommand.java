@@ -19,7 +19,10 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue(null != _publicKey);
+		if (null == _publicKey)
+		{
+			throw new UsageException("Public key must be provided");
+		}
 		
 		ILogger log = context.logger.logStart("Cleaning up to stop following " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;

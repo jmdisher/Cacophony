@@ -23,8 +23,16 @@ public record PublishCommand(String _name, String _description, String _discussi
 	@Override
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
-		Assert.assertTrue(null != _name);
-		Assert.assertTrue(null != _description);
+		if (null == _name)
+		{
+			throw new UsageException("Name must be provided");
+		}
+		if (null == _description)
+		{
+			throw new UsageException("Description must be provided");
+		}
+		// We will expect that any entry-point will allocate this, so it isn't a user-facing error.
+		Assert.assertTrue(null != _elements);
 		
 		ILogger log = context.logger.logStart("Publish: " + this);
 		PublishHelpers.PublishElement[] openElements = openElementFiles(context.logger, _elements);

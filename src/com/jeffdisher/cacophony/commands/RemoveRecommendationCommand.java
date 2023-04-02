@@ -9,7 +9,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand<ChangedRoot>
@@ -17,7 +16,10 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	@Override
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue(null != _channelPublicKey);
+		if (null == _channelPublicKey)
+		{
+			throw new UsageException("Public key must be provided");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))

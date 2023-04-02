@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<None>
@@ -19,7 +18,10 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue(null != _publicKey);
+		if (null == _publicKey)
+		{
+			throw new UsageException("Public key must be provided");
+		}
 		
 		ILogger log = context.logger.logStart("Refreshing followee " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;

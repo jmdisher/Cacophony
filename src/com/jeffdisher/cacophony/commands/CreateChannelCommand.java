@@ -28,7 +28,10 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 	@Override
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		Assert.assertTrue(null != keyName);
+		if (null == keyName)
+		{
+			throw new UsageException("Key name must be provided");
+		}
 		
 		// Make sure that we aren't going to over-write an existing structure.
 		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))

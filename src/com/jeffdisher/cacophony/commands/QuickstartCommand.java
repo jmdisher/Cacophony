@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -29,7 +28,10 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		// Only the keyName must be provided as the other parameters are optional.
-		Assert.assertTrue(null != _keyName);
+		if (null == _keyName)
+		{
+			throw new UsageException("Key name must be provided");
+		}
 		
 		// We need to create the channel, no matter what else we plan to do.
 		// This will throw UsageException if the channel already exists.

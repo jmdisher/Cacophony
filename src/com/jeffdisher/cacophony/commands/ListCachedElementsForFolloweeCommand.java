@@ -17,7 +17,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand<None>
@@ -25,7 +24,10 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
-		Assert.assertTrue(null != _followeeKey);
+		if (null == _followeeKey)
+		{
+			throw new UsageException("Public key must be provided");
+		}
 		
 		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{

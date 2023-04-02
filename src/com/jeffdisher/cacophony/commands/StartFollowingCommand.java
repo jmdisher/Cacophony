@@ -20,7 +20,10 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
 	{
-		Assert.assertTrue(null != _publicKey);
+		if (null == _publicKey)
+		{
+			throw new UsageException("Public key must be provided");
+		}
 		
 		ILogger log = context.logger.logStart("Attempting to follow " + _publicKey + "...");
 		boolean didRefresh = false;
