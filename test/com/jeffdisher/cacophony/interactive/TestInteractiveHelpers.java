@@ -18,6 +18,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
@@ -223,7 +224,7 @@ public class TestInteractiveHelpers
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
-		new CreateChannelCommand(KEY_NAME).runInEnvironment(env, logger);
+		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger));
 		
 		// Now, create a basic draft.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -358,7 +359,7 @@ public class TestInteractiveHelpers
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
-		new CreateChannelCommand(KEY_NAME).runInEnvironment(env, logger);
+		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger));
 		
 		// Now, create a draft and attach audio.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());

@@ -71,7 +71,7 @@ public class TestStartFollowingCommand
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
-		command.runInEnvironment(executor, logger);
+		command.runInContext(new ICommand.Context(executor, logger));
 		
 		// Verify the states that should have changed.
 		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
@@ -115,7 +115,7 @@ public class TestStartFollowingCommand
 		boolean didFail = false;
 		try
 		{
-			command.runInEnvironment(executor, logger);
+			command.runInContext(new ICommand.Context(executor, logger));
 		}
 		catch (ProtocolDataException e)
 		{

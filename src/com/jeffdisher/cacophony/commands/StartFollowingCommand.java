@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -19,13 +18,13 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		ILogger log = logger.logStart("Attempting to follow " + _publicKey + "...");
+		ILogger log = context.logger.logStart("Attempting to follow " + _publicKey + "...");
 		boolean didRefresh = false;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
 			IFolloweeWriting followees = access.writableFolloweeData();
 			

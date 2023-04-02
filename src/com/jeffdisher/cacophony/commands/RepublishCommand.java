@@ -3,8 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -18,10 +16,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RepublishCommand() implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		IpfsFile indexHash;
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{
 			if (null == access.getLastRootElement())
 			{

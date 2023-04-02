@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -20,11 +19,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{
-			_runCore(logger, access);
+			_runCore(context.logger, access);
 		}
 		return None.NONE;
 	}

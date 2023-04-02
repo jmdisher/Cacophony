@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -44,7 +45,7 @@ public class TestLocalIntegrity
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
-		createChannel.runInEnvironment(env, logger);
+		createChannel.runInContext(new ICommand.Context(env, logger));
 		
 		// We expect 5 keys in the storage:
 		// -index
@@ -66,7 +67,7 @@ public class TestLocalIntegrity
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
-		createChannel.runInEnvironment(env, logger);
+		createChannel.runInContext(new ICommand.Context(env, logger));
 		
 		// We expect the normal 5.
 		Set<IpfsFile> initialFiles = node.getStoredFileSet();
@@ -82,7 +83,7 @@ public class TestLocalIntegrity
 		PublishCommand publish = new PublishCommand("name", "description", null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
 		});
-		publish.runInEnvironment(env, logger);
+		publish.runInContext(new ICommand.Context(env, logger));
 		// We expect 7 keys in the storage:
 		// -index
 		// -recommendations
@@ -108,7 +109,7 @@ public class TestLocalIntegrity
 		
 		// Now, remove this entry.
 		RemoveEntryFromThisChannelCommand remove = new RemoveEntryFromThisChannelCommand(entry);
-		remove.runInEnvironment(env, logger);
+		remove.runInContext(new ICommand.Context(env, logger));
 		
 		// We should see the same files from the original post.
 		Set<IpfsFile> afterRemoveFiles = node.getStoredFileSet();

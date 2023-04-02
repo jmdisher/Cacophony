@@ -97,10 +97,11 @@ public class DataDomain implements Closeable
 				, theirKey
 		);
 		StandardLogger theirLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
+		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger);
 		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
-		new CreateChannelCommand(keyName).runInEnvironment(theirEnv, theirLogger);
-		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv, theirLogger);
-		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv, theirLogger);
+		new CreateChannelCommand(keyName).runInContext(theirContext);
+		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
+		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
 		IpfsFile newRoot = result.getIndexToPublish();
 		them.publish(keyName, theirKey, newRoot);
 		theirEnv.shutdown();
@@ -114,13 +115,14 @@ public class DataDomain implements Closeable
 				, ourKey
 		);
 		StandardLogger ourLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
+		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger);
 		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
-		new CreateChannelCommand(keyName).runInEnvironment(ourEnv, ourLogger);
-		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv, ourLogger);
+		new CreateChannelCommand(keyName).runInContext(ourContext);
+		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
 		us.publish(keyName, ourKey, newRoot);
-		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv, ourLogger);
+		new StartFollowingCommand(theirKey).runInContext(ourContext);
 		// (for version 2.1, start follow doesn't fetch the data)
-		new RefreshFolloweeCommand(theirKey).runInEnvironment(ourEnv, ourLogger);
+		new RefreshFolloweeCommand(theirKey).runInContext(ourContext);
 		ourEnv.shutdown();
 		
 		return us;

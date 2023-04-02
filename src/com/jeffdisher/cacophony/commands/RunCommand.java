@@ -6,8 +6,6 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.interactive.InteractiveServer;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.UsageException;
 
@@ -29,9 +27,9 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	private static final String DEFAULT_COMMAND = "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -";
 
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{
 			if (null == access.getLastRootElement())
 			{
@@ -44,7 +42,7 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 			? _overrideCommand
 			: DEFAULT_COMMAND
 		;
-		InteractiveServer.runServerUntilStop(environment, logger, staticResource, _port, processingCommand, canChangeCommand);
+		InteractiveServer.runServerUntilStop(context.environment, context.logger, staticResource, _port, processingCommand, canChangeCommand);
 		return None.NONE;
 	}
 }

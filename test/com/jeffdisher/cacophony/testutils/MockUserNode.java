@@ -58,10 +58,10 @@ public class MockUserNode
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
-		ICommand.Result result = createChannel.runInEnvironment(_executor, _logger);
+		ICommand.Result result = createChannel.runInContext(new ICommand.Context(_executor, _logger));
 		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
-		result = updateDescription.runInEnvironment(_executor, _logger);
+		result = updateDescription.runInContext(new ICommand.Context(_executor, _logger));
 		_handleResult(result);
 	}
 
@@ -81,7 +81,7 @@ public class MockUserNode
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
 		}
-		ICommand.Result result = command.runInEnvironment(_executor, logger);
+		ICommand.Result result = command.runInContext(new ICommand.Context(_executor, logger));
 		_handleResult(result);
 		return !logger.didErrorOccur();
 	}

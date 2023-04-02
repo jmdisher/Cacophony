@@ -17,11 +17,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshNextFolloweeCommand() implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		ILogger log;
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
 			IFolloweeWriting followees = access.writableFolloweeData();
 			
@@ -30,8 +30,8 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 			{
 				throw new UsageException("Not following any users");
 			}
-			log = logger.logStart("Refreshing followee " + publicKey + "...");
-			refresher = _setup(logger, access, followees, publicKey);
+			log = context.logger.logStart("Refreshing followee " + publicKey + "...");
+			refresher = _setup(context.logger, access, followees, publicKey);
 		}
 		
 		// Run the actual refresh.
@@ -40,9 +40,9 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
-			_finish(environment, access, refresher);
+			_finish(context.environment, access, refresher);
 		}
 		finally
 		{

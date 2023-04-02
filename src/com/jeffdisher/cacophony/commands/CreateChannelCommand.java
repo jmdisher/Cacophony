@@ -26,12 +26,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record CreateChannelCommand(String keyName) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != keyName);
 		
 		// Make sure that we aren't going to over-write an existing structure.
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{
 			if (null != access.getLastRootElement())
 			{
@@ -41,15 +41,15 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
-		ILogger setupLog = logger.logStart("Verifying IPFS and setting up public key called \"" + keyName + "\"");
-		_setupKey(environment, setupLog);
+		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + keyName + "\"");
+		_setupKey(context.environment, setupLog);
 		setupLog.logFinish("Key setup done!");
 		
-		ILogger log = logger.logStart("Creating initial channel state...");
+		ILogger log = context.logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
-			newRoot = _runCore(environment, access);
+			newRoot = _runCore(context.environment, access);
 		}
 		log.logFinish("Initial state published to Cacophony!");
 		return new ChangedRoot(newRoot);

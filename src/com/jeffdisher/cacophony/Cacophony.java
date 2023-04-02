@@ -113,7 +113,7 @@ public class Cacophony {
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
-					ICommand.Result result = command.runInEnvironment(executor, logger);
+					ICommand.Result result = command.runInContext(new ICommand.Context(executor, logger));
 					
 					boolean didPublish = _handleResult(executor, logger, result);
 					if (!didPublish)

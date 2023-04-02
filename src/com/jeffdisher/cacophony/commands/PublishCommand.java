@@ -9,7 +9,6 @@ import java.io.InputStream;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -22,16 +21,16 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, SizeConstraintException
+	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);
 		
-		ILogger log = logger.logStart("Publish: " + this);
-		PublishHelpers.PublishElement[] openElements = openElementFiles(logger, _elements);
+		ILogger log = context.logger.logStart("Publish: " + this);
+		PublishHelpers.PublishElement[] openElements = openElementFiles(context.logger, _elements);
 		IpfsFile newRoot;
 		IpfsFile newElement;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
 			if (null == access.getLastRootElement())
 			{

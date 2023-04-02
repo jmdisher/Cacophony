@@ -12,7 +12,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -31,12 +30,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
 			if (null == access.getLastRootElement())
 			{
@@ -76,8 +75,8 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
 			StreamRecord record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			// The record makes sense so pin it and everything it references (will throw on error).
-			_pinReachableData(logger, access, record);
-			newRoot = _updateStreamAndPublish(logger, access, previousRoot, index, previousRecords, records);
+			_pinReachableData(context.logger, access, record);
+			newRoot = _updateStreamAndPublish(context.logger, access, previousRoot, index, previousRecords, records);
 		}
 		return new ChangedRoot(newRoot);
 	}

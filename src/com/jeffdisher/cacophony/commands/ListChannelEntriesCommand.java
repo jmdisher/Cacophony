@@ -12,7 +12,6 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -27,11 +26,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{
-			_runCore(logger, access);
+			_runCore(context.logger, access);
 		}
 		return None.NONE;
 	}

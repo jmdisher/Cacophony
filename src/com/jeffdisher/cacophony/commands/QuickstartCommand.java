@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -27,33 +26,33 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 	private static final IpfsKey DEMO_CHANNEL_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnJ6qSdFeWsMDaivGJPPCVx8jiopn9jK7aUThhuQjhERku");
 
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		// Only the keyName must be provided as the other parameters are optional.
 		Assert.assertTrue(null != _keyName);
 		
 		// We need to create the channel, no matter what else we plan to do.
 		// This will throw UsageException if the channel already exists.
-		ILogger log = logger.logStart("Quickstart:  Creating channel...");
+		ILogger log = context.logger.logStart("Quickstart:  Creating channel...");
 		CreateChannelCommand createCommand = new CreateChannelCommand(_keyName);
-		ChangedRoot finalResult = createCommand.runInEnvironment(environment, logger);
+		ChangedRoot finalResult = createCommand.runInContext(context);
 		log.logFinish("Done!");
 		
 		// We optionally want to update the channel description (just the name, using this path).
 		if (null != _optionalChannelName)
 		{
-			log = logger.logStart("Quickstart:  Setting channel name...");
+			log = context.logger.logStart("Quickstart:  Setting channel name...");
 			UpdateDescriptionCommand updateCommand = new UpdateDescriptionCommand(_optionalChannelName, null, null, null, null);
-			finalResult = updateCommand.runInEnvironment(environment, logger);
+			finalResult = updateCommand.runInContext(context);
 			log.logFinish("Done!");
 		}
 		
 		// Now, follow the demo channel.
-		log = logger.logStart("Quickstart:  Following demo channel (this could take several minutes)...");
+		log = context.logger.logStart("Quickstart:  Following demo channel (this could take several minutes)...");
 		StartFollowingCommand followCommand = new StartFollowingCommand(DEMO_CHANNEL_PUBLIC_KEY);
 		try
 		{
-			followCommand.runInEnvironment(environment, logger);
+			followCommand.runInContext(context);
 		}
 		catch (ProtocolDataException e)
 		{
@@ -66,7 +65,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		}
 		log.logFinish("Done!");
 		
-		logger.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
+		context.logger.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
 		return finalResult;
 	}
 }

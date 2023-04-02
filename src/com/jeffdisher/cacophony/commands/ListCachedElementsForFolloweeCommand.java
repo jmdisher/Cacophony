@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -24,13 +23,13 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _followeeKey);
 		
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
 		{
-			_runCore(logger, access);
+			_runCore(context.logger, access);
 		}
 		return None.NONE;
 	}

@@ -14,14 +14,13 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 public interface ICommand<T extends ICommand.Result>
 {
 	/**
-	 * Runs the command in the given environment.
+	 * Runs the command in the given context.
 	 * 
-	 * @param environment The configuration of the system's environment.
-	 * @param logger The logging utility.
+	 * @param context Resources available to the command.
 	 * @return Extra information about the result (cannot be null).
 	 * @throws CacophonyException Something went wrong which prevented success (success, or safe error, always returns).
 	 */
-	T runInEnvironment(IEnvironment environment, ILogger logger) throws CacophonyException;
+	T runInContext(Context context) throws CacophonyException;
 
 	/**
 	 * The common interface of all result types.
@@ -37,5 +36,22 @@ public interface ICommand<T extends ICommand.Result>
 		 * @return The updated index the command wishes to publish (can be null).
 		 */
 		IpfsFile getIndexToPublish();
+	}
+
+	/**
+	 * A container of resources which can be used by a command.
+	 */
+	public static class Context
+	{
+		public final IEnvironment environment;
+		public final ILogger logger;
+		
+		public Context(IEnvironment environment
+				, ILogger logger
+		)
+		{
+			this.environment = environment;
+			this.logger = logger;
+		}
 	}
 }

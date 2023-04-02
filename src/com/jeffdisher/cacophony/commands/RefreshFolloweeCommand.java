@@ -17,15 +17,15 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		ILogger log = logger.logStart("Refreshing followee " + _publicKey + "...");
+		ILogger log = context.logger.logStart("Refreshing followee " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
-			refresher = _setup(logger, access);
+			refresher = _setup(context.logger, access);
 		}
 		
 		// Run the actual refresh.
@@ -34,9 +34,9 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
-			_finish(environment, access, refresher);
+			_finish(context.environment, access, refresher);
 		}
 		finally
 		{
