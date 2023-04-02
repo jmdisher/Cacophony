@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -61,7 +62,7 @@ public class StandardAccess implements IWritingAccess
 	 * @return The read access interface.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(IEnvironment environment) throws IpfsConnectionException
+	public static IReadingAccess readAccess(IEnvironment environment, ILogger logger) throws IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
@@ -72,7 +73,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		return new StandardAccess(environment, reading, null);
+		return new StandardAccess(environment, logger, reading, null);
 	}
 
 	/**
@@ -84,7 +85,7 @@ public class StandardAccess implements IWritingAccess
 	 * @return The write access interface.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(IEnvironment environment) throws IpfsConnectionException
+	public static IWritingAccess writeAccess(IEnvironment environment, ILogger logger) throws IpfsConnectionException
 	{
 		// Get the filesystem of our configured directory.
 		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
@@ -95,7 +96,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(environment, writing, writing);
+		return new StandardAccess(environment, logger, writing, writing);
 	}
 
 	/**
@@ -144,7 +145,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 
-	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final IConnection _sharedConnection;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
@@ -158,7 +159,7 @@ public class StandardAccess implements IWritingAccess
 	private final ChannelData _channelData;
 	private boolean _writeChannelData;
 
-	private StandardAccess(IEnvironment environment, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite) throws IpfsConnectionException
+	private StandardAccess(IEnvironment environment, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite) throws IpfsConnectionException
 	{
 		PinCacheData pinCache = readOnly.readGlobalPinCache();
 		Assert.assertTrue(null != pinCache);
@@ -176,7 +177,7 @@ public class StandardAccess implements IWritingAccess
 		INetworkScheduler scheduler = environment.getSharedScheduler();
 		Assert.assertTrue(null != scheduler);
 		
-		_environment = environment;
+		_logger = logger;
 		_sharedConnection = connection;
 		_keyName = keyName;
 		_publicKey = publicKey;
@@ -227,7 +228,7 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != file);
 		if (_pinCache.isPinned(file))
 		{
-			_environment.logVerbose("WARNING!  Not expected in cache:  " + file);
+			_logger.logVerbose("WARNING!  Not expected in cache:  " + file);
 		}
 		return _scheduler.readData(file, decoder);
 	}
@@ -428,7 +429,7 @@ public class StandardAccess implements IWritingAccess
 			catch (IpfsConnectionException e)
 			{
 				// This is non-fatal but a concern.
-				_environment.logError("Failed to unpin " + cid + ": " + e.getLocalizedMessage());
+				_logger.logError("Failed to unpin " + cid + ": " + e.getLocalizedMessage());
 			}
 		}
 	}

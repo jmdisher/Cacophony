@@ -14,7 +14,6 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -43,7 +42,7 @@ public class PublishHelpers
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 * @throws SizeConstraintException The meta-data tree serialized to be too large to store.
 	 */
-	public static PublishResult uploadFileAndUpdateTracking(IEnvironment.IOperationLog callerLog
+	public static PublishResult uploadFileAndUpdateTracking(ILogger callerLog
 			, IWritingAccess access
 			, String name
 			, String description
@@ -66,7 +65,7 @@ public class PublishHelpers
 		DataArray array = new DataArray();
 		for (PublishElement elt : elements)
 		{
-			IOperationLog eltLog = callerLog.logStart("-Element: " + elt);
+			ILogger eltLog = callerLog.logStart("-Element: " + elt);
 			// Note that this call will close the file (since it is intended to drain it) but we will still close it in
 			// the caller, just to cover error cases before getting this far.
 			IpfsFile uploaded = access.uploadAndPin(elt.fileData);

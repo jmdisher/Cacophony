@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -16,10 +17,11 @@ public interface ICommand<T extends ICommand.Result>
 	 * Runs the command in the given environment.
 	 * 
 	 * @param environment The configuration of the system's environment.
+	 * @param logger The logging utility.
 	 * @return Extra information about the result (cannot be null).
 	 * @throws CacophonyException Something went wrong which prevented success (success, or safe error, always returns).
 	 */
-	T runInEnvironment(IEnvironment environment) throws CacophonyException;
+	T runInEnvironment(IEnvironment environment, ILogger logger) throws CacophonyException;
 
 	/**
 	 * The common interface of all result types.

@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveRecommendation;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -15,18 +16,18 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _channelPublicKey);
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			if (null == access.getLastRootElement())
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IEnvironment.IOperationLog log = environment.logStart("Removing recommendation " + _channelPublicKey + "...");
+			ILogger log = logger.logStart("Removing recommendation " + _channelPublicKey + "...");
 			newRoot = RemoveRecommendation.run(access, _channelPublicKey);
 			if (null == newRoot)
 			{

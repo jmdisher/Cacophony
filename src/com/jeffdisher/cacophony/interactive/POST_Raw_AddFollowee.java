@@ -4,6 +4,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -26,17 +27,20 @@ import jakarta.servlet.http.HttpServletResponse;
 public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalUserInfoCache _userInfoCache;
 	private final EntryCacheRegistry _entryRegistry;
 
 	public POST_Raw_AddFollowee(IEnvironment environment
+			, ILogger logger
 			, BackgroundOperations backgroundOperations
 			, LocalUserInfoCache userInfoCache
 			, EntryCacheRegistry entryRegistry
 	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_backgroundOperations = backgroundOperations;
 		_userInfoCache = userInfoCache;
 		_entryRegistry = entryRegistry;
@@ -50,7 +54,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		{
 			boolean isAlreadyFollowed = false;
 			boolean didAddFollowee = false;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				IFolloweeWriting followees = access.writableFolloweeData();
 				IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(userToAdd);
@@ -61,7 +65,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 					IpfsFile hackedRoot;
 					try
 					{
-						hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _environment.logVerbose(message), access, _userInfoCache, userToAdd);
+						hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _logger.logVerbose(message), access, _userInfoCache, userToAdd);
 						Assert.assertTrue(null != hackedRoot);
 					}
 					catch (IpfsConnectionException | ProtocolDataException | KeyException e)

@@ -28,6 +28,7 @@ import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -217,11 +218,12 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connection, KEY_NAME, PUBLIC_KEY);
+		StandardEnvironment env = new StandardEnvironment(fileSystem, connection, KEY_NAME, PUBLIC_KEY);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
-		new CreateChannelCommand(KEY_NAME).runInEnvironment(env);
+		new CreateChannelCommand(KEY_NAME).runInEnvironment(env, logger);
 		
 		// Now, create a basic draft.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -230,9 +232,9 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
 		
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
@@ -268,9 +270,9 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, true, false);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
@@ -314,9 +316,9 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft WITHOUT uploading the video attachment.
-		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, false);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, false);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
@@ -351,11 +353,12 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		StandardEnvironment env = new StandardEnvironment(System.out, fileSystem, connection, KEY_NAME, PUBLIC_KEY);
+		StandardEnvironment env = new StandardEnvironment(fileSystem, connection, KEY_NAME, PUBLIC_KEY);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
-		new CreateChannelCommand(KEY_NAME).runInEnvironment(env);
+		new CreateChannelCommand(KEY_NAME).runInEnvironment(env, logger);
 		
 		// Now, create a draft and attach audio.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -371,9 +374,9 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
 
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(env))
+		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(env, access, draftManager, id, false, true);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, true);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		

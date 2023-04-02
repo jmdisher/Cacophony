@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -13,12 +14,12 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 public record ListFolloweesCommand() implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
 			Set<IpfsKey> followees = access.readableFolloweeData().getAllKnownFollowees();
-			IEnvironment.IOperationLog log = environment.logStart("Found " + followees.size() + " followees:");
+			ILogger log = logger.logStart("Found " + followees.size() + " followees:");
 			for(IpfsKey followee : followees)
 			{
 				log.logOperation("Following: " + followee.toPublicKey());

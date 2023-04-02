@@ -36,6 +36,7 @@ import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -237,7 +238,7 @@ public class CommandParser
 			return new ICommand<None>()
 			{
 				@Override
-				public None runInEnvironment(IEnvironment environment)
+				public None runInEnvironment(IEnvironment environment, ILogger logger)
 				{
 					System.out.println(channelPublicKey.toPublicKey());
 					return None.NONE;

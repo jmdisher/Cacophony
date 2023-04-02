@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
@@ -25,12 +26,14 @@ import jakarta.servlet.http.HttpServletResponse;
 public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
 	private final DraftManager _draftManager;
 	private final EntryCacheRegistry _entryRegistry;
 	
 	public POST_Raw_DraftPublish(IEnvironment environment
+			, ILogger logger
 			, BackgroundOperations backgroundOperations
 			, LocalRecordCache recordCache
 			, DraftManager draftManager
@@ -38,6 +41,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
 		_draftManager = draftManager;
@@ -47,12 +51,12 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 		{
 			int draftId = Integer.parseInt(pathVariables[0]);
 			PublishType type = PublishType.valueOf(pathVariables[1]);
 			
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(_environment
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(_logger
 					, access
 					, _draftManager
 					, draftId

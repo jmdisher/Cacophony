@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -16,15 +17,15 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != _publicKey);
 		
-		IEnvironment.IOperationLog log = environment.logStart("Refreshing followee " + _publicKey + "...");
+		ILogger log = logger.logStart("Refreshing followee " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
-			refresher = _setup(environment, access);
+			refresher = _setup(logger, access);
 		}
 		
 		// Run the actual refresh.
@@ -33,7 +34,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			_finish(environment, access, refresher);
 		}
@@ -52,7 +53,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 	}
 
 
-	private ConcurrentFolloweeRefresher _setup(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException, UsageException
+	private ConcurrentFolloweeRefresher _setup(ILogger logger, IWritingAccess access) throws IpfsConnectionException, UsageException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		
@@ -63,7 +64,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 			throw new UsageException("Not following public key: " + _publicKey.toPublicKey());
 		}
 		
-		ConcurrentFolloweeRefresher refresher = new ConcurrentFolloweeRefresher(environment
+		ConcurrentFolloweeRefresher refresher = new ConcurrentFolloweeRefresher(logger
 				, _publicKey
 				, lastRoot
 				, access.readPrefs()

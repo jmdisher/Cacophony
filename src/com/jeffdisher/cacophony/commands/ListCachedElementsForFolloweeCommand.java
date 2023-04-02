@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -23,18 +24,18 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _followeeKey);
 		
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
-			_runCore(environment, access);
+			_runCore(logger, access);
 		}
 		return None.NONE;
 	}
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	private void _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		Map<IpfsFile, FollowingCacheElement> cachedElements = followees.snapshotAllElementsForFollowee(_followeeKey);
@@ -46,7 +47,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 			StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 			List<String> recordList = records.getRecord();
-			IEnvironment.IOperationLog log = environment.logStart("Followee has " + recordList.size() + " elements:");
+			ILogger log = logger.logStart("Followee has " + recordList.size() + " elements:");
 			for(String elementCid : recordList)
 			{
 				FollowingCacheElement element = cachedElements.get(IpfsFile.fromIpfsCid(elementCid));

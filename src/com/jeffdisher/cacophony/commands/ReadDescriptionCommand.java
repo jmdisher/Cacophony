@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -19,17 +20,17 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
-			_runCore(environment, access);
+			_runCore(logger, access);
 		}
 		return None.NONE;
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	private void _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
@@ -44,13 +45,13 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_channelPublicKey);
 			if (null != lastRoot)
 			{
-				environment.logVerbose("Following " + _channelPublicKey);
+				logger.logVerbose("Following " + _channelPublicKey);
 				rootToLoad = lastRoot;
 				isCached = true;
 			}
 			else
 			{
-				environment.logVerbose("NOT following " + _channelPublicKey);
+				logger.logVerbose("NOT following " + _channelPublicKey);
 				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -76,7 +77,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 				? access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
 				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
 		).get();
-		IEnvironment.IOperationLog log = environment.logStart("Channel public key: " + publicKey);
+		ILogger log = logger.logStart("Channel public key: " + publicKey);
 		log.logOperation("Channel public key: " + publicKey);
 		log.logOperation("-name: " + description.getName());
 		log.logOperation("-description: " + description.getDescription());

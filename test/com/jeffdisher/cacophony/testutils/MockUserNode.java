@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -32,6 +33,7 @@ public class MockUserNode
 	private final MockSingleNode _sharedConnection;
 	private final MemoryConfigFileSystem _fileSystem;
 	private final StandardEnvironment _executor;
+	private final StandardLogger _logger;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node)
 	{
@@ -40,7 +42,8 @@ public class MockUserNode
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(null);
-		_executor = new StandardEnvironment(System.out, _fileSystem, _sharedConnection, keyName, key);
+		_executor = new StandardEnvironment(_fileSystem, _sharedConnection, keyName, key);
+		_logger = StandardLogger.topLogger(System.out);
 	}
 
 	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
@@ -55,10 +58,10 @@ public class MockUserNode
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
-		ICommand.Result result = createChannel.runInEnvironment(_executor);
+		ICommand.Result result = createChannel.runInEnvironment(_executor, _logger);
 		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
-		result = updateDescription.runInEnvironment(_executor);
+		result = updateDescription.runInEnvironment(_executor, _logger);
 		_handleResult(result);
 	}
 
@@ -72,21 +75,15 @@ public class MockUserNode
 	 */
 	public boolean runCommand(OutputStream captureStream, ICommand<?> command) throws Throwable
 	{
-		StandardEnvironment executor = _executor;
+		StandardLogger logger = _logger;
 		// See if we want to override the output capture.
-		boolean isNew = false;
 		if (null != captureStream)
 		{
-			executor = new StandardEnvironment(new PrintStream(captureStream), _fileSystem, _sharedConnection, _localKeyName, _publicKey);
-			isNew = true;
+			logger = StandardLogger.topLogger(new PrintStream(captureStream));
 		}
-		ICommand.Result result = command.runInEnvironment(executor);
+		ICommand.Result result = command.runInEnvironment(_executor, logger);
 		_handleResult(result);
-		if (isNew)
-		{
-			executor.shutdown();
-		}
-		return !executor.didErrorOccur();
+		return !logger.didErrorOccur();
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException
@@ -101,7 +98,7 @@ public class MockUserNode
 
 	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_executor))
+		try (IReadingAccess reading = StandardAccess.readAccess(_executor, _logger))
 		{
 			return reading.getLastRootElement();
 		}
@@ -114,7 +111,7 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
-		IReadingAccess reading = StandardAccess.readAccess(_executor);
+		IReadingAccess reading = StandardAccess.readAccess(_executor, _logger);
 		boolean isPinned = reading.isInPinCached(file);
 		reading.close();
 		return isPinned;
@@ -122,7 +119,7 @@ public class MockUserNode
 
 	public PrefsData readPrefs() throws IpfsConnectionException
 	{
-		IReadingAccess reading = StandardAccess.readAccess(_executor);
+		IReadingAccess reading = StandardAccess.readAccess(_executor, _logger);
 		PrefsData prefs = reading.readPrefs();
 		reading.close();
 		return prefs;
@@ -131,7 +128,7 @@ public class MockUserNode
 	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
-		try (IWritingAccess writing = StandardAccess.writeAccess(_executor))
+		try (IWritingAccess writing = StandardAccess.writeAccess(_executor, _logger))
 		{
 			return writing.readableFolloweeData();
 		}

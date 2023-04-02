@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -34,17 +35,20 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_DISCUSSION_URL = "DISCUSSION_URL";
 
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _background;
 	private final LocalRecordCache _recordCache;
 	private final EntryCacheRegistry _entryRegistry;
 
 	public POST_Form_EditPost(IEnvironment environment
+			, ILogger logger
 			, BackgroundOperations background
 			, LocalRecordCache recordCache
 			, EntryCacheRegistry entryRegistry
 	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_background = background;
 		_recordCache = recordCache;
 		_entryRegistry = entryRegistry;
@@ -64,7 +68,7 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 				|| (null != discussionUrl)
 		)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				EditEntry.Result result = EditEntry.run(access, eltCid, name, description, discussionUrl);
 				if (null != result)

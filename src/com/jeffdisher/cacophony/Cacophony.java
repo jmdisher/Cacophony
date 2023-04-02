@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -100,23 +101,26 @@ public class Cacophony {
 				
 				// Make sure we get ownership of the lock file.
 				StandardEnvironment executor = null;
+				boolean errorDidOccur = false;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
 					IConnection connection = connectionFactory.buildConnection(ipfsConnectString);
 					IpfsKey publicKey = _publicKeyForName(connection, keyName);
-					executor = new StandardEnvironment(System.out, dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
+					executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
+					StandardLogger logger = StandardLogger.topLogger(System.out);
 					// Make sure that we create an empty storage directory, if we don't already have one - we ignore whether or not this worked.
 					StandardAccess.createNewChannelConfig(executor, ipfsConnectString, keyName);
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
-					ICommand.Result result = command.runInEnvironment(executor);
+					ICommand.Result result = command.runInEnvironment(executor, logger);
 					
-					boolean didPublish = _handleResult(executor, result);
+					boolean didPublish = _handleResult(executor, logger, result);
 					if (!didPublish)
 					{
 						System.err.println("WARNING:  Update succeeded but publish failed so it will need to be retried");
 					}
+					errorDidOccur = logger.didErrorOccur();
 				}
 				catch (UsageException e)
 				{
@@ -136,7 +140,7 @@ public class Cacophony {
 				}
 				if (null != executor)
 				{
-					if (executor.didErrorOccur())
+					if (errorDidOccur)
 					{
 						// This is a "safe" error, meaning that the command completed successfully but some kind of clean-up may have failed, resulting in manual intervention steps being logged.
 						System.exit(EXIT_SAFE_ERROR);
@@ -186,20 +190,20 @@ public class Cacophony {
 		return publicKey;
 	}
 
-	private static boolean _handleResult(StandardEnvironment environment, ICommand.Result result)
+	private static boolean _handleResult(StandardEnvironment environment, StandardLogger logger, ICommand.Result result)
 	{
 		boolean didPublish = false;
 		// If there is a new root, publish it.
 		IpfsFile newRoot = result.getIndexToPublish();
 		if (null != newRoot)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 			{
-				environment.logVerbose("Publishing " + newRoot + "...");
+				logger.logVerbose("Publishing " + newRoot + "...");
 				FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 				
 				// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-				CommandHelpers.commonWaitForPublish(environment, asyncPublish);
+				CommandHelpers.commonWaitForPublish(logger, asyncPublish);
 				didPublish = true;
 			}
 			catch (IpfsConnectionException e)

@@ -28,7 +28,7 @@ public class ConcurrentFolloweeRefresher
 	public static final double EXISTING_FOLLOWEE_FULLNESS_FRACTION = 0.90;
 	public static final double NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION = 1.0;
 
-	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final IpfsKey _followeeKey;
 	private final IpfsFile _previousRoot;
 	private final PrefsData _prefs;
@@ -56,19 +56,19 @@ public class ConcurrentFolloweeRefresher
 	 * @param prefs The preferences object.
 	 * @param isDelete True if we should be deleting this followee (removing all data instead of updating).
 	 */
-	public ConcurrentFolloweeRefresher(IEnvironment environment
+	public ConcurrentFolloweeRefresher(ILogger logger
 			, IpfsKey followeeKey
 			, IpfsFile previousRoot
 			, PrefsData prefs
 			, boolean isDelete
 	)
 	{
-		Assert.assertTrue(null != environment);
+		Assert.assertTrue(null != logger);
 		Assert.assertTrue(null != followeeKey);
 		Assert.assertTrue(null != previousRoot);
 		Assert.assertTrue(null != prefs);
 		
-		_environment = environment;
+		_logger = logger;
 		_followeeKey = followeeKey;
 		_previousRoot = previousRoot;
 		_prefs = prefs;
@@ -101,7 +101,7 @@ public class ConcurrentFolloweeRefresher
 					: ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION
 			;
 		}
-		CommandHelpers.shrinkCacheToFitInPrefs(_environment, access, fullnessFraction);
+		CommandHelpers.shrinkCacheToFitInPrefs(_logger, access, fullnessFraction);
 		_transaction = access.openConcurrentTransaction();
 		_cachedEntriesForFollowee = followees.snapshotAllElementsForFollowee(_followeeKey);
 		Assert.assertTrue(null != _cachedEntriesForFollowee);
@@ -130,14 +130,14 @@ public class ConcurrentFolloweeRefresher
 		{
 			entryRegistry.setSpecial(_followeeKey, "Refreshing");
 		}
-		_refreshSupport = new StandardRefreshSupport(_environment
+		_refreshSupport = new StandardRefreshSupport(_logger
 				, _transaction
 				, _followeeKey
 				, _cachedEntriesForFollowee
 				, entryRegistry
 		);
 		boolean refreshWasSuccess = false;
-		IEnvironment.IOperationLog log = _environment.logStart("Starting concurrent refresh: " + _followeeKey);
+		ILogger log = _logger.logStart("Starting concurrent refresh: " + _followeeKey);
 		try
 		{
 			if (_isDelete)

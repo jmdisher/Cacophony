@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.UpdateDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -29,12 +30,18 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_WEBSITE = "WEBSITE";
 
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _background;
 	private final LocalUserInfoCache _userInfoCache;
 
-	public POST_Form_UserInfo(IEnvironment environment, BackgroundOperations background, LocalUserInfoCache userInfoCache)
+	public POST_Form_UserInfo(IEnvironment environment
+			, ILogger logger
+			, BackgroundOperations background
+			, LocalUserInfoCache userInfoCache
+	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_background = background;
 		_userInfoCache = userInfoCache;
 	}
@@ -59,7 +66,7 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 		)
 		{
 			StreamDescription streamDescription;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				UpdateDescription.Result result = UpdateDescription.run(access, name, description, null, email, website);
 				IpfsFile newRoot = result.newRoot();

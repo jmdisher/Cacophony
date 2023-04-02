@@ -4,6 +4,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.AddRecommendation;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -18,11 +19,16 @@ import jakarta.servlet.http.HttpServletResponse;
 public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _backgroundOperations;
 
-	public POST_Raw_AddRecommendation(IEnvironment environment, BackgroundOperations backgroundOperations)
+	public POST_Raw_AddRecommendation(IEnvironment environment
+			, ILogger logger
+			, BackgroundOperations backgroundOperations
+	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -33,7 +39,7 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 		if (null != userToAdd)
 		{
 			IpfsFile newRoot = null;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				newRoot = AddRecommendation.run(access, userToAdd);
 			}

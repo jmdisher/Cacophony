@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
@@ -29,10 +30,14 @@ import jakarta.servlet.http.HttpServletResponse;
 public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	
-	public GET_UnknownUserInfo(IEnvironment environment)
+	public GET_UnknownUserInfo(IEnvironment environment
+			, ILogger logger
+	)
 	{
 		_environment = environment;
+		_logger = logger;
 	}
 	
 	@Override
@@ -45,7 +50,7 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 			// Since every step in this operation can be blocking, but we only need network access, we just user small
 			// read-only access requests.
 			FutureResolve resolved;
-			try (IReadingAccess access = StandardAccess.readAccess(_environment))
+			try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
 			{
 				resolved = access.resolvePublicKey(userToResolve);
 			}
@@ -53,7 +58,7 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 			if (null != index)
 			{
 				FutureRead<StreamIndex> futureStreamIndex;
-				try (IReadingAccess access = StandardAccess.readAccess(_environment))
+				try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
 				{
 					futureStreamIndex = access.loadNotCached(index, (byte[] data) -> GlobalData.deserializeIndex(data));
 				}
@@ -61,7 +66,7 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 				IpfsFile description = IpfsFile.fromIpfsCid(streamIndex.getDescription());
 				FutureRead<StreamDescription> futureStreamDescription;
 				String directFetchUrlRoot;
-				try (IReadingAccess access = StandardAccess.readAccess(_environment))
+				try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
 				{
 					futureStreamDescription = access.loadNotCached(description, (byte[] data) -> GlobalData.deserializeDescription(data));
 					directFetchUrlRoot = access.getDirectFetchUrlRoot();

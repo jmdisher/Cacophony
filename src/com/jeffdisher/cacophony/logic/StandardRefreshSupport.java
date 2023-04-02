@@ -24,7 +24,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupport
 {
-	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
@@ -35,20 +35,20 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final List<Consumer<LocalRecordCache>> _localRecordCacheUpdates;
 	private final List<Consumer<LocalUserInfoCache>> _userInfoCacheUpdates;
 
-	public StandardRefreshSupport(IEnvironment environment
+	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
 			, EntryCacheRegistry entryRegistry
 	)
 	{
-		Assert.assertTrue(null != environment);
+		Assert.assertTrue(null != logger);
 		Assert.assertTrue(null != transaction);
 		Assert.assertTrue(null != followeeKey);
 		Assert.assertTrue(null != cachedEntriesForFollowee);
 		// connectorForUser can be null.
 		
-		_environment = environment;
+		_logger = logger;
 		_transaction = transaction;
 		_followeeKey = followeeKey;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
@@ -93,7 +93,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void logMessage(String message)
 	{
-		_environment.logVerbose(message);
+		_logger.logVerbose(message);
 	}
 	@Override
 	public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)

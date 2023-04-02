@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -35,14 +36,22 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 	public final static String COMMAND_REPUBLISH = "COMMAND_REPUBLISH";
 
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final String _xsrf;
 	private final HandoffConnector<Integer, String> _statusHandoff;
 	private final CountDownLatch _stopLatch;
 	private final BackgroundOperations _background;
 	
-	public WS_BackgroundStatus(IEnvironment environment, String xsrf, HandoffConnector<Integer, String> statusHandoff, CountDownLatch stopLatch, BackgroundOperations background)
+	public WS_BackgroundStatus(IEnvironment environment
+			, ILogger logger
+			, String xsrf
+			, HandoffConnector<Integer, String> statusHandoff
+			, CountDownLatch stopLatch
+			, BackgroundOperations background
+	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_xsrf = xsrf;
 		_statusHandoff = statusHandoff;
 		_stopLatch = stopLatch;
@@ -94,7 +103,7 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 			{
 				// Look up the last published root and request that background operations republish it.
 				IpfsFile root = null;
-				try (IReadingAccess access = StandardAccess.readAccess(_environment))
+				try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
 				{
 					root = access.getLastRootElement();
 				}

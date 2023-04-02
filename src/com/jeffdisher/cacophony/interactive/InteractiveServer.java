@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
@@ -42,9 +43,9 @@ public class InteractiveServer
 	// The number of most recent entries, for each user, which will be added to the combined list.
 	public static final int PER_USER_COMBINED_START_SIZE = 10;
 
-	public static void runServerUntilStop(IEnvironment environment, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
+	public static void runServerUntilStop(IEnvironment environment, ILogger logger, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
-		environment.logVerbose("Setting up initial state before starting server...");
+		logger.logVerbose("Setting up initial state before starting server...");
 		
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
@@ -57,7 +58,7 @@ public class InteractiveServer
 		LocalRecordCache localRecordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			prefs = access.readPrefs();
 			ourPublicKey = access.getPublicKey();
@@ -90,13 +91,13 @@ public class InteractiveServer
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
-		BackgroundOperations background = new BackgroundOperations(environment, new BackgroundOperations.IOperationRunner()
+		BackgroundOperations background = new BackgroundOperations(environment, logger, new BackgroundOperations.IOperationRunner()
 		{
 			@Override
 			public FuturePublish startPublish(IpfsFile newRoot)
 			{
 				FuturePublish publish = null;
-				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 				{
 					publish = access.beginIndexPublish(newRoot);
 				}
@@ -112,11 +113,11 @@ public class InteractiveServer
 			public Runnable startFolloweeRefresh(IpfsKey followeeKey)
 			{
 				ConcurrentFolloweeRefresher refresher = null;
-				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-					refresher = new ConcurrentFolloweeRefresher(environment
+					refresher = new ConcurrentFolloweeRefresher(logger
 							, followeeKey
 							, lastRoot
 							, access.readPrefs()
@@ -128,15 +129,15 @@ public class InteractiveServer
 				{
 					// This case, we just log.
 					// (we may want to re-request the publish attempt).
-					environment.logError("Error in background refresh start: " + e.getLocalizedMessage());
+					logger.logError("Error in background refresh start: " + e.getLocalizedMessage());
 				}
 				// We must have a connector by this point since this is only called on refresh, not start follow.
-				return new RefreshWrapper(environment, localRecordCache, userInfoCache, refresher, entryRegistry);
+				return new RefreshWrapper(environment, logger, localRecordCache, userInfoCache, refresher, entryRegistry);
 			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
 		// Load all the known followees into the background operations for background refresh.
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
 			// We will also just request an update of every followee we have.
 			IFolloweeReading followees = access.readableFolloweeData();
@@ -162,14 +163,14 @@ public class InteractiveServer
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
 		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
 		
-		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, background, localRecordCache, entryRegistry));
+		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, logger, background, localRecordCache, entryRegistry));
 		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
 		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(environment, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, background, localRecordCache, manager, entryRegistry));
-		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(environment, background));
+		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, logger, background, localRecordCache, manager, entryRegistry));
+		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(logger, background));
 		
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
 		validated.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(manager));
@@ -201,39 +202,39 @@ public class InteractiveServer
 		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
 		
 		// We use a web socket for listening to updates of background process state.
-		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, xsrf, statusHandoff, stopLatch, background));
+		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, logger, xsrf, statusHandoff, stopLatch, background));
 		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
 		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(xsrf, entryRegistry));
 		server.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(xsrf, entryRegistry));
 		
 		// Prefs.
-		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment));
-		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, background));
+		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment, logger));
+		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, logger, background));
 		
 		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, background, userInfoCache, entryRegistry));
-		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, background, localRecordCache, userInfoCache, entryRegistry));
-		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, background));
-		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, background));
-		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, background, userInfoCache));
-		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(environment, background, userInfoCache));
-		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(environment, background, localRecordCache, entryRegistry));
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, logger, background, userInfoCache, entryRegistry));
+		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, logger, background, localRecordCache, userInfoCache, entryRegistry));
+		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, logger, background));
+		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, logger, background));
+		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, logger, background, userInfoCache));
+		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(environment, logger, background, userInfoCache));
+		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(environment, logger, background, localRecordCache, entryRegistry));
 		
 		// Entry-points related to followee state changes.
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
 		
 		// General REST interface for read-only queries originally generated by the "--htmlOutput" mode.
-		validated.addGetHandler("/publicKey", 0, new GET_PublicKey(environment));
-		validated.addGetHandler("/userInfo", 1, new GET_UserInfo(environment, userInfoCache));
-		validated.addGetHandler("/postHashes", 1, new GET_PostHashes(environment));
-		validated.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(environment));
-		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(environment, localRecordCache));
-		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(environment));
+		validated.addGetHandler("/publicKey", 0, new GET_PublicKey(environment, logger));
+		validated.addGetHandler("/userInfo", 1, new GET_UserInfo(environment, logger, userInfoCache));
+		validated.addGetHandler("/postHashes", 1, new GET_PostHashes(environment, logger));
+		validated.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(environment, logger));
+		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(environment, logger, localRecordCache));
+		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(environment, logger));
 		validated.addGetHandler("/version", 0, new GET_Version());
 		
 		// Special interface for requesting information about other users.
 		// Note that we don't pin any of the information through this interface so it may fail or be slow.
-		validated.addGetHandler("/unknownUser", 1, new GET_UnknownUserInfo(environment));
+		validated.addGetHandler("/unknownUser", 1, new GET_UnknownUserInfo(environment, logger));
 		
 		server.start();
 		if (null != forcedCommand)
@@ -290,6 +291,7 @@ public class InteractiveServer
 
 
 	private static record RefreshWrapper(IEnvironment environment
+			, ILogger logger
 			, LocalRecordCache localRecordCache
 			, LocalUserInfoCache userInfoCache
 			, ConcurrentFolloweeRefresher refresher
@@ -305,7 +307,7 @@ public class InteractiveServer
 			{
 				boolean didRefresh = this.refresher.runRefresh(entryRegistry);
 				// Write-back any update associated with this (success or fail - since we want to update the time).
-				try (IWritingAccess access = StandardAccess.writeAccess(environment))
+				try (IWritingAccess access = StandardAccess.writeAccess(this.environment, this.logger))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					
@@ -315,14 +317,14 @@ public class InteractiveServer
 				catch (IpfsConnectionException e)
 				{
 					// This case, we just log.
-					environment.logError("Error in background refresh finish: " + e.getLocalizedMessage());
+					this.logger.logError("Error in background refresh finish: " + e.getLocalizedMessage());
 				}
 				// (we just log the result)
-				this.environment.logVerbose("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));
+				this.logger.logVerbose("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));
 			}
 			else
 			{
-				this.environment.logVerbose("Background refresh skipped due to null refresher");
+				this.logger.logVerbose("Background refresh skipped due to null refresher");
 			}
 		}
 	}

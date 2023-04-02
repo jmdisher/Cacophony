@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -18,74 +17,32 @@ public class StandardEnvironment implements IEnvironment
 	// network but this seems to be minimized with a larger number of threads so we use 16 instead of the earlier value
 	// of 4.
 	// This will likely still be tweaked in the future as more complex use-cases become common and can be tested.
-	private static final int THREAD_COUNT = 16;
+	private static final int THREAD_COUNT = 1;
 
 	// This lock is used to protect internal variables which may be changed by multiple threads.
 	private final Lock _internalLock;
 
-	private final PrintStream _stream;
 	private final IConfigFileSystem _fileSystem;
 	private final LocalDataModel _sharedDataModel;
 	private final IConnection _connection;
 	private final MultiThreadedScheduler _scheduler;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
-	private int _nextOperationCounter;
-	private boolean _errorOccurred;
 	private DraftManager _lazySharedDraftManager;
 
-	public StandardEnvironment(PrintStream stream
-			, IConfigFileSystem fileSystem
+	public StandardEnvironment(IConfigFileSystem fileSystem
 			, IConnection connection
 			, String keyName
 			, IpfsKey publicKey
 	)
 	{
 		_internalLock = new ReentrantLock();
-		_stream = stream;
 		_fileSystem = fileSystem;
 		_sharedDataModel = new LocalDataModel(fileSystem);
 		_connection = connection;
 		_scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
 		_keyName = keyName;
 		_publicKey = publicKey;
-		_nextOperationCounter = 0;
-	}
-
-	@Override
-	public void logVerbose(String message)
-	{
-		// For now, we will always just log verbose.
-		_stream.println("* " + message);
-	}
-
-	/**
-	 * Used to create a logging object associated with this opening message so that the completion of the operation will
-	 * be associated with it.
-	 * 
-	 * @param openingMessage The message to log when opening the log option.
-	 * @return An object which can receive the log message for when this is finished.
-	 */
-	@Override
-	public IOperationLog logStart(String openingMessage)
-	{
-		int operationNumber = _nextOperationCounter + 1;
-		_nextOperationCounter += 1;
-		String prefix = "" + operationNumber;
-		_stream.println(">" + prefix + " " + openingMessage);
-		return new NestedLog(prefix);
-	}
-
-	@Override
-	public void logError(String message)
-	{
-		System.err.println(message);
-		_errorOccurred = true;
-	}
-
-	public boolean didErrorOccur()
-	{
-		return _errorOccurred;
 	}
 
 	@Override
@@ -168,40 +125,4 @@ public class StandardEnvironment implements IEnvironment
 	{
 		return System.currentTimeMillis();
 	}
-
-
-	private class NestedLog implements IOperationLog
-	{
-		private final String _prefix;
-		private int _nextNumber;
-		public NestedLog(String prefix)
-		{
-			_prefix = prefix;
-			_nextNumber = 0;
-		}
-		@Override
-		public IOperationLog logStart(String openingMessage)
-		{
-			int operationNumber = _nextNumber + 1;
-			_nextNumber += 1;
-			String prefix = _prefix + "." + operationNumber;
-			_stream.println(">" + prefix + "> " + openingMessage);
-			return new NestedLog(prefix);
-		}
-		@Override
-		public void logOperation(String message)
-		{
-			_stream.println("=" + _prefix + "= " + message);
-		}
-		@Override
-		public void logFinish(String finishMessage)
-		{
-			_stream.println("<" + _prefix + "< " + finishMessage);
-		}
-		@Override
-		public void logVerbose(String message)
-		{
-			_stream.println("*" + _prefix + "* " + message);
-		}
-	};
 }

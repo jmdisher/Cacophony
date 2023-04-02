@@ -14,7 +14,7 @@ import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
-import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -120,7 +120,7 @@ public class InteractiveHelpers
 	{
 		return draftManager.deleteExistingDraft(draftId);
 	}
-	public static PublishHelpers.PublishResult postExistingDraft(IEnvironment environment
+	public static PublishHelpers.PublishResult postExistingDraft(ILogger logger
 			, IWritingAccess access
 			, DraftManager draftManager
 			, int draftId
@@ -191,7 +191,7 @@ public class InteractiveHelpers
 		}
 		
 		PublishHelpers.PublishResult result;
-		IEnvironment.IOperationLog log = environment.logStart("Publishing draft");
+		ILogger log = logger.logStart("Publishing draft");
 		try
 		{
 			// The draft can have empty strings or null (only due to old versions) for discussionURL but we want to pass null in those cases to not attach it.
@@ -219,7 +219,7 @@ public class InteractiveHelpers
 		}
 		finally
 		{
-			closeElementFiles(environment, subElements);
+			closeElementFiles(subElements);
 		}
 		
 		return result;
@@ -440,7 +440,7 @@ public class InteractiveHelpers
 	}
 
 
-	private static void closeElementFiles(IEnvironment environment, PublishHelpers.PublishElement[] elements)
+	private static void closeElementFiles(PublishHelpers.PublishElement[] elements)
 	{
 		for (PublishHelpers.PublishElement element : elements)
 		{

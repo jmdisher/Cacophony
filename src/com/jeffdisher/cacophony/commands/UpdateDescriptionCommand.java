@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.UpdateDescription;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -21,7 +22,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
 	{
 		// All of the parameters are optional but at least one of them must be provided (null means "unchanged field").
 		if ((null == _name) && (null == _description) && (null == _pictureStream) && (null == _email) && (null == _website))
@@ -39,13 +40,13 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		}
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			if (null == access.getLastRootElement())
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			IEnvironment.IOperationLog log = environment.logStart("Updating channel description...");
+			ILogger log = logger.logStart("Updating channel description...");
 			UpdateDescription.Result result = UpdateDescription.run(access, _name, _description, _pictureStream, _email, _website);
 			newRoot = result.newRoot();
 			log.logFinish("Update completed!");
@@ -62,7 +63,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				catch (IOException e)
 				{
 					// We will just log and ignore this since it shouldn't happen but we would want to know about it.
-					environment.logError(e.getLocalizedMessage());
+					logger.logError(e.getLocalizedMessage());
 				}
 			}
 		}

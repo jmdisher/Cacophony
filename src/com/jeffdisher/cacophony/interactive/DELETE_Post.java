@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveEntry;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -18,13 +19,20 @@ import jakarta.servlet.http.HttpServletResponse;
 public class DELETE_Post implements ValidatedEntryPoints.DELETE
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
 	private final EntryCacheRegistry _entryRegistry;
 
-	public DELETE_Post(IEnvironment environment, BackgroundOperations backgroundOperations, LocalRecordCache recordCache, EntryCacheRegistry entryRegistry)
+	public DELETE_Post(IEnvironment environment
+			, ILogger logger
+			, BackgroundOperations backgroundOperations
+			, LocalRecordCache recordCache
+			, EntryCacheRegistry entryRegistry
+	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
 		_entryRegistry = entryRegistry;
@@ -36,7 +44,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
 		if (null != postHashToRemove)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				IpfsFile newRoot = RemoveEntry.run(access, _recordCache, postHashToRemove);
 				if (null != newRoot)

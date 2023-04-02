@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -24,12 +25,14 @@ import jakarta.servlet.http.HttpServletResponse;
 public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _backgroundOperations;
 	private final LocalRecordCache _recordCache;
 	private final LocalUserInfoCache _userInfoCache;
 	private final EntryCacheRegistry _entryRegistry;
 
 	public DELETE_RemoveFollowee(IEnvironment environment
+			, ILogger logger
 			, BackgroundOperations backgroundOperations
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
@@ -37,6 +40,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_backgroundOperations = backgroundOperations;
 		_recordCache = recordCache;
 		_userInfoCache = userInfoCache;
@@ -51,14 +55,14 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 		{
 			ConcurrentFolloweeRefresher refresher = null;
 			boolean isAlreadyFollowed = false;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				IFolloweeWriting followees = access.writableFolloweeData();
 				IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(userToRemove);
 				isAlreadyFollowed = (null != lastRoot);
 				if (isAlreadyFollowed)
 				{
-					refresher = new ConcurrentFolloweeRefresher(_environment
+					refresher = new ConcurrentFolloweeRefresher(_logger
 							, userToRemove
 							, lastRoot
 							, access.readPrefs()
@@ -78,7 +82,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 						: false
 				;
 				
-				try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+				try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 				{
 					IFolloweeWriting followees = access.writableFolloweeData();
 					long lastPollMillis = _environment.currentTimeMillis();
@@ -97,7 +101,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 					}
 					else
 					{
-						_environment.logError("Followee failed to be removed: " + userToRemove);
+						_logger.logError("Followee failed to be removed: " + userToRemove);
 					}
 					response.setStatus(HttpServletResponse.SC_OK);
 				}

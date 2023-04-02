@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -19,17 +20,17 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
-			_runCore(environment, access);
+			_runCore(logger, access);
 		}
 		return None.NONE;
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	private void _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
@@ -44,12 +45,12 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			rootToLoad = followees.getLastFetchedRootForFollowee(_publicKey);
 			if (null != rootToLoad)
 			{
-				environment.logVerbose("Following " + _publicKey);
+				logger.logVerbose("Following " + _publicKey);
 				isCached = true;
 			}
 			else
 			{
-				environment.logVerbose("NOT following " + _publicKey);
+				logger.logVerbose("NOT following " + _publicKey);
 				rootToLoad = access.resolvePublicKey(_publicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -79,7 +80,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		).get();
 		
 		// Walk the recommendations and print their keys to the console.
-		IEnvironment.IOperationLog log = environment.logStart("Recommendations of " + publicKey.toPublicKey() + ":");
+		ILogger log = logger.logStart("Recommendations of " + publicKey.toPublicKey() + ":");
 		for (String rawKey : recommendations.getUser())
 		{
 			log.logOperation("\t" + rawKey);

@@ -4,6 +4,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.RemoveRecommendation;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -18,11 +19,16 @@ import jakarta.servlet.http.HttpServletResponse;
 public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 {
 	private final IEnvironment _environment;
+	private final ILogger _logger;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_RemoveRecommendation(IEnvironment environment, BackgroundOperations backgroundOperations)
+	public DELETE_RemoveRecommendation(IEnvironment environment
+			, ILogger logger
+			, BackgroundOperations backgroundOperations
+	)
 	{
 		_environment = environment;
+		_logger = logger;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -33,7 +39,7 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 		if (null != userToRemove)
 		{
 			IpfsFile newRoot = null;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment))
+			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
 			{
 				newRoot = RemoveRecommendation.run(access, userToRemove);
 			}

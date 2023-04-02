@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -39,10 +40,11 @@ public class TestLocalIntegrity
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
-		createChannel.runInEnvironment(env);
+		createChannel.runInEnvironment(env, logger);
 		
 		// We expect 5 keys in the storage:
 		// -index
@@ -60,10 +62,11 @@ public class TestLocalIntegrity
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
-		createChannel.runInEnvironment(env);
+		createChannel.runInEnvironment(env, logger);
 		
 		// We expect the normal 5.
 		Set<IpfsFile> initialFiles = node.getStoredFileSet();
@@ -79,7 +82,7 @@ public class TestLocalIntegrity
 		PublishCommand publish = new PublishCommand("name", "description", null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
 		});
-		publish.runInEnvironment(env);
+		publish.runInEnvironment(env, logger);
 		// We expect 7 keys in the storage:
 		// -index
 		// -recommendations
@@ -105,7 +108,7 @@ public class TestLocalIntegrity
 		
 		// Now, remove this entry.
 		RemoveEntryFromThisChannelCommand remove = new RemoveEntryFromThisChannelCommand(entry);
-		remove.runInEnvironment(env);
+		remove.runInEnvironment(env, logger);
 		
 		// We should see the same files from the original post.
 		Set<IpfsFile> afterRemoveFiles = node.getStoredFileSet();
@@ -116,6 +119,6 @@ public class TestLocalIntegrity
 
 	private static IEnvironment _createSingleNode(IConnection serverData)
 	{
-		return new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), serverData, KEY_NAME1, PUBLIC_KEY1);
+		return new StandardEnvironment(new MemoryConfigFileSystem(null), serverData, KEY_NAME1, PUBLIC_KEY1);
 	}
 }

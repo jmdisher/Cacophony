@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -16,11 +17,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshNextFolloweeCommand() implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
 	{
-		IEnvironment.IOperationLog log;
+		ILogger log;
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			IFolloweeWriting followees = access.writableFolloweeData();
 			
@@ -29,8 +30,8 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 			{
 				throw new UsageException("Not following any users");
 			}
-			log = environment.logStart("Refreshing followee " + publicKey + "...");
-			refresher = _setup(environment, access, followees, publicKey);
+			log = logger.logStart("Refreshing followee " + publicKey + "...");
+			refresher = _setup(logger, access, followees, publicKey);
 		}
 		
 		// Run the actual refresh.
@@ -39,7 +40,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			_finish(environment, access, refresher);
 		}
@@ -58,12 +59,12 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 	}
 
 
-	private ConcurrentFolloweeRefresher _setup(IEnvironment environment, IWritingAccess access, IFolloweeWriting followees, IpfsKey publicKey) throws IpfsConnectionException
+	private ConcurrentFolloweeRefresher _setup(ILogger logger, IWritingAccess access, IFolloweeWriting followees, IpfsKey publicKey) throws IpfsConnectionException
 	{
 		IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(publicKey);
 		Assert.assertTrue(null != lastRoot);
 		
-		ConcurrentFolloweeRefresher refresher = new ConcurrentFolloweeRefresher(environment
+		ConcurrentFolloweeRefresher refresher = new ConcurrentFolloweeRefresher(logger
 				, publicKey
 				, lastRoot
 				, access.readPrefs()

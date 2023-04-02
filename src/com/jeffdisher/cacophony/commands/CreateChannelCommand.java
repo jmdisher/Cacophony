@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -25,12 +26,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record CreateChannelCommand(String keyName) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException
 	{
 		Assert.assertTrue(null != keyName);
 		
 		// Make sure that we aren't going to over-write an existing structure.
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
 			if (null != access.getLastRootElement())
 			{
@@ -40,13 +41,13 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
-		IEnvironment.IOperationLog setupLog = environment.logStart("Verifying IPFS and setting up public key called \"" + keyName + "\"");
-		_setupKey(environment);
+		ILogger setupLog = logger.logStart("Verifying IPFS and setting up public key called \"" + keyName + "\"");
+		_setupKey(environment, setupLog);
 		setupLog.logFinish("Key setup done!");
 		
-		IEnvironment.IOperationLog log = environment.logStart("Creating initial channel state...");
+		ILogger log = logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			newRoot = _runCore(environment, access);
 		}
@@ -55,7 +56,7 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 	}
 
 
-	private void _setupKey(IEnvironment environment) throws IpfsConnectionException
+	private void _setupKey(IEnvironment environment, ILogger logger) throws IpfsConnectionException
 	{
 		IConnection connection = environment.getConnection();
 		
@@ -64,7 +65,7 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		boolean keyExists = keys.stream().anyMatch((k) -> k.name().equals(keyName));
 		// The key now ALWAYS exists since we create it in the pre-command phase.
 		Assert.assertTrue(keyExists);
-		environment.logVerbose("Using existing key: \"" + keyName + "\"");
+		logger.logVerbose("Using existing key: \"" + keyName + "\"");
 	}
 
 	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException

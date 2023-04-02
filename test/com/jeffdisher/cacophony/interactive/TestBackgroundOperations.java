@@ -9,8 +9,10 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MockEnvironment;
+import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -39,10 +41,11 @@ public class TestBackgroundOperations
 	@Test
 	public void noOperations() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -50,11 +53,12 @@ public class TestBackgroundOperations
 	@Test
 	public void oneOperation() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -67,12 +71,13 @@ public class TestBackgroundOperations
 	@Test
 	public void sequentialOperations() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one, then another.
@@ -93,12 +98,13 @@ public class TestBackgroundOperations
 		// This one is somewhat non-deterministic in that the first element added may be seen, or could be overwritten.
 		// We do know that none of the others will be seen, but then the last will ALWAYS be seen.
 		// We will verify this by only setting success on the first and last.
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
 		statusHandoff.registerListener(beforeListener, 0);
@@ -132,11 +138,12 @@ public class TestBackgroundOperations
 	public void testPartialListening() throws Throwable
 	{
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
@@ -159,7 +166,8 @@ public class TestBackgroundOperations
 	@Test
 	public void oneRefresh() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		publishFirst.success();
 		boolean didRun[] = new boolean[1];
@@ -169,7 +177,7 @@ public class TestBackgroundOperations
 			didRun[0] = true;
 		};
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -186,7 +194,8 @@ public class TestBackgroundOperations
 	public void refreshAndPublish() throws Throwable
 	{
 		// We will publish, then use the delay that causes to install both a publish and a refresh so we can see what happens when they both run.
-		StandardEnvironment env = new StandardEnvironment(System.out, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishSecond = new FuturePublish(F2);
 		boolean didRun[] = new boolean[1];
@@ -197,7 +206,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
@@ -228,6 +237,7 @@ public class TestBackgroundOperations
 	public void sortingAssumptions() throws Throwable
 	{
 		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
 		// Just make sure that our understanding of the sorting Comparator is correct.
 		int didRun[] = new int[1];
 		TestOperations ops = new TestOperations();
@@ -247,7 +257,7 @@ public class TestBackgroundOperations
 			didRun[0] += 1;
 		};
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		FuturePublish publishFirst = new FuturePublish(F1);
 		ops.returnOn(F1, publishFirst);
 		publishFirst.success();
@@ -278,6 +288,7 @@ public class TestBackgroundOperations
 		// While we could use an external monitor, it would complicate the code in the BackgroundOperations further, so we won't.
 		// The down-side to using this real delay should only be that the test could actually test nothing, if running too slowly (seems to not happen, in practice).
 		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
 		// We will just use a single publish, and will repeat it, but it will always be left with success.
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
@@ -288,7 +299,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
@@ -320,6 +331,7 @@ public class TestBackgroundOperations
 		// Enqueue 2 followees, allow them both to refresh, then request a refresh for one of them and see that it
 		// happens immediately.
 		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
 		
@@ -333,7 +345,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
@@ -368,6 +380,7 @@ public class TestBackgroundOperations
 	public void addRemoveFollowee() throws Throwable
 	{
 		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
 		
@@ -378,7 +391,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		

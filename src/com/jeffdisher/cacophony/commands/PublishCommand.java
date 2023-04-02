@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -21,16 +22,16 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, SizeConstraintException
+	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		Assert.assertTrue(null != _name);
 		Assert.assertTrue(null != _description);
 		
-		IEnvironment.IOperationLog log = environment.logStart("Publish: " + this);
-		PublishHelpers.PublishElement[] openElements = openElementFiles(environment, _elements);
+		ILogger log = logger.logStart("Publish: " + this);
+		PublishHelpers.PublishElement[] openElements = openElementFiles(logger, _elements);
 		IpfsFile newRoot;
 		IpfsFile newElement;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			if (null == access.getLastRootElement())
 			{
@@ -42,7 +43,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		}
 		finally
 		{
-			closeElementFiles(environment, openElements);
+			closeElementFiles(openElements);
 		}
 		
 		log.logOperation("New element: " + newElement);
@@ -51,7 +52,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 	}
 
 
-	private static PublishHelpers.PublishElement[] openElementFiles(IEnvironment environment, ElementSubCommand[] commands)
+	private static PublishHelpers.PublishElement[] openElementFiles(ILogger logger, ElementSubCommand[] commands)
 	{
 		boolean error = false;
 		PublishHelpers.PublishElement[] elements = new PublishHelpers.PublishElement[commands.length];
@@ -66,19 +67,19 @@ public record PublishCommand(String _name, String _description, String _discussi
 			}
 			catch (FileNotFoundException e)
 			{
-				environment.logError("File not found:  " + file.getAbsolutePath());
+				logger.logError("File not found:  " + file.getAbsolutePath());
 				error = true;
 			}
 		}
 		if (error)
 		{
-			closeElementFiles(environment, elements);
+			closeElementFiles(elements);
 			elements = null;
 		}
 		return elements;
 	}
 
-	private static void closeElementFiles(IEnvironment environment, PublishHelpers.PublishElement[] elements)
+	private static void closeElementFiles(PublishHelpers.PublishElement[] elements)
 	{
 		for (PublishHelpers.PublishElement element : elements)
 		{

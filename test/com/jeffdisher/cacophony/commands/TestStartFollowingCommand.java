@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -48,7 +49,8 @@ public class TestStartFollowingCommand
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), sharedConnection, KEY_NAME, PUBLIC_KEY);
+		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), sharedConnection, KEY_NAME, PUBLIC_KEY);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
@@ -69,7 +71,7 @@ public class TestStartFollowingCommand
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
-		command.runInEnvironment(executor);
+		command.runInEnvironment(executor, logger);
 		
 		// Verify the states that should have changed.
 		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
@@ -79,7 +81,7 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
-		IReadingAccess reading = StandardAccess.readAccess(executor);
+		IReadingAccess reading = StandardAccess.readAccess(executor, logger);
 		IpfsFile lastPublishedIndex = reading.getLastRootElement();
 		reading.close();
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
@@ -105,14 +107,15 @@ public class TestStartFollowingCommand
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem filesystem = new MemoryConfigFileSystem(null);
-		StandardEnvironment executor = new StandardEnvironment(new PrintStream(outputStream), filesystem, sharedConnection, KEY_NAME, PUBLIC_KEY);
+		StandardEnvironment executor = new StandardEnvironment(filesystem, sharedConnection, KEY_NAME, PUBLIC_KEY);
+		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream));
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		
 		boolean didFail = false;
 		try
 		{
-			command.runInEnvironment(executor);
+			command.runInEnvironment(executor, logger);
 		}
 		catch (ProtocolDataException e)
 		{

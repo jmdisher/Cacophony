@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -26,17 +27,17 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand<None>
 {
 	@Override
-	public None runInEnvironment(IEnvironment environment) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public None runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(environment))
+		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
 		{
-			_runCore(environment, access);
+			_runCore(logger, access);
 		}
 		return None.NONE;
 	}
 
 
-	private void _runCore(IEnvironment environment, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	private void _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
@@ -48,12 +49,12 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			rootToLoad = followees.getLastFetchedRootForFollowee(_channelPublicKey);
 			if (null != rootToLoad)
 			{
-				environment.logVerbose("Following " + _channelPublicKey);
+				logger.logVerbose("Following " + _channelPublicKey);
 				isCached = true;
 			}
 			else
 			{
-				environment.logVerbose("NOT following " + _channelPublicKey);
+				logger.logVerbose("NOT following " + _channelPublicKey);
 				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
@@ -88,11 +89,11 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		}
 		
 		// Walk the elements, reading each element.
-		IEnvironment.IOperationLog log = environment.logStart("Found " + asyncRecords.size() + " records:");
+		ILogger log = logger.logStart("Found " + asyncRecords.size() + " records:");
 		for (AsyncRecord asyncRecord : asyncRecords)
 		{
 			StreamRecord record = asyncRecord.future.get();
-			IEnvironment.IOperationLog log2 = log.logStart("element " + asyncRecord.recordCid + ": " + record.getName());
+			ILogger log2 = log.logStart("element " + asyncRecord.recordCid + ": " + record.getName());
 			DataArray array = record.getElements();
 			for (DataElement element : array.getElement())
 			{

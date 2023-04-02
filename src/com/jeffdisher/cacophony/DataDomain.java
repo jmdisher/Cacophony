@@ -22,6 +22,7 @@ import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.logic.Uploader;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
@@ -90,16 +91,16 @@ public class DataDomain implements Closeable
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey(keyName, theirKey);
-		StandardEnvironment theirEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
-				, new MemoryConfigFileSystem(null)
+		StandardEnvironment theirEnv = new StandardEnvironment(new MemoryConfigFileSystem(null)
 				, them
 				, keyName
 				, theirKey
 		);
+		StandardLogger theirLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
 		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
-		new CreateChannelCommand(keyName).runInEnvironment(theirEnv);
-		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv);
-		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv);
+		new CreateChannelCommand(keyName).runInEnvironment(theirEnv, theirLogger);
+		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInEnvironment(theirEnv, theirLogger);
+		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInEnvironment(theirEnv, theirLogger);
 		IpfsFile newRoot = result.getIndexToPublish();
 		them.publish(keyName, theirKey, newRoot);
 		theirEnv.shutdown();
@@ -107,19 +108,19 @@ public class DataDomain implements Closeable
 		MockSingleNode us = new MockSingleNode(swarm);
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
-		StandardEnvironment ourEnv = new StandardEnvironment(new PrintStream(new ByteArrayOutputStream())
-				, ourFileSystem
+		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem
 				, us
 				, keyName
 				, ourKey
 		);
+		StandardLogger ourLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
 		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
-		new CreateChannelCommand(keyName).runInEnvironment(ourEnv);
-		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv);
+		new CreateChannelCommand(keyName).runInEnvironment(ourEnv, ourLogger);
+		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInEnvironment(ourEnv, ourLogger);
 		us.publish(keyName, ourKey, newRoot);
-		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv);
+		new StartFollowingCommand(theirKey).runInEnvironment(ourEnv, ourLogger);
 		// (for version 2.1, start follow doesn't fetch the data)
-		new RefreshFolloweeCommand(theirKey).runInEnvironment(ourEnv);
+		new RefreshFolloweeCommand(theirKey).runInEnvironment(ourEnv, ourLogger);
 		ourEnv.shutdown();
 		
 		return us;

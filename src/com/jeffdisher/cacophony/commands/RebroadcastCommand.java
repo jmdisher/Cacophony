@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -30,12 +31,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInEnvironment(IEnvironment environment) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public ChangedRoot runInEnvironment(IEnvironment environment, ILogger logger) throws IpfsConnectionException, UsageException, FailedDeserializationException
 	{
 		Assert.assertTrue(null != _elementCid);
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment))
+		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
 		{
 			if (null == access.getLastRootElement())
 			{
@@ -75,16 +76,16 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
 			StreamRecord record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			// The record makes sense so pin it and everything it references (will throw on error).
-			_pinReachableData(environment, access, record);
-			newRoot = _updateStreamAndPublish(environment, access, previousRoot, index, previousRecords, records);
+			_pinReachableData(logger, access, record);
+			newRoot = _updateStreamAndPublish(logger, access, previousRoot, index, previousRecords, records);
 		}
 		return new ChangedRoot(newRoot);
 	}
 
 
-	private void _pinReachableData(IEnvironment environment, IWritingAccess access, StreamRecord record) throws IpfsConnectionException
+	private void _pinReachableData(ILogger logger, IWritingAccess access, StreamRecord record) throws IpfsConnectionException
 	{
-		IEnvironment.IOperationLog log = environment.logStart("Pinning StreamRecord " + _elementCid);
+		ILogger log = logger.logStart("Pinning StreamRecord " + _elementCid);
 		List<FuturePin> pins = new ArrayList<>();
 		pins.add(access.pin(_elementCid));
 		for (DataElement elt : record.getElements().getElement())
@@ -103,7 +104,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			}
 			catch (IpfsConnectionException e)
 			{
-				environment.logError("Failed to pin " + pin.cid + ": " + e.getLocalizedMessage());
+				logger.logError("Failed to pin " + pin.cid + ": " + e.getLocalizedMessage());
 				// We will just take any one of these exceptions and re-throw it.
 				pinException = e;
 			}
@@ -124,10 +125,10 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		}
 	}
 
-	private IpfsFile _updateStreamAndPublish(IEnvironment environment, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError
+	private IpfsFile _updateStreamAndPublish(ILogger logger, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError
 	{
 		// If we get this far, that means that everything is pinned so this becomes a normal post operation.
-		IEnvironment.IOperationLog log = environment.logStart("Publishing to your stream...");
+		ILogger log = logger.logStart("Publishing to your stream...");
 		IpfsFile newRoot;
 		try
 		{
@@ -138,7 +139,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			byte[] rawRecords = GlobalData.serializeRecords(records);
 			IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 			index.setRecords(recordsHash.toSafeString());
-			environment.logVerbose("Saving and publishing new index");
+			logger.logVerbose("Saving and publishing new index");
 			newRoot = access.uploadIndexAndUpdateTracking(index);
 			
 			// Unpin the old meta-data.

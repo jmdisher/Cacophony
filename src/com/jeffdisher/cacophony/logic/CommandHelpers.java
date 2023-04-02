@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.logic.IEnvironment.IOperationLog;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -21,9 +20,9 @@ public class CommandHelpers
 	 * @param environment Used for logging.
 	 * @param asyncPublish The in-flight asynchronous publication.
 	 */
-	public static void commonWaitForPublish(IEnvironment environment, FuturePublish asyncPublish)
+	public static void commonWaitForPublish(ILogger logger, FuturePublish asyncPublish)
 	{
-		StandardEnvironment.IOperationLog log = environment.logStart("Waiting for publish " + asyncPublish.getIndexHash());
+		ILogger log = logger.logStart("Waiting for publish " + asyncPublish.getIndexHash());
 		IpfsConnectionException error = asyncPublish.get();
 		if (null == error)
 		{
@@ -32,7 +31,7 @@ public class CommandHelpers
 		else
 		{
 			log.logFinish("Failed: " + error.getLocalizedMessage());
-			environment.logError("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + asyncPublish.getIndexHash());
+			logger.logError("WARNING:  Failed to publish new entry to IPNS (the post succeeded, but a republish will be required): " + asyncPublish.getIndexHash());
 		}
 	}
 
@@ -45,9 +44,9 @@ public class CommandHelpers
 	 * @param fullnessFraction The fraction of the target we should consider our target (1.0 means full cache).
 	 * @throws IpfsConnectionException If something goes wrong interacting with the IPFS node.
 	 */
-	public static void shrinkCacheToFitInPrefs(IEnvironment environment, IWritingAccess access, double fullnessFraction) throws IpfsConnectionException
+	public static void shrinkCacheToFitInPrefs(ILogger logger, IWritingAccess access, double fullnessFraction) throws IpfsConnectionException
 	{
-		IOperationLog log = environment.logStart("Checking is cache requires shrinking...");
+		ILogger log = logger.logStart("Checking is cache requires shrinking...");
 		IFolloweeWriting followees = access.writableFolloweeData();
 		PrefsData prefs = access.readPrefs();
 		

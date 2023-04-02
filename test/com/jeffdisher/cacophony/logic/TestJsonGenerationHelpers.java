@@ -112,18 +112,19 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
+		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		
 		IpfsFile indexFile = null;
 		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
-		try (IWritingAccess access = StandardAccess.writeAccess(executor))
+		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
-		try (IReadingAccess access = StandardAccess.readAccess(executor))
+		try (IReadingAccess access = StandardAccess.readAccess(executor, logger))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, access.getPublicKey(), indexFile);
@@ -143,13 +144,14 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		StandardEnvironment executor = new StandardEnvironment(System.out, new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
+		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
+		StandardLogger logger = StandardLogger.topLogger(System.out);
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
 		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
-		try (IWritingAccess access = StandardAccess.writeAccess(executor))
+		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);
@@ -167,7 +169,7 @@ public class TestJsonGenerationHelpers
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
-		try (IReadingAccess access = StandardAccess.readAccess(executor))
+		try (IReadingAccess access = StandardAccess.readAccess(executor, logger))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);

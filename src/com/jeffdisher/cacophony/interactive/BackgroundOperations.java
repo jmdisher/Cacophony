@@ -6,6 +6,7 @@ import java.util.PriorityQueue;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -41,7 +42,7 @@ public class BackgroundOperations
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
 
-	public BackgroundOperations(IEnvironment environment, IOperationRunner operations, HandoffConnector<Integer, String> connector, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
+	public BackgroundOperations(IEnvironment environment, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
 	{
 		_environment = environment;
 		_connector = connector;
@@ -50,11 +51,11 @@ public class BackgroundOperations
 			while (null != operation)
 			{
 				// If we have a publish operation, start that first, since that typically takes a long time.
-				IEnvironment.IOperationLog publishLog = null;
+				ILogger publishLog = null;
 				FuturePublish publish = null;
 				if (null != operation.publishTarget)
 				{
-					publishLog = _environment.logStart("Background start publish: " + operation.publishTarget);
+					publishLog = logger.logStart("Background start publish: " + operation.publishTarget);
 					publish = operations.startPublish(operation.publishTarget);
 					Assert.assertTrue(null != publish);
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
@@ -62,7 +63,7 @@ public class BackgroundOperations
 				// If we have a followee to refresh, do that work.
 				if (null != operation.followeeKey)
 				{
-					IEnvironment.IOperationLog log = _environment.logStart("Background start refresh: " + operation.followeeKey);
+					ILogger log = logger.logStart("Background start refresh: " + operation.followeeKey);
 					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
 					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
 					refresher.run();
