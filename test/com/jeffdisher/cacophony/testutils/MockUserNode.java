@@ -70,10 +70,10 @@ public class MockUserNode
 	 * 
 	 * @param captureStream The stream to use to override the logging output (can be null).
 	 * @param command The command to run.
-	 * @return True on success, false if the command failed.
+	 * @return The result object on success, null if we detected a partial failure (exception on true failure).
 	 * @throws Throwable Something went wrong which wasn't just a simple failed command.
 	 */
-	public boolean runCommand(OutputStream captureStream, ICommand<?> command) throws Throwable
+	public <T extends ICommand.Result> T runCommand(OutputStream captureStream, ICommand<T> command) throws Throwable
 	{
 		StandardLogger logger = _logger;
 		// See if we want to override the output capture.
@@ -81,9 +81,12 @@ public class MockUserNode
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
 		}
-		ICommand.Result result = command.runInContext(new ICommand.Context(_executor, logger));
+		T result = command.runInContext(new ICommand.Context(_executor, logger));
 		_handleResult(result);
-		return !logger.didErrorOccur();
+		return logger.didErrorOccur()
+				? null
+				: result
+		;
 	}
 
 	public byte[] loadDataFromNode(IpfsFile cid) throws IpfsConnectionException

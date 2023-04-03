@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.PrintStream;
+
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -36,6 +38,12 @@ public interface ICommand<T extends ICommand.Result>
 		 * @return The updated index the command wishes to publish (can be null).
 		 */
 		IpfsFile getIndexToPublish();
+		/**
+		 * Asks the result to write a description of itself to the given output.
+		 * 
+		 * @param output The stream for output.
+		 */
+		void writeHumanReadable(PrintStream output);
 	}
 
 	/**

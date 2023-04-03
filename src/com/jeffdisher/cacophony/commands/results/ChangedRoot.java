@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands.results;
 
+import java.io.PrintStream;
+
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -20,5 +22,11 @@ public class ChangedRoot implements ICommand.Result
 	public IpfsFile getIndexToPublish()
 	{
 		return _newRoot;
+	}
+
+	@Override
+	public void writeHumanReadable(PrintStream output)
+	{
+		// Do nothing.
 	}
 }

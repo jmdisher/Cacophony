@@ -63,9 +63,9 @@ requireSubstring "$PUBLIC_KEY_OUTPUT" "Public Key (other users can follow you wi
 
 echo "Verify that they can each resolve each other..."
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
-requireSubstring "$DESCRIPTION" "name: Unnamed"
+requireSubstring "$DESCRIPTION" "Name: Unnamed"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
-requireSubstring "$DESCRIPTION" "name: Unnamed"
+requireSubstring "$DESCRIPTION" "Name: Unnamed"
 
 echo "Update the names and make sure that they both see each others' updates..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME1"
@@ -73,9 +73,9 @@ checkPreviousCommand "updateDescription1"
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME2"
 checkPreviousCommand "updateDescription2"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
-requireSubstring "$DESCRIPTION" "name: NAME2"
+requireSubstring "$DESCRIPTION" "Name: NAME2"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
-requireSubstring "$DESCRIPTION" "name: NAME1"
+requireSubstring "$DESCRIPTION" "Name: NAME1"
 
 echo "Verify that the answer for something which should not exist makes sense..."
 # Redirect error since it logs the exception.

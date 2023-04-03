@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.scenarios;
 
 import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -10,6 +11,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
+import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -40,13 +42,13 @@ public class TestRecommendations
 		user1.runCommand(null, addCommand);
 		
 		// List the recommendations - make sure we find the key.
-		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
 		ListRecommendationsCommand listCommand = new ListRecommendationsCommand(null);
-		user1.runCommand(captureStream, listCommand);
-		Assert.assertEquals(">1> Recommendations of z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141:\n"
-			+ "=1= 	z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142\n"
-			+ "<1< \n"
-			, new String(captureStream.toByteArray())
+		KeyList result = user1.runCommand(System.out, listCommand);
+		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
+		result.writeHumanReadable(new PrintStream(captureStream));
+		Assert.assertEquals("1 keys in list:\n"
+				+ "	Recommending: z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142\n"
+				, new String(captureStream.toByteArray())
 		);
 		
 		// Remove the recommendation.
@@ -56,9 +58,10 @@ public class TestRecommendations
 		// List the recommendations - make sure we see an empty list.
 		captureStream = new ByteArrayOutputStream();
 		listCommand = new ListRecommendationsCommand(null);
-		user1.runCommand(captureStream, listCommand);
-		Assert.assertEquals(">1> Recommendations of z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141:\n"
-				+ "<1< \n"
+		user1.runCommand(System.out, listCommand);
+		result.writeHumanReadable(new PrintStream(captureStream));
+		Assert.assertEquals("1 keys in list:\n"
+				+ "	Recommending: z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142\n"
 				, new String(captureStream.toByteArray()));
 		user1.shutdown();
 	}

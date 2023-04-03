@@ -119,11 +119,11 @@ public class TestEditPostCommand
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.createEmptyConfig(KEY_NAME);
-		boolean didPass = user.runCommand(null, new CreateChannelCommand(KEY_NAME));
+		boolean didPass = (null != user.runCommand(null, new CreateChannelCommand(KEY_NAME)));
 		Assert.assertTrue(didPass);
 		
 		// Now, run the publish command.
-		didPass = user.runCommand(null, command);
+		didPass = (null != user.runCommand(null, command));
 		Assert.assertTrue(didPass);
 	}
 

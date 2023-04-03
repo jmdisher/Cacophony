@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
@@ -37,7 +38,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		// This will throw UsageException if the channel already exists.
 		ILogger log = context.logger.logStart("Quickstart:  Creating channel...");
 		CreateChannelCommand createCommand = new CreateChannelCommand(_keyName);
-		ChangedRoot finalResult = createCommand.runInContext(context);
+		IpfsFile finalUpdatedRoot = createCommand.runInContext(context).getIndexToPublish();
 		log.logFinish("Done!");
 		
 		// We optionally want to update the channel description (just the name, using this path).
@@ -45,7 +46,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		{
 			log = context.logger.logStart("Quickstart:  Setting channel name...");
 			UpdateDescriptionCommand updateCommand = new UpdateDescriptionCommand(_optionalChannelName, null, null, null, null);
-			finalResult = updateCommand.runInContext(context);
+			finalUpdatedRoot = updateCommand.runInContext(context).getIndexToPublish();
 			log.logFinish("Done!");
 		}
 		
@@ -68,6 +69,6 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		log.logFinish("Done!");
 		
 		context.logger.logVerbose("Channel is created and initial data has been loaded.  Run with \"--run\" to enable web server for interactive use.");
-		return finalResult;
+		return new ChangedRoot(finalUpdatedRoot);
 	}
 }

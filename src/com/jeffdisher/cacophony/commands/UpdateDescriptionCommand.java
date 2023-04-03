@@ -6,7 +6,7 @@ import java.io.InputStream;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.actions.UpdateDescription;
-import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -18,10 +18,10 @@ import com.jeffdisher.cacophony.types.UsageException;
  * NOTE:  The _pictureStream, if not null, will be closed by this command, during runInEnvironment, so the caller can
  * relinguish ownership of it.
  */
-public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website) implements ICommand<ChangedRoot>
+public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website) implements ICommand<ChannelDescription>
 {
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		// All of the parameters are optional but at least one of them must be provided (null means "unchanged field").
 		if ((null == _name) && (null == _description) && (null == _pictureStream) && (null == _email) && (null == _website))
@@ -38,7 +38,8 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			throw new UsageException("Description must be non-empty.");
 		}
 		
-		IpfsFile newRoot;
+		UpdateDescription.Result result;
+		String pictureUrl;
 		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
 			if (null == access.getLastRootElement())
@@ -46,8 +47,9 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
 			ILogger log = context.logger.logStart("Updating channel description...");
-			UpdateDescription.Result result = UpdateDescription.run(access, _name, _description, _pictureStream, _email, _website);
-			newRoot = result.newRoot();
+			result = UpdateDescription.run(access, _name, _description, _pictureStream, _email, _website);
+			// We want to capture the picture URL while we still have access (whether or not we changed it).
+			pictureUrl = access.getCachedUrl(IpfsFile.fromIpfsCid(result.updatedStreamDescription().getPicture())).toString();
 			log.logFinish("Update completed!");
 		}
 		finally
@@ -66,6 +68,6 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				}
 			}
 		}
-		return new ChangedRoot(newRoot);
+		return new ChannelDescription(result.newRoot(), result.updatedStreamDescription(), pictureUrl);
 	}
 }

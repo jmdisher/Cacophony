@@ -46,7 +46,7 @@ LIST=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --listFollowee
 requireSubstring "$LIST" "Following: z5AanNVJCxnJ6qSdFeWsMDaivGJPPCVx8jiopn9jK7aUThhuQjhERku"
 
 OUR_DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" java -Xmx32m -jar Cacophony.jar --readDescription)
-requireSubstring "$OUR_DESCRIPTION" "-name: Quick user"
+requireSubstring "$OUR_DESCRIPTION" "Name: Quick user"
 
 kill $PID1
 

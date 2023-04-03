@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands.results;
 
+import java.io.PrintStream;
+
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -19,5 +21,11 @@ public class None implements ICommand.Result
 	public IpfsFile getIndexToPublish()
 	{
 		return null;
+	}
+
+	@Override
+	public void writeHumanReadable(PrintStream output)
+	{
+		// Do nothing.
 	}
 }

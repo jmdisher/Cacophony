@@ -72,7 +72,7 @@ LIST=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/500
 requireSubstring "$LIST" "Followee has 0 elements"
 
 DESCRIPTION_FOLLOWER=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
-requireSubstring "$DESCRIPTION_FOLLOWER" "-name: Unnamed"
+requireSubstring "$DESCRIPTION_FOLLOWER" "Name: Unnamed"
 
 # Post an update and refresh to make sure that the follower sees the update and can re-render the HTML output
 echo "Generate test files"

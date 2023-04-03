@@ -38,9 +38,9 @@ echo "Check the info from the basic interface..."
 FOLLOWEES=$(CACOPHONY_ENABLE_FAKE_SYSTEM="$DRAFTS_DIR" java -Xmx1g -jar "Cacophony.jar" --listFollowees)
 requireSubstring "$FOLLOWEES" "Following: z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV"
 OUR_DESCRIPTION=$(CACOPHONY_ENABLE_FAKE_SYSTEM="$DRAFTS_DIR" java -Xmx1g -jar "Cacophony.jar" --readDescription)
-requireSubstring "$OUR_DESCRIPTION" "-name: us"
+requireSubstring "$OUR_DESCRIPTION" "Name: us"
 THEIR_DESCRIPTION=$(CACOPHONY_ENABLE_FAKE_SYSTEM="$DRAFTS_DIR" java -Xmx1g -jar "Cacophony.jar" --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV)
-requireSubstring "$THEIR_DESCRIPTION" "-name: them"
+requireSubstring "$THEIR_DESCRIPTION" "Name: them"
 
 echo "Start the interactive server..."
 CACOPHONY_ENABLE_FAKE_SYSTEM="$DRAFTS_DIR" java -Xmx1g -jar "Cacophony.jar" --run &

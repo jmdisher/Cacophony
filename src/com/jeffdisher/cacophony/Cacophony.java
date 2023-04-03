@@ -115,6 +115,9 @@ public class Cacophony {
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(new ICommand.Context(executor, logger));
 					
+					// Write the output to stdout.
+					result.writeHumanReadable(System.out);
+					
 					boolean didPublish = _handleResult(executor, logger, result);
 					if (!didPublish)
 					{
