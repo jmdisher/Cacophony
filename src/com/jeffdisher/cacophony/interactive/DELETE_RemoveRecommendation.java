@@ -3,8 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -19,17 +17,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_RemoveRecommendation(IEnvironment environment
-			, ILogger logger
+	public DELETE_RemoveRecommendation(ICommand.Context context
 			, BackgroundOperations backgroundOperations
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -39,7 +34,7 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 		IpfsKey userToRemove = IpfsKey.fromPublicKey(variables[0]);
 		RemoveRecommendationCommand command = new RemoveRecommendationCommand(userToRemove);
 		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, new ICommand.Context(_environment, _logger, null, null, null)
+				, _context
 				, command
 		);
 		if (null != result)

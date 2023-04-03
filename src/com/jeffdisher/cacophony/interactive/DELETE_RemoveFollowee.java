@@ -3,11 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
-import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,27 +16,15 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _backgroundOperations;
-	private final LocalRecordCache _recordCache;
-	private final LocalUserInfoCache _userInfoCache;
-	private final EntryCacheRegistry _entryRegistry;
 
-	public DELETE_RemoveFollowee(IEnvironment environment
-			, ILogger logger
+	public DELETE_RemoveFollowee(ICommand.Context context
 			, BackgroundOperations backgroundOperations
-			, LocalRecordCache recordCache
-			, LocalUserInfoCache userInfoCache
-			, EntryCacheRegistry entryRegistry
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_backgroundOperations = backgroundOperations;
-		_recordCache = recordCache;
-		_userInfoCache = userInfoCache;
-		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -56,13 +39,13 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 			{
 				StopFollowingCommand command = new StopFollowingCommand(userToRemove);
 				None result = InteractiveHelpers.runCommandAndHandleErrors(response
-						, new ICommand.Context(_environment, _logger, _recordCache, _userInfoCache, _entryRegistry)
+						, _context
 						, command
 				);
 				if (null != result)
 				{
-					_entryRegistry.removeFollowee(userToRemove);
-					_userInfoCache.removeUser(userToRemove);
+					_context.entryRegistry.removeFollowee(userToRemove);
+					_context.userInfoCache.removeUser(userToRemove);
 				}
 			}
 			else

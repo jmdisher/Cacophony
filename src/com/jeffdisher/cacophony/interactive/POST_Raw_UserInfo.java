@@ -6,9 +6,6 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -23,21 +20,15 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _background;
-	private final LocalUserInfoCache _userInfoCache;
 
-	public POST_Raw_UserInfo(IEnvironment environment
-			, ILogger logger
+	public POST_Raw_UserInfo(ICommand.Context context
 			, BackgroundOperations background
-			, LocalUserInfoCache userInfoCache
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_background = background;
-		_userInfoCache = userInfoCache;
 	}
 
 	@Override
@@ -47,7 +38,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 		
 		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, null, null);
 		ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, new ICommand.Context(_environment, _logger, null, null, null)
+				, _context
 				, command
 		);
 		if (null != result)
@@ -56,9 +47,9 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			_background.requestPublish(result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
-			IpfsKey key = _environment.getPublicKey();
+			IpfsKey key = _context.environment.getPublicKey();
 			StreamDescription streamDescription = result.streamDescription;
-			_userInfoCache.setUserInfo(key
+			_context.userInfoCache.setUserInfo(key
 					, streamDescription.getName()
 					, streamDescription.getDescription()
 					, IpfsFile.fromIpfsCid(streamDescription.getPicture())

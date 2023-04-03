@@ -2,8 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.commands.ICommand;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,21 +13,18 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_PublicKey implements ValidatedEntryPoints.GET
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	
-	public GET_PublicKey(IEnvironment environment
-			, ILogger logger
+	public GET_PublicKey(ICommand.Context context
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 	}
 	
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
 		{
 			response.setContentType("text/plain");
 			response.setStatus(HttpServletResponse.SC_OK);

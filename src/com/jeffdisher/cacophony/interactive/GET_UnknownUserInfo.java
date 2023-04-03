@@ -4,8 +4,6 @@ import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -24,15 +22,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	
-	public GET_UnknownUserInfo(IEnvironment environment
-			, ILogger logger
+	public GET_UnknownUserInfo(ICommand.Context context
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 	}
 	
 	@Override
@@ -44,7 +39,7 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 		{
 			ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
 			ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
-					, new ICommand.Context(_environment, _logger, null, null, null)
+					, _context
 					, command
 			);
 			if (null != result)

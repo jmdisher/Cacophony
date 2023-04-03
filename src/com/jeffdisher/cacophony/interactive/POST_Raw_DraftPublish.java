@@ -4,11 +4,8 @@ import java.io.FileNotFoundException;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,38 +22,29 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _backgroundOperations;
-	private final LocalRecordCache _recordCache;
 	private final DraftManager _draftManager;
-	private final EntryCacheRegistry _entryRegistry;
 	
-	public POST_Raw_DraftPublish(IEnvironment environment
-			, ILogger logger
+	public POST_Raw_DraftPublish(ICommand.Context context
 			, BackgroundOperations backgroundOperations
-			, LocalRecordCache recordCache
 			, DraftManager draftManager
-			, EntryCacheRegistry entryRegistry
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_backgroundOperations = backgroundOperations;
-		_recordCache = recordCache;
 		_draftManager = draftManager;
-		_entryRegistry = entryRegistry;
 	}
 	
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(_context.environment, _context.logger))
 		{
 			int draftId = Integer.parseInt(pathVariables[0]);
 			PublishType type = PublishType.valueOf(pathVariables[1]);
 			
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(_logger
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(_context.logger
 					, access
 					, _draftManager
 					, draftId
@@ -68,7 +56,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// The publish is something we can wait on, asynchronously, in a different call.
 			_backgroundOperations.requestPublish(result.newIndexRoot());
 			IpfsFile newElement = result.newRecordCid();
-			_entryRegistry.addLocalElement(newElement);
+			_context.entryRegistry.addLocalElement(newElement);
 			
 			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
 			// bit odd, since we could have updated this during the publish operation, but that would have required some
@@ -76,7 +64,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// verify that the assumptions around this are consistent.
 			// In the future, we may want to refactor this so that it can be more elegantly updated as the network read
 			// seems wrong.
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, _recordCache, newElement);
+			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, _context.recordCache, newElement);
 			
 			response.setStatus(HttpServletResponse.SC_OK);
 		}

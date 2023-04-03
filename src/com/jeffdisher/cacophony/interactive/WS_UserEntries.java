@@ -8,7 +8,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -31,13 +31,15 @@ public class WS_UserEntries implements IWebSocketFactory
 	// We use this command to request we scroll back further.
 	private static final String COMMAND_SCROLL_BACK = "COMMAND_SCROLL_BACK";
 
+	private final ICommand.Context _context;
 	private final String _xsrf;
-	private final EntryCacheRegistry _entryRegistry;
 	
-	public WS_UserEntries(String xsrf, EntryCacheRegistry entryRegistry)
+	public WS_UserEntries(ICommand.Context context
+			, String xsrf
+	)
 	{
+		_context = context;
 		_xsrf = xsrf;
-		_entryRegistry = entryRegistry;
 	}
 	
 	@Override
@@ -72,7 +74,7 @@ public class WS_UserEntries implements IWebSocketFactory
 		{
 			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
 			{
-				_userConnector = _entryRegistry.getReadOnlyConnector(_key);
+				_userConnector = _context.entryRegistry.getReadOnlyConnector(_key);
 				if (null != _userConnector)
 				{
 					_endPoint = session.getRemote();

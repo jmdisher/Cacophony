@@ -2,9 +2,9 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,12 +15,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 {
-	private final IEnvironment _environment;
+	private final ICommand.Context _context;
 	private final DraftManager _draftManager;
 	
-	public POST_Raw_CreateDraft(IEnvironment environment, DraftManager draftManager)
+	public POST_Raw_CreateDraft(ICommand.Context context, DraftManager draftManager)
 	{
-		_environment = environment;
+		_context = context;
 		_draftManager = draftManager;
 	}
 	
@@ -31,7 +31,7 @@ public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 		response.setStatus(HttpServletResponse.SC_OK);
 		
 		// Generate an ID - should be random so just get some bits from the time.
-		int id = Math.abs((int)(_environment.currentTimeMillis() >> 8L));
+		int id = Math.abs((int)(_context.environment.currentTimeMillis() >> 8L));
 		Draft draft = InteractiveHelpers.createNewDraft(_draftManager, id);
 		response.getWriter().print(draft.toJson().toString());
 	}

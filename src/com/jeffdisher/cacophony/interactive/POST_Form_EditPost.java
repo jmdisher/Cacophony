@@ -9,10 +9,6 @@ import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,24 +30,15 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_DESCRIPTION = "DESCRIPTION";
 	public static final String VAR_DISCUSSION_URL = "DISCUSSION_URL";
 
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _background;
-	private final LocalRecordCache _recordCache;
-	private final EntryCacheRegistry _entryRegistry;
 
-	public POST_Form_EditPost(IEnvironment environment
-			, ILogger logger
+	public POST_Form_EditPost(ICommand.Context context
 			, BackgroundOperations background
-			, LocalRecordCache recordCache
-			, EntryCacheRegistry entryRegistry
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_background = background;
-		_recordCache = recordCache;
-		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -65,7 +52,7 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		
 		EditPostCommand command = new EditPostCommand(eltCid, name, description, discussionUrl);
 		OnePost result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, new ICommand.Context(_environment, _logger, null, null, null)
+				, _context
 				, command
 		);
 		if (null != result)
@@ -81,9 +68,9 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	private void _handleCorrectCase(HttpServletResponse response, IpfsFile eltCid, OnePost result)
 	{
 		// Delete the old entry and add the new one.
-		_entryRegistry.removeLocalElement(eltCid);
+		_context.entryRegistry.removeLocalElement(eltCid);
 		IpfsFile newEltCid = result.recordCid;
-		_entryRegistry.addLocalElement(newEltCid);
+		_context.entryRegistry.addLocalElement(newEltCid);
 		
 		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
 		// data, we still need to technically "move" them to the new record CID.
@@ -95,37 +82,37 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 			if (ElementSpecialType.IMAGE == leaf.getSpecial())
 			{
 				// This is the thumbnail.
-				_recordCache.recordThumbnailReleased(eltCid, leafCid);
+				_context.recordCache.recordThumbnailReleased(eltCid, leafCid);
 			}
 			else if (leaf.getMime().startsWith("video/"))
 			{
 				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-				_recordCache.recordVideoReleased(eltCid, leafCid, maxEdge);
+				_context.recordCache.recordVideoReleased(eltCid, leafCid, maxEdge);
 			}
 			else if (leaf.getMime().startsWith("audio/"))
 			{
-				_recordCache.recordAudioReleased(eltCid, leafCid);
+				_context.recordCache.recordAudioReleased(eltCid, leafCid);
 			}
 		}
-		_recordCache.recordMetaDataReleased(eltCid);
+		_context.recordCache.recordMetaDataReleased(eltCid);
 		
-		_recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), unchangedLeaves.size());
+		_context.recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), unchangedLeaves.size());
 		for (DataElement leaf : unchangedLeaves)
 		{
 			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
 			if (ElementSpecialType.IMAGE == leaf.getSpecial())
 			{
 				// This is the thumbnail.
-				_recordCache.recordThumbnailPinned(newEltCid, leafCid);
+				_context.recordCache.recordThumbnailPinned(newEltCid, leafCid);
 			}
 			else if (leaf.getMime().startsWith("video/"))
 			{
 				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-				_recordCache.recordVideoPinned(newEltCid, leafCid, maxEdge);
+				_context.recordCache.recordVideoPinned(newEltCid, leafCid, maxEdge);
 			}
 			else if (leaf.getMime().startsWith("audio/"))
 			{
-				_recordCache.recordAudioPinned(newEltCid, leafCid);
+				_context.recordCache.recordAudioPinned(newEltCid, leafCid);
 			}
 		}
 		

@@ -3,8 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.UsageException;
 
@@ -19,17 +18,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _operations;
 	
-	public POST_Prefs(IEnvironment environment
-			, ILogger logger
+	public POST_Prefs(ICommand.Context context
 			, BackgroundOperations operations
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		// We only expose the BackgroundOperations here so that we can notify it when prefs change (we may want to make this a generic listener, but is simple enough).
 		_operations = operations;
 	}
@@ -52,7 +48,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 			throw new UsageException("Invalid parameter");
 		}
 		boolean didChangeIntervals = false;
-		try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(_context.environment, _context.logger))
 		{
 			PrefsData prefs = access.readPrefs();
 			didChangeIntervals = ((prefs.republishIntervalMillis != republishIntervalMillis) || (prefs.followeeRefreshMillis != followeeRefreshMillis));

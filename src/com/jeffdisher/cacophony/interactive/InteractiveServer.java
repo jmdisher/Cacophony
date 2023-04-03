@@ -8,6 +8,7 @@ import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
@@ -152,25 +153,31 @@ public class InteractiveServer
 		HandoffConnector<String, Long> videoProcessingConnector = new HandoffConnector<>(dispatcher);
 		VideoProcessContainer videoProcessContainer = new VideoProcessContainer(manager, videoProcessingConnector);
 		
+		// Prepare the initial known values we need.
 		String forcedCommand = canChangeCommand
 				? null
 				: processingCommand
 		;
 		String xsrf = "XSRF_TOKEN_" + Math.random();
+		ICommand.Context serverContext = new ICommand.Context(environment, logger, localRecordCache, userInfoCache, entryRegistry);
+		
+		// Setup the server.
 		CountDownLatch stopLatch = new CountDownLatch(1);
 		RestServer server = new RestServer(port, staticResource);
 		ValidatedEntryPoints validated = new ValidatedEntryPoints(server, xsrf);
+		
+		// Install the entry-points.
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
 		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
 		
-		validated.addDeleteHandler("/post", 1, new DELETE_Post(environment, logger, background, localRecordCache, entryRegistry));
+		validated.addDeleteHandler("/post", 1, new DELETE_Post(serverContext, background));
 		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
-		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(environment, manager));
+		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(serverContext, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(environment, logger, background, localRecordCache, manager, entryRegistry));
-		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(logger, background));
+		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(serverContext, background, manager));
+		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(serverContext, background));
 		
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
 		validated.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(manager));
@@ -202,50 +209,52 @@ public class InteractiveServer
 		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
 		
 		// We use a web socket for listening to updates of background process state.
-		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(environment, logger, xsrf, statusHandoff, stopLatch, background));
+		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(serverContext, xsrf, statusHandoff, stopLatch, background));
 		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
-		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(xsrf, entryRegistry));
-		server.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(xsrf, entryRegistry));
+		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext, xsrf));
+		server.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext, xsrf));
 		
 		// Prefs.
-		validated.addGetHandler("/prefs", 0, new GET_Prefs(environment, logger));
-		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(environment, logger, background));
+		validated.addGetHandler("/prefs", 0, new GET_Prefs(serverContext));
+		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(serverContext, background));
 		
 		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(environment, logger, background, userInfoCache, entryRegistry));
-		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(environment, logger, background, localRecordCache, userInfoCache, entryRegistry));
-		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(environment, logger, background));
-		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(environment, logger, background));
-		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(environment, logger, background, userInfoCache));
-		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(environment, logger, background, userInfoCache));
-		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(environment, logger, background, localRecordCache, entryRegistry));
+		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(serverContext, background));
+		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(serverContext, background));
+		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(serverContext, background));
+		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(serverContext, background));
+		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(serverContext, background));
+		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(serverContext, background));
+		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(serverContext, background));
 		
 		// Entry-points related to followee state changes.
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
 		
 		// General REST interface for read-only queries originally generated by the "--htmlOutput" mode.
-		validated.addGetHandler("/publicKey", 0, new GET_PublicKey(environment, logger));
-		validated.addGetHandler("/userInfo", 1, new GET_UserInfo(environment, logger, userInfoCache));
-		validated.addGetHandler("/postHashes", 1, new GET_PostHashes(environment, logger));
-		validated.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(environment, logger));
-		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(environment, logger, localRecordCache));
-		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(environment, logger));
+		validated.addGetHandler("/publicKey", 0, new GET_PublicKey(serverContext));
+		validated.addGetHandler("/userInfo", 1, new GET_UserInfo(serverContext));
+		validated.addGetHandler("/postHashes", 1, new GET_PostHashes(serverContext));
+		validated.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(serverContext));
+		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(serverContext));
+		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(serverContext));
 		validated.addGetHandler("/version", 0, new GET_Version());
 		
 		// Special interface for requesting information about other users.
 		// Note that we don't pin any of the information through this interface so it may fail or be slow.
-		validated.addGetHandler("/unknownUser", 1, new GET_UnknownUserInfo(environment, logger));
+		validated.addGetHandler("/unknownUser", 1, new GET_UnknownUserInfo(serverContext));
 		
+		// Start the server.
+		ILogger serverLog = logger.logStart("Starting server...");
 		server.start();
 		if (null != forcedCommand)
 		{
-			System.out.println("Forced processing command: \"" + forcedCommand + "\"");
+			serverLog.logOperation("Forced processing command: \"" + forcedCommand + "\"");
 		}
 		else
 		{
-			System.out.println("WARNING:  Dangerous processing mode enabled!  User will be able to control server-side command from front-end.");
+			serverLog.logOperation("WARNING:  Dangerous processing mode enabled!  User will be able to control server-side command from front-end.");
 		}
-		System.out.println("Cacophony interactive server running: http://127.0.0.1:" + port);
+		serverLog.logOperation("Cacophony interactive server running: http://127.0.0.1:" + port);
 		
 		try
 		{
@@ -256,13 +265,13 @@ public class InteractiveServer
 			// This thread isn't interrupted.
 			throw Assert.unexpected(e);
 		}
-		System.out.println("Shutting down server...");
+		serverLog.logOperation("Shutting down server...");
 		server.stop();
-		System.out.println("Shutting down connector dispatcher...");
+		serverLog.logOperation("Shutting down connector dispatcher...");
 		dispatcher.shutdown();
-		System.out.println("Shutting down background process...");
+		serverLog.logOperation("Shutting down background process...");
 		background.shutdownProcess();
-		System.out.println("Background process shut down.");
+		serverLog.logFinish("Background process shut down.");
 	}
 
 

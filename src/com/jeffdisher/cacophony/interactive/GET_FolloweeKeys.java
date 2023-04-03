@@ -4,8 +4,6 @@ import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.results.KeyList;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,15 +15,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_FolloweeKeys implements ValidatedEntryPoints.GET
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	
-	public GET_FolloweeKeys(IEnvironment environment
-			, ILogger logger
+	public GET_FolloweeKeys(ICommand.Context context
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 	}
 	
 	@Override
@@ -33,7 +28,7 @@ public class GET_FolloweeKeys implements ValidatedEntryPoints.GET
 	{
 		ListFolloweesCommand command = new ListFolloweesCommand();
 		KeyList result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, new ICommand.Context(_environment, _logger, null, null, null)
+				, _context
 				, command
 		);
 		if (null != result)

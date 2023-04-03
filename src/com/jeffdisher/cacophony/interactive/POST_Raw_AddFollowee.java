@@ -3,10 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,24 +16,15 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _backgroundOperations;
-	private final LocalUserInfoCache _userInfoCache;
-	private final EntryCacheRegistry _entryRegistry;
 
-	public POST_Raw_AddFollowee(IEnvironment environment
-			, ILogger logger
+	public POST_Raw_AddFollowee(ICommand.Context context
 			, BackgroundOperations backgroundOperations
-			, LocalUserInfoCache userInfoCache
-			, EntryCacheRegistry entryRegistry
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_backgroundOperations = backgroundOperations;
-		_userInfoCache = userInfoCache;
-		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -47,12 +34,12 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		
 		StartFollowingCommand command = new StartFollowingCommand(userToAdd);
 		None result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, new ICommand.Context(_environment, _logger, null, _userInfoCache, null)
+				, _context
 				, command
 		);
 		if (null != result)
 		{
-			_entryRegistry.createNewFollowee(userToAdd);
+			_context.entryRegistry.createNewFollowee(userToAdd);
 			_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
 		}
 	}

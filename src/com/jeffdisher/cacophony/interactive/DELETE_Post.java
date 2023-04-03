@@ -3,10 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -19,24 +15,15 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_Post implements ValidatedEntryPoints.DELETE
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
+	private final ICommand.Context _context;
 	private final BackgroundOperations _backgroundOperations;
-	private final LocalRecordCache _recordCache;
-	private final EntryCacheRegistry _entryRegistry;
 
-	public DELETE_Post(IEnvironment environment
-			, ILogger logger
+	public DELETE_Post(ICommand.Context context
 			, BackgroundOperations backgroundOperations
-			, LocalRecordCache recordCache
-			, EntryCacheRegistry entryRegistry
 	)
 	{
-		_environment = environment;
-		_logger = logger;
+		_context = context;
 		_backgroundOperations = backgroundOperations;
-		_recordCache = recordCache;
-		_entryRegistry = entryRegistry;
 	}
 
 	@Override
@@ -45,7 +32,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
 		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(postHashToRemove);
 		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, new ICommand.Context(_environment, _logger, _recordCache, null, null)
+				, _context
 				, command
 		);
 		if (null != result)
@@ -55,7 +42,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 			Assert.assertTrue(null != newRoot);
 			
 			// Delete the entry for anyone listening.
-			_entryRegistry.removeLocalElement(postHashToRemove);
+			_context.entryRegistry.removeLocalElement(postHashToRemove);
 			
 			// Request a republish.
 			_backgroundOperations.requestPublish(newRoot);

@@ -3,8 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -23,18 +22,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_UserInfo implements ValidatedEntryPoints.GET
 {
-	private final IEnvironment _environment;
-	private final ILogger _logger;
-	private final LocalUserInfoCache _userInfoCache;
+	private final ICommand.Context _context;
 	
-	public GET_UserInfo(IEnvironment environment
-			, ILogger logger
-			, LocalUserInfoCache userInfoCache
+	public GET_UserInfo(ICommand.Context context
 	)
 	{
-		_environment = environment;
-		_logger = logger;
-		_userInfoCache = userInfoCache;
+		_context = context;
 	}
 	
 	@Override
@@ -45,12 +38,12 @@ public class GET_UserInfo implements ValidatedEntryPoints.GET
 		// This entry-point (as compared to GET_UnknownUserInfo) is intended for use with already-known users so we will
 		// only consult the cache.
 		// First, we see if we can satisfy this request from the cache.
-		LocalUserInfoCache.Element cached = _userInfoCache.getUserInfo(userToResolve);
+		LocalUserInfoCache.Element cached = _context.userInfoCache.getUserInfo(userToResolve);
 		if (null != cached)
 		{
 			// While this picture CID _should_ be cached, it is possible that it isn't, since this cache is allowed to contain stale and non-cached data references.
 			String directFetchUrlRoot;
-			try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
+			try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
 			{
 				directFetchUrlRoot = access.getDirectFetchUrlRoot();
 			}
