@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.access;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 
@@ -234,7 +233,7 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public URL getCachedUrl(IpfsFile file)
+	public String getCachedUrl(IpfsFile file)
 	{
 		Assert.assertTrue(null != file);
 		Assert.assertTrue(_pinCache.isPinned(file));

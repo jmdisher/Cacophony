@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.access;
 
-import java.net.URL;
-
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -79,7 +77,7 @@ public interface IReadingAccess extends AutoCloseable
 	 * @param file A file on the IPFS node.
 	 * @return The URL to directly GET the file contents.
 	 */
-	URL getCachedUrl(IpfsFile file);
+	String getCachedUrl(IpfsFile file);
 
 	/**
 	 * @return The last index which had been stored as the root (StreamIndex) and published (even if the publish didn't

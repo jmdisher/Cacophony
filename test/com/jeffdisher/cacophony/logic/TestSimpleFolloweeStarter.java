@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -179,7 +178,7 @@ public class TestSimpleFolloweeStarter
 			return r;
 		}
 		@Override
-		public URL getCachedUrl(IpfsFile file)
+		public String getCachedUrl(IpfsFile file)
 		{
 			throw new RuntimeException("Not Called");
 		}

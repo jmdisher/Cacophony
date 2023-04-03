@@ -160,11 +160,11 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
-	public URL urlForDirectFetch(IpfsFile cid)
+	public String urlForDirectFetch(IpfsFile cid)
 	{
 		try
 		{
-			return new URL("http", "test", "/" + cid.toSafeString());
+			return new URL("http", "test", "/" + cid.toSafeString()).toString();
 		}
 		catch (MalformedURLException e)
 		{

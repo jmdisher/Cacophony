@@ -172,9 +172,9 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public URL urlForDirectFetch(IpfsFile cid)
+	public String urlForDirectFetch(IpfsFile cid)
 	{
-		return _urlForDirectFetch(cid.toSafeString());
+		return _urlForDirectFetch(cid.toSafeString()).toString();
 	}
 
 	@Override

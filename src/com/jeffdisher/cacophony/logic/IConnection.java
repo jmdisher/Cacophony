@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.InputStream;
-import java.net.URL;
 import java.util.List;
 
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -46,7 +45,13 @@ public interface IConnection
 
 	long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException;
 
-	URL urlForDirectFetch(IpfsFile cid);
+	/**
+	 * Gets the URL for directly fetching this resource from the IPFS node.
+	 * 
+	 * @param cid The resource.
+	 * @return The URL.
+	 */
+	String urlForDirectFetch(IpfsFile cid);
 
 	/**
 	 * Pins the given file on the node.  Note that it isn't expected to be pinned when this is called as pinning is not
