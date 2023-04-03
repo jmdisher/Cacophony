@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -33,13 +32,13 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		
 		// Run the actual refresh.
 		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh(null)
+				? refresher.runRefresh(context.entryRegistry)
 				: false
 		;
 		
 		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
-			_finish(context.environment, access, refresher);
+			_finish(context, access, refresher);
 		}
 		finally
 		{
@@ -73,10 +72,10 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		return refresher;
 	}
 
-	private void _finish(IEnvironment environment, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
+	private void _finish(ICommand.Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
-		long lastPollMillis = environment.currentTimeMillis();
-		refresher.finishRefresh(access, null, null, followees, lastPollMillis);
+		long lastPollMillis = context.environment.currentTimeMillis();
+		refresher.finishRefresh(access, context.recordCache, context.userInfoCache, followees, lastPollMillis);
 	}
 }

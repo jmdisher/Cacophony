@@ -97,7 +97,7 @@ public class DataDomain implements Closeable
 				, theirKey
 		);
 		StandardLogger theirLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
-		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger);
+		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null);
 		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
@@ -115,7 +115,7 @@ public class DataDomain implements Closeable
 				, ourKey
 		);
 		StandardLogger ourLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
-		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger);
+		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null);
 		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);

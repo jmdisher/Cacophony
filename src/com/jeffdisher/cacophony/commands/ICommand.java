@@ -2,8 +2,11 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.PrintStream;
 
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -48,18 +51,28 @@ public interface ICommand<T extends ICommand.Result>
 
 	/**
 	 * A container of resources which can be used by a command.
+	 * Only the environment and logger are required.  The other fields can be null.
 	 */
 	public static class Context
 	{
 		public final IEnvironment environment;
 		public final ILogger logger;
+		public final LocalRecordCache recordCache;
+		public final LocalUserInfoCache userInfoCache;
+		public final EntryCacheRegistry entryRegistry;
 		
 		public Context(IEnvironment environment
 				, ILogger logger
+				, LocalRecordCache recordCache
+				, LocalUserInfoCache userInfoCache
+				, EntryCacheRegistry entryRegistry
 		)
 		{
 			this.environment = environment;
 			this.logger = logger;
+			this.recordCache = recordCache;
+			this.userInfoCache = userInfoCache;
+			this.entryRegistry = entryRegistry;
 		}
 	}
 }

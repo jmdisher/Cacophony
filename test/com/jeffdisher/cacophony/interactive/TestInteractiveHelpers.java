@@ -224,7 +224,7 @@ public class TestInteractiveHelpers
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
-		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger));
+		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
 		
 		// Now, create a basic draft.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -359,7 +359,7 @@ public class TestInteractiveHelpers
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
-		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger));
+		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
 		
 		// Now, create a draft and attach audio.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());

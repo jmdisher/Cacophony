@@ -112,8 +112,10 @@ public class Cacophony {
 					StandardAccess.createNewChannelConfig(executor, ipfsConnectString, keyName);
 					// Verify that the storage is consistent, before we start.
 					executor.getSharedDataModel().verifyStorageConsistency();
+					// Create the context for running the command.
+					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
-					ICommand.Result result = command.runInContext(new ICommand.Context(executor, logger));
+					ICommand.Result result = command.runInContext(context);
 					
 					// Write the output to stdout.
 					result.writeHumanReadable(System.out);

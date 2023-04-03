@@ -28,7 +28,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
 			ILogger log = context.logger.logStart("Removing entry " + _elementCid + " from channel...");
-			newRoot = RemoveEntry.run(access, null, _elementCid);
+			newRoot = RemoveEntry.run(access, context.recordCache, _elementCid);
 			if (null == newRoot)
 			{
 				throw new UsageException("Unknown post");
