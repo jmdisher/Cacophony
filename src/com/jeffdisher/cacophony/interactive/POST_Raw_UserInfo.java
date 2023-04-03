@@ -2,9 +2,9 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.InputStream;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.UpdateDescription;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -45,26 +45,29 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 	{
 		InputStream input = request.getInputStream();
 		
-		StreamDescription streamDescription;
-		try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
-		{
-			UpdateDescription.Result result = UpdateDescription.run(access, null, null, input, null, null);
-			IpfsFile newRoot = result.newRoot();
-			streamDescription = result.updatedStreamDescription();
-			
-			_background.requestPublish(newRoot);
-			response.getWriter().print(access.getCachedUrl(result.uploadedPictureCid()));
-			response.setStatus(HttpServletResponse.SC_OK);
-		}
-		
-		// We also want to write this back to the user info cache.
-		IpfsKey key = _environment.getPublicKey();
-		_userInfoCache.setUserInfo(key
-				, streamDescription.getName()
-				, streamDescription.getDescription()
-				, IpfsFile.fromIpfsCid(streamDescription.getPicture())
-				, streamDescription.getEmail()
-				, streamDescription.getWebsite()
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, null, null);
+		ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, null, null, null)
+				, command
 		);
+		if (null != result)
+		{
+			// Request the publication.
+			_background.requestPublish(result.getIndexToPublish());
+			
+			// We also want to write this back to the user info cache.
+			IpfsKey key = _environment.getPublicKey();
+			StreamDescription streamDescription = result.streamDescription;
+			_userInfoCache.setUserInfo(key
+					, streamDescription.getName()
+					, streamDescription.getDescription()
+					, IpfsFile.fromIpfsCid(streamDescription.getPicture())
+					, streamDescription.getEmail()
+					, streamDescription.getWebsite()
+			);
+			
+			// Write out the uploaded file's URL.
+			response.getWriter().print(result.userPicUrl);
+		}
 	}
 }

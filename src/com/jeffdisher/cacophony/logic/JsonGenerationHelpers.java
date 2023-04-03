@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -59,24 +58,6 @@ public class JsonGenerationHelpers
 		return array;
 	}
 
-	public static JsonArray recommendedKeys(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
-	{
-		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
-		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followees, userToResolve);
-		JsonArray array = null;
-		if (null != indexToLoad)
-		{
-			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecommendations recommendations = access.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
-			array = new JsonArray();
-			for (String rawCid : recommendations.getUser())
-			{
-				array.add(rawCid);
-			}
-		}
-		return array;
-	}
-
 	/**
 	 * Returns a JSON struct for the given postToResolve or null if it is unknown.
 	 * NOTE:  This will only resolve stream elements this user posted or which was posted by a followee.
@@ -93,11 +74,6 @@ public class JsonGenerationHelpers
 				? _formatAsPostStruct(baseUrl, element)
 				: null
 		;
-	}
-
-	public static JsonArray followeeKeys(IFolloweeReading followees)
-	{
-		return _dataFollowing(followees);
 	}
 
 	public static JsonObject prefs(PrefsData prefs)
@@ -158,16 +134,6 @@ public class JsonGenerationHelpers
 		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
 		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
 		return dataPrefs;
-	}
-
-	private static JsonArray _dataFollowing(IFolloweeReading followees)
-	{
-		JsonArray dataFollowing = new JsonArray();
-		for(IpfsKey followee: followees.getAllKnownFollowees())
-		{
-			dataFollowing.add(followee.toPublicKey());
-		}
-		return dataFollowing;
 	}
 
 	private static IpfsFile _getLastKnownIndexForKey(IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve)

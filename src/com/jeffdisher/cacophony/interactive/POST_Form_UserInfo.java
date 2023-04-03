@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.breakwater.StringMultiMap;
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.UpdateDescription;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -55,29 +55,19 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 		String email = formVariables.getIfSingle(VAR_EMAIL);
 		String website = formVariables.getIfSingle(VAR_WEBSITE);
 		
-		// All of these must be non-null.
-		if ((null != name)
-				&& (null != description)
-				&& (null != email)
-				&& (null != website)
-				// These elements must also be non-empty.
-				&& !name.isEmpty()
-				&& !description.isEmpty()
-		)
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand(name, description, null, email, website);
+		ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, null, null, null)
+				, command
+		);
+		if (null != result)
 		{
-			StreamDescription streamDescription;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
-			{
-				UpdateDescription.Result result = UpdateDescription.run(access, name, description, null, email, website);
-				IpfsFile newRoot = result.newRoot();
-				streamDescription = result.updatedStreamDescription();
-				
-				_background.requestPublish(newRoot);
-				response.setStatus(HttpServletResponse.SC_OK);
-			}
+			// Request the publication.
+			_background.requestPublish(result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
 			IpfsKey key = _environment.getPublicKey();
+			StreamDescription streamDescription = result.streamDescription;
 			_userInfoCache.setUserInfo(key
 					, streamDescription.getName()
 					, streamDescription.getDescription()
@@ -85,11 +75,6 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 					, streamDescription.getEmail()
 					, streamDescription.getWebsite()
 			);
-		}
-		else
-		{
-			// Missing variables.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 }

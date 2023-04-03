@@ -1,12 +1,13 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.RemoveRecommendation;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
+import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,29 +37,17 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsKey userToRemove = IpfsKey.fromPublicKey(variables[0]);
-		if (null != userToRemove)
+		RemoveRecommendationCommand command = new RemoveRecommendationCommand(userToRemove);
+		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, null, null, null)
+				, command
+		);
+		if (null != result)
 		{
-			IpfsFile newRoot = null;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
-			{
-				newRoot = RemoveRecommendation.run(access, userToRemove);
-			}
-			if (null != newRoot)
-			{
-				// Request a republish.
-				_backgroundOperations.requestPublish(newRoot);
-				response.setStatus(HttpServletResponse.SC_OK);
-			}
-			else
-			{
-				// The user was already in the list.
-				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			}
-		}
-		else
-		{
-			// Invalid key.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			IpfsFile newRoot = result.getIndexToPublish();
+			// This should change unless they threw an exception.
+			Assert.assertTrue(null != newRoot);
+			_backgroundOperations.requestPublish(newRoot);
 		}
 	}
 }

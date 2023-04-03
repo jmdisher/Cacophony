@@ -1,17 +1,12 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
+import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.scheduler.FutureResolve;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,43 +42,16 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
 		if (null != userToResolve)
 		{
-			// Since every step in this operation can be blocking, but we only need network access, we just user small
-			// read-only access requests.
-			FutureResolve resolved;
-			try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
+			ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
+			ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
+					, new ICommand.Context(_environment, _logger, null, null, null)
+					, command
+			);
+			if (null != result)
 			{
-				resolved = access.resolvePublicKey(userToResolve);
-			}
-			IpfsFile index = resolved.get();
-			if (null != index)
-			{
-				FutureRead<StreamIndex> futureStreamIndex;
-				try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
-				{
-					futureStreamIndex = access.loadNotCached(index, (byte[] data) -> GlobalData.deserializeIndex(data));
-				}
-				StreamIndex streamIndex = futureStreamIndex.get();
-				IpfsFile description = IpfsFile.fromIpfsCid(streamIndex.getDescription());
-				FutureRead<StreamDescription> futureStreamDescription;
-				String directFetchUrlRoot;
-				try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
-				{
-					futureStreamDescription = access.loadNotCached(description, (byte[] data) -> GlobalData.deserializeDescription(data));
-					directFetchUrlRoot = access.getDirectFetchUrlRoot();
-				}
-				StreamDescription streamDescription = futureStreamDescription.get();
-				// Make sure that the picture is a valid CID before plumbing it through.
-				IpfsFile pictureCid = IpfsFile.fromIpfsCid(streamDescription.getPicture());
-				JsonObject userInfo = JsonGenerationHelpers.populateJsonForUnknownDescription(streamDescription, directFetchUrlRoot + pictureCid.toSafeString());
+				JsonObject userInfo = JsonGenerationHelpers.populateJsonForUnknownDescription(result.streamDescription, result.userPicUrl);
 				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
 				response.getWriter().print(userInfo.toString());
-			}
-			else
-			{
-				// Key was valid but not found.
-				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-				response.getWriter().print("Key could not be resolved: " + rawKey);
 			}
 		}
 		else

@@ -3,9 +3,9 @@ package com.jeffdisher.cacophony.interactive;
 import java.util.List;
 
 import com.jeffdisher.breakwater.StringMultiMap;
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.EditEntry;
+import com.jeffdisher.cacophony.commands.EditPostCommand;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
@@ -62,85 +62,74 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		String name = formVariables.getIfSingle(VAR_NAME);
 		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
 		String discussionUrl = formVariables.getIfSingle(VAR_DISCUSSION_URL);
-		// At least one of these must be non-null:  null means "not changing".
-		if ((null != name)
-				|| (null != description)
-				|| (null != discussionUrl)
-		)
+		
+		EditPostCommand command = new EditPostCommand(eltCid, name, description, discussionUrl);
+		OnePost result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, null, null, null)
+				, command
+		);
+		if (null != result)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
+			_handleCorrectCase(response, eltCid, result);
+			
+			// Output the new element CID.
+			response.setContentType("text/plain");
+			response.getWriter().print(result.recordCid.toSafeString());
+		}
+	}
+
+	private void _handleCorrectCase(HttpServletResponse response, IpfsFile eltCid, OnePost result)
+	{
+		// Delete the old entry and add the new one.
+		_entryRegistry.removeLocalElement(eltCid);
+		IpfsFile newEltCid = result.recordCid;
+		_entryRegistry.addLocalElement(newEltCid);
+		
+		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
+		// data, we still need to technically "move" them to the new record CID.
+		StreamRecord record = result.streamRecord;
+		List<DataElement> unchangedLeaves = record.getElements().getElement();
+		for (DataElement leaf : unchangedLeaves)
+		{
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (ElementSpecialType.IMAGE == leaf.getSpecial())
 			{
-				EditEntry.Result result = EditEntry.run(access, eltCid, name, description, discussionUrl);
-				if (null != result)
-				{
-					// Delete the old entry and add the new one.
-					_entryRegistry.removeLocalElement(eltCid);
-					IpfsFile newEltCid = result.newRecordCid();
-					_entryRegistry.addLocalElement(newEltCid);
-					
-					// Account for the change of the CID in the record cache.  Even though we don't change the leaf
-					// data, we still need to technically "move" them to the new record CID.
-					StreamRecord record = result.newRecord();
-					List<DataElement> unchangedLeaves = record.getElements().getElement();
-					for (DataElement leaf : unchangedLeaves)
-					{
-						IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-						if (ElementSpecialType.IMAGE == leaf.getSpecial())
-						{
-							// This is the thumbnail.
-							_recordCache.recordThumbnailReleased(eltCid, leafCid);
-						}
-						else if (leaf.getMime().startsWith("video/"))
-						{
-							int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-							_recordCache.recordVideoReleased(eltCid, leafCid, maxEdge);
-						}
-						else if (leaf.getMime().startsWith("audio/"))
-						{
-							_recordCache.recordAudioReleased(eltCid, leafCid);
-						}
-					}
-					_recordCache.recordMetaDataReleased(eltCid);
-					
-					_recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), unchangedLeaves.size());
-					for (DataElement leaf : unchangedLeaves)
-					{
-						IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-						if (ElementSpecialType.IMAGE == leaf.getSpecial())
-						{
-							// This is the thumbnail.
-							_recordCache.recordThumbnailPinned(newEltCid, leafCid);
-						}
-						else if (leaf.getMime().startsWith("video/"))
-						{
-							int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-							_recordCache.recordVideoPinned(newEltCid, leafCid, maxEdge);
-						}
-						else if (leaf.getMime().startsWith("audio/"))
-						{
-							_recordCache.recordAudioPinned(newEltCid, leafCid);
-						}
-					}
-					
-					// Now, publish the update.
-					_background.requestPublish(result.newRoot());
-					
-					// Output the new element CID.
-					response.setContentType("text/plain");
-					response.getWriter().print(newEltCid.toSafeString());
-					response.setStatus(HttpServletResponse.SC_OK);
-				}
-				else
-				{
-					// Not found.
-					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-				}
+				// This is the thumbnail.
+				_recordCache.recordThumbnailReleased(eltCid, leafCid);
+			}
+			else if (leaf.getMime().startsWith("video/"))
+			{
+				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+				_recordCache.recordVideoReleased(eltCid, leafCid, maxEdge);
+			}
+			else if (leaf.getMime().startsWith("audio/"))
+			{
+				_recordCache.recordAudioReleased(eltCid, leafCid);
 			}
 		}
-		else
+		_recordCache.recordMetaDataReleased(eltCid);
+		
+		_recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), unchangedLeaves.size());
+		for (DataElement leaf : unchangedLeaves)
 		{
-			// Missing variables.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			if (ElementSpecialType.IMAGE == leaf.getSpecial())
+			{
+				// This is the thumbnail.
+				_recordCache.recordThumbnailPinned(newEltCid, leafCid);
+			}
+			else if (leaf.getMime().startsWith("video/"))
+			{
+				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+				_recordCache.recordVideoPinned(newEltCid, leafCid, maxEdge);
+			}
+			else if (leaf.getMime().startsWith("audio/"))
+			{
+				_recordCache.recordAudioPinned(newEltCid, leafCid);
+			}
 		}
+		
+		// Now, publish the update.
+		_background.requestPublish(result.getIndexToPublish());
 	}
 }

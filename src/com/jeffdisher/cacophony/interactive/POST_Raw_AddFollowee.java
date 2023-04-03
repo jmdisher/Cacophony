@@ -1,19 +1,13 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.StartFollowingCommand;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
-import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.KeyException;
-import com.jeffdisher.cacophony.types.ProtocolDataException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -50,70 +44,16 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
 		IpfsKey userToAdd = IpfsKey.fromPublicKey(pathVariables[0]);
-		if (null != userToAdd)
+		
+		StartFollowingCommand command = new StartFollowingCommand(userToAdd);
+		None result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, null, _userInfoCache, null)
+				, command
+		);
+		if (null != result)
 		{
-			boolean isAlreadyFollowed = false;
-			boolean didAddFollowee = false;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
-			{
-				IFolloweeWriting followees = access.writableFolloweeData();
-				IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(userToAdd);
-				isAlreadyFollowed = (null != lastRoot);
-				if (!isAlreadyFollowed)
-				{
-					// First, start the follow.
-					IpfsFile hackedRoot;
-					try
-					{
-						hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> _logger.logVerbose(message), access, _userInfoCache, userToAdd);
-						Assert.assertTrue(null != hackedRoot);
-					}
-					catch (IpfsConnectionException | ProtocolDataException | KeyException e)
-					{
-						// For now, we won't do anything special with these - we just interpret them as failures to add.
-						hackedRoot = null;
-					}
-					
-					// If that worked, save back the followee and request a refresh.
-					if (null != hackedRoot)
-					{
-						// Create the new followee record, saying we never refreshed it (since this is only a hacked element).
-						followees.createNewFollowee(userToAdd, hackedRoot);
-						
-						// Create the connector.
-						_entryRegistry.createNewFollowee(userToAdd);
-						
-						// Add this to the background operations to be refreshed next.
-						_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
-						
-						didAddFollowee = true;
-					}
-				}
-			}
-			
-			if (!isAlreadyFollowed)
-			{
-				if (didAddFollowee)
-				{
-					// Complete success - although the follow refresh will happen in the background.
-					response.setStatus(HttpServletResponse.SC_OK);
-				}
-				else
-				{
-					// We don't know who this is.
-					response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-				}
-			}
-			else
-			{
-				// Already followed.
-				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			}
-		}
-		else
-		{
-			// Invalid key.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			_entryRegistry.createNewFollowee(userToAdd);
+			_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
 		}
 	}
 }

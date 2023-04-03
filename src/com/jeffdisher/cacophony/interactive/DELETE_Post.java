@@ -1,13 +1,14 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.RemoveEntry;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
+import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,31 +43,22 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
 		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
-		if (null != postHashToRemove)
+		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(postHashToRemove);
+		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, _recordCache, null, null)
+				, command
+		);
+		if (null != result)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
-			{
-				IpfsFile newRoot = RemoveEntry.run(access, _recordCache, postHashToRemove);
-				if (null != newRoot)
-				{
-					// Delete the entry for anyone listening.
-					_entryRegistry.removeLocalElement(postHashToRemove);
-					
-					// Request a republish.
-					_backgroundOperations.requestPublish(newRoot);
-					response.setStatus(HttpServletResponse.SC_OK);
-				}
-				else
-				{
-					// Unknown post.
-					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-				}
-			}
-		}
-		else
-		{
-			// Invalid key.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			IpfsFile newRoot = result.getIndexToPublish();
+			// This should change unless they threw an exception.
+			Assert.assertTrue(null != newRoot);
+			
+			// Delete the entry for anyone listening.
+			_entryRegistry.removeLocalElement(postHashToRemove);
+			
+			// Request a republish.
+			_backgroundOperations.requestPublish(newRoot);
 		}
 	}
 }

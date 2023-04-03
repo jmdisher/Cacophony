@@ -10,14 +10,20 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.websocket.api.Session;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
@@ -437,6 +443,61 @@ public class InteractiveHelpers
 			session.close(WebSocketCodes.SECURITY_FAILED, "Invalid IP");
 		}
 		return isSafe;
+	}
+
+	/**
+	 * A complex helper which handles all of the processing of an ICommand instance within a REST end-point.  This will
+	 * run the command, handling any exceptions as the appropriate HTTP errors, and will return the given result object
+	 * from the command for further processing.
+	 * 
+	 * @param <T> The return value of the command.
+	 * @param response Used for setting HTTP result codes (even in the success case).
+	 * @param context The context in which to run the command.
+	 * @param command The command to run.
+	 * @return The object returned by the command (null on failure).
+	 * @throws IOException There was an error interacting with the response object.
+	 */
+	public static <T extends ICommand.Result> T runCommandAndHandleErrors(HttpServletResponse response, ICommand.Context context, ICommand<T> command) throws IOException
+	{
+		T result = null;
+		try
+		{
+			result = command.runInContext(context);
+			// The commands should only fail with exceptions, always returning non-null on success.
+			Assert.assertTrue(null != result);
+			response.setStatus(HttpServletResponse.SC_OK);
+		}
+		catch (IpfsConnectionException e)
+		{
+			// An internal network error.
+			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		}
+		catch (UsageException e)
+		{
+			// The parameters were wrong.
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+		}
+		catch (KeyException e)
+		{
+			// We couldn't resolve the key.
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		}
+		catch (ProtocolDataException e)
+		{
+			// We found the requeste data but it was corrupt or otherwise not obeying protocol rules.
+			response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+		}
+		catch (VersionException e)
+		{
+			// This should never appear at the top-level.
+			throw Assert.unexpected(e);
+		}
+		catch (CacophonyException e)
+		{
+			// We should have hit one of the above cases.  This would mean we added another exception type but didn't handle it.
+			throw Assert.unexpected(e);
+		}
+		return result;
 	}
 
 

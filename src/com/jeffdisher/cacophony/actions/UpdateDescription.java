@@ -52,11 +52,11 @@ public class UpdateDescription
 		{
 			descriptionObject.setDescription(description);
 		}
-		IpfsFile pictureHash = null;
+		
 		if (null != picture)
 		{
 			// We don't want to pre-load this entire stream so try uploading it and then check the size to make sure it doesn't exceed the limit.
-			pictureHash = access.uploadAndPin(picture);
+			IpfsFile pictureHash = access.uploadAndPin(picture);
 			long sizeInBytes = access.getSizeInBytes(pictureHash).get();
 			if (sizeInBytes > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
 			{
@@ -101,11 +101,11 @@ public class UpdateDescription
 			access.unpin(pictureToUnpin);
 		}
 		
-		return new Result(newRoot, descriptionObject, pictureHash);
+		return new Result(newRoot, descriptionObject);
 	}
 
 
-	public static record Result(IpfsFile newRoot, StreamDescription updatedStreamDescription, IpfsFile uploadedPictureCid)
+	public static record Result(IpfsFile newRoot, StreamDescription updatedStreamDescription)
 	{
 	}
 }

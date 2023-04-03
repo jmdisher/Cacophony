@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,16 +38,11 @@ public class GET_Prefs implements ValidatedEntryPoints.GET
 		{
 			PrefsData prefs = access.readPrefs();
 			JsonObject userInfo = JsonGenerationHelpers.prefs(prefs);
-			if (null != userInfo)
-			{
-				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(userInfo.toString());
-			}
-			else
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-			}
+			// There is no way we can fail to create this object.
+			Assert.assertTrue(null != userInfo);
+			response.setContentType("application/json");
+			response.setStatus(HttpServletResponse.SC_OK);
+			response.getWriter().print(userInfo.toString());
 		}
 	}
 }

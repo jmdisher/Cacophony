@@ -1,14 +1,11 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonArray;
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
+import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,28 +31,31 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
-		try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
+		String rawKey = variables[0];
+		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
+		if (null != userToResolve)
 		{
-			IpfsKey publicKey = access.getPublicKey();
-			IpfsFile lastPublishedIndex = access.getLastRootElement();
-			IFolloweeReading followees = access.readableFolloweeData();
-			JsonArray keys = JsonGenerationHelpers.recommendedKeys(access, publicKey, lastPublishedIndex, followees, userToResolve);
-			if (null != keys)
+			ListRecommendationsCommand command = new ListRecommendationsCommand(userToResolve);
+			KeyList result = InteractiveHelpers.runCommandAndHandleErrors(response
+					, new ICommand.Context(_environment, _logger, null, null, null)
+					, command
+			);
+			if (null != result)
 			{
+				JsonArray array = new JsonArray();
+				for (IpfsKey key : result.keys)
+				{
+					array.add(key.toPublicKey());
+				}
 				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(keys.toString());
-			}
-			else
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				response.getWriter().print(array.toString());
 			}
 		}
-		catch (FailedDeserializationException e)
+		else
 		{
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			e.printStackTrace(response.getWriter());
+			// This happens if the key is invalid.
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.getWriter().print("Invalid key: " + rawKey);
 		}
 	}
 }

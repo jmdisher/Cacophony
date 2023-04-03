@@ -1,17 +1,14 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.StopFollowingCommand;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -53,57 +50,19 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 		IpfsKey userToRemove = IpfsKey.fromPublicKey(variables[0]);
 		if (null != userToRemove)
 		{
-			ConcurrentFolloweeRefresher refresher = null;
-			boolean isAlreadyFollowed = false;
-			try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
+			// First thing, we want to just remove this from background operations.
+			boolean didRemove = _backgroundOperations.removeFollowee(userToRemove);
+			if (didRemove)
 			{
-				IFolloweeWriting followees = access.writableFolloweeData();
-				IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(userToRemove);
-				isAlreadyFollowed = (null != lastRoot);
-				if (isAlreadyFollowed)
+				StopFollowingCommand command = new StopFollowingCommand(userToRemove);
+				None result = InteractiveHelpers.runCommandAndHandleErrors(response
+						, new ICommand.Context(_environment, _logger, _recordCache, _userInfoCache, _entryRegistry)
+						, command
+				);
+				if (null != result)
 				{
-					refresher = new ConcurrentFolloweeRefresher(_logger
-							, userToRemove
-							, lastRoot
-							, access.readPrefs()
-							, true
-					);
-					
-					// Clean the cache and setup state for the refresh.
-					refresher.setupRefresh(access, followees);
-				}
-			}
-			
-			if (isAlreadyFollowed)
-			{
-				// Run the actual refresh.
-				boolean didRefresh = (null != refresher)
-						? refresher.runRefresh(_entryRegistry)
-						: false
-				;
-				
-				try (IWritingAccess access = StandardAccess.writeAccess(_environment, _logger))
-				{
-					IFolloweeWriting followees = access.writableFolloweeData();
-					long lastPollMillis = _environment.currentTimeMillis();
-					refresher.finishRefresh(access, _recordCache, _userInfoCache, followees, lastPollMillis);
-				}
-				finally
-				{
-					// There is no real way to fail at this refresh since we are just dropping things.
-					Assert.assertTrue(didRefresh);
-					boolean didRemove = _backgroundOperations.removeFollowee(userToRemove);
-					// This removal could only fail as a result of racy calls to this end-point.
-					if (didRemove)
-					{
-						_entryRegistry.removeFollowee(userToRemove);
-						_userInfoCache.removeUser(userToRemove);
-					}
-					else
-					{
-						_logger.logError("Followee failed to be removed: " + userToRemove);
-					}
-					response.setStatus(HttpServletResponse.SC_OK);
+					_entryRegistry.removeFollowee(userToRemove);
+					_userInfoCache.removeUser(userToRemove);
 				}
 			}
 			else

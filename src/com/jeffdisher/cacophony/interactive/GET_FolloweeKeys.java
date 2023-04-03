@@ -1,12 +1,12 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonArray;
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
+import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
-import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,20 +31,20 @@ public class GET_FolloweeKeys implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_environment, _logger))
+		ListFolloweesCommand command = new ListFolloweesCommand();
+		KeyList result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, new ICommand.Context(_environment, _logger, null, null, null)
+				, command
+		);
+		if (null != result)
 		{
-			IFolloweeReading followees = access.readableFolloweeData();
-			JsonArray keys = JsonGenerationHelpers.followeeKeys(followees);
-			if (null != keys)
+			JsonArray array = new JsonArray();
+			for(IpfsKey followee: result.keys)
 			{
-				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(keys.toString());
+				array.add(followee.toPublicKey());
 			}
-			else
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-			}
+			response.setContentType("application/json");
+			response.getWriter().print(array.toString());
 		}
 	}
 }
