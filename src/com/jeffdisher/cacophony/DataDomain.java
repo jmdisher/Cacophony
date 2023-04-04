@@ -8,6 +8,7 @@ import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
@@ -18,21 +19,24 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
-import com.jeffdisher.cacophony.logic.IConnectionFactory;
+import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.logic.IpfsConnection;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
-import com.jeffdisher.cacophony.logic.RealConnectionFactory;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.logic.Uploader;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
-import com.jeffdisher.cacophony.testutils.MockConnectionFactory;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
+
+import io.ipfs.api.IPFS;
+import io.ipfs.multiaddr.MultiAddress;
 
 
 /**
@@ -45,6 +49,11 @@ public class DataDomain implements Closeable
 	// We use a lockfile with a name based on the config directory name.  Note that it can't be inside the directory
 	// since it may not exist yet at this level.  This has the side-effect of protecting against concurrent creation.
 	public static final String CONFIG_LOCK_SUFFIX = "_lock";
+	// This is the default used by IPFS.java (timeout to establish connection.
+	public static final int CONNECTION_TIMEOUT_MILLIS = 10_000;
+	// The default wait for response in IPFS.java is 1 minute but pin could take a long time so we use 30 minutes.
+	// (this value isn't based on any solid science so it may change in the future).
+	public static final int LONG_READ_TIMEOUT_MILLIS = 30 * 60 * 1000;
 
 	public static DataDomain detectDataDomain()
 	{
@@ -131,7 +140,7 @@ public class DataDomain implements Closeable
 
 	private final File _realDirectoryOrNull;
 	private final Uploader _uploaderOrNull;
-	private final IConnectionFactory _connectionFactory;
+	private final MockSingleNode _mockNodeOrNull;
 	private final IConfigFileSystem _fileSystem;
 
 	private DataDomain(File realDirectoryOrNull, File fakeDirectoryOrNull)
@@ -149,7 +158,7 @@ public class DataDomain implements Closeable
 				// We don't know how this would fail, here.
 				throw Assert.unexpected(e);
 			}
-			_connectionFactory = new RealConnectionFactory(_uploaderOrNull);
+			_mockNodeOrNull = null;
 			_fileSystem = new RealConfigFileSystem(_realDirectoryOrNull);
 		}
 		else
@@ -157,24 +166,54 @@ public class DataDomain implements Closeable
 			Assert.assertTrue(null != fakeDirectoryOrNull);
 			MemoryConfigFileSystem ourFileSystem = new MemoryConfigFileSystem(fakeDirectoryOrNull);
 			_uploaderOrNull = null;
-			MockSingleNode ourNode;
 			try
 			{
-				ourNode = _buildOurTestNode(ourFileSystem);
+				_mockNodeOrNull = _buildOurTestNode(ourFileSystem);
 			}
 			catch (CacophonyException e)
 			{
 				// We don't expect this error when building test cluster.
 				throw Assert.unexpected(e);
 			}
-			_connectionFactory = new MockConnectionFactory(ourNode);
 			_fileSystem = ourFileSystem;
 		}
 	}
 
-	public IConnectionFactory getConnectionFactory()
+	public IConnection buildSharedConnection(String ipfsConnectString) throws IpfsConnectionException
 	{
-		return _connectionFactory;
+		IConnection connection;
+		if (null == _mockNodeOrNull)
+		{
+			// Real connection.
+			try {
+				IPFS defaultConnection = new IPFS(ipfsConnectString);
+				@SuppressWarnings("unchecked")
+				Map<String, Object> addresses = (Map<String, Object>) defaultConnection.config.get("Addresses");
+				String result = (String) addresses.get("Gateway");
+				// This "Gateway" is of the form:  /ip4/127.0.0.1/tcp/8080
+				int gatewayPort = Integer.parseInt(result.split("/")[4]);
+				
+				MultiAddress addr = new MultiAddress(ipfsConnectString);
+				IPFS longWaitConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, LONG_READ_TIMEOUT_MILLIS, false);
+				connection = new IpfsConnection(_uploaderOrNull, defaultConnection, longWaitConnection, gatewayPort);
+			}
+			catch (IOException e)
+			{
+				// This happens if we fail to read the config, which should only happen if the node is bogus.
+				throw new IpfsConnectionException("connect", ipfsConnectString, e);
+			}
+			catch (RuntimeException e)
+			{
+				// For some reason, "new IPFS" throws a RuntimeException, instead of IOException, if the connection fails.
+				throw new IpfsConnectionException("connect", ipfsConnectString, new IOException(e));
+			}
+		}
+		else
+		{
+			// Fake connection.
+			connection = _mockNodeOrNull;
+		}
+		return connection;
 	}
 
 	public IConfigFileSystem getFileSystem()

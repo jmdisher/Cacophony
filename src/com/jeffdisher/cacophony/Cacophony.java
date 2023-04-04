@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IConnectionFactory;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -87,7 +86,6 @@ public class Cacophony {
 			if (null != command)
 			{
 				DataDomain dataDirectoryWrapper = DataDomain.detectDataDomain();
-				IConnectionFactory connectionFactory = dataDirectoryWrapper.getConnectionFactory();
 				String ipfsConnectString = System.getenv(EnvVars.ENV_VAR_CACOPHONY_IPFS_CONNECT);
 				if (null == ipfsConnectString)
 				{
@@ -104,7 +102,7 @@ public class Cacophony {
 				boolean errorDidOccur = false;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
-					IConnection connection = connectionFactory.buildConnection(ipfsConnectString);
+					IConnection connection = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
 					IpfsKey publicKey = _publicKeyForName(connection, keyName);
 					executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
