@@ -6,10 +6,8 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -30,38 +28,32 @@ import com.jeffdisher.cacophony.utils.Assert;
  * -delete key(action_id)
  * -NO special
  */
-public class WS_BackgroundStatus implements IWebSocketFactory
+public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
 	public final static String COMMAND_STOP = "COMMAND_STOP";
 	public final static String COMMAND_REPUBLISH = "COMMAND_REPUBLISH";
 
 	private final ICommand.Context _context;
-	private final String _xsrf;
 	private final HandoffConnector<Integer, String> _statusHandoff;
 	private final CountDownLatch _stopLatch;
 	private final BackgroundOperations _background;
 	
 	public WS_BackgroundStatus(ICommand.Context context
-			, String xsrf
 			, HandoffConnector<Integer, String> statusHandoff
 			, CountDownLatch stopLatch
 			, BackgroundOperations background
 	)
 	{
 		_context = context;
-		_xsrf = xsrf;
 		_statusHandoff = statusHandoff;
 		_stopLatch = stopLatch;
 		_background = background;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new StatusListener()
-				: null
-		;
+		return new StatusListener();
 	}
 
 

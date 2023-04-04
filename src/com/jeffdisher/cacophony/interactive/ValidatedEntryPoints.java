@@ -2,10 +2,14 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+
 import com.jeffdisher.breakwater.IDeleteHandler;
 import com.jeffdisher.breakwater.IGetHandler;
 import com.jeffdisher.breakwater.IPostFormHandler;
 import com.jeffdisher.breakwater.IPostRawHandler;
+import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -50,6 +54,11 @@ public class ValidatedEntryPoints
 	public void addDeleteHandler(String pathPrefix, int variableCount, DELETE handler)
 	{
 		_server.addDeleteHandler(pathPrefix, variableCount, new VerifiedDelete(handler));
+	}
+
+	public void addWebSocketFactory(String pathPrefix, int variableCount, String protocolName, WEB_SOCKET_FACTORY factory)
+	{
+		_server.addWebSocketFactory(pathPrefix, variableCount, protocolName, new VerifiedSocketFactory(factory));
 	}
 
 
@@ -117,6 +126,23 @@ public class ValidatedEntryPoints
 		}
 	}
 
+	private class VerifiedSocketFactory implements IWebSocketFactory
+	{
+		private final WEB_SOCKET_FACTORY _handler;
+		public VerifiedSocketFactory(WEB_SOCKET_FACTORY handler)
+		{
+			_handler = handler;
+		}
+		@Override
+		public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+		{
+			return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+					? _handler.build(variables)
+					: null
+			;
+		}
+	}
+
 	private static void _commonChecks(String xsrf, HttpServletRequest request, HttpServletResponse response, ThrowingRunnable task) throws IOException
 	{
 		if (InteractiveHelpers.verifySafeRequest(xsrf, request, response))
@@ -168,6 +194,11 @@ public class ValidatedEntryPoints
 	public interface DELETE
 	{
 		void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable;
+	}
+
+	public interface WEB_SOCKET_FACTORY
+	{
+		WebSocketListener build(String[] pathVariables);
 	}
 
 	private interface ThrowingRunnable

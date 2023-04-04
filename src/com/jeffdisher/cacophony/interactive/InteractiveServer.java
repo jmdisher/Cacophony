@@ -206,16 +206,16 @@ public class InteractiveServer
 		validated.addDeleteHandler("/draft/processedVideo", 1, new DELETE_DraftProcessedVideo(manager));
 		validated.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(manager));
 		
-		server.addWebSocketFactory("/draft/saveVideo", 4, "video", new WS_DraftSaveVideo(xsrf, manager));
-		server.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(xsrf, videoProcessContainer, forcedCommand));
-		server.addWebSocketFactory("/draft/existingVideo", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(xsrf, videoProcessContainer));
-		server.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(xsrf, manager));
+		validated.addWebSocketFactory("/draft/saveVideo", 4, "video", new WS_DraftSaveVideo(manager));
+		validated.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(videoProcessContainer, forcedCommand));
+		validated.addWebSocketFactory("/draft/existingVideo", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(videoProcessContainer));
+		validated.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(manager));
 		
 		// We use a web socket for listening to updates of background process state.
-		server.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(serverContext, xsrf, statusHandoff, stopLatch, background));
-		server.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(xsrf, followeeRefreshConnector));
-		server.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext, xsrf));
-		server.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext, xsrf));
+		validated.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(serverContext, statusHandoff, stopLatch, background));
+		validated.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
+		validated.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
+		validated.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
 		
 		// Prefs.
 		validated.addGetHandler("/prefs", 0, new GET_Prefs(serverContext));

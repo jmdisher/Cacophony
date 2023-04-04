@@ -6,9 +6,7 @@ import java.time.Duration;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -24,34 +22,29 @@ import com.jeffdisher.cacophony.utils.Assert;
  * -delete key("outputBytes")
  * -NO special
  */
-public class WS_DraftProcessVideo implements IWebSocketFactory
+public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	private final String _xsrf;
 	private final VideoProcessContainer _videoProcessContainer;
 	private final String _forcedCommand;
 	
-	public WS_DraftProcessVideo(String xsrf, VideoProcessContainer videoProcessContainer, String forcedCommand)
+	public WS_DraftProcessVideo(VideoProcessContainer videoProcessContainer, String forcedCommand)
 	{
-		_xsrf = xsrf;
 		_videoProcessContainer = videoProcessContainer;
 		_forcedCommand = forcedCommand;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		int draftId = Integer.parseInt(variables[0]);
-		String processCommand = variables[1];
+		int draftId = Integer.parseInt(pathVariables[0]);
+		String processCommand = pathVariables[1];
 		// See if we are supposed to override this connection.
 		if (null != _forcedCommand)
 		{
 			processCommand = _forcedCommand;
 		}
 		System.out.println("Opening processing socket with local command: \"" + processCommand + "\"");
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new ProcessVideoWebSocketListener(draftId, processCommand)
-				: null
-		;
+		return new ProcessVideoWebSocketListener(draftId, processCommand);
 	}
 
 

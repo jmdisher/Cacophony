@@ -2,9 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -12,25 +10,20 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Tries to connect to an existing video processing command.
  * Output is identical to WS_DraftProcessVideo, once the connection is established.
  */
-public class WS_DraftExistingVideo implements IWebSocketFactory
+public class WS_DraftExistingVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	private final String _xsrf;
 	private final VideoProcessContainer _videoProcessContainer;
 	
-	public WS_DraftExistingVideo(String xsrf, VideoProcessContainer videoProcessContainer)
+	public WS_DraftExistingVideo(VideoProcessContainer videoProcessContainer)
 	{
-		_xsrf = xsrf;
 		_videoProcessContainer = videoProcessContainer;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		int draftId = Integer.parseInt(variables[0]);
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new ProcessVideoWebSocketListener(draftId)
-				: null
-		;
+		int draftId = Integer.parseInt(pathVariables[0]);
+		return new ProcessVideoWebSocketListener(draftId);
 	}
 
 

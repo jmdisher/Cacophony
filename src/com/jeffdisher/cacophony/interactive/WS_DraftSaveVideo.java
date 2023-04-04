@@ -5,9 +5,7 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -18,30 +16,25 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Receives binary payloads from the client which are interpreted as the binary stream for the original video.
  * Sends nothing.
  */
-public class WS_DraftSaveVideo implements IWebSocketFactory
+public class WS_DraftSaveVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	private final String _xsrf;
 	private final DraftManager _draftManager;
 	
-	public WS_DraftSaveVideo(String xsrf, DraftManager draftManager)
+	public WS_DraftSaveVideo(DraftManager draftManager)
 	{
-		_xsrf = xsrf;
 		_draftManager = draftManager;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		int draftId = Integer.parseInt(variables[0]);
-		int height = Integer.parseInt(variables[1]);
-		int width = Integer.parseInt(variables[2]);
+		int draftId = Integer.parseInt(pathVariables[0]);
+		int height = Integer.parseInt(pathVariables[1]);
+		int width = Integer.parseInt(pathVariables[2]);
 		// Since we know everything coming through this path is an "video/" mime type, we just pass the second part in the path to avoid having to reencode it.
-		String codec = variables[3];
+		String codec = pathVariables[3];
 		String mime = "video/" + codec;
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new SaveVideoWebSocketListener(_draftManager, draftId, height, width, mime)
-				: null
-		;
+		return new SaveVideoWebSocketListener(_draftManager, draftId, height, width, mime);
 	}
 
 

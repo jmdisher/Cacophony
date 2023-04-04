@@ -5,9 +5,7 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -18,28 +16,23 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Receives binary payloads from the client which are interpreted as the binary stream for the audio.
  * Sends nothing.
  */
-public class WS_DraftSaveAudio implements IWebSocketFactory
+public class WS_DraftSaveAudio implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	private final String _xsrf;
 	private final DraftManager _draftManager;
 	
-	public WS_DraftSaveAudio(String xsrf, DraftManager draftManager)
+	public WS_DraftSaveAudio(DraftManager draftManager)
 	{
-		_xsrf = xsrf;
 		_draftManager = draftManager;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		int draftId = Integer.parseInt(variables[0]);
+		int draftId = Integer.parseInt(pathVariables[0]);
 		// Since we know everything coming through this path is an "audio/" mime type, we just pass the second part in the path to avoid having to reencode it.
-		String codec = variables[1];
+		String codec = pathVariables[1];
 		String mime = "audio/" + codec;
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new SaveAudioWebSocketListener(_draftManager, draftId, mime)
-				: null
-		;
+		return new SaveAudioWebSocketListener(_draftManager, draftId, mime);
 	}
 
 

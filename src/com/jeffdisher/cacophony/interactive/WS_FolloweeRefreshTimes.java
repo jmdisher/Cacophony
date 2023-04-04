@@ -5,10 +5,8 @@ import java.time.Duration;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -22,24 +20,19 @@ import com.jeffdisher.cacophony.utils.Assert;
  * -delete key(public_key)
  * -NO special
  */
-public class WS_FolloweeRefreshTimes implements IWebSocketFactory
+public class WS_FolloweeRefreshTimes implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	private final String _xsrf;
 	private final HandoffConnector<IpfsKey, Long> _followeeRefreshConnector;
 	
-	public WS_FolloweeRefreshTimes(String xsrf, HandoffConnector<IpfsKey, Long> followeeRefreshConnector)
+	public WS_FolloweeRefreshTimes(HandoffConnector<IpfsKey, Long> followeeRefreshConnector)
 	{
-		_xsrf = xsrf;
 		_followeeRefreshConnector = followeeRefreshConnector;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new Listener()
-				: null
-		;
+		return new Listener();
 	}
 
 

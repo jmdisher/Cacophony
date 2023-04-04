@@ -5,10 +5,8 @@ import java.time.Duration;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,7 +23,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * -delete key(record_cid)
  * -special is set when the refresh for this user is active, set null when complete
  */
-public class WS_UserEntries implements IWebSocketFactory
+public class WS_UserEntries implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
 	// We will start by just sending them the last 10 entries.
 	private static final int START_ENTRY_LIMIT = 10;
@@ -33,24 +31,18 @@ public class WS_UserEntries implements IWebSocketFactory
 	private static final String COMMAND_SCROLL_BACK = "COMMAND_SCROLL_BACK";
 
 	private final ICommand.Context _context;
-	private final String _xsrf;
 	
 	public WS_UserEntries(ICommand.Context context
-			, String xsrf
 	)
 	{
 		_context = context;
-		_xsrf = xsrf;
 	}
 	
 	@Override
-	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+	public WebSocketListener build(String[] pathVariables)
 	{
-		IpfsKey key = IpfsKey.fromPublicKey(variables[0]);
-		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-				? new Listener(key)
-				: null
-		;
+		IpfsKey key = IpfsKey.fromPublicKey(pathVariables[0]);
+		return new Listener(key);
 	}
 
 
