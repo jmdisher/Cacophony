@@ -5,12 +5,16 @@ import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.UpdateDescription;
+import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
+import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.logic.ChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -38,7 +42,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			throw new UsageException("Description must be non-empty.");
 		}
 		
-		UpdateDescription.Result result;
+		Result result;
 		String pictureUrl;
 		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
 		{
@@ -47,7 +51,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
 			ILogger log = context.logger.logStart("Updating channel description...");
-			result = UpdateDescription.run(access, _name, _description, _pictureStream, _email, _website);
+			result = _run(access, _name, _description, _pictureStream, _email, _website);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
 			pictureUrl = access.getCachedUrl(IpfsFile.fromIpfsCid(result.updatedStreamDescription().getPicture())).toString();
 			log.logFinish("Update completed!");
@@ -69,5 +73,97 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			}
 		}
 		return new ChannelDescription(result.newRoot(), result.updatedStreamDescription(), pictureUrl);
+	}
+
+	/**
+	 * Updates the local user's description.  Also unpins the old picture, if it is being replaced.
+	 * 
+	 * @param access Write access.
+	 * @param name The new name (or null, if not changed).
+	 * @param description The new description (or null, if not changed).
+	 * @param picture The stream containing the new picture (or null, if not changed).
+	 * @param email The E-Mail address (or null, if not changed).
+	 * @param website The web site (or null, if not changed).
+	 * @return The results of the operation (not null).
+	 * @throws IpfsConnectionException There was a network error.
+	 * @throws UsageException The picture stream provided was too large.
+	 */
+	private static Result _run(IWritingAccess access
+			, String name
+			, String description
+			, InputStream picture
+			, String email
+			, String website
+	) throws IpfsConnectionException, UsageException
+	{
+		ChannelModifier modifier = new ChannelModifier(access);
+		
+		// Read the existing description since we might be only partially updating it.
+		StreamDescription descriptionObject = ActionHelpers.readDescription(modifier);
+		IpfsFile pictureToUnpin = null;
+		
+		if (null != name)
+		{
+			descriptionObject.setName(name);
+		}
+		if (null != description)
+		{
+			descriptionObject.setDescription(description);
+		}
+		
+		if (null != picture)
+		{
+			// We don't want to pre-load this entire stream so try uploading it and then check the size to make sure it doesn't exceed the limit.
+			IpfsFile pictureHash = access.uploadAndPin(picture);
+			long sizeInBytes = access.getSizeInBytes(pictureHash).get();
+			if (sizeInBytes > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
+			{
+				access.unpin(pictureHash);
+				throw new UsageException("Picture too big (is " + MiscHelpers.humanReadableBytes(sizeInBytes) + ", limit " + MiscHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
+			}
+			pictureToUnpin = IpfsFile.fromIpfsCid(descriptionObject.getPicture());
+			descriptionObject.setPicture(pictureHash.toSafeString());
+		}
+		if (null != email)
+		{
+			// Since email is optional, we will treat an empty string as "remove".
+			if (email.isEmpty())
+			{
+				descriptionObject.setEmail(null);
+			}
+			else
+			{
+				descriptionObject.setEmail(email);
+			}
+		}
+		if (null != website)
+		{
+			// Since website is optional, we will treat an empty string as "remove".
+			if (website.isEmpty())
+			{
+				descriptionObject.setWebsite(null);
+			}
+			else
+			{
+				descriptionObject.setWebsite(website);
+			}
+		}
+		
+		// Update and commit the structure.
+		modifier.storeDescription(descriptionObject);
+		IpfsFile newRoot = ActionHelpers.commitNewRoot(modifier);
+		
+		// Clean up the old picture.
+		if (null != pictureToUnpin)
+		{
+			access.unpin(pictureToUnpin);
+		}
+		
+		return new Result(newRoot, descriptionObject);
+	}
+
+
+	public static record Result(IpfsFile newRoot, StreamDescription updatedStreamDescription)
+	{
 	}
 }
