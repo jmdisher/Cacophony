@@ -373,36 +373,29 @@ public class InteractiveHelpers
 	public static boolean verifySafeRequest(String xsrf, HttpServletRequest request, HttpServletResponse response)
 	{
 		boolean isSafe = false;
-		if (LOCAL_IP.equals(request.getRemoteAddr()))
+		// We now only bind the local IP so another address should be impossible.
+		Assert.assertTrue(LOCAL_IP.equals(request.getRemoteAddr()));
+		String value = null;
+		Cookie[] cookies = request.getCookies();
+		if (null != cookies)
 		{
-			String value = null;
-			Cookie[] cookies = request.getCookies();
-			if (null != cookies)
+			for (Cookie cookie : cookies)
 			{
-				for (Cookie cookie : cookies)
+				if (XSRF.equals(cookie.getName()))
 				{
-					if (XSRF.equals(cookie.getName()))
-					{
-						value = cookie.getValue();
-					}
+					value = cookie.getValue();
 				}
 			}
-			if (xsrf.equals(value))
-			{
-				// This means all checks passed.
-				isSafe = true;
-			}
-			else
-			{
-				isSafe = false;
-				System.err.println("Invalid XSRF: \"" + value + "\"");
-				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-			}
+		}
+		if (xsrf.equals(value))
+		{
+			// This means all checks passed.
+			isSafe = true;
 		}
 		else
 		{
 			isSafe = false;
-			System.err.println("Invalid IP: " + request.getRemoteAddr());
+			System.err.println("Invalid XSRF: \"" + value + "\"");
 			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 		}
 		return isSafe;
@@ -421,26 +414,19 @@ public class InteractiveHelpers
 		String rawDescription = session.getRemoteAddress().toString();
 		// This rawDescription looks like "/127.0.0.1:65657" so we need to parse it.
 		String ip = rawDescription.substring(1).split(":")[0];
-		if (LOCAL_IP.equals(ip))
+		// We now only bind the local IP so another address should be impossible.
+		Assert.assertTrue(LOCAL_IP.equals(ip));
+		String value = session.getUpgradeRequest().getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
+		if (xsrf.equals(value))
 		{
-			String value = session.getUpgradeRequest().getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
-			if (xsrf.equals(value))
-			{
-				// This means all checks passed.
-				isSafe = true;
-			}
-			else
-			{
-				isSafe = false;
-				System.err.println("Invalid XSRF: \"" + value + "\"");
-				session.close(WebSocketCodes.SECURITY_FAILED, "Invalid XSRF");
-			}
+			// This means all checks passed.
+			isSafe = true;
 		}
 		else
 		{
 			isSafe = false;
-			System.err.println("Invalid IP: " + ip);
-			session.close(WebSocketCodes.SECURITY_FAILED, "Invalid IP");
+			System.err.println("Invalid XSRF: \"" + value + "\"");
+			session.close(WebSocketCodes.SECURITY_FAILED, "Invalid XSRF");
 		}
 		return isSafe;
 	}

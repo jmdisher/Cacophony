@@ -164,7 +164,9 @@ public class InteractiveServer
 		
 		// Setup the server.
 		CountDownLatch stopLatch = new CountDownLatch(1);
-		RestServer server = new RestServer(new InetSocketAddress(port), staticResource);
+		// Note that we specifically want the 127.0.0.1 interface since this should only be used locally and this IP is a special-case for browser permissions.
+		InetSocketAddress interfaceToBind = new InetSocketAddress("127.0.0.1", port);
+		RestServer server = new RestServer(interfaceToBind, staticResource);
 		ValidatedEntryPoints validated = new ValidatedEntryPoints(server, xsrf);
 		
 		// Install the entry-points.
