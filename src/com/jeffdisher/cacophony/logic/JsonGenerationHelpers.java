@@ -26,20 +26,6 @@ public class JsonGenerationHelpers
 		return _dataVersion();
 	}
 
-	public static JsonObject userInfo(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
-	{
-		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
-		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followees, userToResolve);
-		JsonObject foundObject = null;
-		if (null != indexToLoad)
-		{
-			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamDescription description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
-			foundObject = _populateJsonForDescription(description, access.getCachedUrl(IpfsFile.fromIpfsCid(description.getPicture())).toString());
-		}
-		return foundObject;
-	}
-
 	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
