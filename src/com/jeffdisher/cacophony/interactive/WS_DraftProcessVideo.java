@@ -6,6 +6,7 @@ import java.time.Duration;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -37,7 +38,7 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 	}
 	
 	@Override
-	public WebSocketListener create(String[] variables)
+	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
 		// TODO:  If the Breakwater interface changes to provide the session here, we should change this to validate
 		// XSRF and start the process here, then attach the listener on connect.

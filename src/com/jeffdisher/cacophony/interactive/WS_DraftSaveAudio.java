@@ -5,6 +5,7 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.logic.DraftManager;
@@ -29,7 +30,7 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 	}
 	
 	@Override
-	public WebSocketListener create(String[] variables)
+	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
 		int draftId = Integer.parseInt(variables[0]);
 		// Since we know everything coming through this path is an "audio/" mime type, we just pass the second part in the path to avoid having to reencode it.

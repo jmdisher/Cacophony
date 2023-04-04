@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -23,7 +24,7 @@ public class WS_DraftExistingVideo implements IWebSocketFactory
 	}
 	
 	@Override
-	public WebSocketListener create(String[] variables)
+	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
 		int draftId = Integer.parseInt(variables[0]);
 		return new ProcessVideoWebSocketListener(draftId);

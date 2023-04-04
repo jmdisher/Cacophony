@@ -5,6 +5,7 @@ import java.time.Duration;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.breakwater.IWebSocketFactory;
@@ -43,7 +44,7 @@ public class WS_UserEntries implements IWebSocketFactory
 	}
 	
 	@Override
-	public WebSocketListener create(String[] variables)
+	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
 		IpfsKey key = IpfsKey.fromPublicKey(variables[0]);
 		return new Listener(key);

@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -163,7 +164,7 @@ public class InteractiveServer
 		
 		// Setup the server.
 		CountDownLatch stopLatch = new CountDownLatch(1);
-		RestServer server = new RestServer(port, staticResource);
+		RestServer server = new RestServer(new InetSocketAddress(port), staticResource);
 		ValidatedEntryPoints validated = new ValidatedEntryPoints(server, xsrf);
 		
 		// Install the entry-points.
