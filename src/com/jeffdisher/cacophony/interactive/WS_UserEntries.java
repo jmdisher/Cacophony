@@ -47,7 +47,10 @@ public class WS_UserEntries implements IWebSocketFactory
 	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
 		IpfsKey key = IpfsKey.fromPublicKey(variables[0]);
-		return new Listener(key);
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new Listener(key)
+				: null
+		;
 	}
 
 
@@ -73,21 +76,18 @@ public class WS_UserEntries implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
+			_userConnector = _context.entryRegistry.getReadOnlyConnector(_key);
+			if (null != _userConnector)
 			{
-				_userConnector = _context.entryRegistry.getReadOnlyConnector(_key);
-				if (null != _userConnector)
-				{
-					_endPoint = session.getRemote();
-					// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-					_userConnector.registerListener(this, START_ENTRY_LIMIT);
-					// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
-					session.setIdleTimeout(Duration.ofDays(1));
-				}
-				else
-				{
-					session.close(WebSocketCodes.NOT_FOUND, "User not known");
-				}
+				_endPoint = session.getRemote();
+				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
+				_userConnector.registerListener(this, START_ENTRY_LIMIT);
+				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
+				session.setIdleTimeout(Duration.ofDays(1));
+			}
+			else
+			{
+				session.close(WebSocketCodes.NOT_FOUND, "User not known");
 			}
 		}
 		

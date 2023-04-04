@@ -58,7 +58,10 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 	@Override
 	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
-		return new StatusListener();
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new StatusListener()
+				: null
+		;
 	}
 
 
@@ -76,15 +79,12 @@ public class WS_BackgroundStatus implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
-			{
-				_session = session;
-				_endPoint = session.getRemote();
-				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-				_statusHandoff.registerListener(this, 0);
-				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
-				session.setIdleTimeout(Duration.ofDays(1));
-			}
+			_session = session;
+			_endPoint = session.getRemote();
+			// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
+			_statusHandoff.registerListener(this, 0);
+			// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
+			session.setIdleTimeout(Duration.ofDays(1));
 		}
 		
 		@Override

@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -400,35 +400,23 @@ public class InteractiveHelpers
 		}
 		return isSafe;
 	}
+
 	/**
-	 * Checks that the request is from the local IP and the upgrade request has the expected XSRF cookie.  Closes the
-	 * session with an error if not.
+	 * Checks that the XSRF cookie is correct in this upgrade request.
 	 * 
 	 * @param xsrf The XSRF cookie value we expect to see.
-	 * @param session The WebSocket session.
+	 * @param upgradeRequest The upgrade request.
 	 * @return True if this request should proceed or false if it should be rejected.
 	 */
-	public static boolean verifySafeWebSocket(String xsrf, Session session)
+	public static boolean verifySafeWebSocket(String xsrf, JettyServerUpgradeRequest upgradeRequest)
 	{
-		boolean isSafe = false;
-		String rawDescription = session.getRemoteAddress().toString();
+		String rawDescription = upgradeRequest.getRemoteSocketAddress().toString();
 		// This rawDescription looks like "/127.0.0.1:65657" so we need to parse it.
 		String ip = rawDescription.substring(1).split(":")[0];
 		// We now only bind the local IP so another address should be impossible.
 		Assert.assertTrue(LOCAL_IP.equals(ip));
-		String value = session.getUpgradeRequest().getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
-		if (xsrf.equals(value))
-		{
-			// This means all checks passed.
-			isSafe = true;
-		}
-		else
-		{
-			isSafe = false;
-			System.err.println("Invalid XSRF: \"" + value + "\"");
-			session.close(WebSocketCodes.SECURITY_FAILED, "Invalid XSRF");
-		}
-		return isSafe;
+		String value = upgradeRequest.getCookies().stream().filter((cookie) -> XSRF.equals(cookie.getName())).map((cookie) -> cookie.getValue()).findFirst().get();
+		return xsrf.equals(value);
 	}
 
 	/**

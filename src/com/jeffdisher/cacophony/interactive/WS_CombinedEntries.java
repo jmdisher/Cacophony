@@ -45,7 +45,10 @@ public class WS_CombinedEntries implements IWebSocketFactory
 	@Override
 	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
-		return new Listener();
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new Listener()
+				: null
+		;
 	}
 
 
@@ -66,21 +69,18 @@ public class WS_CombinedEntries implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
+			_connector = _context.entryRegistry.getCombinedConnector();
+			if (null != _connector)
 			{
-				_connector = _context.entryRegistry.getCombinedConnector();
-				if (null != _connector)
-				{
-					_endPoint = session.getRemote();
-					// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-					_connector.registerListener(this, START_ENTRY_LIMIT);
-					// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
-					session.setIdleTimeout(Duration.ofDays(1));
-				}
-				else
-				{
-					session.close(WebSocketCodes.NOT_FOUND, "User not known");
-				}
+				_endPoint = session.getRemote();
+				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
+				_connector.registerListener(this, START_ENTRY_LIMIT);
+				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
+				session.setIdleTimeout(Duration.ofDays(1));
+			}
+			else
+			{
+				session.close(WebSocketCodes.NOT_FOUND, "User not known");
 			}
 		}
 		

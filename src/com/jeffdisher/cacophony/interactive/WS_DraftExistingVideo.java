@@ -27,7 +27,10 @@ public class WS_DraftExistingVideo implements IWebSocketFactory
 	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
 		int draftId = Integer.parseInt(variables[0]);
-		return new ProcessVideoWebSocketListener(draftId);
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new ProcessVideoWebSocketListener(draftId)
+				: null
+		;
 	}
 
 
@@ -70,19 +73,16 @@ public class WS_DraftExistingVideo implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
+			Assert.assertTrue(null == _handler);
+			VideoProcessorCallbackHandler handler = new VideoProcessorCallbackHandler(session);
+			if (_videoProcessContainer.attachListener(handler, _draftId))
 			{
-				Assert.assertTrue(null == _handler);
-				VideoProcessorCallbackHandler handler = new VideoProcessorCallbackHandler(session);
-				if (_videoProcessContainer.attachListener(handler, _draftId))
-				{
-					_handler = handler;
-				}
-				else
-				{
-					// There is no active process so just close this.
-					session.close(WebSocketCodes.NOT_FOUND, "No process running");
-				}
+				_handler = handler;
+			}
+			else
+			{
+				// There is no active process so just close this.
+				session.close(WebSocketCodes.NOT_FOUND, "No process running");
 			}
 		}
 	}

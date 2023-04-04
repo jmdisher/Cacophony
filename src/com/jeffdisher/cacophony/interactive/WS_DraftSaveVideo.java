@@ -38,13 +38,15 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		// Since we know everything coming through this path is an "video/" mime type, we just pass the second part in the path to avoid having to reencode it.
 		String codec = variables[3];
 		String mime = "video/" + codec;
-		return new SaveVideoWebSocketListener(_xsrf, _draftManager, draftId, height, width, mime);
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new SaveVideoWebSocketListener(_draftManager, draftId, height, width, mime)
+				: null
+		;
 	}
 
 
 	private static class SaveVideoWebSocketListener implements WebSocketListener
 	{
-		private final String _xsrf;
 		private final DraftManager _draftManager;
 		private final int _draftId;
 		private final int _height;
@@ -54,9 +56,8 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		private OutputStream _outputStream;
 		private long _bytesSavedToStream;
 		
-		public SaveVideoWebSocketListener(String xsrf, DraftManager draftManager, int draftId, int height, int width, String mime)
+		public SaveVideoWebSocketListener(DraftManager draftManager, int draftId, int height, int width, String mime)
 		{
-			_xsrf = xsrf;
 			_draftManager = draftManager;
 			_draftId = draftId;
 			_height = height;
@@ -85,22 +86,19 @@ public class WS_DraftSaveVideo implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
+			// 256 KiB should be reasonable.
+			session.setMaxBinaryMessageSize(256 * 1024);
+			Assert.assertTrue(null == _outputStream);
+			_openDraft = _draftManager.openExistingDraft(_draftId);
+			if (null != _openDraft)
 			{
-				// 256 KiB should be reasonable.
-				session.setMaxBinaryMessageSize(256 * 1024);
-				Assert.assertTrue(null == _outputStream);
-				_openDraft = _draftManager.openExistingDraft(_draftId);
-				if (null != _openDraft)
-				{
-					_outputStream = _openDraft.writeOriginalVideo();
-					_bytesSavedToStream = 0;
-				}
-				else
-				{
-					// This happens in the case where the draft doesn't exist.
-					session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
-				}
+				_outputStream = _openDraft.writeOriginalVideo();
+				_bytesSavedToStream = 0;
+			}
+			else
+			{
+				// This happens in the case where the draft doesn't exist.
+				session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
 			}
 		}
 		

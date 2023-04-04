@@ -40,8 +40,6 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 	@Override
 	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
-		// TODO:  If the Breakwater interface changes to provide the session here, we should change this to validate
-		// XSRF and start the process here, then attach the listener on connect.
 		int draftId = Integer.parseInt(variables[0]);
 		String processCommand = variables[1];
 		// See if we are supposed to override this connection.
@@ -50,7 +48,10 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 			processCommand = _forcedCommand;
 		}
 		System.out.println("Opening processing socket with local command: \"" + processCommand + "\"");
-		return new ProcessVideoWebSocketListener(draftId, processCommand);
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new ProcessVideoWebSocketListener(draftId, processCommand)
+				: null
+		;
 	}
 
 
@@ -95,39 +96,36 @@ public class WS_DraftProcessVideo implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
+			Assert.assertTrue(null == _handler);
+			try
 			{
-				Assert.assertTrue(null == _handler);
-				try
+				boolean didStart = _videoProcessContainer.startProcess(_draftId, _processCommand);
+				if (didStart)
 				{
-					boolean didStart = _videoProcessContainer.startProcess(_draftId, _processCommand);
-					if (didStart)
-					{
-						_handler = new VideoProcessorCallbackHandler(session);
-						boolean didAttach = _videoProcessContainer.attachListener(_handler, _draftId);
-						// This can only fail in the case where the command immediately failed before we ran this next
-						// line - we don't expect to see this and would like to study it if it happens.
-						Assert.assertTrue(didAttach);
-						
-						// Set a 1-day idle timeout, just to avoid this dropping on slower systems while waiting for the
-						// processing to finish the last bit of input (since we don't see progress in those last few seconds).
-						session.setIdleTimeout(Duration.ofDays(1));
-					}
-					else
-					{
-						session.close(WebSocketCodes.ALREADY_STARTED, "Already running");
-					}
+					_handler = new VideoProcessorCallbackHandler(session);
+					boolean didAttach = _videoProcessContainer.attachListener(_handler, _draftId);
+					// This can only fail in the case where the command immediately failed before we ran this next
+					// line - we don't expect to see this and would like to study it if it happens.
+					Assert.assertTrue(didAttach);
+					
+					// Set a 1-day idle timeout, just to avoid this dropping on slower systems while waiting for the
+					// processing to finish the last bit of input (since we don't see progress in those last few seconds).
+					session.setIdleTimeout(Duration.ofDays(1));
 				}
-				catch (FileNotFoundException e)
+				else
 				{
-					// This happens in the case where the draft doesn't exist.
-					session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
+					session.close(WebSocketCodes.ALREADY_STARTED, "Already running");
 				}
-				catch (IOException e)
-				{
-					// This happened if we failed to run the processor.
-					session.close(WebSocketCodes.FAILED_TO_START, "Failed to run processing program: \"" + _processCommand + "\"");
-				}
+			}
+			catch (FileNotFoundException e)
+			{
+				// This happens in the case where the draft doesn't exist.
+				session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
+			}
+			catch (IOException e)
+			{
+				// This happened if we failed to run the processor.
+				session.close(WebSocketCodes.FAILED_TO_START, "Failed to run processing program: \"" + _processCommand + "\"");
 			}
 		}
 	}

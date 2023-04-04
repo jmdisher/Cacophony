@@ -36,7 +36,10 @@ public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 	@Override
 	public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
 	{
-		return new Listener();
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new Listener()
+				: null
+		;
 	}
 
 
@@ -53,14 +56,11 @@ public class WS_FolloweeRefreshTimes implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
-			{
-				_endPoint = session.getRemote();
-				// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
-				_followeeRefreshConnector.registerListener(this, 0);
-				// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
-				session.setIdleTimeout(Duration.ofDays(1));
-			}
+			_endPoint = session.getRemote();
+			// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
+			_followeeRefreshConnector.registerListener(this, 0);
+			// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
+			session.setIdleTimeout(Duration.ofDays(1));
 		}
 		
 		@Override

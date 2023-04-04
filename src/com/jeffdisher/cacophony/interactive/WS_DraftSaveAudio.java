@@ -36,13 +36,15 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 		// Since we know everything coming through this path is an "audio/" mime type, we just pass the second part in the path to avoid having to reencode it.
 		String codec = variables[1];
 		String mime = "audio/" + codec;
-		return new SaveAudioWebSocketListener(_xsrf, _draftManager, draftId, mime);
+		return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
+				? new SaveAudioWebSocketListener(_draftManager, draftId, mime)
+				: null
+		;
 	}
 
 
 	private static class SaveAudioWebSocketListener implements WebSocketListener
 	{
-		private final String _xsrf;
 		private final DraftManager _draftManager;
 		private final int _draftId;
 		private final String _mime;
@@ -50,9 +52,8 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 		private OutputStream _outputStream;
 		private long _bytesSavedToStream;
 		
-		public SaveAudioWebSocketListener(String xsrf, DraftManager draftManager, int draftId, String mime)
+		public SaveAudioWebSocketListener(DraftManager draftManager, int draftId, String mime)
 		{
-			_xsrf = xsrf;
 			_draftManager = draftManager;
 			_draftId = draftId;
 			_mime = mime;
@@ -79,22 +80,19 @@ public class WS_DraftSaveAudio implements IWebSocketFactory
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			if (InteractiveHelpers.verifySafeWebSocket(_xsrf, session))
+			// 256 KiB should be reasonable.
+			session.setMaxBinaryMessageSize(256 * 1024);
+			Assert.assertTrue(null == _outputStream);
+			_openDraft = _draftManager.openExistingDraft(_draftId);
+			if (null != _openDraft)
 			{
-				// 256 KiB should be reasonable.
-				session.setMaxBinaryMessageSize(256 * 1024);
-				Assert.assertTrue(null == _outputStream);
-				_openDraft = _draftManager.openExistingDraft(_draftId);
-				if (null != _openDraft)
-				{
-					_outputStream = _openDraft.writeAudio();
-					_bytesSavedToStream = 0;
-				}
-				else
-				{
-					// This happens in the case where the draft doesn't exist.
-					session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
-				}
+				_outputStream = _openDraft.writeAudio();
+				_bytesSavedToStream = 0;
+			}
+			else
+			{
+				// This happens in the case where the draft doesn't exist.
+				session.close(WebSocketCodes.NOT_FOUND, "Draft does not exist");
 			}
 		}
 		
