@@ -7,11 +7,11 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -70,11 +70,8 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}
-		StreamIndex index = access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-		StreamRecords records = (isCached
-				? access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
-				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data))
-		).get();
+		ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, isCached);
+		StreamRecords records = reader.loadRecords();
 		
 		// Start the async StreamRecord loads.
 		List<AsyncRecord> asyncRecords = new ArrayList<>();

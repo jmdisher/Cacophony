@@ -4,9 +4,7 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.Version;
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -33,8 +31,8 @@ public class JsonGenerationHelpers
 		JsonArray array = null;
 		if (null != indexToLoad)
 		{
-			StreamIndex index = access.loadCached(indexToLoad, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			ForeignChannelReader reader = new ForeignChannelReader(access, indexToLoad, true);
+			StreamRecords records = reader.loadRecords();
 			array = new JsonArray();
 			for (String rawCid : records.getRecord())
 			{

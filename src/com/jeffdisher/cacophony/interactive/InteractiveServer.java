@@ -11,12 +11,12 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -292,8 +292,8 @@ public class InteractiveServer
 
 	private static void _populateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
 	{
-		StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-		StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
+		StreamRecords records = reader.loadRecords();
 		for (String raw : records.getRecord())
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(raw);

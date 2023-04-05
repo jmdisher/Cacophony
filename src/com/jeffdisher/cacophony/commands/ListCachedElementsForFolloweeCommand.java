@@ -6,10 +6,9 @@ import java.util.Map;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -45,8 +44,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			// We know that all the meta-data reachable from this root is cached locally, but not all the leaf data elements, so we will check the FollowRecord.
 			IpfsFile root = followees.getLastFetchedRootForFollowee(_followeeKey);
 			
-			StreamIndex index = access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-			StreamRecords records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
+			StreamRecords records = reader.loadRecords();
 			List<String> recordList = records.getRecord();
 			ILogger log = logger.logStart("Followee has " + recordList.size() + " elements:");
 			for(String elementCid : recordList)

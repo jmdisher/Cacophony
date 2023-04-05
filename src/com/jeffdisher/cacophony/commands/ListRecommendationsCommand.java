@@ -6,9 +6,8 @@ import java.util.stream.Collectors;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.KeyList;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -68,16 +67,10 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 			Assert.assertTrue(null != rootToLoad);
 			isCached = true;
 		}
-		StreamIndex index = (isCached
-				? access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
-				: access.loadNotCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
-		).get();
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = (isCached
-				? access.loadCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
-				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getRecommendations()), (byte[] data) -> GlobalData.deserializeRecommendations(data))
-		).get();
+		ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, isCached);
+		StreamRecommendations recommendations = reader.loadRecommendations();
 		
 		// Note that we will filter the keys since some of them could be invalid.
 		List<String> rawKeys = recommendations.getUser();

@@ -3,9 +3,8 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
-import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -69,14 +68,8 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			rootToLoad = access.getLastRootElement();
 			Assert.assertTrue(null != rootToLoad);
 		}
-		StreamIndex index = (isCached
-				? access.loadCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
-				: access.loadNotCached(rootToLoad, (byte[] data) -> GlobalData.deserializeIndex(data))
-		).get();
-		StreamDescription description = (isCached
-				? access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
-				: access.loadNotCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data))
-		).get();
+		ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, isCached);
+		StreamDescription description = reader.loadDescription();
 		String userPicUrl = access.getDirectFetchUrlRoot() + description.getPicture();
 		return new ChannelDescription(null, description, userPicUrl);
 	}
