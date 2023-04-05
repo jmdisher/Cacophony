@@ -8,17 +8,13 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -50,17 +46,6 @@ public class PublishHelpers
 			, PublishElement[] elements
 	) throws IpfsConnectionException, SizeConstraintException
 	{
-		// Read the existing StreamIndex.
-		IpfsKey publicKey = access.getPublicKey();
-		
-		IpfsFile previousRoot = access.getLastRootElement();
-		Assert.assertTrue(null != previousRoot);
-		StreamIndex index = _safeRead(access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)));
-		
-		// Read the existing stream so we can append to it (we do this first just to verify integrity is fine).
-		IpfsFile previousRecords = IpfsFile.fromIpfsCid(index.getRecords());
-		StreamRecords records = _safeRead(access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)));
-		
 		// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
 		DataArray array = new DataArray();
 		for (PublishElement elt : elements)
@@ -83,6 +68,7 @@ public class PublishHelpers
 			eltLog.logFinish("-Done!");
 		}
 		
+		// Assemble and upload the new StreamRecord.
 		StreamRecord record = new StreamRecord();
 		record.setName(name);
 		record.setDescription(description);
@@ -91,12 +77,15 @@ public class PublishHelpers
 			record.setDiscussion(discussionUrl);
 		}
 		record.setElements(array);
-		record.setPublisherKey(publicKey.toPublicKey());
+		record.setPublisherKey(access.getPublicKey().toPublicKey());
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);
 		IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(rawRecord));
 		
+		// Now, update the channel data structure.
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
+		StreamRecords records = modifier.loadRecords();
 		List<String> recordCids = records.getRecord();
 		String newRecordCid = recordHash.toSafeString();
 		// This assertion is just to avoid some corner-cases which can happen in testing but have no obvious meaning in real usage.
@@ -107,18 +96,10 @@ public class PublishHelpers
 		recordCids.add(newRecordCid);
 		
 		// Save the updated records and index.
-		byte[] rawRecords = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
+		modifier.storeRecords(records);
 		
-		// Update, save, and publish the new index.
-		index.setRecords(recordsHash.toSafeString());
 		callerLog.logVerbose("Saving and publishing new index");
-		IpfsFile newRoot = access.uploadIndexAndUpdateTracking(index);
-		
-		// Now that the new index has been uploaded, we can unpin the previous root and records.
-		// (we may want more explicit control over this, in the future)
-		access.unpin(previousRoot);
-		access.unpin(previousRecords);
+		IpfsFile newRoot = modifier.commitNewRoot();
 		return new PublishResult(newRoot, recordHash);
 	}
 
@@ -127,23 +108,6 @@ public class PublishHelpers
 	{
 		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 		return now.toEpochSecond();
-	}
-
-	private static <R> R _safeRead(FutureRead<R> future) throws IpfsConnectionException
-	{
-		try
-		{
-			return future.get();
-		}
-		catch (IpfsConnectionException e)
-		{
-			throw e;
-		}
-		catch (FailedDeserializationException e)
-		{
-			// We call this for local user data so we can't fail to deserialize.
-			throw Assert.unexpected(e);
-		}
 	}
 
 
