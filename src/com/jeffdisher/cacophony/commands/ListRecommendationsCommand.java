@@ -15,13 +15,14 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand<KeyList>
 {
 	@Override
-	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		IpfsKey[] keys;
 		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
@@ -32,7 +33,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	}
 
 
-	private IpfsKey[] _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	private IpfsKey[] _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		

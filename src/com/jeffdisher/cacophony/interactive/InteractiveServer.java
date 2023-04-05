@@ -32,6 +32,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -77,11 +78,6 @@ public class InteractiveServer
 			{
 				// This is a start-up failure.
 				throw e;
-			}
-			catch (FailedDeserializationException e)
-			{
-				// We already cached this data so this shouldn't happen.
-				throw Assert.unexpected(e);
 			}
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, ourPublicKey, rootElement);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, followees);
@@ -278,7 +274,7 @@ public class InteractiveServer
 	}
 
 
-	private static void _populateInitialHandoffs(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateInitialHandoffs(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException
 	{
 		entryRegistryBuilder.createConnector(ourKey);
 		_populateConnector(access, entryRegistryBuilder, ourKey, ourRoot);
@@ -290,10 +286,24 @@ public class InteractiveServer
 		}
 	}
 
-	private static void _populateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException, FailedDeserializationException
+	private static void _populateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException
 	{
 		ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
-		StreamRecords records = reader.loadRecords();
+		StreamRecords records;
+		try
+		{
+			records = reader.loadRecords();
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We should not have already cached this if it was corrupt.
+			throw Assert.unexpected(e);
+		}
+		catch (SizeConstraintException e)
+		{
+			// We should not have already cached this if it was too big.
+			throw Assert.unexpected(e);
+		}
 		for (String raw : records.getRecord())
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(raw);

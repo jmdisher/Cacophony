@@ -11,6 +11,8 @@ import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -18,6 +20,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  * cached.
  * This helper class only exists since this is a pretty common idiom and the boiler-plate to implement it is a complete
  * duplicate.
+ * Note that the size exceptions can only be thrown if this is a non-cached case.
  */
 public class ForeignChannelReader
 {
@@ -44,41 +47,45 @@ public class ForeignChannelReader
 		_isCached = isCached;
 	}
 
-	public StreamRecommendations loadRecommendations() throws IpfsConnectionException, FailedDeserializationException
+	public StreamRecommendations loadRecommendations() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
 	{
 		if (null == _recommendations)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
+			_checkSize(cid, "recommendations", SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 			_recommendations = _loadHelper(cid, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		}
 		return _recommendations;
 	}
 
-	public StreamRecords loadRecords() throws IpfsConnectionException, FailedDeserializationException
+	public StreamRecords loadRecords() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
 	{
 		if (null == _records)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
+			_checkSize(cid, "records", SizeLimits.MAX_RECORD_SIZE_BYTES);
 			_records = _loadHelper(cid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		}
 		return _records;
 	}
 
-	public StreamDescription loadDescription() throws IpfsConnectionException, FailedDeserializationException
+	public StreamDescription loadDescription() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
 	{
 		if (null == _description)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
+			_checkSize(cid, "description", SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
 			_description = _loadHelper(cid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		}
 		return _description;
 	}
 
 
-	private StreamIndex _getIndex() throws IpfsConnectionException, FailedDeserializationException
+	private StreamIndex _getIndex() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
 	{
 		if (null == _index)
 		{
+			_checkSize(_root, "index", SizeLimits.MAX_INDEX_SIZE_BYTES);
 			_index = _loadHelper(_root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		}
 		return _index;
@@ -90,5 +97,18 @@ public class ForeignChannelReader
 				? _access.loadCached(file, decoder)
 				: _access.loadNotCached(file, decoder)
 		;
+	}
+
+	private void _checkSize(IpfsFile cid, String type, long sizeLimit) throws IpfsConnectionException, SizeConstraintException
+	{
+		// We assume these are correctly-sized if they are already cached.
+		if (!_isCached)
+		{
+			long size = _access.getSizeInBytes(cid).get();
+			if (size > sizeLimit)
+			{
+				throw new SizeConstraintException(type, size, sizeLimit);
+			}
+		}
 	}
 }

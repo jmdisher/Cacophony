@@ -12,6 +12,8 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -24,7 +26,7 @@ public class JsonGenerationHelpers
 		return _dataVersion();
 	}
 
-	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException, FailedDeserializationException
+	public static JsonArray postHashes(IReadingAccess access, IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve) throws IpfsConnectionException
 	{
 		// We are only going to resolve this if it is this user or one we follow (at least for the near-term).
 		IpfsFile indexToLoad = _getLastKnownIndexForKey(ourPublicKey, lastPublishedIndex, followees, userToResolve);
@@ -32,7 +34,21 @@ public class JsonGenerationHelpers
 		if (null != indexToLoad)
 		{
 			ForeignChannelReader reader = new ForeignChannelReader(access, indexToLoad, true);
-			StreamRecords records = reader.loadRecords();
+			StreamRecords records;
+			try
+			{
+				records = reader.loadRecords();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// We should not have already cached this if it was corrupt.
+				throw Assert.unexpected(e);
+			}
+			catch (SizeConstraintException e)
+			{
+				// We should not have already cached this if it was too big.
+				throw Assert.unexpected(e);
+			}
 			array = new JsonArray();
 			for (String rawCid : records.getRecord())
 			{

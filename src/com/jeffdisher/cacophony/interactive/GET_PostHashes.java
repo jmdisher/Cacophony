@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -47,11 +46,6 @@ public class GET_PostHashes implements ValidatedEntryPoints.GET
 			{
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
-		}
-		catch (FailedDeserializationException e)
-		{
-			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			e.printStackTrace(response.getWriter());
 		}
 	}
 }

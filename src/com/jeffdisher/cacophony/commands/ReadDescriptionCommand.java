@@ -12,13 +12,14 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements ICommand<ChannelDescription>
 {
 	@Override
-	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		ChannelDescription result;
 		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
@@ -29,7 +30,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	}
 
 
-	private ChannelDescription _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException
+	private ChannelDescription _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
