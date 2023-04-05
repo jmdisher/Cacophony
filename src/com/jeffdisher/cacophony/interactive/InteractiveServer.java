@@ -10,10 +10,10 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
-import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
@@ -33,6 +33,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -86,6 +87,9 @@ public class InteractiveServer
 			);
 		}
 		
+		// Create the context object which we will use for any command invocation from the interactive server.
+		ICommand.Context serverContext = new ICommand.Context(environment, logger, localRecordCache, userInfoCache, entryRegistry);
+		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
@@ -108,29 +112,28 @@ public class InteractiveServer
 				return publish;
 			}
 			@Override
-			public Runnable startFolloweeRefresh(IpfsKey followeeKey)
+			public boolean refreshFollowee(IpfsKey followeeKey)
 			{
-				ConcurrentFolloweeRefresher refresher = null;
-				try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+				// We just want to run the RefreshFolloweeCommand, since it internally does everything.
+				RefreshFolloweeCommand command = new RefreshFolloweeCommand(followeeKey);
+				boolean didRefresh;
+				try
 				{
-					IFolloweeWriting followees = access.writableFolloweeData();
-					IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-					refresher = new ConcurrentFolloweeRefresher(logger
-							, followeeKey
-							, lastRoot
-							, access.readPrefs()
-							, false
-					);
-					refresher.setupRefresh(access, followees);
+					command.runInContext(serverContext);
+					didRefresh = true;
 				}
 				catch (IpfsConnectionException e)
 				{
-					// This case, we just log.
-					// (we may want to re-request the publish attempt).
-					logger.logError("Error in background refresh start: " + e.getLocalizedMessage());
+					// This just means it didn't succeed (but is harmless - usually means we couldn't look up the key).
+					didRefresh = false;
 				}
-				// We must have a connector by this point since this is only called on refresh, not start follow.
-				return new RefreshWrapper(environment, logger, localRecordCache, userInfoCache, refresher, entryRegistry);
+				catch (UsageException e)
+				{
+					// This shouldn't happen (we are calling it from an internal utility) but we may want to make sure
+					// that this can't happen as a result of some kind of race.
+					throw Assert.unexpected(e);
+				}
+				return didRefresh;
 			}
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
@@ -156,7 +159,6 @@ public class InteractiveServer
 				: processingCommand
 		;
 		String xsrf = "XSRF_TOKEN_" + Math.random();
-		ICommand.Context serverContext = new ICommand.Context(environment, logger, localRecordCache, userInfoCache, entryRegistry);
 		
 		// Setup the server.
 		CountDownLatch stopLatch = new CountDownLatch(1);
@@ -308,46 +310,6 @@ public class InteractiveServer
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(raw);
 			entryRegistryBuilder.addToUser(key, cid);
-		}
-	}
-
-
-	private static record RefreshWrapper(IEnvironment environment
-			, ILogger logger
-			, LocalRecordCache localRecordCache
-			, LocalUserInfoCache userInfoCache
-			, ConcurrentFolloweeRefresher refresher
-			, EntryCacheRegistry entryRegistry
-	) implements Runnable
-	{
-		@Override
-		public void run()
-		{
-			// Note that the "refresher" can be null if we were created after a connection error to the local daemon.
-			// In that case, just log the problem.
-			if (null != this.refresher)
-			{
-				boolean didRefresh = this.refresher.runRefresh(entryRegistry);
-				// Write-back any update associated with this (success or fail - since we want to update the time).
-				try (IWritingAccess access = StandardAccess.writeAccess(this.environment, this.logger))
-				{
-					IFolloweeWriting followees = access.writableFolloweeData();
-					
-					long lastPollMillis = environment.currentTimeMillis();
-					this.refresher.finishRefresh(access, localRecordCache, userInfoCache, followees, lastPollMillis);
-				}
-				catch (IpfsConnectionException e)
-				{
-					// This case, we just log.
-					this.logger.logError("Error in background refresh finish: " + e.getLocalizedMessage());
-				}
-				// (we just log the result)
-				this.logger.logVerbose("Background refresh: " + (didRefresh ? "SUCCESS" : "FAILURE"));
-			}
-			else
-			{
-				this.logger.logVerbose("Background refresh skipped due to null refresher");
-			}
 		}
 	}
 }

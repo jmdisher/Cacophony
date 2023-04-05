@@ -172,7 +172,7 @@ public class TestBackgroundOperations
 		publishFirst.success();
 		boolean didRun[] = new boolean[1];
 		TestOperations ops = new TestOperations();
-		Runnable refresher = () -> {
+		Consumer<IpfsKey> refresher = (IpfsKey key) -> {
 			Assert.assertFalse(didRun[0]);
 			didRun[0] = true;
 		};
@@ -199,7 +199,7 @@ public class TestBackgroundOperations
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishSecond = new FuturePublish(F2);
 		boolean didRun[] = new boolean[1];
-		Runnable refresher = () -> {
+		Consumer<IpfsKey> refresher = (IpfsKey key) -> {
 			Assert.assertFalse(didRun[0]);
 			didRun[0] = true;
 		};
@@ -236,15 +236,28 @@ public class TestBackgroundOperations
 	@Test
 	public void sortingAssumptions() throws Throwable
 	{
+		// Just make sure that our understanding of the sorting Comparator is correct.
 		MockEnvironment env = new MockEnvironment();
 		SilentLogger logger = new SilentLogger();
-		// Just make sure that our understanding of the sorting Comparator is correct.
-		int didRun[] = new int[1];
 		TestOperations ops = new TestOperations();
-		// We use a barrier to synchronize between the background and foreground threads so we can set up the next followee refresh value before the previous one finished.
-		// (Otherwise, this causes intermittent errors when the background thread goes to request the next refresh but the value we are matching on is still null)
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		
+		// We use a barrier and a reentrant call into the background operations in order to ensure that the next followee refresh value is enqueued before the previous (currently executing) one is finished.
+		int didRun[] = new int[1];
 		CyclicBarrier barrier = new CyclicBarrier(2);
-		Runnable refresher = () -> {
+		@SuppressWarnings("unchecked")
+		Consumer<IpfsKey>[] container = new Consumer[1];
+		container[0] = (IpfsKey key) -> {
+			// We just enqueue the next operation before we return from this call.
+			if (key.equals(K1))
+			{
+				ops.returnFolloweeOn(K2, container[0]);
+			}
+			else if (key.equals(K2))
+			{
+				ops.returnFolloweeOn(K3, container[0]);
+			}
 			try
 			{
 				barrier.await();
@@ -256,8 +269,7 @@ public class TestBackgroundOperations
 			}
 			didRun[0] += 1;
 		};
-		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		
 		FuturePublish publishFirst = new FuturePublish(F1);
 		ops.returnOn(F1, publishFirst);
 		publishFirst.success();
@@ -267,15 +279,11 @@ public class TestBackgroundOperations
 		back.startProcess();
 		
 		// Enqueue one.
-		ops.returnFolloweeOn(K1, refresher);
-		ops.waitForConsume();
-		ops.returnFolloweeOn(K2, refresher);
+		ops.returnFolloweeOn(K1, container[0]);
+		barrier.await();
+		barrier.await();
 		barrier.await();
 		ops.waitForConsume();
-		ops.returnFolloweeOn(K3, refresher);
-		barrier.await();
-		ops.waitForConsume();
-		barrier.await();
 		
 		back.shutdownProcess();
 		Assert.assertEquals(3, didRun[0]);
@@ -293,7 +301,7 @@ public class TestBackgroundOperations
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
 		int runCount[] = new int[1];
-		Runnable refresher = () -> {
+		Consumer<IpfsKey> refresher = (IpfsKey key) -> {
 			runCount[0] += 1;
 		};
 		TestOperations ops = new TestOperations();
@@ -336,10 +344,10 @@ public class TestBackgroundOperations
 		publish.success();
 		
 		int runCount[] = new int[2];
-		Runnable refresher1 = () -> {
+		Consumer<IpfsKey> refresher1 = (IpfsKey key) -> {
 			runCount[0] += 1;
 		};
-		Runnable refresher2 = () -> {
+		Consumer<IpfsKey> refresher2 = (IpfsKey key) -> {
 			runCount[1] += 1;
 		};
 		TestOperations ops = new TestOperations();
@@ -385,7 +393,7 @@ public class TestBackgroundOperations
 		publish.success();
 		
 		int runCount[] = new int[1];
-		Runnable refresher = () -> {
+		Consumer<IpfsKey> refresher = (IpfsKey key) -> {
 			runCount[0] += 1;
 		};
 		TestOperations ops = new TestOperations();
@@ -429,7 +437,7 @@ public class TestBackgroundOperations
 		private IpfsFile _match;
 		private FuturePublish _return;
 		private IpfsKey _expectedFolloweeKey;
-		private Runnable _refresher;
+		private Consumer<IpfsKey> _refresher;
 		
 		@Override
 		public synchronized FuturePublish startPublish(IpfsFile newRoot)
@@ -453,14 +461,16 @@ public class TestBackgroundOperations
 			return publish;
 		}
 		@Override
-		public synchronized Runnable startFolloweeRefresh(IpfsKey followeeKey)
+		public synchronized boolean refreshFollowee(IpfsKey followeeKey)
 		{
 			Assert.assertEquals(_expectedFolloweeKey, followeeKey);
+			Consumer<IpfsKey> toRun = _refresher;
 			_expectedFolloweeKey = null;
-			Runnable runnable = _refresher;
 			_refresher = null;
 			this.notifyAll();
-			return runnable;
+			
+			toRun.accept(followeeKey);
+			return true;
 		}
 		public synchronized void waitForConsume()
 		{
@@ -482,7 +492,7 @@ public class TestBackgroundOperations
 			_return = publish;
 			this.notifyAll();
 		}
-		public synchronized void returnFolloweeOn(IpfsKey expectedFolloweeKey, Runnable refresher)
+		public synchronized void returnFolloweeOn(IpfsKey expectedFolloweeKey, Consumer<IpfsKey> refresher)
 		{
 			_expectedFolloweeKey = expectedFolloweeKey;
 			_refresher = refresher;

@@ -64,11 +64,10 @@ public class BackgroundOperations
 				if (null != operation.followeeKey)
 				{
 					ILogger log = logger.logStart("Background start refresh: " + operation.followeeKey);
-					Runnable refresher = operations.startFolloweeRefresh(operation.followeeKey);
 					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
-					refresher.run();
+					boolean didRefresh = operations.refreshFollowee(operation.followeeKey);
 					_connector.destroy(operation.followeeNumber);
-					log.logFinish("Background end refresh: " + operation.followeeKey);
+					log.logFinish("Background end refresh: " + operation.followeeKey + " -> " + (didRefresh ? "SUCCESS" : "FAILURE"));
 				}
 				// Now, we can wait for the publish before we go back for more work.
 				if (null != publish)
@@ -334,17 +333,14 @@ public class BackgroundOperations
 		 */
 		FuturePublish startPublish(IpfsFile newRoot);
 		/**
-		 * Requests that an asynchronous refresh of the given followee be started.  The bulk of the work is expected to
-		 * be performed within the returned Runnable.
-		 * NOTE:  The reason why this start-run split is done is in order to improve reporting around server state.  The
-		 * start allows the creation of the refresh to begin so that it can be reported as running.  The runnable is
-		 * where any long-running or blocking operations should be performed.  Once the Runnable returns, the operation
-		 * is reported as complete.
+		 * Runs the refresh of the given followee, synchronously on the calling thread, returning true if there was a
+		 * success or false if something went wrong.
+		 * This doesn't report any information around what changed, just whether or not the refresh was a "success".
 		 * 
 		 * @param followeeKey The public key of the followee to refresh.
-		 * @return The Runnable to perform the bulk of the refresh operation (cannot be null).
+		 * @return True if the refresh was a success (although nothing may have changed) or false if there was an error.
 		 */
-		Runnable startFolloweeRefresh(IpfsKey followeeKey);
+		boolean refreshFollowee(IpfsKey followeeKey);
 	}
 
 
