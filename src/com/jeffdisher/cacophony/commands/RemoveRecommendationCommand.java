@@ -2,10 +2,9 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -51,10 +50,10 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	 */
 	private static IpfsFile _run(IWritingAccess access, IpfsKey userToRemove) throws IpfsConnectionException
 	{
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = ActionHelpers.readRecommendations(modifier);
+		StreamRecommendations recommendations = modifier.loadRecommendations();
 		
 		// Verify that they are already in the list.
 		IpfsFile newRoot = null;
@@ -65,7 +64,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 			
 			// Update and commit the structure.
 			modifier.storeRecommendations(recommendations);
-			newRoot = ActionHelpers.commitNewRoot(modifier);
+			newRoot = modifier.commitNewRoot();
 		}
 		return newRoot;
 	}

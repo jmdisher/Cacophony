@@ -4,17 +4,17 @@ import java.util.Iterator;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -60,8 +60,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	 */
 	private static IpfsFile _run(IWritingAccess access, LocalRecordCache recordCache, IpfsFile postToRemove) throws IpfsConnectionException
 	{
-		ChannelModifier modifier = new ChannelModifier(access);
-		StreamRecords records = ActionHelpers.readRecords(modifier);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
+		StreamRecords records = modifier.loadRecords();
 		
 		boolean didRemove = false;
 		Iterator<String> rawIterator = records.getRecord().iterator();
@@ -86,10 +86,19 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			
 			// Update the channel structure, unpinning dropped data.
 			modifier.storeRecords(records);
-			newRoot = ActionHelpers.commitNewRoot(modifier);
+			newRoot = modifier.commitNewRoot();
 			
 			// Now, unpin this data and update the LocalRecordCache.
-			StreamRecord deadRecord = ActionHelpers.unwrap(deadRecordFuture);
+			StreamRecord deadRecord;
+			try
+			{
+				deadRecord = deadRecordFuture.get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is for deserializing the local channel so the error isn't expected.
+				throw Assert.unexpected(e);
+			}
 			for (DataElement leaf : deadRecord.getElements().getElement())
 			{
 				IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());

@@ -18,15 +18,17 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
- * Contains the common logic for navigating a channel tree and saving it back, post-modification.  This is intended to
- * be used only for the home channel, as it is assumed that it is modifying the channel contents.
+ * Contains the common logic for navigating the home channel's on-IPFS data tree and saving it back, post-modification.
+ * Note that this should ONLY be used for the home channel.
  * This keeps track of things which need to be unpinned when committed and manages updating the intermediate data
  * structures in the tree and writing back the new root for the channel.
  * Note that, despite the objects being returned by the "load*" calls being mutable, they will only be written-back as
  * changed if they are passed back in via the associated "store*" call.  This can be done with a new instance or
  * modified original instance.
+ * NOTE:  Only the directly-updated meta-data is written-back when changed, not anything underneath it (StreamRecord
+ * instances, for example).
  */
-public class ChannelModifier
+public class HomeChannelModifier
 {
 	private final IWritingAccess _access;
 	private Tuple<StreamIndex> _index;
@@ -34,17 +36,26 @@ public class ChannelModifier
 	private Tuple<StreamRecords> _records;
 	private Tuple<StreamDescription> _description;
 
-	public ChannelModifier(IWritingAccess access)
+	public HomeChannelModifier(IWritingAccess access)
 	{
 		_access = access;
 	}
 
-	public StreamRecommendations loadRecommendations() throws IpfsConnectionException, FailedDeserializationException
+	public StreamRecommendations loadRecommendations() throws IpfsConnectionException
 	{
 		if (null == _recommendations)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
-			StreamRecommendations elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			StreamRecommendations elt;
+			try
+			{
+				elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is the home channel so we wrote this.
+				throw Assert.unexpected(e);
+			}
 			_recommendations = new Tuple<>(elt, cid, false);
 		}
 		return _recommendations.element;
@@ -56,12 +67,21 @@ public class ChannelModifier
 		_recommendations = new Tuple<>(elt, _recommendations.originalCid, true);
 	}
 
-	public StreamRecords loadRecords() throws IpfsConnectionException, FailedDeserializationException
+	public StreamRecords loadRecords() throws IpfsConnectionException
 	{
 		if (null == _records)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
-			StreamRecords elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			StreamRecords elt;
+			try
+			{
+				elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is the home channel so we wrote this.
+				throw Assert.unexpected(e);
+			}
 			_records = new Tuple<>(elt, cid, false);
 		}
 		return _records.element;
@@ -73,12 +93,21 @@ public class ChannelModifier
 		_records = new Tuple<>(elt, _records.originalCid, true);
 	}
 
-	public StreamDescription loadDescription() throws IpfsConnectionException, FailedDeserializationException
+	public StreamDescription loadDescription() throws IpfsConnectionException
 	{
 		if (null == _description)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
-			StreamDescription elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			StreamDescription elt;
+			try
+			{
+				elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is the home channel so we wrote this.
+				throw Assert.unexpected(e);
+			}
 			_description = new Tuple<>(elt, cid, false);
 		}
 		return _description.element;
@@ -99,9 +128,8 @@ public class ChannelModifier
 	 * 
 	 * @return The new root of the channel structure (CID of the StreamIndex).
 	 * @throws IpfsConnectionException If there was a problem contacting the server.
-	 * @throws SizeConstraintException One of the elements in the tree serialized to be too large to store.
 	 */
-	public IpfsFile commitNewRoot() throws IpfsConnectionException, SizeConstraintException
+	public IpfsFile commitNewRoot() throws IpfsConnectionException
 	{
 		// For us to get this far, we must have at least loaded something.
 		Assert.assertTrue(null != _index);
@@ -110,9 +138,20 @@ public class ChannelModifier
 		
 		// Note that even if these changes are not actually changing the CID, we still want to balance uploadAndPin with unpin.
 		List<IpfsFile> toUnpin = new ArrayList<>();
-		IpfsFile recommendations = _writeUpdatedRecommendations(toUnpin);
-		IpfsFile records = _writeUpdatedRecords(toUnpin);
-		IpfsFile description = _writeUpdatedDescription(toUnpin);
+		IpfsFile recommendations;
+		IpfsFile records;
+		IpfsFile description;
+		try
+		{
+			recommendations = _writeUpdatedRecommendations(toUnpin);
+			records = _writeUpdatedRecords(toUnpin);
+			description = _writeUpdatedDescription(toUnpin);
+		}
+		catch (SizeConstraintException e)
+		{
+			// If we hit this failure, there is either something seriously corrupt or the spec needs to be updated.
+			throw Assert.unexpected(e);
+		}
 		
 		if (null != recommendations)
 		{
@@ -190,12 +229,21 @@ public class ChannelModifier
 		return cid;
 	}
 
-	private StreamIndex _getIndex() throws IpfsConnectionException, FailedDeserializationException
+	private StreamIndex _getIndex() throws IpfsConnectionException
 	{
 		if (null == _index)
 		{
 			IpfsFile root = _access.getLastRootElement();
-			StreamIndex index = _access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			StreamIndex index;
+			try
+			{
+				index = _access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is the home channel so we wrote this.
+				throw Assert.unexpected(e);
+			}
 			_index = new Tuple<>(index, root, false);
 		}
 		return _index.element;

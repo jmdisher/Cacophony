@@ -34,7 +34,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 
 
-public class TestChannelModifier
+public class TestHomeChannelModifier
 {
 	@Test
 	public void testEmpty() throws Throwable
@@ -52,7 +52,7 @@ public class TestChannelModifier
 		Access access = new Access();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		StreamDescription desc = modifier.loadDescription();
 		StreamRecords records = modifier.loadRecords();
 		StreamRecommendations recom = modifier.loadRecommendations();
@@ -74,13 +74,13 @@ public class TestChannelModifier
 		Access access = new Access();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		StreamDescription desc = modifier.loadDescription();
 		desc.setName("updated name");
 		modifier.storeDescription(desc);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
-		modifier = new ChannelModifier(access);
+		modifier = new HomeChannelModifier(access);
 		desc = modifier.loadDescription();
 		Assert.assertEquals("updated name", desc.getName());
 		Assert.assertEquals(4, access.data.size());
@@ -94,13 +94,13 @@ public class TestChannelModifier
 		Access access = new Access();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		StreamRecords records = modifier.loadRecords();
 		records.getRecord().add(MockSingleNode.generateHash("fake post".getBytes()).toSafeString());
 		modifier.storeRecords(records);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
-		modifier = new ChannelModifier(access);
+		modifier = new HomeChannelModifier(access);
 		records = modifier.loadRecords();
 		Assert.assertEquals(1, records.getRecord().size());
 		Assert.assertEquals(4, access.data.size());
@@ -114,13 +114,13 @@ public class TestChannelModifier
 		Access access = new Access();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		StreamRecommendations recom = modifier.loadRecommendations();
 		recom.getUser().add("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 		modifier.storeRecommendations(recom);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
-		modifier = new ChannelModifier(access);
+		modifier = new HomeChannelModifier(access);
 		recom = modifier.loadRecommendations();
 		Assert.assertEquals(1, recom.getUser().size());
 		Assert.assertEquals(4, access.data.size());
@@ -134,7 +134,7 @@ public class TestChannelModifier
 		Access access = new Access();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		// We define it as invalid to commit if nothing has been read so check for the assertion error.
 		boolean didFail = false;
 		try
@@ -155,7 +155,7 @@ public class TestChannelModifier
 		Access access = new Access();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		modifier.storeDescription(modifier.loadDescription());
 		modifier.storeRecords(modifier.loadRecords());
 		modifier.storeRecommendations(modifier.loadRecommendations());

@@ -5,15 +5,17 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.logic.HomeChannelModifier;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record EditPostCommand(IpfsFile _postToEdit, String _name, String _description, String _discussionUrl) implements ICommand<OnePost>
@@ -61,8 +63,8 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		// things like editing someone else's content - nothing prevents this, but the standard UI shouldn't
 		// make such a mistake easy).
 		// Then, we will create a replacement StreamRecord element and replace the old one, in-place.
-		ChannelModifier modifier = new ChannelModifier(access);
-		StreamRecords records = ActionHelpers.readRecords(modifier);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
+		StreamRecords records = modifier.loadRecords();
 		List<String> recordList = records.getRecord();
 		IpfsFile newRoot = null;
 		IpfsFile newEltCid = null;
@@ -70,7 +72,15 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		if (recordList.contains(postToEdit.toSafeString()))
 		{
 			// Found this, so replace it.
-			record = ActionHelpers.unwrap(access.loadCached(postToEdit, (byte[] data) -> GlobalData.deserializeRecord(data)));
+			try
+			{
+				record = access.loadCached(postToEdit, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// This is for deserializing the local channel so the error isn't expected.
+				throw Assert.unexpected(e);
+			}
 			if (null != name)
 			{
 				record.setName(name);
@@ -90,14 +100,22 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 					record.setDiscussion(discussionUrl);
 				}
 			}
-			newEltCid = access.uploadAndPin(new ByteArrayInputStream(ActionHelpers.serializeRecord(record)));
+			try
+			{
+				newEltCid = access.uploadAndPin(new ByteArrayInputStream(GlobalData.serializeRecord(record)));
+			}
+			catch (SizeConstraintException e)
+			{
+				// This would be a static error we should be handling on a higher level so ending up here would be a bug.
+				throw Assert.unexpected(e);
+			}
 			
 			int index = recordList.indexOf(postToEdit.toSafeString());
 			recordList.remove(index);
 			recordList.add(index, newEltCid.toSafeString());
 			
 			modifier.storeRecords(records);
-			newRoot = ActionHelpers.commitNewRoot(modifier);
+			newRoot = modifier.commitNewRoot();
 			access.unpin(postToEdit);
 		}
 		return (null != newRoot)

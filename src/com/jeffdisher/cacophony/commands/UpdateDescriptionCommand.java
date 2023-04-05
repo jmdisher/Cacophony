@@ -5,10 +5,9 @@ import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.actions.ActionHelpers;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.logic.ChannelModifier;
+import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -96,10 +95,10 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			, String website
 	) throws IpfsConnectionException, UsageException
 	{
-		ChannelModifier modifier = new ChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing description since we might be only partially updating it.
-		StreamDescription descriptionObject = ActionHelpers.readDescription(modifier);
+		StreamDescription descriptionObject = modifier.loadDescription();
 		IpfsFile pictureToUnpin = null;
 		
 		if (null != name)
@@ -151,7 +150,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		
 		// Update and commit the structure.
 		modifier.storeDescription(descriptionObject);
-		IpfsFile newRoot = ActionHelpers.commitNewRoot(modifier);
+		IpfsFile newRoot = modifier.commitNewRoot();
 		
 		// Clean up the old picture.
 		if (null != pictureToUnpin)
