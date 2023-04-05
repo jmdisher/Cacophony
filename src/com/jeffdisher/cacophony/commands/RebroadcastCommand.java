@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,10 +7,10 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -19,7 +18,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -30,7 +29,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException
+	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
 	{
 		if (null == _elementCid)
 		{
@@ -44,42 +43,32 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
+			HomeChannelModifier modifier = new HomeChannelModifier(access);
+			
 			// First, load our existing stream to make sure that this isn't a duplicate.
-			IpfsFile previousRoot = access.getLastRootElement();
-			Assert.assertTrue(null != previousRoot);
-			StreamIndex index;
-			IpfsFile previousRecords;
-			StreamRecords records;
-			try
+			StreamRecords records = modifier.loadRecords();
+			String elementCidString = _elementCid.toSafeString();
+			List<String> rawRecordCids = records.getRecord();
+			if (rawRecordCids.contains(elementCidString))
 			{
-				index = access.loadCached(previousRoot, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-				previousRecords = IpfsFile.fromIpfsCid(index.getRecords());
-				records = access.loadCached(previousRecords, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
-				String elementCidString = _elementCid.toSafeString();
-				for (String elt : records.getRecord())
-				{
-					if (elementCidString.equals(elt))
-					{
-						throw new UsageException("Element is already posted to channel: " + _elementCid);
-					}
-				}
-			}
-			catch (IpfsConnectionException e)
-			{
-				// This is basically unexpected - it _can_ happen but it would be unusual for local data, given remote data worked, above.
-				throw e;
-			}
-			catch (FailedDeserializationException e)
-			{
-				// This can't happen since we published this file.
-				throw Assert.unexpected(e);
+				throw new UsageException("Element is already posted to channel: " + _elementCid);
 			}
 			
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
+			long elementSize = access.getSizeInBytes(_elementCid).get();
+			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
+			{
+				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
+			}
 			StreamRecord record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+			
 			// The record makes sense so pin it and everything it references (will throw on error).
 			_pinReachableData(context.logger, access, record);
-			newRoot = _updateStreamAndPublish(context.logger, access, previousRoot, index, previousRecords, records);
+			
+			// Add this element to the records and write it back.
+			rawRecordCids.add(elementCidString);
+			modifier.storeRecords(records);
+			newRoot = modifier.commitNewRoot();
 		}
 		return new ChangedRoot(newRoot);
 	}
@@ -125,40 +114,5 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			}
 			throw pinException;
 		}
-	}
-
-	private IpfsFile _updateStreamAndPublish(ILogger logger, IWritingAccess access, IpfsFile previousRoot, StreamIndex index, IpfsFile previousRecords, StreamRecords records) throws IpfsConnectionException, AssertionError
-	{
-		// If we get this far, that means that everything is pinned so this becomes a normal post operation.
-		ILogger log = logger.logStart("Publishing to your stream...");
-		IpfsFile newRoot;
-		try
-		{
-			// Fetch and update the data.
-			records.getRecord().add(_elementCid.toSafeString());
-			
-			// Serialize and write-back the updates.
-			byte[] rawRecords = GlobalData.serializeRecords(records);
-			IpfsFile recordsHash = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
-			index.setRecords(recordsHash.toSafeString());
-			logger.logVerbose("Saving and publishing new index");
-			newRoot = access.uploadIndexAndUpdateTracking(index);
-			
-			// Unpin the old meta-data.
-			access.unpin(previousRoot);
-			access.unpin(previousRecords);
-			log.logFinish("Rebroadcast complete!");
-		}
-		catch (IpfsConnectionException e)
-		{
-			// This is basically unexpected - it _can_ happen but it would be unusual for local data, given remote data worked, above.
-			throw e;
-		}
-		catch (SizeConstraintException e)
-		{
-			// This would require a change to the spec.
-			throw Assert.unexpected(e);
-		}
-		return newRoot;
 	}
 }
