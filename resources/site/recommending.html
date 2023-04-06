@@ -228,7 +228,7 @@ function addKeyToList(list, key, onPopulate)
 				<h5 class="card-header" ng-show="{{user.known}}"><a ng-href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
 				<div class="card-body container row">
 					<div class="col-md-4" ng-show="{{user.known}}">
-						<a ng-href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
+						<a ng-href="user.html?publicKey={{user.publicKey}}"><img class="img-fluid" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
 					</div>
 					<div class="col-md-8" ng-show="{{user.known}}">
 						Public Key: <strong>{{user.publicKey}}</strong><br />

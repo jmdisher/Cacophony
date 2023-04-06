@@ -200,7 +200,7 @@ function beginPopulating($scope)
 			</div>
 			<div class="card" ng-show="null !== unknownUser">
 				<h5 class="card-header">{{unknownUser.name}}</h5>
-				<div class="card-body container row">
+				<div class="card-body row">
 					<div class="col-md-4">
 						<img class="img-fluid" ng-src="{{unknownUser.userPicUrl}}" />
 					</div>
@@ -217,9 +217,9 @@ function beginPopulating($scope)
 			<h3>Users you Follow</h3>
 			<div ng-repeat="user in following" class="card">
 				<h5 class="card-header"><a href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
-				<div class="card-body container row">
+				<div class="card-body row">
 					<div class="col-md-4">
-						<a href="user.html?publicKey={{user.publicKey}}"><img class="img-responsive" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a><br />
+						<a href="user.html?publicKey={{user.publicKey}}"><img class="img-fluid" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a><br />
 					</div>
 					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
