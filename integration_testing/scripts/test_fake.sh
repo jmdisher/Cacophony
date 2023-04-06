@@ -91,7 +91,7 @@ POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$POST_STRUCT" "{\"name\":\"New Draft - "
 
 # Shutdown.
-echo -n "COMMAND_STOP" > "$STATUS_INPUT"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/stop"
 wait $SERVER_PID
 echo -n "-WAIT" > "$STATUS_INPUT"
 wait $STATUS_PID

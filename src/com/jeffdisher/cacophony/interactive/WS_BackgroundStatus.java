@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -30,23 +29,19 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	public final static String COMMAND_STOP = "COMMAND_STOP";
 	public final static String COMMAND_REPUBLISH = "COMMAND_REPUBLISH";
 
 	private final ICommand.Context _context;
 	private final HandoffConnector<Integer, String> _statusHandoff;
-	private final CountDownLatch _stopLatch;
 	private final BackgroundOperations _background;
 	
 	public WS_BackgroundStatus(ICommand.Context context
 			, HandoffConnector<Integer, String> statusHandoff
-			, CountDownLatch stopLatch
 			, BackgroundOperations background
 	)
 	{
 		_context = context;
 		_statusHandoff = statusHandoff;
-		_stopLatch = stopLatch;
 		_background = background;
 	}
 	
@@ -83,12 +78,7 @@ public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACT
 		public void onWebSocketText(String message)
 		{
 			// We currently only check for a bunch of keywords here, not structured data.
-			if (COMMAND_STOP.equals(message))
-			{
-				// Stop the server.
-				_stopLatch.countDown();
-			}
-			else if (COMMAND_REPUBLISH.equals(message))
+			if (COMMAND_REPUBLISH.equals(message))
 			{
 				// Look up the last published root and request that background operations republish it.
 				IpfsFile root = null;

@@ -169,6 +169,7 @@ public class InteractiveServer
 		
 		// Install the entry-points.
 		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
+		validated.addPostRawHandler("/stop", 0, new POST_Raw_Stop(stopLatch));
 		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
 		
 		validated.addDeleteHandler("/post", 1, new DELETE_Post(serverContext, background));
@@ -210,7 +211,7 @@ public class InteractiveServer
 		validated.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(manager));
 		
 		// We use a web socket for listening to updates of background process state.
-		validated.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(serverContext, statusHandoff, stopLatch, background));
+		validated.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(serverContext, statusHandoff, background));
 		validated.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
 		validated.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
 		validated.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));

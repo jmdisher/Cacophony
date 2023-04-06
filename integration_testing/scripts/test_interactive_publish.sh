@@ -467,7 +467,7 @@ requireSubstring "$JSTACK" "Background Operations"
 requireSubstring "$JSTACK" "Scheduler thread"
 
 echo "Stop the server and wait for it to exit..."
-echo -n "COMMAND_STOP" > "$STATUS_INPUT.1"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/stop"
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"

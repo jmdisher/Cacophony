@@ -110,8 +110,8 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
 
-echo "We will just kill the background process instead of creating the status socket."
-kill "$SERVER_PID"
+echo "Shut-down and wait for sockets to close..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/stop"
 wait $SERVER_PID
 echo -n "-WAIT" > "$ENTRIES_INPUT"
 wait $ENTRIES_PID
