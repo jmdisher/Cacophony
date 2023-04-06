@@ -11,7 +11,6 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -525,26 +524,17 @@ public class FolloweeRefreshLogic
 		IpfsFile videoHash = null;
 		IpfsFile audioHash = null;
 		int biggestEdge = 0;
-		for (DataElement elt : record.getElements().getElement())
+		
+		LeafFinder leaves = LeafFinder.parseRecord(record);
+		imageHash = leaves.thumbnail;
+		audioHash = leaves.audio;
+		LeafFinder.VideoLeaf videoLeaf = leaves.largestVideoWithLimit(videoEdgePixelMax);
+		if (null != videoLeaf)
 		{
-			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-			String mime = elt.getMime();
-			if (null != elt.getSpecial())
-			{
-				Assert.assertTrue(null == imageHash);
-				imageHash = eltCid;
-			}
-			else if (mime.startsWith("video/") && (elt.getWidth() >= biggestEdge) && (elt.getWidth() <= videoEdgePixelMax) && (elt.getHeight() >= biggestEdge) && (elt.getHeight() <= videoEdgePixelMax))
-			{
-				biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
-				videoHash = eltCid;
-			}
-			else if (mime.startsWith("audio/"))
-			{
-				// If there are multiple audio attachments, we will just grab the last one (since that use-case isn't currently defined).
-				audioHash = eltCid;
-			}
+			videoHash = videoLeaf.cid();
+			biggestEdge = videoLeaf.edgeSize();
 		}
+		
 		// We will prefer the video leaf, if available (although we don't currently have a use-case where there would be both).
 		data.videoLeafHash = videoHash;
 		data.videoEdgeSize = biggestEdge;

@@ -7,11 +7,11 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -99,26 +99,28 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 				// This is for deserializing the local channel so the error isn't expected.
 				throw Assert.unexpected(e);
 			}
+			
+			// Interpret the leaves.
+			if (null != recordCache)
+			{
+				LeafFinder leaves = LeafFinder.parseRecord(deadRecord);
+				if (null != leaves.thumbnail)
+				{
+					recordCache.recordThumbnailReleased(postToRemove, leaves.thumbnail);
+				}
+				if (null != leaves.audio)
+				{
+					recordCache.recordAudioReleased(postToRemove, leaves.audio);
+				}
+				for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+				{
+					recordCache.recordVideoReleased(postToRemove, leaf.cid(), leaf.edgeSize());
+				}
+			}
+			// Unpin everything, no matter what it means.
 			for (DataElement leaf : deadRecord.getElements().getElement())
 			{
 				IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-				if (null != recordCache)
-				{
-					if (ElementSpecialType.IMAGE == leaf.getSpecial())
-					{
-						// This is the thumbnail.
-						recordCache.recordThumbnailReleased(postToRemove, leafCid);
-					}
-					else if (leaf.getMime().startsWith("video/"))
-					{
-						int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-						recordCache.recordVideoReleased(postToRemove, leafCid, maxEdge);
-					}
-					else if (leaf.getMime().startsWith("audio/"))
-					{
-						recordCache.recordAudioReleased(postToRemove, leafCid);
-					}
-				}
 				access.unpin(leafCid);
 			}
 			if (null != recordCache)

@@ -1,14 +1,11 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.util.List;
-
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.commands.EditPostCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -75,45 +72,33 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
 		// data, we still need to technically "move" them to the new record CID.
 		StreamRecord record = result.streamRecord;
-		List<DataElement> unchangedLeaves = record.getElements().getElement();
-		for (DataElement leaf : unchangedLeaves)
+		LeafFinder leaves = LeafFinder.parseRecord(record);
+		if (null != leaves.thumbnail)
 		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			if (ElementSpecialType.IMAGE == leaf.getSpecial())
-			{
-				// This is the thumbnail.
-				_context.recordCache.recordThumbnailReleased(eltCid, leafCid);
-			}
-			else if (leaf.getMime().startsWith("video/"))
-			{
-				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-				_context.recordCache.recordVideoReleased(eltCid, leafCid, maxEdge);
-			}
-			else if (leaf.getMime().startsWith("audio/"))
-			{
-				_context.recordCache.recordAudioReleased(eltCid, leafCid);
-			}
+			_context.recordCache.recordThumbnailReleased(eltCid, leaves.thumbnail);
+		}
+		if (null != leaves.audio)
+		{
+			_context.recordCache.recordAudioReleased(eltCid, leaves.audio);
+		}
+		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+		{
+			_context.recordCache.recordVideoReleased(eltCid, leaf.cid(), leaf.edgeSize());
 		}
 		_context.recordCache.recordMetaDataReleased(eltCid);
 		
-		_context.recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), unchangedLeaves.size());
-		for (DataElement leaf : unchangedLeaves)
+		_context.recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
+		if (null != leaves.thumbnail)
 		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			if (ElementSpecialType.IMAGE == leaf.getSpecial())
-			{
-				// This is the thumbnail.
-				_context.recordCache.recordThumbnailPinned(newEltCid, leafCid);
-			}
-			else if (leaf.getMime().startsWith("video/"))
-			{
-				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-				_context.recordCache.recordVideoPinned(newEltCid, leafCid, maxEdge);
-			}
-			else if (leaf.getMime().startsWith("audio/"))
-			{
-				_context.recordCache.recordAudioPinned(newEltCid, leafCid);
-			}
+			_context.recordCache.recordThumbnailPinned(newEltCid, leaves.thumbnail);
+		}
+		if (null != leaves.audio)
+		{
+			_context.recordCache.recordAudioPinned(newEltCid, leaves.audio);
+		}
+		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+		{
+			_context.recordCache.recordVideoPinned(newEltCid, leaf.cid(), leaf.edgeSize());
 		}
 		
 		// Now, publish the update.

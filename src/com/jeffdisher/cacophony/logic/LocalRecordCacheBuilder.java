@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
@@ -250,27 +249,21 @@ public class LocalRecordCacheBuilder
 			throw Assert.unexpected(e);
 		}
 		
-		List<DataElement> elements = record.getElements().getElement();
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), elements.size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
 		
 		// If this is a local user, state that all the files are cached.
-		for (DataElement leaf : elements)
+		LeafFinder leaves = LeafFinder.parseRecord(record);
+		if (null != leaves.thumbnail)
 		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			if (ElementSpecialType.IMAGE == leaf.getSpecial())
-			{
-				// This is the thumbnail.
-				recordCache.recordThumbnailPinned(cid, leafCid);
-			}
-			else if (leaf.getMime().startsWith("video/"))
-			{
-				int maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
-				recordCache.recordVideoPinned(cid, leafCid, maxEdge);
-			}
-			else if (leaf.getMime().startsWith("audio/"))
-			{
-				recordCache.recordAudioPinned(cid, leafCid);
-			}
+			recordCache.recordThumbnailPinned(cid, leaves.thumbnail);
+		}
+		if (null != leaves.audio)
+		{
+			recordCache.recordAudioPinned(cid, leaves.audio);
+		}
+		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+		{
+			recordCache.recordVideoPinned(cid, leaf.cid(), leaf.edgeSize());
 		}
 	}
 
