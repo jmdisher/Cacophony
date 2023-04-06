@@ -27,6 +27,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -162,14 +163,23 @@ public class TestSimpleFolloweeStarter
 			return r;
 		}
 		@Override
-		public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
+		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 		{
 			// While non-cached loads _could_ be theoretically pinned (since the element can be found via multiple paths), this test doesn't do that.
 			Assert.assertFalse(pins.containsKey(file));
-			FutureRead<R> r = new FutureRead<>();
+			FutureSizedRead<R> r = new FutureSizedRead<>();
 			try
 			{
-				r.success(decoder.apply(this.data.get(file)));
+				byte[] bytes = this.data.get(file);
+				if (bytes.length <= maxSizeInBytes)
+				{
+					r.success(decoder.apply(bytes));
+				}
+				else
+				{
+					// Not expected in this test.
+					Assert.fail();
+				}
 			}
 			catch (FailedDeserializationException e)
 			{

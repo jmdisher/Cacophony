@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -127,9 +128,9 @@ public class SimpleFolloweeStarter
 			return _access.loadCached(file, decoder);
 		}
 		@Override
-		public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
+		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 		{
-			return _access.loadNotCached(file, decoder);
+			return _access.loadNotCached(file, context, maxSizeInBytes, decoder);
 		}
 		@Override
 		public IpfsFile uploadNewData(byte[] data) throws IpfsConnectionException

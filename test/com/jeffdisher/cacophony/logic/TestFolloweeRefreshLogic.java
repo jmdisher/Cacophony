@@ -25,6 +25,7 @@ import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -1004,15 +1005,24 @@ public class TestFolloweeRefreshLogic
 			}
 		}
 		@Override
-		public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
+		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 		{
 			Assert.assertTrue(_upstreamData.containsKey(file));
 			// While we could technically see something pinned in the non-cached load, we don't expect that in this test.
 			Assert.assertFalse(_data.containsKey(file));
-			FutureRead<R> future = new FutureRead<R>();
+			FutureSizedRead<R> future = new FutureSizedRead<R>();
 			try
 			{
-				future.success(decoder.apply(_upstreamData.get(file)));
+				byte[] data = _upstreamData.get(file);
+				if (data.length <= maxSizeInBytes)
+				{
+					future.success(decoder.apply(data));
+				}
+				else
+				{
+					// One of the tests does use this.
+					future.failureInSizeCheck(new SizeConstraintException(context, data.length, maxSizeInBytes));
+				}
 			}
 			catch (FailedDeserializationException e)
 			{

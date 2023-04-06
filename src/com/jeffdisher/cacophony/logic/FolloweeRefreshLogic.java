@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -128,8 +129,8 @@ public class FolloweeRefreshLogic
 		Assert.assertTrue(null != newIndexElement);
 		
 		// Load the root element - we will NOT cache this, since we are going to use a hacked variant.
-		_checkSizeInline(support, "index", newIndexElement, SizeLimits.MAX_INDEX_SIZE_BYTES);
-		StreamIndex newIndex = support.loadNotCached(newIndexElement, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		// (since we are using the not-cached loader, it will do our size check for us)
+		StreamIndex newIndex = support.loadNotCached(newIndexElement, "index", SizeLimits.MAX_INDEX_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		
 		// Load the description.
 		IpfsFile newDescriptionElement = _cidOrNull(newIndex.getDescription());
@@ -729,14 +730,16 @@ public class FolloweeRefreshLogic
 		 */
 		<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
 		/**
-		 * Requests a read of data which is not known to be pinned on the local node.
+		 * Loads the given file, decoding it into and instance of R, but assuming that it is NOT pinned on the local node.
 		 * 
 		 * @param <R> The type of object to return.
 		 * @param file The CID of the data to read.
+		 * @param context The name to use to describe this, if there is an error.
+		 * @param maxSizeInBytes The maximum size of the resource, in bytes, in order for it to be loaded (must be positive).
 		 * @param decoder A deserializer to convert the loaded bytes into the returned R type.
 		 * @return The future read response.
 		 */
-		<R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder);
+		<R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder);
 		IpfsFile uploadNewData(byte[] data) throws IpfsConnectionException;
 	}
 }

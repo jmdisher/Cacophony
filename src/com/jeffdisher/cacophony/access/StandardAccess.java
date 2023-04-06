@@ -27,6 +27,7 @@ import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -222,14 +223,18 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
+	public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(null != file);
+		Assert.assertTrue(null != context);
+		Assert.assertTrue(maxSizeInBytes > 0L);
+		Assert.assertTrue(null != decoder);
+		
 		if (_pinCache.isPinned(file))
 		{
 			_logger.logVerbose("WARNING!  Not expected in cache:  " + file);
 		}
-		return _scheduler.readData(file, decoder);
+		return _scheduler.readDataWithSizeCheck(file, context, maxSizeInBytes, decoder);
 	}
 
 	@Override

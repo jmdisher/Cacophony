@@ -14,7 +14,8 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
+import com.jeffdisher.cacophony.scheduler.SyntheticRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -22,6 +23,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand<None>
@@ -76,13 +78,14 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		
 		// Start the async StreamRecord loads.
 		List<AsyncRecord> asyncRecords = new ArrayList<>();
-		for (String recordCid : records.getRecord())
+		for (String rawCid : records.getRecord())
 		{
-			FutureRead<StreamRecord> future = (isCached
-					? access.loadCached(IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
-					: access.loadNotCached(IpfsFile.fromIpfsCid(recordCid), (byte[] data) -> GlobalData.deserializeRecord(data))
+			IpfsFile recordCid = IpfsFile.fromIpfsCid(rawCid);
+			ICommonFutureRead<StreamRecord> future = (isCached
+					? new SyntheticRead<>(access.loadCached(recordCid, (byte[] data) -> GlobalData.deserializeRecord(data)))
+					: access.loadNotCached(recordCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data))
 			);
-			asyncRecords.add(new AsyncRecord(recordCid, future));
+			asyncRecords.add(new AsyncRecord(rawCid, future));
 		}
 		
 		// Walk the elements, reading each element.
@@ -102,7 +105,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	}
 
 
-	private static record AsyncRecord(String recordCid, FutureRead<StreamRecord> future)
+	private static record AsyncRecord(String recordCid, ICommonFutureRead<StreamRecord> future)
 	{
 	}
 }

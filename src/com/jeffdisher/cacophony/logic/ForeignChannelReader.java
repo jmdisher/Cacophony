@@ -7,7 +7,8 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
+import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
+import com.jeffdisher.cacophony.scheduler.SyntheticRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -52,8 +53,7 @@ public class ForeignChannelReader
 		if (null == _recommendations)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
-			_checkSize(cid, "recommendations", SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
-			_recommendations = _loadHelper(cid, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			_recommendations = _loadHelper(cid, "recommendations", SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		}
 		return _recommendations;
 	}
@@ -63,8 +63,7 @@ public class ForeignChannelReader
 		if (null == _records)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
-			_checkSize(cid, "records", SizeLimits.MAX_RECORD_SIZE_BYTES);
-			_records = _loadHelper(cid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			_records = _loadHelper(cid, "records", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		}
 		return _records;
 	}
@@ -74,8 +73,7 @@ public class ForeignChannelReader
 		if (null == _description)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
-			_checkSize(cid, "description", SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
-			_description = _loadHelper(cid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			_description = _loadHelper(cid, "description", SizeLimits.MAX_DESCRIPTION_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		}
 		return _description;
 	}
@@ -85,30 +83,16 @@ public class ForeignChannelReader
 	{
 		if (null == _index)
 		{
-			_checkSize(_root, "index", SizeLimits.MAX_INDEX_SIZE_BYTES);
-			_index = _loadHelper(_root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			_index = _loadHelper(_root, "index", SizeLimits.MAX_INDEX_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
 		}
 		return _index;
 	}
 
-	private <T> FutureRead<T> _loadHelper(IpfsFile file, DataDeserializer<T> decoder)
+	private <T> ICommonFutureRead<T> _loadHelper(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<T> decoder)
 	{
 		return _isCached
-				? _access.loadCached(file, decoder)
-				: _access.loadNotCached(file, decoder)
+				? new SyntheticRead<>(_access.loadCached(file, decoder))
+				: _access.loadNotCached(file, context, maxSizeInBytes, decoder)
 		;
-	}
-
-	private void _checkSize(IpfsFile cid, String type, long sizeLimit) throws IpfsConnectionException, SizeConstraintException
-	{
-		// We assume these are correctly-sized if they are already cached.
-		if (!_isCached)
-		{
-			long size = _access.getSizeInBytes(cid).get();
-			if (size > sizeLimit)
-			{
-				throw new SizeConstraintException(type, size, sizeLimit);
-			}
-		}
 	}
 }

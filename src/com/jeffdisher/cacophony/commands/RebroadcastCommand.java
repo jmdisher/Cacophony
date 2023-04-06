@@ -55,12 +55,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			}
 			
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
-			long elementSize = access.getSizeInBytes(_elementCid).get();
-			if (elementSize > SizeLimits.MAX_RECORD_SIZE_BYTES)
-			{
-				throw new SizeConstraintException("record", elementSize, SizeLimits.MAX_RECORD_SIZE_BYTES);
-			}
-			StreamRecord record = access.loadNotCached(_elementCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+			StreamRecord record = access.loadNotCached(_elementCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			
 			// The record makes sense so pin it and everything it references (will throw on error).
 			_pinReachableData(context.logger, access, record);

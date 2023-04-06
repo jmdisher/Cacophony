@@ -26,6 +26,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -245,7 +246,7 @@ public class TestHomeChannelModifier
 			return r;
 		}
 		@Override
-		public <R> FutureRead<R> loadNotCached(IpfsFile file, DataDeserializer<R> decoder)
+		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 		{
 			throw new RuntimeException("Not Called");
 		}

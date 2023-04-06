@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
@@ -57,6 +58,39 @@ public class MultiThreadedScheduler implements INetworkScheduler
 			{
 				byte[] data = _ipfs.loadData(file);
 				future.success(decoder.apply(data));
+			}
+			catch (IpfsConnectionException e)
+			{
+				future.failureInConnection(e);
+			}
+			catch (FailedDeserializationException e)
+			{
+				future.failureInDecoding(e);
+			}
+		};
+		_queue.enqueue(r);
+		return future;
+	}
+
+	@Override
+	public <R> FutureSizedRead<R> readDataWithSizeCheck(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
+	{
+		Assert.assertTrue(maxSizeInBytes > 0L);
+		FutureSizedRead<R> future = new FutureSizedRead<R>();
+		Runnable r = () -> {
+			try
+			{
+				long sizeInBytes = _ipfs.getSizeInBytes(file);
+				if (sizeInBytes <= maxSizeInBytes)
+				{
+					byte[] data = _ipfs.loadData(file);
+					future.success(decoder.apply(data));
+				}
+				else
+				{
+					// Size was greater than limit so synthesize the exception.
+					future.failureInSizeCheck(new SizeConstraintException(context, sizeInBytes, maxSizeInBytes));
+				}
 			}
 			catch (IpfsConnectionException e)
 			{

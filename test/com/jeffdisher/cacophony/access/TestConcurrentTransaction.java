@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.scheduler.FutureUnpin;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -191,6 +192,11 @@ public class TestConcurrentTransaction
 			}
 			this.nextRead = null;
 			return read;
+		}
+		@Override
+		public <R> FutureSizedRead<R> readDataWithSizeCheck(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
+		{
+			throw new AssertionError("Not in test");
 		}
 		@Override
 		public FutureSave saveStream(InputStream stream)
