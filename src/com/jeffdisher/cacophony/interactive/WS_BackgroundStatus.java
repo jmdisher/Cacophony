@@ -7,12 +7,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -29,20 +24,12 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	public final static String COMMAND_REPUBLISH = "COMMAND_REPUBLISH";
-
-	private final ICommand.Context _context;
 	private final HandoffConnector<Integer, String> _statusHandoff;
-	private final BackgroundOperations _background;
 	
-	public WS_BackgroundStatus(ICommand.Context context
-			, HandoffConnector<Integer, String> statusHandoff
-			, BackgroundOperations background
+	public WS_BackgroundStatus(HandoffConnector<Integer, String> statusHandoff
 	)
 	{
-		_context = context;
 		_statusHandoff = statusHandoff;
-		_background = background;
 	}
 	
 	@Override
@@ -54,7 +41,6 @@ public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACT
 
 	private class StatusListener implements WebSocketListener, HandoffConnector.IHandoffListener<Integer, String>
 	{
-		private Session _session;
 		private RemoteEndpoint _endPoint;
 		
 		@Override
@@ -66,41 +52,11 @@ public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACT
 		@Override
 		public void onWebSocketConnect(Session session)
 		{
-			_session = session;
 			_endPoint = session.getRemote();
 			// Note that this call to registerListener will likely involves calls back into us, relying on the _endPoint.
 			_statusHandoff.registerListener(this, 0);
 			// Set a 1-day idle timeout, just to avoid this constantly dropping when looking at it.
 			session.setIdleTimeout(Duration.ofDays(1));
-		}
-		
-		@Override
-		public void onWebSocketText(String message)
-		{
-			// We currently only check for a bunch of keywords here, not structured data.
-			if (COMMAND_REPUBLISH.equals(message))
-			{
-				// Look up the last published root and request that background operations republish it.
-				IpfsFile root = null;
-				try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
-				{
-					root = access.getLastRootElement();
-				}
-				catch (IpfsConnectionException e)
-				{
-					// This error probably means serious issues so close the socket.
-					_session.close(WebSocketCodes.IPFS_CONNECTION_ERROR, e.getLocalizedMessage());
-				}
-				if (null != root)
-				{
-					_background.requestPublish(root);
-				}
-			}
-			else
-			{
-				// This is unknown, so close the socket with an error.
-				_session.close(WebSocketCodes.INVALID_COMMAND, "Invalid command");
-			}
 		}
 		
 		@Override

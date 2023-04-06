@@ -422,7 +422,7 @@ STATUS_PAGE=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
 echo "Test that we can request another republish..."
-echo -n "COMMAND_REPUBLISH" > "$STATUS_INPUT.1"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/republish"
 STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
 echo -n "-ACK" > "$STATUS_INPUT.1"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
