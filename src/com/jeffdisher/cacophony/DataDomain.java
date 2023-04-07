@@ -1,10 +1,8 @@
 package com.jeffdisher.cacophony;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
@@ -20,14 +18,15 @@ import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.IpfsConnection;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.logic.Uploader;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -105,7 +104,7 @@ public class DataDomain implements Closeable
 				, keyName
 				, theirKey
 		);
-		StandardLogger theirLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
+		ILogger theirLogger = new SilentLogger();
 		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null);
 		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
@@ -123,7 +122,7 @@ public class DataDomain implements Closeable
 				, keyName
 				, ourKey
 		);
-		StandardLogger ourLogger = StandardLogger.topLogger(new PrintStream(new ByteArrayOutputStream()));
+		ILogger ourLogger = new SilentLogger();
 		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null);
 		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(ourContext);

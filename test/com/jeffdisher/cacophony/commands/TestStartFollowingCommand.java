@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
@@ -50,7 +51,7 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), sharedConnection, KEY_NAME, PUBLIC_KEY);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		// For this test, we want to just fake a default config.
 		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
 		

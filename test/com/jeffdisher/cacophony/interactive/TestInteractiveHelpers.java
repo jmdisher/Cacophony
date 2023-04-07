@@ -29,9 +29,9 @@ import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -220,7 +220,7 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		StandardEnvironment env = new StandardEnvironment(fileSystem, connection, KEY_NAME, PUBLIC_KEY);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
@@ -355,7 +355,7 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		StandardEnvironment env = new StandardEnvironment(fileSystem, connection, KEY_NAME, PUBLIC_KEY);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
 		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);

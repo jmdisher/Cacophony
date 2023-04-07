@@ -7,19 +7,23 @@ public class StandardLogger implements ILogger
 {
 	public static StandardLogger topLogger(PrintStream stream)
 	{
-		return new StandardLogger(stream, "");
+		return new StandardLogger(null, stream, "");
 	}
 
 
+	// We keep the parent so we can write-back error state after a sub-logger finishes.
+	private final StandardLogger _parent;
 	private final PrintStream _stream;
 	private final String _prefix;
 	private int _nextOperationCounter;
 	private boolean _errorOccurred;
 
-	private StandardLogger(PrintStream stream
+	private StandardLogger(StandardLogger parent
+			, PrintStream stream
 			, String prefix
 	)
 	{
+		_parent = parent;
 		_stream = stream;
 		_prefix = prefix;
 		_nextOperationCounter = 0;
@@ -32,7 +36,7 @@ public class StandardLogger implements ILogger
 		_nextOperationCounter += 1;
 		String prefix = "" + operationNumber;
 		_stream.println(">" + prefix + "> " + openingMessage);
-		return new StandardLogger(_stream, prefix);
+		return new StandardLogger(this, _stream, prefix);
 	}
 
 	@Override
@@ -44,6 +48,11 @@ public class StandardLogger implements ILogger
 	@Override
 	public void logFinish(String finishMessage)
 	{
+		// Saturate to error in the parent.
+		if (_errorOccurred && (null != _parent))
+		{
+			_parent._errorOccurred = true;
+		}
 		_stream.println("<" + _prefix + "< " + finishMessage);
 	}
 
@@ -60,6 +69,7 @@ public class StandardLogger implements ILogger
 		_errorOccurred = true;
 	}
 
+	@Override
 	public boolean didErrorOccur()
 	{
 		return _errorOccurred;

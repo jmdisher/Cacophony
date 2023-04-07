@@ -828,7 +828,7 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public void logMessage(String message)
 		{
-			System.out.println(message);
+			// No logging in tests.
 		}
 		@Override
 		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)

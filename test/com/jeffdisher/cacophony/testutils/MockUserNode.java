@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -33,7 +34,7 @@ public class MockUserNode
 	private final MockSingleNode _sharedConnection;
 	private final MemoryConfigFileSystem _fileSystem;
 	private final StandardEnvironment _executor;
-	private final StandardLogger _logger;
+	private final SilentLogger _logger;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node)
 	{
@@ -43,7 +44,7 @@ public class MockUserNode
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(null);
 		_executor = new StandardEnvironment(_fileSystem, _sharedConnection, keyName, key);
-		_logger = StandardLogger.topLogger(System.out);
+		_logger = new SilentLogger();
 	}
 
 	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
@@ -75,7 +76,7 @@ public class MockUserNode
 	 */
 	public <T extends ICommand.Result> T runCommand(OutputStream captureStream, ICommand<T> command) throws Throwable
 	{
-		StandardLogger logger = _logger;
+		ILogger logger = _logger;
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{

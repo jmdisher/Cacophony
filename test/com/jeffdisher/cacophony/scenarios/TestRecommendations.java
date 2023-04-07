@@ -43,7 +43,7 @@ public class TestRecommendations
 		
 		// List the recommendations - make sure we find the key.
 		ListRecommendationsCommand listCommand = new ListRecommendationsCommand(null);
-		KeyList result = user1.runCommand(System.out, listCommand);
+		KeyList result = user1.runCommand(null, listCommand);
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
 		result.writeHumanReadable(new PrintStream(captureStream));
 		Assert.assertEquals("1 keys in list:\n"
@@ -58,7 +58,7 @@ public class TestRecommendations
 		// List the recommendations - make sure we see an empty list.
 		captureStream = new ByteArrayOutputStream();
 		listCommand = new ListRecommendationsCommand(null);
-		user1.runCommand(System.out, listCommand);
+		user1.runCommand(null, listCommand);
 		result.writeHumanReadable(new PrintStream(captureStream));
 		Assert.assertEquals("1 keys in list:\n"
 				+ "	Recommending: z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142\n"

@@ -38,4 +38,10 @@ public interface ILogger
 	 * @param message The message to log.
 	 */
 	void logError(String message);
+	/**
+	 * Mostly used for tests.
+	 * 
+	 * @return True if logError was called on this logger or any nested logger.
+	 */
+	boolean didErrorOccur();
 }

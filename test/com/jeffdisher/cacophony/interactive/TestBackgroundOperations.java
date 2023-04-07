@@ -9,7 +9,6 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MockEnvironment;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
@@ -42,7 +41,7 @@ public class TestBackgroundOperations
 	public void noOperations() throws Throwable
 	{
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
@@ -54,7 +53,7 @@ public class TestBackgroundOperations
 	public void oneOperation() throws Throwable
 	{
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
@@ -72,7 +71,7 @@ public class TestBackgroundOperations
 	public void sequentialOperations() throws Throwable
 	{
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
@@ -99,7 +98,7 @@ public class TestBackgroundOperations
 		// We do know that none of the others will be seen, but then the last will ALWAYS be seen.
 		// We will verify this by only setting success on the first and last.
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
@@ -139,7 +138,7 @@ public class TestBackgroundOperations
 	{
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
@@ -167,7 +166,7 @@ public class TestBackgroundOperations
 	public void oneRefresh() throws Throwable
 	{
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		publishFirst.success();
 		boolean didRun[] = new boolean[1];
@@ -195,7 +194,7 @@ public class TestBackgroundOperations
 	{
 		// We will publish, then use the delay that causes to install both a publish and a refresh so we can see what happens when they both run.
 		StandardEnvironment env = new StandardEnvironment(null, null, null, null);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishSecond = new FuturePublish(F2);
 		boolean didRun[] = new boolean[1];

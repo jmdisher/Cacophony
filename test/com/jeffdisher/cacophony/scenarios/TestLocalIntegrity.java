@@ -18,10 +18,10 @@ import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
-import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -41,7 +41,7 @@ public class TestLocalIntegrity
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
@@ -63,7 +63,7 @@ public class TestLocalIntegrity
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
 		IEnvironment env = _createSingleNode(node);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		
 		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);

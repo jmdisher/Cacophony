@@ -7,6 +7,8 @@ import java.time.Duration;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
+import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -24,11 +26,13 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
+	private final ICommand.Context _context;
 	private final VideoProcessContainer _videoProcessContainer;
 	private final String _forcedCommand;
 	
-	public WS_DraftProcessVideo(VideoProcessContainer videoProcessContainer, String forcedCommand)
+	public WS_DraftProcessVideo(ICommand.Context context, VideoProcessContainer videoProcessContainer, String forcedCommand)
 	{
+		_context = context;
 		_videoProcessContainer = videoProcessContainer;
 		_forcedCommand = forcedCommand;
 	}
@@ -43,7 +47,6 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 		{
 			processCommand = _forcedCommand;
 		}
-		System.out.println("Opening processing socket with local command: \"" + processCommand + "\"");
 		return new ProcessVideoWebSocketListener(draftId, processCommand);
 	}
 
@@ -52,12 +55,14 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 	{
 		private final int _draftId;
 		private final String _processCommand;
+		private final ILogger _logger;
 		private VideoProcessorCallbackHandler _handler;
 		
 		public ProcessVideoWebSocketListener(int draftId, String processCommand)
 		{
 			_draftId = draftId;
 			_processCommand = processCommand;
+			_logger = _context.logger.logStart("Opening processing socket with local command: \"" + processCommand + "\"");
 		}
 		
 		@Override
@@ -67,6 +72,7 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 			Assert.assertTrue(null != _handler);
 			if (VideoProcessContainer.COMMAND_CANCEL_PROCESSING.equals(message))
 			{
+				_logger.logOperation("Cancelling video processing...");
 				_videoProcessContainer.cancelProcess();
 			}
 			else
@@ -82,6 +88,7 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 			if (null != _handler)
 			{
 				_videoProcessContainer.detachListener(_handler);
+				_logger.logFinish("Socket closed");
 				_handler = null;
 			}
 		}
@@ -95,6 +102,7 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 				boolean didStart = _videoProcessContainer.startProcess(_draftId, _processCommand);
 				if (didStart)
 				{
+					_logger.logOperation("Processing start...");
 					_handler = new VideoProcessorCallbackHandler(session);
 					boolean didAttach = _videoProcessContainer.attachListener(_handler, _draftId);
 					// This can only fail in the case where the command immediately failed before we ran this next

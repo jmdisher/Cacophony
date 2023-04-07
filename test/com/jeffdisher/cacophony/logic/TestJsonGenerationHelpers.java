@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -102,7 +103,7 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
 		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
@@ -134,7 +135,7 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
-		StandardLogger logger = StandardLogger.topLogger(System.out);
+		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;

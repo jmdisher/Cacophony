@@ -207,7 +207,7 @@ public class InteractiveServer
 		validated.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(manager));
 		
 		validated.addWebSocketFactory("/draft/saveVideo", 4, "video", new WS_DraftSaveVideo(manager));
-		validated.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(videoProcessContainer, forcedCommand));
+		validated.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(serverContext, videoProcessContainer, forcedCommand));
 		validated.addWebSocketFactory("/draft/existingVideo", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(videoProcessContainer));
 		validated.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(manager));
 		

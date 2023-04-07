@@ -110,8 +110,6 @@ public class TestDraftWrapper
 			smallCount += threads[i].smallCount;
 			bigCount += threads[i].bigCount;
 		}
-		System.out.println("SMALL: " + smallCount);
-		System.out.println("BIG: " + bigCount);
 		Assert.assertEquals(threads.length * 20, smallCount + bigCount);
 	}
 
