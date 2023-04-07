@@ -34,7 +34,7 @@ public class TestCommandParser
 	public void testPublish() throws Throwable
 	{
 		File tempFile = FOLDER.newFile();
-		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL", "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath()};
+		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "http://www.example.com", "--element", "--mime", "image/jpeg", "--file", tempFile.getAbsolutePath()};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand<?> command = CommandParser.parseArgs(foo, capture);
@@ -46,9 +46,9 @@ public class TestCommandParser
 	public void testFullPublish() throws Throwable
 	{
 		File tempFile = FOLDER.newFile();
-		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL"
-				, "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath(), "--special", "image"
-				, "--element", "--mime", "mime type", "--file", tempFile.getAbsolutePath(), "--width", "640", "--height", "480"
+		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "http://www.example.com"
+				, "--element", "--mime", "image/jpeg", "--file", tempFile.getAbsolutePath(), "--special", "image"
+				, "--element", "--mime", "video/webm", "--file", tempFile.getAbsolutePath(), "--width", "640", "--height", "480"
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
@@ -302,7 +302,7 @@ public class TestCommandParser
 	public void testSingleVideo() throws Throwable
 	{
 		File tempFile = FOLDER.newFile();
-		String[] foo = {"--publishSingleVideo", "--name", "entry name", "--description", "entry description", "--discussionUrl", "URL"
+		String[] foo = {"--publishSingleVideo", "--name", "entry name", "--description", "entry description", "--discussionUrl", "http://www.example.com"
 				, "--thumbnailJpeg", tempFile.getAbsolutePath()
 				, "--videoFile", tempFile.getAbsolutePath(), "--videoMime", "video/webm", "--videoHeight", "640", "--videoWidth", "480"
 		};

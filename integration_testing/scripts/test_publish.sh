@@ -44,7 +44,7 @@ TEST_FILE="/tmp/zero_file"
 createBinaryFile "$TEST_FILE" 512
 
 echo "Publishing test..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post" --description "no description" --discussionUrl "http://www.example.com" --element --mime "application/octet-stream" --file "$TEST_FILE"
 checkPreviousCommand "publishToThisChannel"
 
 echo "Make sure we see this in the list..."
@@ -56,7 +56,7 @@ TEST_FILE2="/tmp/zero_file2"
 createBinaryFile "$TEST_FILE2" 1024
 
 echo "Publishing second test..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post 2" --description "this is a short-term entry" --discussionUrl "URL" --element --mime "application/octet-stream" --file "$TEST_FILE2"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post 2" --description "this is a short-term entry" --discussionUrl "http://www.example.com" --element --mime "application/octet-stream" --file "$TEST_FILE2"
 checkPreviousCommand "publishToThisChannel"
 
 echo "Make sure this new entry shows up in the list..."
