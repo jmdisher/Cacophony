@@ -59,12 +59,16 @@ public class CommandParser
 	{
 		// Sub-element side args (these are always assumed to have one or more potential instances).
 		ELEMENT(false, "--element"
-				, new ArgParameter[] { new ArgParameter("--mime", ParameterType.MIME)
-						, new ArgParameter("--file", ParameterType.FILE)
+				, new ArgParameter[] { new ArgParameter("--mime", ParameterType.MIME, "MIME type of the attachment")
+					, new ArgParameter("--file", ParameterType.FILE, "The path to the file to upload")
 				}
-				, new ArgParameter[] { new ArgParameter("--height", ParameterType.INT)
-						, new ArgParameter("--width", ParameterType.INT)
-						, new ArgParameter("--special", ParameterType.SPECIAL)
+				, new ArgParameter[] { new ArgParameter("--height", ParameterType.INT
+						, "The height, pixels (for videos only)"
+					)
+					, new ArgParameter("--width", ParameterType.INT, "The width, pixels (for videos only)")
+					, new ArgParameter("--special", ParameterType.SPECIAL
+						, "Set to \"image\" if this should be the thumbnail attachment"
+					)
 				}
 				, "Attaches a file to the new post being made."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -101,11 +105,13 @@ public class CommandParser
 		}),
 		UPDATE_DESCRIPTION(true, "--updateDescription"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING)
-						, new ArgParameter("--description", ParameterType.STRING)
-						, new ArgParameter("--pictureFile", ParameterType.FILE)
-						, new ArgParameter("--email", ParameterType.STRING)
-						, new ArgParameter("--website", ParameterType.URL)
+				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING, "The channel name")
+					, new ArgParameter("--description", ParameterType.STRING, "The channel description")
+					, new ArgParameter("--pictureFile", ParameterType.FILE
+						, "The path to the image to use as the user pic"
+					)
+					, new ArgParameter("--email", ParameterType.STRING, "Email address, if you want to share that")
+					, new ArgParameter("--website", ParameterType.URL, "Website, if you have one you want to share")
 				}
 				, "Updates the user description of the home user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -131,7 +137,9 @@ public class CommandParser
 		}),
 		READ_DESCRIPTION(true, "--readDescription"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, "Reads and displays the description of another user on the network, given their public key."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
@@ -139,7 +147,9 @@ public class CommandParser
 			return new ReadDescriptionCommand(channelPublicKey);
 		}),
 		ADD_RECOMMENDATION(true, "--addRecommendation"
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, new ArgParameter[0]
 				, "Adds the given public key to the list of users recommended by the home user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -148,7 +158,9 @@ public class CommandParser
 			return new AddRecommendationCommand(channelPublicKey);
 		}),
 		REMOVE_RECOMMENDATION(true, "--removeRecommendation"
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, new ArgParameter[0]
 				, "Removes the given public key from the list of users recommended by the home user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -158,7 +170,9 @@ public class CommandParser
 		}),
 		LIST_RECOMMENDATIONS(true, "--listRecommendations"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, "Lists the public keys of the users recommended by the given user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
@@ -166,10 +180,12 @@ public class CommandParser
 			return new ListRecommendationsCommand(publicKey);
 		}),
 		PUBLISH_TO_THIS_CHANNEL(true, "--publishToThisChannel"
-				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING)
-						, new ArgParameter("--description", ParameterType.STRING)
+				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING, "The name/title of the post")
+					, new ArgParameter("--description", ParameterType.STRING, "The description of the post")
 				}
-				, new ArgParameter[] { new ArgParameter("--discussionUrl", ParameterType.URL) }
+				, new ArgParameter[] { new ArgParameter("--discussionUrl", ParameterType.URL
+					, "A URL to a discussion or context, if there is one"
+				) }
 				, "Makes a new post to the home user's channel."
 				, ELEMENT, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
@@ -182,7 +198,9 @@ public class CommandParser
 		}),
 		LIST_THIS_CHANNEL(true, "--listChannel"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user (lists local channel if not provided)"
+				) }
 				, "Lists basic information about the posts made to the channel of the given user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
@@ -190,7 +208,9 @@ public class CommandParser
 			return new ListChannelEntriesCommand(channelPublicKey);
 		}),
 		REMOVE_FROM_THIS_CHANNEL(true, "--removeFromThisChannel"
-				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID) }
+				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
+					, "The CID of the StreamRecord element to delete"
+				) }
 				, new ArgParameter[0]
 				, "Removes the given post (identified by CID) from the home user's channel."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -199,7 +219,9 @@ public class CommandParser
 			return new RemoveEntryFromThisChannelCommand(elementCid);
 		}),
 		START_FOLLOWING(true, "--startFollowing"
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, new ArgParameter[0]
 				, "Starts following the user with the given public key.  Note that their posts will not all be"
 						+ " synchronized until it is next refreshed."
@@ -209,7 +231,9 @@ public class CommandParser
 			return new StartFollowingCommand(publicKey);
 		}),
 		STOP_FOLLOWING(true, "--stopFollowing"
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, new ArgParameter[0]
 				, "Stops following the user with the given public key.  This will drop all of their posts from your"
 						+ " local cache, allowing IPFS to reclaim the storage (may require --cleanCache)."
@@ -227,7 +251,9 @@ public class CommandParser
 			return new ListFolloweesCommand();
 		}),
 		LIST_CACHED_ELEMENTS_FOR_FOLLOWEE(true, "--listFollowee"
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, new ArgParameter[0]
 				, "Lists all the elements locally cached for a given followed user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -236,7 +262,9 @@ public class CommandParser
 			return new ListCachedElementsForFolloweeCommand(followeeKey);
 		}),
 		REFRESH_FOLLOWEE(true, "--refreshFollowee"
-				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--publicKey", ParameterType.PUBLIC_KEY
+					, "The IPFS public key of the user"
+				) }
 				, new ArgParameter[0]
 				, "Refreshes the cache for the given followee.  This will consider fetching new posts they have made."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -264,7 +292,9 @@ public class CommandParser
 			return new RepublishCommand();
 		}),
 		REBROADCAST(true, "--rebroadcast"
-				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID) }
+				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
+					, "The CID of the StreamRecord element to rebroadcast to your stream"
+				) }
 				, new ArgParameter[0]
 				, "Reposts an existing post, from another user, to the home user's stream.  This will cache all of the"
 						+ " files attached to the post."
@@ -274,10 +304,18 @@ public class CommandParser
 			return new RebroadcastCommand(elementCid);
 		}),
 		EDIT_POST(true, "--editPost"
-				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID) }
-				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING)
-						, new ArgParameter("--description", ParameterType.STRING)
-						, new ArgParameter("--discussionUrl", ParameterType.URL)
+				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
+					, "The CID of the StreamRecord to modify"
+				) }
+				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING
+						, "The new name (unchanged if ommitted)"
+					)
+					, new ArgParameter("--description", ParameterType.STRING
+						, "The new description (unchanged if ommitted)"
+					)
+					, new ArgParameter("--discussionUrl", ParameterType.URL
+						, "The new discussionURL (unchanged if ommitted, deleted if empty)"
+					)
 				}
 				, "Edits an existing post from the home user's stream."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -292,10 +330,20 @@ public class CommandParser
 		// Methods to manage local state.
 		SET_GLOBAL_PREFS(true, "--setGlobalPrefs"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--edgeMaxPixels", ParameterType.INT)
-						, new ArgParameter("--followCacheTargetBytes", ParameterType.LONG_BYTES)
-						, new ArgParameter("--republishIntervalMillis", ParameterType.LONG_MILLIS)
-						, new ArgParameter("--followeeRefreshMillis", ParameterType.LONG_MILLIS)
+				, new ArgParameter[] { new ArgParameter("--edgeMaxPixels", ParameterType.INT
+						, "Will only fetch the largest video for each post which fits into a box with this edge"
+							+ " size, in pixels"
+					)
+					, new ArgParameter("--followCacheTargetBytes", ParameterType.LONG_BYTES
+						, "The target size of the follow cache (that is, how much space is used for caching videos"
+							+ " and images of the users you follow) in bytes (accepts k, m, g suffixes)"
+					)
+					, new ArgParameter("--republishIntervalMillis", ParameterType.LONG_MILLIS, "How often, in"
+						+ " milliseconds, to republish your channel to IPNS (should be less than 24 hours)"
+					)
+					, new ArgParameter("--followeeRefreshMillis", ParameterType.LONG_MILLIS, "How often, in"
+						+ " milliseconds, to refresh the post lists of those you follow"
+					)
 				}
 				, "Updates preferences related to the Cacophony installation."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -311,7 +359,9 @@ public class CommandParser
 			);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey"
-				, new ArgParameter[] { new ArgParameter("--key", ParameterType.PUBLIC_KEY) }
+				, new ArgParameter[] { new ArgParameter("--key", ParameterType.PUBLIC_KEY
+					, "The IPFS key to canonicalize in Base58"
+				) }
 				, new ArgParameter[0]
 				, "Converts a given IPFS public key from whatever encoding it is using to the \"canonical\" Base58"
 						+ " representation used by Cacophony."
@@ -347,9 +397,17 @@ public class CommandParser
 		}),
 		RUN(true, "--run"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--overrideCommand", ParameterType.STRING)
-						, new ArgParameter("--commandSelection", ParameterType.STRING)
-						, new ArgParameter("--port", ParameterType.INT)
+				, new ArgParameter[] { new ArgParameter("--overrideCommand", ParameterType.STRING
+						, "The video preprocessing command to use for new drafts (must accept video as stdin and"
+							+ " output video on stdout)"
+					)
+					, new ArgParameter("--commandSelection", ParameterType.STRING
+						, "If set to DANGEROUS, will allow you to change the video preprocessing command from the"
+							+ " web UI (default is STRICT)"
+					)
+					, new ArgParameter("--port", ParameterType.INT
+						, "The port to use for the interactive web UI (default is 8000)"
+					)
 				}
 				, "Starts the long-running interactive web server."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -386,15 +444,21 @@ public class CommandParser
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.
 		PUBLISH_SINGLE_VIDEO(true, "--publishSingleVideo"
-				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING)
-						, new ArgParameter("--description", ParameterType.STRING)
-						, new ArgParameter("--thumbnailJpeg", ParameterType.FILE)
-						, new ArgParameter("--videoFile", ParameterType.FILE)
-						, new ArgParameter("--videoMime", ParameterType.MIME)
-						, new ArgParameter("--videoHeight", ParameterType.INT)
-						, new ArgParameter("--videoWidth", ParameterType.INT)
+				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING, "The name/title of the post")
+					, new ArgParameter("--description", ParameterType.STRING, "The description of the post")
+					, new ArgParameter("--thumbnailJpeg", ParameterType.FILE
+						, "The path to the file to use as the post thumbnail"
+					)
+					, new ArgParameter("--videoFile", ParameterType.FILE
+						, "The path to the file to use as the video attachment"
+					)
+					, new ArgParameter("--videoMime", ParameterType.MIME, "The MIME type of the video")
+					, new ArgParameter("--videoHeight", ParameterType.INT, "The height of the video, in pixels")
+					, new ArgParameter("--videoWidth", ParameterType.INT, "The width of the video, in pixels")
 				}
-				, new ArgParameter[] { new ArgParameter("--discussionUrl", ParameterType.URL) }
+				, new ArgParameter[] { new ArgParameter("--discussionUrl", ParameterType.URL
+					, "A URL to a discussion or context, if there is one"
+				) }
 				, "Publishes a new post to the home user's stream including a single video and a thumbnail.  This is"
 						+ " just a wrapper over --publishToThisChannel to cover a very common case."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -415,7 +479,9 @@ public class CommandParser
 		}),
 		QUICKSTART(true, "--quickstart"
 				, new ArgParameter[0]
-				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING) }
+				, new ArgParameter[] { new ArgParameter("--name", ParameterType.STRING
+					, "The name to put in the channel description"
+				) }
 				, "Creates a new home user channel with the given name as its description and sets it to follow the"
 						+ " Cacophony demo channel.  This is just a combination of --createNewChannel,"
 						+ " --updateDescription, and --startFollowing."
@@ -690,25 +756,24 @@ public class CommandParser
 	{
 		stream.println(prefix + pattern._name);
 		stream.println(prefix + "\tDescription: " + pattern._description);
-		stream.println(prefix + "\tRequired parameters: " + _describeParameterList(pattern._params));
-		stream.println(prefix + "\tOptional parameters: " + _describeParameterList(pattern._optionalParams));
+		stream.println(prefix + "\tRequired parameters:");
+		_describeParameterList(stream, prefix + "\t\t", pattern._params);
+		stream.println(prefix + "\tOptional parameters:");
+		_describeParameterList(stream, prefix + "\t\t", pattern._optionalParams);
 	}
 
-	private static String _describeParameterList(ArgParameter[] list)
+	private static void _describeParameterList(PrintStream stream, String prefix, ArgParameter[] list)
 	{
-		String result;
 		if (0 == list.length)
 		{
-			result = "(none)";
+			stream.println(prefix + "(none)");
 		}
 		else
 		{
-			result = list[0].shortDescription();
-			for (int i = 1; i < list.length; ++i)
+			for (int i = 0; i < list.length; ++i)
 			{
-				result += ", " + list[i].shortDescription();
+				stream.println(prefix + list[i].longDescription());
 			}
 		}
-		return result;
 	}
 }
