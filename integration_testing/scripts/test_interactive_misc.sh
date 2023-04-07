@@ -72,7 +72,7 @@ XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 echo "Attach the status listener..."
 mkfifo "$STATUS_INPUT"
 mkfifo "$STATUS_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/backgroundStatus" "event_api" "$STATUS_INPUT" "$STATUS_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/backgroundStatus" "event_api" "$STATUS_OUTPUT" "$STATUS_INPUT" &
 STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$STATUS_OUTPUT" > /dev/null
@@ -80,7 +80,7 @@ cat "$STATUS_OUTPUT" > /dev/null
 echo "Attach the followee refresh WebSocket..."
 mkfifo "$FOLLOWEE_REFRESH_INPUT"
 mkfifo "$FOLLOWEE_REFRESH_OUTPUT"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/refreshTime" "event_api" "$FOLLOWEE_REFRESH_INPUT" "$FOLLOWEE_REFRESH_OUTPUT" &
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/refreshTime" "event_api" "$FOLLOWEE_REFRESH_OUTPUT" "$FOLLOWEE_REFRESH_INPUT" &
 FOLLOWEE_REFRESH_PID=$!
 cat "$FOLLOWEE_REFRESH_OUTPUT" > /dev/null
 
@@ -113,7 +113,7 @@ requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Descripti
 echo "Attach the followee post listener..."
 mkfifo "$ENTRIES_INPUT"
 mkfifo "$ENTRIES_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/user/entries/$PUBLIC2" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/user/entries/$PUBLIC2" "event_api" "$ENTRIES_OUTPUT" "$ENTRIES_INPUT" &
 ENTRIES_PID=$!
 cat "$ENTRIES_OUTPUT" > /dev/null
 

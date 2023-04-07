@@ -55,7 +55,7 @@ done
 echo "Connect the entries socket..."
 mkfifo "$ENTRIES_INPUT"
 mkfifo "$ENTRIES_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_OUTPUT" "$ENTRIES_INPUT" &
 ENTRIES_PID=$!
 cat "$ENTRIES_OUTPUT" > /dev/null
 
@@ -81,7 +81,7 @@ done
 echo "Connect the combined socket and do a similar verification..."
 mkfifo "$COMBINED_INPUT"
 mkfifo "$COMBINED_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$COMBINED_INPUT" "$COMBINED_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$COMBINED_OUTPUT" "$COMBINED_INPUT" &
 COMBINED_PID=$!
 cat "$COMBINED_OUTPUT" > /dev/null
 

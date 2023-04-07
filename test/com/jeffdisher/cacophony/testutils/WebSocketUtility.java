@@ -26,14 +26,16 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
  * interactions with WebSockets.
  * Args:
  * [0] - XSRF token
- * [1] - SEND/JSON_IO
+ * [1] - SEND/DRAIN/JSON_IO
  * [2] - URI
  * [3] - protocol
- * [[4] - [JSON_IO input_pipe]]
- * [[5] - JSON_IO output_pipe]
+ * [[4] - JSON_IO output_pipe]
+ * [[5] - [JSON_IO input_pipe]]
  * 
  * In "SEND" mode, will read stdin, sending this data to the other side as binary.  Closes the socket on EOF.
- * In "JSON_IO" mode, we open an optional input_pipe and required output_pipe.  These don't need to be pipes, but the
+ * In "DRAIN" mode, will listen to the WebSocket, writing all data to the given output_pipe.  Exits on WebSocket
+ * disconnect.
+ * In "JSON_IO" mode, we open a given output_pipe and input_pipe.  These don't need to be pipes, but the
  * design intends for this to be the case since we will always open-read/write-close for each message:
  * -open input pipe, read all bytes to EOF:
  *   -if starts with "-", interpret as a command:
@@ -43,7 +45,7 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
  *   -else, send this as a String message
  *   -loop
  * -wait for message, open output pipe, write message, close, loop, wait for ack, exit when socket closes
- * NOTE:  If the input pipe is provided, a zero-byte message will ALWAYS be required in order to close down correctly.
+ * NOTE:  In JSON_IO mode, a zero-byte message will ALWAYS be required in order to close down correctly.
  * Returns 0 on success, 1 on arg failure, 2 on WebSocket error.
  */
 public class WebSocketUtility implements WebSocketListener
@@ -63,7 +65,7 @@ public class WebSocketUtility implements WebSocketListener
 	private boolean _isShuttingDown;
 
 
-	public WebSocketUtility(File inputPipe, File outputPipe)
+	public WebSocketUtility(File outputPipe, File inputPipe)
 	{
 		_outputPipe = outputPipe;
 		_client = new WebSocketClient();
@@ -276,30 +278,30 @@ public class WebSocketUtility implements WebSocketListener
 			String uri = args[2];
 			String protocol = args[3];
 			boolean sendMode = false;
-			File inputPipe = null;
 			File outputPipe = null;
+			File inputPipe = null;
 			if (("SEND".equals(mode)) && (4 == args.length))
 			{
 				sendMode = true;
 			}
-			else if (("JSON_IO".equals(mode)) && ((5 == args.length) || (6 == args.length)))
+			else if (("DRAIN".equals(mode)) && (5 == args.length))
 			{
-				int outputPipeIndex = 4;
-				if (6 == args.length)
-				{
-					inputPipe = new File(args[4]);
-					Assert.assertTrue(inputPipe.exists());
-					outputPipeIndex += 1;
-				}
-				outputPipe = new File(args[outputPipeIndex]);
+				outputPipe = new File(args[4]);
 				Assert.assertTrue(outputPipe.exists());
+			}
+			else if (("JSON_IO".equals(mode)) && (6 == args.length))
+			{
+				outputPipe = new File(args[4]);
+				Assert.assertTrue(outputPipe.exists());
+				inputPipe = new File(args[5]);
+				Assert.assertTrue(inputPipe.exists());
 			}
 			else
 			{
 				_usageExit();
 			}
 			
-			WebSocketUtility utility = new WebSocketUtility(inputPipe, outputPipe);
+			WebSocketUtility utility = new WebSocketUtility(outputPipe, inputPipe);
 			utility.connect(uri, xsrf, protocol);
 			utility.waitForConnection();
 			

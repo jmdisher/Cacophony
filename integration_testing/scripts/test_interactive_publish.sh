@@ -74,10 +74,10 @@ echo "Now that we have verified that the server is up, start listening to status
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
 mkfifo "$STATUS_INPUT.1"
 mkfifo "$STATUS_OUTPUT.1"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_INPUT.1" "$STATUS_OUTPUT.1" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.1" "$STATUS_INPUT.1" &
 STATUS_PID1=$!
 touch "$STATUS_OUTPUT.2"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
 STATUS_PID2=$!
 # Wait for connect.
 cat "$STATUS_OUTPUT.1" > /dev/null
@@ -106,7 +106,7 @@ requireSubstring "$PUBLIC_KEY" "z"
 echo "Attach the followee post listener..."
 mkfifo "$ENTRIES_INPUT"
 mkfifo "$ENTRIES_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_INPUT" "$ENTRIES_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_OUTPUT" "$ENTRIES_INPUT" &
 ENTRIES_PID=$!
 cat "$ENTRIES_OUTPUT" > /dev/null
 
@@ -143,7 +143,7 @@ mkfifo "$FAIL_PROCESS_FIFO"
 rm -f "$CANCEL_PROCESS_INPUT"
 mkfifo "$CANCEL_PROCESS_INPUT"
 # Note that the value of FAIL_PROCESS_FIFO is hard-coded in this process:  "%2Ftmp%2Ffail_fifo"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "$CANCEL_PROCESS_INPUT" "/dev/null" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "/dev/null" "$CANCEL_PROCESS_INPUT" &
 FAIL_PID=$!
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
@@ -165,7 +165,7 @@ fi
 echo "Do the re-open..."
 mkfifo "$EXISTING_INPUT"
 mkfifo "$EXISTING_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_INPUT" "$EXISTING_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_OUTPUT" "$EXISTING_INPUT" &
 FAIL_PID=$!
 # Wait for connect.
 cat "$EXISTING_OUTPUT" > /dev/null
@@ -202,7 +202,7 @@ requireSubstring "$DRAFT" ",\"originalVideo\":{\"mime\":\"video/webm\",\"height\
 echo "Verify that we can make sense of the error when the command isn't found (the default is ffmpeg, which not everyone has)..."
 mkfifo "$PROCESS_INPUT"
 mkfifo "$PROCESS_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/bogusProgramName" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/bogusProgramName" "event_api" "$PROCESS_OUTPUT" "$PROCESS_INPUT" &
 SAMPLE_PID=$!
 # Wait for connect and then wait for disconnect - that is what happens on the error (there will be no events).
 cat "$PROCESS_OUTPUT" > /dev/null
@@ -213,7 +213,7 @@ rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
 echo "Process the uploaded video..."
 mkfifo "$PROCESS_INPUT"
 mkfifo "$PROCESS_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_INPUT" "$PROCESS_OUTPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_OUTPUT" "$PROCESS_INPUT" &
 SAMPLE_PID=$!
 # Wait for connect.
 cat "$PROCESS_OUTPUT" > /dev/null
