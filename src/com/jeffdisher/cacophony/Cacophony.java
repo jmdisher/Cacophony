@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony;
 
 import java.io.IOException;
+import java.io.PrintStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -152,6 +153,12 @@ public class Cacophony {
 				}
 				dataDirectoryWrapper.close();
 			}
+			else if ((1 == args.length) && "--help".equals(args[0]))
+			{
+				// We handle "--help" as a special-case where we provide more than basic usage data but don't want to do the normal Cacophony start-up.
+				_commonUsage(System.out);
+				CommandParser.printHelp(System.out);
+			}
 			else
 			{
 				errorStart();
@@ -165,10 +172,9 @@ public class Cacophony {
 
 	private static void errorStart()
 	{
-		System.err.println("Cacophony release " + Version.TAG + " (build hash: " + Version.HASH + ")");
-		System.err.println("Usage:  Cacophony <command>");
-		System.err.println("\tStorage directory defaults to ~/.cacophony unless overridden with CACOPHONY_STORAGE env var");
+		_commonUsage(System.err);
 		CommandParser.printUsage(System.err);
+		System.err.println("More detailed usage can be seen with --help");
 		System.exit(EXIT_STATIC_ERROR);
 	}
 
@@ -220,5 +226,12 @@ public class Cacophony {
 			didPublish = true;
 		}
 		return didPublish;
+	}
+
+	private static void _commonUsage(PrintStream stream)
+	{
+		stream.println("Cacophony release " + Version.TAG + " (build hash: " + Version.HASH + ")");
+		stream.println("Usage:  Cacophony <command>");
+		stream.println("\tStorage directory defaults to ~/.cacophony unless overridden with CACOPHONY_STORAGE env var");
 	}
 }
