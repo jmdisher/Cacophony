@@ -25,7 +25,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.checkUnknownUser = function()
 	{
 		$scope.inProgress = true;
-		REST.GET("/unknownUser/" + $scope.unknownUserKey)
+		REST.GET("/server/unknownUser/" + $scope.unknownUserKey)
 			.then((response) => {
 				$scope.inProgress = false;
 				$scope.$apply();
@@ -46,7 +46,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.startRecommending = function(publicKey)
 	{
 		// We will send the request and then treat this like a new recommended key was loaded, on success.
-		REST.POST("/recommend/" + publicKey)
+		REST.POST("/home/recommend/add/" + publicKey)
 			.then((response) => {
 				if (response.ok)
 				{
@@ -124,7 +124,7 @@ function recommendedUsersLoaded($scope, recommended)
 	$scope.stopRecommending = function(user)
 	{
 		// When the delete returns, remove them from the list.
-		REST.DELETE("/recommend/" + user.publicKey)
+		REST.DELETE("/home/recommend/remove/" + user.publicKey)
 			.then((response) => {
 				if (response.ok)
 				{

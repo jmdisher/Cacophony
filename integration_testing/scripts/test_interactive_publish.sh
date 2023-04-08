@@ -69,30 +69,31 @@ INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -
 requireSubstring "$INDEX" "Cacophony - Static Index"
 
 echo "Requesting creation of XSRF token..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/cookie
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/server/cookie
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
 mkfifo "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/status" "event_api" "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear" &
 STATUS_PID1=$!
 touch "$WS_STATUS2.out"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$WS_STATUS2.out" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/server/events/status" "event_api" "$WS_STATUS2.out" &
 STATUS_PID2=$!
 # Wait for connect.
 cat "$WS_STATUS1.out" > /dev/null
 
 echo "Get the default video config..."
-VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/videoConfig)
+VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/server/videoConfig)
 requireSubstring "$VIDEO_CONFIG" "ffmpeg"
 
 echo "Get the empty list of drafts..."
-DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+echo "CALLING curl --cookie $COOKIES1 --cookie-jar $COOKIES1 --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all"
+DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all)
 requireSubstring "$DRAFTS" "[]"
 
 echo "Verify that even fetching the drafts requires the XSRF token..."
-curl --fail --no-progress-meter -XGET http://127.0.0.1:8000/drafts >& /dev/null
+curl --fail --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all >& /dev/null
 if [ "22" != "$?" ];
 then
 	echo "Expected failure"
@@ -100,18 +101,18 @@ then
 fi
 
 echo "Check that we can read our public key"
-PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/publicKey")
+PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/home/publicKey")
 # (we only know that the key starts with "z".
 requireSubstring "$PUBLIC_KEY" "z"
 
 echo "Attach the followee post listener..."
 mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
 ENTRIES_PID=$!
 cat "$WS_ENTRIES.out" > /dev/null
 
 echo "Create a new draft..."
-CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new)
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 ID=$(echo $ID_PARSE)
@@ -122,7 +123,7 @@ DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -
 requireSubstring "$DRAFT" "\"title\":\"New Draft - $ID\""
 
 echo "Verify that we can see the draft in the list..."
-DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all)
 requireSubstring "$DRAFTS" "\"title\":\"New Draft - $ID\""
 
 echo "Update the title, description, then thumbnail..."
@@ -135,14 +136,14 @@ DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -
 requireSubstring "$DRAFT" "\"thumbnail\":{\"mime\":\"image/jpeg\",\"height\":5,\"width\":6,\"byteSize\":15}"
 
 echo "Upload the video for the draft..."
-echo "aXbXcXdXe" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveVideo/$ID/1/2/webm" video
+echo "aXbXcXdXe" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/originalVideo/upload/$ID/1/2/webm" video
 
 echo "Verify that we can cancel a video processing operation..."
 rm -f "$FAIL_PROCESS_FIFO"
 mkfifo "$FAIL_PROCESS_FIFO"
 mkfifo "$WS_PROCESSING1.out" "$WS_PROCESSING1.in" "$WS_PROCESSING1.clear"
 # Note that the value of FAIL_PROCESS_FIFO is hard-coded in this process:  "%2Ftmp%2Ffail_fifo"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "/dev/null" "$WS_PROCESSING1.in" "$WS_PROCESSING1.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processedVideo/process/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "/dev/null" "$WS_PROCESSING1.in" "$WS_PROCESSING1.clear" &
 FAIL_PID=$!
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
@@ -163,7 +164,7 @@ fi
 # Do the re-open.
 echo "Do the re-open..."
 mkfifo "$WS_EXISTING.out" "$WS_EXISTING.in" "$WS_EXISTING.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$WS_EXISTING.out" "$WS_EXISTING.in" "$WS_EXISTING.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processedVideo/reconnect/$ID" "event_api" "$WS_EXISTING.out" "$WS_EXISTING.in" "$WS_EXISTING.clear" &
 FAIL_PID=$!
 # Wait for connect.
 cat "$WS_EXISTING.out" > /dev/null
@@ -199,7 +200,7 @@ requireSubstring "$DRAFT" ",\"originalVideo\":{\"mime\":\"video/webm\",\"height\
 
 echo "Verify that we can make sense of the error when the command isn't found (the default is ffmpeg, which not everyone has)..."
 mkfifo "$WS_PROCESSING2.out" "$WS_PROCESSING2.in" "$WS_PROCESSING2.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/bogusProgramName" "event_api" "$WS_PROCESSING2.out" "$WS_PROCESSING2.in" "$WS_PROCESSING2.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processedVideo/process/$ID/bogusProgramName" "event_api" "$WS_PROCESSING2.out" "$WS_PROCESSING2.in" "$WS_PROCESSING2.clear" &
 SAMPLE_PID=$!
 # Wait for connect and then wait for disconnect - that is what happens on the error (there will be no events).
 cat "$WS_PROCESSING2.out" > /dev/null
@@ -208,7 +209,7 @@ wait $SAMPLE_PID
 
 echo "Process the uploaded video..."
 mkfifo "$WS_PROCESSING3.out" "$WS_PROCESSING3.in" "$WS_PROCESSING3.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$WS_PROCESSING3.out" "$WS_PROCESSING3.in" "$WS_PROCESSING3.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processedVideo/process/$ID/cut%20-d%20X%20-f%203" "event_api" "$WS_PROCESSING3.out" "$WS_PROCESSING3.in" "$WS_PROCESSING3.clear" &
 SAMPLE_PID=$!
 # Wait for connect.
 cat "$WS_PROCESSING3.out" > /dev/null
@@ -248,7 +249,7 @@ then
 fi
 
 echo "Upload some audio, as well..."
-echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$ID/ogg" audio
+echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/audio/upload/$ID/ogg" audio
 ORIGINAL_AUDIO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/audio/$ID")
 if [ "AUDIO_DATA" != "$ORIGINAL_AUDIO" ];
 then
@@ -280,7 +281,7 @@ requireSubstring "$DRAFT" "\"audio\":null"
 
 echo "Verify that we can delete the draft and see an empty list..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XDELETE http://127.0.0.1:8000/draft/$ID
-DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all)
 requireSubstring "$DRAFTS" "[]"
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 if [ ! -z "$DRAFT" ]; then
@@ -289,7 +290,7 @@ if [ ! -z "$DRAFT" ]; then
 fi
 
 echo "Create a new draft and publish it..."
-CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new)
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
@@ -301,7 +302,7 @@ requireSubstring "$ERROR" "Invalid draft type: \"BOGUS\""
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/VIDEO
 
 echo "Waiting for draft publish..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/wait/publish
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/waitPublish
 
 echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$WS_ENTRIES.out")
@@ -323,33 +324,33 @@ echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 
 echo "Verify that it is not in the list..."
-DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/drafts)
+DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all)
 requireSubstring "$DRAFTS" "[]"
 
 echo "Check the user data for this user"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/userInfo/$PUBLIC_KEY")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
 requireSubstring "$USER_INFO" "\"description\":\"Description forthcoming\""
 
 echo "Check the list of posts for this user"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 # (make sure we at least see an entry in the list - we just don't know what it will be)
 requireSubstring "$POST_LIST" "[\"Qm"
 
 echo "Check the list of recommended keys for this user"
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/recommendedKeys/$PUBLIC_KEY")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/recommendedKeys/$PUBLIC_KEY")
 requireSubstring "$RECOMMENDED_KEYS" "[]"
 
 echo "Read the new post through the REST interface"
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 2)
-POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
+POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
 
 echo "Edit the post and make sure that we see the updates in both sockets and the post list..."
 OLD_POST_ID="$POST_ID"
-POST_ID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Edit%20Title&DESCRIPTION=Has%20Changed" http://127.0.0.1:8000/editPost/$POST_ID)
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+POST_ID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Edit%20Title&DESCRIPTION=Has%20Changed" http://127.0.0.1:8000/home/post/edit/$POST_ID)
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
-POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
+POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" "{\"name\":\"Edit Title\",\"description\":\"Has Changed\",\"publishedSecondsUtc\":"
 SAMPLE=$(cat "$WS_ENTRIES.out")
 echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
@@ -365,16 +366,16 @@ echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
 
 echo "Create an audio post, publish it, and make sure we can see it..."
-CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new)
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
-echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/saveAudio/$PUBLISH_ID/ogg" audio
+echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/audio/upload/$PUBLISH_ID/ogg" audio
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/AUDIO
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 # We want to look for the second post so get field 4:  1 "2" 3 "4" 5
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 4)
-POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
+POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 
 # Check that we see this in the output events.
@@ -396,20 +397,20 @@ if [ "$EVENT_POST_ID" != "$POST_ID" ]; then
 fi
 
 echo "Check the list of followee keys for this user"
-FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followeeKeys")
+FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followees/keys")
 requireSubstring "$FOLLOWEE_KEYS" "[]"
 
 echo "Check that we can read the preferences"
-PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/prefs")
+PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/prefs")
 requireSubstring "$PREFS" "{\"edgeSize\":1280,\"followerCacheBytes\":10000000000,\"republishIntervalMillis\":43200000,\"followeeRefreshMillis\":3600000}"
 
 echo "Check that we can edit the preferences"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "edgeSize=500&followerCacheBytes=2000000000&republishIntervalMillis=70000&followeeRefreshMillis=80000" http://127.0.0.1:8000/prefs
-PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/prefs")
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "edgeSize=500&followerCacheBytes=2000000000&republishIntervalMillis=70000&followeeRefreshMillis=80000" http://127.0.0.1:8000/server/prefs
+PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/prefs")
 requireSubstring "$PREFS" "{\"edgeSize\":500,\"followerCacheBytes\":2000000000,\"republishIntervalMillis\":70000,\"followeeRefreshMillis\":80000}"
 
 echo "Check that we can read the version"
-VERSION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/version")
+VERSION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/version")
 requireSubstring "$VERSION" "\"version\""
 
 echo "Verify that we can load the status page..."
@@ -417,7 +418,7 @@ STATUS_PAGE=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
 echo "Test that we can request another republish..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/republish"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/home/republish"
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
@@ -426,18 +427,18 @@ echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 
 echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 # Extract fields 2 and 4:  1 "2" 3 "4" 5
 POST_TO_DELETE=$(echo "$POST_LIST" | cut -d "\"" -f 2)
 POST_TO_KEEP=$(echo "$POST_LIST" | cut -d "\"" -f 4)
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/post/$POST_TO_DELETE"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/home/post/delete/$POST_TO_DELETE"
 checkPreviousCommand "DELETE post"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/post/$POST_TO_DELETE" >& /dev/null
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/home/post/delete/$POST_TO_DELETE" >& /dev/null
 # 400 bad request.
 if [ $? != 22 ]; then
 	exit 1
 fi
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP\"]"
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
@@ -445,9 +446,9 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Pu
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_KEEP" >& /dev/null
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP" >& /dev/null
 checkPreviousCommand "read post"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_DELETE" >& /dev/null
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE" >& /dev/null
 # 404 not found.
 if [ $? != 22 ]; then
 	exit 1
@@ -462,7 +463,7 @@ requireSubstring "$JSTACK" "Background Operations"
 requireSubstring "$JSTACK" "Scheduler thread"
 
 echo "Stop the server and wait for it to exit..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/stop"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/server/stop"
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"

@@ -167,84 +167,72 @@ public class InteractiveServer
 		RestServer server = new RestServer(interfaceToBind, staticResource);
 		ValidatedEntryPoints validated = new ValidatedEntryPoints(server, xsrf);
 		
-		// Install the entry-points.
-		server.addPostRawHandler("/cookie", 0, new POST_Raw_Cookie(xsrf));
-		validated.addPostRawHandler("/stop", 0, new POST_Raw_Stop(stopLatch));
-		validated.addPostRawHandler("/republish", 0, new POST_Raw_Republish(serverContext, background));
-		validated.addGetHandler("/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
+		// Entry-points for server-global.
+		server.addPostRawHandler("/server/cookie", 0, new POST_Raw_Cookie(xsrf));
+		validated.addGetHandler("/server/version", 0, new GET_Version());
+		validated.addPostRawHandler("/server/stop", 0, new POST_Raw_Stop(stopLatch));
+		validated.addGetHandler("/server/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
+		validated.addGetHandler("/server/prefs", 0, new GET_Prefs(serverContext));
+		validated.addPostFormHandler("/server/prefs", 0, new POST_Prefs(serverContext, background));
+		validated.addWebSocketFactory("/server/events/status", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
+		validated.addWebSocketFactory("/server/events/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
+		validated.addWebSocketFactory("/server/events/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
+		validated.addGetHandler("/server/postHashes", 1, new GET_PostHashes(serverContext));
+		validated.addGetHandler("/server/recommendedKeys", 1, new GET_RecommendedKeys(serverContext));
+		validated.addGetHandler("/server/postStruct", 1, new GET_PostStruct(serverContext));
+		validated.addGetHandler("/server/unknownUser", 1, new GET_UnknownUserInfo(serverContext));
+		validated.addGetHandler("/server/userInfo", 1, new GET_UserInfo(serverContext));
 		
-		validated.addDeleteHandler("/post", 1, new DELETE_Post(serverContext, background));
-		validated.addGetHandler("/drafts", 0, new GET_Drafts(manager));
-		validated.addPostRawHandler("/createDraft", 0, new POST_Raw_CreateDraft(serverContext, manager));
+		// Home user operations.
+		validated.addPostRawHandler("/home/republish", 0, new POST_Raw_Republish(serverContext, background));
+		validated.addPostFormHandler("/home/post/edit", 1, new POST_Form_EditPost(serverContext, background));
+		validated.addDeleteHandler("/home/post/delete", 1, new DELETE_Post(serverContext, background));
+		validated.addPostRawHandler("/home/recommend/add", 1, new POST_Raw_AddRecommendation(serverContext, background));
+		validated.addDeleteHandler("/home/recommend/remove", 1, new DELETE_RemoveRecommendation(serverContext, background));
+		validated.addPostFormHandler("/home/userInfo/info", 0, new POST_Form_UserInfo(serverContext, background));
+		validated.addPostRawHandler("/home/userInfo/image", 0, new POST_Raw_UserInfo(serverContext, background));
+		validated.addGetHandler("/home/publicKey", 0, new GET_PublicKey(serverContext));
+		
+		// Draft operations.
+		validated.addGetHandler("/allDrafts/all", 0, new GET_Drafts(manager));
+		validated.addPostRawHandler("/allDrafts/new", 0, new POST_Raw_CreateDraft(serverContext, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
 		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(serverContext, background, manager));
-		validated.addPostRawHandler("/wait/publish", 0, new POST_Raw_WaitPublish(serverContext, background));
-		
+		validated.addPostRawHandler("/draft/waitPublish", 0, new POST_Raw_WaitPublish(serverContext, background));
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
 		validated.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(manager));
 		validated.addDeleteHandler("/draft/thumb", 1, new DELETE_DraftThumb(manager));
-		
 		validated.addGetHandler("/draft/originalVideo", 1, new GET_DraftLargeStream(manager
 				, (IDraftWrapper wrapper) -> wrapper.readOriginalVideo()
 				, (Draft draft) -> draft.originalVideo().mime()
 				, (Draft draft) -> draft.originalVideo().byteSize()
 		));
+		validated.addWebSocketFactory("/draft/originalVideo/upload", 4, "video", new WS_DraftSaveVideo(manager));
+		validated.addDeleteHandler("/draft/originalVideo", 1, new DELETE_DraftOriginalVideo(manager));
 		validated.addGetHandler("/draft/processedVideo", 1, new GET_DraftLargeStream(manager
 				, (IDraftWrapper wrapper) -> wrapper.readProcessedVideo()
 				, (Draft draft) -> draft.processedVideo().mime()
 				, (Draft draft) -> draft.processedVideo().byteSize()
 		));
+		validated.addWebSocketFactory("/draft/processedVideo/process", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(serverContext, videoProcessContainer, forcedCommand));
+		validated.addWebSocketFactory("/draft/processedVideo/reconnect", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(videoProcessContainer));
+		validated.addDeleteHandler("/draft/processedVideo", 1, new DELETE_DraftProcessedVideo(manager));
 		validated.addGetHandler("/draft/audio", 1, new GET_DraftLargeStream(manager
 				, (IDraftWrapper wrapper) -> wrapper.readAudio()
 				, (Draft draft) -> draft.audio().mime()
 				, (Draft draft) -> draft.audio().byteSize()
 		));
-		
-		validated.addDeleteHandler("/draft/originalVideo", 1, new DELETE_DraftOriginalVideo(manager));
-		validated.addDeleteHandler("/draft/processedVideo", 1, new DELETE_DraftProcessedVideo(manager));
+		validated.addWebSocketFactory("/draft/audio/upload", 2, "audio", new WS_DraftSaveAudio(manager));
 		validated.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(manager));
 		
-		validated.addWebSocketFactory("/draft/saveVideo", 4, "video", new WS_DraftSaveVideo(manager));
-		validated.addWebSocketFactory("/draft/processVideo", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(serverContext, videoProcessContainer, forcedCommand));
-		validated.addWebSocketFactory("/draft/existingVideo", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(videoProcessContainer));
-		validated.addWebSocketFactory("/draft/saveAudio", 2, "audio", new WS_DraftSaveAudio(manager));
-		
-		// We use a web socket for listening to updates of background process state.
-		validated.addWebSocketFactory("/backgroundStatus", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
-		validated.addWebSocketFactory("/followee/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
-		validated.addWebSocketFactory("/user/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
-		validated.addWebSocketFactory("/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
-		
-		// Prefs.
-		validated.addGetHandler("/prefs", 0, new GET_Prefs(serverContext));
-		validated.addPostFormHandler("/prefs", 0, new POST_Prefs(serverContext, background));
-		
-		// General data updates.
-		validated.addPostRawHandler("/followees", 1, new POST_Raw_AddFollowee(serverContext, background));
-		validated.addDeleteHandler("/followees", 1, new DELETE_RemoveFollowee(serverContext, background));
-		validated.addPostRawHandler("/recommend", 1, new POST_Raw_AddRecommendation(serverContext, background));
-		validated.addDeleteHandler("/recommend", 1, new DELETE_RemoveRecommendation(serverContext, background));
-		validated.addPostFormHandler("/userInfo/info", 0, new POST_Form_UserInfo(serverContext, background));
-		validated.addPostRawHandler("/userInfo/image", 0, new POST_Raw_UserInfo(serverContext, background));
-		validated.addPostFormHandler("/editPost", 1, new POST_Form_EditPost(serverContext, background));
-		
-		// Entry-points related to followee state changes.
+		// Followee operations.
+		validated.addGetHandler("/followees/keys", 0, new GET_FolloweeKeys(serverContext));
+		validated.addPostRawHandler("/followees/add", 1, new POST_Raw_AddFollowee(serverContext, background));
+		validated.addDeleteHandler("/followees/remove", 1, new DELETE_RemoveFollowee(serverContext, background));
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
-		
-		// General REST interface for read-only queries originally generated by the "--htmlOutput" mode.
-		validated.addGetHandler("/publicKey", 0, new GET_PublicKey(serverContext));
-		validated.addGetHandler("/userInfo", 1, new GET_UserInfo(serverContext));
-		validated.addGetHandler("/postHashes", 1, new GET_PostHashes(serverContext));
-		validated.addGetHandler("/recommendedKeys", 1, new GET_RecommendedKeys(serverContext));
-		validated.addGetHandler("/postStruct", 1, new GET_PostStruct(serverContext));
-		validated.addGetHandler("/followeeKeys", 0, new GET_FolloweeKeys(serverContext));
-		validated.addGetHandler("/version", 0, new GET_Version());
-		
-		// Special interface for requesting information about other users.
-		// Note that we don't pin any of the information through this interface so it may fail or be slow.
-		validated.addGetHandler("/unknownUser", 1, new GET_UnknownUserInfo(serverContext));
+		validated.addWebSocketFactory("/followee/events/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
 		
 		// Start the server.
 		ILogger serverLog = logger.logStart("Starting server...");

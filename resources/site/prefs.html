@@ -39,7 +39,7 @@ function xsrfLoaded($scope)
 			"republishIntervalMillis": ($scope.republishIntervalMinutes * 1000 * 60),
 			"followeeRefreshMillis": ($scope.followeeRefreshMinutes * 1000 * 60),
 		};
-		return REST.POST_asForm("/prefs", variables);
+		return REST.POST_asForm("/server/prefs", variables);
 	}
 }
 </script>

@@ -4,7 +4,7 @@
 function API_loadPublicKey()
 {
 	return new Promise(resolve => {
-		REST.GET("/publicKey")
+		REST.GET("/home/publicKey")
 			.then(result => result.text())
 			.then(text => resolve(text));
 	});
@@ -13,7 +13,7 @@ function API_loadPublicKey()
 function API_getInfoForUser(publicKey)
 {
 	return new Promise(resolve => {
-		REST.GET("/userInfo/" + publicKey)
+		REST.GET("/server/userInfo/" + publicKey)
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -22,7 +22,7 @@ function API_getInfoForUser(publicKey)
 function API_getAllPostsForUser(publicKey)
 {
 	return new Promise(resolve => {
-		REST.GET("/postHashes/" + publicKey)
+		REST.GET("/server/postHashes/" + publicKey)
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -31,7 +31,7 @@ function API_getAllPostsForUser(publicKey)
 function API_getRecommendedUsers(publicKey)
 {
 	return new Promise(resolve => {
-		REST.GET("/recommendedKeys/" + publicKey)
+		REST.GET("/server/recommendedKeys/" + publicKey)
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -40,7 +40,7 @@ function API_getRecommendedUsers(publicKey)
 function API_getPost(hash)
 {
 	return new Promise(resolve => {
-		REST.GET("/postStruct/" + hash)
+		REST.GET("/server/postStruct/" + hash)
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -49,7 +49,7 @@ function API_getPost(hash)
 function API_getFollowedKeys()
 {
 	return new Promise(resolve => {
-		REST.GET("/followeeKeys")
+		REST.GET("/followees/keys")
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -58,7 +58,7 @@ function API_getFollowedKeys()
 function API_getPrefs()
 {
 	return new Promise(resolve => {
-		REST.GET("/prefs")
+		REST.GET("/server/prefs")
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -67,7 +67,7 @@ function API_getPrefs()
 function API_getVersion()
 {
 	return new Promise(resolve => {
-		REST.GET("/version")
+		REST.GET("/server/version")
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});
@@ -77,7 +77,7 @@ function API_getVersion()
 function API_getXsrf()
 {
 	return new Promise(resolve => {
-		REST.POST("/cookie")
+		REST.POST("/server/cookie")
 			.then(resolve);
 	});
 }

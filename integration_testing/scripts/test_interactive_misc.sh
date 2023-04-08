@@ -65,24 +65,24 @@ SERVER_PID=$!
 waitForCacophonyStart 8001
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8001/")
 requireSubstring "$INDEX" "Cacophony - Static Index"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/cookie
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Attach the status listener..."
 mkfifo "$WS_STATUS.out" "$WS_STATUS.in" "$WS_STATUS.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/backgroundStatus" "event_api" "$WS_STATUS.out" "$WS_STATUS.in" "$WS_STATUS.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/server/events/status" "event_api" "$WS_STATUS.out" "$WS_STATUS.in" "$WS_STATUS.clear" &
 STATUS_PID=$!
 # Wait for connect so that we know we will see the refresh.
 cat "$WS_STATUS.out" > /dev/null
 
 echo "Attach the followee refresh WebSocket..."
 mkfifo "$WS_REFRESH.out" "$WS_REFRESH.in" "$WS_REFRESH.clear"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/refreshTime" "event_api" "$WS_REFRESH.out" "$WS_REFRESH.in" "$WS_REFRESH.clear" &
+java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/followee/events/refreshTime" "event_api" "$WS_REFRESH.out" "$WS_REFRESH.in" "$WS_REFRESH.clear" &
 FOLLOWEE_REFRESH_PID=$!
 cat "$WS_REFRESH.out" > /dev/null
 
 echo "Make user1 follow user2 and verify an empty stream..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/add/$PUBLIC2"
 # Verify that we see the new followee reference created in the follow refresh time socket.
 SAMPLE=$(cat "$WS_REFRESH.out")
 echo -n "-ACK" > "$WS_REFRESH.in" && cat "$WS_REFRESH.clear" > /dev/null
@@ -99,17 +99,17 @@ SAMPLE=$(cat "$WS_REFRESH.out")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
 echo -n "-ACK" > "$WS_REFRESH.in" && cat "$WS_REFRESH.clear" > /dev/null
 # Verify that the post list is empty.
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 
 echo "Verify that we can read the followee data from the cache..."
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/userInfo/$PUBLIC2")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC2")
 # We always know the default state of the info so just verify it.
 requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null}"
 
 echo "Attach the followee post listener..."
 mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/user/entries/$PUBLIC2" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/server/events/entries/$PUBLIC2" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
 ENTRIES_PID=$!
 cat "$WS_ENTRIES.out" > /dev/null
 
@@ -121,7 +121,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh 
 SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[]"
 # We should also see this update the refresh time.
 SAMPLE=$(cat "$WS_REFRESH.out")
@@ -140,7 +140,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\":\"Refresh 
 SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\"Qm"
 
 echo "Verify that we see the refresh in the followee socket..."
@@ -164,10 +164,10 @@ echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null,\"isNewest\":false}"
 
 echo "Test the add/remove of the followee..."
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8001/followees/$PUBLIC2"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8001/followees/remove/$PUBLIC2"
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
 if [ "" != "$POST_LIST" ];
 then
 	exit 1
@@ -187,7 +187,7 @@ SAMPLE=$(cat "$WS_REFRESH.out")
 echo -n "-ACK" > "$WS_REFRESH.in" && cat "$WS_REFRESH.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$PUBLIC2\",\"value\":null,\"isNewest\":false}"
 
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/followees/add/$PUBLIC2"
 # Note that we need to wait for the refresh to finish, since it is now asynchronous.
 SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
@@ -204,26 +204,26 @@ SAMPLE=$(cat "$WS_REFRESH.out")
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
 echo -n "-ACK" > "$WS_REFRESH.in" && cat "$WS_REFRESH.clear" > /dev/null
 
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/postHashes/$PUBLIC2")
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
 requireSubstring "$POST_LIST" "[\""
 
 echo "Check asking for information about users, including invalid keys..."
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/unknownUser/BOGUS")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/BOGUS")
 requireSubstring "$USER_INFO" "Invalid key: BOGUS"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/unknownUser/$PUBLIC2")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC2")
 requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null}"
 
 echo "Check the manipulation of the recommended users"
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/recommendedKeys/$PUBLIC1")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[]"
 # Add the other user.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/recommend/add/$PUBLIC2"
 checkPreviousCommand "add to recommended"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/recommend/add/$PUBLIC2"
 if [ $? != 22 ]; then
 	exit 1
 fi
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/recommendedKeys/$PUBLIC1")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[\"$PUBLIC2\"]"
 # Wait for publish.
 SAMPLE=$(cat "$WS_STATUS.out")
@@ -233,13 +233,13 @@ SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":6,\"value\""
 # Remove.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/recommend/remove/$PUBLIC2"
 checkPreviousCommand "remove from recommended"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/recommend/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/recommend/remove/$PUBLIC2"
 if [ $? != 22 ]; then
 	exit 1
 fi
-RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/recommendedKeys/$PUBLIC1")
+RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[]"
 # Wait for publish.
 SAMPLE=$(cat "$WS_STATUS.out")
@@ -250,9 +250,9 @@ echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":7,\"value\""
 
 echo "Update description..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8001/userInfo/info"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8001/home/userInfo/info"
 checkPreviousCommand "update description info"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/userInfo/$PUBLIC1")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC1")
 requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":\"http://example.com\"}"
 # Wait for publish.
 SAMPLE=$(cat "$WS_STATUS.out")
@@ -262,10 +262,10 @@ SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":8,\"value\""
 
-NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8001/userInfo/image")
+NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8001/home/userInfo/image")
 checkPreviousCommand "update description image"
 requireSubstring "$NEW_URL" "http://127.0.0.1:8080/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/userInfo/$PUBLIC1")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC1")
 requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd\",\"email\":null,\"website\":\"http://example.com\"}"
 # Wait for publish.
 SAMPLE=$(cat "$WS_STATUS.out")
@@ -277,7 +277,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":9,\"value\""
 
 
 echo "Stop the server and wait for it to exit..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/stop"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
 wait $SERVER_PID
 echo -n "-WAIT" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 echo -n "-WAIT" > "$WS_REFRESH.in" && cat "$WS_REFRESH.clear" > /dev/null

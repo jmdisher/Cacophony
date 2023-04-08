@@ -36,7 +36,7 @@ function stopCamera(previewElement, videoState, audioState)
 
 function openVideoUploadWebSocket(draftId, height, width, videoType, onOpen, onClose)
 {
-	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveVideo/" + draftId + "/" + height + "/" + width + "/" + videoType, "video");
+	let ws = new WebSocket("ws://127.0.0.1:8000/draft/originalVideo/upload/" + draftId + "/" + height + "/" + width + "/" + videoType, "video");
 	ws.onopen = onOpen;
 	ws.onclose = onClose;
 	ws.onerror = function(event)
@@ -49,7 +49,7 @@ function openVideoUploadWebSocket(draftId, height, width, videoType, onOpen, onC
 
 function openAudioUploadWebSocket(draftId, audioType, onOpen, onClose)
 {
-	let ws = new WebSocket("ws://127.0.0.1:8000/draft/saveAudio/" + draftId + "/" + audioType, "audio");
+	let ws = new WebSocket("ws://127.0.0.1:8000/draft/audio/upload/" + draftId + "/" + audioType, "audio");
 	ws.onopen = onOpen;
 	ws.onclose = onClose;
 	ws.onerror = function(event)
@@ -399,7 +399,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.createNewDraft = function()
 	{
-		REST.POST("/createDraft")
+		REST.POST("/allDrafts/new")
 			.then(data => data.json())
 			.then(draftObject => {
 				populateSyntheticType(draftObject);
@@ -797,13 +797,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
-		REST.GET("/drafts")
+		REST.GET("/allDrafts/all")
 			.then(data => data.json())
 			.then(json => {
 				$scope.drafts = json;
 				$scope.$apply();
 			});
-		REST.GET("/videoConfig")
+		REST.GET("/server/videoConfig")
 			.then(data => data.json())
 			.then(json => {
 				$scope.videoConfig = json;

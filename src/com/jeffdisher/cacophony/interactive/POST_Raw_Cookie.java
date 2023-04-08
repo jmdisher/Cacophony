@@ -26,6 +26,7 @@ public class POST_Raw_Cookie implements IPostRawHandler
 		if ("127.0.0.1".equals(request.getRemoteAddr()))
 		{
 			Cookie cookie = new Cookie("XSRF", _xsrf);
+			cookie.setPath("/");
 			cookie.setHttpOnly(true);
 			cookie.setComment(HttpCookie.SAME_SITE_STRICT_COMMENT);
 			response.addCookie(cookie);

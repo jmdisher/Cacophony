@@ -31,7 +31,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.checkUnknownUser = function()
 	{
 		$scope.inProgress = true;
-		REST.GET("/unknownUser/" + $scope.unknownUserKey)
+		REST.GET("/server/unknownUser/" + $scope.unknownUserKey)
 			.then((response) => {
 				$scope.inProgress = false;
 				$scope.$apply();
@@ -53,7 +53,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		// We will send the request and wait for the create to come in from the WebSocket.
 		$scope.inProgress = true;
-		REST.POST("/followees/" + publicKey)
+		REST.POST("/followees/add/" + publicKey)
 			.then((response) => {
 				$scope.inProgress = false;
 				$scope.unknownUser = null;
@@ -156,7 +156,7 @@ function beginPopulating($scope)
 	$scope.stopFollowing = function(user)
 	{
 		// We will handle this like the refresh case and wait for the delete to come in on the WebSocket.
-		REST.DELETE("/followees/" + user.publicKey);
+		REST.DELETE("/followees/remove/" + user.publicKey);
 		user.isRefreshing = true;
 	}
 

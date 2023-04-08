@@ -16,13 +16,13 @@
 <script type="text/javascript">
 function stopServer(onComplete)
 {
-	REST.POST("/stop")
+	REST.POST("/server/stop")
 		.then(data => data.text())
 		.then(onComplete);
 }
 function republish(onComplete)
 {
-	REST.POST("/republish")
+	REST.POST("/home/republish")
 		.then(data => data.text())
 		.then(onComplete);
 }

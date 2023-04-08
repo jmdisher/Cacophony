@@ -67,7 +67,7 @@ function postWasLoaded($scope, hashArg, elt)
 			"DISCUSSION_URL": $scope.data["discussionUrl"],
 		};
 		$scope.inProgress = true;
-		REST.POST_asForm("/editPost/" + hashArg, variables)
+		REST.POST_asForm("/home/post/edit/" + hashArg, variables)
 			.then(response => response.text())
 			.then((elementHash) => {
 				$scope.inProgress = false;
