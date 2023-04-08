@@ -14,16 +14,16 @@ RESOURCES="$2"
 PATH_TO_JAR="$3"
 
 COOKIES1=/tmp/cookies1
-ENTRIES_OUTPUT=/tmp/entries_output
-ENTRIES_INPUT=/tmp/entries_input
-COMBINED_OUTPUT=/tmp/combined_output
-COMBINED_INPUT=/tmp/combined_input
 DRAFTS_DIR=/tmp/drafts
 
+WS_ENTRIES=/tmp/entries
+WS_COMBINED=/tmp/combined
+
 rm -f "$COOKIES1"
-rm -f "$ENTRIES_OUTPUT" "$ENTRIES_INPUT"
-rm -f "$COMBINED_OUTPUT" "$COMBINED_INPUT"
 rm -rf "$DRAFTS_DIR"
+
+rm -f "$WS_ENTRIES".*
+rm -f "$WS_COMBINED".*
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -53,59 +53,57 @@ do
 done
 
 echo "Connect the entries socket..."
-mkfifo "$ENTRIES_INPUT"
-mkfifo "$ENTRIES_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_OUTPUT" "$ENTRIES_INPUT" &
+mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" &
 ENTRIES_PID=$!
-cat "$ENTRIES_OUTPUT" > /dev/null
+cat "$WS_ENTRIES.out" > /dev/null
 
 echo "We expect to see the last 10 (but we can't verify the others _don't_ appear - although the WS util will hang on disconnect if there are unread messages)."
 for N in {12..3}; 
 do
-	SAMPLE=$(cat "$ENTRIES_OUTPUT")
-	echo -n "-ACK" > "$ENTRIES_INPUT"
+	SAMPLE=$(cat "$WS_ENTRIES.out")
+	echo -n "-ACK" > "$WS_ENTRIES.in"
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
 echo "Request more and verify we see the other 2."
-echo -n "COMMAND_SCROLL_BACK" > "$ENTRIES_INPUT"
+echo -n "COMMAND_SCROLL_BACK" > "$WS_ENTRIES.in"
 for N in {2..1}; 
 do
-	SAMPLE=$(cat "$ENTRIES_OUTPUT")
-	echo -n "-ACK" > "$ENTRIES_INPUT"
+	SAMPLE=$(cat "$WS_ENTRIES.out")
+	echo -n "-ACK" > "$WS_ENTRIES.in"
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
 echo "Connect the combined socket and do a similar verification..."
-mkfifo "$COMBINED_INPUT"
-mkfifo "$COMBINED_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$COMBINED_OUTPUT" "$COMBINED_INPUT" &
+mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$WS_COMBINED.out" "$WS_COMBINED.in" &
 COMBINED_PID=$!
-cat "$COMBINED_OUTPUT" > /dev/null
+cat "$WS_COMBINED.out" > /dev/null
 
 # Similarly, we should see the last 10.
 for N in {12..3}; 
 do
-	SAMPLE=$(cat "$COMBINED_OUTPUT")
-	echo -n "-ACK" > "$COMBINED_INPUT"
+	SAMPLE=$(cat "$WS_COMBINED.out")
+	echo -n "-ACK" > "$WS_COMBINED.in"
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
 # Scroll back and see the others (they will all be present since we haven't restarted - the combined per-user limit only applies to start-up).
-echo -n "COMMAND_SCROLL_BACK" > "$COMBINED_INPUT"
+echo -n "COMMAND_SCROLL_BACK" > "$WS_COMBINED.in"
 for N in {2..1}; 
 do
-	SAMPLE=$(cat "$COMBINED_OUTPUT")
-	echo -n "-ACK" > "$COMBINED_INPUT"
+	SAMPLE=$(cat "$WS_COMBINED.out")
+	echo -n "-ACK" > "$WS_COMBINED.in"
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 # Note that this will also see the fake entry for the "other user" so read that, too.
-SAMPLE=$(cat "$COMBINED_OUTPUT")
-echo -n "-ACK" > "$COMBINED_INPUT"
+SAMPLE=$(cat "$WS_COMBINED.out")
+echo -n "-ACK" > "$WS_COMBINED.in"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
@@ -113,9 +111,9 @@ requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 echo "Shut-down and wait for sockets to close..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/stop"
 wait $SERVER_PID
-echo -n "-WAIT" > "$ENTRIES_INPUT"
+echo -n "-WAIT" > "$WS_ENTRIES.in"
 wait $ENTRIES_PID
-echo -n "-WAIT" > "$COMBINED_INPUT"
+echo -n "-WAIT" > "$WS_COMBINED.in"
 wait $COMBINED_PID
 
 

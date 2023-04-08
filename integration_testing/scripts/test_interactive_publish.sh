@@ -16,25 +16,27 @@ PATH_TO_JAR="$3"
 USER1=/tmp/user1
 USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
-STATUS_OUTPUT=/tmp/status_output
-STATUS_INPUT=/tmp/status_input
 FAIL_PROCESS_FIFO=/tmp/fail_fifo
-CANCEL_PROCESS_INPUT=/tmp/fail_input
-PROCESS_INPUT=/tmp/process_input
-PROCESS_OUTPUT=/tmp/process_output
-EXISTING_INPUT=/tmp/existing_input
-EXISTING_OUTPUT=/tmp/existing_output
-ENTRIES_OUTPUT=/tmp/entries_output
-ENTRIES_INPUT=/tmp/entries_input
+
+WS_STATUS1=/tmp/status1
+WS_STATUS2=/tmp/status2
+WS_ENTRIES=/tmp/entries
+WS_PROCESSING1=/tmp/processing1
+WS_PROCESSING2=/tmp/processing2
+WS_PROCESSING3=/tmp/processing3
+WS_EXISTING=/tmp/existing
 
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
-rm -f "$STATUS_OUTPUT.1" "$STATUS_OUTPUT.2"
-rm -f "$STATUS_INPUT.1"
-rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
-rm -f "$EXISTING_INPUT" "$EXISTING_OUTPUT"
-rm -f "$ENTRIES_INPUT" "$ENTRIES_OUTPUT"
+
+rm -f "$WS_STATUS1".*
+rm -f "$WS_STATUS2".*
+rm -f "$WS_ENTRIES".*
+rm -f "$WS_PROCESSING1".*
+rm -f "$WS_PROCESSING2".*
+rm -f "$WS_PROCESSING3".*
+rm -f "$WS_EXISTING".*
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -72,15 +74,14 @@ XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
-mkfifo "$STATUS_INPUT.1"
-mkfifo "$STATUS_OUTPUT.1"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.1" "$STATUS_INPUT.1" &
+mkfifo "$WS_STATUS1.out" "$WS_STATUS1.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$WS_STATUS1.out" "$WS_STATUS1.in" &
 STATUS_PID1=$!
-touch "$STATUS_OUTPUT.2"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$STATUS_OUTPUT.2" &
+touch "$WS_STATUS2.out"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/backgroundStatus" "event_api" "$WS_STATUS2.out" &
 STATUS_PID2=$!
 # Wait for connect.
-cat "$STATUS_OUTPUT.1" > /dev/null
+cat "$WS_STATUS1.out" > /dev/null
 
 echo "Get the default video config..."
 VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/videoConfig)
@@ -104,11 +105,10 @@ PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-m
 requireSubstring "$PUBLIC_KEY" "z"
 
 echo "Attach the followee post listener..."
-mkfifo "$ENTRIES_INPUT"
-mkfifo "$ENTRIES_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$ENTRIES_OUTPUT" "$ENTRIES_INPUT" &
+mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" &
 ENTRIES_PID=$!
-cat "$ENTRIES_OUTPUT" > /dev/null
+cat "$WS_ENTRIES.out" > /dev/null
 
 echo "Create a new draft..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/createDraft)
@@ -140,10 +140,9 @@ echo "aXbXcXdXe" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.c
 echo "Verify that we can cancel a video processing operation..."
 rm -f "$FAIL_PROCESS_FIFO"
 mkfifo "$FAIL_PROCESS_FIFO"
-rm -f "$CANCEL_PROCESS_INPUT"
-mkfifo "$CANCEL_PROCESS_INPUT"
+mkfifo "$WS_PROCESSING1.out" "$WS_PROCESSING1.in"
 # Note that the value of FAIL_PROCESS_FIFO is hard-coded in this process:  "%2Ftmp%2Ffail_fifo"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "/dev/null" "$CANCEL_PROCESS_INPUT" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cat%20%2Ftmp%2Ffail_fifo" "event_api" "/dev/null" "$WS_PROCESSING1.in" &
 FAIL_PID=$!
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
 if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
@@ -152,7 +151,7 @@ if [ "$FAIL_PROC_COUNT" -ne 1 ]; then
 	exit 1
 fi
 echo "Close the processing channel to cancel it"
-echo -n "-CLOSE" > "$CANCEL_PROCESS_INPUT"
+echo -n "-CLOSE" > "$WS_PROCESSING1.in"
 wait $FAIL_PID
 # We expect that the process is still running.
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
@@ -163,29 +162,28 @@ fi
 
 # Do the re-open.
 echo "Do the re-open..."
-mkfifo "$EXISTING_INPUT"
-mkfifo "$EXISTING_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$EXISTING_OUTPUT" "$EXISTING_INPUT" &
+mkfifo "$WS_EXISTING.out" "$WS_EXISTING.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/existingVideo/$ID" "event_api" "$WS_EXISTING.out" "$WS_EXISTING.in" &
 FAIL_PID=$!
 # Wait for connect.
-cat "$EXISTING_OUTPUT" > /dev/null
+cat "$WS_EXISTING.out" > /dev/null
 
 # We should see the replay of the creation of inputBytes key.
-SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
-echo -n "-ACK" > "$EXISTING_INPUT"
+SINGLE_EVENT=$(cat "$WS_EXISTING.out")
+echo -n "-ACK" > "$WS_EXISTING.in"
 requireSubstring "$SINGLE_EVENT" "{\"event\":\"create\",\"key\":\"inputBytes\",\"value\":"
 # Do the cancel (VideoProcessorCallbackHandler.COMMAND_CANCEL_PROCESSING) and wait for the close.
 echo "Cancel the processing..."
-echo -n "COMMAND_CANCEL_PROCESSING" > "$EXISTING_INPUT"
+echo -n "COMMAND_CANCEL_PROCESSING" > "$WS_EXISTING.in"
 # We should see this force-stop as a delete of that input bytes key followed by a create and delete pair of the output bytes set to -1.
-SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
-echo -n "-ACK" > "$EXISTING_INPUT"
+SINGLE_EVENT=$(cat "$WS_EXISTING.out")
+echo -n "-ACK" > "$WS_EXISTING.in"
 requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null,\"isNewest\":false}"
-SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
-echo -n "-ACK" > "$EXISTING_INPUT"
+SINGLE_EVENT=$(cat "$WS_EXISTING.out")
+echo -n "-ACK" > "$WS_EXISTING.in"
 requireSubstring "$SINGLE_EVENT" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":-1,\"isNewest\":true}"
-SINGLE_EVENT=$(cat "$EXISTING_OUTPUT")
-echo -n "-ACK" > "$EXISTING_INPUT"
+SINGLE_EVENT=$(cat "$WS_EXISTING.out")
+echo -n "-ACK" > "$WS_EXISTING.in"
 requireSubstring "$SINGLE_EVENT" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null,\"isNewest\":false}"
 # Verify that the process has terminated.
 FAIL_PROC_COUNT=$(ps auxww | grep fail | grep --count fifo)
@@ -193,50 +191,47 @@ if [ "$FAIL_PROC_COUNT" -ne 0 ]; then
 	echo "Stuck processes remaining: $FAIL_PROC_COUNT"
 	exit 1
 fi
-echo -n "-WAIT" > "$EXISTING_INPUT"
+echo -n "-WAIT" > "$WS_EXISTING.in"
 wait $FAIL_PID
 echo "Verify that the draft shows no processed video..."
 DRAFT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/draft/$ID)
 requireSubstring "$DRAFT" ",\"originalVideo\":{\"mime\":\"video/webm\",\"height\":1,\"width\":2,\"byteSize\":10},\"processedVideo\":null,\"audio\":null}"
 
 echo "Verify that we can make sense of the error when the command isn't found (the default is ffmpeg, which not everyone has)..."
-mkfifo "$PROCESS_INPUT"
-mkfifo "$PROCESS_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/bogusProgramName" "event_api" "$PROCESS_OUTPUT" "$PROCESS_INPUT" &
+mkfifo "$WS_PROCESSING2.out" "$WS_PROCESSING2.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/bogusProgramName" "event_api" "$WS_PROCESSING2.out" "$WS_PROCESSING2.in" &
 SAMPLE_PID=$!
 # Wait for connect and then wait for disconnect - that is what happens on the error (there will be no events).
-cat "$PROCESS_OUTPUT" > /dev/null
-echo -n "-WAIT" > "$PROCESS_INPUT"
+cat "$WS_PROCESSING2.out" > /dev/null
+echo -n "-WAIT" > "$WS_PROCESSING2.in"
 wait $SAMPLE_PID
-rm -f "$PROCESS_INPUT" "$PROCESS_OUTPUT"
 
 echo "Process the uploaded video..."
-mkfifo "$PROCESS_INPUT"
-mkfifo "$PROCESS_OUTPUT"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$PROCESS_OUTPUT" "$PROCESS_INPUT" &
+mkfifo "$WS_PROCESSING3.out" "$WS_PROCESSING3.in"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/draft/processVideo/$ID/cut%20-d%20X%20-f%203" "event_api" "$WS_PROCESSING3.out" "$WS_PROCESSING3.in" &
 SAMPLE_PID=$!
 # Wait for connect.
-cat "$PROCESS_OUTPUT" > /dev/null
+cat "$WS_PROCESSING3.out" > /dev/null
 # We expect every message to be an "event" - we need to see the "create", zero or more "update", and then a single "delete".
-SAMPLE=$(cat "$PROCESS_OUTPUT")
-echo -n "-ACK" > "$PROCESS_INPUT"
+SAMPLE=$(cat "$WS_PROCESSING3.out")
+echo -n "-ACK" > "$WS_PROCESSING3.in"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"inputBytes\",\"value\":"
-SAMPLE=$(cat "$PROCESS_OUTPUT")
-echo -n "-ACK" > "$PROCESS_INPUT"
+SAMPLE=$(cat "$WS_PROCESSING3.out")
+echo -n "-ACK" > "$WS_PROCESSING3.in"
 while [ "$SAMPLE" != "{\"event\":\"delete\",\"key\":\"inputBytes\",\"value\":null,\"isNewest\":false}" ]
 do
 	requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"inputBytes\",\"value\":"
-	SAMPLE=$(cat "$PROCESS_OUTPUT")
-	echo -n "-ACK" > "$PROCESS_INPUT"
+	SAMPLE=$(cat "$WS_PROCESSING3.out")
+	echo -n "-ACK" > "$WS_PROCESSING3.in"
 done
 # At the end, we see the final update with processed size (2 bytes - "c\n").
-SAMPLE=$(cat "$PROCESS_OUTPUT")
-echo -n "-ACK" > "$PROCESS_INPUT"
+SAMPLE=$(cat "$WS_PROCESSING3.out")
+echo -n "-ACK" > "$WS_PROCESSING3.in"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"outputBytes\",\"value\":2,\"isNewest\":true}"
-SAMPLE=$(cat "$PROCESS_OUTPUT")
-echo -n "-ACK" > "$PROCESS_INPUT"
+SAMPLE=$(cat "$WS_PROCESSING3.out")
+echo -n "-ACK" > "$WS_PROCESSING3.in"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"outputBytes\",\"value\":null,\"isNewest\":false}"
-echo -n "-WAIT" > "$PROCESS_INPUT"
+echo -n "-WAIT" > "$WS_PROCESSING3.in"
 wait $SAMPLE_PID
 
 ORIGINAL_VIDEO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8000/draft/originalVideo/$ID")
@@ -309,22 +304,22 @@ echo "Waiting for draft publish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/wait/publish
 
 echo "Verify that we see the new entry in the entry socket..."
-SAMPLE=$(cat "$ENTRIES_OUTPUT")
-echo -n "-ACK" > "$ENTRIES_INPUT"
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
 
 # We will verify that this is in the pipe we are reading from the WebSocket (note that we may sometimes see event "1" from the start-up publish, so just skip that one in this case).
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 if [[ "$STATUS_EVENT" =~ "\"event\":\"create\",\"key\":1," ]]; then
-	STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-	echo -n "-ACK" > "$STATUS_INPUT.1"
-	STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-	echo -n "-ACK" > "$STATUS_INPUT.1"
+	STATUS_EVENT=$(cat "$WS_STATUS1.out")
+	echo -n "-ACK" > "$WS_STATUS1.in"
+	STATUS_EVENT=$(cat "$WS_STATUS1.out")
+	echo -n "-ACK" > "$WS_STATUS1.in"
 fi
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 
 echo "Verify that it is not in the list..."
@@ -356,17 +351,17 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postStruct/$POST_ID")
 requireSubstring "$POST_STRUCT" "{\"name\":\"Edit Title\",\"description\":\"Has Changed\",\"publishedSecondsUtc\":"
-SAMPLE=$(cat "$ENTRIES_OUTPUT")
-echo -n "-ACK" > "$ENTRIES_INPUT"
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$OLD_POST_ID\",\"value\":null,\"isNewest\":false}"
-SAMPLE=$(cat "$ENTRIES_OUTPUT")
-echo -n "-ACK" > "$ENTRIES_INPUT"
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$POST_ID\",\"value\":null,\"isNewest\":true}"
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
 
 echo "Create an audio post, publish it, and make sure we can see it..."
@@ -383,16 +378,16 @@ POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 
 # Check that we see this in the output events.
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Verify that we see the new entry in the entry socket..."
-SAMPLE=$(cat "$ENTRIES_OUTPUT")
-echo -n "-ACK" > "$ENTRIES_INPUT"
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in"
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
 # Capture the record CID to verify it against the POST_ID from earlier:  1 "2-event" 3 "4-create" 5 "6-key" 7 "8-CID"
 EVENT_POST_ID=$(echo "$SAMPLE" | cut -d "\"" -f 8)
@@ -423,11 +418,11 @@ requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
 echo "Test that we can request another republish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/republish"
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 
 echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
@@ -444,11 +439,11 @@ if [ $? != 22 ]; then
 fi
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/postHashes/$PUBLIC_KEY")
 requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP\"]"
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$STATUS_OUTPUT.1")
-echo -n "-ACK" > "$STATUS_INPUT.1"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in"
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/postStruct/$POST_TO_KEEP" >& /dev/null
 checkPreviousCommand "read post"
@@ -457,8 +452,8 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -
 if [ $? != 22 ]; then
 	exit 1
 fi
-SAMPLE=$(cat "$ENTRIES_OUTPUT")
-echo -n "-ACK" > "$ENTRIES_INPUT"
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in"
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null,\"isNewest\":false}"
 
 echo "Make sure that the core threads are still running..."
@@ -471,13 +466,13 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"
-echo -n "-WAIT" > "$STATUS_INPUT.1"
-echo -n "-WAIT" > "$ENTRIES_INPUT"
+echo -n "-WAIT" > "$WS_STATUS1.in"
+echo -n "-WAIT" > "$WS_ENTRIES.in"
 wait $STATUS_PID1
 wait $STATUS_PID2
 wait $ENTRIES_PID
 # We just want to look for some of the events we would expect to see in a typical run (this is more about coverage than precision).
-STATUS_DATA2=$(cat "$STATUS_OUTPUT.2")
+STATUS_DATA2=$(cat "$WS_STATUS2.out")
 requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
