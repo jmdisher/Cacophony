@@ -31,6 +31,7 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
  * [3] - protocol
  * [[4] - JSON_IO output_pipe]
  * [[5] - [JSON_IO input_pipe]]
+ * [[6] - [JSON_IO clear_pipe]]
  * 
  * In "SEND" mode, will read stdin, sending this data to the other side as binary.  Closes the socket on EOF.
  * In "DRAIN" mode, will listen to the WebSocket, writing all data to the given output_pipe.  Exits on WebSocket
@@ -53,6 +54,7 @@ public class WebSocketUtility implements WebSocketListener
 	public static final String COMMAND_CLOSE = "-CLOSE";
 	public static final String COMMAND_WAIT = "-WAIT";
 	public static final String COMMAND_ACK = "-ACK";
+	public static final String CLEAR = "CLEAR";
 
 	private final File _outputPipe;
 	private final WebSocketClient _client;
@@ -65,7 +67,7 @@ public class WebSocketUtility implements WebSocketListener
 	private boolean _isShuttingDown;
 
 
-	public WebSocketUtility(File outputPipe, File inputPipe)
+	public WebSocketUtility(File outputPipe, File inputPipe, File clearPipe)
 	{
 		_outputPipe = outputPipe;
 		_client = new WebSocketClient();
@@ -81,6 +83,10 @@ public class WebSocketUtility implements WebSocketListener
 					try
 					{
 						byte[] data = Files.readAllBytes(inputPipe.toPath());
+						// We need to write to the "clear" pipe in order to properly lock-step with the calling script.
+						// This is in order to avoid a problem where multiple pipe writes can be seen in the same read.
+						Files.write(clearPipe.toPath(), CLEAR.getBytes(), StandardOpenOption.APPEND);
+						
 						String stringValue = new String(data);
 						if (stringValue.startsWith("-"))
 						{
@@ -280,6 +286,7 @@ public class WebSocketUtility implements WebSocketListener
 			boolean sendMode = false;
 			File outputPipe = null;
 			File inputPipe = null;
+			File clearPipe = null;
 			if (("SEND".equals(mode)) && (4 == args.length))
 			{
 				sendMode = true;
@@ -289,19 +296,21 @@ public class WebSocketUtility implements WebSocketListener
 				outputPipe = new File(args[4]);
 				Assert.assertTrue(outputPipe.exists());
 			}
-			else if (("JSON_IO".equals(mode)) && (6 == args.length))
+			else if (("JSON_IO".equals(mode)) && (7 == args.length))
 			{
 				outputPipe = new File(args[4]);
 				Assert.assertTrue(outputPipe.exists());
 				inputPipe = new File(args[5]);
 				Assert.assertTrue(inputPipe.exists());
+				clearPipe = new File(args[6]);
+				Assert.assertTrue(clearPipe.exists());
 			}
 			else
 			{
 				_usageExit();
 			}
 			
-			WebSocketUtility utility = new WebSocketUtility(outputPipe, inputPipe);
+			WebSocketUtility utility = new WebSocketUtility(outputPipe, inputPipe, clearPipe);
 			utility.connect(uri, xsrf, protocol);
 			utility.waitForConnection();
 			

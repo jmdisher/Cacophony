@@ -53,8 +53,8 @@ do
 done
 
 echo "Connect the entries socket..."
-mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" &
+mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/user/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
 ENTRIES_PID=$!
 cat "$WS_ENTRIES.out" > /dev/null
 
@@ -62,24 +62,24 @@ echo "We expect to see the last 10 (but we can't verify the others _don't_ appea
 for N in {12..3}; 
 do
 	SAMPLE=$(cat "$WS_ENTRIES.out")
-	echo -n "-ACK" > "$WS_ENTRIES.in"
+	echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
 echo "Request more and verify we see the other 2."
-echo -n "COMMAND_SCROLL_BACK" > "$WS_ENTRIES.in"
+echo -n "COMMAND_SCROLL_BACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 for N in {2..1}; 
 do
 	SAMPLE=$(cat "$WS_ENTRIES.out")
-	echo -n "-ACK" > "$WS_ENTRIES.in"
+	echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
 echo "Connect the combined socket and do a similar verification..."
-mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$WS_COMBINED.out" "$WS_COMBINED.in" &
+mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/combined/entries" "event_api" "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear" &
 COMBINED_PID=$!
 cat "$WS_COMBINED.out" > /dev/null
 
@@ -87,23 +87,23 @@ cat "$WS_COMBINED.out" > /dev/null
 for N in {12..3}; 
 do
 	SAMPLE=$(cat "$WS_COMBINED.out")
-	echo -n "-ACK" > "$WS_COMBINED.in"
+	echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 
 # Scroll back and see the others (they will all be present since we haven't restarted - the combined per-user limit only applies to start-up).
-echo -n "COMMAND_SCROLL_BACK" > "$WS_COMBINED.in"
+echo -n "COMMAND_SCROLL_BACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 for N in {2..1}; 
 do
 	SAMPLE=$(cat "$WS_COMBINED.out")
-	echo -n "-ACK" > "$WS_COMBINED.in"
+	echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
 # Note that this will also see the fake entry for the "other user" so read that, too.
 SAMPLE=$(cat "$WS_COMBINED.out")
-echo -n "-ACK" > "$WS_COMBINED.in"
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
@@ -111,9 +111,9 @@ requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 echo "Shut-down and wait for sockets to close..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/stop"
 wait $SERVER_PID
-echo -n "-WAIT" > "$WS_ENTRIES.in"
+echo -n "-WAIT" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 wait $ENTRIES_PID
-echo -n "-WAIT" > "$WS_COMBINED.in"
+echo -n "-WAIT" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 wait $COMBINED_PID
 
 
