@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -34,6 +35,39 @@ public class RealConfigFileSystem implements IConfigFileSystem
 	public boolean doesConfigDirectoryExist()
 	{
 		return _directory.isDirectory();
+	}
+
+	@Override
+	public byte[] readTrivialFile(String fileName)
+	{
+		File file = new File(_directory, fileName);
+		try
+		{
+			return file.exists()
+					? Files.readAllBytes(file.toPath())
+					: null
+			;
+		}
+		catch (IOException e)
+		{
+			// We don't expect errors on local file access after we checked it existed.
+			throw Assert.unexpected(e);
+		}
+	}
+
+	@Override
+	public void writeTrivialFile(String fileName, byte[] data)
+	{
+		File file = new File(_directory, fileName);
+		try
+		{
+			Files.write(file.toPath(), data);
+		}
+		catch (IOException e)
+		{
+			// We don't expect errors on local file access.
+			throw Assert.unexpected(e);
+		}
 	}
 
 	@Override

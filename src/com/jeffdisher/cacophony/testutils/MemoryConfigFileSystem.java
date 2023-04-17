@@ -48,6 +48,18 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
+	public byte[] readTrivialFile(String fileName)
+	{
+		return _data.get(fileName);
+	}
+
+	@Override
+	public void writeTrivialFile(String fileName, byte[] data)
+	{
+		_data.put(fileName, data);
+	}
+
+	@Override
 	public InputStream readConfigFile(String fileName)
 	{
 		// Note that the cases where we are using an existing config directory aren't explicitly called out yet so they may originate here.

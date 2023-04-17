@@ -29,6 +29,22 @@ public interface IConfigFileSystem
 	boolean doesConfigDirectoryExist();
 
 	/**
+	 * Reads and returns all the data in the file called fileName.
+	 * 
+	 * @param fileName The name of the file to read.
+	 * @return The contents of the file, null if it couldn't be found.
+	 */
+	byte[] readTrivialFile(String fileName);
+
+	/**
+	 * Writes the given data to the file called fileName.
+	 * 
+	 * @param fileName The name of the file to write.
+	 * @param data The data to write to the file (cannot be null).
+	 */
+	void writeTrivialFile(String fileName, byte[] data);
+
+	/**
 	 * Opens a config file for reading, if it exists.  The caller takes ownership of the stream.
 	 * 
 	 * @param fileName The name of the config file.

@@ -247,10 +247,7 @@ public class TestLocalDataModel
 		
 		// Create the directory with valid version but nothing else.
 		fileSystem.createConfigDirectory();
-		try (OutputStream stream = fileSystem.writeConfigFile("version"))
-		{
-			stream.write(new byte[] {1});
-		}
+		fileSystem.writeTrivialFile("version", new byte[] {1});
 		
 		// Verify that this throws a version error.
 		LocalDataModel model = new LocalDataModel(fileSystem);
@@ -302,10 +299,7 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We throw a usage error if the version file is not a supported version.
-		try (OutputStream stream = fileSystem.writeConfigFile("version"))
-		{
-			stream.write(new byte[] {1});
-		}
+		fileSystem.writeTrivialFile("version", new byte[] {1});
 		didFail = false;
 		try
 		{
@@ -318,10 +312,7 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We throw a usage error if the opcode log is missing.
-		try (OutputStream stream = fileSystem.writeConfigFile("version"))
-		{
-			stream.write(new byte[] {2});
-		}
+		fileSystem.writeTrivialFile("version", new byte[] {2});
 		didFail = false;
 		try
 		{

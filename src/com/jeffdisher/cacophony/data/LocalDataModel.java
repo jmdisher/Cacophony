@@ -65,45 +65,42 @@ public class LocalDataModel
 	{
 		// We know that this is called immediately after creating any missing config.
 		Assert.assertTrue(_fileSystem.doesConfigDirectoryExist());
-		try (InputStream versionStream = _fileSystem.readConfigFile(VERSION_FILE))
+		byte[] data = _fileSystem.readTrivialFile(VERSION_FILE);
+		if (null != data)
 		{
-			if (null != versionStream)
+			// The version file exists so just make sure it is what we expect.
+			byte version = (1 == data.length)
+					? data[0]
+					: 0
+			;
+			if (LOCAL_CONFIG_VERSION_NUMBER == version)
 			{
-				// The version file exists so just make sure it is what we expect.
-				byte[] data = versionStream.readAllBytes();
-				byte version = (1 == data.length)
-						? data[0]
-						: 0
-				;
-				if (LOCAL_CONFIG_VERSION_NUMBER == version)
-				{
-					// Current version, do nothing special.
-				}
-				else
-				{
-					// Unknown.
-					throw new UsageException("Local storage version cannot be understood: " + version);
-				}
-				
-				// We know that this is called immediately after creating the config so there should be an opcode log file.
-				try (InputStream opcodeLog = _fileSystem.readConfigFile(V2_FINAL_LOG))
-				{
-					if (null == opcodeLog)
-					{
-						throw new UsageException("Local storage opcode log file is missing");
-					}
-				}
+				// Current version, do nothing special.
 			}
 			else
 			{
-				// This file needs to exist.
-				throw new UsageException("Version file missing");
+				// Unknown.
+				throw new UsageException("Local storage version cannot be understood: " + version);
+			}
+			
+			// We know that this is called immediately after creating the config so there should be an opcode log file.
+			try (InputStream opcodeLog = _fileSystem.readConfigFile(V2_FINAL_LOG))
+			{
+				if (null == opcodeLog)
+				{
+					throw new UsageException("Local storage opcode log file is missing");
+				}
+			}
+			catch (IOException e)
+			{
+				// Close exception not expected.
+				throw Assert.unexpected(e);
 			}
 		}
-		catch (IOException e)
+		else
 		{
-			// Not expected.
-			throw Assert.unexpected(e);
+			// This file needs to exist.
+			throw new UsageException("Version file missing");
 		}
 	}
 
@@ -234,7 +231,7 @@ public class LocalDataModel
 			// Note that this is null during initial creation.
 			if (null != input)
 			{
-				ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(_fileSystem.readConfigFile(V2_FINAL_LOG));
+				ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(input);
 				_localIndex = projections.channel();
 				_globalPrefs = projections.prefs();
 				_globalPinCache = projections.pinCache();
@@ -278,10 +275,7 @@ public class LocalDataModel
 		}
 		
 		// Update the version file.
-		try (OutputStream versionStream = _fileSystem.writeConfigFile(VERSION_FILE))
-		{
-			versionStream.write(new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
-		}
+		_fileSystem.writeTrivialFile(VERSION_FILE, new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
 	}
 
 	public static record ReadLock(Lock lock) {};
