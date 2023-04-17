@@ -3,18 +3,13 @@ package com.jeffdisher.cacophony.data;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
-import com.jeffdisher.cacophony.data.local.v1.GlobalPrefs;
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
@@ -35,12 +30,6 @@ public class LocalDataModel
 {
 	private static final String VERSION_FILE = "version";
 	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 2;
-
-	private static final byte V1 = 1;
-	private static final String V1_INDEX_FILE = "index1.dat";
-	private static final String V1_GLOBAL_PREFS_FILE = "global_prefs1.dat";
-	private static final String V1_GLOBAL_PIN_CACHE_FILE = "global_pin_cache1.dat";
-	private static final String V1_FOLLOWING_INDEX_FILE = "following_index1.dat";
 
 	private static final String V2_FINAL_LOG = "opcodes_0.final.gzlog";
 
@@ -94,15 +83,10 @@ public class LocalDataModel
 						{
 							// Current version, do nothing special.
 						}
-						else if (V1 == version)
-						{
-							// Old version, migrate the data.
-							_migrateData();
-						}
 						else
 						{
 							// Unknown.
-							throw new UsageException("Version data incorrect");
+							throw new UsageException("Local storage version cannot be understood: " + version);
 						}
 					}
 				}
@@ -263,91 +247,6 @@ public class LocalDataModel
 			// We have no way to handle this failure.
 			throw Assert.unexpected(e);
 		}
-	}
-
-	private <T> T _readFile(String fileName, Class<T> clazz)
-	{
-		T object = null;
-		InputStream rawStream = _fileSystem.readConfigFile(fileName);
-		if (null != rawStream)
-		{
-			try (ObjectInputStream stream = new ObjectInputStream(rawStream))
-			{
-				try
-				{
-					object = clazz.cast(stream.readObject());
-				}
-				catch (ClassNotFoundException e)
-				{
-					throw Assert.unexpected(e);
-				}
-			}
-			catch (IOException e)
-			{
-				// We don't expect this.
-				throw Assert.unexpected(e);
-			}
-		}
-		return object;
-	}
-
-	private void _migrateData() throws IOException, UsageException
-	{
-		// Read the original files.
-		LocalIndex localIndex = _readFile(V1_INDEX_FILE, LocalIndex.class);
-		// If the original file is missing, this is a UsageException.
-		if (null == localIndex)
-		{
-			throw new UsageException("Missing index file");
-		}
-		ChannelData channelData = ChannelData.buildOnIndex(localIndex);
-		
-		PinCacheData pinCacheData = null;
-		InputStream pinStream = _fileSystem.readConfigFile(V1_GLOBAL_PIN_CACHE_FILE);
-		if (null != pinStream)
-		{
-			try (pinStream)
-			{
-				pinCacheData = PinCacheData.buildOnCache(GlobalPinCache.fromStream(pinStream));
-			}
-			Assert.assertTrue(null != pinCacheData);
-		}
-		else
-		{
-			pinCacheData = PinCacheData.createEmpty();
-		}
-		
-		FolloweeData followeeData = null;
-		InputStream followeeStream = _fileSystem.readConfigFile(V1_FOLLOWING_INDEX_FILE);
-		if (null != followeeStream)
-		{
-			try (followeeStream)
-			{
-				followeeData = FolloweeData.buildOnIndex(FollowIndex.fromStream(followeeStream));
-			}
-		}
-		else
-		{
-			followeeData = FolloweeData.createEmpty();
-		}
-		
-		GlobalPrefs prefs = _readFile(V1_GLOBAL_PREFS_FILE, GlobalPrefs.class);
-		PrefsData prefsData = PrefsData.defaultPrefs();
-		if (null != prefs)
-		{
-			prefsData.videoEdgePixelMax = prefs.videoEdgePixelMax();
-			prefsData.followCacheTargetBytes = prefs.followCacheTargetBytes();
-		}
-		
-		// Set the ivars.
-		_didLoadStorage = true;
-		_localIndex = channelData;
-		_globalPinCache = pinCacheData;
-		_followIndex = followeeData;
-		_globalPrefs = prefsData;
-		
-		// Write the projections to the new stream.
-		_flushStateToStream();
 	}
 
 	private void _flushStateToStream() throws IOException

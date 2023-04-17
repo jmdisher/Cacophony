@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
@@ -32,24 +31,18 @@ public class TestFolloweeData
 	@Test
 	public void serializeEmpty() throws Throwable
 	{
-		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
-		byte[] between = _serialize(data);
-		FolloweeData read = _deserialize(between);
+		FolloweeData data = FolloweeData.createEmpty();
+		byte[] between = _serializeAsOpcodeStream(data);
+		FolloweeData read = _decodeOpcodeStream(between);
 		Assert.assertNotNull(read);
-		byte[] check = _serialize(data);
+		byte[] check = _serializeAsOpcodeStream(data);
 		Assert.assertArrayEquals(between, check);
-		
-		// Verify that the opcode stream works.
-		byte[] byteArray = _serializeAsOpcodeStream(data);
-		FolloweeData latest = _decodeOpcodeStream(byteArray);
-		byte[] byteArray2 = _serializeAsOpcodeStream(latest);
-		Assert.assertArrayEquals(byteArray, byteArray2);
 	}
 
 	@Test
 	public void addSingleFollowee() throws Throwable
 	{
-		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
+		FolloweeData data = FolloweeData.createEmpty();
 		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
@@ -64,10 +57,8 @@ public class TestFolloweeData
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
 		
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		data.serializeToIndex().writeToStream(outStream);
-		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		FolloweeData read = FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
+		byte[] out = _serializeAsOpcodeStream(data);
+		FolloweeData read = _decodeOpcodeStream(out);
 		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = read.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(5, cachedEntries1.get(F1).combinedSizeBytes());
 		
@@ -83,7 +74,7 @@ public class TestFolloweeData
 	@Test
 	public void addRemoveSingleFollowee() throws Throwable
 	{
-		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
+		FolloweeData data = FolloweeData.createEmpty();
 		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
@@ -102,10 +93,8 @@ public class TestFolloweeData
 		data.removeFollowee(K1);
 		Assert.assertTrue(data.getAllKnownFollowees().isEmpty());
 		
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		data.serializeToIndex().writeToStream(outStream);
-		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		FolloweeData read = FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
+		byte[] out = _serializeAsOpcodeStream(data);
+		FolloweeData read = _decodeOpcodeStream(out);
 		Assert.assertTrue(read.getAllKnownFollowees().isEmpty());
 		
 		// Verify that the opcode stream works.
@@ -119,7 +108,7 @@ public class TestFolloweeData
 	@Test
 	public void addTwoFollowees() throws Throwable
 	{
-		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
+		FolloweeData data = FolloweeData.createEmpty();
 		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.updateExistingFollowee(K1, F2, 2L);
@@ -136,10 +125,8 @@ public class TestFolloweeData
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
 		
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		data.serializeToIndex().writeToStream(outStream);
-		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		FolloweeData read = FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
+		byte[] out = _serializeAsOpcodeStream(data);
+		FolloweeData read = _decodeOpcodeStream(out);
 		Assert.assertEquals(K1, read.getNextFolloweeToPoll());
 		
 		// Verify that the opcode stream works.
@@ -153,7 +140,7 @@ public class TestFolloweeData
 	@Test
 	public void addRemoveElements() throws Throwable
 	{
-		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
+		FolloweeData data = FolloweeData.createEmpty();
 		data.createNewFollowee(K1, F1);
 		data.addElement(K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.addElement(K1, new FollowingCacheElement(F2, F3, null, 6));
@@ -176,10 +163,8 @@ public class TestFolloweeData
 		Assert.assertEquals(2L, data.getLastPollMillisForFollowee(K1));
 		Assert.assertEquals(K1, data.getNextFolloweeToPoll());
 		
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		data.serializeToIndex().writeToStream(outStream);
-		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		FolloweeData read = FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
+		byte[] out = _serializeAsOpcodeStream(data);
+		FolloweeData read = _decodeOpcodeStream(out);
 		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = read.snapshotAllElementsForFollowee(K1);
 		Assert.assertEquals(5, cachedEntries1.get(F1).combinedSizeBytes());
 		
@@ -217,7 +202,7 @@ public class TestFolloweeData
 		
 		// We will run all callbacks inline so we will just use a map to observe the state.
 		Map<IpfsKey, Long> map = new HashMap<>();
-		FolloweeData data = FolloweeData.buildOnIndex(FollowIndex.emptyFollowIndex());
+		FolloweeData data = FolloweeData.createEmpty();
 		
 		// Start with an existing followee to make sure it is observed in the map.
 		data.createNewFollowee(K1, F1);
@@ -267,19 +252,6 @@ public class TestFolloweeData
 		Assert.assertTrue(map.isEmpty());
 	}
 
-
-	private byte[] _serialize(FolloweeData data)
-	{
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		data.serializeToIndex().writeToStream(outStream);
-		return outStream.toByteArray();
-	}
-
-	private FolloweeData _deserialize(byte[] data)
-	{
-		ByteArrayInputStream inStream = new ByteArrayInputStream(data);
-		return FolloweeData.buildOnIndex(FollowIndex.fromStream(inStream));
-	}
 
 	private byte[] _serializeAsOpcodeStream(FolloweeData data) throws IOException
 	{

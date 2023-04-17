@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.projection;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-import com.jeffdisher.cacophony.data.local.v1.LocalIndex;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_CreateChannel;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_SetLastPublishedIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -11,13 +10,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 
 public class ChannelData
 {
-	public static ChannelData buildOnIndex(LocalIndex index)
-	{
-		ChannelData data = new ChannelData(index.ipfsHost(), index.keyName());
-		data.setLastPublishedIndex(index.lastPublishedIndex());
-		return data;
-	}
-
 	public static ChannelData create(String ipfsHost, String keyName)
 	{
 		return new ChannelData(ipfsHost, keyName);
@@ -32,11 +24,6 @@ public class ChannelData
 	{
 		_ipfsHost = ipfsHost;
 		_keyName = keyName;
-	}
-
-	public LocalIndex serializeToIndex()
-	{
-		return new LocalIndex(_ipfsHost, _keyName, _lastPublishedIndex);
 	}
 
 	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException

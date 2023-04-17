@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_SetPinnedCount;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -14,12 +13,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 public class PinCacheData
 {
-	public static PinCacheData buildOnCache(GlobalPinCache pinCache)
-	{
-		Map<IpfsFile, Integer> map = pinCache.readInternalCopy();
-		return new PinCacheData(map);
-	}
-
 	public static PinCacheData createEmpty()
 	{
 		return new PinCacheData(new HashMap<>());
@@ -31,21 +24,6 @@ public class PinCacheData
 	private PinCacheData(Map<IpfsFile, Integer> map)
 	{
 		_map = map;
-	}
-
-	public GlobalPinCache serializeToPinCache()
-	{
-		GlobalPinCache pinCache = GlobalPinCache.newCache();
-		for (Map.Entry<IpfsFile, Integer> elt : _map.entrySet())
-		{
-			IpfsFile cid = elt.getKey();
-			int count = elt.getValue();
-			for (int i = 0; i < count; ++i)
-			{
-				pinCache.hashWasAdded(cid);
-			}
-		}
-		return pinCache;
 	}
 
 	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException

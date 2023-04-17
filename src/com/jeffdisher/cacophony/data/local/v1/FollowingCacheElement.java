@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.data.local.v1;
 
-import java.io.Serializable;
-
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -11,6 +9,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  * The leaf node refers to the specific file actually hashed since there are often multiple options but a given follower
  * should only cache the one they care about.
  */
-public record FollowingCacheElement(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes) implements Serializable
+public record FollowingCacheElement(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)
 {
 }

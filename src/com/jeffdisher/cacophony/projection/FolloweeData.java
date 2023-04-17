@@ -8,11 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowIndex;
-import com.jeffdisher.cacophony.data.local.v1.FollowRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_AddFollowee;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_AddFolloweeRecord;
@@ -27,32 +23,6 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class FolloweeData implements IFolloweeWriting
 {
-	/**
-	 * Creates the data on top of the given followIndex, writing back its changes there.
-	 * 
-	 * @param followIndex The FollowIndex we will use as the backing store.
-	 * @return The new instance.
-	 */
-	public static FolloweeData buildOnIndex(FollowIndex followIndex)
-	{
-		// We want to tear apart this data structure and pass the relevant parts into the new instance.
-		Map<IpfsKey, List<FollowingCacheElement>> followeeElements = new HashMap<>();
-		Map<IpfsKey, IpfsFile> followeeLastIndices = new HashMap<>();
-		Map<IpfsKey, Long> followeeLastFetchMillis = new HashMap<>();
-		for (FollowRecord record : followIndex.readRecords())
-		{
-			IpfsKey publicKey = record.publicKey();
-			List<FollowingCacheElement> elements = Stream.of(record.elements())
-					.collect(Collectors.toList())
-			;
-			followeeElements.put(publicKey, elements);
-			followeeLastIndices.put(publicKey, record.lastFetchedRoot());
-			followeeLastFetchMillis.put(publicKey, record.lastPollMillis());
-		}
-		
-		return new FolloweeData(followeeElements, followeeLastIndices, followeeLastFetchMillis);
-	}
-
 	public static FolloweeData createEmpty()
 	{
 		Map<IpfsKey, List<FollowingCacheElement>> followeeElements = new HashMap<>();
@@ -89,34 +59,6 @@ public class FolloweeData implements IFolloweeWriting
 		}
 		_followeeLastIndices = new HashMap<>(followeeLastIndices);
 		_followeeLastFetchMillis = new HashMap<>(followeeLastFetchMillis);
-	}
-
-	public FollowIndex serializeToIndex()
-	{
-		// Note that the index entries are technically supposed to be sorted such that the next followee to poll is first.
-		List<IpfsKey> sortedKeys = _followeeLastFetchMillis.entrySet().stream()
-			.sorted((Map.Entry<IpfsKey, Long> elt1, Map.Entry<IpfsKey, Long> elt2) -> {
-				long one = elt1.getValue();
-				long two = elt2.getValue();
-				return (one > two)
-						? 1
-						: (one < two)
-							? -1
-							: 0
-				;
-			})
-			.map((Map.Entry<IpfsKey, Long> elt) -> elt.getKey())
-			.collect(Collectors.toList())
-		;
-		
-		FollowIndex index = FollowIndex.emptyFollowIndex();
-		for (IpfsKey oneKey : sortedKeys)
-		{
-			FollowingCacheElement[] elements = _followeeElements.get(oneKey).toArray((int size) -> new FollowingCacheElement[size]);
-			FollowRecord record = new FollowRecord(oneKey, _followeeLastIndices.get(oneKey), _followeeLastFetchMillis.get(oneKey), elements);
-			index.checkinRecord(record);
-		}
-		return index;
 	}
 
 	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException

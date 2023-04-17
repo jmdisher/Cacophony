@@ -2,11 +2,13 @@ package com.jeffdisher.cacophony.projection;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v1.GlobalPinCache;
+import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -16,9 +18,9 @@ public class TestPinCacheData
 	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 
 	@Test
-	public void serializeEmpty()
+	public void serializeEmpty() throws Throwable
 	{
-		PinCacheData pinCache = PinCacheData.buildOnCache(GlobalPinCache.newCache());
+		PinCacheData pinCache = PinCacheData.createEmpty();
 		byte[] between = _serialize(pinCache);
 		PinCacheData read = _deserialize(between);
 		Assert.assertNotNull(read);
@@ -27,9 +29,9 @@ public class TestPinCacheData
 	}
 
 	@Test
-	public void checkBasics()
+	public void checkBasics() throws Throwable
 	{
-		PinCacheData pinCache = PinCacheData.buildOnCache(GlobalPinCache.newCache());
+		PinCacheData pinCache = PinCacheData.createEmpty();
 		Assert.assertFalse(pinCache.isPinned(F1));
 		pinCache.addRef(F1);
 		Assert.assertTrue(pinCache.isPinned(F1));
@@ -48,16 +50,19 @@ public class TestPinCacheData
 	}
 
 
-	private byte[] _serialize(PinCacheData data)
+	private byte[] _serialize(PinCacheData data) throws IOException
 	{
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		data.serializeToPinCache().writeToStream(outStream);
+		try (ObjectOutputStream stream = OpcodeContext.createOutputStream(outStream))
+		{
+			data.serializeToOpcodeStream(stream);
+		}
 		return outStream.toByteArray();
 	}
 
-	private PinCacheData _deserialize(byte[] data)
+	private PinCacheData _deserialize(byte[] data) throws IOException
 	{
 		ByteArrayInputStream inStream = new ByteArrayInputStream(data);
-		return PinCacheData.buildOnCache(GlobalPinCache.fromStream(inStream));
+		return ProjectionBuilder.buildProjectionsFromOpcodeStream(inStream).pinCache();
 	}
 }
