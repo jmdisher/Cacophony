@@ -286,6 +286,22 @@ wait $STATUS_PID
 wait $FOLLOWEE_REFRESH_PID
 wait $ENTRIES_PID
 
+echo "Start the server again to verify that the on-disk data is correct"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
+SERVER_PID=$!
+waitForCacophonyStart 8001
+
+# Make sure that our cookies are set.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
+
+# We will verify that the followed user's post can be seen.
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
+requireSubstring "$POST_LIST" "[\""
+
+echo "Stop the server and wait for it to exit..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
+
+
 echo "Check that our upload utility can handle large uploads..."
 # Create a 10 MiB file and upload it with an 8 MiB heap.
 createBinaryFile "/tmp/zero" 10240

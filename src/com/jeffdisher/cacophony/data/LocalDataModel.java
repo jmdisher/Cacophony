@@ -55,56 +55,55 @@ public class LocalDataModel
 	}
 
 	/**
-	 * Called during start-up to make sure that the storage model is consistent.  A consistent model either doesn't
-	 * exist or does exist and contains all files, updated to the latest version of the storage.
+	 * Called during start-up to make sure that the storage model is consistent.  A consistent model MUST exist and
+	 * contains all files, updated to the latest version of the storage.
 	 * If the storage is inconsistent, it will be repaired (if possible) or an exception will be thrown.
 	 * 
 	 * @throws UsageException The data model was inconsistent and couldn't be repaired.
 	 */
 	public void verifyStorageConsistency() throws UsageException
 	{
-		if (_fileSystem.doesConfigDirectoryExist())
+		// We know that this is called immediately after creating any missing config.
+		Assert.assertTrue(_fileSystem.doesConfigDirectoryExist());
+		try (InputStream versionStream = _fileSystem.readConfigFile(VERSION_FILE))
 		{
-			try
+			if (null != versionStream)
 			{
-				// The config directory exists, so make sure that the version file is there.
-				InputStream versionStream = _fileSystem.readConfigFile(VERSION_FILE);
-				if (null != versionStream)
+				// The version file exists so just make sure it is what we expect.
+				byte[] data = versionStream.readAllBytes();
+				byte version = (1 == data.length)
+						? data[0]
+						: 0
+				;
+				if (LOCAL_CONFIG_VERSION_NUMBER == version)
 				{
-					// The version file exists so just make sure it is what we expect.
-					try (versionStream)
-					{
-						byte[] data = versionStream.readAllBytes();
-						byte version = (1 == data.length)
-								? data[0]
-								: 0
-						;
-						if (LOCAL_CONFIG_VERSION_NUMBER == version)
-						{
-							// Current version, do nothing special.
-						}
-						else
-						{
-							// Unknown.
-							throw new UsageException("Local storage version cannot be understood: " + version);
-						}
-					}
+					// Current version, do nothing special.
 				}
 				else
 				{
-					// This file needs to exist.
-					throw new UsageException("Version file missing");
+					// Unknown.
+					throw new UsageException("Local storage version cannot be understood: " + version);
+				}
+				
+				// We know that this is called immediately after creating the config so there should be an opcode log file.
+				try (InputStream opcodeLog = _fileSystem.readConfigFile(V2_FINAL_LOG))
+				{
+					if (null == opcodeLog)
+					{
+						throw new UsageException("Local storage opcode log file is missing");
+					}
 				}
 			}
-			catch (IOException e)
+			else
 			{
-				// Not expected.
-				throw Assert.unexpected(e);
+				// This file needs to exist.
+				throw new UsageException("Version file missing");
 			}
 		}
-		else
+		catch (IOException e)
 		{
-			// If the directory doesn't, this is valid (means that no channel has been created).
+			// Not expected.
+			throw Assert.unexpected(e);
 		}
 	}
 

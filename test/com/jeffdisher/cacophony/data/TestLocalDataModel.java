@@ -266,6 +266,80 @@ public class TestLocalDataModel
 		Assert.assertTrue(error);
 	}
 
+	/**
+	 * Just tests the different failure cases around inconsistent local data.
+	 */
+	@Test
+	public void inconsistentData() throws Throwable
+	{
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel model = new LocalDataModel(fileSystem);
+		
+		// We assert that we verify data only AFTER creating the storage.
+		boolean didFail = false;
+		try
+		{
+			model.verifyStorageConsistency();
+		}
+		catch (AssertionError e)
+		{
+			// This is an assertion since it would be a bug in the code.
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		
+		// We throw a usage error if the version file is missing so create the directory, but nothing else.
+		fileSystem.createConfigDirectory();
+		didFail = false;
+		try
+		{
+			model.verifyStorageConsistency();
+		}
+		catch (UsageException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		
+		// We throw a usage error if the version file is not a supported version.
+		try (OutputStream stream = fileSystem.writeConfigFile("version"))
+		{
+			stream.write(new byte[] {1});
+		}
+		didFail = false;
+		try
+		{
+			model.verifyStorageConsistency();
+		}
+		catch (UsageException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		
+		// We throw a usage error if the opcode log is missing.
+		try (OutputStream stream = fileSystem.writeConfigFile("version"))
+		{
+			stream.write(new byte[] {2});
+		}
+		didFail = false;
+		try
+		{
+			model.verifyStorageConsistency();
+		}
+		catch (UsageException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		
+		// We don't validate the the log is correct, just that it exists.
+		try (OutputStream stream = fileSystem.writeConfigFile("opcodes_0.final.gzlog"))
+		{
+		}
+		model.verifyStorageConsistency();
+	}
+
 	@Test
 	public void draftDirectory() throws Throwable
 	{
