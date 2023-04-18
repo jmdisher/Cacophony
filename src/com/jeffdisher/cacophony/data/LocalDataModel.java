@@ -219,19 +219,6 @@ public class LocalDataModel
 		lock.lock.unlock();
 	}
 
-	/**
-	 * Drops all the internal caches, forcing them to be lazily reloaded when next needed.  The only real reason for
-	 * this is for unit tests which may run into problems due to accidentally shared state.
-	 */
-	public void dropAllCaches()
-	{
-		_didLoadStorage = false;
-		_localIndex = null;
-		_globalPinCache = null;
-		_followIndex = null;
-		_globalPrefs = null;
-	}
-
 
 	private void _loadAllFiles()
 	{

@@ -33,8 +33,10 @@ public class MockUserNode
 	private final IpfsKey _publicKey;
 	private final MockSingleNode _sharedConnection;
 	private final MemoryConfigFileSystem _fileSystem;
-	private final StandardEnvironment _executor;
 	private final SilentLogger _logger;
+
+	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
+	private StandardEnvironment _lazyExecutor;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node)
 	{
@@ -43,26 +45,25 @@ public class MockUserNode
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(null);
-		_executor = new StandardEnvironment(_fileSystem, _sharedConnection, keyName, key);
 		_logger = new SilentLogger();
 	}
 
 	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
 	{
-		_executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
+		_lazyEnv().getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
 	{
-		_executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
+		_lazyEnv().getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
 		
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
-		ICommand.Result result = createChannel.runInContext(new ICommand.Context(_executor, _logger, null, null, null));
+		ICommand.Result result = createChannel.runInContext(new ICommand.Context(_lazyEnv(), _logger, null, null, null));
 		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
-		result = updateDescription.runInContext(new ICommand.Context(_executor, _logger, null, null, null));
+		result = updateDescription.runInContext(new ICommand.Context(_lazyEnv(), _logger, null, null, null));
 		_handleResult(result);
 	}
 
@@ -82,7 +83,7 @@ public class MockUserNode
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
 		}
-		T result = command.runInContext(new ICommand.Context(_executor, logger, null, null, null));
+		T result = command.runInContext(new ICommand.Context(_lazyEnv(), logger, null, null, null));
 		_handleResult(result);
 		return logger.didErrorOccur()
 				? null
@@ -102,7 +103,7 @@ public class MockUserNode
 
 	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_executor, _logger))
+		try (IReadingAccess reading = StandardAccess.readAccess(_lazyEnv(), _logger))
 		{
 			return reading.getLastRootElement();
 		}
@@ -115,24 +116,24 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
-		IReadingAccess reading = StandardAccess.readAccess(_executor, _logger);
-		boolean isPinned = reading.isInPinCached(file);
-		reading.close();
-		return isPinned;
+		try (IReadingAccess reading = StandardAccess.readAccess(_lazyEnv(), _logger))
+		{
+			return reading.isInPinCached(file);
+		}
 	}
 
 	public PrefsData readPrefs() throws IpfsConnectionException
 	{
-		IReadingAccess reading = StandardAccess.readAccess(_executor, _logger);
-		PrefsData prefs = reading.readPrefs();
-		reading.close();
-		return prefs;
+		try (IReadingAccess reading = StandardAccess.readAccess(_lazyEnv(), _logger))
+		{
+			return reading.readPrefs();
+		}
 	}
 
 	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
-		try (IWritingAccess writing = StandardAccess.writeAccess(_executor, _logger))
+		try (IWritingAccess writing = StandardAccess.writeAccess(_lazyEnv(), _logger))
 		{
 			return writing.readableFolloweeData();
 		}
@@ -152,7 +153,9 @@ public class MockUserNode
 
 	public void shutdown()
 	{
-		_executor.shutdown();
+		Assert.assertTrue(null != _lazyExecutor);
+		_lazyExecutor.shutdown();
+		_lazyExecutor = null;
 	}
 
 	public void timeoutKey(IpfsKey publicKey)
@@ -168,5 +171,14 @@ public class MockUserNode
 		{
 			_sharedConnection.publish(_localKeyName, _publicKey, rootToPublish);
 		}
+	}
+
+	private StandardEnvironment _lazyEnv()
+	{
+		if (null == _lazyExecutor)
+		{
+			_lazyExecutor = new StandardEnvironment(_fileSystem, _sharedConnection, _localKeyName, _publicKey);
+		}
+		return _lazyExecutor;
 	}
 }
