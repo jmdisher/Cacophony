@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,21 +46,22 @@ public interface IConfigFileSystem
 	void writeTrivialFile(String fileName, byte[] data);
 
 	/**
-	 * Opens a config file for reading, if it exists.  The caller takes ownership of the stream.
+	 * Opens a file for reading, if it exists.  The caller takes ownership of the stream.
+	 * This assumes that the file was written using our portable atomic pattern, so it will not open an incomplete file.
 	 * 
-	 * @param fileName The name of the config file.
+	 * @param fileName The name of the file.
 	 * @return The input stream for the file, null if the file didn't exist.
 	 */
-	InputStream readConfigFile(String fileName);
+	InputStream readAtomicFile(String fileName);
 
 	/**
-	 * Opens a config file for writing, overwriting any existing file.  The caller takes ownership of the stream.
-	 * Assert fails if something goes wrong.
+	 * Opens a file for writing using our portable atomic pattern.  The caller takes ownership of the stream.
+	 * The caller MUST call commit() on the returned object before close if it wants the write to become durable.
 	 * 
-	 * @param fileName The name of the config file.
-	 * @return The output stream for the file.
+	 * @param fileName The name of the file.
+	 * @return The atomic output abstraction to use in writing the file.
 	 */
-	OutputStream writeConfigFile(String fileName);
+	AtomicOutputStream writeAtomicFile(String fileName);
 
 	/**
 	 * This is a pretty low-level call since the drafts can meaningful use a storage abstraction as they are just a few
@@ -70,4 +72,20 @@ public interface IConfigFileSystem
 	 * @throws IOException The directory doesn't exist and couldn't be created.
 	 */
 	File getDraftsTopLevelDirectory() throws IOException;
+
+
+	/**
+	 * We do file IO using the typical atomic write trick:  Write to a temp file and then rename it to replace the
+	 * original file.  This interface allows a way to only do the final rename if the output was explicitly told to
+	 * commit before being closed (then, it will perform the atomic when closing).
+	 * NOTE:  I have previously had problems with this not being supported on Windows systems so this approach will NOT
+	 * use the explicit atomic rename but will do the delete and rename, manually, as a 2-step process.  The consequence
+	 * of this is that the read must also apply some special logic so it can clean up a broken write, if it observes
+	 * one.
+	 */
+	public interface AtomicOutputStream extends Closeable
+	{
+		OutputStream getStream();
+		void commit();
+	}
 }

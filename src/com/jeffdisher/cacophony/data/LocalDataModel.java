@@ -1,10 +1,8 @@
 package com.jeffdisher.cacophony.data;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -84,7 +82,7 @@ public class LocalDataModel
 			}
 			
 			// We know that this is called immediately after creating the config so there should be an opcode log file.
-			try (InputStream opcodeLog = _fileSystem.readConfigFile(V2_FINAL_LOG))
+			try (InputStream opcodeLog = _fileSystem.readAtomicFile(V2_FINAL_LOG))
 			{
 				if (null == opcodeLog)
 				{
@@ -226,7 +224,7 @@ public class LocalDataModel
 
 	private void _loadAllFiles()
 	{
-		try (InputStream input = _fileSystem.readConfigFile(V2_FINAL_LOG))
+		try (InputStream input = _fileSystem.readAtomicFile(V2_FINAL_LOG))
 		{
 			// Note that this is null during initial creation.
 			if (null != input)
@@ -256,22 +254,17 @@ public class LocalDataModel
 		Assert.assertTrue(null != _globalPinCache);
 		Assert.assertTrue(null != _followIndex);
 		
-		// We will first serialize to memory, before we re-write the on-disk file.
-		// This will protect us from bugs, but not power loss.
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		try (ObjectOutputStream output = OpcodeContext.createOutputStream(bytes))
+		// We will serialize directly to the file.  If there are any exceptions, we won't reach the commit.
+		try (IConfigFileSystem.AtomicOutputStream atomic = _fileSystem.writeAtomicFile(V2_FINAL_LOG))
 		{
-			_localIndex.serializeToOpcodeStream(output);
-			_globalPrefs.serializeToOpcodeStream(output);
-			_globalPinCache.serializeToOpcodeStream(output);
-			_followIndex.serializeToOpcodeStream(output);
-		}
-		bytes.close();
-		
-		byte[] serialized = bytes.toByteArray();
-		try (OutputStream output = _fileSystem.writeConfigFile(V2_FINAL_LOG))
-		{
-			output.write(serialized);
+			try (ObjectOutputStream output = OpcodeContext.createOutputStream(atomic.getStream()))
+			{
+				_localIndex.serializeToOpcodeStream(output);
+				_globalPrefs.serializeToOpcodeStream(output);
+				_globalPinCache.serializeToOpcodeStream(output);
+				_followIndex.serializeToOpcodeStream(output);
+			}
+			atomic.commit();
 		}
 		
 		// Update the version file.

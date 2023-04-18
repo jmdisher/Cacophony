@@ -60,7 +60,7 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
-	public InputStream readConfigFile(String fileName)
+	public InputStream readAtomicFile(String fileName)
 	{
 		// Note that the cases where we are using an existing config directory aren't explicitly called out yet so they may originate here.
 		if (null == _data)
@@ -75,10 +75,10 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
-	public OutputStream writeConfigFile(String fileName)
+	public IConfigFileSystem.AtomicOutputStream writeAtomicFile(String fileName)
 	{
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		return new OutputStream()
+		OutputStream outputStream = new OutputStream()
 		{
 			@Override
 			public void write(int arg0) throws IOException
@@ -90,6 +90,29 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 			{
 				stream.close();
 				_data.put(fileName, stream.toByteArray());
+			}
+		};
+		return new IConfigFileSystem.AtomicOutputStream()
+		{
+			private boolean _didCommit = false;
+			@Override
+			public void close() throws IOException
+			{
+				outputStream.close();
+				if (_didCommit)
+				{
+					_data.put(fileName, stream.toByteArray());
+				}
+			}
+			@Override
+			public OutputStream getStream()
+			{
+				return outputStream;
+			}
+			@Override
+			public void commit()
+			{
+				_didCommit = true;
 			}
 		};
 	}

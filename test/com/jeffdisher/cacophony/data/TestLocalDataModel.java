@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -20,6 +19,7 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
@@ -325,8 +325,9 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We don't validate the the log is correct, just that it exists.
-		try (OutputStream stream = fileSystem.writeConfigFile("opcodes_0.final.gzlog"))
+		try (IConfigFileSystem.AtomicOutputStream stream = fileSystem.writeAtomicFile("opcodes_0.final.gzlog"))
 		{
+			stream.commit();
 		}
 		model.verifyStorageConsistency();
 	}
