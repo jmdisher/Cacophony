@@ -223,7 +223,7 @@ public class TestInteractiveHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
+		env.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
 		
 		// Now, create a basic draft.
@@ -358,7 +358,7 @@ public class TestInteractiveHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		StandardAccess.createNewChannelConfig(env, IPFS_HOST, KEY_NAME);
+		env.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
 		
 		// Now, create a draft and attach audio.

@@ -103,16 +103,18 @@ public class Cacophony {
 				boolean errorDidOccur = false;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
+					// We want to make sure that we can connect to the IPFS node.
 					IConnection connection = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
 					IpfsKey publicKey = _publicKeyForName(connection, keyName);
+					
+					// Create the executor and logger for our run and put them into the context.
 					executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
-					// Make sure that we create an empty storage directory, if we don't already have one - we ignore whether or not this worked.
-					StandardAccess.createNewChannelConfig(executor, ipfsConnectString, keyName);
-					// Verify that the storage is consistent, before we start.
-					executor.getSharedDataModel().verifyStorageConsistency();
-					// Create the context for running the command.
 					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+					
+					// We want to make sure that the local storage exists and is in a sane state.
+					executor.getSharedDataModel().verifyStorageConsistency(ipfsConnectString, keyName);
+					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);
 					

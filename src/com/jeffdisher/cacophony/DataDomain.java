@@ -8,7 +8,6 @@ import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -106,7 +105,7 @@ public class DataDomain implements Closeable
 		);
 		ILogger theirLogger = new SilentLogger();
 		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null);
-		StandardAccess.createNewChannelConfig(theirEnv, ipfsConnectString, keyName);
+		theirEnv.getSharedDataModel().verifyStorageConsistency(ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
 		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
@@ -124,7 +123,7 @@ public class DataDomain implements Closeable
 		);
 		ILogger ourLogger = new SilentLogger();
 		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null);
-		StandardAccess.createNewChannelConfig(ourEnv, ipfsConnectString, keyName);
+		ourEnv.getSharedDataModel().verifyStorageConsistency(ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
 		us.publish(keyName, ourKey, newRoot);

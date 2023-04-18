@@ -9,7 +9,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -43,7 +42,7 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node);
 		SilentLogger logger = new SilentLogger();
 		
-		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
+		env.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new ICommand.Context(env, logger, null, null, null));
 		
@@ -65,7 +64,7 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node);
 		SilentLogger logger = new SilentLogger();
 		
-		StandardAccess.createNewChannelConfig(env, "ipfs", KEY_NAME1);
+		env.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new ICommand.Context(env, logger, null, null, null));
 		

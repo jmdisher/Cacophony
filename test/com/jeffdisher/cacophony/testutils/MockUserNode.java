@@ -49,12 +49,12 @@ public class MockUserNode
 
 	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
 	{
-		StandardAccess.createNewChannelConfig(_executor, IPFS_HOST, keyName);
+		_executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
 	{
-		StandardAccess.createNewChannelConfig(_executor, IPFS_HOST, keyName);
+		_executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
 		
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		

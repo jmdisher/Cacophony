@@ -53,7 +53,7 @@ public class TestStartFollowingCommand
 		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), sharedConnection, KEY_NAME, PUBLIC_KEY);
 		SilentLogger logger = new SilentLogger();
 		// For this test, we want to just fake a default config.
-		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
+		executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
@@ -111,7 +111,7 @@ public class TestStartFollowingCommand
 		StandardEnvironment executor = new StandardEnvironment(filesystem, sharedConnection, KEY_NAME, PUBLIC_KEY);
 		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream));
 		// For this test, we want to just fake a default config.
-		StandardAccess.createNewChannelConfig(executor, IPFS_HOST, KEY_NAME);
+		executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		
 		boolean didFail = false;
 		try

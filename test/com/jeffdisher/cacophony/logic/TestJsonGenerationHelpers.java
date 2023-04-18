@@ -106,7 +106,7 @@ public class TestJsonGenerationHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
-		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
+		executor.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME);
 		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
@@ -140,7 +140,7 @@ public class TestJsonGenerationHelpers
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		StandardAccess.createNewChannelConfig(executor, "ipfs", KEY_NAME);
+		executor.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME);
 		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);

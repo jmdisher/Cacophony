@@ -33,7 +33,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
-import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -97,51 +96,6 @@ public class StandardAccess implements IWritingAccess
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
 		return new StandardAccess(environment, logger, writing, writing);
-	}
-
-	/**
-	 * Creates a new on-disk data location for our data.  This is expected to be tried on most launches, sometimes with
-	 * incomplete data, so it will just return false and do nothing if there already seems to be data present.
-	 * 
-	 * @param environment The environment.
-	 * @param ipfsConnectionString The IPFS connection string from daemon startup (the "/ip4/127.0.0.1/tcp/5001" from
-	 * "API server listening on /ip4/127.0.0.1/tcp/5001").
-	 * @param keyName The name of the key to use for publishing (may be null if this wasn't provided).
-	 * @return True if the config was created with default data or false if it wasn't touched as it already existed.
-	 * @throws UsageException If the config directory couldn't be created.
-	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
-	 */
-	public static boolean createNewChannelConfig(IEnvironment environment, String ipfsConnectionString, String keyName) throws UsageException, IpfsConnectionException
-	{
-		boolean didCreate = false;
-		
-		// Get the filesystem of our configured directory.
-		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
-		
-		// First, make sure it doesn't already exist.
-		boolean doesExist = fileSystem.doesConfigDirectoryExist();
-		if (!doesExist)
-		{
-			// We want to check that the connection works before we create the config file (otherwise we might store a broken config).
-			IConnection connection = environment.getConnection();
-			Assert.assertTrue(null != connection);
-			
-			didCreate = fileSystem.createConfigDirectory();
-			if (!didCreate)
-			{
-				throw new UsageException("Failed to create config directory");
-			}
-			// Create the instance and populate it with default files.
-			LocalDataModel dataModel = environment.getSharedDataModel();
-			try (IReadWriteLocalData writing = dataModel.openForWrite())
-			{
-				writing.writeLocalIndex(ChannelData.create(ipfsConnectionString, keyName));
-				writing.writeGlobalPrefs(PrefsData.defaultPrefs());
-				writing.writeGlobalPinCache(PinCacheData.createEmpty());
-				writing.writeFollowIndex(FolloweeData.createEmpty());
-			}
-		}
-		return didCreate;
 	}
 
 

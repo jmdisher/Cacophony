@@ -36,6 +36,9 @@ public class TestLocalDataModel
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
+	private static final String IPFS_HOST = "ipfsHost";
+	private static final String KEY_NAME = "keyName";
+
 	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
@@ -50,7 +53,7 @@ public class TestLocalDataModel
 		
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
-		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
+		access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
 		access.writeGlobalPrefs(PrefsData.defaultPrefs());
 		access.writeGlobalPinCache(PinCacheData.createEmpty());
 		access.writeFollowIndex(FolloweeData.createEmpty());
@@ -73,7 +76,7 @@ public class TestLocalDataModel
 		// Create the model.
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
-		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
+		access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
 		access.writeGlobalPrefs(PrefsData.defaultPrefs());
 		access.writeGlobalPinCache(PinCacheData.createEmpty());
 		access.writeFollowIndex(FolloweeData.createEmpty());
@@ -125,7 +128,7 @@ public class TestLocalDataModel
 		// Create the model.
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		IReadWriteLocalData access = model.openForWrite();
-		access.writeLocalIndex(ChannelData.create("ipfs", "key"));
+		access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
 		access.writeGlobalPrefs(PrefsData.defaultPrefs());
 		access.writeGlobalPinCache(PinCacheData.createEmpty());
 		access.writeFollowIndex(FolloweeData.createEmpty());
@@ -192,7 +195,7 @@ public class TestLocalDataModel
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
-			access.writeLocalIndex(ChannelData.create("host", "key"));
+			access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
 			access.writeGlobalPrefs(PrefsData.defaultPrefs());
 			access.writeFollowIndex(FolloweeData.createEmpty());
 			access.writeGlobalPinCache(PinCacheData.createEmpty());
@@ -217,7 +220,7 @@ public class TestLocalDataModel
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
-			access.writeLocalIndex(ChannelData.create("host", "key"));
+			access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
 			access.writeGlobalPrefs(PrefsData.defaultPrefs());
 			FolloweeData followees = FolloweeData.createEmpty();
 			followees.createNewFollowee(K1, F1);
@@ -254,7 +257,7 @@ public class TestLocalDataModel
 		boolean error = false;
 		try
 		{
-			model.verifyStorageConsistency();
+			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -272,25 +275,12 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		LocalDataModel model = new LocalDataModel(fileSystem);
 		
-		// We assert that we verify data only AFTER creating the storage.
+		// We throw a usage error if the version file is missing so create the directory, but nothing else.
+		fileSystem.createConfigDirectory();
 		boolean didFail = false;
 		try
 		{
-			model.verifyStorageConsistency();
-		}
-		catch (AssertionError e)
-		{
-			// This is an assertion since it would be a bug in the code.
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
-		
-		// We throw a usage error if the version file is missing so create the directory, but nothing else.
-		fileSystem.createConfigDirectory();
-		didFail = false;
-		try
-		{
-			model.verifyStorageConsistency();
+			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -303,7 +293,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			model.verifyStorageConsistency();
+			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -316,7 +306,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			model.verifyStorageConsistency();
+			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -329,7 +319,7 @@ public class TestLocalDataModel
 		{
 			stream.commit();
 		}
-		model.verifyStorageConsistency();
+		model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 	}
 
 	@Test

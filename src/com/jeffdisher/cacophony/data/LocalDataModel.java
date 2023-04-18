@@ -53,16 +53,34 @@ public class LocalDataModel
 	}
 
 	/**
-	 * Called during start-up to make sure that the storage model is consistent.  A consistent model MUST exist and
-	 * contains all files, updated to the latest version of the storage.
-	 * If the storage is inconsistent, it will be repaired (if possible) or an exception will be thrown.
+	 * Called during start-up to make sure that the storage model is consistent.  This means that it will create the
+	 * storage, if it doesn't already exist, and will make sure that it has a valid shape and can be used.
 	 * 
-	 * @throws UsageException The data model was inconsistent and couldn't be repaired.
+	 * @param ipfsConnectionString The connection string to set in the channel config, if it needs to be created.
+	 * @param keyName The IPFS key name to set in the channel config, if it needs to be created.
+	 * @throws UsageException The data model couldn't be created or was inconsistent.
 	 */
-	public void verifyStorageConsistency() throws UsageException
+	public void verifyStorageConsistency(String ipfsConnectionString, String keyName) throws UsageException
 	{
-		// We know that this is called immediately after creating any missing config.
-		Assert.assertTrue(_fileSystem.doesConfigDirectoryExist());
+		// If the config doesn't exist, create it with default values.
+		if (!_fileSystem.doesConfigDirectoryExist())
+		{
+			boolean didCreate = _fileSystem.createConfigDirectory();
+			if (!didCreate)
+			{
+				throw new UsageException("Failed to create config directory");
+			}
+			// Create the instance and populate it with default files - this will require grabbing the write lock.
+			try (IReadWriteLocalData writing = _openForWrite())
+			{
+				writing.writeLocalIndex(ChannelData.create(ipfsConnectionString, keyName));
+				writing.writeGlobalPrefs(PrefsData.defaultPrefs());
+				writing.writeGlobalPinCache(PinCacheData.createEmpty());
+				writing.writeFollowIndex(FolloweeData.createEmpty());
+			}
+		}
+		
+		// Now that the data exists, validate its consistency.
 		byte[] data = _fileSystem.readTrivialFile(VERSION_FILE);
 		if (null != data)
 		{
@@ -138,14 +156,7 @@ public class LocalDataModel
 	 */
 	public IReadWriteLocalData openForWrite()
 	{
-		Lock lock = _readWriteLock.writeLock();
-		lock.lock();
-		if (!_didLoadStorage)
-		{
-			_loadAllFiles();
-			_didLoadStorage = true;
-		}
-		return LoadedStorage.openReadWrite(this, new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
+		return _openForWrite();
 	}
 
 	/**
@@ -270,6 +281,19 @@ public class LocalDataModel
 		// Update the version file.
 		_fileSystem.writeTrivialFile(VERSION_FILE, new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
 	}
+
+	private IReadWriteLocalData _openForWrite()
+	{
+		Lock lock = _readWriteLock.writeLock();
+		lock.lock();
+		if (!_didLoadStorage)
+		{
+			_loadAllFiles();
+			_didLoadStorage = true;
+		}
+		return LoadedStorage.openReadWrite(this, new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
+	}
+
 
 	public static record ReadLock(Lock lock) {};
 	public static record WriteLock(Lock lock) {};
