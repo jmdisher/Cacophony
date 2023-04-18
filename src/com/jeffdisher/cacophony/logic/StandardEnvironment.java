@@ -17,7 +17,7 @@ public class StandardEnvironment implements IEnvironment
 	// network but this seems to be minimized with a larger number of threads so we use 16 instead of the earlier value
 	// of 4.
 	// This will likely still be tweaked in the future as more complex use-cases become common and can be tested.
-	private static final int THREAD_COUNT = 1;
+	private static final int THREAD_COUNT = 16;
 
 	// This lock is used to protect internal variables which may be changed by multiple threads.
 	private final Lock _internalLock;
