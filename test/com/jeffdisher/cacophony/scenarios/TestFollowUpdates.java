@@ -45,13 +45,13 @@ public class TestFollowUpdates
 	{
 		// Node 1.
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm));
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -108,13 +108,13 @@ public class TestFollowUpdates
 	{
 		// Node 1.
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm));
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -175,13 +175,13 @@ public class TestFollowUpdates
 	{
 		// Node 1.
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm));
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());

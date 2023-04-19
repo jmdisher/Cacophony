@@ -26,7 +26,7 @@ public class TestListChannelEntriesCommand
 	@Test
 	public void testWithAndWithoutKey() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -51,8 +51,8 @@ public class TestListChannelEntriesCommand
 	public void testCheckingOtherUser() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm));
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channels.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -68,8 +68,8 @@ public class TestListChannelEntriesCommand
 	public void testNotCachedEntry() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm));
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channels.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));

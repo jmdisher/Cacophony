@@ -35,7 +35,7 @@ public class TestEditPostCommand
 	@Test
 	public void testMatch() throws Throwable
 	{
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// Create the entry.
 		String name = "entry name";
@@ -67,7 +67,7 @@ public class TestEditPostCommand
 	@Test
 	public void testMissing() throws Throwable
 	{
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// Create the entry.
 		String name = "entry name";

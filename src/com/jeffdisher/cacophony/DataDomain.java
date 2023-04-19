@@ -99,9 +99,10 @@ public class DataDomain implements Closeable
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey(keyName, theirKey);
-		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(null);
+		// "They" never save drafts so we will just use the same one as "our", just to pass the sanity checks.
+		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(ourFileSystem.getDraftsTopLevelDirectory());
 		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, ipfsConnectString, keyName);
-		StandardEnvironment theirEnv = new StandardEnvironment(theirFileSystem
+		StandardEnvironment theirEnv = new StandardEnvironment(theirFileSystem.getDraftsTopLevelDirectory()
 				, theirDataModel
 				, them
 				, keyName
@@ -120,7 +121,7 @@ public class DataDomain implements Closeable
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
 		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ipfsConnectString, keyName);
-		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem
+		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem.getDraftsTopLevelDirectory()
 				, ourDataModel
 				, us
 				, keyName

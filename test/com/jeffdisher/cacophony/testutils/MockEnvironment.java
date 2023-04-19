@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.testutils;
 
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -31,13 +30,6 @@ public class MockEnvironment implements IEnvironment
 
 	@Override
 	public LocalDataModel getSharedDataModel()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
-	public IConfigFileSystem getConfigFileSystem()
 	{
 		// Not used in test.
 		throw Assert.unreachable();

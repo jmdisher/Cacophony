@@ -52,7 +52,7 @@ public class TestPublishCommand
 	@Test
 	public void testMissingChannel() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		PublishCommand command = new PublishCommand("name", "description", null, new ElementSubCommand[0]);
 		try
 		{
@@ -76,7 +76,7 @@ public class TestPublishCommand
 		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
 		PublishCommand command = new PublishCommand(name, "description", discussionUrl, elements);
 		
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));

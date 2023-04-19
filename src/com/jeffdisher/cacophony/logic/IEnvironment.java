@@ -34,11 +34,6 @@ public interface IEnvironment
 	LocalDataModel getSharedDataModel();
 
 	/**
-	 * @return The config filesystem location.
-	 */
-	IConfigFileSystem getConfigFileSystem();
-
-	/**
 	 * @return The lower-level IPFS connection object (getSharedScheduler() is usually more appropriate).
 	 */
 	IConnection getConnection();

@@ -36,8 +36,8 @@ public class TestRebroadcastCommand
 	public void testRebroadcastFromFollowee() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -81,8 +81,8 @@ public class TestRebroadcastCommand
 	public void testRebroadcastUnknown() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -123,7 +123,7 @@ public class TestRebroadcastCommand
 	public void testRebroadcastOurDuplicate() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channel and publish an entry.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -163,8 +163,8 @@ public class TestRebroadcastCommand
 	public void testRebroadcastBrokenElement() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -219,7 +219,7 @@ public class TestRebroadcastCommand
 	@Test
 	public void testMissingChannel() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		RebroadcastCommand command = new RebroadcastCommand(MISC_FILE);
 		try
 		{

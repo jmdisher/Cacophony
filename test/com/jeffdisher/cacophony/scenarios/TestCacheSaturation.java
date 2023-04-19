@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.scenarios;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.Assert;
@@ -143,11 +144,11 @@ public class TestCacheSaturation
 		private final IpfsKey _publicKey;
 		private final MockUserNode _user;
 		
-		public User(String keyName, IpfsKey publicKey, MockSwarm swarm)
+		public User(String keyName, IpfsKey publicKey, MockSwarm swarm) throws IOException
 		{
 			_keyName = keyName;
 			_publicKey = publicKey;
-			_user = new MockUserNode(keyName, publicKey, new MockSingleNode(swarm));
+			_user = new MockUserNode(keyName, publicKey, new MockSingleNode(swarm), FOLDER.newFolder());
 		}
 		
 		public void createChannel(int userNumber) throws Throwable

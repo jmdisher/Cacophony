@@ -118,7 +118,7 @@ public class MemoryConfigFileSystem implements IConfigFileSystem
 	}
 
 	@Override
-	public File getDraftsTopLevelDirectory() throws IOException
+	public File getDraftsTopLevelDirectory()
 	{
 		// If we didn't give this a draft directory, we don't expect this method to be called.
 		Assert.assertTrue(null != _draftsDirectoryOrNull);

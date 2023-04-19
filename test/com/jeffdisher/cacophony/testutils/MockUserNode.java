@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.testutils;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
@@ -39,13 +40,13 @@ public class MockUserNode
 	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
 	private StandardEnvironment _lazyExecutor;
 
-	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node)
+	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
 	{
 		_localKeyName = keyName;
 		_publicKey = key;
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
-		_fileSystem = new MemoryConfigFileSystem(null);
+		_fileSystem = new MemoryConfigFileSystem(draftsDir);
 		_logger = new SilentLogger();
 	}
 
@@ -181,7 +182,7 @@ public class MockUserNode
 				// We don't expect this in the test.
 				throw Assert.unexpected(e);
 			}
-			_lazyExecutor = new StandardEnvironment(_fileSystem
+			_lazyExecutor = new StandardEnvironment(_fileSystem.getDraftsTopLevelDirectory()
 					, model
 					, _sharedConnection
 					, _localKeyName

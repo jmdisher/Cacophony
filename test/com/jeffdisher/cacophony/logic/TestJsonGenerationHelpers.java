@@ -3,7 +3,9 @@ package com.jeffdisher.cacophony.logic;
 import java.io.ByteArrayInputStream;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
@@ -35,6 +37,8 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 
 public class TestJsonGenerationHelpers
 {
+	@ClassRule
+	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	public static final IpfsFile FILE1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 	public static final IpfsFile FILE2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 	public static final IpfsFile FILE3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
@@ -103,9 +107,9 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem
+		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, remoteConnection
 				, KEY_NAME
@@ -141,9 +145,9 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem
+		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, remoteConnection
 				, KEY_NAME

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.scenarios;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -117,11 +118,11 @@ public class TestLocalIntegrity
 	}
 
 
-	private static IEnvironment _createSingleNode(IConnection serverData) throws UsageException
+	private static IEnvironment _createSingleNode(IConnection serverData) throws UsageException, IOException
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME1);
-		return new StandardEnvironment(fileSystem
+		return new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, serverData
 				, KEY_NAME1

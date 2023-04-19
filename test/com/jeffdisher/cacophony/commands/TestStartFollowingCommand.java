@@ -5,7 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -30,6 +32,8 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 
 public class TestStartFollowingCommand
 {
+	@ClassRule
+	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
@@ -50,9 +54,9 @@ public class TestStartFollowingCommand
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem
+		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, localDataModel
 				, sharedConnection
 				, KEY_NAME
@@ -112,9 +116,9 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem
+		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, localDataModel
 				, sharedConnection
 				, KEY_NAME

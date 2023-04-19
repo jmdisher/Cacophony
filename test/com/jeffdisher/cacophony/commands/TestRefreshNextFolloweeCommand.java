@@ -40,7 +40,7 @@ public class TestRefreshNextFolloweeCommand
 	{
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -64,8 +64,8 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -88,9 +88,9 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -126,9 +126,9 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -191,9 +191,9 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -252,9 +252,9 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user3 = new MockUserNode(KEY_NAME, PUBLIC_KEY3, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -315,8 +315,8 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -354,8 +354,8 @@ public class TestRefreshNextFolloweeCommand
 		RefreshNextFolloweeCommand command = new RefreshNextFolloweeCommand();
 		
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm));
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
+		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));

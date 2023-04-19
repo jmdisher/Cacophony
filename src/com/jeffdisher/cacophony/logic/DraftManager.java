@@ -27,6 +27,8 @@ public class DraftManager
 
 	public DraftManager(File draftsDirectory)
 	{
+		Assert.assertTrue(null != draftsDirectory);
+		
 		_draftsDirectory = draftsDirectory;
 		_sharedWrappers = new HashMap<>();
 		

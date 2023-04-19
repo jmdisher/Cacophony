@@ -32,7 +32,7 @@ public class TestRecommendations
 	public void testAddRecommendation() throws Throwable
 	{
 		// We only need a single node.
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()));
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We only need a single real user.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
@@ -70,7 +70,7 @@ public class TestRecommendations
 	public void testUsageErrorNotFollowed() throws Throwable
 	{
 		// We only need a single node.
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()));
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We only need a single real user.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());

@@ -221,7 +221,7 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
-		StandardEnvironment env = new StandardEnvironment(fileSystem
+		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, connection
 				, KEY_NAME, PUBLIC_KEY
@@ -360,7 +360,7 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
-		StandardEnvironment env = new StandardEnvironment(fileSystem
+		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, connection
 				, KEY_NAME
