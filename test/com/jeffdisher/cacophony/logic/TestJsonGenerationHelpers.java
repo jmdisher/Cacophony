@@ -9,6 +9,7 @@ import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -102,11 +103,17 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(fileSystem
+				, model
+				, remoteConnection
+				, KEY_NAME
+				, PUBLIC_KEY1
+		);
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
-		executor.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME);
 		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
@@ -134,13 +141,19 @@ public class TestJsonGenerationHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
-		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), remoteConnection, KEY_NAME, PUBLIC_KEY1);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(fileSystem
+				, model
+				, remoteConnection
+				, KEY_NAME
+				, PUBLIC_KEY1
+		);
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		executor.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME);
 		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);

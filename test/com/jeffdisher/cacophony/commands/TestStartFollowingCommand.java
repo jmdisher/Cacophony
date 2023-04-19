@@ -50,10 +50,15 @@ public class TestStartFollowingCommand
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
-		StandardEnvironment executor = new StandardEnvironment(new MemoryConfigFileSystem(null), sharedConnection, KEY_NAME, PUBLIC_KEY);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(fileSystem
+				, localDataModel
+				, sharedConnection
+				, KEY_NAME
+				, PUBLIC_KEY
+		);
 		SilentLogger logger = new SilentLogger();
-		// For this test, we want to just fake a default config.
-		executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
 		originalDescriptionData.setName("name");
@@ -107,11 +112,15 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		MemoryConfigFileSystem filesystem = new MemoryConfigFileSystem(null);
-		StandardEnvironment executor = new StandardEnvironment(filesystem, sharedConnection, KEY_NAME, PUBLIC_KEY);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		StandardEnvironment executor = new StandardEnvironment(fileSystem
+				, localDataModel
+				, sharedConnection
+				, KEY_NAME
+				, PUBLIC_KEY
+		);
 		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream));
-		// For this test, we want to just fake a default config.
-		executor.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		
 		boolean didFail = false;
 		try
@@ -129,8 +138,7 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Followee meta-data element too big (probably wrong file published):  Size limit broken: index was 1025 but is limited to 1024"));
 		
 		// Check that the data shows nobody being followed.
-		LocalDataModel model = new LocalDataModel(filesystem);
-		try (IReadOnlyLocalData access = model.openForRead())
+		try (IReadOnlyLocalData access = localDataModel.openForRead())
 		{
 			Assert.assertTrue(access.readFollowIndex().getAllKnownFollowees().isEmpty());
 		}

@@ -6,6 +6,7 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -107,13 +108,13 @@ public class Cacophony {
 					IConnection connection = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
 					IpfsKey publicKey = _publicKeyForName(connection, keyName);
 					
+					// Make sure that the local storage is in a sane state and load it into memory.
+					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), ipfsConnectString, keyName);
+					
 					// Create the executor and logger for our run and put them into the context.
-					executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem(), connection, keyName, publicKey);
+					executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem(), localDataModel, connection, keyName, publicKey);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
 					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
-					
-					// We want to make sure that the local storage exists and is in a sane state.
-					executor.getSharedDataModel().verifyStorageConsistency(ipfsConnectString, keyName);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);

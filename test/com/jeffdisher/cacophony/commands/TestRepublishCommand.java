@@ -24,7 +24,6 @@ public class TestRepublishCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Verify initial update.
@@ -45,7 +44,6 @@ public class TestRepublishCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		RepublishCommand command = new RepublishCommand();
-		user1.createEmptyConfig(KEY_NAME);
 		try
 		{
 			user1.runCommand(null, command);

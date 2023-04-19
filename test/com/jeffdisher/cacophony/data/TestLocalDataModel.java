@@ -20,7 +20,6 @@ import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
-import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -49,15 +48,8 @@ public class TestLocalDataModel
 	public void createAndReadEmpty() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		fileSystem.createConfigDirectory();
 		
-		LocalDataModel model = new LocalDataModel(fileSystem);
-		IReadWriteLocalData access = model.openForWrite();
-		access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
-		access.writeGlobalPrefs(PrefsData.defaultPrefs());
-		access.writeGlobalPinCache(PinCacheData.createEmpty());
-		access.writeFollowIndex(FolloweeData.createEmpty());
-		access.close();
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		
 		IReadOnlyLocalData reader = model.openForRead();
 		PrefsData prefs = reader.readGlobalPrefs();
@@ -71,16 +63,9 @@ public class TestLocalDataModel
 	public void concurrentReaders() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		fileSystem.createConfigDirectory();
 		
 		// Create the model.
-		LocalDataModel model = new LocalDataModel(fileSystem);
-		IReadWriteLocalData access = model.openForWrite();
-		access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
-		access.writeGlobalPrefs(PrefsData.defaultPrefs());
-		access.writeGlobalPinCache(PinCacheData.createEmpty());
-		access.writeFollowIndex(FolloweeData.createEmpty());
-		access.close();
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		
 		// Create a bunch of threads with a barrier to synchronize them inside the read lock.
 		Thread[] threads = new Thread[3];
@@ -123,16 +108,9 @@ public class TestLocalDataModel
 	public void serializedWriters() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		fileSystem.createConfigDirectory();
 		
 		// Create the model.
-		LocalDataModel model = new LocalDataModel(fileSystem);
-		IReadWriteLocalData access = model.openForWrite();
-		access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
-		access.writeGlobalPrefs(PrefsData.defaultPrefs());
-		access.writeGlobalPinCache(PinCacheData.createEmpty());
-		access.writeFollowIndex(FolloweeData.createEmpty());
-		access.close();
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		
 		// Create a bunch of threads with an atomic counter to verify that nobody is ever inside the write lock at the same time.
 		// NOTE:  This is racy but should only rarely pass when it is actually broken.
@@ -189,17 +167,9 @@ public class TestLocalDataModel
 	public void basicOpcodeStream() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		fileSystem.createConfigDirectory();
 		
 		// Create the model with some minimal data.
-		LocalDataModel model = new LocalDataModel(fileSystem);
-		try (IReadWriteLocalData access = model.openForWrite())
-		{
-			access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
-			access.writeGlobalPrefs(PrefsData.defaultPrefs());
-			access.writeFollowIndex(FolloweeData.createEmpty());
-			access.writeGlobalPinCache(PinCacheData.createEmpty());
-		}
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		byte[] serialized = _serializeModelToOpcodes(model);
 		
 		// Replay the stream to make sure it is what we expected to see.
@@ -214,20 +184,17 @@ public class TestLocalDataModel
 	public void fullOpcodeStream() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		fileSystem.createConfigDirectory();
 		
 		// Create the model with enough data to see positive opcode generated.
-		LocalDataModel model = new LocalDataModel(fileSystem);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
-			access.writeLocalIndex(ChannelData.create(IPFS_HOST, KEY_NAME));
-			access.writeGlobalPrefs(PrefsData.defaultPrefs());
-			FolloweeData followees = FolloweeData.createEmpty();
+			FolloweeData followees = access.readFollowIndex();
 			followees.createNewFollowee(K1, F1);
 			followees.addElement(K1, new FollowingCacheElement(F1, F2, null, 5L));
 			followees.updateExistingFollowee(K1, F1, 1L);
 			access.writeFollowIndex(followees);
-			PinCacheData pinCache = PinCacheData.createEmpty();
+			PinCacheData pinCache = access.readGlobalPinCache();
 			pinCache.addRef(F1);
 			pinCache.addRef(F2);
 			pinCache.addRef(F1);
@@ -253,11 +220,10 @@ public class TestLocalDataModel
 		fileSystem.writeTrivialFile("version", new byte[] {1});
 		
 		// Verify that this throws a version error.
-		LocalDataModel model = new LocalDataModel(fileSystem);
 		boolean error = false;
 		try
 		{
-			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -273,14 +239,13 @@ public class TestLocalDataModel
 	public void inconsistentData() throws Throwable
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		LocalDataModel model = new LocalDataModel(fileSystem);
 		
 		// We throw a usage error if the version file is missing so create the directory, but nothing else.
 		fileSystem.createConfigDirectory();
 		boolean didFail = false;
 		try
 		{
-			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -293,7 +258,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -306,7 +271,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -319,7 +284,7 @@ public class TestLocalDataModel
 		{
 			stream.commit();
 		}
-		model.verifyStorageConsistency(IPFS_HOST, KEY_NAME);
+		LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 	}
 
 	@Test

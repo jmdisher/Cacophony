@@ -26,7 +26,6 @@ public class TestCreateChannelCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
-		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, command);
 		
 		// Verify the states that should have changed.
@@ -60,7 +59,6 @@ public class TestCreateChannelCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
-		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, command);
 		try
 		{

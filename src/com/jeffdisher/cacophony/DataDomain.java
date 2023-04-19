@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -98,14 +99,16 @@ public class DataDomain implements Closeable
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey(keyName, theirKey);
-		StandardEnvironment theirEnv = new StandardEnvironment(new MemoryConfigFileSystem(null)
+		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, ipfsConnectString, keyName);
+		StandardEnvironment theirEnv = new StandardEnvironment(theirFileSystem
+				, theirDataModel
 				, them
 				, keyName
 				, theirKey
 		);
 		ILogger theirLogger = new SilentLogger();
 		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null);
-		theirEnv.getSharedDataModel().verifyStorageConsistency(ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
 		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
@@ -116,14 +119,15 @@ public class DataDomain implements Closeable
 		MockSingleNode us = new MockSingleNode(swarm);
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
+		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ipfsConnectString, keyName);
 		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem
+				, ourDataModel
 				, us
 				, keyName
 				, ourKey
 		);
 		ILogger ourLogger = new SilentLogger();
 		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null);
-		ourEnv.getSharedDataModel().verifyStorageConsistency(ipfsConnectString, keyName);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
 		us.publish(keyName, ourKey, newRoot);

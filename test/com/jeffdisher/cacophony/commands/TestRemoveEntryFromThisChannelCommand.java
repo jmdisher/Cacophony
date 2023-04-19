@@ -22,7 +22,6 @@ public class TestRemoveEntryFromThisChannelCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(MISC_FILE);
-		user1.createEmptyConfig(KEY_NAME);
 		try
 		{
 			user1.runCommand(null, command);

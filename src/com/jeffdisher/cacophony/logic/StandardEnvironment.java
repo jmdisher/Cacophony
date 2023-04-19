@@ -32,6 +32,7 @@ public class StandardEnvironment implements IEnvironment
 	private DraftManager _lazySharedDraftManager;
 
 	public StandardEnvironment(IConfigFileSystem fileSystem
+			, LocalDataModel sharedDataModel
 			, IConnection connection
 			, String keyName
 			, IpfsKey publicKey
@@ -39,7 +40,7 @@ public class StandardEnvironment implements IEnvironment
 	{
 		_internalLock = new ReentrantLock();
 		_fileSystem = fileSystem;
-		_sharedDataModel = new LocalDataModel(fileSystem);
+		_sharedDataModel = sharedDataModel;
 		_connection = connection;
 		_keyName = keyName;
 		_publicKey = publicKey;

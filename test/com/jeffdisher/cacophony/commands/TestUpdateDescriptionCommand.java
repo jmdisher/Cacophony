@@ -20,7 +20,6 @@ public class TestUpdateDescriptionCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		UpdateDescriptionCommand command = new UpdateDescriptionCommand("name", "description", null, null, null);
-		user1.createEmptyConfig(KEY_NAME);
 		try
 		{
 			user1.runCommand(null, command);

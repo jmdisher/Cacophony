@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
@@ -48,15 +49,8 @@ public class MockUserNode
 		_logger = new SilentLogger();
 	}
 
-	public void createEmptyConfig(String keyName) throws UsageException, IpfsConnectionException
-	{
-		_lazyEnv().getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
-	}
-
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
 	{
-		_lazyEnv().getSharedDataModel().verifyStorageConsistency(IPFS_HOST, keyName);
-		
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
@@ -177,7 +171,22 @@ public class MockUserNode
 	{
 		if (null == _lazyExecutor)
 		{
-			_lazyExecutor = new StandardEnvironment(_fileSystem, _sharedConnection, _localKeyName, _publicKey);
+			LocalDataModel model;
+			try
+			{
+				model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, IPFS_HOST, _localKeyName);
+			}
+			catch (UsageException e)
+			{
+				// We don't expect this in the test.
+				throw Assert.unexpected(e);
+			}
+			_lazyExecutor = new StandardEnvironment(_fileSystem
+					, model
+					, _sharedConnection
+					, _localKeyName
+					, _publicKey
+			);
 		}
 		return _lazyExecutor;
 	}

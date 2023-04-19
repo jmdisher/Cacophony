@@ -152,6 +152,7 @@ public class LoadedStorage implements IReadWriteLocalData
 		/**
 		 * Called when the storage read-write lock should be released as the instance is now closed.  Any of the
 		 * non-null parameters passed back MUST be written to disk before the lock finishes being released.
+		 * NOTE:  Any non-null values must be the same instances returned by a previous read.
 		 * 
 		 * @param updateLocalIndex Non-null if this should be saved as the new ChannelData.
 		 * @param updateGlobalPinCache Non-null if this should be saved as the new PinCacheData.

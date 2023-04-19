@@ -21,7 +21,6 @@ public class TestAddRecommendationCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		AddRecommendationCommand command = new AddRecommendationCommand(TARGET_KEY);
-		user1.createEmptyConfig(KEY_NAME);
 		try
 		{
 			user1.runCommand(null, command);

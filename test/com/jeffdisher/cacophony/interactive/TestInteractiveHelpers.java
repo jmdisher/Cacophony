@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
@@ -219,11 +220,15 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		StandardEnvironment env = new StandardEnvironment(fileSystem, connection, KEY_NAME, PUBLIC_KEY);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		StandardEnvironment env = new StandardEnvironment(fileSystem
+				, model
+				, connection
+				, KEY_NAME, PUBLIC_KEY
+		);
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		env.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
 		
 		// Now, create a basic draft.
@@ -354,11 +359,16 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		StandardEnvironment env = new StandardEnvironment(fileSystem, connection, KEY_NAME, PUBLIC_KEY);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		StandardEnvironment env = new StandardEnvironment(fileSystem
+				, model
+				, connection
+				, KEY_NAME
+				, PUBLIC_KEY
+		);
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		env.getSharedDataModel().verifyStorageConsistency(IPFS_HOST, KEY_NAME);
 		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
 		
 		// Now, create a draft and attach audio.

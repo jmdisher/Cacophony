@@ -40,11 +40,9 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
@@ -87,10 +85,8 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Publish something we can copy.
@@ -130,7 +126,6 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// Create the channel and publish an entry.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		File fakeVideo = FOLDER.newFile();
 		Files.write(fakeVideo.toPath(), "video".getBytes());
@@ -172,10 +167,8 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Publish something we can copy.
@@ -228,7 +221,6 @@ public class TestRebroadcastCommand
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		RebroadcastCommand command = new RebroadcastCommand(MISC_FILE);
-		user1.createEmptyConfig(KEY_NAME);
 		try
 		{
 			user1.runCommand(null, command);

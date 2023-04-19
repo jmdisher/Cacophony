@@ -31,57 +31,43 @@ public class LocalDataModel
 
 	private static final String V2_FINAL_LOG = "opcodes_0.final.gzlog";
 
-	private final IConfigFileSystem _fileSystem;
-	private final ReadWriteLock _readWriteLock;
-
-	private boolean _didLoadStorage;
-	private ChannelData _localIndex;
-	private PinCacheData _globalPinCache;
-	private FolloweeData _followIndex;
-	private PrefsData _globalPrefs;
-
 	/**
-	 * Loads the initial state of the data model from disk.  If the constructor returns without exception, then the
-	 * local data model has been loaded and no more read-only operations related to it will run against storage.
+	 * Verifies the on-disk data model, creating it if it isn't already present.
+	 * Loads the on-disk model into memory, returning this representation.
 	 * 
 	 * @param fileSystem The file system where the data lives.
+	 * @param ipfsConnectionString The string describing the API server end-point.
+	 * @param keyName The name of the IPFS key to use for this user.
 	 */
-	public LocalDataModel(IConfigFileSystem fileSystem)
-	{
-		_fileSystem = fileSystem;
-		_readWriteLock = new ReentrantReadWriteLock();
-	}
-
-	/**
-	 * Called during start-up to make sure that the storage model is consistent.  This means that it will create the
-	 * storage, if it doesn't already exist, and will make sure that it has a valid shape and can be used.
-	 * 
-	 * @param ipfsConnectionString The connection string to set in the channel config, if it needs to be created.
-	 * @param keyName The IPFS key name to set in the channel config, if it needs to be created.
-	 * @throws UsageException The data model couldn't be created or was inconsistent.
-	 */
-	public void verifyStorageConsistency(String ipfsConnectionString, String keyName) throws UsageException
+	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, String ipfsConnectionString, String keyName) throws UsageException
 	{
 		// If the config doesn't exist, create it with default values.
-		if (!_fileSystem.doesConfigDirectoryExist())
+		if (!fileSystem.doesConfigDirectoryExist())
 		{
-			boolean didCreate = _fileSystem.createConfigDirectory();
+			boolean didCreate = fileSystem.createConfigDirectory();
 			if (!didCreate)
 			{
 				throw new UsageException("Failed to create config directory");
 			}
-			// Create the instance and populate it with default files - this will require grabbing the write lock.
-			try (IReadWriteLocalData writing = _openForWrite())
+			// Write the initial files.
+			try
 			{
-				writing.writeLocalIndex(ChannelData.create(ipfsConnectionString, keyName));
-				writing.writeGlobalPrefs(PrefsData.defaultPrefs());
-				writing.writeGlobalPinCache(PinCacheData.createEmpty());
-				writing.writeFollowIndex(FolloweeData.createEmpty());
+				_writeToDisk(fileSystem
+						, ChannelData.create(ipfsConnectionString, keyName)
+						, PrefsData.defaultPrefs()
+						, PinCacheData.createEmpty()
+						, FolloweeData.createEmpty()
+				);
+			}
+			catch (IOException e)
+			{
+				// We don't expect a failure to write to local storage.
+				throw Assert.unexpected(e);
 			}
 		}
 		
 		// Now that the data exists, validate its consistency.
-		byte[] data = _fileSystem.readTrivialFile(VERSION_FILE);
+		byte[] data = fileSystem.readTrivialFile(VERSION_FILE);
 		if (null != data)
 		{
 			// The version file exists so just make sure it is what we expect.
@@ -98,26 +84,57 @@ public class LocalDataModel
 				// Unknown.
 				throw new UsageException("Local storage version cannot be understood: " + version);
 			}
-			
-			// We know that this is called immediately after creating the config so there should be an opcode log file.
-			try (InputStream opcodeLog = _fileSystem.readAtomicFile(V2_FINAL_LOG))
-			{
-				if (null == opcodeLog)
-				{
-					throw new UsageException("Local storage opcode log file is missing");
-				}
-			}
-			catch (IOException e)
-			{
-				// Close exception not expected.
-				throw Assert.unexpected(e);
-			}
 		}
 		else
 		{
 			// This file needs to exist.
 			throw new UsageException("Version file missing");
 		}
+		
+		// Now, load all the files so we can create the initial data model.
+		try (InputStream opcodeLog = fileSystem.readAtomicFile(V2_FINAL_LOG))
+		{
+			if (null == opcodeLog)
+			{
+				throw new UsageException("Local storage opcode log file is missing");
+			}
+			
+			ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(opcodeLog);
+			return new LocalDataModel(fileSystem
+					, projections.channel()
+					, projections.prefs()
+					, projections.pinCache()
+					, projections.followee()
+			);
+		}
+		catch (IOException e)
+		{
+			// We have no way to handle this failure.
+			throw Assert.unexpected(e);
+		}
+	}
+
+
+	private final IConfigFileSystem _fileSystem;
+	private final ChannelData _localIndex;
+	private final PrefsData _globalPrefs;
+	private final PinCacheData _globalPinCache;
+	private final FolloweeData _followIndex;
+	private final ReadWriteLock _readWriteLock;
+
+	private LocalDataModel(IConfigFileSystem fileSystem
+			, ChannelData localIndex
+			, PrefsData globalPrefs
+			, PinCacheData globalPinCache
+			, FolloweeData followIndex
+	)
+	{
+		_fileSystem = fileSystem;
+		_localIndex = localIndex;
+		_globalPrefs = globalPrefs;
+		_globalPinCache = globalPinCache;
+		_followIndex = followIndex;
+		_readWriteLock = new ReentrantReadWriteLock();
 	}
 
 	/**
@@ -130,11 +147,6 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
-		if (!_didLoadStorage)
-		{
-			_loadAllFiles();
-			_didLoadStorage = true;
-		}
 		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
@@ -150,67 +162,46 @@ public class LocalDataModel
 	}
 
 
-	private void _loadAllFiles()
-	{
-		try (InputStream input = _fileSystem.readAtomicFile(V2_FINAL_LOG))
-		{
-			// Note that this is null during initial creation.
-			if (null != input)
-			{
-				ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(input);
-				_localIndex = projections.channel();
-				_globalPrefs = projections.prefs();
-				_globalPinCache = projections.pinCache();
-				_followIndex = projections.followee();
-			}
-		}
-		catch (IOException e)
-		{
-			// We have no way to handle this failure.
-			throw Assert.unexpected(e);
-		}
-	}
-
 	private void _flushStateToStream() throws IOException
 	{
-		// Make sure that the state was actually loaded or set.
-		// This is only not enforced by the loading mechanism in the case of a new channel, where all storage must be
-		// explicitly created.
-		Assert.assertTrue(_didLoadStorage);
-		Assert.assertTrue(null != _localIndex);
-		Assert.assertTrue(null != _globalPrefs);
-		Assert.assertTrue(null != _globalPinCache);
-		Assert.assertTrue(null != _followIndex);
-		
-		// We will serialize directly to the file.  If there are any exceptions, we won't reach the commit.
-		try (IConfigFileSystem.AtomicOutputStream atomic = _fileSystem.writeAtomicFile(V2_FINAL_LOG))
-		{
-			try (ObjectOutputStream output = OpcodeContext.createOutputStream(atomic.getStream()))
-			{
-				_localIndex.serializeToOpcodeStream(output);
-				_globalPrefs.serializeToOpcodeStream(output);
-				_globalPinCache.serializeToOpcodeStream(output);
-				_followIndex.serializeToOpcodeStream(output);
-			}
-			atomic.commit();
-		}
-		
-		// Update the version file.
-		_fileSystem.writeTrivialFile(VERSION_FILE, new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
+		_writeToDisk(_fileSystem
+				, _localIndex
+				, _globalPrefs
+				, _globalPinCache
+				, _followIndex
+		);
 	}
 
 	private IReadWriteLocalData _openForWrite()
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();
-		if (!_didLoadStorage)
-		{
-			_loadAllFiles();
-			_didLoadStorage = true;
-		}
 		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
+	private static void _writeToDisk(IConfigFileSystem fileSystem
+			, ChannelData localIndex
+			, PrefsData globalPrefs
+			, PinCacheData globalPinCache
+			, FolloweeData followIndex
+	) throws IOException
+	{
+		// We will serialize directly to the file.  If there are any exceptions, we won't reach the commit.
+		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile(V2_FINAL_LOG))
+		{
+			try (ObjectOutputStream output = OpcodeContext.createOutputStream(atomic.getStream()))
+			{
+				localIndex.serializeToOpcodeStream(output);
+				globalPrefs.serializeToOpcodeStream(output);
+				globalPinCache.serializeToOpcodeStream(output);
+				followIndex.serializeToOpcodeStream(output);
+			}
+			atomic.commit();
+		}
+		
+		// Update the version file.
+		fileSystem.writeTrivialFile(VERSION_FILE, new byte[] { LOCAL_CONFIG_VERSION_NUMBER });
+	}
 
 
 	public class ReadLock implements LoadedStorage.UnlockRead
@@ -243,29 +234,25 @@ public class LocalDataModel
 			if (null != updateLocalIndex)
 			{
 				// We can't change the instance - this is just to signify it may have changed.
-				Assert.assertTrue((null == _localIndex) || (_localIndex == updateLocalIndex));
-				_localIndex = updateLocalIndex;
+				Assert.assertTrue(_localIndex == updateLocalIndex);
 				somethingUpdated = true;
 			}
 			if (null != updateGlobalPinCache)
 			{
 				// We can't change the instance - this is just to signify it may have changed.
-				Assert.assertTrue((null == _globalPinCache) || (_globalPinCache == updateGlobalPinCache));
-				_globalPinCache = updateGlobalPinCache;
+				Assert.assertTrue(_globalPinCache == updateGlobalPinCache);
 				somethingUpdated = true;
 			}
 			if (null != updateFollowIndex)
 			{
 				// We can't change the instance - this is just to signify it may have changed.
-				Assert.assertTrue((null == _followIndex) || (_followIndex == updateFollowIndex));
-				_followIndex = updateFollowIndex;
+				Assert.assertTrue(_followIndex == updateFollowIndex);
 				somethingUpdated = true;
 			}
 			if (null != updateGlobalPrefs)
 			{
 				// We can't change the instance - this is just to signify it may have changed.
-				Assert.assertTrue((null == _globalPrefs) || (_globalPrefs == updateGlobalPrefs));
-				_globalPrefs = updateGlobalPrefs;
+				Assert.assertTrue(_globalPrefs == updateGlobalPrefs);
 				somethingUpdated = true;
 			}
 			// Write the version if anything changed.

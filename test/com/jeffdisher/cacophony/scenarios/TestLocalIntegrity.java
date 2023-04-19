@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
@@ -23,6 +24,7 @@ import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestLocalIntegrity
@@ -42,7 +44,6 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node);
 		SilentLogger logger = new SilentLogger();
 		
-		env.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new ICommand.Context(env, logger, null, null, null));
 		
@@ -64,7 +65,6 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node);
 		SilentLogger logger = new SilentLogger();
 		
-		env.getSharedDataModel().verifyStorageConsistency("ipfs", KEY_NAME1);
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new ICommand.Context(env, logger, null, null, null));
 		
@@ -117,8 +117,15 @@ public class TestLocalIntegrity
 	}
 
 
-	private static IEnvironment _createSingleNode(IConnection serverData)
+	private static IEnvironment _createSingleNode(IConnection serverData) throws UsageException
 	{
-		return new StandardEnvironment(new MemoryConfigFileSystem(null), serverData, KEY_NAME1, PUBLIC_KEY1);
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME1);
+		return new StandardEnvironment(fileSystem
+				, model
+				, serverData
+				, KEY_NAME1
+				, PUBLIC_KEY1
+		);
 	}
 }

@@ -43,7 +43,6 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		boolean didThrow = false;
@@ -69,11 +68,9 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add a followee.
-		user1.createEmptyConfig(KEY_NAME);
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
@@ -96,15 +93,12 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
-		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
@@ -137,15 +131,12 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
-		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
@@ -205,15 +196,12 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
-		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
@@ -269,15 +257,12 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
-		user3.createEmptyConfig(KEY_NAME);
 		user3.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY3));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY3));
@@ -334,11 +319,9 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add a followee.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
@@ -375,11 +358,9 @@ public class TestRefreshNextFolloweeCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm));
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.createEmptyConfig(KEY_NAME);
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followee.
-		user2.createEmptyConfig(KEY_NAME);
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		user.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
