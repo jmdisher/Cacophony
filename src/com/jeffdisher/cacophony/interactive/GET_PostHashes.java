@@ -15,6 +15,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Returns a list of post hashes for the given user, as a JSON array.
+ * 
+ * NOTE:  This is ONLY used by integration tests since they often want to see a snapshot of everything to prove what is
+ * NOT known to the server.
+ * Normal use-cases should instead listen to the WS_UserEntries event stream.
  */
 public class GET_PostHashes implements ValidatedEntryPoints.GET
 {

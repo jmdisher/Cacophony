@@ -148,15 +148,6 @@ function API_getInfoForUser(publicKey)
 	});
 }
 
-function API_getAllPostsForUser(publicKey)
-{
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve(DATA_userPosts[publicKey]);
-		});
-	});
-}
-
 function API_getRecommendedUsers(publicKey)
 {
 	return new Promise(resolve => {

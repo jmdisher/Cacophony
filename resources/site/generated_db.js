@@ -19,15 +19,6 @@ function API_getInfoForUser(publicKey)
 	});
 }
 
-function API_getAllPostsForUser(publicKey)
-{
-	return new Promise(resolve => {
-		REST.GET("/server/postHashes/" + publicKey)
-			.then(result => result.json())
-			.then(json => resolve(json));
-	});
-}
-
 function API_getRecommendedUsers(publicKey)
 {
 	return new Promise(resolve => {
