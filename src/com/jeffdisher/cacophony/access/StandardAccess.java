@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -63,12 +62,6 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IReadingAccess readAccess(IEnvironment environment, ILogger logger) throws IpfsConnectionException
 	{
-		// Get the filesystem of our configured directory.
-		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
-		
-		boolean doesExist = fileSystem.doesConfigDirectoryExist();
-		// Should have been created earlier in the run.
-		Assert.assertTrue(doesExist);
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
@@ -86,12 +79,6 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess writeAccess(IEnvironment environment, ILogger logger) throws IpfsConnectionException
 	{
-		// Get the filesystem of our configured directory.
-		IConfigFileSystem fileSystem = environment.getConfigFileSystem();
-		
-		boolean doesExist = fileSystem.doesConfigDirectoryExist();
-		// Should have been created earlier in the run.
-		Assert.assertTrue(doesExist);
 		LocalDataModel dataModel = environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
