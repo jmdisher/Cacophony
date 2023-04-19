@@ -135,17 +135,7 @@ public class LocalDataModel
 			_loadAllFiles();
 			_didLoadStorage = true;
 		}
-		return LoadedStorage.openReadOnly(this, new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
-	}
-
-	/**
-	 * Called by the IReadOnlyLocalData implementation when it is closed.
-	 * 
-	 * @param lock The read lock originally given to the read context.
-	 */
-	public void closeRead(ReadLock lock)
-	{
-		lock.lock.unlock();
+		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
 	/**
@@ -157,66 +147,6 @@ public class LocalDataModel
 	public IReadWriteLocalData openForWrite()
 	{
 		return _openForWrite();
-	}
-
-	/**
-	 * Called by the IReadWriteLocalData implementation when it is closed.  Any of the non-null parameters passed back
-	 * will be written to disk before the lock finishes being released.
-	 * 
-	 * @param lock The write lock originally given to the write context.
-	 * @param updateLocalIndex Non-null if this should be saved as the new LocalIndex.
-	 * @param updateGlobalPinCache Non-null if this should be saved as the new GlobalPinCache.
-	 * @param updateFollowIndex Non-null if this should be saved as the new FollowIndex.
-	 * @param updateGlobalPrefs Non-null if this should be saved as the new GlobalPrefs.
-	 */
-	public void closeWrite(WriteLock lock, ChannelData updateLocalIndex, PinCacheData updateGlobalPinCache, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs)
-	{
-		// Write-back the elements they provided (anything passed as null is unchanged).
-		
-		boolean somethingUpdated = false;
-		if (null != updateLocalIndex)
-		{
-			// We can't change the instance - this is just to signify it may have changed.
-			Assert.assertTrue((null == _localIndex) || (_localIndex == updateLocalIndex));
-			_localIndex = updateLocalIndex;
-			somethingUpdated = true;
-		}
-		if (null != updateGlobalPinCache)
-		{
-			// We can't change the instance - this is just to signify it may have changed.
-			Assert.assertTrue((null == _globalPinCache) || (_globalPinCache == updateGlobalPinCache));
-			_globalPinCache = updateGlobalPinCache;
-			somethingUpdated = true;
-		}
-		if (null != updateFollowIndex)
-		{
-			// We can't change the instance - this is just to signify it may have changed.
-			Assert.assertTrue((null == _followIndex) || (_followIndex == updateFollowIndex));
-			_followIndex = updateFollowIndex;
-			somethingUpdated = true;
-		}
-		if (null != updateGlobalPrefs)
-		{
-			// We can't change the instance - this is just to signify it may have changed.
-			Assert.assertTrue((null == _globalPrefs) || (_globalPrefs == updateGlobalPrefs));
-			_globalPrefs = updateGlobalPrefs;
-			somethingUpdated = true;
-		}
-		// Write the version if anything changed.
-		if (somethingUpdated)
-		{
-			try
-			{
-				_flushStateToStream();
-			}
-			catch (IOException e)
-			{
-				// We don't really have a fall-back for these exceptions.
-				throw Assert.unexpected(e);
-			}
-		}
-		
-		lock.lock.unlock();
 	}
 
 
@@ -278,10 +208,81 @@ public class LocalDataModel
 			_loadAllFiles();
 			_didLoadStorage = true;
 		}
-		return LoadedStorage.openReadWrite(this, new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
+		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
 	}
 
 
-	public static record ReadLock(Lock lock) {};
-	public static record WriteLock(Lock lock) {};
+
+	public class ReadLock implements LoadedStorage.UnlockRead
+	{
+		private final Lock _lock;
+		public ReadLock(Lock lock)
+		{
+			_lock = lock;
+		}
+		@Override
+		public void closeRead()
+		{
+			_lock.unlock();
+		}
+	}
+
+	public class WriteLock implements LoadedStorage.UnlockWrite
+	{
+		private final Lock _lock;
+		public WriteLock(Lock lock)
+		{
+			_lock = lock;
+		}
+		@Override
+		public void closeWrite(ChannelData updateLocalIndex, PinCacheData updateGlobalPinCache, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs)
+		{
+			// Write-back the elements they provided (anything passed as null is unchanged).
+			
+			boolean somethingUpdated = false;
+			if (null != updateLocalIndex)
+			{
+				// We can't change the instance - this is just to signify it may have changed.
+				Assert.assertTrue((null == _localIndex) || (_localIndex == updateLocalIndex));
+				_localIndex = updateLocalIndex;
+				somethingUpdated = true;
+			}
+			if (null != updateGlobalPinCache)
+			{
+				// We can't change the instance - this is just to signify it may have changed.
+				Assert.assertTrue((null == _globalPinCache) || (_globalPinCache == updateGlobalPinCache));
+				_globalPinCache = updateGlobalPinCache;
+				somethingUpdated = true;
+			}
+			if (null != updateFollowIndex)
+			{
+				// We can't change the instance - this is just to signify it may have changed.
+				Assert.assertTrue((null == _followIndex) || (_followIndex == updateFollowIndex));
+				_followIndex = updateFollowIndex;
+				somethingUpdated = true;
+			}
+			if (null != updateGlobalPrefs)
+			{
+				// We can't change the instance - this is just to signify it may have changed.
+				Assert.assertTrue((null == _globalPrefs) || (_globalPrefs == updateGlobalPrefs));
+				_globalPrefs = updateGlobalPrefs;
+				somethingUpdated = true;
+			}
+			// Write the version if anything changed.
+			if (somethingUpdated)
+			{
+				try
+				{
+					_flushStateToStream();
+				}
+				catch (IOException e)
+				{
+					// We don't really have a fall-back for these exceptions.
+					throw Assert.unexpected(e);
+				}
+			}
+			
+			_lock.unlock();
+		}
+	}
 }

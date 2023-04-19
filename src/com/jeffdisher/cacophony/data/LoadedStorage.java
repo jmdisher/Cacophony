@@ -14,20 +14,19 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class LoadedStorage implements IReadWriteLocalData
 {
-	public static IReadOnlyLocalData openReadOnly(LocalDataModel dataModel, LocalDataModel.ReadLock readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
+	public static IReadOnlyLocalData openReadOnly(UnlockRead readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
-		return new LoadedStorage(dataModel, readLock, null, localIndex, globalPinCache, followIndex, globalPrefs);
+		return new LoadedStorage(readLock, null, localIndex, globalPinCache, followIndex, globalPrefs);
 	}
 
-	public static IReadWriteLocalData openReadWrite(LocalDataModel dataModel, LocalDataModel.WriteLock writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
+	public static IReadWriteLocalData openReadWrite(UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
-		return new LoadedStorage(dataModel, null, writeLock, localIndex, globalPinCache, followIndex, globalPrefs);
+		return new LoadedStorage(null, writeLock, localIndex, globalPinCache, followIndex, globalPrefs);
 	}
 
 
-	private final LocalDataModel _dataModel;
-	private final LocalDataModel.ReadLock _readLock;
-	private final LocalDataModel.WriteLock _writeLock;
+	private final UnlockRead _readLock;
+	private final UnlockWrite _writeLock;
 	private boolean _isOpen;
 	private ChannelData _localIndex;
 	private boolean _changed_localIndex;
@@ -38,9 +37,8 @@ public class LoadedStorage implements IReadWriteLocalData
 	private PrefsData _globalPrefs;
 	private boolean _changed_globalPrefs;
 
-	private LoadedStorage(LocalDataModel dataModel, LocalDataModel.ReadLock readLock, LocalDataModel.WriteLock writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
+	private LoadedStorage(UnlockRead readLock, UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
-		_dataModel = dataModel;
 		_readLock = readLock;
 		_writeLock = writeLock;
 		_isOpen = true;
@@ -85,8 +83,7 @@ public class LoadedStorage implements IReadWriteLocalData
 		Assert.assertTrue(_isOpen);
 		if (null != _writeLock)
 		{
-			_dataModel.closeWrite(_writeLock
-					, (_changed_localIndex ? _localIndex : null)
+			_writeLock.closeWrite((_changed_localIndex ? _localIndex : null)
 					, (_changed_globalPinCache ? _globalPinCache : null)
 					, (_changed_followIndex ? _followIndex : null)
 					, (_changed_globalPrefs ? _globalPrefs : null)
@@ -94,7 +91,7 @@ public class LoadedStorage implements IReadWriteLocalData
 		}
 		else
 		{
-			_dataModel.closeRead(_readLock);
+			_readLock.closeRead();
 		}
 		_isOpen = false;
 	}
@@ -133,5 +130,34 @@ public class LoadedStorage implements IReadWriteLocalData
 		Assert.assertTrue(null != _writeLock);
 		_followIndex = followIndex;
 		_changed_followIndex = true;
+	}
+
+
+	/**
+	 * Implemented by a read-only caller to be notified when the storage is closed.
+	 */
+	public interface UnlockRead
+	{
+		/**
+		 * Called when the storage read lock should be released as the instance is now closed.
+		 */
+		void closeRead();
+	}
+
+	/**
+	 * Implemented by a read-write caller to be notified when the storage is closed, and told what was updated.
+	 */
+	public interface UnlockWrite
+	{
+		/**
+		 * Called when the storage read-write lock should be released as the instance is now closed.  Any of the
+		 * non-null parameters passed back MUST be written to disk before the lock finishes being released.
+		 * 
+		 * @param updateLocalIndex Non-null if this should be saved as the new ChannelData.
+		 * @param updateGlobalPinCache Non-null if this should be saved as the new PinCacheData.
+		 * @param updateFollowIndex Non-null if this should be saved as the new FolloweeData.
+		 * @param updateGlobalPrefs Non-null if this should be saved as the new PrefsData.
+		 */
+		void closeWrite(ChannelData updateLocalIndex, PinCacheData updateGlobalPinCache, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs);
 	}
 }
