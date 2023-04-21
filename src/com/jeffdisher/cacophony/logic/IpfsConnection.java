@@ -250,7 +250,7 @@ public class IpfsConnection implements IConnection
 	}
 
 
-	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException, AssertionError
+	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException
 	{
 		// For some reason, IPFS wraps java.net.SocketTimeoutException in RuntimeException, but we want to expose that here.
 		try
@@ -268,6 +268,7 @@ public class IpfsConnection implements IConnection
 		}
 		catch (SocketTimeoutException timeout)
 		{
+			// This is typically what happens if the IPFS node is taking too long to respond (typically not being able to find a resource on the network).
 			throw new IpfsConnectionException(action, context, timeout);
 		}
 		catch (IOException ioe)
@@ -275,6 +276,12 @@ public class IpfsConnection implements IConnection
 			// If the IPFS node experiences something like an internal server error, we will see that as IOException here.
 			// From our perspective, that is still just a network error.
 			throw new IpfsConnectionException(action, context, ioe);
+		}
+		catch (RuntimeException re)
+		{
+			// This usually means that the node isn't running:
+			// java.lang.RuntimeException: Couldn't connect to IPFS daemon... Is IPFS running?
+			throw new IpfsConnectionException(action, context, re);
 		}
 		catch (Throwable t)
 		{
