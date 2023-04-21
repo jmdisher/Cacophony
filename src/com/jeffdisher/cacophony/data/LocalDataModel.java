@@ -9,11 +9,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -36,10 +40,11 @@ public class LocalDataModel
 	 * Loads the on-disk model into memory, returning this representation.
 	 * 
 	 * @param fileSystem The file system where the data lives.
+	 * @param scheduler The scheduler for fetching network resources.
 	 * @param ipfsConnectionString The string describing the API server end-point.
 	 * @param keyName The name of the IPFS key to use for this user.
 	 */
-	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, String ipfsConnectionString, String keyName) throws UsageException
+	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler, String ipfsConnectionString, String keyName) throws UsageException
 	{
 		// If the config doesn't exist, create it with default values.
 		if (!fileSystem.doesConfigDirectoryExist())
@@ -100,6 +105,10 @@ public class LocalDataModel
 			}
 			
 			ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(opcodeLog);
+			// Validate the pin cache we loaded, to make sure that it is consistent with the data we logically claim is pinned.
+			PinCacheData pinCache = _buildPinCache(scheduler, projections.channel().lastPublishedIndex(), projections.followee());
+			// (we ignore the result since the implementation will log anything relevant and we are only logging, for now.
+			projections.pinCache().verifyMatch(pinCache);
 			return new LocalDataModel(fileSystem
 					, projections.channel()
 					, projections.prefs()
@@ -112,6 +121,20 @@ public class LocalDataModel
 			// We have no way to handle this failure.
 			throw Assert.unexpected(e);
 		}
+	}
+
+	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile lastRootElement, FolloweeData followees)
+	{
+		PinCacheBuilder builder = new PinCacheBuilder(scheduler);
+		if (null != lastRootElement)
+		{
+			builder.addHomeUser(lastRootElement);
+			for (IpfsKey key : followees.getAllKnownFollowees())
+			{
+				builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
+			}
+		}
+		return builder.finish();
 	}
 
 

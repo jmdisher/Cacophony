@@ -221,7 +221,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
@@ -363,7 +363,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model

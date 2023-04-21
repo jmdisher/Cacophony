@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -49,7 +50,7 @@ public class TestLocalDataModel
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		
 		IReadOnlyLocalData reader = model.openForRead();
 		PrefsData prefs = reader.readGlobalPrefs();
@@ -65,7 +66,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		
 		// Create a bunch of threads with a barrier to synchronize them inside the read lock.
 		Thread[] threads = new Thread[3];
@@ -110,7 +111,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		
 		// Create a bunch of threads with an atomic counter to verify that nobody is ever inside the write lock at the same time.
 		// NOTE:  This is racy but should only rarely pass when it is actually broken.
@@ -169,7 +170,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model with some minimal data.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		byte[] serialized = _serializeModelToOpcodes(model);
 		
 		// Replay the stream to make sure it is what we expected to see.
@@ -186,7 +187,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model with enough data to see positive opcode generated.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
 			FolloweeData followees = access.readFollowIndex();
@@ -223,7 +224,7 @@ public class TestLocalDataModel
 		boolean error = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -245,7 +246,7 @@ public class TestLocalDataModel
 		boolean didFail = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -258,7 +259,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -271,7 +272,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 		}
 		catch (UsageException e)
 		{
@@ -279,12 +280,19 @@ public class TestLocalDataModel
 		}
 		Assert.assertTrue(didFail);
 		
-		// We don't validate the the log is correct, just that it exists.
+		// We need the log to exist and contain valid data, so use the defaults we use when initializing it before running a command.
 		try (IConfigFileSystem.AtomicOutputStream stream = fileSystem.writeAtomicFile("opcodes_0.final.gzlog"))
 		{
+			try (ObjectOutputStream output = OpcodeContext.createOutputStream(stream.getStream()))
+			{
+				ChannelData.create(IPFS_HOST, KEY_NAME).serializeToOpcodeStream(output);
+				PrefsData.defaultPrefs().serializeToOpcodeStream(output);
+				PinCacheData.createEmpty().serializeToOpcodeStream(output);
+				FolloweeData.createEmpty().serializeToOpcodeStream(output);
+			}
 			stream.commit();
 		}
-		LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME);
 	}
 
 	@Test

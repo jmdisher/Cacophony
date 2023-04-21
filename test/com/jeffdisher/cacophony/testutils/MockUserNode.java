@@ -181,7 +181,7 @@ public class MockUserNode
 			LocalDataModel model;
 			try
 			{
-				model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, IPFS_HOST, _localKeyName);
+				model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler, IPFS_HOST, _localKeyName);
 			}
 			catch (UsageException e)
 			{
