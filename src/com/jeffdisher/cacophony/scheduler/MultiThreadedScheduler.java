@@ -234,7 +234,6 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		return future;
 	}
 
-	@Override
 	public void shutdown()
 	{
 		_queue.shutdown();

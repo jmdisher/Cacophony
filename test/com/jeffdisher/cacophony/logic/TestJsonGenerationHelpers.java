@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -109,9 +110,11 @@ public class TestJsonGenerationHelpers
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, remoteConnection
+				, scheduler
 				, KEY_NAME
 				, PUBLIC_KEY1
 		);
@@ -137,6 +140,7 @@ public class TestJsonGenerationHelpers
 		// Make sure that we fail to look something up.
 		JsonObject object = JsonGenerationHelpers.postStruct(null, recordCache, FILE1);
 		Assert.assertNull(object);
+		scheduler.shutdown();
 	}
 
 	@Test
@@ -147,9 +151,11 @@ public class TestJsonGenerationHelpers
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, remoteConnection
+				, scheduler
 				, KEY_NAME
 				, PUBLIC_KEY1
 		);
@@ -191,6 +197,7 @@ public class TestJsonGenerationHelpers
 		Assert.assertEquals("entry1", object.get("name").asString());
 		object = JsonGenerationHelpers.postStruct("url/", recordCache, followeeRecordFile);
 		Assert.assertEquals("entry2", object.get("name").asString());
+		scheduler.shutdown();
 	}
 
 

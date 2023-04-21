@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -38,6 +39,7 @@ public class MockUserNode
 	private final SilentLogger _logger;
 
 	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
+	private MultiThreadedScheduler _lazyScheduler;
 	private StandardEnvironment _lazyExecutor;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
@@ -148,8 +150,10 @@ public class MockUserNode
 
 	public void shutdown()
 	{
+		Assert.assertTrue(null != _lazyScheduler);
 		Assert.assertTrue(null != _lazyExecutor);
-		_lazyExecutor.shutdown();
+		_lazyScheduler.shutdown();
+		_lazyScheduler = null;
 		_lazyExecutor = null;
 	}
 
@@ -172,6 +176,8 @@ public class MockUserNode
 	{
 		if (null == _lazyExecutor)
 		{
+			Assert.assertTrue(null == _lazyScheduler);
+			_lazyScheduler = new MultiThreadedScheduler(_sharedConnection, 1);
 			LocalDataModel model;
 			try
 			{
@@ -185,6 +191,7 @@ public class MockUserNode
 			_lazyExecutor = new StandardEnvironment(_fileSystem.getDraftsTopLevelDirectory()
 					, model
 					, _sharedConnection
+					, _lazyScheduler
 					, _localKeyName
 					, _publicKey
 			);

@@ -4,30 +4,23 @@ import java.io.File;
 
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class StandardEnvironment implements IEnvironment
 {
-	// There is a very high degree of variability observed when requesting multiple pieces of remote data from the
-	// network but this seems to be minimized with a larger number of threads so we use 16 instead of the earlier value
-	// of 4.
-	// This will likely still be tweaked in the future as more complex use-cases become common and can be tested.
-	private static final int THREAD_COUNT = 16;
-
 	private final LocalDataModel _sharedDataModel;
 	private final IConnection _connection;
+	private final INetworkScheduler _scheduler;
 	private final DraftManager _sharedDraftManager;
 	private final String _keyName;
 	private final IpfsKey _publicKey;
 
-	private MultiThreadedScheduler _scheduler;
-
 	public StandardEnvironment(File topLevelDraftsDirectory
 			, LocalDataModel sharedDataModel
 			, IConnection connection
+			, INetworkScheduler scheduler
 			, String keyName
 			, IpfsKey publicKey
 	)
@@ -36,10 +29,10 @@ public class StandardEnvironment implements IEnvironment
 		
 		_sharedDataModel = sharedDataModel;
 		_connection = connection;
+		_scheduler = scheduler;
 		_sharedDraftManager = new DraftManager(topLevelDraftsDirectory);
 		_keyName = keyName;
 		_publicKey = publicKey;
-		_scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
 	}
 
 	@Override
@@ -64,15 +57,6 @@ public class StandardEnvironment implements IEnvironment
 	public LocalDataModel getSharedDataModel()
 	{
 		return _sharedDataModel;
-	}
-
-	/**
-	 * Shuts down the scheduler.
-	 */
-	public void shutdown()
-	{
-		_scheduler.shutdown();
-		_scheduler = null;
 	}
 
 	@Override

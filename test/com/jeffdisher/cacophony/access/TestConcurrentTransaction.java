@@ -240,10 +240,5 @@ public class TestConcurrentTransaction
 			unpin.success();
 			return unpin;
 		}
-		@Override
-		public void shutdown()
-		{
-			throw new AssertionError("Not in test");
-		}
 	}
 }

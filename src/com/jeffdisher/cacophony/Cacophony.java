@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -40,6 +41,12 @@ public class Cacophony {
 	 * This can be found in IPFS daemon startup output:  "API server listening on /ip4/127.0.0.1/tcp/5001".
 	 */
 	private static final String DEFAULT_IPFS_CONNECT = "/ip4/127.0.0.1/tcp/5001";
+
+	// There is a very high degree of variability observed when requesting multiple pieces of remote data from the
+	// network but this seems to be minimized with a larger number of threads so we use 16 instead of the earlier value
+	// of 4.
+	// This will likely still be tweaked in the future as more complex use-cases become common and can be tested.
+	private static final int THREAD_COUNT = 16;
 
 	/**
 	 * Argument modes:
@@ -100,7 +107,7 @@ public class Cacophony {
 				}
 				
 				// Make sure we get ownership of the lock file.
-				StandardEnvironment executor = null;
+				MultiThreadedScheduler scheduler = null;
 				boolean errorDidOccur = false;
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
@@ -108,11 +115,14 @@ public class Cacophony {
 					IConnection connection = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
 					IpfsKey publicKey = _publicKeyForName(connection, keyName);
 					
+					// Create the scheduler we will use for the run.
+					scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
+					
 					// Make sure that the local storage is in a sane state and load it into memory.
 					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), ipfsConnectString, keyName);
 					
 					// Create the executor and logger for our run and put them into the context.
-					executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, keyName, publicKey);
+					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler, keyName, publicKey);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
 					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
 					
@@ -145,14 +155,14 @@ public class Cacophony {
 					e.printStackTrace();
 					System.exit(EXIT_COMPLETE_ERROR);
 				}
-				if (null != executor)
+				if (null != scheduler)
 				{
 					if (errorDidOccur)
 					{
 						// This is a "safe" error, meaning that the command completed successfully but some kind of clean-up may have failed, resulting in manual intervention steps being logged.
 						System.exit(EXIT_SAFE_ERROR);
 					}
-					executor.shutdown();
+					scheduler.shutdown();
 				}
 				dataDirectoryWrapper.close();
 			}

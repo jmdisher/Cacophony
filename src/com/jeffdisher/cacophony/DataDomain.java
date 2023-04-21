@@ -23,6 +23,7 @@ import com.jeffdisher.cacophony.logic.IpfsConnection;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.Uploader;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -101,10 +102,12 @@ public class DataDomain implements Closeable
 		them.addNewKey(keyName, theirKey);
 		// "They" never save drafts so we will just use the same one as "our", just to pass the sanity checks.
 		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(ourFileSystem.getDraftsTopLevelDirectory());
+		MultiThreadedScheduler theirScheduler = new MultiThreadedScheduler(them, 2);
 		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, ipfsConnectString, keyName);
 		StandardEnvironment theirEnv = new StandardEnvironment(theirFileSystem.getDraftsTopLevelDirectory()
 				, theirDataModel
 				, them
+				, theirScheduler
 				, keyName
 				, theirKey
 		);
@@ -115,15 +118,17 @@ public class DataDomain implements Closeable
 		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
 		IpfsFile newRoot = result.getIndexToPublish();
 		them.publish(keyName, theirKey, newRoot);
-		theirEnv.shutdown();
+		theirScheduler.shutdown();
 		
 		MockSingleNode us = new MockSingleNode(swarm);
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
+		MultiThreadedScheduler ourScheduler = new MultiThreadedScheduler(us, 2);
 		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ipfsConnectString, keyName);
 		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem.getDraftsTopLevelDirectory()
 				, ourDataModel
 				, us
+				, ourScheduler
 				, keyName
 				, ourKey
 		);
@@ -135,7 +140,7 @@ public class DataDomain implements Closeable
 		new StartFollowingCommand(theirKey).runInContext(ourContext);
 		// (for version 2.1, start follow doesn't fetch the data)
 		new RefreshFolloweeCommand(theirKey).runInContext(ourContext);
-		ourEnv.shutdown();
+		ourScheduler.shutdown();
 		
 		return us;
 	}

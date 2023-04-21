@@ -30,6 +30,7 @@ import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
@@ -221,9 +222,11 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, connection
+				, scheduler
 				, KEY_NAME, PUBLIC_KEY
 		);
 		SilentLogger logger = new SilentLogger();
@@ -349,6 +352,7 @@ public class TestInteractiveHelpers
 		}
 		Assert.assertEquals("title3", record.getName());
 		Assert.assertEquals(0, record.getElements().getElement().size());
+		scheduler.shutdown();
 	}
 
 	@Test
@@ -360,9 +364,11 @@ public class TestInteractiveHelpers
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, connection
+				, scheduler
 				, KEY_NAME
 				, PUBLIC_KEY
 		);
@@ -410,6 +416,7 @@ public class TestInteractiveHelpers
 		Assert.assertEquals("title", record.getName());
 		Assert.assertEquals(1, record.getElements().getElement().size());
 		Assert.assertEquals("audio/ogg", record.getElements().getElement().get(0).getMime());
+		scheduler.shutdown();
 	}
 
 

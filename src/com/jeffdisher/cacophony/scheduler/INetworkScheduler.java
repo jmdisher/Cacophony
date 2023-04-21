@@ -88,9 +88,4 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureUnpin unpin(IpfsFile cid);
-
-	/**
-	 * Requests that the scheduler shut down and dispose of any resources before the system goes down.
-	 */
-	void shutdown();
 }

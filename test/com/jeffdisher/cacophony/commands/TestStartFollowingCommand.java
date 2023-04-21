@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -55,10 +56,12 @@ public class TestStartFollowingCommand
 		
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, localDataModel
 				, sharedConnection
+				, scheduler
 				, KEY_NAME
 				, PUBLIC_KEY
 		);
@@ -96,7 +99,7 @@ public class TestStartFollowingCommand
 		reading.close();
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
 		Assert.assertNull(lastPublishedIndex);
-		executor.shutdown();
+		scheduler.shutdown();
 	}
 
 	@Test
@@ -117,10 +120,12 @@ public class TestStartFollowingCommand
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, IPFS_HOST, KEY_NAME);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, localDataModel
 				, sharedConnection
+				, scheduler
 				, KEY_NAME
 				, PUBLIC_KEY
 		);
@@ -136,7 +141,7 @@ public class TestStartFollowingCommand
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
-		executor.shutdown();
+		scheduler.shutdown();
 		
 		// Check for the error message.
 		Assert.assertTrue(new String(outputStream.toByteArray()).contains("Followee meta-data element too big (probably wrong file published):  Size limit broken: index was 1025 but is limited to 1024"));

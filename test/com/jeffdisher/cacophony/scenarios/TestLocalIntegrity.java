@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -42,7 +43,8 @@ public class TestLocalIntegrity
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
-		IEnvironment env = _createSingleNode(node);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		IEnvironment env = _createSingleNode(node, scheduler);
 		SilentLogger logger = new SilentLogger();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
@@ -55,6 +57,7 @@ public class TestLocalIntegrity
 		// -description
 		// -description image
 		Assert.assertEquals(5, node.getStoredFileSet().size());
+		scheduler.shutdown();
 	}
 
 	@Test
@@ -63,7 +66,8 @@ public class TestLocalIntegrity
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
-		IEnvironment env = _createSingleNode(node);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		IEnvironment env = _createSingleNode(node, scheduler);
 		SilentLogger logger = new SilentLogger();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
@@ -115,16 +119,18 @@ public class TestLocalIntegrity
 		Set<IpfsFile> afterRemoveFiles = node.getStoredFileSet();
 		Assert.assertEquals(5, afterRemoveFiles.size());
 		Assert.assertEquals(initialFiles, afterRemoveFiles);
+		scheduler.shutdown();
 	}
 
 
-	private static IEnvironment _createSingleNode(IConnection serverData) throws UsageException, IOException
+	private static IEnvironment _createSingleNode(IConnection serverData, MultiThreadedScheduler scheduler) throws UsageException, IOException
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, "ipfs", KEY_NAME1);
 		return new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, serverData
+				, scheduler
 				, KEY_NAME1
 				, PUBLIC_KEY1
 		);
