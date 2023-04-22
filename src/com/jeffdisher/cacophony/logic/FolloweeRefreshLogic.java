@@ -38,7 +38,8 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  * will happen elsewhere, independently.
  * The implementation will pin meta-data and leaf files as it sees fit:
  * -generally, all meta-data (including record elements which aren't too big) is pinned (since these are small)
- * -meta-data which is too big to pin is ignored (and will never be pinned)
+ * -meta-data which is too big to pin (due to size limits) or fails to be parsed (malformed) will cause the refresh to
+ *  abort.
  * -a failure to pin meta-data (refusing to pin big meta-data is NOT a failure) will result in abandoning the entire
  *  refresh operation with IpfsConnectionException.  Note that this will NOT unpin anything, in this case, assuming it
  *  will be retried later.
@@ -314,7 +315,7 @@ public class FolloweeRefreshLogic
 				}
 				else
 				{
-					support.logMessage("Record entry for " + data.elementCid + " is too big (" + MiscHelpers.humanReadableBytes(data.size) + "): Ignoring this entry (will also be ignored in the future)");
+					throw new SizeConstraintException("record", data.size, SizeLimits.MAX_RECORD_SIZE_BYTES);
 				}
 			}
 			newRecordsBeingProcessedInitial = null;

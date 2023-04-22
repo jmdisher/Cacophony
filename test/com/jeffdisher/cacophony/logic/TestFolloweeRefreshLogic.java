@@ -511,7 +511,7 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 		
-		// Now, add an illegally-sized element and check that we don't try to pin it.
+		// Now, add an illegally-sized element and verify that we fail the refresh.
 		IpfsFile oldIndex = index;
 		byte[] raw = new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1];
 		IpfsFile rawHash = _fakeHash(raw);
@@ -522,7 +522,17 @@ public class TestFolloweeRefreshLogic
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
 		// We don't add leaf-less entries to the followee index, since that would be redundant.
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean didAdd = false;
+		try
+		{
+			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+			didAdd = true;
+		}
+		catch (SizeConstraintException e)
+		{
+			didAdd = false;
+		}
+		Assert.assertFalse(didAdd);
 		result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
