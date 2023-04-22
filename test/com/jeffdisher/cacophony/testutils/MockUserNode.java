@@ -93,6 +93,11 @@ public class MockUserNode
 		return _sharedConnection.loadDataFromNode(cid);
 	}
 
+	public IpfsFile storeDataToNode(byte[] recordData) throws IpfsConnectionException
+	{
+		return _sharedConnection.storeData(new ByteArrayInputStream(recordData));
+	}
+
 	public IpfsFile resolveKeyOnNode(IpfsKey key) throws IpfsConnectionException
 	{
 		return _sharedConnection.resolve(key);
@@ -160,6 +165,16 @@ public class MockUserNode
 	public void timeoutKey(IpfsKey publicKey)
 	{
 		_sharedConnection.timeoutKey(publicKey);
+	}
+
+	public void assertConsistentPinCache() throws UsageException
+	{
+		LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler, IPFS_HOST, _localKeyName, true);
+	}
+
+	public void manualPublishLocal(IpfsFile manualRoot) throws IpfsConnectionException
+	{
+		_sharedConnection.publish(_localKeyName, _publicKey, manualRoot);
 	}
 
 

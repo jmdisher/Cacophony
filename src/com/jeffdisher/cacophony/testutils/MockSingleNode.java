@@ -123,7 +123,7 @@ public class MockSingleNode implements IConnection
 	public void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException
 	{
 		IpfsKey key = _keys.get(keyName);
-		Assert.assertTrue(null != key);
+		Assert.assertTrue(publicKey.equals(key));
 		_publications.put(key, file);
 	}
 
