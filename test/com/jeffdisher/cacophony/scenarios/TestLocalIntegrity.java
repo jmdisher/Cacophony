@@ -126,7 +126,7 @@ public class TestLocalIntegrity
 	private static IEnvironment _createSingleNode(IConnection serverData, MultiThreadedScheduler scheduler) throws UsageException, IOException
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, "ipfs", KEY_NAME1);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, "ipfs", KEY_NAME1, true);
 		return new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
 				, serverData

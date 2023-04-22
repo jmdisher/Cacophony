@@ -43,8 +43,9 @@ public class LocalDataModel
 	 * @param scheduler The scheduler for fetching network resources.
 	 * @param ipfsConnectionString The string describing the API server end-point.
 	 * @param keyName The name of the IPFS key to use for this user.
+	 * @param assertConsistent If true, will assert that the pin cache is consistent with the referencing data.
 	 */
-	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler, String ipfsConnectionString, String keyName) throws UsageException
+	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler, String ipfsConnectionString, String keyName, boolean assertConsistent) throws UsageException
 	{
 		// If the config doesn't exist, create it with default values.
 		if (!fileSystem.doesConfigDirectoryExist())
@@ -108,7 +109,11 @@ public class LocalDataModel
 			// Validate the pin cache we loaded, to make sure that it is consistent with the data we logically claim is pinned.
 			PinCacheData pinCache = _buildPinCache(scheduler, projections.channel().lastPublishedIndex(), projections.followee());
 			// (we ignore the result since the implementation will log anything relevant and we are only logging, for now.
-			projections.pinCache().verifyMatch(pinCache);
+			boolean isConsistent = projections.pinCache().verifyMatch(pinCache);
+			if (assertConsistent)
+			{
+				Assert.assertTrue(isConsistent);
+			}
 			return new LocalDataModel(fileSystem
 					, projections.channel()
 					, projections.prefs()

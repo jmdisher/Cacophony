@@ -103,7 +103,7 @@ public class DataDomain implements Closeable
 		// "They" never save drafts so we will just use the same one as "our", just to pass the sanity checks.
 		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(ourFileSystem.getDraftsTopLevelDirectory());
 		MultiThreadedScheduler theirScheduler = new MultiThreadedScheduler(them, 2);
-		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, theirScheduler, ipfsConnectString, keyName);
+		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, theirScheduler, ipfsConnectString, keyName, true);
 		StandardEnvironment theirEnv = new StandardEnvironment(theirFileSystem.getDraftsTopLevelDirectory()
 				, theirDataModel
 				, them
@@ -124,7 +124,7 @@ public class DataDomain implements Closeable
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
 		MultiThreadedScheduler ourScheduler = new MultiThreadedScheduler(us, 2);
-		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ourScheduler, ipfsConnectString, keyName);
+		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ourScheduler, ipfsConnectString, keyName, true);
 		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem.getDraftsTopLevelDirectory()
 				, ourDataModel
 				, us
