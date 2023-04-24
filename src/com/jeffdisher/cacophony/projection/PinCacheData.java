@@ -2,7 +2,9 @@ package com.jeffdisher.cacophony.projection;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -82,9 +84,9 @@ public class PinCacheData
 	 * parameter is the "derived" version (from more fundamental data elements).
 	 * 
 	 * @param derived The other instance.
-	 * @return True if both instances have the same elements and element values.
+	 * @return The list of pin cache elements which were ONLY present in the receiver and not derived (null on match).
 	 */
-	public boolean verifyMatch(PinCacheData derived)
+	public List<IpfsFile> verifyMatch(PinCacheData derived)
 	{
 		boolean doesMatch = false;
 		if (_map.size() == derived._map.size())
@@ -101,8 +103,10 @@ public class PinCacheData
 		}
 		
 		// For now, we want to log information describing this mismatch, just to observe inconsistencies.
+		List<IpfsFile> receiverOnly = null;
 		if (!doesMatch)
 		{
+			receiverOnly = new ArrayList<>();
 			System.err.println("MISMATCH in PinCache:  Canonical size is " + _map.size() + " while derived is " + derived._map.size());
 			for (IpfsFile key : _map.keySet())
 			{
@@ -118,6 +122,8 @@ public class PinCacheData
 				else
 				{
 					System.err.println("CANONICAL(" + key + ") value " + canonicalCount);
+					// Add this to the list so it can be used in correcting the problem.
+					receiverOnly.add(key);
 				}
 			}
 			for (IpfsFile key : derived._map.keySet())
@@ -125,9 +131,11 @@ public class PinCacheData
 				if (!_map.containsKey(key))
 				{
 					System.err.println("DERIVED(" + key + ") value " + derived._map.get(key));
+					// If this is missing in the receiver but present in the derived case, then this is a type of corruption which probably can't be corrected (and we have never seen in).
+					Assert.assertTrue(false);
 				}
 			}
 		}
-		return doesMatch;
+		return receiverOnly;
 	}
 }

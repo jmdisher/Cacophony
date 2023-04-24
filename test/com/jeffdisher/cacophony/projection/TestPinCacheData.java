@@ -54,13 +54,13 @@ public class TestPinCacheData
 	{
 		PinCacheData pinCache1 = PinCacheData.createEmpty();
 		PinCacheData pinCache2 = PinCacheData.createEmpty();
-		Assert.assertTrue(pinCache1.verifyMatch(pinCache2));
+		Assert.assertNull(pinCache1.verifyMatch(pinCache2));
 		pinCache1.addRef(F1);
-		Assert.assertFalse(pinCache1.verifyMatch(pinCache2));
+		Assert.assertNotNull(pinCache1.verifyMatch(pinCache2));
 		pinCache2.addRef(F1);
-		Assert.assertTrue(pinCache1.verifyMatch(pinCache2));
+		Assert.assertNull(pinCache1.verifyMatch(pinCache2));
 		pinCache1.addRef(F1);
-		Assert.assertFalse(pinCache1.verifyMatch(pinCache2));
+		Assert.assertNotNull(pinCache1.verifyMatch(pinCache2));
 	}
 
 

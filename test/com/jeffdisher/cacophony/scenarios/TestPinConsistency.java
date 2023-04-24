@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -19,11 +20,15 @@ import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.data.IReadWriteLocalData;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -383,6 +388,55 @@ public class TestPinConsistency
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
+		
+		user1.shutdown();
+		user2.shutdown();
+	}
+
+	/**
+	 * Shows what happens in the cases we have sometimes observed in very old data models where the pin cache describes
+	 * information not referenced by the home user or cached followee data.
+	 */
+	@Test
+	public void inconsistentPins() throws Throwable
+	{
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		
+		_commonSetup(user1, user2);
+		
+		// Create a similar post in both user 1 and 2, then fresh.
+		String videoFileString = "VIDEO FILE\n";
+		String imageFileString = "IMAGE\n";
+		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
+		user2.runCommand(null, publishCommand);
+		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, _createPublishCommand("local", imageFileString, "other video\n"));
+		IpfsFile followeeVideoCid = MockSingleNode.generateHash(videoFileString.getBytes());
+		Assert.assertTrue(user1.isPinnedLocally(followeeVideoCid));
+		
+		// Now, break the data store by removing the followee cache data and see what happens when we validate.
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(user1.getFileSystem(), user1.getScheduler(), null, null, true);
+		try (IReadWriteLocalData writer = model.openForWrite())
+		{
+			FolloweeData followees = writer.readFollowIndex();
+			Map<IpfsFile, FollowingCacheElement> map = followees.snapshotAllElementsForFollowee(PUBLIC_KEY2);
+			// We expect there to be a single element here.
+			Assert.assertEquals(1, map.size());
+			// Remove this one element and re-write it.
+			followees.removeElement(PUBLIC_KEY2, map.keySet().iterator().next());
+			writer.writeFollowIndex(followees);
+		}
+		
+		// Verify integrity of user 1.
+		// This break we introduced above should result in the other video leaf missing and the image leaf having the wrong ref count.
+		// We allow this call to fix it.
+		LocalDataModel.verifiedAndLoadedModel(user1.getFileSystem(), user1.getScheduler(), null, null, false);
+		Assert.assertFalse(user1.isPinnedLocally(followeeVideoCid));
+		
+		// Call again and verify that it was fixed.
+		LocalDataModel.verifiedAndLoadedModel(user1.getFileSystem(), user1.getScheduler(), null, null, true);
 		
 		user1.shutdown();
 		user2.shutdown();

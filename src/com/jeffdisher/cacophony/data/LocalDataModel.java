@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.data;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -106,19 +107,49 @@ public class LocalDataModel
 			}
 			
 			ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(opcodeLog);
-			// Validate the pin cache we loaded, to make sure that it is consistent with the data we logically claim is pinned.
-			PinCacheData pinCache = _buildPinCache(scheduler, projections.channel().lastPublishedIndex(), projections.followee());
-			// (we ignore the result since the implementation will log anything relevant and we are only logging, for now.
-			boolean isConsistent = projections.pinCache().verifyMatch(pinCache);
+			ChannelData channelData = projections.channel();
+			FolloweeData followees = projections.followee();
+			// We build the pin cache as a projection of our other data about the home user and followee data.
+			// The on-disk pin cache is now only used to find leaked pin from older versions of the software the user might have run.
+			// TODO:  Remove pin cache from next version of data model.
+			PinCacheData pinCache = _buildPinCache(scheduler, channelData.lastPublishedIndex(), followees);
+			PinCacheData diskPinCache = projections.pinCache();
+			List<IpfsFile> incorrectlyPinned = diskPinCache.verifyMatch(pinCache);
 			if (assertConsistent)
 			{
-				Assert.assertTrue(isConsistent);
+				// The verification will return null if they are a perfect match.
+				Assert.assertTrue(null == incorrectlyPinned);
+			}
+			else if (null != incorrectlyPinned)
+			{
+				// We are going to proceed with the derived cache so we need to unpin the extraneous references in the on-disk version.
+				// NOTE:  This is NOT expected and is only present in some older data models do to an old bug where meta-data wasn't correctly unpinned.
+				for (IpfsFile unpin : incorrectlyPinned)
+				{
+					System.err.println("REPAIRING: Unpin " + unpin);
+					scheduler.unpin(unpin);
+				}
+				// Force the write-back since we needed to correct the model and have updated the network.
+				try
+				{
+					_writeToDisk(fileSystem
+							, channelData
+							, projections.prefs()
+							, pinCache
+							, followees
+					);
+				}
+				catch (IOException e)
+				{
+					// We don't expect a failure to write to local storage.
+					throw Assert.unexpected(e);
+				}
 			}
 			return new LocalDataModel(fileSystem
-					, projections.channel()
+					, channelData
 					, projections.prefs()
-					, projections.pinCache()
-					, projections.followee()
+					, pinCache
+					, followees
 			);
 		}
 		catch (IOException e)

@@ -12,11 +12,13 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -175,6 +177,16 @@ public class MockUserNode
 	public void manualPublishLocal(IpfsFile manualRoot) throws IpfsConnectionException
 	{
 		_sharedConnection.publish(_localKeyName, _publicKey, manualRoot);
+	}
+
+	public IConfigFileSystem getFileSystem()
+	{
+		return _fileSystem;
+	}
+
+	public INetworkScheduler getScheduler()
+	{
+		return _lazyScheduler;
 	}
 
 
