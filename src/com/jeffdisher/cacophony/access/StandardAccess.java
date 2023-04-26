@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -56,16 +57,16 @@ public class StandardAccess implements IWritingAccess
 	 * Note that this assumes that the config directory has already been created and is valid (see
 	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
 	 * 
-	 * @param environment The environment.
+	 * @param context The current command context.
 	 * @return The read access interface.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(IEnvironment environment, ILogger logger) throws IpfsConnectionException
+	public static IReadingAccess readAccess(ICommand.Context context) throws IpfsConnectionException
 	{
-		LocalDataModel dataModel = environment.getSharedDataModel();
+		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		return new StandardAccess(environment, logger, reading, null);
+		return new StandardAccess(context.environment, context.logger, reading, null);
 	}
 
 	/**
@@ -73,16 +74,16 @@ public class StandardAccess implements IWritingAccess
 	 * Note that this assumes that the config directory has already been created and is valid (see
 	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
 	 * 
-	 * @param environment The environment.
+	 * @param context The current command context.
 	 * @return The write access interface.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(IEnvironment environment, ILogger logger) throws IpfsConnectionException
+	public static IWritingAccess writeAccess(ICommand.Context context) throws IpfsConnectionException
 	{
-		LocalDataModel dataModel = environment.getSharedDataModel();
+		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(environment, logger, writing, writing);
+		return new StandardAccess(context.environment, context.logger, writing, writing);
 	}
 
 

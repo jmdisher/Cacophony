@@ -22,7 +22,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		ChannelDescription result;
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			result = _runCore(context.logger, access);
 		}

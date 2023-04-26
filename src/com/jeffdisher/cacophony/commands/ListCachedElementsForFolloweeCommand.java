@@ -30,7 +30,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			throw new UsageException("Public key must be provided");
 		}
 		
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			_runCore(context.logger, access);
 		}

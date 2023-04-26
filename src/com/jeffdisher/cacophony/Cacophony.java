@@ -132,7 +132,7 @@ public class Cacophony {
 					// Write the output to stdout.
 					result.writeHumanReadable(System.out);
 					
-					boolean didPublish = _handleResult(executor, logger, result);
+					boolean didPublish = _handleResult(context, result);
 					if (!didPublish)
 					{
 						System.err.println("WARNING:  Update succeeded but publish failed so it will need to be retried");
@@ -212,20 +212,20 @@ public class Cacophony {
 		return publicKey;
 	}
 
-	private static boolean _handleResult(StandardEnvironment environment, StandardLogger logger, ICommand.Result result)
+	private static boolean _handleResult(ICommand.Context context, ICommand.Result result)
 	{
 		boolean didPublish = false;
 		// If there is a new root, publish it.
 		IpfsFile newRoot = result.getIndexToPublish();
 		if (null != newRoot)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+			try (IWritingAccess access = StandardAccess.writeAccess(context))
 			{
-				logger.logVerbose("Publishing " + newRoot + "...");
+				context.logger.logVerbose("Publishing " + newRoot + "...");
 				FuturePublish asyncPublish = access.beginIndexPublish(newRoot);
 				
 				// See if the publish actually succeeded (we still want to update our local state, even if it failed).
-				CommandHelpers.commonWaitForPublish(logger, asyncPublish);
+				CommandHelpers.commonWaitForPublish(context.logger, asyncPublish);
 				didPublish = true;
 			}
 			catch (IpfsConnectionException e)

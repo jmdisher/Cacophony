@@ -25,7 +25,7 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		IpfsKey[] keys;
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			keys = _runCore(context.logger, access);
 		}

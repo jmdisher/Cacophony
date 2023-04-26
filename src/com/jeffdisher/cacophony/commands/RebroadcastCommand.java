@@ -37,7 +37,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		}
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{

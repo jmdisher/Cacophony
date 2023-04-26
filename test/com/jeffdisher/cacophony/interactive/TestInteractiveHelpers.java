@@ -232,7 +232,8 @@ public class TestInteractiveHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
+		ICommand.Context context = new ICommand.Context(env, logger, null, null, null);
+		new CreateChannelCommand(KEY_NAME).runInContext(context);
 		
 		// Now, create a basic draft.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -241,7 +242,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
 		
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false);
 			access.beginIndexPublish(result.newIndexRoot());
@@ -279,7 +280,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false);
 			access.beginIndexPublish(result.newIndexRoot());
@@ -325,7 +326,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft WITHOUT uploading the video attachment.
-		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, false);
 			access.beginIndexPublish(result.newIndexRoot());
@@ -375,7 +376,8 @@ public class TestInteractiveHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		new CreateChannelCommand(KEY_NAME).runInContext(new ICommand.Context(env, logger, null, null, null));
+		ICommand.Context context = new ICommand.Context(env, logger, null, null, null);
+		new CreateChannelCommand(KEY_NAME).runInContext(context);
 		
 		// Now, create a draft and attach audio.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -391,7 +393,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
 
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(env, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, true);
 			access.beginIndexPublish(result.newIndexRoot());

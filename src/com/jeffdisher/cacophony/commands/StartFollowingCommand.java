@@ -27,7 +27,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 		
 		ILogger log = context.logger.logStart("Attempting to follow " + _publicKey + "...");
 		boolean didRefresh = false;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			IFolloweeWriting followees = access.writableFolloweeData();
 			

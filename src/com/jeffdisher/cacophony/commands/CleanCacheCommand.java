@@ -18,7 +18,7 @@ public record CleanCacheCommand() implements ICommand<None>
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// First, we want to shrink the local cache.
 			CommandHelpers.shrinkCacheToFitInPrefs(context.logger, access, ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION);

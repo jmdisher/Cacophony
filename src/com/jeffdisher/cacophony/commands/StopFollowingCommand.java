@@ -25,7 +25,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		
 		ILogger log = context.logger.logStart("Cleaning up to stop following " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			refresher = _setup(context.logger, access);
 		}
@@ -36,7 +36,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			_finish(context, access, refresher);
 		}

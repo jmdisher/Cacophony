@@ -38,7 +38,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		PublishHelpers.PublishElement[] openElements = openElementFiles(context.logger, _elements);
 		IpfsFile newRoot;
 		IpfsFile newElement;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{

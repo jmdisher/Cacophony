@@ -39,7 +39,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(_context.environment, _context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(_context))
 		{
 			int draftId = Integer.parseInt(pathVariables[0]);
 			PublishType type = PublishType.valueOf(pathVariables[1]);

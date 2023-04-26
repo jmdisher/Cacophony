@@ -30,7 +30,7 @@ public class GET_Prefs implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			PrefsData prefs = access.readPrefs();
 			JsonObject userInfo = JsonGenerationHelpers.prefs(prefs);

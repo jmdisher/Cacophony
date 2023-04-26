@@ -29,7 +29,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		}
 		
 		Result result;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{

@@ -21,7 +21,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 	{
 		ILogger log;
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			IFolloweeWriting followees = access.writableFolloweeData();
 			
@@ -40,7 +40,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			_finish(context.environment, access, refresher);
 		}

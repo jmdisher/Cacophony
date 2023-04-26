@@ -29,7 +29,7 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{
@@ -42,7 +42,7 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 			? _overrideCommand
 			: DEFAULT_COMMAND
 		;
-		InteractiveServer.runServerUntilStop(context.environment, context.logger, staticResource, _port, processingCommand, canChangeCommand);
+		InteractiveServer.runServerUntilStop(context, staticResource, _port, processingCommand, canChangeCommand);
 		return None.NONE;
 	}
 }

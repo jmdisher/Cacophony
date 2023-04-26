@@ -24,7 +24,7 @@ public class GET_PublicKey implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			response.setContentType("text/plain");
 			response.setStatus(HttpServletResponse.SC_OK);

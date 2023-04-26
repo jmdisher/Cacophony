@@ -24,7 +24,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 		
 		ILogger log = context.logger.logStart("Refreshing followee " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			refresher = _setup(context.logger, access);
 		}
@@ -35,7 +35,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 				: false
 		;
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			_finish(context, access, refresher);
 		}

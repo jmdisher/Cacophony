@@ -32,7 +32,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		}
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{

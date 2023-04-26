@@ -31,7 +31,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			_runCore(context.logger, access);
 		}

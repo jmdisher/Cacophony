@@ -34,7 +34,7 @@ public class GET_PostHashes implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
-		try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			IpfsKey publicKey = access.getPublicKey();
 			IpfsFile lastPublishedIndex = access.getLastRootElement();

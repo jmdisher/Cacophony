@@ -15,7 +15,7 @@ public record ListFolloweesCommand() implements ICommand<KeyList>
 	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException
 	{
 		KeyList result;
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			Set<IpfsKey> followees = access.readableFolloweeData().getAllKnownFollowees();
 			IpfsKey[] keys = new IpfsKey[followees.size()];

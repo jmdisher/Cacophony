@@ -19,7 +19,6 @@ import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
@@ -47,9 +46,9 @@ public class InteractiveServer
 	// The number of most recent entries, for each user, which will be added to the combined list.
 	public static final int PER_USER_COMBINED_START_SIZE = 10;
 
-	public static void runServerUntilStop(IEnvironment environment, ILogger logger, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
+	public static void runServerUntilStop(ICommand.Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
-		logger.logVerbose("Setting up initial state before starting server...");
+		startingContext.logger.logVerbose("Setting up initial state before starting server...");
 		
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
@@ -62,7 +61,7 @@ public class InteractiveServer
 		LocalRecordCache localRecordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry;
-		try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();
 			ourPublicKey = access.getPublicKey();
@@ -88,18 +87,18 @@ public class InteractiveServer
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		ICommand.Context serverContext = new ICommand.Context(environment, logger, localRecordCache, userInfoCache, entryRegistry);
+		ICommand.Context serverContext = new ICommand.Context(startingContext.environment, startingContext.logger, localRecordCache, userInfoCache, entryRegistry);
 		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
-		BackgroundOperations background = new BackgroundOperations(environment, logger, new BackgroundOperations.IOperationRunner()
+		BackgroundOperations background = new BackgroundOperations(serverContext.environment, serverContext.logger, new BackgroundOperations.IOperationRunner()
 		{
 			@Override
 			public FuturePublish startPublish(IpfsFile newRoot)
 			{
 				FuturePublish publish = null;
-				try (IWritingAccess access = StandardAccess.writeAccess(environment, logger))
+				try (IWritingAccess access = StandardAccess.writeAccess(serverContext))
 				{
 					publish = access.beginIndexPublish(newRoot);
 				}
@@ -138,7 +137,7 @@ public class InteractiveServer
 		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
 		// Load all the known followees into the background operations for background refresh.
-		try (IReadingAccess access = StandardAccess.readAccess(environment, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(serverContext))
 		{
 			// We will also just request an update of every followee we have.
 			IFolloweeReading followees = access.readableFolloweeData();
@@ -149,7 +148,7 @@ public class InteractiveServer
 		}
 		background.startProcess();
 		
-		DraftManager manager = environment.getSharedDraftManager();
+		DraftManager manager = serverContext.environment.getSharedDraftManager();
 		HandoffConnector<String, Long> videoProcessingConnector = new HandoffConnector<>(dispatcher);
 		VideoProcessContainer videoProcessContainer = new VideoProcessContainer(manager, videoProcessingConnector);
 		
@@ -235,7 +234,7 @@ public class InteractiveServer
 		validated.addWebSocketFactory("/followee/events/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
 		
 		// Start the server.
-		ILogger serverLog = logger.logStart("Starting server...");
+		ILogger serverLog = serverContext.logger.logStart("Starting server...");
 		server.start();
 		if (null != forcedCommand)
 		{

@@ -15,7 +15,7 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, 
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			_runCore(context.logger, access);
 		}

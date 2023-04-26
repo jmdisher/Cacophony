@@ -11,6 +11,7 @@ import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -121,14 +122,15 @@ public class TestJsonGenerationHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
+		ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
-		try (IReadingAccess access = StandardAccess.readAccess(executor, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, access.getPublicKey(), indexFile);
@@ -164,7 +166,8 @@ public class TestJsonGenerationHelpers
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(executor, logger))
+		ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);
@@ -182,7 +185,7 @@ public class TestJsonGenerationHelpers
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
-		try (IReadingAccess access = StandardAccess.readAccess(executor, logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);

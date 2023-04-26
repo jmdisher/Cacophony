@@ -19,7 +19,7 @@ public record RepublishCommand() implements ICommand<ChangedRoot>
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
 		IpfsFile indexHash;
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{

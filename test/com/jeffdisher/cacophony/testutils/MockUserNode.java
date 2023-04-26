@@ -107,7 +107,7 @@ public class MockUserNode
 
 	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_lazyEnv(), _logger))
+		try (IReadingAccess reading = StandardAccess.readAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
 		{
 			return reading.getLastRootElement();
 		}
@@ -120,7 +120,7 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_lazyEnv(), _logger))
+		try (IReadingAccess reading = StandardAccess.readAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
 		{
 			return reading.isInPinCached(file);
 		}
@@ -128,7 +128,7 @@ public class MockUserNode
 
 	public PrefsData readPrefs() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_lazyEnv(), _logger))
+		try (IReadingAccess reading = StandardAccess.readAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
 		{
 			return reading.readPrefs();
 		}
@@ -137,7 +137,7 @@ public class MockUserNode
 	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
-		try (IWritingAccess writing = StandardAccess.writeAccess(_lazyEnv(), _logger))
+		try (IWritingAccess writing = StandardAccess.writeAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
 		{
 			return writing.readableFolloweeData();
 		}

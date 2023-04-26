@@ -48,7 +48,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 			throw new UsageException("Invalid parameter");
 		}
 		boolean didChangeIntervals = false;
-		try (IWritingAccess access = StandardAccess.writeAccess(_context.environment, _context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(_context))
 		{
 			PrefsData prefs = access.readPrefs();
 			didChangeIntervals = ((prefs.republishIntervalMillis != republishIntervalMillis) || (prefs.followeeRefreshMillis != followeeRefreshMillis));

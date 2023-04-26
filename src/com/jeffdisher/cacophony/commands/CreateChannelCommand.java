@@ -34,7 +34,7 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		}
 		
 		// Make sure that we aren't going to over-write an existing structure.
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			if (null != access.getLastRootElement())
 			{
@@ -50,7 +50,7 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			newRoot = _runCore(context.environment, access);
 		}

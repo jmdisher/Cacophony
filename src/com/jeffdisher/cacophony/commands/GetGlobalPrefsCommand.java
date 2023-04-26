@@ -14,7 +14,7 @@ public record GetGlobalPrefsCommand() implements ICommand<None>
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context.environment, context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			ILogger log = context.logger.logStart("Preferences:");
 			PrefsData prefs = access.readPrefs();

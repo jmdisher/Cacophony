@@ -43,7 +43,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		
 		Result result;
 		String pictureUrl;
-		try (IWritingAccess access = StandardAccess.writeAccess(context.environment, context.logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			if (null == access.getLastRootElement())
 			{

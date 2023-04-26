@@ -37,7 +37,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		try (IReadingAccess access = StandardAccess.readAccess(_context.environment, _context.logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			JsonObject postStruct = JsonGenerationHelpers.postStruct(access.getDirectFetchUrlRoot(), _context.recordCache, postToResolve);
 			if (null != postStruct)

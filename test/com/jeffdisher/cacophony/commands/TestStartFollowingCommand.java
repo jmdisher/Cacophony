@@ -84,7 +84,8 @@ public class TestStartFollowingCommand
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
-		command.runInContext(new ICommand.Context(executor, logger, null, null, null));
+		ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+		command.runInContext(context);
 		
 		// Verify the states that should have changed.
 		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
@@ -94,9 +95,11 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
-		IReadingAccess reading = StandardAccess.readAccess(executor, logger);
-		IpfsFile lastPublishedIndex = reading.getLastRootElement();
-		reading.close();
+		IpfsFile lastPublishedIndex;
+		try (IReadingAccess reading = StandardAccess.readAccess(context))
+		{
+			lastPublishedIndex = reading.getLastRootElement();
+		}
 		// (since we started with a null published index (not normally something which can happen), and didn't publish a change, we expect it to still be null).
 		Assert.assertNull(lastPublishedIndex);
 		scheduler.shutdown();
