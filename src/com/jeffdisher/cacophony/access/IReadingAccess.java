@@ -90,11 +90,6 @@ public interface IReadingAccess extends AutoCloseable
 	IpfsFile getLastRootElement();
 
 	/**
-	 * @return The public key of this channel.
-	 */
-	IpfsKey getPublicKey();
-
-	/**
 	 * Resolves the given keyToResolve as a public key to see the file it has published.
 	 * 
 	 * @param keyToResolve The key to resolve.

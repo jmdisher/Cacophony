@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,11 +22,8 @@ public class GET_PublicKey implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
-		{
-			response.setContentType("text/plain");
-			response.setStatus(HttpServletResponse.SC_OK);
-			response.getWriter().print(access.getPublicKey().toPublicKey());
-		}
+		response.setContentType("text/plain");
+		response.setStatus(HttpServletResponse.SC_OK);
+		response.getWriter().print(_context.publicKey.toPublicKey());
 	}
 }

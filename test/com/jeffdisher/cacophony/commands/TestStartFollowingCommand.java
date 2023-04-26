@@ -62,8 +62,6 @@ public class TestStartFollowingCommand
 				, localDataModel
 				, sharedConnection
 				, scheduler
-				, KEY_NAME
-				, PUBLIC_KEY
 		);
 		SilentLogger logger = new SilentLogger();
 		
@@ -84,7 +82,14 @@ public class TestStartFollowingCommand
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
-		ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+		ICommand.Context context = new ICommand.Context(executor
+				, logger
+				, null
+				, null
+				, null
+				, KEY_NAME
+				, PUBLIC_KEY
+		);
 		command.runInContext(context);
 		
 		// Verify the states that should have changed.
@@ -129,15 +134,20 @@ public class TestStartFollowingCommand
 				, localDataModel
 				, sharedConnection
 				, scheduler
-				, KEY_NAME
-				, PUBLIC_KEY
 		);
 		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream));
 		
 		boolean didFail = false;
 		try
 		{
-			command.runInContext(new ICommand.Context(executor, logger, null, null, null));
+			command.runInContext(new ICommand.Context(executor
+					, logger
+					, null
+					, null
+					, null
+					, KEY_NAME
+					, PUBLIC_KEY
+			));
 		}
 		catch (ProtocolDataException e)
 		{

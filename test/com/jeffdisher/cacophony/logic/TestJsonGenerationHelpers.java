@@ -116,13 +116,18 @@ public class TestJsonGenerationHelpers
 				, model
 				, remoteConnection
 				, scheduler
-				, KEY_NAME
-				, PUBLIC_KEY1
 		);
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
-		ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+		ICommand.Context context = new ICommand.Context(executor
+				, logger
+				, null
+				, null
+				, null
+				, KEY_NAME
+				, PUBLIC_KEY1
+		);
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
@@ -133,7 +138,7 @@ public class TestJsonGenerationHelpers
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, access.getPublicKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.publicKey, indexFile);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
 		}
 		
@@ -158,15 +163,20 @@ public class TestJsonGenerationHelpers
 				, model
 				, remoteConnection
 				, scheduler
-				, KEY_NAME
-				, PUBLIC_KEY1
 		);
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+		ICommand.Context context = new ICommand.Context(executor
+				, logger
+				, null
+				, null
+				, null
+				, KEY_NAME
+				, PUBLIC_KEY1
+		);
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
@@ -190,7 +200,7 @@ public class TestJsonGenerationHelpers
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, access.getPublicKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.publicKey, indexFile);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
 		}
 		

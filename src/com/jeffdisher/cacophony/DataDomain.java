@@ -108,11 +108,9 @@ public class DataDomain implements Closeable
 				, theirDataModel
 				, them
 				, theirScheduler
-				, keyName
-				, theirKey
 		);
 		ILogger theirLogger = new SilentLogger();
-		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null);
+		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null, keyName, theirKey);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
 		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
@@ -129,11 +127,9 @@ public class DataDomain implements Closeable
 				, ourDataModel
 				, us
 				, ourScheduler
-				, keyName
-				, ourKey
 		);
 		ILogger ourLogger = new SilentLogger();
-		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null);
+		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null, keyName, ourKey);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
 		us.publish(keyName, ourKey, newRoot);

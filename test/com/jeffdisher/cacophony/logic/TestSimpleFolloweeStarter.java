@@ -198,11 +198,6 @@ public class TestSimpleFolloweeStarter
 			throw new RuntimeException("Not Called");
 		}
 		@Override
-		public IpfsKey getPublicKey()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
 		public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 		{
 			Assert.assertEquals(this.oneKey, keyToResolve);

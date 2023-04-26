@@ -227,12 +227,18 @@ public class TestInteractiveHelpers
 				, model
 				, connection
 				, scheduler
-				, KEY_NAME, PUBLIC_KEY
 		);
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		ICommand.Context context = new ICommand.Context(env, logger, null, null, null);
+		ICommand.Context context = new ICommand.Context(env
+				, logger
+				, null
+				, null
+				, null
+				, KEY_NAME
+				, PUBLIC_KEY
+		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);
 		
 		// Now, create a basic draft.
@@ -244,7 +250,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false, PUBLIC_KEY);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
@@ -282,7 +288,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false, PUBLIC_KEY);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
@@ -328,7 +334,7 @@ public class TestInteractiveHelpers
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, false);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, false, PUBLIC_KEY);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		
@@ -370,13 +376,18 @@ public class TestInteractiveHelpers
 				, model
 				, connection
 				, scheduler
-				, KEY_NAME
-				, PUBLIC_KEY
 		);
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		ICommand.Context context = new ICommand.Context(env, logger, null, null, null);
+		ICommand.Context context = new ICommand.Context(env
+				, logger
+				, null
+				, null
+				, null
+				, KEY_NAME
+				, PUBLIC_KEY
+		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);
 		
 		// Now, create a draft and attach audio.
@@ -395,7 +406,7 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, true);
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, true, PUBLIC_KEY);
 			access.beginIndexPublish(result.newIndexRoot());
 		}
 		

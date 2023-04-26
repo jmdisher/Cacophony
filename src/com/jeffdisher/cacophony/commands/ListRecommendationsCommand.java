@@ -27,7 +27,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		IpfsKey[] keys;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			keys = _runCore(context.logger, access.getPublicKey(), access);
+			keys = _runCore(context.logger, context.publicKey, access);
 		}
 		return new KeyList("Recommending", keys);
 	}

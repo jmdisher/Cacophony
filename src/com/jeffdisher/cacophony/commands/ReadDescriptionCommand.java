@@ -24,19 +24,18 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		ChannelDescription result;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			result = _runCore(context.logger, access);
+			result = _runCore(context.logger, access, context.publicKey);
 		}
 		return result;
 	}
 
 
-	private ChannelDescription _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	private ChannelDescription _runCore(ILogger logger, IReadingAccess access, IpfsKey ourPublicKey) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
 		// See if this is our key or one we are following (we can only do this list for channels we are following since
 		// we only want to read data we already pinned).
-		IpfsKey ourPublicKey = access.getPublicKey();
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
 		if ((null != _channelPublicKey) && !_channelPublicKey.equals(ourPublicKey))

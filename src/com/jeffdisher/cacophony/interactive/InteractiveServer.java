@@ -54,7 +54,7 @@ public class InteractiveServer
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
-		IpfsKey ourPublicKey;
+		IpfsKey ourPublicKey = startingContext.publicKey;
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
@@ -64,7 +64,6 @@ public class InteractiveServer
 		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();
-			ourPublicKey = access.getPublicKey();
 			rootElement = access.getLastRootElement();
 			IFolloweeWriting followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
@@ -87,7 +86,14 @@ public class InteractiveServer
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		ICommand.Context serverContext = new ICommand.Context(startingContext.environment, startingContext.logger, localRecordCache, userInfoCache, entryRegistry);
+		ICommand.Context serverContext = new ICommand.Context(startingContext.environment
+				, startingContext.logger
+				, localRecordCache
+				, userInfoCache
+				, entryRegistry
+				, startingContext.keyName
+				, startingContext.publicKey
+		);
 		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);

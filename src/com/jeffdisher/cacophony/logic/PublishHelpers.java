@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -34,6 +35,7 @@ public class PublishHelpers
 	 * @param description The description of the entry.
 	 * @param discussionUrl The discussion URL of the entry (could be null).
 	 * @param elements The list of elements we want to upload as attachments to this entry.
+	 * @param publisherKey The back-reference to the publisher's public key.
 	 * @return The result of the publish.
 	 * @throws IpfsConnectionException Thrown if there is a network error talking to IPFS.
 	 * @throws SizeConstraintException The meta-data tree serialized to be too large to store.
@@ -44,6 +46,7 @@ public class PublishHelpers
 			, String description
 			, String discussionUrl
 			, PublishElement[] elements
+			, IpfsKey publisherKey
 	) throws IpfsConnectionException, SizeConstraintException
 	{
 		// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
@@ -77,7 +80,7 @@ public class PublishHelpers
 			record.setDiscussion(discussionUrl);
 		}
 		record.setElements(array);
-		record.setPublisherKey(access.getPublicKey().toPublicKey());
+		record.setPublisherKey(publisherKey.toPublicKey());
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		byte[] rawRecord = GlobalData.serializeRecord(record);

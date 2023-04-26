@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -37,20 +36,6 @@ public class MockEnvironment implements IEnvironment
 
 	@Override
 	public IConnection getConnection()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
-	public String getKeyName()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
-	public IpfsKey getPublicKey()
 	{
 		// Not used in test.
 		throw Assert.unreachable();

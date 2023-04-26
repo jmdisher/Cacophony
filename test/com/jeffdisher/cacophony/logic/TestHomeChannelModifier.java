@@ -261,11 +261,6 @@ public class TestHomeChannelModifier
 			return this.root;
 		}
 		@Override
-		public IpfsKey getPublicKey()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
 		public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 		{
 			throw new RuntimeException("Not Called");

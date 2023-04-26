@@ -47,7 +47,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			_background.requestPublish(result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
-			IpfsKey key = _context.environment.getPublicKey();
+			IpfsKey key = _context.publicKey;
 			StreamDescription streamDescription = result.streamDescription;
 			_context.userInfoCache.setUserInfo(key
 					, streamDescription.getName()

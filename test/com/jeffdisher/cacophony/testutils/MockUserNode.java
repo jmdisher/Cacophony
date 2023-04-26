@@ -59,10 +59,10 @@ public class MockUserNode
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
-		ICommand.Result result = createChannel.runInContext(new ICommand.Context(_lazyEnv(), _logger, null, null, null));
+		ICommand.Result result = createChannel.runInContext(_buildContext(_logger));
 		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
-		result = updateDescription.runInContext(new ICommand.Context(_lazyEnv(), _logger, null, null, null));
+		result = updateDescription.runInContext(_buildContext(_logger));
 		_handleResult(result);
 	}
 
@@ -82,7 +82,7 @@ public class MockUserNode
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
 		}
-		T result = command.runInContext(new ICommand.Context(_lazyEnv(), logger, null, null, null));
+		T result = command.runInContext(_buildContext(logger));
 		_handleResult(result);
 		return logger.didErrorOccur()
 				? null
@@ -107,7 +107,7 @@ public class MockUserNode
 
 	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
+		try (IReadingAccess reading = StandardAccess.readAccess(_buildContext(_logger)))
 		{
 			return reading.getLastRootElement();
 		}
@@ -120,7 +120,7 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
+		try (IReadingAccess reading = StandardAccess.readAccess(_buildContext(_logger)))
 		{
 			return reading.isInPinCached(file);
 		}
@@ -128,7 +128,7 @@ public class MockUserNode
 
 	public PrefsData readPrefs() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
+		try (IReadingAccess reading = StandardAccess.readAccess(_buildContext(_logger)))
 		{
 			return reading.readPrefs();
 		}
@@ -137,7 +137,7 @@ public class MockUserNode
 	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
-		try (IWritingAccess writing = StandardAccess.writeAccess(new ICommand.Context(_lazyEnv(), _logger, null, null, null)))
+		try (IWritingAccess writing = StandardAccess.writeAccess(_buildContext(_logger)))
 		{
 			return writing.readableFolloweeData();
 		}
@@ -219,10 +219,20 @@ public class MockUserNode
 					, model
 					, _sharedConnection
 					, _lazyScheduler
-					, _localKeyName
-					, _publicKey
 			);
 		}
 		return _lazyExecutor;
+	}
+
+	private ICommand.Context _buildContext(ILogger logger)
+	{
+		return new ICommand.Context(_lazyEnv()
+				, logger
+				, null
+				, null
+				, null
+				, _localKeyName
+				, _publicKey
+		);
 	}
 }

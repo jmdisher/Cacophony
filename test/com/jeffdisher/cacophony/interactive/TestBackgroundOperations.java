@@ -44,7 +44,7 @@ public class TestBackgroundOperations
 	@Test
 	public void noOperations() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
@@ -56,7 +56,7 @@ public class TestBackgroundOperations
 	@Test
 	public void oneOperation() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
@@ -74,7 +74,7 @@ public class TestBackgroundOperations
 	@Test
 	public void sequentialOperations() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
@@ -101,7 +101,7 @@ public class TestBackgroundOperations
 		// This one is somewhat non-deterministic in that the first element added may be seen, or could be overwritten.
 		// We do know that none of the others will be seen, but then the last will ALWAYS be seen.
 		// We will verify this by only setting success on the first and last.
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
@@ -141,7 +141,7 @@ public class TestBackgroundOperations
 	public void testPartialListening() throws Throwable
 	{
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
@@ -169,7 +169,7 @@ public class TestBackgroundOperations
 	@Test
 	public void oneRefresh() throws Throwable
 	{
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		publishFirst.success();
@@ -197,7 +197,7 @@ public class TestBackgroundOperations
 	public void refreshAndPublish() throws Throwable
 	{
 		// We will publish, then use the delay that causes to install both a publish and a refresh so we can see what happens when they both run.
-		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null, null, null);
+		StandardEnvironment env = new StandardEnvironment(FOLDER.newFolder(), null, null, null);
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishSecond = new FuturePublish(F2);

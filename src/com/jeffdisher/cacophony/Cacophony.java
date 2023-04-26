@@ -122,9 +122,9 @@ public class Cacophony {
 					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), scheduler, ipfsConnectString, keyName, false);
 					
 					// Create the executor and logger for our run and put them into the context.
-					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler, keyName, publicKey);
+					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
-					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null);
+					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null, keyName, publicKey);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);

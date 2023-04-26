@@ -66,7 +66,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		return new StandardAccess(context.environment, context.logger, reading, null);
+		return new StandardAccess(context.environment, context.logger, reading, null, context.keyName, context.publicKey);
 	}
 
 	/**
@@ -83,7 +83,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(context.environment, context.logger, writing, writing);
+		return new StandardAccess(context.environment, context.logger, writing, writing, context.keyName, context.publicKey);
 	}
 
 
@@ -101,7 +101,7 @@ public class StandardAccess implements IWritingAccess
 	private final ChannelData _channelData;
 	private boolean _writeChannelData;
 
-	private StandardAccess(IEnvironment environment, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite) throws IpfsConnectionException
+	private StandardAccess(IEnvironment environment, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey) throws IpfsConnectionException
 	{
 		PinCacheData pinCache = readOnly.readGlobalPinCache();
 		Assert.assertTrue(null != pinCache);
@@ -114,8 +114,6 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != localIndex);
 		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
-		String keyName = environment.getKeyName();
-		IpfsKey publicKey = environment.getPublicKey();
 		INetworkScheduler scheduler = environment.getSharedScheduler();
 		Assert.assertTrue(null != scheduler);
 		
@@ -191,12 +189,6 @@ public class StandardAccess implements IWritingAccess
 	public IpfsFile getLastRootElement()
 	{
 		return _channelData.lastPublishedIndex();
-	}
-
-	@Override
-	public IpfsKey getPublicKey()
-	{
-		return _publicKey;
 	}
 
 	@Override

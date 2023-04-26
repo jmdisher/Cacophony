@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -132,6 +133,7 @@ public class InteractiveHelpers
 			, int draftId
 			, boolean shouldPublishVideo
 			, boolean shouldPublishAudio
+			, IpfsKey publisherKey
 	) throws FileNotFoundException
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -206,7 +208,14 @@ public class InteractiveHelpers
 			{
 				discussionUrl = null;
 			}
-			result = PublishHelpers.uploadFileAndUpdateTracking(log, access, draft.title(), draft.description(), discussionUrl, subElements);
+			result = PublishHelpers.uploadFileAndUpdateTracking(log
+					, access
+					, draft.title()
+					, draft.description()
+					, discussionUrl
+					, subElements
+					, publisherKey
+			);
 			log.logFinish("Publish success!");
 		}
 		catch (IpfsConnectionException e)

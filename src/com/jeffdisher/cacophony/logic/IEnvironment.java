@@ -2,12 +2,12 @@ package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
- * The interface provided when running commands, allowing them to access logging facilities and create/load
- * configurations to actually interact with the system.
+ * This interface contains the details of the environment where the program was started, meaning any of the resources
+ * which were bootstrapped before the system started running.  For the most part, this just refers to shared resources.
+ * The expectation is that a single instance will be created during start-up and passed through the rest of the system.
  */
 public interface IEnvironment
 {
@@ -37,17 +37,6 @@ public interface IEnvironment
 	 * @return The lower-level IPFS connection object (getSharedScheduler() is usually more appropriate).
 	 */
 	IConnection getConnection();
-
-	/**
-	 * @return The name used to identify the signing key for publication on the local IPFS node (usually "Cacophony").
-	 * This value is never null.
-	 */
-	String getKeyName();
-
-	/**
-	 * @return The public key of this user.  This value is never null.
-	 */
-	IpfsKey getPublicKey();
 
 	/**
 	 * @return Milliseconds since the Unix Epoch.

@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -51,7 +52,8 @@ public interface ICommand<T extends ICommand.Result>
 
 	/**
 	 * A container of resources which can be used by a command.
-	 * Only the environment and logger are required.  The other fields can be null.
+	 * Instances of this type are expected to configured for sub-commands, etc, based on resources available at the
+	 * top-level.
 	 */
 	public static class Context
 	{
@@ -60,12 +62,16 @@ public interface ICommand<T extends ICommand.Result>
 		public final LocalRecordCache recordCache;
 		public final LocalUserInfoCache userInfoCache;
 		public final EntryCacheRegistry entryRegistry;
+		public final String keyName;
+		public final IpfsKey publicKey;
 		
 		public Context(IEnvironment environment
 				, ILogger logger
 				, LocalRecordCache recordCache
 				, LocalUserInfoCache userInfoCache
 				, EntryCacheRegistry entryRegistry
+				, String keyName
+				, IpfsKey publicKey
 		)
 		{
 			this.environment = environment;
@@ -73,6 +79,8 @@ public interface ICommand<T extends ICommand.Result>
 			this.recordCache = recordCache;
 			this.userInfoCache = userInfoCache;
 			this.entryRegistry = entryRegistry;
+			this.keyName = keyName;
+			this.publicKey = publicKey;
 		}
 	}
 }

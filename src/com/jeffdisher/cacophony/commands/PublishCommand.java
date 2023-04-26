@@ -44,7 +44,14 @@ public record PublishCommand(String _name, String _description, String _discussi
 			{
 				throw new UsageException("Channel must first be created with --createNewChannel");
 			}
-			PublishHelpers.PublishResult result = PublishHelpers.uploadFileAndUpdateTracking(log, access, _name, _description, _discussionUrl, openElements);
+			PublishHelpers.PublishResult result = PublishHelpers.uploadFileAndUpdateTracking(log
+					, access
+					, _name
+					, _description
+					, _discussionUrl
+					, openElements
+					, context.publicKey
+			);
 			newRoot = result.newIndexRoot();
 			newElement = result.newRecordCid();
 		}
