@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -164,13 +165,21 @@ public class TestRefreshNextFolloweeCommand
 		IpfsFile metaDataToDelete = IpfsFile.fromIpfsCid(index.getRecords());
 		user3.deleteFile(metaDataToDelete);
 		
-		// Note that we expect this to fail, but the command will handle any exceptions internally.
-		// The only way we can observe this failure is by scraping the output or observing the root didn't change but the next to poll advanced.
+		// Note that we expect this to fail.  Verify we see the exception, observe the root didn't change, and the next to poll advanced.
 		followees = user.readFollowIndex();
 		IpfsKey beforeToPoll = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY3, beforeToPoll);
 		IpfsFile beforeRoot = followees.getLastFetchedRootForFollowee(beforeToPoll);
-		user.runCommand(null, command);
+		boolean didFail = false;
+		try
+		{
+			user.runCommand(null, command);
+		}
+		catch (IpfsConnectionException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
 		followees = user.readFollowIndex();
 		IpfsKey afterToPoll = followees.getNextFolloweeToPoll();
 		IpfsFile afterRoot = followees.getLastFetchedRootForFollowee(beforeToPoll);
@@ -234,7 +243,16 @@ public class TestRefreshNextFolloweeCommand
 		user3.deleteFile(recordToDelete);
 		
 		// This should abort, just advancing the next to poll.
-		user.runCommand(null, command);
+		boolean didFail = false;
+		try
+		{
+			user.runCommand(null, command);
+		}
+		catch (IpfsConnectionException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
 		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(PUBLIC_KEY2, nextKey);
 		

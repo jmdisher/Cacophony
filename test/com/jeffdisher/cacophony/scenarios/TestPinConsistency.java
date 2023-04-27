@@ -104,7 +104,17 @@ public class TestPinConsistency
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
 		byte[] recordData = _readAndBreakElement(user2, PUBLIC_KEY2);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		boolean didFail = false;
+		try
+		{
+			user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		}
+		catch (IpfsConnectionException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		
 		
 		// Re-add the record data and refresh again.
 		user2.storeDataToNode(recordData);
@@ -132,7 +142,16 @@ public class TestPinConsistency
 		
 		// Manually update the stream with something too big, then refresh.
 		_uploadAsRecord(user2, PUBLIC_KEY2, new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1]);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		boolean didFail = false;
+		try
+		{
+			user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		}
+		catch (SizeConstraintException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
 		
 		// Delete the post and create a normal one.
 		_removeAllRecords(user2, PUBLIC_KEY2);

@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -16,7 +17,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
 	{
 		if (null == _publicKey)
 		{
@@ -72,7 +73,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		return refresher;
 	}
 
-	private void _finish(ICommand.Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
+	private void _finish(ICommand.Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		long lastPollMillis = context.environment.currentTimeMillis();

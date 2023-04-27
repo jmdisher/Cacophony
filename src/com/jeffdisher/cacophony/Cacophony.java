@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -146,6 +147,11 @@ public class Cacophony {
 				catch (IpfsConnectionException e)
 				{
 					System.err.println("Unexpected exception while contacting IPFS daemon (" + e.getLocalizedMessage() + ").  The command did not complete.");
+					System.exit(EXIT_COMPLETE_ERROR);
+				}
+				catch (ProtocolDataException e)
+				{
+					System.err.println("Found malformed data on the network (" + e.getLocalizedMessage() + ").  The command did not complete.");
 					System.exit(EXIT_COMPLETE_ERROR);
 				}
 				catch (CacophonyException e)

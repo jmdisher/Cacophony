@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -17,7 +18,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshNextFolloweeCommand() implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
 	{
 		ILogger log;
 		ConcurrentFolloweeRefresher refresher = null;
@@ -76,7 +77,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 		return refresher;
 	}
 
-	private void _finish(IEnvironment environment, IWritingAccess access, ConcurrentFolloweeRefresher refresher)
+	private void _finish(IEnvironment environment, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		

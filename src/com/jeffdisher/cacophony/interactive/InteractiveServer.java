@@ -31,6 +31,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -130,6 +131,11 @@ public class InteractiveServer
 				catch (IpfsConnectionException e)
 				{
 					// This just means it didn't succeed (but is harmless - usually means we couldn't look up the key).
+					didRefresh = false;
+				}
+				catch (ProtocolDataException e)
+				{
+					// This means the user had corrupt data (we won't be able to refresh them until they fix it).
 					didRefresh = false;
 				}
 				catch (UsageException e)

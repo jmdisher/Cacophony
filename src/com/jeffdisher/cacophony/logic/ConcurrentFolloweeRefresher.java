@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -44,6 +45,8 @@ public class ConcurrentFolloweeRefresher
 	private IpfsFile _newRoot;
 	private StandardRefreshSupport _refreshSupport;
 	private boolean _isSuccess;
+	private IpfsConnectionException _connectionException;
+	private ProtocolDataException _protocolException;
 
 	private boolean _didFinish;
 
@@ -173,16 +176,19 @@ public class ConcurrentFolloweeRefresher
 		catch (IpfsConnectionException e)
 		{
 			log.logOperation("Network failure in refresh: " + e.getLocalizedMessage());
+			_connectionException = e;
 			refreshWasSuccess = false;
 		}
 		catch (SizeConstraintException e)
 		{
 			log.logOperation("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
+			_protocolException = e;
 			refreshWasSuccess = false;
 		}
 		catch (FailedDeserializationException e)
 		{
 			log.logOperation("Followee data appears to be corrupt: " + e.getLocalizedMessage());
+			_protocolException = e;
 			refreshWasSuccess = false;
 		}
 		finally
@@ -214,13 +220,15 @@ public class ConcurrentFolloweeRefresher
 	 * @param userInfoCache The user info cache which should be updated in response to finishing this refresh (can be null).
 	 * @param followees The followees structure to update.
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
+	 * @throws IpfsConnectionException There was a problem accessing data from the network.
+	 * @throws ProtocolDataException Found data which violated the constraints of the Cacophony protocol.
 	 */
 	public void finishRefresh(IWritingAccess access
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, IFolloweeWriting followees
 			, long currentTimeMillis
-	)
+	) throws IpfsConnectionException, ProtocolDataException
 	{
 		Assert.assertTrue(_didRun);
 		Assert.assertTrue(!_didFinish);
@@ -257,5 +265,14 @@ public class ConcurrentFolloweeRefresher
 			_transaction.rollback(resolver);
 		}
 		_didFinish = true;
+		// At this point, we want to throw any exceptions we caught in the main operation.
+		if (null != _connectionException)
+		{
+			throw _connectionException;
+		}
+		else if (null != _protocolException)
+		{
+			throw _protocolException;
+		}
 	}
 }
