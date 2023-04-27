@@ -9,7 +9,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 
 
 public class TestDraftManager
@@ -60,5 +63,24 @@ public class TestDraftManager
 		}
 		List<Draft> drafts = manager.listAllDrafts();
 		Assert.assertEquals(1, drafts.size());
+	}
+
+	@Test
+	public void json() throws Throwable
+	{
+		File directory = FOLDER.newFolder();
+		DraftManager manager = new DraftManager(directory);
+		IDraftWrapper wrapper = manager.createNewDraft(1);
+		SizedElement audio = new SizedElement("audio/ogg", 0, 0, 5L);
+		wrapper.updateDraftUnderLock((Draft oldDraft) ->
+			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), audio)
+		);
+		JsonObject out = wrapper.loadDraft().toJson();
+		String raw = out.toString();
+		JsonObject in = Json.parse(raw).asObject();
+		Draft read = Draft.fromJson(in);
+		Assert.assertEquals(1, read.id());
+		Assert.assertNull(read.originalVideo());
+		Assert.assertEquals(0, read.audio().height());
 	}
 }

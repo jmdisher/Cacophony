@@ -2,9 +2,8 @@ package com.jeffdisher.cacophony.data.local.v1;
 
 import java.io.Serializable;
 
-import org.junit.Assert;
-
 import com.eclipsesource.json.JsonObject;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -29,9 +28,9 @@ public record SizedElement(String mime
 			String mime = json.getString("mime", null);
 			Assert.assertTrue(null != mime);
 			int height = json.getInt("height", -1);
-			Assert.assertTrue(height > 0);
+			Assert.assertTrue(height >= 0);
 			int width = json.getInt("width", -1);
-			Assert.assertTrue(width > 0);
+			Assert.assertTrue(width >= 0);
 			long byteSize = json.getLong("byteSize", -1L);
 			Assert.assertTrue(byteSize >= 0);
 			element = new SizedElement(mime, height, width, byteSize);
