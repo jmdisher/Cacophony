@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.InputStream;
-import java.util.List;
 
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -13,12 +12,6 @@ import com.jeffdisher.cacophony.types.IpfsKey;
  */
 public interface IConnection
 {
-	static record Key(String name, IpfsKey key)
-	{
-	}
-
-	List<Key> getKeys() throws IpfsConnectionException;
-
 	IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException;
 
 	byte[] loadData(IpfsFile file) throws IpfsConnectionException;
@@ -74,15 +67,6 @@ public interface IConnection
 	void rm(IpfsFile cid) throws IpfsConnectionException;
 
 	/**
-	 * Generates the given key on the IPFS node.
-	 * 
-	 * @param keyName The name of the key.
-	 * @return The generated key (never null).
-	 * @throws IpfsConnectionException If there is some problem contacting the server.
-	 */
-	Key generateKey(String keyName) throws IpfsConnectionException;
-
-	/**
 	 * Requests that the remote node reclaim any storage it can.
 	 * 
 	 * @throws IpfsConnectionException If there is some problem contacting the server.
@@ -96,4 +80,13 @@ public interface IConnection
 	 * @return The base URL component of resources on this IPFS node.
 	 */
 	String directFetchUrlRoot();
+
+	/**
+	 * Looks up a named key on the local IPFS node, generating it if it doesn't exist.
+	 * 
+	 * @param keyName The name of the key.
+	 * @return The generated key (never null).
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException;
 }

@@ -88,4 +88,12 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureUnpin unpin(IpfsFile cid);
+
+	/**
+	 * Looks up or creates a new key on the local node.
+	 * 
+	 * @param keyName The name of the key.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureKey getOrCreatePublicKey(String keyName);
 }

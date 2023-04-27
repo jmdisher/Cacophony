@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.List;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
@@ -18,6 +17,7 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -63,12 +63,8 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 	{
 		IConnection connection = environment.getConnection();
 		
-		// Check to see if this key exists.
-		List<IConnection.Key> keys = connection.getKeys();
-		boolean keyExists = keys.stream().anyMatch((k) -> k.name().equals(keyName));
-		// The key now ALWAYS exists since we create it in the pre-command phase.
-		Assert.assertTrue(keyExists);
-		logger.logVerbose("Using existing key: \"" + keyName + "\"");
+		IpfsKey publicKey = connection.getOrCreatePublicKey(this.keyName);
+		logger.logVerbose("Using existing key for \"" + keyName + "\": " + publicKey);
 	}
 
 	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException

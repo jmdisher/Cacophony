@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
+import com.jeffdisher.cacophony.scheduler.FutureKey;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -115,5 +116,12 @@ public class MockNetworkScheduler implements INetworkScheduler
 		FutureUnpin unpin = new FutureUnpin();
 		unpin.success();
 		return unpin;
+	}
+
+	@Override
+	public FutureKey getOrCreatePublicKey(String keyName)
+	{
+		// Not called in tests.
+		throw Assert.unreachable();
 	}
 }

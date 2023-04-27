@@ -234,6 +234,25 @@ public class MultiThreadedScheduler implements INetworkScheduler
 		return future;
 	}
 
+	@Override
+	public FutureKey getOrCreatePublicKey(String keyName)
+	{
+		FutureKey future = new FutureKey();
+		Runnable r = () -> {
+			try
+			{
+				IpfsKey publicKey = _ipfs.getOrCreatePublicKey(keyName);
+				future.success(publicKey);
+			}
+			catch (IpfsConnectionException e)
+			{
+				future.failureInConnection(e);
+			}
+		};
+		_queue.enqueue(r);
+		return future;
+	}
+
 	public void shutdown()
 	{
 		_queue.shutdown();

@@ -7,10 +7,8 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -85,14 +83,6 @@ public class MockSingleNode implements IConnection
 	public Set<IpfsFile> getStoredFileSet()
 	{
 		return Set.copyOf(_data.keySet());
-	}
-
-	@Override
-	public List<Key> getKeys() throws IpfsConnectionException
-	{
-		return _keys.entrySet().stream().map(
-				(Map.Entry<String, IpfsKey> entry) -> new IConnection.Key(entry.getKey(), entry.getValue())
-		).collect(Collectors.toList());
 	}
 
 	@Override
@@ -195,13 +185,6 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
-	public Key generateKey(String keyName) throws IpfsConnectionException
-	{
-		// We don't expect this in tests.
-		throw Assert.unreachable();
-	}
-
-	@Override
 	public void requestStorageGc() throws IpfsConnectionException
 	{
 		// Does nothing.
@@ -211,6 +194,14 @@ public class MockSingleNode implements IConnection
 	public String directFetchUrlRoot()
 	{
 		return "http://test/";
+	}
+
+	@Override
+	public IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException
+	{
+		// We don't create keys in any existing tests, just look them up.
+		Assert.assertTrue(_keys.containsKey(keyName));
+		return _keys.get(keyName);
 	}
 
 

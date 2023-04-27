@@ -47,23 +47,6 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public List<Key> getKeys() throws IpfsConnectionException
-	{
-		try
-		{
-			return _defaultConnection.key.list().stream().map((info) -> new IConnection.Key(info.name, new IpfsKey(info.id))).collect(Collectors.toList());
-		}
-		catch (RuntimeException e)
-		{
-			throw _handleIpfsRuntimeException("getKeys", "", e);
-		}
-		catch (IOException e)
-		{
-			throw new IpfsConnectionException("getKeys", "", e);
-		}
-	}
-
-	@Override
 	public IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException
 	{
 		try
@@ -213,24 +196,6 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public Key generateKey(String keyName) throws IpfsConnectionException
-	{
-		try
-		{
-			KeyInfo info = _defaultConnection.key.gen(keyName, Optional.empty(), Optional.empty());
-			return new IConnection.Key(info.name, new IpfsKey(info.id));
-		}
-		catch (RuntimeException e)
-		{
-			throw _handleIpfsRuntimeException("gen", keyName, e);
-		}
-		catch (IOException e)
-		{
-			throw new IpfsConnectionException("gen", keyName, e);
-		}
-	}
-
-	@Override
 	public void requestStorageGc() throws IpfsConnectionException
 	{
 		try
@@ -247,6 +212,44 @@ public class IpfsConnection implements IConnection
 	public String directFetchUrlRoot()
 	{
 		return _urlForDirectFetch("").toString();
+	}
+
+	@Override
+	public IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException
+	{
+		String context = "lookup";
+		try
+		{
+			List<IpfsKey> matchOrEmpty = _defaultConnection.key.list().stream()
+					.filter((KeyInfo info) -> keyName.equals(info.name))
+					.map((KeyInfo info) -> new IpfsKey(info.id))
+					.collect(Collectors.toList())
+			;
+			// We can have only 1 or 0 entries in this list.
+			Assert.assertTrue(matchOrEmpty.size() <= 1);
+			IpfsKey publicKey = (1 == matchOrEmpty.size())
+					? matchOrEmpty.get(0)
+					: null
+			;
+			if (null == publicKey)
+			{
+				// We need to create the key.
+				context = "creation";
+				KeyInfo info = _defaultConnection.key.gen(keyName, Optional.empty(), Optional.empty());
+				publicKey = new IpfsKey(info.id);
+			}
+			// Any failures should hit the exception cases.
+			Assert.assertTrue(null != publicKey);
+			return publicKey;
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException("getOrCreatePublicKey", context, e);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException("getOrCreatePublicKey", context, e);
+		}
 	}
 
 

@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
@@ -113,7 +112,7 @@ public class Cacophony {
 				{
 					// We want to make sure that we can connect to the IPFS node.
 					IConnection connection = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
-					IpfsKey publicKey = _publicKeyForName(connection, keyName);
+					IpfsKey publicKey = connection.getOrCreatePublicKey(keyName);
 					
 					// Create the scheduler we will use for the run.
 					scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
@@ -189,27 +188,6 @@ public class Cacophony {
 		CommandParser.printUsage(System.err);
 		System.err.println("More detailed usage can be seen with --help");
 		System.exit(EXIT_STATIC_ERROR);
-	}
-
-	private static IpfsKey _publicKeyForName(IConnection ipfs, String keyName) throws IpfsConnectionException
-	{
-		IpfsKey publicKey = null;
-		// First, see if the key exists.
-		for (IConnection.Key info : ipfs.getKeys())
-		{
-			if (keyName.equals(info.name()))
-			{
-				Assert.assertTrue(null == publicKey);
-				publicKey = info.key();
-			}
-		}
-		// If not, create it now.
-		if (null == publicKey)
-		{
-			publicKey = ipfs.generateKey(keyName).key();
-		}
-		Assert.assertTrue(null != publicKey);
-		return publicKey;
 	}
 
 	private static boolean _handleResult(ICommand.Context context, ICommand.Result result)
