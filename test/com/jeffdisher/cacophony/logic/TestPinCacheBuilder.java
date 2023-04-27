@@ -1,9 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.InputStream;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,18 +16,8 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PinCacheData;
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
-import com.jeffdisher.cacophony.scheduler.FuturePin;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.scheduler.FutureResolve;
-import com.jeffdisher.cacophony.scheduler.FutureSave;
-import com.jeffdisher.cacophony.scheduler.FutureSize;
-import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
-import com.jeffdisher.cacophony.scheduler.FutureUnpin;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.testutils.MockNetworkScheduler;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -46,7 +33,7 @@ public class TestPinCacheBuilder
 	@Test
 	public void testEmpty() throws Throwable
 	{
-		DataOnlyNetwork network = new DataOnlyNetwork();
+		MockNetworkScheduler network = new MockNetworkScheduler();
 		PinCacheBuilder builder = new PinCacheBuilder(network);
 		PinCacheData data = builder.finish();
 		Assert.assertTrue(data.snapshotPinnedSet().isEmpty());
@@ -55,7 +42,7 @@ public class TestPinCacheBuilder
 	@Test
 	public void testHomeAndOneFollower() throws Throwable
 	{
-		DataOnlyNetwork network = new DataOnlyNetwork();
+		MockNetworkScheduler network = new MockNetworkScheduler();
 		
 		// Create the home data with 1 post with one attachment.
 		IpfsFile homePost = _makePost(network, "First post!", F2);
@@ -96,7 +83,7 @@ public class TestPinCacheBuilder
 	}
 
 
-	private IpfsFile _createUser(DataOnlyNetwork network, String name, IpfsFile pic, IpfsFile post) throws SizeConstraintException
+	private IpfsFile _createUser(MockNetworkScheduler network, String name, IpfsFile pic, IpfsFile post) throws SizeConstraintException
 	{
 		StreamDescription description = new StreamDescription();
 		description.setName(name);
@@ -117,7 +104,7 @@ public class TestPinCacheBuilder
 		return network.storeData(GlobalData.serializeIndex(streamIndex));
 	}
 
-	private IpfsFile _makePost(DataOnlyNetwork network, String title, IpfsFile image) throws SizeConstraintException
+	private IpfsFile _makePost(MockNetworkScheduler network, String title, IpfsFile image) throws SizeConstraintException
 	{
 		StreamRecord record = new StreamRecord();
 		record.setName(title);
@@ -135,68 +122,5 @@ public class TestPinCacheBuilder
 		}
 		record.setElements(elements);
 		return network.storeData(GlobalData.serializeRecord(record));
-	}
-
-
-	private static class DataOnlyNetwork implements INetworkScheduler
-	{
-		private final Map<IpfsFile, byte[]> _data = new HashMap<>();
-		public IpfsFile storeData(byte[] data)
-		{
-			IpfsFile key = MockSingleNode.generateHash(data);
-			// This might over-write this element but that is ok.
-			_data.put(key, data);
-			return key;
-		}
-		@Override
-		public <R> FutureRead<R> readData(IpfsFile file, DataDeserializer<R> decoder)
-		{
-			Assert.assertTrue(_data.containsKey(file));
-			FutureRead<R> read = new FutureRead<>();
-			try
-			{
-				read.success(decoder.apply(_data.get(file)));
-			}
-			catch (FailedDeserializationException e)
-			{
-				throw new AssertionError("This component only operates on already-valid data");
-			}
-			return read;
-		}
-		@Override
-		public <R> FutureSizedRead<R> readDataWithSizeCheck(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
-		{
-			throw new AssertionError("Not called");
-		}
-		@Override
-		public FutureSave saveStream(InputStream stream)
-		{
-			throw new AssertionError("Not called");
-		}
-		@Override
-		public FuturePublish publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
-		{
-			throw new AssertionError("Not called");
-		}
-		@Override
-		public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
-		{
-			throw new AssertionError("Not called");
-		}
-		@Override
-		public FutureSize getSizeInBytes(IpfsFile cid)
-		{
-			throw new AssertionError("Not called");
-		}
-		@Override
-		public FuturePin pin(IpfsFile cid)
-		{
-			throw new AssertionError("Not called");
-		}
-		@Override
-		public FutureUnpin unpin(IpfsFile cid)
-		{
-			throw new AssertionError("Not called");
-		}
 	}
 }
