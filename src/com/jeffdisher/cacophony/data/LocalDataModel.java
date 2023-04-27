@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -127,7 +128,15 @@ public class LocalDataModel
 				for (IpfsFile unpin : incorrectlyPinned)
 				{
 					System.err.println("REPAIRING: Unpin " + unpin);
-					scheduler.unpin(unpin);
+					try
+					{
+						scheduler.unpin(unpin).get();
+					}
+					catch (IpfsConnectionException e)
+					{
+						// This should be uncommon and this is a best-efforts patching up of an old storage error, so we will just log this.
+						System.err.println("WARNING:  Failed to unpin " + unpin + "!  This should be manually unpinned to not leak.");
+					}
 				}
 				// Force the write-back since we needed to correct the model and have updated the network.
 				try
