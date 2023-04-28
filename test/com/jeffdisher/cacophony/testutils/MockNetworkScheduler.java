@@ -29,6 +29,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class MockNetworkScheduler implements INetworkScheduler
 {
 	private final Map<IpfsFile, byte[]> _data = new HashMap<>();
+	private final Map<String, IpfsKey> _keys = new HashMap<>();
 	private final Set<IpfsFile> _addedPins = new HashSet<>();
 
 	public IpfsFile storeData(byte[] data)
@@ -42,6 +43,11 @@ public class MockNetworkScheduler implements INetworkScheduler
 	public int addedPinCount()
 	{
 		return _addedPins.size();
+	}
+
+	public void addKey(String keyName, IpfsKey publicKey)
+	{
+		_keys.put(keyName, publicKey);
 	}
 
 	@Override
@@ -121,7 +127,16 @@ public class MockNetworkScheduler implements INetworkScheduler
 	@Override
 	public FutureKey getOrCreatePublicKey(String keyName)
 	{
-		// Not called in tests.
-		throw Assert.unreachable();
+		FutureKey key = new FutureKey();
+		if (_keys.containsKey(keyName))
+		{
+			key.success(_keys.get(keyName));
+		}
+		else
+		{
+			// Not called in tests.
+			throw Assert.unreachable();
+		}
+		return key;
 	}
 }

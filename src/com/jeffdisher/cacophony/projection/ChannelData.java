@@ -2,11 +2,18 @@ package com.jeffdisher.cacophony.projection;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.cacophony.data.local.v2.Opcode_CreateChannel;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_SetLastPublishedIndex;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_DefineChannel;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.Pair;
 
 
 public class ChannelData
@@ -17,49 +24,66 @@ public class ChannelData
 	}
 
 
-	private String _ipfsHost;
-	private String _keyName;
-	private IpfsFile _lastPublishedIndex;
+	private final Map<String, Pair<IpfsKey, IpfsFile>> _homeChannelsByKeyName;
 
 	private ChannelData()
 	{
+		_homeChannelsByKeyName = new HashMap<>();
 	}
 
 	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
 	{
-		stream.writeObject(new Opcode_CreateChannel(_ipfsHost, _keyName));
-		if (null != _lastPublishedIndex)
+		// V2 data model only works with a single channel.
+		Assert.assertTrue(1 == _homeChannelsByKeyName.size());
+		String keyName = _homeChannelsByKeyName.keySet().iterator().next();
+		IpfsFile lastPublishedIndex = _homeChannelsByKeyName.get(keyName).second();
+		stream.writeObject(new Opcode_CreateChannel("ipfs", keyName));
+		if (null != lastPublishedIndex)
 		{
-			stream.writeObject(new Opcode_SetLastPublishedIndex(_lastPublishedIndex));
+			stream.writeObject(new Opcode_SetLastPublishedIndex(lastPublishedIndex));
 		}
 	}
 
-	public void initializeChannelState(String ipfsHost, String keyName)
+	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
 	{
-		// This is partially a V3 shape but we still want to apply the V2 rules since that is what we are using.
-		Assert.assertTrue(null == _ipfsHost);
-		Assert.assertTrue(null == _keyName);
-		_ipfsHost = ipfsHost;
-		_keyName = keyName;
+		for (Map.Entry<String, Pair<IpfsKey, IpfsFile>> elt : _homeChannelsByKeyName.entrySet())
+		{
+			String keyName = elt.getKey();
+			Pair<IpfsKey, IpfsFile> channelInfo = elt.getValue();
+			IpfsKey publicKey = channelInfo.first();
+			IpfsFile rootElement = channelInfo.second();
+			writer.writeOpcode(new Opcode_DefineChannel(keyName, publicKey, rootElement));
+		}
 	}
 
-	public String ipfsHost()
+	public void initializeChannelState(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
-		return _ipfsHost;
+		Assert.assertTrue(!_homeChannelsByKeyName.containsKey(keyName));
+		_homeChannelsByKeyName.put(keyName, new Pair<>(publicKey, rootElement));
 	}
 
-	public String keyName()
+	public Set<String> getKeyNames()
 	{
-		return _keyName;
+		return _homeChannelsByKeyName.keySet();
 	}
 
-	public IpfsFile lastPublishedIndex()
+	public IpfsKey getPublicKey(String keyName)
 	{
-		return _lastPublishedIndex;
+		Assert.assertTrue(_homeChannelsByKeyName.containsKey(keyName));
+		return _homeChannelsByKeyName.get(keyName).first();
 	}
 
-	public void setLastPublishedIndex(IpfsFile lastPublishedIndex)
+	public IpfsFile getLastPublishedIndex(String keyName)
 	{
-		_lastPublishedIndex = lastPublishedIndex;
+		// Note that we may try to look up keys which haven't yet been published.
+		return _homeChannelsByKeyName.containsKey(keyName)
+				? _homeChannelsByKeyName.get(keyName).second()
+				: null
+		;
+	}
+
+	public void setLastPublishedIndex(String keyName, IpfsKey publicKey, IpfsFile rootElement)
+	{
+		_homeChannelsByKeyName.put(keyName, new Pair<>(publicKey, rootElement));
 	}
 }

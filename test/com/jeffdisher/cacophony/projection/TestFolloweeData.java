@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.projection;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,8 +12,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
-import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -256,43 +255,20 @@ public class TestFolloweeData
 	private byte[] _serializeAsOpcodeStream(FolloweeData data) throws IOException
 	{
 		ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
-		try (ObjectOutputStream stream = OpcodeContext.createOutputStream(outBytes))
+		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(outBytes))
 		{
-			data.serializeToOpcodeStream(stream);
+			data.serializeToOpcodeWriter(writer);
 		}
 		return outBytes.toByteArray();
 	}
 
 	private FolloweeData _decodeOpcodeStream(byte[] byteArray) throws IOException
 	{
-		FolloweeData latest = FolloweeData.createEmpty();
-		// We are only decoding the followee data so we can use a null misc decoder.
-		OpcodeContext context = new OpcodeContext(null, new IFolloweeDecoding()
-		{
-			@Override
-			public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
-			{
-				latest.createNewFollowee(followeeKey, indexRoot);
-				if (lastPollMillis > 0L)
-				{
-					latest.updateExistingFollowee(followeeKey, indexRoot, lastPollMillis);
-				}
-			}
-			@Override
-			public void addElement(IpfsKey followeeKey, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)
-			{
-				latest.addElement(followeeKey, new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
-			}
-		});
-		ByteArrayInputStream inBytes = new ByteArrayInputStream(byteArray);
-		try
-		{
-			context.decodeWholeStream(inBytes);
-		}
-		finally
-		{
-			inBytes.close();
-		}
-		return latest;
+		ChannelData channelData = null;
+		PrefsData prefs = null;
+		FolloweeData followees = FolloweeData.createEmpty();
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(byteArray), context);
+		return followees;
 	}
 }

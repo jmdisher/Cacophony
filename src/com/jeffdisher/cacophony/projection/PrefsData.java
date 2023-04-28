@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 import com.jeffdisher.cacophony.data.local.v2.Opcode_SetPrefsKey;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_SetPrefsInt;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_SetPrefsLong;
 
 
 /**
@@ -55,5 +58,13 @@ public class PrefsData
 		stream.writeObject(new Opcode_SetPrefsKey(LONG_FOLLOW_CACHE_BYTES, Long.valueOf(this.followCacheTargetBytes)));
 		stream.writeObject(new Opcode_SetPrefsKey(LONG_REPUBLISH_INTERVAL_MILLIS, Long.valueOf(this.republishIntervalMillis)));
 		stream.writeObject(new Opcode_SetPrefsKey(LONG_FOLLOWEE_REFRESH_MILLIS, Long.valueOf(this.followeeRefreshMillis)));
+	}
+
+	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
+	{
+		writer.writeOpcode(new Opcode_SetPrefsInt(INT_VIDEO_EDGE, Integer.valueOf(this.videoEdgePixelMax)));
+		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_FOLLOW_CACHE_BYTES, Long.valueOf(this.followCacheTargetBytes)));
+		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_REPUBLISH_INTERVAL_MILLIS, Long.valueOf(this.republishIntervalMillis)));
+		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_FOLLOWEE_REFRESH_MILLIS, Long.valueOf(this.followeeRefreshMillis)));
 	}
 }

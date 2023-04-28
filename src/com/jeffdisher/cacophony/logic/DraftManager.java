@@ -107,6 +107,18 @@ public class DraftManager
 		return _sharedWrappers.values().stream().map((DraftWrapper wrapper) -> wrapper.loadDraft()).collect(Collectors.toList());
 	}
 
+	/**
+	 * This helper is only in place temporarily, to facilitate the data migration from V2 to V3, as this includes
+	 * changing the Drafts, as well.
+	 */
+	public synchronized void migrateDrafts()
+	{
+		for (DraftWrapper wrapper : _sharedWrappers.values())
+		{
+			wrapper.migrateDraft();
+		}
+	}
+
 
 	private static void _populateDrafts(Map<Integer, DraftWrapper> container, File draftsDirectory)
 	{

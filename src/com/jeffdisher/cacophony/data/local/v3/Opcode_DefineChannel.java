@@ -36,8 +36,7 @@ public record Opcode_DefineChannel(String keyName, IpfsKey publicKey, IpfsFile l
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		// The ChannelData still requires the IPFS host so we just pass an empty string, since we aren't yet using this.
-		context.channelData().initializeChannelState("", this.keyName);
+		context.channelData().initializeChannelState(this.keyName, this.publicKey, this.latestRoot);
 	}
 
 	@Override

@@ -2,13 +2,15 @@ package com.jeffdisher.cacophony.data;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
+import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
@@ -17,7 +19,6 @@ import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -33,9 +34,11 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class LocalDataModel
 {
 	private static final String VERSION_FILE = "version";
-	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 2;
+	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 3;
 
+	private static final byte V2 = 2;
 	private static final String V2_FINAL_LOG = "opcodes_0.final.gzlog";
+	private static final String V3_LOG = "opcodes.v3.gzlog";
 
 	/**
 	 * Verifies the on-disk data model, creating it if it isn't already present.
@@ -61,11 +64,9 @@ public class LocalDataModel
 			try
 			{
 				ChannelData channelData = ChannelData.create();
-				channelData.initializeChannelState(ipfsConnectionString, keyName);
 				_writeToDisk(fileSystem
 						, channelData
 						, PrefsData.defaultPrefs()
-						, PinCacheData.createEmpty()
 						, FolloweeData.createEmpty()
 				);
 			}
@@ -89,6 +90,11 @@ public class LocalDataModel
 			{
 				// Current version, do nothing special.
 			}
+			else if (V2 == version)
+			{
+				// The V2_FINAL_LOG version - migrate the data.
+				_migrateData(fileSystem, scheduler);
+			}
 			else
 			{
 				// Unknown.
@@ -102,63 +108,30 @@ public class LocalDataModel
 		}
 		
 		// Now, load all the files so we can create the initial data model.
-		try (InputStream opcodeLog = fileSystem.readAtomicFile(V2_FINAL_LOG))
+		try (InputStream opcodeLog = fileSystem.readAtomicFile(V3_LOG))
 		{
 			if (null == opcodeLog)
 			{
 				throw new UsageException("Local storage opcode log file is missing");
 			}
 			
-			ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(opcodeLog);
-			ChannelData channelData = projections.channel();
-			FolloweeData followees = projections.followee();
-			// We build the pin cache as a projection of our other data about the home user and followee data.
-			// The on-disk pin cache is now only used to find leaked pin from older versions of the software the user might have run.
-			// TODO:  Remove pin cache from next version of data model.
-			PinCacheData pinCache = _buildPinCache(scheduler, channelData.lastPublishedIndex(), followees);
-			PinCacheData diskPinCache = projections.pinCache();
-			List<IpfsFile> incorrectlyPinned = diskPinCache.verifyMatch(pinCache);
-			if (assertConsistent)
-			{
-				// The verification will return null if they are a perfect match.
-				Assert.assertTrue(null == incorrectlyPinned);
-			}
-			else if (null != incorrectlyPinned)
-			{
-				// We are going to proceed with the derived cache so we need to unpin the extraneous references in the on-disk version.
-				// NOTE:  This is NOT expected and is only present in some older data models do to an old bug where meta-data wasn't correctly unpinned.
-				for (IpfsFile unpin : incorrectlyPinned)
-				{
-					System.err.println("REPAIRING: Unpin " + unpin);
-					try
-					{
-						scheduler.unpin(unpin).get();
-					}
-					catch (IpfsConnectionException e)
-					{
-						// This should be uncommon and this is a best-efforts patching up of an old storage error, so we will just log this.
-						System.err.println("WARNING:  Failed to unpin " + unpin + "!  This should be manually unpinned to not leak.");
-					}
-				}
-				// Force the write-back since we needed to correct the model and have updated the network.
-				try
-				{
-					_writeToDisk(fileSystem
-							, channelData
-							, projections.prefs()
-							, pinCache
-							, followees
-					);
-				}
-				catch (IOException e)
-				{
-					// We don't expect a failure to write to local storage.
-					throw Assert.unexpected(e);
-				}
-			}
+			OpcodeContext context = new OpcodeContext(ChannelData.create()
+					, PrefsData.defaultPrefs()
+					, FolloweeData.createEmpty()
+			);
+			OpcodeCodec.decodeWholeStream(opcodeLog, context);
+			ChannelData channels = context.channelData();
+			PrefsData prefs = context.prefs();
+			FolloweeData followees = context.followees();
+			Set<String> channelKeyNames = channels.getKeyNames();
+			IpfsFile[] homeRoots = channelKeyNames.stream()
+					.map((String channelKeyName) -> channels.getLastPublishedIndex(channelKeyName))
+					.toArray((int size) -> new IpfsFile[size])
+			;
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees);
 			return new LocalDataModel(fileSystem
-					, channelData
-					, projections.prefs()
+					, channels
+					, prefs
 					, pinCache
 					, followees
 			);
@@ -170,18 +143,62 @@ public class LocalDataModel
 		}
 	}
 
-	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile lastRootElement, FolloweeData followees)
+	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees)
 	{
 		PinCacheBuilder builder = new PinCacheBuilder(scheduler);
-		if (null != lastRootElement)
+		for (IpfsFile homeRoot : homeRootElements)
 		{
-			builder.addHomeUser(lastRootElement);
-			for (IpfsKey key : followees.getAllKnownFollowees())
-			{
-				builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
-			}
+			builder.addHomeUser(homeRoot);
+		}
+		for (IpfsKey key : followees.getAllKnownFollowees())
+		{
+			builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
 		}
 		return builder.finish();
+	}
+
+	private static void _migrateData(IConfigFileSystem fileSystem, INetworkScheduler scheduler)
+	{
+		try (InputStream opcodeLog = fileSystem.readAtomicFile(V2_FINAL_LOG))
+		{
+			// We are only here for the version upgrade so the data must be here.
+			Assert.assertTrue(null != opcodeLog);
+			
+			ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(scheduler, opcodeLog);
+			ChannelData channelData = projections.channel();
+			FolloweeData followees = projections.followee();
+			
+			Set<String> channelKeyNames = channelData.getKeyNames();
+			// We expect precisely one channel when migrating data from version 2.
+			Assert.assertTrue(1 == channelKeyNames.size());
+			String keyName = channelKeyNames.iterator().next();
+			Assert.assertTrue(keyName.length() > 0);
+			IpfsFile lastIndex = channelData.getLastPublishedIndex(keyName);
+			Assert.assertTrue(null != lastIndex);
+			
+			// We build the pin cache as a projection of our other data about the home user and followee data.
+			IpfsFile[] homeRoots = (null != lastIndex)
+					? new IpfsFile[] { lastIndex }
+					: new IpfsFile[0]
+			;
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees);
+			PinCacheData diskPinCache = projections.pinCache();
+			List<IpfsFile> incorrectlyPinned = diskPinCache.verifyMatch(pinCache);
+			// The verification will return null if they are a perfect match.
+			Assert.assertTrue(null == incorrectlyPinned);
+			
+			// Also update the drafts, since they no longer use Java serialization in V3.
+			DraftManager manager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
+			manager.migrateDrafts();
+			
+			// Now, write-back the data.
+			_writeToDisk(fileSystem, channelData, projections.prefs(), followees);
+		}
+		catch (IOException e)
+		{
+			// We have no way to handle this failure.
+			throw Assert.unexpected(e);
+		}
 	}
 
 
@@ -237,7 +254,6 @@ public class LocalDataModel
 		_writeToDisk(_fileSystem
 				, _localIndex
 				, _globalPrefs
-				, _globalPinCache
 				, _followIndex
 		);
 	}
@@ -252,19 +268,17 @@ public class LocalDataModel
 	private static void _writeToDisk(IConfigFileSystem fileSystem
 			, ChannelData localIndex
 			, PrefsData globalPrefs
-			, PinCacheData globalPinCache
 			, FolloweeData followIndex
 	) throws IOException
 	{
 		// We will serialize directly to the file.  If there are any exceptions, we won't reach the commit.
-		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile(V2_FINAL_LOG))
+		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile(V3_LOG))
 		{
-			try (ObjectOutputStream output = OpcodeContext.createOutputStream(atomic.getStream()))
+			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(atomic.getStream()))
 			{
-				localIndex.serializeToOpcodeStream(output);
-				globalPrefs.serializeToOpcodeStream(output);
-				globalPinCache.serializeToOpcodeStream(output);
-				followIndex.serializeToOpcodeStream(output);
+				localIndex.serializeToOpcodeWriter(writer);
+				globalPrefs.serializeToOpcodeWriter(writer);
+				followIndex.serializeToOpcodeWriter(writer);
 			}
 			atomic.commit();
 		}

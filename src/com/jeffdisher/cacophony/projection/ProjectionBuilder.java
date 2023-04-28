@@ -8,6 +8,8 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
 import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
 import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -18,19 +20,30 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 {
-	public static Projections buildProjectionsFromOpcodeStream(InputStream rawData) throws IOException
+	public static Projections buildProjectionsFromOpcodeStream(INetworkScheduler scheduler, InputStream rawData) throws IOException
 	{
-		ProjectionBuilder builder = new ProjectionBuilder();
+		ProjectionBuilder builder = new ProjectionBuilder(scheduler);
 		OpcodeContext context = new OpcodeContext(builder, builder);
 		context.decodeWholeStream(rawData);
 		return builder.getProjections();
 	}
 
 
-	private ChannelData _channel;
-	private final FolloweeData _followees = FolloweeData.createEmpty();
-	private final PinCacheData _pinCache = PinCacheData.createEmpty();
-	private final PrefsData _prefs = PrefsData.defaultPrefs();
+	private final INetworkScheduler _scheduler;
+	private final ChannelData _channel;
+	private final FolloweeData _followees;
+	private final PinCacheData _pinCache;
+	private final PrefsData _prefs;
+	private String _keyName;
+
+	public ProjectionBuilder(INetworkScheduler scheduler)
+	{
+		_scheduler = scheduler;
+		_channel = ChannelData.create();
+		_followees = FolloweeData.createEmpty();
+		_pinCache = PinCacheData.createEmpty();
+		_prefs = PrefsData.defaultPrefs();
+	}
 
 	public Projections getProjections()
 	{
@@ -40,15 +53,32 @@ public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 	@Override
 	public void createConfig(String ipfsHost, String keyName)
 	{
-		Assert.assertTrue(null == _channel);
-		_channel = ChannelData.create();
-		_channel.initializeChannelState(ipfsHost, keyName);
+		// This is a version 2 data model so assert that we didn't already define the singular channel.
+		Assert.assertTrue(_channel.getKeyNames().isEmpty());
+		Assert.assertTrue(null == _keyName);
+		// We just store the name and populate the config later (that way, if there is no root, we don't define the channel).
+		_keyName = keyName;
 	}
 
 	@Override
 	public void setLastPublishedIndex(IpfsFile lastPublishedIndex)
 	{
-		_channel.setLastPublishedIndex(lastPublishedIndex);
+		// This is a version 2 data model so assert that we didn't already define the singular channel.
+		Assert.assertTrue(_channel.getKeyNames().isEmpty());
+		Assert.assertTrue(null != _keyName);
+		
+		// We need to look up the key - later models store this locally, for convenience, but the older model doesn't.
+		IpfsKey publicKey;
+		try
+		{
+			publicKey = _scheduler.getOrCreatePublicKey(_keyName).get();
+		}
+		catch (IpfsConnectionException e)
+		{
+			// This is only now called during migration so we won't sweat not having an elegant way to plumb the error and just fail.
+			throw Assert.unexpected(e);
+		}
+		_channel.initializeChannelState(_keyName, publicKey, lastPublishedIndex);
 	}
 
 	@Override

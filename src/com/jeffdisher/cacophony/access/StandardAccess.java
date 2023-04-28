@@ -188,7 +188,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public IpfsFile getLastRootElement()
 	{
-		return _channelData.lastPublishedIndex();
+		return _channelData.getLastPublishedIndex(_keyName);
 	}
 
 	@Override
@@ -207,7 +207,7 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public FuturePublish republishIndex()
 	{
-		IpfsFile lastRoot = _channelData.lastPublishedIndex();
+		IpfsFile lastRoot = _channelData.getLastPublishedIndex(_keyName);
 		return _scheduler.publishIndex(_keyName, _publicKey, lastRoot);
 	}
 
@@ -260,7 +260,7 @@ public class StandardAccess implements IWritingAccess
 		FutureSave save = _scheduler.saveStream(new ByteArrayInputStream(serializedIndex));
 		IpfsFile hash = save.get();
 		_pinCache.addRef(hash);
-		_channelData.setLastPublishedIndex(hash);
+		_channelData.setLastPublishedIndex(_keyName, _publicKey, hash);
 		_writeChannelData = true;
 		return hash;
 	}

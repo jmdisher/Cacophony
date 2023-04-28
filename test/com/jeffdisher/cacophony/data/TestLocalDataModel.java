@@ -4,8 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
@@ -16,9 +15,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
-import com.jeffdisher.cacophony.data.local.v2.IFolloweeDecoding;
-import com.jeffdisher.cacophony.data.local.v2.IMiscUses;
-import com.jeffdisher.cacophony.data.local.v2.OpcodeContext;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
@@ -174,11 +172,15 @@ public class TestLocalDataModel
 		byte[] serialized = _serializeModelToOpcodes(model);
 		
 		// Replay the stream to make sure it is what we expected to see.
-		CountingCallbacks counting = new CountingCallbacks();
-		OpcodeContext context = new OpcodeContext(counting, counting);
-		context.decodeWholeStream(new ByteArrayInputStream(serialized));
-		Assert.assertEquals(5, counting.miscCount);
-		Assert.assertEquals(0, counting.followeeCount);
+		ChannelData channelData = null;
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FolloweeData followees = null;
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
+		Assert.assertEquals(PrefsData.DEFAULT_VIDEO_EDGE, prefs.videoEdgePixelMax);
+		Assert.assertEquals(PrefsData.DEFAULT_FOLLOW_CACHE_BYTES, prefs.followCacheTargetBytes);
+		Assert.assertEquals(PrefsData.DEFAULT_FOLLOWEE_REFRESH_MILLIS, prefs.followeeRefreshMillis);
+		Assert.assertEquals(PrefsData.DEFAULT_REPUBLISH_INTERVAL_MILLIS, prefs.republishIntervalMillis);
 	}
 
 	@Test
@@ -204,11 +206,17 @@ public class TestLocalDataModel
 		byte[] serialized = _serializeModelToOpcodes(model);
 		
 		// Replay the stream to make sure it is what we expected to see.
-		CountingCallbacks counting = new CountingCallbacks();
-		OpcodeContext context = new OpcodeContext(counting, counting);
-		context.decodeWholeStream(new ByteArrayInputStream(serialized));
-		Assert.assertEquals(7, counting.miscCount);
-		Assert.assertEquals(2, counting.followeeCount);
+		ChannelData channelData = null;
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FolloweeData followees = FolloweeData.createEmpty();
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
+		Set<IpfsKey> knownKeys = followees.getAllKnownFollowees();
+		Assert.assertEquals(1, knownKeys.size());
+		IpfsKey followee = knownKeys.iterator().next();
+		Assert.assertEquals(K1, followee);
+		Assert.assertEquals(F1, followees.getLastFetchedRootForFollowee(followee));
+		
 	}
 
 	@Test
@@ -268,7 +276,7 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We throw a usage error if the opcode log is missing.
-		fileSystem.writeTrivialFile("version", new byte[] {2});
+		fileSystem.writeTrivialFile("version", new byte[] {3});
 		didFail = false;
 		try
 		{
@@ -281,18 +289,15 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We need the log to exist and contain valid data, so use the defaults we use when initializing it before running a command.
-		try (IConfigFileSystem.AtomicOutputStream stream = fileSystem.writeAtomicFile("opcodes_0.final.gzlog"))
+		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile("opcodes.v3.gzlog"))
 		{
-			try (ObjectOutputStream output = OpcodeContext.createOutputStream(stream.getStream()))
+			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(atomic.getStream()))
 			{
-				ChannelData channelData = ChannelData.create();
-				channelData.initializeChannelState(IPFS_HOST, KEY_NAME);
-				channelData.serializeToOpcodeStream(output);
-				PrefsData.defaultPrefs().serializeToOpcodeStream(output);
-				PinCacheData.createEmpty().serializeToOpcodeStream(output);
-				FolloweeData.createEmpty().serializeToOpcodeStream(output);
+				ChannelData.create().serializeToOpcodeWriter(writer);
+				PrefsData.defaultPrefs().serializeToOpcodeWriter(writer);
+				FolloweeData.createEmpty().serializeToOpcodeWriter(writer);
 			}
-			stream.commit();
+			atomic.commit();
 		}
 		LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME, true);
 	}
@@ -313,53 +318,14 @@ public class TestLocalDataModel
 		try (IReadOnlyLocalData access = model.openForRead())
 		{
 			ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-			ObjectOutputStream stream = OpcodeContext.createOutputStream(bytes);
-			access.readLocalIndex().serializeToOpcodeStream(stream);
-			access.readGlobalPrefs().serializeToOpcodeStream(stream);
-			access.readGlobalPinCache().serializeToOpcodeStream(stream);
-			access.readFollowIndex().serializeToOpcodeStream(stream);
-			stream.close();
+			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(bytes))
+			{
+				access.readLocalIndex().serializeToOpcodeWriter(writer);
+				access.readGlobalPrefs().serializeToOpcodeWriter(writer);
+				access.readFollowIndex().serializeToOpcodeWriter(writer);
+			}
 			serialized = bytes.toByteArray();
 		}
 		return serialized;
-	}
-
-
-	private static class CountingCallbacks implements IMiscUses, IFolloweeDecoding
-	{
-		public int miscCount;
-		public int followeeCount;
-		
-		@Override
-		public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
-		{
-			this.followeeCount += 1;
-		}
-		@Override
-		public void addElement(IpfsKey followeeKey, IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)
-		{
-			this.followeeCount += 1;
-		}
-		
-		@Override
-		public void createConfig(String ipfsHost, String keyName)
-		{
-			this.miscCount += 1;
-		}
-		@Override
-		public void setLastPublishedIndex(IpfsFile lastPublishedIndex)
-		{
-			this.miscCount += 1;
-		}
-		@Override
-		public void setPinnedCount(IpfsFile cid, int count)
-		{
-			this.miscCount += 1;
-		}
-		@Override
-		public void setPrefsKey(String keyName, Serializable value)
-		{
-			this.miscCount += 1;
-		}
 	}
 }

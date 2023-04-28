@@ -41,6 +41,7 @@ public class TestV3Data
 			OpcodeCodec.decodeWholeStream(input, context);
 		}
 		
+		Assert.assertEquals(1, channels.getKeyNames().size());
 		Assert.assertEquals(1, prefs.videoEdgePixelMax);
 		Assert.assertEquals(2L, prefs.followCacheTargetBytes);
 	}

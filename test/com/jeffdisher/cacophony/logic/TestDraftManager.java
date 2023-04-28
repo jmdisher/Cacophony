@@ -83,4 +83,51 @@ public class TestDraftManager
 		Assert.assertNull(read.originalVideo());
 		Assert.assertEquals(0, read.audio().height());
 	}
+
+	/**
+	 * This test is short-lived, as it only exists to show how the Drafts are migrated from V2 to V3.
+	 */
+	@Test
+	public void migrationFromV2() throws Throwable
+	{
+		// Create the directory and manually serialize the draft into it.
+		Draft testDraft1 = new Draft(1, 2L, "title", "description", "url"
+				, new SizedElement("image/jpeg", 0, 0, 5L)
+				, new SizedElement("video/webm", 720, 1280, 1000L)
+				, new SizedElement("video/webm", 720, 1280, 100L)
+				, null
+		);
+		Draft testDraft2 = new Draft(2, 4L, "min", "none", ""
+				, null
+				, null
+				, null
+				, null
+		);
+		
+		File directory = FOLDER.newFolder();
+		_writeDraft(directory, testDraft1);
+		_writeDraft(directory, testDraft2);
+		DraftManager manager = new DraftManager(directory);
+		manager.migrateDrafts();
+		Assert.assertTrue(new File(new File(directory, "draft_1"), "draft.json").exists());
+		Assert.assertFalse(new File(new File(directory, "draft_1"), "draft.dat").exists());
+		
+		Assert.assertEquals(2, manager.listAllDrafts().size());
+		Draft read1 = manager.openExistingDraft(1).loadDraft();
+		Draft read2 = manager.openExistingDraft(2).loadDraft();
+		
+		Assert.assertEquals(testDraft1.title(), read1.title());
+		Assert.assertEquals(testDraft1.thumbnail().byteSize(), read1.thumbnail().byteSize());
+		Assert.assertEquals(testDraft1.processedVideo().mime(), read1.processedVideo().mime());
+		Assert.assertEquals(testDraft2.description(), read2.description());
+		Assert.assertEquals(testDraft2.discussionUrl(), read2.discussionUrl());
+	}
+
+	private void _writeDraft(File draftsDirectory, Draft draft)
+	{
+		File directory = new File(draftsDirectory, "draft_" + draft.id());
+		directory.mkdir();
+		DraftWrapper wrapper = new DraftWrapper(directory);
+		wrapper.saveV2(draft);
+	}
 }
