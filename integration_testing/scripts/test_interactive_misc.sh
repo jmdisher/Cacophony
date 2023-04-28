@@ -90,6 +90,16 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\"
 # Note that we need to wait for the refresh to finish, since it is now asynchronous.
 SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
+# Note that the first event we see is typically a create of key 2 but we will see key 1 if the start-up publish is unusually slow.
+if [[ "$SAMPLE" =~ "{\"event\":\"create\",\"key\":1," ]];
+then
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":1,\"value\":\"Publish IpfsFile("
+	SAMPLE=$(cat "$WS_STATUS.out")
+	echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
+	requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":1,"
+	SAMPLE=$(cat "$WS_STATUS.out")
+	echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
+fi
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey($PUBLIC2)\",\"isNewest\":true}"
 SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null

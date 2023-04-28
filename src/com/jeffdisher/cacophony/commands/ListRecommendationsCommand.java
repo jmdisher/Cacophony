@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand<KeyList>
+public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand<KeyList>
 {
 	@Override
 	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
@@ -27,46 +27,44 @@ public record ListRecommendationsCommand(IpfsKey _publicKey) implements ICommand
 		IpfsKey[] keys;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			keys = _runCore(context.logger, access);
+			keys = _runCore(context.logger, access.getPublicKey(), access);
 		}
 		return new KeyList("Recommending", keys);
 	}
 
 
-	private IpfsKey[] _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	private IpfsKey[] _runCore(ILogger logger, IpfsKey ourKey, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
-		IFolloweeReading followees = access.readableFolloweeData();
-		
-		// See if this is our key or one we are following (we can only do this list for channels we are following since
-		// we only want to read data we already pinned).
 		IpfsFile rootToLoad = null;
 		boolean isCached = false;
-		if (null != _publicKey)
+		
+		// If there was no key specified, or the key is our key, we can avoid key resolving.
+		if ((null == _targetKey) || ourKey.equals(_targetKey))
 		{
-			rootToLoad = followees.getLastFetchedRootForFollowee(_publicKey);
+			rootToLoad = access.getLastRootElement();
+			Assert.assertTrue(null != rootToLoad);
+			isCached = true;
+		}
+		else
+		{
+			// See if this is a follower so we know if the data should be cached.
+			IFolloweeReading followees = access.readableFolloweeData();
+			rootToLoad = followees.getLastFetchedRootForFollowee(_targetKey);
 			if (null != rootToLoad)
 			{
-				logger.logVerbose("Following " + _publicKey);
+				logger.logVerbose("Following " + _targetKey);
 				isCached = true;
 			}
 			else
 			{
-				logger.logVerbose("NOT following " + _publicKey);
-				rootToLoad = access.resolvePublicKey(_publicKey).get();
+				logger.logVerbose("NOT following " + _targetKey);
+				rootToLoad = access.resolvePublicKey(_targetKey).get();
 				// If this failed to resolve, through a key exception.
 				if (null == rootToLoad)
 				{
-					throw new KeyException("Failed to resolve key: " + _publicKey);
+					throw new KeyException("Failed to resolve key: " + _targetKey);
 				}
 			}
-		}
-		else
-		{
-			// Just list our recommendations.
-			// Read the existing StreamIndex.
-			rootToLoad = access.getLastRootElement();
-			Assert.assertTrue(null != rootToLoad);
-			isCached = true;
 		}
 		
 		// Read the existing recommendations list.
