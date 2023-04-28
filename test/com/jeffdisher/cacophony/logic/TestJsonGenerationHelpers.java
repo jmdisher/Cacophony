@@ -110,7 +110,7 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, "ipfs", KEY_NAME, true);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
@@ -157,7 +157,7 @@ public class TestJsonGenerationHelpers
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
 		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, "ipfs", KEY_NAME, true);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model

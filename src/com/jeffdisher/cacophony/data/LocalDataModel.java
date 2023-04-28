@@ -46,11 +46,8 @@ public class LocalDataModel
 	 * 
 	 * @param fileSystem The file system where the data lives.
 	 * @param scheduler The scheduler for fetching network resources.
-	 * @param ipfsConnectionString The string describing the API server end-point.
-	 * @param keyName The name of the IPFS key to use for this user.
-	 * @param assertConsistent If true, will assert that the pin cache is consistent with the referencing data.
 	 */
-	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler, String ipfsConnectionString, String keyName, boolean assertConsistent) throws UsageException
+	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler) throws UsageException
 	{
 		// If the config doesn't exist, create it with default values.
 		if (!fileSystem.doesConfigDirectoryExist())

@@ -44,7 +44,6 @@ public class TestInteractiveHelpers
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
@@ -221,7 +220,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME, true);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model
@@ -370,7 +369,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null, IPFS_HOST, KEY_NAME, true);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, model

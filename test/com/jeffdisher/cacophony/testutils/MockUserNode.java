@@ -32,8 +32,6 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class MockUserNode
 {
-	private static final String IPFS_HOST = "ipfsHost";
-
 	private final String _localKeyName;
 	private final IpfsKey _publicKey;
 	private final MockSingleNode _sharedConnection;
@@ -171,7 +169,7 @@ public class MockUserNode
 
 	public void assertConsistentPinCache() throws UsageException
 	{
-		LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler, IPFS_HOST, _localKeyName, true);
+		LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler);
 	}
 
 	public void manualPublishLocal(IpfsFile manualRoot) throws IpfsConnectionException
@@ -208,7 +206,7 @@ public class MockUserNode
 			LocalDataModel model;
 			try
 			{
-				model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler, IPFS_HOST, _localKeyName, true);
+				model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler);
 			}
 			catch (UsageException e)
 			{

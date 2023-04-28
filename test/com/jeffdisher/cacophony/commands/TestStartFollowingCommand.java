@@ -35,7 +35,6 @@ public class TestStartFollowingCommand
 {
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
-	private static final String IPFS_HOST = "ipfsHost";
 	private static final String KEY_NAME = "keyName";
 	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final String REMOTE_KEY_NAME = "remoteKey";
@@ -57,7 +56,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
-		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler, IPFS_HOST, KEY_NAME, true);
+		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, localDataModel
 				, sharedConnection
@@ -129,7 +128,7 @@ public class TestStartFollowingCommand
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
-		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler, IPFS_HOST, KEY_NAME, true);
+		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
 		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
 				, localDataModel
 				, sharedConnection
