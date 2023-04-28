@@ -41,7 +41,8 @@ public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 	public void createConfig(String ipfsHost, String keyName)
 	{
 		Assert.assertTrue(null == _channel);
-		_channel = ChannelData.create(ipfsHost, keyName);
+		_channel = ChannelData.create();
+		_channel.initializeChannelState(ipfsHost, keyName);
 	}
 
 	@Override

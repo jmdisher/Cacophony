@@ -60,8 +60,10 @@ public class LocalDataModel
 			// Write the initial files.
 			try
 			{
+				ChannelData channelData = ChannelData.create();
+				channelData.initializeChannelState(ipfsConnectionString, keyName);
 				_writeToDisk(fileSystem
-						, ChannelData.create(ipfsConnectionString, keyName)
+						, channelData
 						, PrefsData.defaultPrefs()
 						, PinCacheData.createEmpty()
 						, FolloweeData.createEmpty()

@@ -6,13 +6,14 @@ import java.io.ObjectOutputStream;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_CreateChannel;
 import com.jeffdisher.cacophony.data.local.v2.Opcode_SetLastPublishedIndex;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public class ChannelData
 {
-	public static ChannelData create(String ipfsHost, String keyName)
+	public static ChannelData create()
 	{
-		return new ChannelData(ipfsHost, keyName);
+		return new ChannelData();
 	}
 
 
@@ -20,10 +21,8 @@ public class ChannelData
 	private String _keyName;
 	private IpfsFile _lastPublishedIndex;
 
-	private ChannelData(String ipfsHost, String keyName)
+	private ChannelData()
 	{
-		_ipfsHost = ipfsHost;
-		_keyName = keyName;
 	}
 
 	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
@@ -33,6 +32,15 @@ public class ChannelData
 		{
 			stream.writeObject(new Opcode_SetLastPublishedIndex(_lastPublishedIndex));
 		}
+	}
+
+	public void initializeChannelState(String ipfsHost, String keyName)
+	{
+		// This is partially a V3 shape but we still want to apply the V2 rules since that is what we are using.
+		Assert.assertTrue(null == _ipfsHost);
+		Assert.assertTrue(null == _keyName);
+		_ipfsHost = ipfsHost;
+		_keyName = keyName;
 	}
 
 	public String ipfsHost()

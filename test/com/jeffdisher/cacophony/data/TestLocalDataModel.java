@@ -285,7 +285,9 @@ public class TestLocalDataModel
 		{
 			try (ObjectOutputStream output = OpcodeContext.createOutputStream(stream.getStream()))
 			{
-				ChannelData.create(IPFS_HOST, KEY_NAME).serializeToOpcodeStream(output);
+				ChannelData channelData = ChannelData.create();
+				channelData.initializeChannelState(IPFS_HOST, KEY_NAME);
+				channelData.serializeToOpcodeStream(output);
 				PrefsData.defaultPrefs().serializeToOpcodeStream(output);
 				PinCacheData.createEmpty().serializeToOpcodeStream(output);
 				FolloweeData.createEmpty().serializeToOpcodeStream(output);
