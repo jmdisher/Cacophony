@@ -31,7 +31,6 @@ public class LoadedStorage implements IReadWriteLocalData
 	private ChannelData _localIndex;
 	private boolean _changed_localIndex;
 	private PinCacheData _globalPinCache;
-	private boolean _changed_globalPinCache;
 	private FolloweeData _followIndex;
 	private boolean _changed_followIndex;
 	private PrefsData _globalPrefs;
@@ -84,7 +83,6 @@ public class LoadedStorage implements IReadWriteLocalData
 		if (null != _writeLock)
 		{
 			_writeLock.closeWrite((_changed_localIndex ? _localIndex : null)
-					, (_changed_globalPinCache ? _globalPinCache : null)
 					, (_changed_followIndex ? _followIndex : null)
 					, (_changed_globalPrefs ? _globalPrefs : null)
 			);
@@ -119,8 +117,7 @@ public class LoadedStorage implements IReadWriteLocalData
 	{
 		Assert.assertTrue(_isOpen);
 		Assert.assertTrue(null != _writeLock);
-		_globalPinCache = pinCache;
-		_changed_globalPinCache = true;
+		Assert.assertTrue(_globalPinCache == pinCache);
 	}
 
 	@Override
@@ -155,10 +152,9 @@ public class LoadedStorage implements IReadWriteLocalData
 		 * NOTE:  Any non-null values must be the same instances returned by a previous read.
 		 * 
 		 * @param updateLocalIndex Non-null if this should be saved as the new ChannelData.
-		 * @param updateGlobalPinCache Non-null if this should be saved as the new PinCacheData.
 		 * @param updateFollowIndex Non-null if this should be saved as the new FolloweeData.
 		 * @param updateGlobalPrefs Non-null if this should be saved as the new PrefsData.
 		 */
-		void closeWrite(ChannelData updateLocalIndex, PinCacheData updateGlobalPinCache, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs);
+		void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs);
 	}
 }

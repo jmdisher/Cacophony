@@ -307,7 +307,7 @@ public class LocalDataModel
 			_lock = lock;
 		}
 		@Override
-		public void closeWrite(ChannelData updateLocalIndex, PinCacheData updateGlobalPinCache, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs)
+		public void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs)
 		{
 			// Write-back the elements they provided (anything passed as null is unchanged).
 			
@@ -316,12 +316,6 @@ public class LocalDataModel
 			{
 				// We can't change the instance - this is just to signify it may have changed.
 				Assert.assertTrue(_localIndex == updateLocalIndex);
-				somethingUpdated = true;
-			}
-			if (null != updateGlobalPinCache)
-			{
-				// We can't change the instance - this is just to signify it may have changed.
-				Assert.assertTrue(_globalPinCache == updateGlobalPinCache);
 				somethingUpdated = true;
 			}
 			if (null != updateFollowIndex)
