@@ -23,6 +23,7 @@ import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -354,7 +355,18 @@ public class TestRefreshNextFolloweeCommand
 		// Now, break the key reference and run it again to make sure the time is updated but not the root (we sleep for a few millis to make sure the clock advances).
 		Thread.sleep(2);
 		user2.timeoutKey(PUBLIC_KEY2);
-		user.runCommand(null, command);
+		// We should see an exception since there is no key.
+		boolean didSucceed;
+		try
+		{
+			user.runCommand(null, command);
+			didSucceed = true;
+		}
+		catch (KeyException e)
+		{
+			didSucceed = false;
+		}
+		Assert.assertFalse(didSucceed);
 		reading = user.readFollowIndex();
 		IpfsFile lastRoot2 = reading.getLastFetchedRootForFollowee(PUBLIC_KEY2);
 		Assert.assertNotNull(user2.loadDataFromNode(lastRoot));

@@ -45,39 +45,38 @@ public class SimpleFolloweeStarter
 	 */
 	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
-		IpfsFile actualRoot = access.resolvePublicKey(followeeKey).get();
-		IpfsFile hackedRoot = null;
-		if (null != actualRoot)
+		StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
+		
+		// Run the operation, bearing in mind that we need to handle errors, internally.
+		IpfsFile hackedRoot;
+		try
 		{
-			StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
-			
-			// Run the operation, bearing in mind that we need to handle errors, internally.
-			try
-			{
-				hackedRoot = FolloweeRefreshLogic.startFollowing(support, actualRoot);
-				// This should only fail with an exception.
-				Assert.assertTrue(null != hackedRoot);
-			}
-			catch (IpfsConnectionException e)
-			{
-				logger.accept("Network error contacting IPFS node:  " + e.getLocalizedMessage());
-				throw e;
-			}
-			catch (SizeConstraintException e)
-			{
-				logger.accept("Followee meta-data element too big (probably wrong file published):  " + e.getLocalizedMessage());
-				throw e;
-			}
-			catch (FailedDeserializationException e)
-			{
-				logger.accept("Followee data appears to be corrupt:  " + e.getLocalizedMessage());
-				throw e;
-			}
+			IpfsFile actualRoot = access.resolvePublicKey(followeeKey).get();
+			// Throws KeyException on failure.
+			Assert.assertTrue(null != actualRoot);
+			hackedRoot = FolloweeRefreshLogic.startFollowing(support, actualRoot);
+			// This should only fail with an exception.
+			Assert.assertTrue(null != hackedRoot);
 		}
-		else
+		catch (IpfsConnectionException e)
 		{
-			logger.accept("Failed to resolve the key of the user so the follow wasn't attempted");
-			throw new KeyException("Key could not be resolved");
+			logger.accept("Network error contacting IPFS node:  " + e.getLocalizedMessage());
+			throw e;
+		}
+		catch (KeyException e)
+		{
+			logger.accept("Key resolution failure in start following:  " + e.getLocalizedMessage());
+			throw e;
+		}
+		catch (SizeConstraintException e)
+		{
+			logger.accept("Followee meta-data element too big (probably wrong file published):  " + e.getLocalizedMessage());
+			throw e;
+		}
+		catch (FailedDeserializationException e)
+		{
+			logger.accept("Followee data appears to be corrupt:  " + e.getLocalizedMessage());
+			throw e;
 		}
 		return hackedRoot;
 	}

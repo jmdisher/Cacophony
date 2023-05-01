@@ -201,14 +201,14 @@ public class TestSimpleFolloweeStarter
 		public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 		{
 			Assert.assertEquals(this.oneKey, keyToResolve);
-			FutureResolve resolve = new FutureResolve();
+			FutureResolve resolve = new FutureResolve(keyToResolve);
 			if (null != this.oneRoot)
 			{
 				resolve.success(this.oneRoot);
 			}
 			else
 			{
-				resolve.failure();
+				resolve.failure(new IpfsConnectionException("resolve", "no result", null));
 			}
 			return resolve;
 		}

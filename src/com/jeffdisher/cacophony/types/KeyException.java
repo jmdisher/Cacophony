@@ -9,8 +9,8 @@ public class KeyException extends CacophonyException
 {
 	private static final long serialVersionUID = 1L;
 
-	public KeyException(String message)
+	public KeyException(IpfsKey failedResolve, IpfsConnectionException networkException)
 	{
-		super(message);
+		super("Failed to resolve: " + failedResolve, networkException);
 	}
 }

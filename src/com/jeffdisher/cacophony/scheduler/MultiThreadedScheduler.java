@@ -159,7 +159,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 	{
 		Assert.assertTrue(null != keyToResolve);
-		FutureResolve future = new FutureResolve();
+		FutureResolve future = new FutureResolve(keyToResolve);
 		Runnable r = () -> {
 			try
 			{
@@ -170,7 +170,7 @@ public class MultiThreadedScheduler implements INetworkScheduler
 			}
 			catch (IpfsConnectionException e)
 			{
-				future.failure();
+				future.failure(e);
 			}
 		};
 		_queue.enqueue(r);

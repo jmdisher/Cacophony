@@ -31,6 +31,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -130,7 +131,12 @@ public class InteractiveServer
 				}
 				catch (IpfsConnectionException e)
 				{
-					// This just means it didn't succeed (but is harmless - usually means we couldn't look up the key).
+					// This just means it didn't succeed due to some kind of network error.
+					didRefresh = false;
+				}
+				catch (KeyException e)
+				{
+					// We couldn't look up the key - this is common since IPNS has a timeout.
 					didRefresh = false;
 				}
 				catch (ProtocolDataException e)

@@ -58,11 +58,8 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			{
 				logger.logVerbose("NOT following " + _channelPublicKey);
 				rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
-				// If this failed to resolve, through a key exception.
-				if (null == rootToLoad)
-				{
-					throw new KeyException("Failed to resolve key: " + _channelPublicKey);
-				}
+				// Throws KeyException on failure.
+				Assert.assertTrue(null != rootToLoad);
 				isCached = false;
 			}
 		}

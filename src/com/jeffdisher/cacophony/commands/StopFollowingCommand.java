@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -77,6 +78,14 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		long lastPollMillis = context.environment.currentTimeMillis();
-		refresher.finishRefresh(access, context.recordCache, context.userInfoCache, followees, lastPollMillis);
+		try
+		{
+			refresher.finishRefresh(access, context.recordCache, context.userInfoCache, followees, lastPollMillis);
+		}
+		catch (KeyException e)
+		{
+			// The key is not resolved in the "stop following" case.
+			Assert.unexpected(e);
+		}
 	}
 }

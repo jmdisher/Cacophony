@@ -59,11 +59,8 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 			{
 				logger.logVerbose("NOT following " + _targetKey);
 				rootToLoad = access.resolvePublicKey(_targetKey).get();
-				// If this failed to resolve, through a key exception.
-				if (null == rootToLoad)
-				{
-					throw new KeyException("Failed to resolve key: " + _targetKey);
-				}
+				// Throws KeyException on failure.
+				Assert.assertTrue(null != rootToLoad);
 			}
 		}
 		

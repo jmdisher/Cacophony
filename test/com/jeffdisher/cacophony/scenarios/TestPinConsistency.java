@@ -36,6 +36,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -70,7 +71,17 @@ public class TestPinConsistency
 		
 		// Break the key and try to refresh.
 		user2.timeoutKey(PUBLIC_KEY2);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		boolean didSucceed;
+		try
+		{
+			user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+			didSucceed = true;
+		}
+		catch (KeyException e)
+		{
+			didSucceed = false;
+		}
+		Assert.assertFalse(didSucceed);
 		
 		// Update user 2 with a new post and refresh.
 		String videoFileString = "VIDEO FILE\n";

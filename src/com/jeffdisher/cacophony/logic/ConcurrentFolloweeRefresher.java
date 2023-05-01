@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -47,6 +48,7 @@ public class ConcurrentFolloweeRefresher
 	private boolean _isSuccess;
 	private IpfsConnectionException _connectionException;
 	private ProtocolDataException _protocolException;
+	private KeyException _keyException;
 
 	private boolean _didFinish;
 
@@ -156,27 +158,27 @@ public class ConcurrentFolloweeRefresher
 			else
 			{
 				_newRoot = _keyResolve.get();
-				if (null != _newRoot)
-				{
-					FolloweeRefreshLogic.refreshFollowee(_refreshSupport
-							, _prefs
-							, _previousRoot
-							, _newRoot
-							, _currentCacheUsageInBytes
-					);
-					refreshWasSuccess = true;
-				}
-				else
-				{
-					log.logOperation("Failed to resolve key: " + _followeeKey);
-					refreshWasSuccess = false;
-				}
+				// If this failed to resolve, it will throw.
+				Assert.assertTrue(null != _newRoot);
+				FolloweeRefreshLogic.refreshFollowee(_refreshSupport
+						, _prefs
+						, _previousRoot
+						, _newRoot
+						, _currentCacheUsageInBytes
+				);
+				refreshWasSuccess = true;
 			}
 		}
 		catch (IpfsConnectionException e)
 		{
 			log.logOperation("Network failure in refresh: " + e.getLocalizedMessage());
 			_connectionException = e;
+			refreshWasSuccess = false;
+		}
+		catch (KeyException e)
+		{
+			log.logOperation("Key resolution failure in refresh: " + e.getLocalizedMessage());
+			_keyException = e;
 			refreshWasSuccess = false;
 		}
 		catch (SizeConstraintException e)
@@ -222,13 +224,14 @@ public class ConcurrentFolloweeRefresher
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
 	 * @throws IpfsConnectionException There was a problem accessing data from the network.
 	 * @throws ProtocolDataException Found data which violated the constraints of the Cacophony protocol.
+	 * @throws KeyException There was an error resolving the followee key (probably expired from IPNS).
 	 */
 	public void finishRefresh(IWritingAccess access
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, IFolloweeWriting followees
 			, long currentTimeMillis
-	) throws IpfsConnectionException, ProtocolDataException
+	) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
 		Assert.assertTrue(_didRun);
 		Assert.assertTrue(!_didFinish);
@@ -273,6 +276,10 @@ public class ConcurrentFolloweeRefresher
 		else if (null != _protocolException)
 		{
 			throw _protocolException;
+		}
+		else if (null != _keyException)
+		{
+			throw _keyException;
 		}
 	}
 }
