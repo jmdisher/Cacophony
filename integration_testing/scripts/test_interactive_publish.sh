@@ -431,6 +431,9 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 # Extract fields 2 and 4:  1 "2" 3 "4" 5
 POST_TO_DELETE=$(echo "$POST_LIST" | cut -d "\"" -f 2)
 POST_TO_KEEP=$(echo "$POST_LIST" | cut -d "\"" -f 4)
+# Before deleting the post, we should see that it is known to be cached.
+TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE")
+requireSubstring "$TARGET_STRUCT" "\"cached\":true"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/home/post/delete/$POST_TO_DELETE"
 checkPreviousCommand "DELETE post"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/home/post/delete/$POST_TO_DELETE" >& /dev/null
@@ -448,11 +451,9 @@ echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP" >& /dev/null
 checkPreviousCommand "read post"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE" >& /dev/null
-# 404 not found.
-if [ $? != 22 ]; then
-	exit 1
-fi
+# Note that the system will now try to find an unknown post on the network but it should know that it isn't cached.
+TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE")
+requireSubstring "$TARGET_STRUCT" "\"cached\":false"
 SAMPLE=$(cat "$WS_ENTRIES.out")
 echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null,\"isNewest\":false}"

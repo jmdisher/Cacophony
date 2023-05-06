@@ -4,7 +4,7 @@ import java.net.URL;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.commands.ICommand;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
+import com.jeffdisher.cacophony.commands.ShowPostCommand;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,30 +37,30 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		LocalRecordCache.Element element = _context.recordCache.get(postToResolve);
-		if (null != element)
+		ShowPostCommand command = new ShowPostCommand(postToResolve);
+		ShowPostCommand.PostDetails result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _context
+				, command
+		);
+		if (null != result)
 		{
 			JsonObject postStruct = new JsonObject();
-			postStruct.set("name", element.name());
-			postStruct.set("description", element.description());
-			postStruct.set("publishedSecondsUtc", element.publishedSecondsUtc());
-			postStruct.set("discussionUrl", element.discussionUrl());
-			postStruct.set("publisherKey", element.publisherKey());
-			postStruct.set("cached", element.isCached());
-			if (element.isCached())
+			postStruct.set("name", result.name());
+			postStruct.set("description", result.description());
+			postStruct.set("publishedSecondsUtc", result.publishedSecondsUtc());
+			postStruct.set("discussionUrl", result.discussionUrl());
+			postStruct.set("publisherKey", result.publisherKey());
+			postStruct.set("cached", result.isKnownToBeCached());
+			if (result.isKnownToBeCached())
 			{
-				postStruct.set("thumbnailUrl", _urlOrNull(_context.baseUrl, element.thumbnailCid()));
-				postStruct.set("videoUrl", _urlOrNull(_context.baseUrl, element.videoCid()));
-				postStruct.set("audioUrl", _urlOrNull(_context.baseUrl, element.audioCid()));
+				postStruct.set("thumbnailUrl", _urlOrNull(_context.baseUrl, result.thumbnailCid()));
+				postStruct.set("videoUrl", _urlOrNull(_context.baseUrl, result.videoCid()));
+				postStruct.set("audioUrl", _urlOrNull(_context.baseUrl, result.audioCid()));
 			}
 			
 			response.setContentType("application/json");
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.getWriter().print(postStruct.toString());
-		}
-		else
-		{
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
 

@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LeafFinder;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,10 +26,37 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 	@Override
 	public PostDetails runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		PostDetails post = null;
+		// First, check if we have a record cache and if it contains this.
+		if (null != context.recordCache)
 		{
-			return _runCore(context.logger, access);
+			LocalRecordCache.Element element = context.recordCache.get(_elementCid);
+			if (null != element)
+			{
+				post = new PostDetails(_elementCid
+						, element.isCached()
+						, element.name()
+						, element.description()
+						, element.publishedSecondsUtc()
+						, element.discussionUrl()
+						, element.publisherKey()
+						, element.thumbnailCid()
+						, element.videoCid()
+						, element.audioCid()
+				);
+			}
 		}
+		
+		// If we didn't have a cache or didn't find it, try the expensive path to the network (we assume this is NOT cached).
+		if (null == post)
+		{
+			try (IReadingAccess access = StandardAccess.readAccess(context))
+			{
+				post = _runCore(context.logger, access);
+			}
+		}
+		Assert.assertTrue(null != post);
+		return post;
 	}
 
 
@@ -49,6 +77,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		;
 		IpfsFile audioHash = leaves.audio;
 		return new PostDetails(_elementCid
+				, false
 				, record.getName()
 				, record.getDescription()
 				, record.getPublishedSecondsUtc()
@@ -62,6 +91,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 
 
 	public static record PostDetails(IpfsFile elementCid
+			, boolean isKnownToBeCached
 			, String name
 			, String description
 			, long publishedSecondsUtc
@@ -82,6 +112,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		public void writeHumanReadable(PrintStream output)
 		{
 			output.println("Post details:");
+			output.println("\tCached state: " + (this.isKnownToBeCached ? "CACHED" : "UNKNOWN"));
 			output.println("\tName: " + this.name);
 			output.println("\tDescription: " + this.description);
 			output.println("\tPublished time (seconds since UTC): " + this.publishedSecondsUtc);

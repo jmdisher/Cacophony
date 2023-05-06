@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -23,10 +24,33 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	@Override
 	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
-		ChannelDescription result;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		ChannelDescription result = null;
+		// First, check the cache, if there is one.
+		if (null != context.userInfoCache)
 		{
-			result = _runCore(context.logger, context.baseUrl, access, context.publicKey);
+			LocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(_channelPublicKey);
+			if (null != cached)
+			{
+				IpfsFile userPicCid = cached.userPicCid();
+				String userPicUrl = context.baseUrl + userPicCid.toSafeString();
+				result = new ChannelDescription(null
+						, cached.name()
+						, cached.description()
+						, userPicCid
+						, cached.emailOrNull()
+						, cached.websiteOrNull()
+						, userPicUrl
+				);
+			}
+		}
+		
+		// If we didn't have a cache or didn't find it, try the expensive path to the network.
+		if (null == result)
+		{
+			try (IReadingAccess access = StandardAccess.readAccess(context))
+			{
+				result = _runCore(context.logger, context.baseUrl, access, context.publicKey);
+			}
 		}
 		return result;
 	}
