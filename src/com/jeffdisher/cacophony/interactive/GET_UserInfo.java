@@ -40,7 +40,12 @@ public class GET_UserInfo implements ValidatedEntryPoints.GET
 		if (null != cached)
 		{
 			// While this picture CID _should_ be cached, it is possible that it isn't, since this cache is allowed to contain stale and non-cached data references.
-			JsonObject userInfo = JsonGenerationHelpers.populateJsonForCachedDescription(cached, _context.baseUrl + cached.userPicCid().toSafeString());
+			JsonObject userInfo = JsonGenerationHelpers.userDescription(cached.name()
+					, cached.description()
+					, _context.baseUrl + cached.userPicCid().toSafeString()
+					, cached.emailOrNull()
+					, cached.websiteOrNull()
+			);
 			response.setContentType("application/json");
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.getWriter().print(userInfo.toString());

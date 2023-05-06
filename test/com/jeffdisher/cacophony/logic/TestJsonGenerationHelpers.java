@@ -57,46 +57,6 @@ public class TestJsonGenerationHelpers
 	}
 
 	@Test
-	public void testPostStructNotCached() throws Throwable
-	{
-		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 1);
-		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":false}", data.toString());
-	}
-
-	@Test
-	public void testPostStructImplicitCached() throws Throwable
-	{
-		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 0);
-		JsonObject data = JsonGenerationHelpers.postStruct(null, cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}", data.toString());
-	}
-
-	@Test
-	public void testPostStructCached() throws Throwable
-	{
-		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 2);
-		cache.recordThumbnailPinned(FILE1, FILE2);
-		cache.recordVideoPinned(FILE1, FILE3, 100);
-		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\",\"audioUrl\":null}", data.toString());
-	}
-
-	@Test
-	public void testPostStructCachedAudio() throws Throwable
-	{
-		LocalRecordCache cache = new LocalRecordCache();
-		cache.recordMetaDataPinned(FILE1, "string", "description", 1L, "discussionUrl", PUBLIC_KEY1.toPublicKey(), 2);
-		cache.recordThumbnailPinned(FILE1, FILE2);
-		cache.recordAudioPinned(FILE1, FILE3);
-		JsonObject data = JsonGenerationHelpers.postStruct("url/", cache, FILE1);
-		Assert.assertEquals("{\"name\":\"string\",\"description\":\"description\",\"publishedSecondsUtc\":1,\"discussionUrl\":\"discussionUrl\",\"publisherKey\":\"z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F\",\"cached\":true,\"thumbnailUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG\",\"videoUrl\":null,\"audioUrl\":\"url/QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC\"}", data.toString());
-	}
-
-	@Test
 	public void testPrefs() throws Throwable
 	{
 		PrefsData prefs = PrefsData.defaultPrefs();
@@ -147,8 +107,7 @@ public class TestJsonGenerationHelpers
 		// This should have zero entries.
 		Assert.assertTrue(recordCache.getKeys().isEmpty());
 		// Make sure that we fail to look something up.
-		JsonObject object = JsonGenerationHelpers.postStruct(null, recordCache, FILE1);
-		Assert.assertNull(object);
+		Assert.assertNull(recordCache.get(FILE1));
 		scheduler.shutdown();
 	}
 
@@ -209,10 +168,8 @@ public class TestJsonGenerationHelpers
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
 		Assert.assertEquals(2, recordCache.getKeys().size());
-		JsonObject object = JsonGenerationHelpers.postStruct("url/", recordCache, recordFile);
-		Assert.assertEquals("entry1", object.get("name").asString());
-		object = JsonGenerationHelpers.postStruct("url/", recordCache, followeeRecordFile);
-		Assert.assertEquals("entry2", object.get("name").asString());
+		Assert.assertEquals("entry1", recordCache.get(recordFile).name());
+		Assert.assertEquals("entry2", recordCache.get(followeeRecordFile).name());
 		scheduler.shutdown();
 	}
 

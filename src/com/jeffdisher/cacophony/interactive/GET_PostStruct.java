@@ -1,8 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.net.URL;
+
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.commands.ICommand;
-import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,9 +37,23 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		JsonObject postStruct = JsonGenerationHelpers.postStruct(_context.baseUrl.toString(), _context.recordCache, postToResolve);
-		if (null != postStruct)
+		LocalRecordCache.Element element = _context.recordCache.get(postToResolve);
+		if (null != element)
 		{
+			JsonObject postStruct = new JsonObject();
+			postStruct.set("name", element.name());
+			postStruct.set("description", element.description());
+			postStruct.set("publishedSecondsUtc", element.publishedSecondsUtc());
+			postStruct.set("discussionUrl", element.discussionUrl());
+			postStruct.set("publisherKey", element.publisherKey());
+			postStruct.set("cached", element.isCached());
+			if (element.isCached())
+			{
+				postStruct.set("thumbnailUrl", _urlOrNull(_context.baseUrl, element.thumbnailCid()));
+				postStruct.set("videoUrl", _urlOrNull(_context.baseUrl, element.videoCid()));
+				postStruct.set("audioUrl", _urlOrNull(_context.baseUrl, element.audioCid()));
+			}
+			
 			response.setContentType("application/json");
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.getWriter().print(postStruct.toString());
@@ -46,5 +62,14 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 		{
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
+	}
+
+
+	private static String _urlOrNull(URL baseUrl, IpfsFile cid)
+	{
+		return (null != cid)
+				? (baseUrl + cid.toSafeString())
+				: null
+		;
 	}
 }
