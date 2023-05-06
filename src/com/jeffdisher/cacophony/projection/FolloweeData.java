@@ -39,6 +39,8 @@ public class FolloweeData implements IFolloweeWriting
 	private final Map<IpfsKey, Map<IpfsFile, FollowingCacheElement>> _elementsForLookup;
 	private final Map<IpfsKey, IpfsFile> _followeeLastIndices;
 	private final Map<IpfsKey, Long> _followeeLastFetchMillis;
+	// We keep track of the most recent fetch so that we can adjust the time of any updates to make tests more reliable.
+	private long _mostRecentFetchMillis;
 
 	// Only set in the cases of servers so it is bound late, but can only be bound once.
 	private HandoffConnector<IpfsKey, Long> _followeeRefreshConnector;
@@ -62,6 +64,7 @@ public class FolloweeData implements IFolloweeWriting
 		}
 		_followeeLastIndices = new HashMap<>(followeeLastIndices);
 		_followeeLastFetchMillis = new HashMap<>(followeeLastFetchMillis);
+		_mostRecentFetchMillis = 0;
 	}
 
 	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
@@ -132,10 +135,11 @@ public class FolloweeData implements IFolloweeWriting
 		long oldestTime = Long.MAX_VALUE;
 		for (Map.Entry<IpfsKey, Long> elt : _followeeLastFetchMillis.entrySet())
 		{
-			if (elt.getValue() < oldestTime)
+			long thisTime = elt.getValue();
+			if (thisTime < oldestTime)
 			{
 				followee = elt.getKey();
-				oldestTime = elt.getValue();
+				oldestTime = thisTime;
 			}
 		}
 		return followee;
@@ -190,14 +194,21 @@ public class FolloweeData implements IFolloweeWriting
 	{
 		// We expect that any actual update uses a non-zero time (since that is effectively the "never updated" value).
 		Assert.assertTrue(lastPollMillis > 0L);
+		// Note that some tests run quickly enough that the lastPollMillis can overlap.  This is harmless but does make tests flaky so we ensure this is always added at the end.
+		long pollMillisToSave = lastPollMillis;
+		if (_mostRecentFetchMillis >= pollMillisToSave)
+		{
+			pollMillisToSave = _mostRecentFetchMillis + 1L;
+		}
+		_mostRecentFetchMillis = pollMillisToSave;
 		IpfsFile match0 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null != match0);
-		Long match1 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
+		Long match1 = _followeeLastFetchMillis.put(followeeKey, pollMillisToSave);
 		Assert.assertTrue(null != match1);
 		
 		if (null != _followeeRefreshConnector)
 		{
-			_followeeRefreshConnector.update(followeeKey, lastPollMillis);
+			_followeeRefreshConnector.update(followeeKey, pollMillisToSave);
 		}
 	}
 
