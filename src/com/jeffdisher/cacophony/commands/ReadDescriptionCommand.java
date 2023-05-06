@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.net.URL;
+
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
@@ -24,13 +26,13 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		ChannelDescription result;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			result = _runCore(context.logger, access, context.publicKey);
+			result = _runCore(context.logger, context.baseUrl, access, context.publicKey);
 		}
 		return result;
 	}
 
 
-	private ChannelDescription _runCore(ILogger logger, IReadingAccess access, IpfsKey ourPublicKey) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	private ChannelDescription _runCore(ILogger logger, URL baseUrl, IReadingAccess access, IpfsKey ourPublicKey) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
@@ -67,7 +69,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		}
 		ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, isCached);
 		StreamDescription description = reader.loadDescription();
-		String userPicUrl = access.getDirectFetchUrlRoot() + description.getPicture();
+		String userPicUrl = baseUrl + description.getPicture();
 		return new ChannelDescription(null, description, userPicUrl);
 	}
 }

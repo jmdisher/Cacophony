@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.PrintStream;
+import java.net.URL;
 
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -59,6 +60,7 @@ public interface ICommand<T extends ICommand.Result>
 	{
 		public final IEnvironment environment;
 		public final ILogger logger;
+		public final URL baseUrl;
 		public final LocalRecordCache recordCache;
 		public final LocalUserInfoCache userInfoCache;
 		public final EntryCacheRegistry entryRegistry;
@@ -67,6 +69,7 @@ public interface ICommand<T extends ICommand.Result>
 		
 		public Context(IEnvironment environment
 				, ILogger logger
+				, URL baseUrl
 				, LocalRecordCache recordCache
 				, LocalUserInfoCache userInfoCache
 				, EntryCacheRegistry entryRegistry
@@ -76,6 +79,7 @@ public interface ICommand<T extends ICommand.Result>
 		{
 			this.environment = environment;
 			this.logger = logger;
+			this.baseUrl = baseUrl;
 			this.recordCache = recordCache;
 			this.userInfoCache = userInfoCache;
 			this.entryRegistry = entryRegistry;

@@ -251,11 +251,6 @@ public class TestHomeChannelModifier
 			throw new RuntimeException("Not Called");
 		}
 		@Override
-		public String getCachedUrl(IpfsFile file)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
 		public IpfsFile getLastRootElement()
 		{
 			return this.root;
@@ -277,11 +272,6 @@ public class TestHomeChannelModifier
 		}
 		@Override
 		public ConcurrentTransaction openConcurrentTransaction()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public String getDirectFetchUrlRoot()
 		{
 			throw new RuntimeException("Not Called");
 		}

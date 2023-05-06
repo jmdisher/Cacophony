@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -52,7 +53,9 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			ILogger log = context.logger.logStart("Updating channel description...");
 			result = _run(access, _name, _description, _pictureStream, _email, _website);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
-			pictureUrl = access.getCachedUrl(IpfsFile.fromIpfsCid(result.updatedStreamDescription().getPicture())).toString();
+			IpfsFile pictureCid = IpfsFile.fromIpfsCid(result.updatedStreamDescription().getPicture());
+			Assert.assertTrue(access.isInPinCached(pictureCid));
+			pictureUrl = context.baseUrl + pictureCid.toSafeString();
 			log.logFinish("Update completed!");
 		}
 		finally

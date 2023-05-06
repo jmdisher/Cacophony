@@ -188,11 +188,6 @@ public class TestSimpleFolloweeStarter
 			return r;
 		}
 		@Override
-		public String getCachedUrl(IpfsFile file)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
 		public IpfsFile getLastRootElement()
 		{
 			throw new RuntimeException("Not Called");
@@ -227,11 +222,6 @@ public class TestSimpleFolloweeStarter
 		}
 		@Override
 		public ConcurrentTransaction openConcurrentTransaction()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public String getDirectFetchUrlRoot()
 		{
 			throw new RuntimeException("Not Called");
 		}

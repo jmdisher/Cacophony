@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.eclipsesource.json.JsonObject;
+import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -122,6 +123,7 @@ public class TestJsonGenerationHelpers
 		IpfsFile indexFile = null;
 		ICommand.Context context = new ICommand.Context(executor
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null
@@ -171,6 +173,7 @@ public class TestJsonGenerationHelpers
 		IpfsFile followeeRecordFile = null;
 		ICommand.Context context = new ICommand.Context(executor
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null

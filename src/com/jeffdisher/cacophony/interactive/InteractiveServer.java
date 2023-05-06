@@ -90,6 +90,7 @@ public class InteractiveServer
 		// Create the context object which we will use for any command invocation from the interactive server.
 		ICommand.Context serverContext = new ICommand.Context(startingContext.environment
 				, startingContext.logger
+				, startingContext.baseUrl
 				, localRecordCache
 				, userInfoCache
 				, entryRegistry

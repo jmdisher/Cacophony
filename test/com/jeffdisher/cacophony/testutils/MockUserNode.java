@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
+import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -226,6 +227,7 @@ public class MockUserNode
 	{
 		return new ICommand.Context(_lazyEnv()
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null

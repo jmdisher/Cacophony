@@ -3,6 +3,8 @@ package com.jeffdisher.cacophony;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
@@ -34,6 +36,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.Pair;
 
 import io.ipfs.api.IPFS;
 import io.ipfs.multiaddr.MultiAddress;
@@ -54,6 +57,19 @@ public class DataDomain implements Closeable
 	// The default wait for response in IPFS.java is 1 minute but pin could take a long time so we use 30 minutes.
 	// (this value isn't based on any solid science so it may change in the future).
 	public static final int LONG_READ_TIMEOUT_MILLIS = 30 * 60 * 1000;
+
+	public static final URL FAKE_BASE_URL;
+
+	static {
+		try
+		{
+			FAKE_BASE_URL = new URL("http://test/");
+		}
+		catch (MalformedURLException e)
+		{
+			throw Assert.unexpected(e);
+		}
+	}
 
 	public static DataDomain detectDataDomain()
 	{
@@ -108,7 +124,15 @@ public class DataDomain implements Closeable
 				, theirScheduler
 		);
 		ILogger theirLogger = new SilentLogger();
-		ICommand.Context theirContext = new ICommand.Context(theirEnv, theirLogger, null, null, null, keyName, theirKey);
+		ICommand.Context theirContext = new ICommand.Context(theirEnv
+				, theirLogger
+				, FAKE_BASE_URL
+				, null
+				, null
+				, null
+				, keyName
+				, theirKey
+		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
 		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
@@ -127,7 +151,15 @@ public class DataDomain implements Closeable
 				, ourScheduler
 		);
 		ILogger ourLogger = new SilentLogger();
-		ICommand.Context ourContext = new ICommand.Context(ourEnv, ourLogger, null, null, null, keyName, ourKey);
+		ICommand.Context ourContext = new ICommand.Context(ourEnv
+				, ourLogger
+				, FAKE_BASE_URL
+				, null
+				, null
+				, null
+				, keyName
+				, ourKey
+		);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
 		us.publish(keyName, ourKey, newRoot);
@@ -181,9 +213,10 @@ public class DataDomain implements Closeable
 		}
 	}
 
-	public IConnection buildSharedConnection(String ipfsConnectString) throws IpfsConnectionException
+	public Pair<IConnection, URL> buildSharedConnection(String ipfsConnectString) throws IpfsConnectionException
 	{
 		IConnection connection;
+		URL baseUrl;
 		if (null == _mockNodeOrNull)
 		{
 			// Real connection.
@@ -197,7 +230,8 @@ public class DataDomain implements Closeable
 				
 				MultiAddress addr = new MultiAddress(ipfsConnectString);
 				IPFS longWaitConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, LONG_READ_TIMEOUT_MILLIS, false);
-				connection = new IpfsConnection(_uploaderOrNull, defaultConnection, longWaitConnection, gatewayPort);
+				connection = new IpfsConnection(_uploaderOrNull, defaultConnection, longWaitConnection);
+				baseUrl = new URL(defaultConnection.protocol, defaultConnection.host, gatewayPort, "/ipfs/");
 			}
 			catch (IOException e)
 			{
@@ -214,8 +248,11 @@ public class DataDomain implements Closeable
 		{
 			// Fake connection.
 			connection = _mockNodeOrNull;
+			baseUrl = FAKE_BASE_URL;
 		}
-		return connection;
+		Assert.assertTrue(null != connection);
+		Assert.assertTrue(null != baseUrl);
+		return new Pair<>(connection, baseUrl);
 	}
 
 	public IConfigFileSystem getFileSystem()

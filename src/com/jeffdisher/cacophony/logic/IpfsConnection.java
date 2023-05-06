@@ -2,9 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +24,6 @@ public class IpfsConnection implements IConnection
 	private final Uploader _uploader;
 	private final IPFS _defaultConnection;
 	private final IPFS _longWaitConnection;
-	private final int _gatewayPort;
 
 	/**
 	 * Creates the IPFS connection abstraction.
@@ -36,14 +33,12 @@ public class IpfsConnection implements IConnection
 	 * @param uploader The uploader to use for posting data streams to the IPFS.
 	 * @param defaultConnection The connection to use for most calls.
 	 * @param longWaitConnection The connection to use for slow calls (pin).
-	 * @param gatewayPort The port to use when building URLs to directly fetch a file from the IPFS daemon.
 	 */
-	public IpfsConnection(Uploader uploader, IPFS defaultConnection, IPFS longWaitConnection, int gatewayPort)
+	public IpfsConnection(Uploader uploader, IPFS defaultConnection, IPFS longWaitConnection)
 	{
 		_uploader = uploader;
 		_defaultConnection = defaultConnection;
 		_longWaitConnection = longWaitConnection;
-		_gatewayPort = gatewayPort;
 	}
 
 	@Override
@@ -155,12 +150,6 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public String urlForDirectFetch(IpfsFile cid)
-	{
-		return _urlForDirectFetch(cid.toSafeString()).toString();
-	}
-
-	@Override
 	public void pin(IpfsFile cid) throws IpfsConnectionException
 	{
 		try
@@ -206,12 +195,6 @@ public class IpfsConnection implements IConnection
 		{
 			throw new IpfsConnectionException("gc", null, e);
 		}
-	}
-
-	@Override
-	public String directFetchUrlRoot()
-	{
-		return _urlForDirectFetch("").toString();
 	}
 
 	@Override
@@ -290,18 +273,6 @@ public class IpfsConnection implements IConnection
 		{
 			// Unknown.
 			throw Assert.unexpected(t);
-		}
-	}
-
-	private URL _urlForDirectFetch(String fileName)
-	{
-		try
-		{
-			return new URL(_defaultConnection.protocol, _defaultConnection.host, _gatewayPort, "/ipfs/" + fileName);
-		}
-		catch (MalformedURLException e)
-		{
-			throw Assert.unexpected(e);
 		}
 	}
 

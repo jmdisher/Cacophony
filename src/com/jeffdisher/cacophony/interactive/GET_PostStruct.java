@@ -1,8 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -37,19 +35,16 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
+		JsonObject postStruct = JsonGenerationHelpers.postStruct(_context.baseUrl.toString(), _context.recordCache, postToResolve);
+		if (null != postStruct)
 		{
-			JsonObject postStruct = JsonGenerationHelpers.postStruct(access.getDirectFetchUrlRoot(), _context.recordCache, postToResolve);
-			if (null != postStruct)
-			{
-				response.setContentType("application/json");
-				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().print(postStruct.toString());
-			}
-			else
-			{
-				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-			}
+			response.setContentType("application/json");
+			response.setStatus(HttpServletResponse.SC_OK);
+			response.getWriter().print(postStruct.toString());
+		}
+		else
+		{
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
 }

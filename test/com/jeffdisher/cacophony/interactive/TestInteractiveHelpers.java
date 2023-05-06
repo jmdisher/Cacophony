@@ -15,6 +15,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
@@ -232,6 +233,7 @@ public class TestInteractiveHelpers
 		// First, create a channel so the channel is set up.
 		ICommand.Context context = new ICommand.Context(env
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null
@@ -381,6 +383,7 @@ public class TestInteractiveHelpers
 		// First, create a channel so the channel is set up.
 		ICommand.Context context = new ICommand.Context(env
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null

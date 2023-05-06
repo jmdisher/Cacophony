@@ -39,14 +39,6 @@ public interface IConnection
 	long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException;
 
 	/**
-	 * Gets the URL for directly fetching this resource from the IPFS node.
-	 * 
-	 * @param cid The resource.
-	 * @return The URL.
-	 */
-	String urlForDirectFetch(IpfsFile cid);
-
-	/**
 	 * Pins the given file on the node.  Note that it isn't expected to be pinned when this is called as pinning is not
 	 * a counting concept, but a boolean state.  Any higher-level pin-counting mechanism should be built on top of this,
 	 * not inside it.
@@ -72,14 +64,6 @@ public interface IConnection
 	 * @throws IpfsConnectionException If there is some problem contacting the server.
 	 */
 	void requestStorageGc() throws IpfsConnectionException;
-
-	/**
-	 * Very similar to urlForDirectFetch() but is more like a config-level concern, as opposed to something which
-	 * validates the data.  An resource of unknown existence can be opened by appending its CID directly to this string.
-	 * 
-	 * @return The base URL component of resources on this IPFS node.
-	 */
-	String directFetchUrlRoot();
 
 	/**
 	 * Looks up a named key on the local IPFS node, generating it if it doesn't exist.

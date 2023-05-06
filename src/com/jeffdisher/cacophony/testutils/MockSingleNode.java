@@ -2,8 +2,6 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -150,19 +148,6 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
-	public String urlForDirectFetch(IpfsFile cid)
-	{
-		try
-		{
-			return new URL("http", "test", "/" + cid.toSafeString()).toString();
-		}
-		catch (MalformedURLException e)
-		{
-			throw Assert.unexpected(e);
-		}
-	}
-
-	@Override
 	public void pin(IpfsFile cid) throws IpfsConnectionException
 	{
 		// If we were told to pin this, we shouldn't already have it locally.
@@ -188,12 +173,6 @@ public class MockSingleNode implements IConnection
 	public void requestStorageGc() throws IpfsConnectionException
 	{
 		// Does nothing.
-	}
-
-	@Override
-	public String directFetchUrlRoot()
-	{
-		return "http://test/";
 	}
 
 	@Override

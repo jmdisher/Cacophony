@@ -1,8 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
@@ -42,12 +40,7 @@ public class GET_UserInfo implements ValidatedEntryPoints.GET
 		if (null != cached)
 		{
 			// While this picture CID _should_ be cached, it is possible that it isn't, since this cache is allowed to contain stale and non-cached data references.
-			String directFetchUrlRoot;
-			try (IReadingAccess access = StandardAccess.readAccess(_context))
-			{
-				directFetchUrlRoot = access.getDirectFetchUrlRoot();
-			}
-			JsonObject userInfo = JsonGenerationHelpers.populateJsonForCachedDescription(cached, directFetchUrlRoot + cached.userPicCid().toSafeString());
+			JsonObject userInfo = JsonGenerationHelpers.populateJsonForCachedDescription(cached, _context.baseUrl + cached.userPicCid().toSafeString());
 			response.setContentType("application/json");
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.getWriter().print(userInfo.toString());

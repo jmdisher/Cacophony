@@ -178,14 +178,6 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public String getCachedUrl(IpfsFile file)
-	{
-		Assert.assertTrue(null != file);
-		Assert.assertTrue(_pinCache.isPinned(file));
-		return _sharedConnection.urlForDirectFetch(file);
-	}
-
-	@Override
 	public IpfsFile getLastRootElement()
 	{
 		return _channelData.getLastPublishedIndex(_keyName);
@@ -347,12 +339,6 @@ public class StandardAccess implements IWritingAccess
 		{
 			_rationalizeUnpin(pin);
 		}
-	}
-
-	@Override
-	public String getDirectFetchUrlRoot()
-	{
-		return _sharedConnection.directFetchUrlRoot();
 	}
 
 

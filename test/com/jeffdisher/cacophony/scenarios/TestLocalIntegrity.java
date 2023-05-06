@@ -10,6 +10,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -50,6 +51,7 @@ public class TestLocalIntegrity
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new ICommand.Context(env
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null
@@ -80,6 +82,7 @@ public class TestLocalIntegrity
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new ICommand.Context(env
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null
@@ -103,6 +106,7 @@ public class TestLocalIntegrity
 		});
 		publish.runInContext(new ICommand.Context(env
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null
@@ -136,6 +140,7 @@ public class TestLocalIntegrity
 		RemoveEntryFromThisChannelCommand remove = new RemoveEntryFromThisChannelCommand(entry);
 		remove.runInContext(new ICommand.Context(env
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null

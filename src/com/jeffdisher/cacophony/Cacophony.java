@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -19,6 +20,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Pair;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/
@@ -112,7 +114,8 @@ public class Cacophony {
 				try (DataDomain.Lock lockFile = dataDirectoryWrapper.lock())
 				{
 					// We want to make sure that we can connect to the IPFS node.
-					IConnection connection = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
+					Pair<IConnection, URL> connectionData = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
+					IConnection connection = connectionData.first();
 					IpfsKey publicKey = connection.getOrCreatePublicKey(keyName);
 					
 					// Create the scheduler we will use for the run.
@@ -124,7 +127,15 @@ public class Cacophony {
 					// Create the executor and logger for our run and put them into the context.
 					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
-					ICommand.Context context = new ICommand.Context(executor, logger, null, null, null, keyName, publicKey);
+					ICommand.Context context = new ICommand.Context(executor
+							, logger
+							, connectionData.second()
+							, null
+							, null
+							, null
+							, keyName
+							, publicKey
+					);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);

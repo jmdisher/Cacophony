@@ -9,6 +9,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
@@ -83,6 +84,7 @@ public class TestStartFollowingCommand
 		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
 		ICommand.Context context = new ICommand.Context(executor
 				, logger
+				, DataDomain.FAKE_BASE_URL
 				, null
 				, null
 				, null
@@ -141,6 +143,7 @@ public class TestStartFollowingCommand
 		{
 			command.runInContext(new ICommand.Context(executor
 					, logger
+					, DataDomain.FAKE_BASE_URL
 					, null
 					, null
 					, null

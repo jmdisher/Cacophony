@@ -76,14 +76,6 @@ public interface IReadingAccess extends AutoCloseable
 	<R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder);
 
 	/**
-	 * Gets a URL which can be used to access the given file.
-	 * 
-	 * @param file A file on the IPFS node.
-	 * @return The URL to directly GET the file contents.
-	 */
-	String getCachedUrl(IpfsFile file);
-
-	/**
 	 * @return The last index which had been stored as the root (StreamIndex) and published (even if the publish didn't
 	 * succeed).
 	 */
@@ -119,12 +111,4 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The new transaction.
 	 */
 	ConcurrentTransaction openConcurrentTransaction();
-
-	/**
-	 * Very similar to getCachedUrl() but is more like a config-level concern, as opposed to something which validates
-	 * the data.  An resource of unknown existence can be opened by appending its CID directly to this string.
-	 * 
-	 * @return The base URL component of resources on this IPFS node.
-	 */
-	String getDirectFetchUrlRoot();
 }
