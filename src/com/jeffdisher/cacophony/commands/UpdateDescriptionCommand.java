@@ -74,7 +74,15 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				}
 			}
 		}
-		return new ChannelDescription(result.newRoot(), result.updatedStreamDescription(), pictureUrl);
+		StreamDescription updated = result.updatedStreamDescription();
+		return new ChannelDescription(result.newRoot()
+				, updated.getName()
+				, updated.getDescription()
+				, IpfsFile.fromIpfsCid(updated.getPicture())
+				, updated.getEmail()
+				, updated.getWebsite()
+				, pictureUrl
+		);
 	}
 
 	/**

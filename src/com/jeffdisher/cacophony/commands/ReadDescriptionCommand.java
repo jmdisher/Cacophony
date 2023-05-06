@@ -70,6 +70,13 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, isCached);
 		StreamDescription description = reader.loadDescription();
 		String userPicUrl = baseUrl + description.getPicture();
-		return new ChannelDescription(null, description, userPicUrl);
+		return new ChannelDescription(null
+				, description.getName()
+				, description.getDescription()
+				, IpfsFile.fromIpfsCid(description.getPicture())
+				, description.getEmail()
+				, description.getWebsite()
+				, userPicUrl
+		);
 	}
 }

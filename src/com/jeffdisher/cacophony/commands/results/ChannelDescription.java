@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.commands.results;
 import java.io.PrintStream;
 
 import com.jeffdisher.cacophony.commands.ICommand;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -15,15 +14,34 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class ChannelDescription implements ICommand.Result
 {
 	private final IpfsFile _newRoot;
-	public final StreamDescription streamDescription;
+	public final String name;
+	public final String description;
+	public final IpfsFile userPicCid;
+	public final String email;
+	public final String website;
 	public final String userPicUrl;
 
-	public ChannelDescription(IpfsFile newRoot, StreamDescription description, String userPicUrl)
+	public ChannelDescription(IpfsFile newRoot
+			, String name
+			, String description
+			, IpfsFile userPicCid
+			, String email
+			, String website
+			, String userPicUrl
+	)
 	{
+		// newRoot is null when this result isn't changing anything.
+		Assert.assertTrue(null != name);
 		Assert.assertTrue(null != description);
+		// email and website can be null.
 		Assert.assertTrue(null != userPicUrl);
+		
 		_newRoot = newRoot;
-		this.streamDescription = description;
+		this.name = name;
+		this.description = description;
+		this.userPicCid = userPicCid;
+		this.email = email;
+		this.website = website;
 		this.userPicUrl = userPicUrl;
 	}
 
@@ -37,10 +55,10 @@ public class ChannelDescription implements ICommand.Result
 	public void writeHumanReadable(PrintStream output)
 	{
 		output.println("This channel description:");
-		output.println("\tName: " + this.streamDescription.getName());
-		output.println("\tDescription: " + this.streamDescription.getDescription());
+		output.println("\tName: " + this.name);
+		output.println("\tDescription: " + this.description);
 		output.println("\tUser pic: " + this.userPicUrl);
-		output.println("\tE-Mail: " + this.streamDescription.getEmail());
-		output.println("\tWebsite: " + this.streamDescription.getWebsite());
+		output.println("\tE-Mail: " + this.email);
+		output.println("\tWebsite: " + this.website);
 	}
 }

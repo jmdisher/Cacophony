@@ -4,8 +4,6 @@ import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,13 +56,12 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 			
 			// We also want to write this back to the user info cache.
 			IpfsKey key = _context.publicKey;
-			StreamDescription streamDescription = result.streamDescription;
 			_context.userInfoCache.setUserInfo(key
-					, streamDescription.getName()
-					, streamDescription.getDescription()
-					, IpfsFile.fromIpfsCid(streamDescription.getPicture())
-					, streamDescription.getEmail()
-					, streamDescription.getWebsite()
+					, result.name
+					, result.description
+					, result.userPicCid
+					, result.email
+					, result.website
 			);
 		}
 	}

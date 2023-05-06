@@ -44,11 +44,11 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 			);
 			if (null != result)
 			{
-				JsonObject userInfo = JsonGenerationHelpers.userDescription(result.streamDescription.getName()
-						, result.streamDescription.getDescription()
+				JsonObject userInfo = JsonGenerationHelpers.userDescription(result.name
+						, result.description
 						, result.userPicUrl
-						, result.streamDescription.getEmail()
-						, result.streamDescription.getWebsite()
+						, result.email
+						, result.website
 				);
 				response.setContentType("application/json");
 				response.getWriter().print(userInfo.toString());
