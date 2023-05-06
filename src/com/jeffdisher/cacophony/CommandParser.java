@@ -30,6 +30,7 @@ import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.RepublishCommand;
 import com.jeffdisher.cacophony.commands.RunCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
+import com.jeffdisher.cacophony.commands.ShowPostCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
@@ -325,6 +326,17 @@ public class CommandParser
 			String description = _optionalString(optional[1]);
 			String discussionUrl = _optionalString(optional[2]);
 			return new EditPostCommand(elementCid, name, description, discussionUrl);
+		}),
+		SHOW_POST(true, "--showPost"
+				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
+					, "The CID of the StreamRecord to show"
+				) }
+				, new ArgParameter[0]
+				, "Shows an existing post from the network."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			IpfsFile elementCid = required[0].parse(IpfsFile.class);
+			return new ShowPostCommand(elementCid);
 		}),
 		
 		// Methods to manage local state.

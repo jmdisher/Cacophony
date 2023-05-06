@@ -129,6 +129,13 @@ checkPreviousCommand "stopFollowing"
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowees
 checkPreviousCommand "listFollowees"
 
+echo "Make sure that we can read the specific element"
+SHOWN=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar "Cacophony.jar" --showPost --elementCid "$ELEMENT_TO_REBROADCAST")
+requireSubstring "$SHOWN" "Name: basic post"
+requireSubstring "$SHOWN" "Thumbnail: "
+requireSubstring "$SHOWN" "Video: "
+requireSubstring "$SHOWN" "Publisher: $PUBLIC1"
+
 echo "Rebroadcast one of the elements from the followee and verify that we can see it in our list..."
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --rebroadcast --elementCid "$ELEMENT_TO_REBROADCAST"
 checkPreviousCommand "Rebroadcast"

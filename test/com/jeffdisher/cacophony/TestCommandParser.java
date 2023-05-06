@@ -441,4 +441,15 @@ public class TestCommandParser
 		// We expect this to throw the UsageException.
 		CommandParser.parseArgs(args, capture);
 	}
+
+	@Test
+	public void testShowPost() throws Throwable
+	{
+		String[] args = {"--showPost", "--elementCid", "QmRntQodp7qHb3PwS8GkcaKXfeELJymB4H5D8rBfoEwq8J"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand<?> command = CommandParser.parseArgs(args, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }
