@@ -149,7 +149,8 @@ public class TestV2V3
 		ChannelData channelData = ChannelData.create();
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = FolloweeData.createEmpty();
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		ExplicitCacheData explicitCache = new ExplicitCacheData();
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(byteArray), context);
 		return new Tuple(channelData, prefs, followees);
 	}

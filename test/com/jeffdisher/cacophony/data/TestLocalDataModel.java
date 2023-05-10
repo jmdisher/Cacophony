@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -172,7 +173,8 @@ public class TestLocalDataModel
 		ChannelData channelData = null;
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = null;
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		ExplicitCacheData explicitCache = null;
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Assert.assertEquals(PrefsData.DEFAULT_VIDEO_EDGE, prefs.videoEdgePixelMax);
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOW_CACHE_BYTES, prefs.followCacheTargetBytes);
@@ -206,7 +208,8 @@ public class TestLocalDataModel
 		ChannelData channelData = null;
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = FolloweeData.createEmpty();
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		ExplicitCacheData explicitCache = new ExplicitCacheData();
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Set<IpfsKey> knownKeys = followees.getAllKnownFollowees();
 		Assert.assertEquals(1, knownKeys.size());

@@ -39,6 +39,8 @@ public class OpcodeCodec
 		Opcode_AddFolloweeElement.register(_OPCODE_TABLE);
 		Opcode_SetPrefsInt.register(_OPCODE_TABLE);
 		Opcode_SetPrefsLong.register(_OPCODE_TABLE);
+		Opcode_ExplicitUserInfo.register(_OPCODE_TABLE);
+		Opcode_ExplicitStreamRecord.register(_OPCODE_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _OPCODE_TABLE.length; ++i)

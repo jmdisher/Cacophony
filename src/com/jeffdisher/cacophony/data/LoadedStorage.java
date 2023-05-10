@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.data;
 
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -16,12 +17,12 @@ public class LoadedStorage implements IReadWriteLocalData
 {
 	public static IReadOnlyLocalData openReadOnly(UnlockRead readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
 	{
-		return new LoadedStorage(readLock, null, localIndex, globalPinCache, followIndex, globalPrefs);
+		return new LoadedStorage(readLock, null, localIndex, globalPinCache, followIndex, globalPrefs, null);
 	}
 
-	public static IReadWriteLocalData openReadWrite(UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
+	public static IReadWriteLocalData openReadWrite(UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, ExplicitCacheData explicitCache)
 	{
-		return new LoadedStorage(null, writeLock, localIndex, globalPinCache, followIndex, globalPrefs);
+		return new LoadedStorage(null, writeLock, localIndex, globalPinCache, followIndex, globalPrefs, explicitCache);
 	}
 
 
@@ -35,8 +36,10 @@ public class LoadedStorage implements IReadWriteLocalData
 	private boolean _changed_followIndex;
 	private PrefsData _globalPrefs;
 	private boolean _changed_globalPrefs;
+	private ExplicitCacheData _explicitCache;
+	private boolean _changed_explicitCache;
 
-	private LoadedStorage(UnlockRead readLock, UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs)
+	private LoadedStorage(UnlockRead readLock, UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, ExplicitCacheData explicitCache)
 	{
 		_readLock = readLock;
 		_writeLock = writeLock;
@@ -46,6 +49,7 @@ public class LoadedStorage implements IReadWriteLocalData
 		_globalPinCache = globalPinCache;
 		_followIndex = followIndex;
 		_globalPrefs = globalPrefs;
+		_explicitCache = explicitCache;
 	}
 
 	@Override
@@ -85,6 +89,7 @@ public class LoadedStorage implements IReadWriteLocalData
 			_writeLock.closeWrite((_changed_localIndex ? _localIndex : null)
 					, (_changed_followIndex ? _followIndex : null)
 					, (_changed_globalPrefs ? _globalPrefs : null)
+					, (_changed_explicitCache ? _explicitCache : null)
 			);
 		}
 		else
@@ -154,7 +159,8 @@ public class LoadedStorage implements IReadWriteLocalData
 		 * @param updateLocalIndex Non-null if this should be saved as the new ChannelData.
 		 * @param updateFollowIndex Non-null if this should be saved as the new FolloweeData.
 		 * @param updateGlobalPrefs Non-null if this should be saved as the new PrefsData.
+		 * @param updatedExplicitCache Non-null if this should be saved as the new ExplicitCacheData.
 		 */
-		void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs);
+		void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs, ExplicitCacheData updatedExplicitCache);
 	}
 }

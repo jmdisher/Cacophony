@@ -1,11 +1,15 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitStreamRecord;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -28,6 +32,32 @@ public class ExplicitCacheData
 		_lru = new ArrayList<>();
 		_userInfo = new HashMap<>();
 		_recordInfo = new HashMap<>();
+	}
+
+	/**
+	 * Serializes the contents of the receiver into the given writer.
+	 * 
+	 * @param writer The writer which will consume the opcodes.
+	 * @throws IOException The writer encountered an error.
+	 */
+	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
+	{
+		// We walk the LRU in-order from least to most recently used since that is how we re-add them.
+		for (IpfsFile elt : _lru)
+		{
+			// Check what this is.
+			if (_userInfo.containsKey(elt))
+			{
+				UserInfo info = _userInfo.remove(elt);
+				writer.writeOpcode(new Opcode_ExplicitUserInfo(info.indexCid, info.recommendationsCid, info.descriptionCid, info.userPicCid, info.combinedSizeBytes));
+			}
+			else
+			{
+				Assert.assertTrue(_recordInfo.containsKey(elt));
+				RecordInfo info = _recordInfo.remove(elt);
+				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid, info.thumbnailCid, info.videoCid, info.audioCid, info.combinedSizeBytes));
+			}
+		}
 	}
 
 	/**

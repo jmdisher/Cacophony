@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +11,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -127,7 +131,18 @@ public class TestExplicitCacheData
 
 	private static ExplicitCacheData _codec(ExplicitCacheData start) throws IOException
 	{
-		// TODO:  Replace this with the opcodes once they are added to serialize-deserialize.
-		return start;
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
+		{
+			start.serializeToOpcodeWriter(writer);
+		}
+		
+		ExplicitCacheData explicitCache = new ExplicitCacheData();
+		OpcodeContext context = new OpcodeContext(null, null, null, explicitCache);
+		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
+		{
+			OpcodeCodec.decodeWholeStream(input, context);
+		}
+		return explicitCache;
 	}
 }

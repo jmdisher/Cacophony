@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -65,6 +66,7 @@ public class LocalDataModel
 						, channelData
 						, PrefsData.defaultPrefs()
 						, FolloweeData.createEmpty()
+						, new ExplicitCacheData()
 				);
 			}
 			catch (IOException e)
@@ -115,22 +117,25 @@ public class LocalDataModel
 			OpcodeContext context = new OpcodeContext(ChannelData.create()
 					, PrefsData.defaultPrefs()
 					, FolloweeData.createEmpty()
+					, new ExplicitCacheData()
 			);
 			OpcodeCodec.decodeWholeStream(opcodeLog, context);
 			ChannelData channels = context.channelData();
 			PrefsData prefs = context.prefs();
 			FolloweeData followees = context.followees();
+			ExplicitCacheData explicitCache = context.explicitCache();
 			Set<String> channelKeyNames = channels.getKeyNames();
 			IpfsFile[] homeRoots = channelKeyNames.stream()
 					.map((String channelKeyName) -> channels.getLastPublishedIndex(channelKeyName))
 					.toArray((int size) -> new IpfsFile[size])
 			;
-			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees);
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, explicitCache);
 			return new LocalDataModel(fileSystem
 					, channels
 					, prefs
 					, pinCache
 					, followees
+					, explicitCache
 			);
 		}
 		catch (IOException e)
@@ -140,7 +145,7 @@ public class LocalDataModel
 		}
 	}
 
-	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees)
+	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees, ExplicitCacheData explicitCache)
 	{
 		PinCacheBuilder builder = new PinCacheBuilder(scheduler);
 		for (IpfsFile homeRoot : homeRootElements)
@@ -151,6 +156,7 @@ public class LocalDataModel
 		{
 			builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
 		}
+		builder.addExplicitCache(explicitCache);
 		return builder.finish();
 	}
 
@@ -178,7 +184,8 @@ public class LocalDataModel
 					? new IpfsFile[] { lastIndex }
 					: new IpfsFile[0]
 			;
-			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees);
+			ExplicitCacheData emptyExplicitCache = new ExplicitCacheData();
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, emptyExplicitCache);
 			PinCacheData diskPinCache = projections.pinCache();
 			List<IpfsFile> incorrectlyPinned = diskPinCache.verifyMatch(pinCache);
 			// The verification will return null if they are a perfect match.
@@ -189,7 +196,7 @@ public class LocalDataModel
 			manager.migrateDrafts();
 			
 			// Now, write-back the data.
-			_writeToDisk(fileSystem, channelData, projections.prefs(), followees);
+			_writeToDisk(fileSystem, channelData, projections.prefs(), followees, emptyExplicitCache);
 		}
 		catch (IOException e)
 		{
@@ -204,6 +211,7 @@ public class LocalDataModel
 	private final PrefsData _globalPrefs;
 	private final PinCacheData _globalPinCache;
 	private final FolloweeData _followIndex;
+	private final ExplicitCacheData _explicitCache;
 	private final ReadWriteLock _readWriteLock;
 
 	private LocalDataModel(IConfigFileSystem fileSystem
@@ -211,6 +219,7 @@ public class LocalDataModel
 			, PrefsData globalPrefs
 			, PinCacheData globalPinCache
 			, FolloweeData followIndex
+			, ExplicitCacheData explicitCache
 	)
 	{
 		_fileSystem = fileSystem;
@@ -218,6 +227,7 @@ public class LocalDataModel
 		_globalPrefs = globalPrefs;
 		_globalPinCache = globalPinCache;
 		_followIndex = followIndex;
+		_explicitCache = explicitCache;
 		_readWriteLock = new ReentrantReadWriteLock();
 	}
 
@@ -252,6 +262,7 @@ public class LocalDataModel
 				, _localIndex
 				, _globalPrefs
 				, _followIndex
+				, _explicitCache
 		);
 	}
 
@@ -259,13 +270,14 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();
-		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
+		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _explicitCache);
 	}
 
 	private static void _writeToDisk(IConfigFileSystem fileSystem
 			, ChannelData localIndex
 			, PrefsData globalPrefs
 			, FolloweeData followIndex
+			, ExplicitCacheData explicitCache
 	) throws IOException
 	{
 		// We will serialize directly to the file.  If there are any exceptions, we won't reach the commit.
@@ -276,6 +288,7 @@ public class LocalDataModel
 				localIndex.serializeToOpcodeWriter(writer);
 				globalPrefs.serializeToOpcodeWriter(writer);
 				followIndex.serializeToOpcodeWriter(writer);
+				explicitCache.serializeToOpcodeWriter(writer);
 			}
 			atomic.commit();
 		}
@@ -307,7 +320,7 @@ public class LocalDataModel
 			_lock = lock;
 		}
 		@Override
-		public void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs)
+		public void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs, ExplicitCacheData updatedExplicitCache)
 		{
 			// Write-back the elements they provided (anything passed as null is unchanged).
 			
@@ -328,6 +341,12 @@ public class LocalDataModel
 			{
 				// We can't change the instance - this is just to signify it may have changed.
 				Assert.assertTrue(_globalPrefs == updateGlobalPrefs);
+				somethingUpdated = true;
+			}
+			if (null != updatedExplicitCache)
+			{
+				// We can't change the instance - this is just to signify it may have changed.
+				Assert.assertTrue(_explicitCache == updatedExplicitCache);
 				somethingUpdated = true;
 			}
 			// Write the version if anything changed.

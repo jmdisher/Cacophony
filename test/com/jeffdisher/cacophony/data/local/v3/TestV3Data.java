@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
@@ -35,7 +36,8 @@ public class TestV3Data
 		ChannelData channels = ChannelData.create();
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = null;
-		OpcodeContext context = new OpcodeContext(channels, prefs, followees);
+		ExplicitCacheData explicitCache = null;
+		OpcodeContext context = new OpcodeContext(channels, prefs, followees, explicitCache);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);
@@ -64,7 +66,8 @@ public class TestV3Data
 		ChannelData channels = ChannelData.create();
 		PrefsData prefs = null;
 		FolloweeData followees = FolloweeData.createEmpty();
-		OpcodeContext context = new OpcodeContext(channels, prefs, followees);
+		ExplicitCacheData explicitCache = new ExplicitCacheData();
+		OpcodeContext context = new OpcodeContext(channels, prefs, followees, explicitCache);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);

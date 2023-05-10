@@ -267,7 +267,8 @@ public class TestFolloweeData
 		ChannelData channelData = null;
 		PrefsData prefs = null;
 		FolloweeData followees = FolloweeData.createEmpty();
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees);
+		ExplicitCacheData explicitCache = new ExplicitCacheData();
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(byteArray), context);
 		return followees;
 	}
