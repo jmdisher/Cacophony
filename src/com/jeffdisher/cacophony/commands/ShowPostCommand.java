@@ -6,14 +6,12 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.KeyException;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -24,69 +22,78 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPostCommand.PostDetails>
 {
 	@Override
-	public PostDetails runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	public PostDetails runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
 	{
 		PostDetails post = null;
 		// First, check if we have a record cache and if it contains this.
 		if (null != context.recordCache)
 		{
-			LocalRecordCache.Element element = context.recordCache.get(_elementCid);
-			if (null != element)
-			{
-				post = new PostDetails(_elementCid
-						, element.isCached()
-						, element.name()
-						, element.description()
-						, element.publishedSecondsUtc()
-						, element.discussionUrl()
-						, element.publisherKey()
-						, element.thumbnailCid()
-						, element.videoCid()
-						, element.audioCid()
-				);
-			}
+			post = _checkKnownCache(context);
 		}
 		
-		// If we didn't have a cache or didn't find it, try the expensive path to the network (we assume this is NOT cached).
+		// If we didn't have a cache or didn't find it, try the expensive path through the network.
 		if (null == post)
 		{
-			try (IReadingAccess access = StandardAccess.readAccess(context))
-			{
-				post = _runCore(context.logger, access);
-			}
+			post = _checkNetwork(context);
 		}
 		Assert.assertTrue(null != post);
 		return post;
 	}
 
 
-	private PostDetails _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	private PostDetails _checkKnownCache(ICommand.Context context)
 	{
-		// We don't know anything about this so we will just read it as uncached.
-		StreamRecord record = access.loadNotCached(_elementCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
-		// This fails with exception and never returns null.
-		Assert.assertTrue(null != record);
-		
-		// Format the data for the expected shape (which is, as though we were putting it into the followee cache).
-		LeafFinder leaves = LeafFinder.parseRecord(record);
-		LeafFinder.VideoLeaf videoLeaf = leaves.largestVideoWithLimit(access.readPrefs().videoEdgePixelMax);
-		IpfsFile imageHash = leaves.thumbnail;
-		IpfsFile videoHash = (null != videoLeaf)
-				? videoLeaf.cid()
-				: null
-		;
-		IpfsFile audioHash = leaves.audio;
-		return new PostDetails(_elementCid
-				, false
-				, record.getName()
-				, record.getDescription()
-				, record.getPublishedSecondsUtc()
-				, record.getDiscussion()
-				, record.getPublisherKey()
-				, imageHash
-				, videoHash
-				, audioHash
-		);
+		PostDetails post = null;
+		LocalRecordCache.Element element = context.recordCache.get(_elementCid);
+		if (null != element)
+		{
+			post = new PostDetails(_elementCid
+					, element.isCached()
+					, element.name()
+					, element.description()
+					, element.publishedSecondsUtc()
+					, element.discussionUrl()
+					, element.publisherKey()
+					, element.thumbnailCid()
+					, element.videoCid()
+					, element.audioCid()
+			);
+		}
+		return post;
+	}
+
+	private PostDetails _checkNetwork(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	{
+		PostDetails post;
+		try (IReadingAccess access = StandardAccess.readAccess(context))
+		{
+			// We don't know anything about this so we will just read it as uncached.
+			StreamRecord record = access.loadNotCached(_elementCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+			// This fails with exception and never returns null.
+			Assert.assertTrue(null != record);
+			
+			// Format the data for the expected shape (which is, as though we were putting it into the followee cache).
+			LeafFinder leaves = LeafFinder.parseRecord(record);
+			LeafFinder.VideoLeaf videoLeaf = leaves.largestVideoWithLimit(access.readPrefs().videoEdgePixelMax);
+			IpfsFile imageHash = leaves.thumbnail;
+			IpfsFile videoHash = (null != videoLeaf)
+					? videoLeaf.cid()
+					: null
+			;
+			IpfsFile audioHash = leaves.audio;
+			post = new PostDetails(_elementCid
+					, false
+					, record.getName()
+					, record.getDescription()
+					, record.getPublishedSecondsUtc()
+					, record.getDiscussion()
+					, record.getPublisherKey()
+					, imageHash
+					, videoHash
+					, audioHash
+			);
+		}
+		return post;
 	}
 
 
