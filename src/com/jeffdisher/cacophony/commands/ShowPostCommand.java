@@ -2,18 +2,18 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.PrintStream;
 
-import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.logic.LeafFinder;
+import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.Assert;
-import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -31,10 +31,10 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 			post = _checkKnownCache(context);
 		}
 		
-		// If we didn't have a cache or didn't find it, try the expensive path through the network.
+		// If we didn't have a cache or didn't find it, try the expensive path through the explicit cache.
 		if (null == post)
 		{
-			post = _checkNetwork(context);
+			post = _checkExplicitCache(context);
 		}
 		Assert.assertTrue(null != post);
 		return post;
@@ -62,35 +62,25 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		return post;
 	}
 
-	private PostDetails _checkNetwork(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private PostDetails _checkExplicitCache(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		PostDetails post;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			// We don't know anything about this so we will just read it as uncached.
-			StreamRecord record = access.loadNotCached(_elementCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
-			// This fails with exception and never returns null.
-			Assert.assertTrue(null != record);
-			
-			// Format the data for the expected shape (which is, as though we were putting it into the followee cache).
-			LeafFinder leaves = LeafFinder.parseRecord(record);
-			LeafFinder.VideoLeaf videoLeaf = leaves.largestVideoWithLimit(access.readPrefs().videoEdgePixelMax);
-			IpfsFile imageHash = leaves.thumbnail;
-			IpfsFile videoHash = (null != videoLeaf)
-					? videoLeaf.cid()
-					: null
-			;
-			IpfsFile audioHash = leaves.audio;
+			// Consult the cache - this never returns null but will throw on error.
+			ExplicitCacheData.RecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
+			// Everything in the explicit cache is cached.
+			StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			post = new PostDetails(_elementCid
-					, false
+					, true
 					, record.getName()
 					, record.getDescription()
 					, record.getPublishedSecondsUtc()
 					, record.getDiscussion()
 					, record.getPublisherKey()
-					, imageHash
-					, videoHash
-					, audioHash
+					, info.thumbnailCid()
+					, info.videoCid()
+					, info.audioCid()
 			);
 		}
 		return post;

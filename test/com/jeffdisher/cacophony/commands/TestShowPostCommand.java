@@ -31,19 +31,22 @@ public class TestShowPostCommand
 	@Test
 	public void validPost() throws Throwable
 	{
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode writeNode = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
 		String title = "valid post";
 		byte[] fakeImage = "image".getBytes();
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
-		IpfsFile postCid = _storeRecord(user1, title, fakeImage, PUBLIC_KEY1);
+		MockUserNode readNode = new MockUserNode(null, null, new MockSingleNode(swarm), FOLDER.newFolder());
+		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, PUBLIC_KEY1);
 		
 		// Make sure that we see no error when this is valid.
-		ShowPostCommand.PostDetails details = user1.runCommand(null, new ShowPostCommand(postCid));
+		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid));
 		Assert.assertEquals(title, details.name());
 		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
 		Assert.assertNull(details.audioCid());
 		Assert.assertNull(details.videoCid());
 		
-		user1.shutdown();
+		readNode.shutdown();
+		// Write node never started.
 	}
 
 	@Test

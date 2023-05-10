@@ -4,10 +4,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.KeyList;
+import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,10 +28,10 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		// We start by checking for known users.
 		StreamRecommendations recommendations = _checkKnownUsers(context);
 		
-		// If we don't know anything about this user, read the network.
+		// If we don't know anything about this user, take the explicit read-through cache (requires write-access).
 		if (null == recommendations)
 		{
-			recommendations = _checkNetwork(context);
+			recommendations = _checkExplicitCache(context);
 		}
 		
 		// If there was an error, it would have thrown.
@@ -76,16 +80,16 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		return result;
 	}
 
-	private StreamRecommendations _checkNetwork(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private StreamRecommendations _checkExplicitCache(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
-		context.logger.logVerbose("Check network: " + _targetKey);
+		context.logger.logVerbose("Check explicit cache: " + _targetKey);
 		StreamRecommendations result;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			// Read the existing recommendations list.
-			IpfsFile rootToLoad = access.resolvePublicKey(_targetKey).get();
-			ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, false);
-			result = reader.loadRecommendations();
+			// Consult the cache - this never returns null but will throw on error.
+			ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, _targetKey);
+			// Everything in the explicit cache is cached.
+			result = access.loadCached(userInfo.recommendationsCid(), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		}
 		return result;
 	}

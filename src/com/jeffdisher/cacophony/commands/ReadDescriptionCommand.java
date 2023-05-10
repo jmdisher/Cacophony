@@ -1,11 +1,15 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
+import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,10 +28,10 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 				: _checkKnownUsers(context)
 		;
 		
-		// If we don't know anything about this user, read the network.
+		// If we don't know anything about this user, take the explicit read-through cache (requires write-access).
 		if (null == result)
 		{
-			result = _checkNetwork(context);
+			result = _checkExplicitCache(context);
 		}
 		return result;
 	}
@@ -92,17 +96,17 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		return result;
 	}
 
-	private ChannelDescription _checkNetwork(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private ChannelDescription _checkExplicitCache(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
-		context.logger.logVerbose("Check network: " + _channelPublicKey);
+		context.logger.logVerbose("Check explicit cache: " + _channelPublicKey);
 		ChannelDescription result;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			// Read the existing recommendations list.
-			IpfsFile rootToLoad = access.resolvePublicKey(_channelPublicKey).get();
-			ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, false);
-			StreamDescription description = reader.loadDescription();
-			String userPicUrl = context.baseUrl + description.getPicture();
+			// Consult the cache - this never returns null but will throw on error.
+			ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, _channelPublicKey);
+			// Everything in the explicit cache is cached.
+			StreamDescription description = access.loadCached(userInfo.descriptionCid(), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			String userPicUrl = context.baseUrl + userInfo.userPicCid().toSafeString();
 			result = new ChannelDescription(null
 					, description.getName()
 					, description.getDescription()
