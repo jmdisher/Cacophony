@@ -1,38 +1,17 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.access.ConcurrentTransaction;
-import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
-import com.jeffdisher.cacophony.projection.PrefsData;
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
-import com.jeffdisher.cacophony.scheduler.FuturePin;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.scheduler.FutureResolve;
-import com.jeffdisher.cacophony.scheduler.FutureSize;
-import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 
 
 public class TestHomeChannelModifier
@@ -40,7 +19,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testEmpty() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		Assert.assertEquals(4, access.data.size());
 		Assert.assertEquals(4, _countPins(access));
@@ -50,7 +29,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testReadWriteEmpty() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -72,7 +51,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testUpdateDescription() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -92,7 +71,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testUpdateRecords() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -112,7 +91,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testUpdateRecommendations() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -132,7 +111,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testEmptyUpdate() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -153,7 +132,7 @@ public class TestHomeChannelModifier
 	@Test
 	public void testVacuousUpdate() throws Throwable
 	{
-		Access access = new Access();
+		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -170,7 +149,7 @@ public class TestHomeChannelModifier
 	}
 
 
-	private static void _populateWithEmpty(Access access) throws Throwable
+	private static void _populateWithEmpty(MockWritingAccess access) throws Throwable
 	{
 		StreamDescription desc = new StreamDescription();
 		desc.setName("name");
@@ -185,12 +164,12 @@ public class TestHomeChannelModifier
 		access.uploadIndexAndUpdateTracking(index);
 	}
 
-	private static String _storeWithString(Access access, byte[] data) throws Throwable
+	private static String _storeWithString(MockWritingAccess access, byte[] data) throws Throwable
 	{
 		return access.uploadAndPin(new ByteArrayInputStream(data)).toSafeString();
 	}
 
-	private static int _countPins(Access access)
+	private static int _countPins(MockWritingAccess access)
 	{
 		int count = 0;
 		for (Integer i : access.pins.values())
@@ -198,162 +177,5 @@ public class TestHomeChannelModifier
 			count += i;
 		}
 		return count;
-	}
-
-
-	private static final class Access implements IWritingAccess
-	{
-		public final Map<IpfsFile, byte[]> data = new HashMap<>();
-		public final Map<IpfsFile, Integer> pins = new HashMap<>();
-		public IpfsFile root = null;
-		public int writes = 0;
-		@Override
-		public void close()
-		{
-		}
-		@Override
-		public IFolloweeReading readableFolloweeData()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public boolean isInPinCached(IpfsFile file)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public PrefsData readPrefs()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public void requestIpfsGc() throws IpfsConnectionException
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public <R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder)
-		{
-			FutureRead<R> r = new FutureRead<>();
-			try
-			{
-				r.success(decoder.apply(this.data.get(file)));
-			}
-			catch (FailedDeserializationException e)
-			{
-				Assert.fail();
-			}
-			return r;
-		}
-		@Override
-		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public IpfsFile getLastRootElement()
-		{
-			return this.root;
-		}
-		@Override
-		public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public FutureSize getSizeInBytes(IpfsFile cid)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public FuturePublish republishIndex()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public ConcurrentTransaction openConcurrentTransaction()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public IFolloweeWriting writableFolloweeData()
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public void writePrefs(PrefsData prefs)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public IpfsFile uploadAndPin(InputStream dataToSave) throws IpfsConnectionException
-		{
-			byte[] data = null;
-			try
-			{
-				data = dataToSave.readAllBytes();
-				dataToSave.close();
-			}
-			catch (IOException e)
-			{
-				Assert.fail();
-			}
-			IpfsFile file = MockSingleNode.generateHash(data);
-			this.data.put(file, data);
-			int count = this.pins.containsKey(file) ? this.pins.get(file).intValue() : 0;
-			this.pins.put(file, count + 1);
-			this.writes += 1;
-			return file;
-		}
-		@Override
-		public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
-		{
-			byte[] data;
-			try
-			{
-				data = GlobalData.serializeIndex(streamIndex);
-			}
-			catch (SizeConstraintException e)
-			{
-				// We created this as well-formed so it can't be this large.
-				throw new AssertionError(e);
-			}
-			IpfsFile file = MockSingleNode.generateHash(data);
-			this.data.put(file, data);
-			int count = this.pins.containsKey(file) ? this.pins.get(file).intValue() : 0;
-			this.pins.put(file, count + 1);
-			this.writes += 1;
-			this.root = file;
-			return file;
-		}
-		@Override
-		public FuturePin pin(IpfsFile cid)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public void unpin(IpfsFile cid) throws IpfsConnectionException
-		{
-			int count = this.pins.get(cid).intValue();
-			if (1 == count)
-			{
-				this.pins.remove(cid);
-				this.data.remove(cid);
-			}
-			else
-			{
-				this.pins.put(cid, count - 1);
-			}
-		}
-		@Override
-		public FuturePublish beginIndexPublish(IpfsFile indexRoot)
-		{
-			throw new RuntimeException("Not Called");
-		}
-		@Override
-		public void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins)
-		{
-			throw new RuntimeException("Not Called");
-		}
 	}
 }
