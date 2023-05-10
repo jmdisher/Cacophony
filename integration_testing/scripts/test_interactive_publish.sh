@@ -455,7 +455,7 @@ checkPreviousCommand "read post"
 # We want to verify that something reasonable happens when we fetch the now-deleted element if it has been removed from the network.  This requires a GC of the IPFS nodes to wipe it.
 requestIpfsGc "$PATH_TO_IPFS" 1
 requestIpfsGc "$PATH_TO_IPFS" 2
-echo "Fetching now-wiped element (this should delay for about 60 seconds while waiting for timeout)..."
+echo "Fetching now-wiped element (this should delay for about 10 seconds while waiting for timeout)..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE" >& /dev/null
 # Currently appears as error 500 since the timeout is a generic IpfsConnectionException
 if [ $? != 22 ]; then

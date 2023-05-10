@@ -54,8 +54,11 @@ public class DataDomain implements Closeable
 	public static final String CONFIG_LOCK_SUFFIX = "_lock";
 	// This is the default used by IPFS.java (timeout to establish connection.
 	public static final int CONNECTION_TIMEOUT_MILLIS = 10_000;
-	// The default wait for response in IPFS.java is 1 minute but pin could take a long time so we use 30 minutes.
+	// The default wait for response in IPFS.java is 1 minute but this is overkill for the common case and not nearly
+	// long enough for pins (since they could be fetching lots of data).
+	// As a result, we will use 10 seconds for the short reads and 30 minutes for the long reads.
 	// (this value isn't based on any solid science so it may change in the future).
+	public static final int SHORT_READ_TIMEOUT_MILLIS = 10 * 1000;
 	public static final int LONG_READ_TIMEOUT_MILLIS = 30 * 60 * 1000;
 
 	public static final URL FAKE_BASE_URL;
@@ -221,14 +224,14 @@ public class DataDomain implements Closeable
 		{
 			// Real connection.
 			try {
-				IPFS defaultConnection = new IPFS(ipfsConnectString);
+				MultiAddress addr = new MultiAddress(ipfsConnectString);
+				IPFS defaultConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, SHORT_READ_TIMEOUT_MILLIS, false);
 				@SuppressWarnings("unchecked")
 				Map<String, Object> addresses = (Map<String, Object>) defaultConnection.config.get("Addresses");
 				String result = (String) addresses.get("Gateway");
 				// This "Gateway" is of the form:  /ip4/127.0.0.1/tcp/8080
 				int gatewayPort = Integer.parseInt(result.split("/")[4]);
 				
-				MultiAddress addr = new MultiAddress(ipfsConnectString);
 				IPFS longWaitConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, LONG_READ_TIMEOUT_MILLIS, false);
 				connection = new IpfsConnection(_uploaderOrNull, defaultConnection, longWaitConnection);
 				baseUrl = new URL(defaultConnection.protocol, defaultConnection.host, gatewayPort, "/ipfs/");
