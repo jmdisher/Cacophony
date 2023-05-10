@@ -172,3 +172,19 @@ function createBinaryFile()
 	checkPreviousCommand "dd"
 }
 
+# Requests a repo GC for the given IPFS instance  Args:
+# 1) path_to_ipfs
+# 2) instance_number
+function requestIpfsGc()
+{
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: path_to_ipfs instance_number"
+		exit 1
+	fi
+	PATH_TO_IPFS="$1"
+	INSTANCE_NUMBER="$2"
+	
+	REPO_PATH=$(getIpfsRepoPath "$INSTANCE_NUMBER")
+	IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" repo gc >& /dev/null
+}
+

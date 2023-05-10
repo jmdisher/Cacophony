@@ -451,9 +451,17 @@ echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP" >& /dev/null
 checkPreviousCommand "read post"
-# Note that the system will now try to find an unknown post on the network but it should know that it isn't cached.
-TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE")
-requireSubstring "$TARGET_STRUCT" "\"cached\":false"
+
+# We want to verify that something reasonable happens when we fetch the now-deleted element if it has been removed from the network.  This requires a GC of the IPFS nodes to wipe it.
+requestIpfsGc "$PATH_TO_IPFS" 1
+requestIpfsGc "$PATH_TO_IPFS" 2
+echo "Fetching now-wiped element (this should delay for about 60 seconds while waiting for timeout)..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE" >& /dev/null
+# Currently appears as error 500 since the timeout is a generic IpfsConnectionException
+if [ $? != 22 ]; then
+	exit 1
+fi
+
 SAMPLE=$(cat "$WS_ENTRIES.out")
 echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null,\"isNewest\":false}"
