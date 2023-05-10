@@ -134,6 +134,23 @@ public class LoadedStorage implements IReadWriteLocalData
 		_changed_followIndex = true;
 	}
 
+	@Override
+	public ExplicitCacheData readExplicitCache()
+	{
+		Assert.assertTrue(_isOpen);
+		Assert.assertTrue(null != _writeLock);
+		return _explicitCache;
+	}
+
+	@Override
+	public void writeExplicitCache(ExplicitCacheData explicitCache)
+	{
+		Assert.assertTrue(_isOpen);
+		Assert.assertTrue(null != _writeLock);
+		Assert.assertTrue(_explicitCache == explicitCache);
+		_changed_explicitCache = true;
+	}
+
 
 	/**
 	 * Implemented by a read-only caller to be notified when the storage is closed.

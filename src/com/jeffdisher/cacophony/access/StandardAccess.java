@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -100,6 +101,8 @@ public class StandardAccess implements IWritingAccess
 	private boolean _writeFollowIndex;
 	private final ChannelData _channelData;
 	private boolean _writeChannelData;
+	private final ExplicitCacheData _explicitCache;
+	private boolean _didAccessExplicitCache;
 
 	private StandardAccess(IEnvironment environment, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey) throws IpfsConnectionException
 	{
@@ -128,6 +131,10 @@ public class StandardAccess implements IWritingAccess
 		_pinCache = pinCache;
 		_followeeData = followeeData;
 		_channelData = localIndex;
+		_explicitCache = (null != readWrite)
+				? readWrite.readExplicitCache()
+				: null
+		;
 	}
 
 	@Override
@@ -309,6 +316,10 @@ public class StandardAccess implements IWritingAccess
 		{
 			_readWrite.writeLocalIndex(_channelData);
 		}
+		if (_didAccessExplicitCache)
+		{
+			_readWrite.writeExplicitCache(_explicitCache);
+		}
 		// The read/write references are the same, when both present, but read-only is always present so close it.
 		_readOnly.close();
 	}
@@ -339,6 +350,15 @@ public class StandardAccess implements IWritingAccess
 		{
 			_rationalizeUnpin(pin);
 		}
+	}
+
+	@Override
+	public ExplicitCacheData writableExplicitCache()
+	{
+		Assert.assertTrue(null != _explicitCache);
+		// Almost all access to the explicit cache will change its state.
+		_didAccessExplicitCache = true;
+		return _explicitCache;
 	}
 
 

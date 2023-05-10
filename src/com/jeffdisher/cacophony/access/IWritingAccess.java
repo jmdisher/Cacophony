@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -94,4 +95,12 @@ public interface IWritingAccess extends IReadingAccess
 	 * cache.
 	 */
 	void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins);
+
+	/**
+	 * Requests access to the explicit cache data.  Note that this is only exposed for write access since even reads of
+	 * the cache cause it to change state, since it is least-recently-used.
+	 * 
+	 * @return The shared explicit cache data.
+	 */
+	ExplicitCacheData writableExplicitCache();
 }

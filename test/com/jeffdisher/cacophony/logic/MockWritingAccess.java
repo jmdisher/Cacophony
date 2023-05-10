@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -35,6 +36,8 @@ import com.jeffdisher.cacophony.types.SizeConstraintException;
  */
 public class MockWritingAccess implements IWritingAccess
 {
+	public final PrefsData prefsData = PrefsData.defaultPrefs();
+	public final ExplicitCacheData explicitCacheData = new ExplicitCacheData();
 	public final Map<IpfsFile, byte[]> data = new HashMap<>();
 	public final Map<IpfsFile, Integer> pins = new HashMap<>();
 	// The root of THIS storage.
@@ -44,6 +47,8 @@ public class MockWritingAccess implements IWritingAccess
 	public IpfsFile oneRoot = null;
 	// Accounting.
 	public int writes = 0;
+	public int sizeChecksPerformed = 0;
+	public int sizeAndReadPerformed = 0;
 
 	@Override
 	public void close()
@@ -65,7 +70,7 @@ public class MockWritingAccess implements IWritingAccess
 	@Override
 	public PrefsData readPrefs()
 	{
-		throw new RuntimeException("Not Called");
+		return this.prefsData;
 	}
 
 	@Override
@@ -92,8 +97,6 @@ public class MockWritingAccess implements IWritingAccess
 	@Override
 	public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 	{
-		// While non-cached loads _could_ be theoretically pinned (since the element can be found via multiple paths), this test doesn't do that.
-		Assert.assertFalse(pins.containsKey(file));
 		FutureSizedRead<R> r = new FutureSizedRead<>();
 		byte[] data = this.data.get(file);
 		if (null != data)
@@ -118,6 +121,7 @@ public class MockWritingAccess implements IWritingAccess
 		{
 			r.failureInConnection(new IpfsConnectionException("size", file, null));
 		}
+		this.sizeAndReadPerformed += 1;
 		return r;
 	}
 
@@ -130,7 +134,6 @@ public class MockWritingAccess implements IWritingAccess
 	@Override
 	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 	{
-		Assert.assertEquals(this.oneKey, keyToResolve);
 		FutureResolve resolve = new FutureResolve(keyToResolve);
 		if (null != this.oneRoot)
 		{
@@ -146,9 +149,17 @@ public class MockWritingAccess implements IWritingAccess
 	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
-		Assert.assertTrue(this.data.containsKey(cid));
 		FutureSize size = new FutureSize();
-		size.success(this.data.get(cid).length);
+		byte[] data = this.data.get(cid);
+		if (null != data)
+		{
+			size.success(data.length);
+		}
+		else
+		{
+			size.failure(new IpfsConnectionException("size", cid, null));
+		}
+		this.sizeChecksPerformed += 1;
 		return size;
 	}
 
@@ -222,27 +233,35 @@ public class MockWritingAccess implements IWritingAccess
 	@Override
 	public FuturePin pin(IpfsFile cid)
 	{
-		// While multiple pins could happen in real usage, that doesn't happen in this test.
-		Assert.assertTrue(this.data.containsKey(cid));
-		Assert.assertFalse(this.pins.containsKey(cid));
-		this.pins.put(cid, 1);
 		FuturePin pin = new FuturePin(cid);
-		pin.success();
+		if (this.data.containsKey(cid))
+		{
+			int count = this.pins.containsKey(cid) ? this.pins.get(cid).intValue() : 0;
+			this.pins.put(cid, count + 1);
+			pin.success();
+		}
+		else
+		{
+			pin.failure(new IpfsConnectionException("pin", cid, null));
+		}
 		return pin;
 	}
 
 	@Override
 	public void unpin(IpfsFile cid) throws IpfsConnectionException
 	{
-		int count = this.pins.get(cid).intValue();
-		if (1 == count)
+		if (this.pins.containsKey(cid))
 		{
-			this.pins.remove(cid);
-			this.data.remove(cid);
-		}
-		else
-		{
-			this.pins.put(cid, count - 1);
+			int count = this.pins.get(cid).intValue();
+			if (1 == count)
+			{
+				this.pins.remove(cid);
+				this.data.remove(cid);
+			}
+			else
+			{
+				this.pins.put(cid, count - 1);
+			}
 		}
 	}
 
@@ -256,6 +275,12 @@ public class MockWritingAccess implements IWritingAccess
 	public void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins)
 	{
 		throw new RuntimeException("Not Called");
+	}
+
+	@Override
+	public ExplicitCacheData writableExplicitCache()
+	{
+		return this.explicitCacheData;
 	}
 
 	public IpfsFile storeWithoutPin(byte[] data)
