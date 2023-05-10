@@ -42,12 +42,6 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public class ExplicitCacheLogic
 {
 	/**
-	 * We will use 1 GB as the size of the explicit cache, since we usually satisfy requests from the local user or
-	 * followee cache so this is typically just used for one-offs.
-	 */
-	private static long MAX_EXPLICIT_CACHE_BYTES = 1_000_000_000L;
-
-	/**
 	 * Loads user info for the user with the given public key, reading through to the network to find the info if it
 	 * isn't already in the cache.
 	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
@@ -103,7 +97,8 @@ public class ExplicitCacheLogic
 			info = data.addUserInfo(pinIndex.cid, pinRecommendations.cid, pinDescription.cid, userPicCid, combinedSizeBytes);
 			
 			// Purge any overflow.
-			_purgeExcess(access, data);
+			PrefsData prefs = access.readPrefs();
+			_purgeExcess(access, data, prefs);
 		}
 		return info;
 	}
@@ -172,7 +167,7 @@ public class ExplicitCacheLogic
 				info = data.addStreamRecord(recordCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
 				
 				// Purge any overflow.
-				_purgeExcess(access, data);
+				_purgeExcess(access, data, prefs);
 			}
 			catch (IpfsConnectionException e)
 			{
@@ -196,7 +191,7 @@ public class ExplicitCacheLogic
 	}
 
 
-	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data)
+	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, PrefsData prefs)
 	{
 		data.purgeCacheToSize((IpfsFile evict) -> {
 			try
@@ -208,6 +203,6 @@ public class ExplicitCacheLogic
 				// This is just a local contact problem so just log it.
 				System.err.println("WARNING:  Failure in unpin, will need to be removed manually: " + evict);
 			}
-		}, MAX_EXPLICIT_CACHE_BYTES);
+		}, prefs.explicitCacheTargetBytes);
 	}
 }

@@ -44,6 +44,10 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		{
 			context.prefs().followeeRefreshMillis = this.value;
 		}
+		else if (this.key.equals(PrefsData.LONG_EXPLICIT_CACHE_BYTES))
+		{
+			context.prefs().explicitCacheTargetBytes = this.value;
+		}
 		else
 		{
 			throw Assert.unreachable();

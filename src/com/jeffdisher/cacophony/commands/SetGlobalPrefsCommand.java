@@ -10,7 +10,12 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
-public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, long _republishIntervalMillis, long _followeeRefreshMillis) implements ICommand<None>
+public record SetGlobalPrefsCommand(int _edgeMax
+		, long _followCacheTargetBytes
+		, long _republishIntervalMillis
+		, long _followeeRefreshMillis
+		, long _explicitCacheTargetBytes
+) implements ICommand<None>
 {
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
@@ -48,12 +53,18 @@ public record SetGlobalPrefsCommand(int _edgeMax, long _followCacheTargetBytes, 
 			prefs.followeeRefreshMillis = _followeeRefreshMillis;
 			didChange = true;
 		}
+		if (_explicitCacheTargetBytes > 0L)
+		{
+			prefs.explicitCacheTargetBytes = _explicitCacheTargetBytes;
+			didChange = true;
+		}
 		if (didChange)
 		{
 			access.writePrefs(prefs);
 			ILogger log = logger.logStart("Preferences:");
 			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
 			log.logOperation("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			log.logOperation("Explicit cache target size: " + MiscHelpers.humanReadableBytes(prefs.explicitCacheTargetBytes));
 			log.logFinish("Update saved");
 		}
 		else

@@ -180,6 +180,7 @@ public class TestLocalDataModel
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOW_CACHE_BYTES, prefs.followCacheTargetBytes);
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOWEE_REFRESH_MILLIS, prefs.followeeRefreshMillis);
 		Assert.assertEquals(PrefsData.DEFAULT_REPUBLISH_INTERVAL_MILLIS, prefs.republishIntervalMillis);
+		Assert.assertEquals(PrefsData.DEFAULT_EXPLICIT_CACHE_BYTES, prefs.explicitCacheTargetBytes);
 	}
 
 	@Test

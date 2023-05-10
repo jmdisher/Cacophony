@@ -356,6 +356,10 @@ public class CommandParser
 					, new ArgParameter("--followeeRefreshMillis", ParameterType.LONG_MILLIS, "How often, in"
 						+ " milliseconds, to refresh the post lists of those you follow"
 					)
+					, new ArgParameter("--explicitCacheTargetBytes", ParameterType.LONG_BYTES
+						, "The target size of the explicit cache (that is, how much space is used for caching videos"
+							+ " and images for miscellaneous look-ups) in bytes (accepts k, m, g suffixes)"
+					)
 				}
 				, "Updates preferences related to the Cacophony installation."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -364,10 +368,12 @@ public class CommandParser
 			long followCacheTargetBytes = _optionalLong(optional[1], 0L);
 			long republishIntervalMillis = _optionalLong(optional[2], 0L);
 			long followeeRefreshMillis = _optionalLong(optional[3], 0L);
+			long explicitCacheTargetBytes = _optionalLong(optional[4], 0L);
 			return new SetGlobalPrefsCommand(edgeMaxPixels
 					, followCacheTargetBytes
 					, republishIntervalMillis
 					, followeeRefreshMillis
+					, explicitCacheTargetBytes
 			);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey"
