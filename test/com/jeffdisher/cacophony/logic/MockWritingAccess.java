@@ -95,22 +95,28 @@ public class MockWritingAccess implements IWritingAccess
 		// While non-cached loads _could_ be theoretically pinned (since the element can be found via multiple paths), this test doesn't do that.
 		Assert.assertFalse(pins.containsKey(file));
 		FutureSizedRead<R> r = new FutureSizedRead<>();
-		try
+		byte[] data = this.data.get(file);
+		if (null != data)
 		{
-			byte[] bytes = this.data.get(file);
-			if (bytes.length <= maxSizeInBytes)
+			if (data.length <= maxSizeInBytes)
 			{
-				r.success(decoder.apply(bytes));
+				try
+				{
+					r.success(decoder.apply(this.data.get(file)));
+				}
+				catch (FailedDeserializationException e)
+				{
+					r.failureInDecoding(e);
+				}
 			}
 			else
 			{
-				// Not expected in this test.
-				Assert.fail();
+				r.failureInSizeCheck(new SizeConstraintException("read", data.length, maxSizeInBytes));
 			}
 		}
-		catch (FailedDeserializationException e)
+		else
 		{
-			Assert.fail();
+			r.failureInConnection(new IpfsConnectionException("size", file, null));
 		}
 		return r;
 	}

@@ -9,10 +9,9 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
 import com.jeffdisher.cacophony.scheduler.SyntheticRead;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -48,7 +47,26 @@ public class ForeignChannelReader
 		_isCached = isCached;
 	}
 
-	public StreamRecommendations loadRecommendations() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	/**
+	 * Lazily loads the StreamIndex and returns it.
+	 * 
+	 * @return The StreamIndex (never null).
+	 * @throws ProtocolDataException The data was too big couldn't be parsed.
+	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
+	 */
+	public StreamIndex loadIndex() throws ProtocolDataException, IpfsConnectionException 
+	{
+		return _getIndex();
+	}
+
+	/**
+	 * Lazily loads the StreamRecommendations and returns it, loading the StreamIndex to do so if not already loaded.
+	 * 
+	 * @return The StreamRecommendations (never null).
+	 * @throws ProtocolDataException The data was too big couldn't be parsed.
+	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
+	 */
+	public StreamRecommendations loadRecommendations() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _recommendations)
 		{
@@ -58,7 +76,14 @@ public class ForeignChannelReader
 		return _recommendations;
 	}
 
-	public StreamRecords loadRecords() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	/**
+	 * Lazily loads the StreamRecords and returns it, loading the StreamIndex to do so if not already loaded.
+	 * 
+	 * @return The StreamRecords (never null).
+	 * @throws ProtocolDataException The data was too big couldn't be parsed.
+	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
+	 */
+	public StreamRecords loadRecords() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _records)
 		{
@@ -68,7 +93,14 @@ public class ForeignChannelReader
 		return _records;
 	}
 
-	public StreamDescription loadDescription() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	/**
+	 * Lazily loads the StreamDescription and returns it, loading the StreamIndex to do so if not already loaded.
+	 * 
+	 * @return The StreamDescription (never null).
+	 * @throws ProtocolDataException The data was too big couldn't be parsed.
+	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
+	 */
+	public StreamDescription loadDescription() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _description)
 		{
@@ -79,7 +111,7 @@ public class ForeignChannelReader
 	}
 
 
-	private StreamIndex _getIndex() throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	private StreamIndex _getIndex() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _index)
 		{

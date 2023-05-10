@@ -8,13 +8,11 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -50,7 +48,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 	}
 
 
-	private StreamRecommendations _checkKnownUsers(ICommand.Context context) throws IpfsConnectionException, FailedDeserializationException, SizeConstraintException
+	private StreamRecommendations _checkKnownUsers(ICommand.Context context) throws IpfsConnectionException, ProtocolDataException
 	{
 		// We don't have a cache when running in the direct command-line mode.
 		context.logger.logVerbose("Check known users directly: " + _targetKey);

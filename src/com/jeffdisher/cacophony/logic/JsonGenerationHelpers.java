@@ -7,11 +7,10 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -38,14 +37,9 @@ public class JsonGenerationHelpers
 			{
 				records = reader.loadRecords();
 			}
-			catch (FailedDeserializationException e)
+			catch (ProtocolDataException e)
 			{
 				// We should not have already cached this if it was corrupt.
-				throw Assert.unexpected(e);
-			}
-			catch (SizeConstraintException e)
-			{
-				// We should not have already cached this if it was too big.
 				throw Assert.unexpected(e);
 			}
 			array = new JsonArray();

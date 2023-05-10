@@ -16,12 +16,11 @@ import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
 import com.jeffdisher.cacophony.scheduler.SyntheticRead;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -29,7 +28,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	public None runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
@@ -39,7 +38,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	}
 
 
-	private void _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, FailedDeserializationException, SizeConstraintException
+	private void _runCore(ILogger logger, IReadingAccess access) throws IpfsConnectionException, KeyException, ProtocolDataException
 	{
 		IFolloweeReading followees = access.readableFolloweeData();
 		
