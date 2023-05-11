@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.ListChannelEntriesCommand;
+import com.jeffdisher.cacophony.commands.ListChannelsCommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.QuickstartCommand;
@@ -458,6 +459,14 @@ public class CommandParser
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new CleanCacheCommand();
+		}),
+		LIST_CHANNELS(true, "--listChannels"
+				, new ArgParameter[0]
+				, new ArgParameter[0]
+				, "Lists all the local home channels."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			return new ListChannelsCommand();
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.

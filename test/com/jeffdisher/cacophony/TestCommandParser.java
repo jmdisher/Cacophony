@@ -452,4 +452,15 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test
+	public void testListChannels() throws Throwable
+	{
+		String[] args = {"--listChannels"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		ICommand<?> command = CommandParser.parseArgs(args, capture);
+		Assert.assertNotNull(command);
+		Assert.assertTrue(0 == outStream.size());
+	}
 }

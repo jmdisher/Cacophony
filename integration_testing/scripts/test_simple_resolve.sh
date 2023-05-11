@@ -35,6 +35,10 @@ echo "Pausing for startup..."
 waitForIpfsStart "$PATH_TO_IPFS" 1
 waitForIpfsStart "$PATH_TO_IPFS" 2
 
+echo "Make sure we don't see any channels..."
+CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
+requireSubstring "$CHANNEL_LIST" "Found 0 channels:"
+
 echo "Creating key on node 1..."
 REPO1=$(getIpfsRepoPath 1)
 PUBLIC1=$(IPFS_PATH="$REPO1" $PATH_TO_IPFS key gen test1)
@@ -42,6 +46,11 @@ echo "Key is $PUBLIC1"
 echo "Attaching Cacophony instance1 to this key..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel1"
+
+echo "Make sure we see the new channel..."
+CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
+requireSubstring "$CHANNEL_LIST" "Found 1 channels:"
+requireSubstring "$CHANNEL_LIST" "Key name: test1 (SELECTED)"
 
 echo "Creating key on node 2..."
 REPO2=$(getIpfsRepoPath 2)
