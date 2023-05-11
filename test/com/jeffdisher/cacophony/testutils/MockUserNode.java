@@ -42,6 +42,7 @@ public class MockUserNode
 	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
 	private MultiThreadedScheduler _lazyScheduler;
 	private StandardEnvironment _lazyExecutor;
+	private ICommand.Context _lazyContext;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
 	{
@@ -58,10 +59,10 @@ public class MockUserNode
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(_localKeyName);
-		ICommand.Result result = createChannel.runInContext(_buildContext(_logger));
+		ICommand.Result result = createChannel.runInContext(_lazyContext());
 		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
-		result = updateDescription.runInContext(_buildContext(_logger));
+		result = updateDescription.runInContext(_lazyContext());
 		_handleResult(result);
 	}
 
@@ -76,12 +77,23 @@ public class MockUserNode
 	public <T extends ICommand.Result> T runCommand(OutputStream captureStream, ICommand<T> command) throws Throwable
 	{
 		ILogger logger = _logger;
+		ICommand.Context defaultContext = _lazyContext();
+		ICommand.Context usedContext = defaultContext;
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
+			usedContext = new ICommand.Context(defaultContext.environment
+					, logger
+					, defaultContext.baseUrl
+					, null
+					, null
+					, null
+					, defaultContext.keyName
+					, defaultContext.publicKey
+			);
 		}
-		T result = command.runInContext(_buildContext(logger));
+		T result = command.runInContext(usedContext);
 		_handleResult(result);
 		return logger.didErrorOccur()
 				? null
@@ -106,7 +118,7 @@ public class MockUserNode
 
 	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_buildContext(_logger)))
+		try (IReadingAccess reading = StandardAccess.readAccess(_lazyContext()))
 		{
 			return reading.getLastRootElement();
 		}
@@ -119,7 +131,7 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_buildContext(_logger)))
+		try (IReadingAccess reading = StandardAccess.readAccess(_lazyContext()))
 		{
 			return reading.isInPinCached(file);
 		}
@@ -127,7 +139,7 @@ public class MockUserNode
 
 	public PrefsData readPrefs() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_buildContext(_logger)))
+		try (IReadingAccess reading = StandardAccess.readAccess(_lazyContext()))
 		{
 			return reading.readPrefs();
 		}
@@ -136,7 +148,7 @@ public class MockUserNode
 	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
-		try (IWritingAccess writing = StandardAccess.writeAccess(_buildContext(_logger)))
+		try (IWritingAccess writing = StandardAccess.writeAccess(_lazyContext()))
 		{
 			return writing.readableFolloweeData();
 		}
@@ -158,9 +170,11 @@ public class MockUserNode
 	{
 		Assert.assertTrue(null != _lazyScheduler);
 		Assert.assertTrue(null != _lazyExecutor);
+		Assert.assertTrue(null != _lazyContext);
 		_lazyScheduler.shutdown();
 		_lazyScheduler = null;
 		_lazyExecutor = null;
+		_lazyContext = null;
 	}
 
 	public void timeoutKey(IpfsKey publicKey)
@@ -223,16 +237,20 @@ public class MockUserNode
 		return _lazyExecutor;
 	}
 
-	private ICommand.Context _buildContext(ILogger logger)
+	private ICommand.Context _lazyContext()
 	{
-		return new ICommand.Context(_lazyEnv()
-				, logger
-				, DataDomain.FAKE_BASE_URL
-				, null
-				, null
-				, null
-				, _localKeyName
-				, _publicKey
-		);
+		if (null == _lazyContext)
+		{
+			_lazyContext = new ICommand.Context(_lazyEnv()
+					, _logger
+					, DataDomain.FAKE_BASE_URL
+					, null
+					, null
+					, null
+					, _localKeyName
+					, _publicKey
+			);
+		}
+		return _lazyContext;
 	}
 }
