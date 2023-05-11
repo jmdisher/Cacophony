@@ -27,6 +27,10 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	@Override
 	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		// All of the parameters are optional but at least one of them must be provided (null means "unchanged field").
 		if ((null == _name) && (null == _description) && (null == _pictureStream) && (null == _email) && (null == _website))
 		{
@@ -46,10 +50,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		String pictureUrl;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Updating channel description...");
 			result = _run(access, _name, _description, _pictureStream, _email, _website);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).

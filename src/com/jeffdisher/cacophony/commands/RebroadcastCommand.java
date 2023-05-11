@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -35,14 +36,15 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		{
 			throw new UsageException("Element CID must be provided");
 		}
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			HomeChannelModifier modifier = new HomeChannelModifier(access);
 			
 			// First, load our existing stream to make sure that this isn't a duplicate.

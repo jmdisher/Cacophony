@@ -34,7 +34,6 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class MockUserNode
 {
 	private final String _localKeyName;
-	private final IpfsKey _publicKey;
 	private final MockSingleNode _sharedConnection;
 	private final MemoryConfigFileSystem _fileSystem;
 	private final SilentLogger _logger;
@@ -47,7 +46,6 @@ public class MockUserNode
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
 	{
 		_localKeyName = keyName;
-		_publicKey = key;
 		_sharedConnection = node;
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(draftsDir);
@@ -94,6 +92,10 @@ public class MockUserNode
 			);
 		}
 		T result = command.runInContext(usedContext);
+		if (usedContext != defaultContext)
+		{
+			defaultContext.publicKey = usedContext.publicKey;
+		}
 		_handleResult(result);
 		return logger.didErrorOccur()
 				? null
@@ -189,7 +191,7 @@ public class MockUserNode
 
 	public void manualPublishLocal(IpfsFile manualRoot) throws IpfsConnectionException
 	{
-		_sharedConnection.publish(_localKeyName, _publicKey, manualRoot);
+		_sharedConnection.publish(_localKeyName, null, manualRoot);
 	}
 
 	public IConfigFileSystem getFileSystem()
@@ -208,7 +210,7 @@ public class MockUserNode
 		IpfsFile rootToPublish = result.getIndexToPublish();
 		if (null != rootToPublish)
 		{
-			_sharedConnection.publish(_localKeyName, _publicKey, rootToPublish);
+			_sharedConnection.publish(_localKeyName, null, rootToPublish);
 		}
 	}
 
@@ -248,7 +250,7 @@ public class MockUserNode
 					, null
 					, null
 					, _localKeyName
-					, _publicKey
+					, null
 			);
 		}
 		return _lazyContext;

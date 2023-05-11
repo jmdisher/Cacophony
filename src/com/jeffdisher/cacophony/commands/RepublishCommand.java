@@ -18,13 +18,14 @@ public record RepublishCommand() implements ICommand<ChangedRoot>
 	@Override
 	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		IpfsFile indexHash;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			// Get the previously posted index hash.
 			indexHash = access.getLastRootElement();
 			// We must have previously published something.

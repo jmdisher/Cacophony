@@ -7,6 +7,7 @@ import java.net.URL;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
@@ -116,13 +117,19 @@ public class Cacophony {
 					// We want to make sure that we can connect to the IPFS node.
 					Pair<IConnection, URL> connectionData = dataDirectoryWrapper.buildSharedConnection(ipfsConnectString);
 					IConnection connection = connectionData.first();
-					IpfsKey publicKey = connection.getOrCreatePublicKey(keyName);
 					
 					// Create the scheduler we will use for the run.
 					scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
 					
 					// Make sure that the local storage is in a sane state and load it into memory.
 					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), scheduler);
+					
+					// Look up our selected channel key (may be null if there is no such channel created).
+					IpfsKey publicKey;
+					try (IReadOnlyLocalData reading = localDataModel.openForRead())
+					{
+						publicKey = reading.readLocalIndex().getPublicKey(keyName);
+					}
 					
 					// Create the executor and logger for our run and put them into the context.
 					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler);

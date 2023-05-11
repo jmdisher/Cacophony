@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
@@ -34,19 +33,23 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		}
 		
 		// Make sure that we aren't going to over-write an existing structure.
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		// (note that the public key is read from storage so it being null means we have no channel for this name).
+		if (null != context.publicKey)
 		{
-			if (null != access.getLastRootElement())
-			{
-				throw new UsageException("Channel already exists for the IPFS key named: \"" + keyName + "\"");
-			}
+			throw new UsageException("Channel already exists for the IPFS key named: \"" + keyName + "\"");
 		}
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
 		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + keyName + "\"");
-		_setupKey(context.environment, setupLog);
-		setupLog.logFinish("Key setup done!");
+		IConnection connection = context.environment.getConnection();
+		IpfsKey publicKey = connection.getOrCreatePublicKey(this.keyName);
+		// This will fail with exception, never null.
+		Assert.assertTrue(null != publicKey);
+		setupLog.logFinish("Key setup done:  " + publicKey);
+		
+		// We need to modify the context with this new key.
+		context.publicKey = publicKey;
 		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;
@@ -58,14 +61,6 @@ public record CreateChannelCommand(String keyName) implements ICommand<ChangedRo
 		return new ChangedRoot(newRoot);
 	}
 
-
-	private void _setupKey(IEnvironment environment, ILogger logger) throws IpfsConnectionException
-	{
-		IConnection connection = environment.getConnection();
-		
-		IpfsKey publicKey = connection.getOrCreatePublicKey(this.keyName);
-		logger.logVerbose("Using existing key for \"" + keyName + "\": " + publicKey);
-	}
 
 	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
 	{

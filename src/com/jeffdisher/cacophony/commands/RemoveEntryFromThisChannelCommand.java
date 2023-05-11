@@ -30,14 +30,15 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			throw new UsageException("Element CID must be provided");
 		}
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing entry " + _elementCid + " from channel...");
 			newRoot = _run(access, context.recordCache, _elementCid);
 			if (null == newRoot)

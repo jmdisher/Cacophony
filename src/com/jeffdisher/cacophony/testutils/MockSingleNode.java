@@ -111,7 +111,11 @@ public class MockSingleNode implements IConnection
 	public void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException
 	{
 		IpfsKey key = _keys.get(keyName);
-		Assert.assertTrue(publicKey.equals(key));
+		// Our tests don't always handle creation in the expected way so sometimes the caller doesn't have the key.
+		if (null != publicKey)
+		{
+			Assert.assertTrue(publicKey.equals(key));
+		}
 		_publications.put(key, file);
 	}
 

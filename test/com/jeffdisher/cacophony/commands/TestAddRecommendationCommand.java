@@ -17,13 +17,12 @@ public class TestAddRecommendationCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsKey TARGET_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 	@Test
 	public void testMissingChannel() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME, null, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		AddRecommendationCommand command = new AddRecommendationCommand(TARGET_KEY);
 		try
 		{

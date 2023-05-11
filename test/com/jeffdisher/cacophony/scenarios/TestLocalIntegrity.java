@@ -56,7 +56,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, KEY_NAME1
-				, PUBLIC_KEY1
+				, null
 		));
 		
 		// We expect 5 keys in the storage:
@@ -87,7 +87,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, KEY_NAME1
-				, PUBLIC_KEY1
+				, null
 		));
 		
 		// We expect the normal 5.

@@ -69,8 +69,12 @@ public class ChannelData
 
 	public IpfsKey getPublicKey(String keyName)
 	{
-		Assert.assertTrue(_homeChannelsByKeyName.containsKey(keyName));
-		return _homeChannelsByKeyName.get(keyName).first();
+		// If we haven't yet created the channel, we won't have a key for it.
+		Pair<IpfsKey, IpfsFile> pair = _homeChannelsByKeyName.get(keyName);
+		return (null != pair)
+				? pair.first()
+				: null
+		;
 	}
 
 	public IpfsFile getLastPublishedIndex(String keyName)

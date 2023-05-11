@@ -65,7 +65,8 @@ public interface ICommand<T extends ICommand.Result>
 		public final LocalUserInfoCache userInfoCache;
 		public final EntryCacheRegistry entryRegistry;
 		public final String keyName;
-		public final IpfsKey publicKey;
+		// The public key of the context, since it can be set when the channel is created.
+		public IpfsKey publicKey;
 		
 		public Context(IEnvironment environment
 				, ILogger logger

@@ -31,6 +31,10 @@ public record PublishCommand(String _name, String _description, String _discussi
 		{
 			throw new UsageException("Description must be provided");
 		}
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		// We will expect that any entry-point will allocate this, so it isn't a user-facing error.
 		Assert.assertTrue(null != _elements);
 		
@@ -40,10 +44,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IpfsFile newElement;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			PublishHelpers.PublishResult result = PublishHelpers.uploadFileAndUpdateTracking(log
 					, access
 					, _name

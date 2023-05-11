@@ -134,7 +134,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, keyName
-				, theirKey
+				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
@@ -161,7 +161,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, keyName
-				, ourKey
+				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);

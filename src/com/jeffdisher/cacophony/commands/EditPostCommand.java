@@ -27,14 +27,15 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		{
 			throw new UsageException("At least one field must be being changed");
 		}
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		
 		Result result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			result = _run(access, _postToEdit, _name, _description, _discussionUrl);
 			if (null == result)
 			{

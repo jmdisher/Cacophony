@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements ICommand<ChangedRoot>
@@ -21,14 +22,15 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		{
 			throw new UsageException("Public key must be provided");
 		}
+		if (null == context.publicKey)
+		{
+			throw new UsageException("Channel must first be created with --createNewChannel");
+		}
 		
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
+			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing recommendation " + _channelPublicKey + "...");
 			newRoot = _run(access, _channelPublicKey);
 			if (null == newRoot)
