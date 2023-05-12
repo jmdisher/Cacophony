@@ -139,4 +139,11 @@ public class MockNetworkScheduler implements INetworkScheduler
 		}
 		return key;
 	}
+
+	@Override
+	public FutureVoid deletePublicKey(String keyName)
+	{
+		// Not called in tests.
+		throw Assert.unreachable();
+	}
 }

@@ -73,4 +73,12 @@ public interface IConnection
 	 * @throws IpfsConnectionException If there is some problem contacting the server.
 	 */
 	IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException;
+
+	/**
+	 * Deletes the named public key from the local node.
+	 * 
+	 * @param keyName The name of the key to delete.
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	void deletePublicKey(String keyName) throws IpfsConnectionException;
 }

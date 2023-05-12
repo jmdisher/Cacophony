@@ -283,6 +283,12 @@ public class MockWritingAccess implements IWritingAccess
 		return this.explicitCacheData;
 	}
 
+	@Override
+	public void deleteChannelData()
+	{
+		throw new RuntimeException("Not Called");
+	}
+
 	public IpfsFile storeWithoutPin(byte[] data)
 	{
 		IpfsFile file = MockSingleNode.generateHash(data);

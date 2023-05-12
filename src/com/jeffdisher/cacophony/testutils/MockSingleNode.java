@@ -187,6 +187,13 @@ public class MockSingleNode implements IConnection
 		return _keys.get(keyName);
 	}
 
+	@Override
+	public void deletePublicKey(String keyName) throws IpfsConnectionException
+	{
+		// Not used.
+		throw Assert.unreachable();
+	}
+
 
 	private byte[] _networkLoadData(IpfsFile file)
 	{

@@ -361,6 +361,17 @@ public class StandardAccess implements IWritingAccess
 		return _explicitCache;
 	}
 
+	@Override
+	public void deleteChannelData() throws IpfsConnectionException
+	{
+		// First, remove these from local tracking.
+		_channelData.removeChannel(_keyName);
+		_writeChannelData = true;
+		
+		// Now, remove the key from the node.
+		_scheduler.deletePublicKey(_keyName).get();
+	}
+
 
 	private void _rationalizeUnpin(IpfsFile cid)
 	{

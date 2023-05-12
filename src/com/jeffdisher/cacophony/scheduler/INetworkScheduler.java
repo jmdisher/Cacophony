@@ -96,4 +96,12 @@ public interface INetworkScheduler
 	 * @return The asynchronously-completed future.
 	 */
 	FutureKey getOrCreatePublicKey(String keyName);
+
+	/**
+	 * Deletes the public key with the given name from the local node.
+	 * 
+	 * @param keyName The name of the key.
+	 * @return The asynchronously-completed future.
+	 */
+	FutureVoid deletePublicKey(String keyName);
 }

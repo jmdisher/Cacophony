@@ -235,6 +235,23 @@ public class IpfsConnection implements IConnection
 		}
 	}
 
+	@Override
+	public void deletePublicKey(String keyName) throws IpfsConnectionException
+	{
+		try
+		{
+			_defaultConnection.key.rm(keyName);
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException("deletePublicKey", keyName, e);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException("deletePublicKey", keyName, e);
+		}
+	}
+
 
 	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException
 	{

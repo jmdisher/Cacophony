@@ -10,6 +10,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CleanCacheCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.DeleteChannelCommand;
 import com.jeffdisher.cacophony.commands.EditPostCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.GetGlobalPrefsCommand;
@@ -467,6 +468,14 @@ public class CommandParser
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new ListChannelsCommand();
+		}),
+		DELETE_CHANNEL(true, "--deleteChannel"
+				, new ArgParameter[0]
+				, new ArgParameter[0]
+				, "Deletes the channel currently selected by key name, unpinning all of its data from the local node."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			return new DeleteChannelCommand();
 		}),
 		
 		// High-level commands which aren't actually real commands, but are just convenient invocation idioms built on top of actual commands.

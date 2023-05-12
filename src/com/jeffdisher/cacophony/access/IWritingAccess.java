@@ -103,4 +103,13 @@ public interface IWritingAccess extends IReadingAccess
 	 * @return The shared explicit cache data.
 	 */
 	ExplicitCacheData writableExplicitCache();
+
+	/**
+	 * Deletes the local accounting for the currently selected channel and instructs the IPFS node to delete the key.
+	 * Even if this fails with an exception, it will still update the local data, just not delete the key from the node.
+	 * 
+	 * @throws IpfsConnectionException A network error prevented deletion of the key from the node (local data is still
+	 * changed).
+	 */
+	void deleteChannelData() throws IpfsConnectionException;
 }
