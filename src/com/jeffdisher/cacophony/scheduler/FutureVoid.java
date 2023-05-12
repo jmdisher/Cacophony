@@ -5,11 +5,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
- * The asynchronously-returned result of a "pin rm" call.
- * Note that this is largely identical to FuturePublish so these calls which return nothing but success may be
- * coalesced in the future (currently kept distinct just for clarity of intent).
+ * The asynchronously-returned result of an operation which has no returned data (such as unpin or delete key).
+ * Note that FuturePublish may be replaced with this in the future since they are similar.
  */
-public class FutureUnpin
+public class FutureVoid
 {
 	private boolean _didSucceed;
 	private IpfsConnectionException _exception;

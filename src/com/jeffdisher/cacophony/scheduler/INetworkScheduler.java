@@ -87,7 +87,7 @@ public interface INetworkScheduler
 	 * @param cid The file to unpin.
 	 * @return The asynchronously-completed future.
 	 */
-	FutureUnpin unpin(IpfsFile cid);
+	FutureVoid unpin(IpfsFile cid);
 
 	/**
 	 * Looks up or creates a new key on the local node.

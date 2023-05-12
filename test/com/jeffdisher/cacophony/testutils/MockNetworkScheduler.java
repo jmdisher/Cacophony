@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
-import com.jeffdisher.cacophony.scheduler.FutureUnpin;
+import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -115,11 +115,11 @@ public class MockNetworkScheduler implements INetworkScheduler
 	}
 
 	@Override
-	public FutureUnpin unpin(IpfsFile cid)
+	public FutureVoid unpin(IpfsFile cid)
 	{
 		Assert.assertTrue(_addedPins.contains(cid));
 		_addedPins.remove(cid);
-		FutureUnpin unpin = new FutureUnpin();
+		FutureVoid unpin = new FutureVoid();
 		unpin.success();
 		return unpin;
 	}

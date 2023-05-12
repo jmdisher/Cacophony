@@ -216,9 +216,9 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
-	public FutureUnpin unpin(IpfsFile cid)
+	public FutureVoid unpin(IpfsFile cid)
 	{
-		FutureUnpin future = new FutureUnpin();
+		FutureVoid future = new FutureVoid();
 		Runnable r = () -> {
 			try
 			{
