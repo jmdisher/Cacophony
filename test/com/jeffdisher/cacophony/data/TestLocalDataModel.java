@@ -312,6 +312,34 @@ public class TestLocalDataModel
 		Assert.assertEquals(input, drafts);
 	}
 
+	@Test
+	public void createDestroyChannel() throws Throwable
+	{
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
+		
+		try (IReadWriteLocalData reader = model.openForWrite())
+		{
+			ChannelData channels = reader.readLocalIndex();
+			Assert.assertEquals(0, channels.getKeyNames().size());
+			channels.setLastPublishedIndex("key1", K1, F1);
+		}
+		
+		try (IReadWriteLocalData reader = model.openForWrite())
+		{
+			ChannelData channels = reader.readLocalIndex();
+			Assert.assertEquals(1, channels.getKeyNames().size());
+			channels.removeChannel("key1");
+		}
+		
+		try (IReadOnlyLocalData reader = model.openForRead())
+		{
+			ChannelData channels = reader.readLocalIndex();
+			Assert.assertEquals(0, channels.getKeyNames().size());
+		}
+	}
+
 
 	private byte[] _serializeModelToOpcodes(LocalDataModel model) throws IOException
 	{

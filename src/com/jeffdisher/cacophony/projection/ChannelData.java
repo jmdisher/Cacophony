@@ -90,4 +90,11 @@ public class ChannelData
 	{
 		_homeChannelsByKeyName.put(keyName, new Pair<>(publicKey, rootElement));
 	}
+
+	public void removeChannel(String keyName)
+	{
+		// We expect this to be here.
+		Assert.assertTrue(_homeChannelsByKeyName.containsKey(keyName));
+		_homeChannelsByKeyName.remove(keyName);
+	}
 }
