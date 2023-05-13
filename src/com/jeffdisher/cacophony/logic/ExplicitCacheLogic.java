@@ -59,6 +59,9 @@ public class ExplicitCacheLogic
 	 */
 	public static ExplicitCacheData.UserInfo loadUserInfo(IWritingAccess access, IpfsKey publicKey) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
+		Assert.assertTrue(null != access);
+		Assert.assertTrue(null != publicKey);
+		
 		IpfsFile root = access.resolvePublicKey(publicKey).get();
 		// This will fail instead of returning null.
 		Assert.assertTrue(null != root);

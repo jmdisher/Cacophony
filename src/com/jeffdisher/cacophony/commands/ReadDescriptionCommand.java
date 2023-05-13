@@ -15,34 +15,45 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements ICommand<ChannelDescription>
 {
 	@Override
-	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
+	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException, UsageException
 	{
+		// First, make sure that we find the relevant key (since they default to the local user).
+		IpfsKey keyToCheck = (null != _channelPublicKey)
+				? _channelPublicKey
+				: context.publicKey
+		;
+		if (null == keyToCheck)
+		{
+			throw new UsageException("The default user cannot be used since they don't exist");
+		}
+		
 		// We start by checking for known users.  We will either check local data or the known user cache, if we have one.  They are equivalent.
 		ChannelDescription result = (null != context.userInfoCache)
-				? _checkKnownUserCache(context)
-				: _checkKnownUsers(context)
+				? _checkKnownUserCache(context, keyToCheck)
+				: _checkKnownUsers(context, keyToCheck)
 		;
 		
 		// If we don't know anything about this user, take the explicit read-through cache (requires write-access).
 		if (null == result)
 		{
-			result = _checkExplicitCache(context);
+			result = _checkExplicitCache(context, keyToCheck);
 		}
 		return result;
 	}
 
 
-	private ChannelDescription _checkKnownUserCache(ICommand.Context context)
+	private ChannelDescription _checkKnownUserCache(ICommand.Context context, IpfsKey keyToCheck)
 	{
 		// We have a cache when running in interactive mode.
-		context.logger.logVerbose("Check known user cache: " + _channelPublicKey);
+		context.logger.logVerbose("Check known user cache: " + keyToCheck);
 		ChannelDescription result = null;
-		LocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(_channelPublicKey);
+		LocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(keyToCheck);
 		if (null != cached)
 		{
 			IpfsFile userPicCid = cached.userPicCid();
@@ -59,23 +70,23 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		return result;
 	}
 
-	private ChannelDescription _checkKnownUsers(ICommand.Context context) throws IpfsConnectionException, ProtocolDataException
+	private ChannelDescription _checkKnownUsers(ICommand.Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
 	{
 		// We don't have a cache when running in the direct command-line mode.
-		context.logger.logVerbose("Check known users directly: " + _channelPublicKey);
+		context.logger.logVerbose("Check known users directly: " + keyToCheck);
 		ChannelDescription result = null;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IpfsFile rootToLoad = null;
 			// First is to see if this is us.
-			if ((null == _channelPublicKey) || _channelPublicKey.equals(context.publicKey))
+			if (keyToCheck.equals(context.publicKey))
 			{
 				rootToLoad = access.getLastRootElement();
 			}
 			else
 			{
 				// Second, check if this is someone we are following.
-				rootToLoad = access.readableFolloweeData().getLastFetchedRootForFollowee(_channelPublicKey);
+				rootToLoad = access.readableFolloweeData().getLastFetchedRootForFollowee(keyToCheck);
 			}
 			if (null != rootToLoad)
 			{
@@ -96,14 +107,14 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		return result;
 	}
 
-	private ChannelDescription _checkExplicitCache(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private ChannelDescription _checkExplicitCache(ICommand.Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
-		context.logger.logVerbose("Check explicit cache: " + _channelPublicKey);
+		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		ChannelDescription result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// Consult the cache - this never returns null but will throw on error.
-			ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, _channelPublicKey);
+			ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, keyToCheck);
 			// Everything in the explicit cache is cached.
 			StreamDescription description = access.loadCached(userInfo.descriptionCid(), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 			String userPicUrl = context.baseUrl + userInfo.userPicCid().toSafeString();

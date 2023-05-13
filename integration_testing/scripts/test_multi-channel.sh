@@ -42,17 +42,57 @@ echo "Creating channel on node 1..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel1"
 
-echo "Make sure we see the new channel..."
+echo "Count the pins after the creation (14 = 9 + 5 (index, recommendations, records, description, pic))..."
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "14"
+
+echo "Quickstart another channel..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --quickstart --name "Quick user"
+checkPreviousCommand "create quickstart"
+
+echo "Make sure we see the new channels..."
+CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
+requireSubstring "$CHANNEL_LIST" "Found 2 channels:"
+requireSubstring "$CHANNEL_LIST" "Key name: test1 (SELECTED)"
+requireSubstring "$CHANNEL_LIST" "Key name: quick"
+
+echo "Count the pins after the creation (16 = 9 + 5 (index, recommendations, records, description, pic) + 2 (index, description))..."
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "16"
+
+echo "Delete the channel..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --deleteChannel
+checkPreviousCommand "delete test1"
+
+echo "Make sure we see only one channel..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
 requireSubstring "$CHANNEL_LIST" "Found 1 channels:"
-requireSubstring "$CHANNEL_LIST" "Key name: test1 (SELECTED)"
+requireSubstring "$CHANNEL_LIST" "Key name: quick"
 
 echo "Count the pins after the creation (14 = 9 + 5 (index, recommendations, records, description, pic))..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "14"
 
-echo "Delete the channel..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --deleteChannel
+echo "Make sure that we see the expected output from descriptions and recommendations..."
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --readDescription)
+# We expect a usage error.
+if [ $? -ne 1 ]; then
+	exit 1
+fi
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --readDescription)
+requireSubstring "$DESCRIPTION" "Name: Quick user"
+
+LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listRecommendations)
+# We expect a usage error.
+if [ $? -ne 1 ]; then
+	exit 1
+fi
+LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --listRecommendations)
+requireSubstring "$LIST" "0 keys in list:"
+
+echo "Delete the quick channel..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --deleteChannel
+checkPreviousCommand "delete quick"
 
 echo "Make sure we don't see any channels..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
