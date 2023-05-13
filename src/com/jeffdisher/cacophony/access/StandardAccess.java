@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
@@ -214,6 +215,15 @@ public class StandardAccess implements IWritingAccess
 	public ConcurrentTransaction openConcurrentTransaction()
 	{
 		return new ConcurrentTransaction(_scheduler, _pinCache.snapshotPinnedSet());
+	}
+
+	@Override
+	public Set<IpfsKey> readHomeUserPublicKeys()
+	{
+		return _channelData.getKeyNames().stream()
+				.map((String keyName) -> _channelData.getPublicKey(keyName))
+				.collect(Collectors.toSet())
+		;
 	}
 
 	// ----- Writing methods -----

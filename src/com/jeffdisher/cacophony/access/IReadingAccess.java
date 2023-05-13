@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.access;
 
+import java.util.Set;
+
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -111,4 +113,9 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The new transaction.
 	 */
 	ConcurrentTransaction openConcurrentTransaction();
+
+	/**
+	 * @return The set of public keys of all the users managed in this instance.
+	 */
+	Set<IpfsKey> readHomeUserPublicKeys();
 }

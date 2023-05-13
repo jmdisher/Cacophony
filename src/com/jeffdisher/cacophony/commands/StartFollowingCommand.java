@@ -29,6 +29,12 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 		boolean didRefresh = false;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
+			// Make sure that this isn't a local user.
+			if (access.readHomeUserPublicKeys().contains(_publicKey))
+			{
+				throw new UsageException("Cannot follow on of the home users");
+			}
+			
 			IFolloweeWriting followees = access.writableFolloweeData();
 			
 			// We need to first verify that we aren't already following them.

@@ -176,6 +176,12 @@ public class MockWritingAccess implements IWritingAccess
 	}
 
 	@Override
+	public Set<IpfsKey> readHomeUserPublicKeys()
+	{
+		throw new RuntimeException("Not Called");
+	}
+
+	@Override
 	public IFolloweeWriting writableFolloweeData()
 	{
 		throw new RuntimeException("Not Called");

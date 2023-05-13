@@ -60,6 +60,15 @@ echo "Count the pins after the creation (16 = 9 + 5 (index, recommendations, rec
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "16"
 
+echo "Verify that we aren't allowed to start following a home user..."
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --getPublicKey)
+PUBLIC_KEY1=$(echo $RESULT_STRING | cut -d " " -f 14)
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC_KEY1")
+# We expect a usage error.
+if [ $? -ne 1 ]; then
+	exit 1
+fi
+
 echo "Delete the channel..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --deleteChannel
 checkPreviousCommand "delete test1"
