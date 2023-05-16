@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
-import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.KeyException;
@@ -68,7 +68,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// Consult the cache - this never returns null but will throw on error.
-			ExplicitCacheData.RecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
+			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
 			// Everything in the explicit cache is cached.
 			StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			post = new PostDetails(_elementCid

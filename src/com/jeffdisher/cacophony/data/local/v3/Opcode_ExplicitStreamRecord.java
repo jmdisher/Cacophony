@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.data.local.v3;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -44,7 +45,8 @@ public record Opcode_ExplicitStreamRecord(IpfsFile streamCid, IpfsFile thumbnail
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.explicitCache().addStreamRecord(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
+		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
+		context.explicitCache().addStreamRecord(this.streamCid, info);
 	}
 
 	@Override

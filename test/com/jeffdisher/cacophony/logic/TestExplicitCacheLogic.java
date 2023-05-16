@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -146,13 +147,13 @@ public class TestExplicitCacheLogic
 	{
 		MockWritingAccess access = new MockWritingAccess();
 		IpfsFile cid = _populateStreamRecord(access, K1, "name", null, null, 0, null);
-		ExplicitCacheData.RecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record);
 		// We just see the one size check and load.
 		Assert.assertEquals(1, access.sizeChecksPerformed);
 		Assert.assertEquals(1, access.sizeAndReadPerformed);
 		// A second attempt should be a cache hit and not touch the network.
-		ExplicitCacheData.RecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, access.sizeChecksPerformed);
 		Assert.assertEquals(1, access.sizeAndReadPerformed);
@@ -163,13 +164,13 @@ public class TestExplicitCacheLogic
 	{
 		MockWritingAccess access = new MockWritingAccess();
 		IpfsFile cid = _populateStreamRecord(access, K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
-		ExplicitCacheData.RecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record);
 		// We just see the 3 size checks and the record load.
 		Assert.assertEquals(3, access.sizeChecksPerformed);
 		Assert.assertEquals(1, access.sizeAndReadPerformed);
 		// A second attempt should be a cache hit and not touch the network.
-		ExplicitCacheData.RecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(3, access.sizeChecksPerformed);
 		Assert.assertEquals(1, access.sizeAndReadPerformed);
@@ -180,13 +181,13 @@ public class TestExplicitCacheLogic
 	{
 		MockWritingAccess access = new MockWritingAccess();
 		IpfsFile cid = _populateStreamRecord(access, K1, "name", null, null, 0, "audio".getBytes());
-		ExplicitCacheData.RecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record);
 		// We just see the 2 size checks and the record load.
 		Assert.assertEquals(2, access.sizeChecksPerformed);
 		Assert.assertEquals(1, access.sizeAndReadPerformed);
 		// A second attempt should be a cache hit and not touch the network.
-		ExplicitCacheData.RecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(2, access.sizeChecksPerformed);
 		Assert.assertEquals(1, access.sizeAndReadPerformed);

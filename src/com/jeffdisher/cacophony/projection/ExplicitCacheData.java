@@ -24,7 +24,7 @@ public class ExplicitCacheData
 	// This means that element 0 is "least recently used".
 	private final List<IpfsFile> _lru;
 	private final Map<IpfsFile, UserInfo> _userInfo;
-	private final Map<IpfsFile, RecordInfo> _recordInfo;
+	private final Map<IpfsFile, CachedRecordInfo> _recordInfo;
 	private long _totalCacheInBytes;
 
 	public ExplicitCacheData()
@@ -54,8 +54,8 @@ public class ExplicitCacheData
 			else
 			{
 				Assert.assertTrue(_recordInfo.containsKey(elt));
-				RecordInfo info = _recordInfo.remove(elt);
-				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid, info.thumbnailCid, info.videoCid, info.audioCid, info.combinedSizeBytes));
+				CachedRecordInfo info = _recordInfo.remove(elt);
+				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
 			}
 		}
 	}
@@ -75,20 +75,20 @@ public class ExplicitCacheData
 			pin.accept(info.descriptionCid);
 			pin.accept(info.userPicCid);
 		}
-		for(RecordInfo info : _recordInfo.values())
+		for(CachedRecordInfo info : _recordInfo.values())
 		{
-			pin.accept(info.streamCid);
-			if (null != info.thumbnailCid)
+			pin.accept(info.streamCid());
+			if (null != info.thumbnailCid())
 			{
-				pin.accept(info.thumbnailCid);
+				pin.accept(info.thumbnailCid());
 			}
-			if (null != info.videoCid)
+			if (null != info.videoCid())
 			{
-				pin.accept(info.videoCid);
+				pin.accept(info.videoCid());
 			}
-			if (null != info.audioCid)
+			if (null != info.audioCid())
 			{
-				pin.accept(info.audioCid);
+				pin.accept(info.audioCid());
 			}
 		}
 	}
@@ -121,22 +121,15 @@ public class ExplicitCacheData
 	 * NOTE:  A record with the given streamCid cannot already be in the cache.
 	 * 
 	 * @param streamCid The CID of the StreamRecord.
-	 * @param thumbnailCid The CID of the thumbnail selected from this StreamRecord.
-	 * @param videoCid The CID of the video element selected from this StreamRecord.
-	 * @param audioCid The CID of the audio element selected from this StreamRecord.
-	 * @param combinedSizeBytes The combined size, in bytes, of all of the above elements.
-	 * @return The new RecordInfo element added.
+	 * @param recordInfo The common info of a cached record.
 	 */
-	public RecordInfo addStreamRecord(IpfsFile streamCid, IpfsFile thumbnailCid, IpfsFile videoCid, IpfsFile audioCid, long combinedSizeBytes)
+	public void addStreamRecord(IpfsFile streamCid, CachedRecordInfo recordInfo)
 	{
 		Assert.assertTrue(!_userInfo.containsKey(streamCid));
 		Assert.assertTrue(!_recordInfo.containsKey(streamCid));
-		Assert.assertTrue((null == videoCid) || (null == audioCid));
-		RecordInfo recordInfo = new RecordInfo(streamCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
 		_recordInfo.put(streamCid, recordInfo);
 		_lru.add(streamCid);
-		_totalCacheInBytes += combinedSizeBytes;
-		return recordInfo;
+		_totalCacheInBytes += recordInfo.combinedSizeBytes();
 	}
 
 	/**
@@ -158,14 +151,14 @@ public class ExplicitCacheData
 	}
 
 	/**
-	 * Reads the RecordInfo of the given StreamRecord's recordCid.  On success, marks the record as most recently used.
+	 * Reads the CachedRecordInfo of the given StreamRecord's recordCid.  On success, marks the record as most recently used.
 	 * 
 	 * @param recordCid The CID of the StreamRecord.
-	 * @return The RecordInfo for the record (null if not found).
+	 * @return The CachedRecordInfo for the record (null if not found).
 	 */
-	public RecordInfo getRecordInfo(IpfsFile recordCid)
+	public CachedRecordInfo getRecordInfo(IpfsFile recordCid)
 	{
-		RecordInfo info = _recordInfo.get(recordCid);
+		CachedRecordInfo info = _recordInfo.get(recordCid);
 		if (null != info)
 		{
 			// Re-sort this as recently used.
@@ -199,26 +192,25 @@ public class ExplicitCacheData
 			else
 			{
 				Assert.assertTrue(_recordInfo.containsKey(elt));
-				RecordInfo info = _recordInfo.remove(elt);
-				unpin.accept(info.streamCid);
-				if (null != info.thumbnailCid)
+				CachedRecordInfo info = _recordInfo.remove(elt);
+				unpin.accept(info.streamCid());
+				if (null != info.thumbnailCid())
 				{
-					unpin.accept(info.thumbnailCid);
+					unpin.accept(info.thumbnailCid());
 				}
-				if (null != info.videoCid)
+				if (null != info.videoCid())
 				{
-					unpin.accept(info.videoCid);
+					unpin.accept(info.videoCid());
 				}
-				if (null != info.audioCid)
+				if (null != info.audioCid())
 				{
-					unpin.accept(info.audioCid);
+					unpin.accept(info.audioCid());
 				}
-				_totalCacheInBytes -= info.combinedSizeBytes;
+				_totalCacheInBytes -= info.combinedSizeBytes();
 			}
 		}
 	}
 
 
 	public static record UserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) {};
-	public static record RecordInfo(IpfsFile streamCid, IpfsFile thumbnailCid, IpfsFile videoCid, IpfsFile audioCid, long combinedSizeBytes) {}
 }

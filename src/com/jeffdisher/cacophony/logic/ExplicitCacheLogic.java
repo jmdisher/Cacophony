@@ -1,10 +1,9 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -118,77 +117,21 @@ public class ExplicitCacheLogic
 	 * @throws IpfsConnectionException There was a problem accessing the network (could be a timeout due to not finding
 	 * the data).
 	 */
-	public static ExplicitCacheData.RecordInfo loadRecordInfo(IWritingAccess access, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	public static CachedRecordInfo loadRecordInfo(IWritingAccess access, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
 	{
 		ExplicitCacheData data = access.writableExplicitCache();
-		ExplicitCacheData.RecordInfo info = data.getRecordInfo(recordCid);
+		CachedRecordInfo info = data.getRecordInfo(recordCid);
 		if (null == info)
 		{
 			// Find and populate the cache.
-			StreamRecord record = access.loadNotCached(recordCid, "explicit record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] bytes) -> GlobalData.deserializeRecord(bytes)).get();
-			LeafFinder leafFinder = LeafFinder.parseRecord(record);
-			IpfsFile thumbnailCid = leafFinder.thumbnail;
 			PrefsData prefs = access.readPrefs();
-			LeafFinder.VideoLeaf videoLeaf = leafFinder.largestVideoWithLimit(prefs.videoEdgePixelMax);
-			IpfsFile videoCid = (null != videoLeaf) ? videoLeaf.cid() : null;
-			IpfsFile audioCid = (null != videoLeaf) ? null : leafFinder.audio;
+			info = CommonRecordPinning.loadAndPinRecord(access, prefs.videoEdgePixelMax, recordCid);
+			// This is never null - throws on error.
+			Assert.assertTrue(null != info);
+			data.addStreamRecord(recordCid, info);
 			
-			// Now, pin everything and update the cache.
-			FuturePin pinRecord = access.pin(recordCid);
-			FuturePin pinThumbnail = (null != thumbnailCid)
-					? access.pin(thumbnailCid)
-					: null
-			;
-			FuturePin pinVideo = (null != videoCid)
-					? access.pin(videoCid)
-					: null
-			;
-			FuturePin pinAudio = (null != audioCid)
-					? access.pin(audioCid)
-					: null
-			;
-			// We want to revert all the pins if any of these fail.
-			try
-			{
-				pinRecord.get();
-				long combinedSizeBytes = access.getSizeInBytes(recordCid).get();
-				if (null != pinThumbnail)
-				{
-					pinThumbnail.get();
-					combinedSizeBytes += access.getSizeInBytes(thumbnailCid).get();
-				}
-				if (null != pinVideo)
-				{
-					pinVideo.get();
-					combinedSizeBytes += access.getSizeInBytes(videoCid).get();
-				}
-				if (null != pinAudio)
-				{
-					pinAudio.get();
-					combinedSizeBytes += access.getSizeInBytes(audioCid).get();
-				}
-				info = data.addStreamRecord(recordCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
-				
-				// Purge any overflow.
-				_purgeExcess(access, data, prefs);
-			}
-			catch (IpfsConnectionException e)
-			{
-				access.unpin(recordCid);
-				if (null != thumbnailCid)
-				{
-					access.unpin(thumbnailCid);
-				}
-				if (null != videoCid)
-				{
-					access.unpin(videoCid);
-				}
-				if (null != audioCid)
-				{
-					access.unpin(audioCid);
-				}
-				throw e;
-			}
+			// Purge any overflow.
+			_purgeExcess(access, data, prefs);
 		}
 		return info;
 	}

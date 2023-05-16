@@ -39,10 +39,10 @@ public class TestExplicitCacheData
 		ExplicitCacheData start = new ExplicitCacheData();
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
-		start.addStreamRecord(F1, F2, null, null, 5L);
+		_addStreamRecord(start, F1, F2, null, null, 5L);
 		start.addUserInfo(F5, F2, F3, F4, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
-		ExplicitCacheData.RecordInfo recordInfo = explicitCache.getRecordInfo(F1);
+		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(F5);
 		Assert.assertEquals(F2, recordInfo.thumbnailCid());
 		Assert.assertNull(recordInfo.videoCid());
@@ -58,11 +58,11 @@ public class TestExplicitCacheData
 	public void basicLru() throws Throwable
 	{
 		ExplicitCacheData start = new ExplicitCacheData();
-		start.addStreamRecord(F1, F2, null, null, 5L);
-		start.addStreamRecord(F2, F2, F3, null, 20L);
-		start.addStreamRecord(F3, null, null, null, 1L);
-		start.addStreamRecord(F4, F2, null, null, 5L);
-		start.addStreamRecord(F5, F2, F4, null, 25L);
+		_addStreamRecord(start, F1, F2, null, null, 5L);
+		_addStreamRecord(start, F2, F2, F3, null, 20L);
+		_addStreamRecord(start, F3, null, null, null, 1L);
+		_addStreamRecord(start, F4, F2, null, null, 5L);
+		_addStreamRecord(start, F5, F2, F4, null, 25L);
 		ExplicitCacheData explicitCache = _codec(start);
 		List<IpfsFile> unpins = new ArrayList<>();
 		explicitCache.purgeCacheToSize((IpfsFile unpin) -> unpins.add(unpin), 30L);
@@ -80,11 +80,11 @@ public class TestExplicitCacheData
 	public void readingLru() throws Throwable
 	{
 		ExplicitCacheData start = new ExplicitCacheData();
-		start.addStreamRecord(F1, F2, null, null, 5L);
-		start.addStreamRecord(F2, F2, F3, null, 20L);
-		start.addStreamRecord(F3, null, null, null, 1L);
-		start.addStreamRecord(F4, F2, null, null, 5L);
-		start.addStreamRecord(F5, F2, F4, null, 25L);
+		_addStreamRecord(start, F1, F2, null, null, 5L);
+		_addStreamRecord(start, F2, F2, F3, null, 20L);
+		_addStreamRecord(start, F3, null, null, null, 1L);
+		_addStreamRecord(start, F4, F2, null, null, 5L);
+		_addStreamRecord(start, F5, F2, F4, null, 25L);
 		ExplicitCacheData explicitCache = _codec(start);
 		// Read some of these elements to make sure that we see the unpins in the expected LRU order.
 		explicitCache.getRecordInfo(F1);
@@ -106,11 +106,11 @@ public class TestExplicitCacheData
 	public void pinCounts() throws Throwable
 	{
 		ExplicitCacheData start = new ExplicitCacheData();
-		start.addStreamRecord(F1, F2, null, null, 5L);
-		start.addStreamRecord(F2, F2, F3, null, 20L);
-		start.addStreamRecord(F3, null, null, null, 1L);
-		start.addStreamRecord(F4, F2, null, null, 5L);
-		start.addStreamRecord(F5, F2, F4, null, 25L);
+		_addStreamRecord(start, F1, F2, null, null, 5L);
+		_addStreamRecord(start, F2, F2, F3, null, 20L);
+		_addStreamRecord(start, F3, null, null, null, 1L);
+		_addStreamRecord(start, F4, F2, null, null, 5L);
+		_addStreamRecord(start, F5, F2, F4, null, 25L);
 		ExplicitCacheData explicitCache = _codec(start);
 		
 		// Test the expected pin counts.
@@ -144,5 +144,11 @@ public class TestExplicitCacheData
 			OpcodeCodec.decodeWholeStream(input, context);
 		}
 		return explicitCache;
+	}
+
+	private static void _addStreamRecord(ExplicitCacheData data, IpfsFile streamCid, IpfsFile thumbnailCid, IpfsFile videoCid, IpfsFile audioCid, long combinedSizeBytes)
+	{
+		CachedRecordInfo info = new CachedRecordInfo(streamCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
+		data.addStreamRecord(streamCid, info);
 	}
 }
