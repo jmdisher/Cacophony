@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
@@ -77,6 +78,16 @@ public class PinCacheBuilder
 			// Not expected since this is already pinned.
 			throw Assert.unexpected(e);
 		}
+	}
+
+	/**
+	 * Called to add favourites to the pin cache.
+	 * 
+	 * @param explicitCache The explicit cache.
+	 */
+	public void addFavourites(FavouritesCacheData favourites)
+	{
+		favourites.walkAllPins((IpfsFile elt) -> _pin(elt));
 	}
 
 	/**

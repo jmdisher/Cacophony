@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.data;
 
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -19,6 +20,7 @@ public interface IReadOnlyLocalData extends AutoCloseable
 	PrefsData readGlobalPrefs();
 	PinCacheData readGlobalPinCache();
 	FolloweeData readFollowIndex();
+	FavouritesCacheData readFavouritesCache();
 	/**
 	 * We implement AudoCloseable so we can use the try-with-resources idiom but we have no need for the exception so
 	 * we override the close() not to throw it.

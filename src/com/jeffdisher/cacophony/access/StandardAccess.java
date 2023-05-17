@@ -17,7 +17,9 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PinCacheData;
@@ -102,6 +104,8 @@ public class StandardAccess implements IWritingAccess
 	private boolean _writeFollowIndex;
 	private final ChannelData _channelData;
 	private boolean _writeChannelData;
+	private final FavouritesCacheData _favouritesCache;
+	private boolean _writeFavouritesCache;
 	private final ExplicitCacheData _explicitCache;
 	private boolean _didAccessExplicitCache;
 
@@ -111,11 +115,11 @@ public class StandardAccess implements IWritingAccess
 		Assert.assertTrue(null != pinCache);
 		FolloweeData followeeData = readOnly.readFollowIndex();
 		Assert.assertTrue(null != followeeData);
-		
-		// Note that we only use the lastPublishedIndex from ChannelData.
-		// TODO:  Remove this with the next storage version number change.
 		ChannelData localIndex = readOnly.readLocalIndex();
 		Assert.assertTrue(null != localIndex);
+		FavouritesCacheData favouritesCache = readOnly.readFavouritesCache();
+		Assert.assertTrue(null != favouritesCache);
+		
 		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
 		INetworkScheduler scheduler = environment.getSharedScheduler();
@@ -132,6 +136,7 @@ public class StandardAccess implements IWritingAccess
 		_pinCache = pinCache;
 		_followeeData = followeeData;
 		_channelData = localIndex;
+		_favouritesCache = favouritesCache;
 		_explicitCache = (null != readWrite)
 				? readWrite.readExplicitCache()
 				: null
@@ -224,6 +229,13 @@ public class StandardAccess implements IWritingAccess
 				.map((String keyName) -> _channelData.getPublicKey(keyName))
 				.collect(Collectors.toSet())
 		;
+	}
+
+	@Override
+	public IFavouritesReading readableFavouritesCache()
+	{
+		Assert.assertTrue(null != _favouritesCache);
+		return _favouritesCache;
 	}
 
 	// ----- Writing methods -----
@@ -326,6 +338,10 @@ public class StandardAccess implements IWritingAccess
 		{
 			_readWrite.writeLocalIndex(_channelData);
 		}
+		if (_writeFavouritesCache)
+		{
+			_readWrite.writeFavouritesCache(_favouritesCache);
+		}
 		if (_didAccessExplicitCache)
 		{
 			_readWrite.writeExplicitCache(_explicitCache);
@@ -380,6 +396,15 @@ public class StandardAccess implements IWritingAccess
 		
 		// Now, remove the key from the node.
 		_scheduler.deletePublicKey(_keyName).get();
+	}
+
+	@Override
+	public FavouritesCacheData writableFavouritesCache()
+	{
+		Assert.assertTrue(null != _favouritesCache);
+		// If we are requesting write access, we will just assume it is written.
+		_writeFavouritesCache = true;
+		return _favouritesCache;
 	}
 
 

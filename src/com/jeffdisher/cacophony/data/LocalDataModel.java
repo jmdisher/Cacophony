@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -66,6 +67,7 @@ public class LocalDataModel
 						, channelData
 						, PrefsData.defaultPrefs()
 						, FolloweeData.createEmpty()
+						, new FavouritesCacheData()
 						, new ExplicitCacheData()
 				);
 			}
@@ -117,24 +119,27 @@ public class LocalDataModel
 			OpcodeContext context = new OpcodeContext(ChannelData.create()
 					, PrefsData.defaultPrefs()
 					, FolloweeData.createEmpty()
+					, new FavouritesCacheData()
 					, new ExplicitCacheData()
 			);
 			OpcodeCodec.decodeWholeStream(opcodeLog, context);
 			ChannelData channels = context.channelData();
 			PrefsData prefs = context.prefs();
 			FolloweeData followees = context.followees();
+			FavouritesCacheData favouritesCache = context.favouritesCache();
 			ExplicitCacheData explicitCache = context.explicitCache();
 			Set<String> channelKeyNames = channels.getKeyNames();
 			IpfsFile[] homeRoots = channelKeyNames.stream()
 					.map((String channelKeyName) -> channels.getLastPublishedIndex(channelKeyName))
 					.toArray((int size) -> new IpfsFile[size])
 			;
-			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, explicitCache);
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
 			return new LocalDataModel(fileSystem
 					, channels
 					, prefs
 					, pinCache
 					, followees
+					, favouritesCache
 					, explicitCache
 			);
 		}
@@ -145,7 +150,7 @@ public class LocalDataModel
 		}
 	}
 
-	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees, ExplicitCacheData explicitCache)
+	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
 	{
 		PinCacheBuilder builder = new PinCacheBuilder(scheduler);
 		for (IpfsFile homeRoot : homeRootElements)
@@ -156,6 +161,7 @@ public class LocalDataModel
 		{
 			builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
 		}
+		builder.addFavourites(favouritesCache);
 		builder.addExplicitCache(explicitCache);
 		return builder.finish();
 	}
@@ -184,8 +190,9 @@ public class LocalDataModel
 					? new IpfsFile[] { lastIndex }
 					: new IpfsFile[0]
 			;
+			FavouritesCacheData emptyFavourites = new FavouritesCacheData();
 			ExplicitCacheData emptyExplicitCache = new ExplicitCacheData();
-			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, emptyExplicitCache);
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, emptyFavourites, emptyExplicitCache);
 			PinCacheData diskPinCache = projections.pinCache();
 			List<IpfsFile> incorrectlyPinned = diskPinCache.verifyMatch(pinCache);
 			// The verification will return null if they are a perfect match.
@@ -196,7 +203,7 @@ public class LocalDataModel
 			manager.migrateDrafts();
 			
 			// Now, write-back the data.
-			_writeToDisk(fileSystem, channelData, projections.prefs(), followees, emptyExplicitCache);
+			_writeToDisk(fileSystem, channelData, projections.prefs(), followees, emptyFavourites, emptyExplicitCache);
 		}
 		catch (IOException e)
 		{
@@ -211,6 +218,7 @@ public class LocalDataModel
 	private final PrefsData _globalPrefs;
 	private final PinCacheData _globalPinCache;
 	private final FolloweeData _followIndex;
+	private final FavouritesCacheData _favouritesCache;
 	private final ExplicitCacheData _explicitCache;
 	private final ReadWriteLock _readWriteLock;
 
@@ -219,6 +227,7 @@ public class LocalDataModel
 			, PrefsData globalPrefs
 			, PinCacheData globalPinCache
 			, FolloweeData followIndex
+			, FavouritesCacheData favouritesCache
 			, ExplicitCacheData explicitCache
 	)
 	{
@@ -227,6 +236,7 @@ public class LocalDataModel
 		_globalPrefs = globalPrefs;
 		_globalPinCache = globalPinCache;
 		_followIndex = followIndex;
+		_favouritesCache = favouritesCache;
 		_explicitCache = explicitCache;
 		_readWriteLock = new ReentrantReadWriteLock();
 	}
@@ -241,7 +251,7 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
-		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs);
+		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache);
 	}
 
 	/**
@@ -262,6 +272,7 @@ public class LocalDataModel
 				, _localIndex
 				, _globalPrefs
 				, _followIndex
+				, _favouritesCache
 				, _explicitCache
 		);
 	}
@@ -270,13 +281,14 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.writeLock();
 		lock.lock();
-		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _explicitCache);
+		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
 	private static void _writeToDisk(IConfigFileSystem fileSystem
 			, ChannelData localIndex
 			, PrefsData globalPrefs
 			, FolloweeData followIndex
+			, FavouritesCacheData favouritesCache
 			, ExplicitCacheData explicitCache
 	) throws IOException
 	{
@@ -288,6 +300,7 @@ public class LocalDataModel
 				localIndex.serializeToOpcodeWriter(writer);
 				globalPrefs.serializeToOpcodeWriter(writer);
 				followIndex.serializeToOpcodeWriter(writer);
+				favouritesCache.serializeToOpcodeWriter(writer);
 				explicitCache.serializeToOpcodeWriter(writer);
 			}
 			atomic.commit();
@@ -320,7 +333,7 @@ public class LocalDataModel
 			_lock = lock;
 		}
 		@Override
-		public void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs, ExplicitCacheData updatedExplicitCache)
+		public void closeWrite(ChannelData updateLocalIndex, FolloweeData updateFollowIndex, PrefsData updateGlobalPrefs, FavouritesCacheData updateFavouritesCache, ExplicitCacheData updatedExplicitCache)
 		{
 			// Write-back the elements they provided (anything passed as null is unchanged).
 			
@@ -341,6 +354,12 @@ public class LocalDataModel
 			{
 				// We can't change the instance - this is just to signify it may have changed.
 				Assert.assertTrue(_globalPrefs == updateGlobalPrefs);
+				somethingUpdated = true;
+			}
+			if (null != updateFavouritesCache)
+			{
+				// We can't change the instance - this is just to signify it may have changed.
+				Assert.assertTrue(_favouritesCache == updateFavouritesCache);
 				somethingUpdated = true;
 			}
 			if (null != updatedExplicitCache)

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.data.local.v3;
 
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 
@@ -12,6 +13,7 @@ import com.jeffdisher.cacophony.projection.PrefsData;
 public record OpcodeContext(ChannelData channelData
 		, PrefsData prefs
 		, FolloweeData followees
+		, FavouritesCacheData favouritesCache
 		, ExplicitCacheData explicitCache
 )
 {

@@ -174,7 +174,7 @@ public class TestLocalDataModel
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = null;
 		ExplicitCacheData explicitCache = null;
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, explicitCache);
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, null, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Assert.assertEquals(PrefsData.DEFAULT_VIDEO_EDGE, prefs.videoEdgePixelMax);
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOW_CACHE_BYTES, prefs.followCacheTargetBytes);
@@ -210,7 +210,7 @@ public class TestLocalDataModel
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = FolloweeData.createEmpty();
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, explicitCache);
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, null, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Set<IpfsKey> knownKeys = followees.getAllKnownFollowees();
 		Assert.assertEquals(1, knownKeys.size());

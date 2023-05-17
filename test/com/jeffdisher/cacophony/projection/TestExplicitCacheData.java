@@ -138,7 +138,7 @@ public class TestExplicitCacheData
 		}
 		
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(null, null, null, explicitCache);
+		OpcodeContext context = new OpcodeContext(null, null, null, null, explicitCache);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);

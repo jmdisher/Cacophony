@@ -1,10 +1,13 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_FavouriteStreamRecord;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -24,6 +27,21 @@ public class FavouritesCacheData implements IFavouritesReading
 	public FavouritesCacheData()
 	{
 		_recordInfo = new HashMap<>();
+	}
+
+	/**
+	 * Serializes the contents of the receiver into the given writer.
+	 * 
+	 * @param writer The writer which will consume the opcodes.
+	 * @throws IOException The writer encountered an error.
+	 */
+	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
+	{
+		for (Map.Entry<IpfsFile, CachedRecordInfo> elt : _recordInfo.entrySet())
+		{
+			CachedRecordInfo info = elt.getValue();
+			writer.writeOpcode(new Opcode_FavouriteStreamRecord(elt.getKey(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
+		}
 	}
 
 	/**

@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.projection;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,6 +9,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -76,8 +80,19 @@ public class TestFavouritesCacheData
 
 	private static FavouritesCacheData _codec(FavouritesCacheData start) throws IOException
 	{
-		// TODO:  In the future, this helper will actually serialize/deserialize the data.
-		return start;
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
+		{
+			start.serializeToOpcodeWriter(writer);
+		}
+		
+		FavouritesCacheData favourites = new FavouritesCacheData();
+		OpcodeContext context = new OpcodeContext(null, null, null, favourites, null);
+		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
+		{
+			OpcodeCodec.decodeWholeStream(input, context);
+		}
+		return favourites;
 	}
 
 	private static void addStreamRecord(FavouritesCacheData data, IpfsFile streamCid, IpfsFile thumbnailCid, IpfsFile videoCid, IpfsFile audioCid, long combinedSizeBytes)

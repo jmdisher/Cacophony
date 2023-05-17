@@ -13,6 +13,8 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
+import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -182,6 +184,12 @@ public class MockWritingAccess implements IWritingAccess
 	}
 
 	@Override
+	public IFavouritesReading readableFavouritesCache()
+	{
+		throw new RuntimeException("Not Called");
+	}
+
+	@Override
 	public IFolloweeWriting writableFolloweeData()
 	{
 		throw new RuntimeException("Not Called");
@@ -291,6 +299,12 @@ public class MockWritingAccess implements IWritingAccess
 
 	@Override
 	public void deleteChannelData()
+	{
+		throw new RuntimeException("Not Called");
+	}
+
+	@Override
+	public FavouritesCacheData writableFavouritesCache()
 	{
 		throw new RuntimeException("Not Called");
 	}

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -112,4 +113,13 @@ public interface IWritingAccess extends IReadingAccess
 	 * changed).
 	 */
 	void deleteChannelData() throws IpfsConnectionException;
+
+	/**
+	 * Allows direct read-write access to the shared favourites data projection instance.  This interface is provided
+	 * for cache update and management logic.
+	 * Calling this helper will mark the favoutites data as needing to be written-back, upon closing the access.
+	 * 
+	 * @return The shared favourites data instance.
+	 */
+	FavouritesCacheData writableFavouritesCache();
 }
