@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.jeffdisher.cacophony.commands.AddFavouriteCommand;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CleanCacheCommand;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
@@ -20,6 +21,7 @@ import com.jeffdisher.cacophony.commands.ListCachedElementsForFolloweeCommand;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.ListChannelEntriesCommand;
 import com.jeffdisher.cacophony.commands.ListChannelsCommand;
+import com.jeffdisher.cacophony.commands.ListFavouritesCommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.QuickstartCommand;
@@ -28,6 +30,7 @@ import com.jeffdisher.cacophony.commands.RebroadcastCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RefreshNextFolloweeCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
+import com.jeffdisher.cacophony.commands.RemoveFavouriteCommand;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.RepublishCommand;
 import com.jeffdisher.cacophony.commands.RunCommand;
@@ -339,6 +342,36 @@ public class CommandParser
 		{
 			IpfsFile elementCid = required[0].parse(IpfsFile.class);
 			return new ShowPostCommand(elementCid);
+		}),
+		ADD_FAVOURITE(true, "--addFavourite"
+				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
+					, "The CID of the StreamRecord element to favourite"
+				) }
+				, new ArgParameter[0]
+				, "Marks the given StreamRecord as a favourite, keeping it locally cached forever."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			IpfsFile elementCid = required[0].parse(IpfsFile.class);
+			return new AddFavouriteCommand(elementCid);
+		}),
+		REMOVE_FAVOURITE(true, "--removeFavourite"
+				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
+					, "The CID of the StreamRecord element to unfavourite"
+				) }
+				, new ArgParameter[0]
+				, "Releases a previously favourite StreamRecord from the local cache."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			IpfsFile elementCid = required[0].parse(IpfsFile.class);
+			return new RemoveFavouriteCommand(elementCid);
+		}),
+		LIST_FAVOURITES(true, "--listFavourites"
+				, new ArgParameter[0]
+				, new ArgParameter[0]
+				, "List the StreamRecords previously added as favourites."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			return new ListFavouritesCommand();
 		}),
 		
 		// Methods to manage local state.

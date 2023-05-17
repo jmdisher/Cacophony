@@ -66,6 +66,18 @@ requireSubstring "$LISTING" "QmVkbauSDEaMP4Tkq6Epm9uW75mWm136n81YH8fGtfwdHU - ap
 # Get the element CID.
 SECOND_CID=$(echo "$LISTING" | grep "test post 2" | cut -d ":" -f 1 | cut -d " " -f 3)
 
+echo "Verify that the favourites work as expected..."
+FAVOURITE="$SECOND_CID"
+# We want to add the post, but also miscellaneous data, as a favourite and verify that only the real post ends up in the list.
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --addFavourite --elementCid "$FAVOURITE"
+checkPreviousCommand "Add favourite"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --addFavourite --elementCid "QmVkbauSDEaMP4Tkq6Epm9uW75mWm136n81YH8fGtfwdHU"
+if [ $? -ne 1 ]; then
+	exit 1
+fi
+LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listFavourites)
+requireSubstring "$LISTING" "Found 1 favourites:"
+
 echo "Add a third entry with no attachments..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "test post 3" --description "minimal post"
 checkPreviousCommand "publishToThisChannel"
@@ -99,6 +111,16 @@ echo "Verify that the prefs look right..."
 PREFS=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --getGlobalPrefs)
 requireSubstring "$PREFS" "Video preferred bounds: 1280 x 1280"
 requireSubstring "$PREFS" "Follower cache target size: 10.00 GB (10000000000 bytes)"
+
+echo "Run the GC and verify that we still see the post we added as a favourite..."
+requestIpfsGc "$PATH_TO_IPFS" 1
+POST_DETAILS=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --showPost --elementCid "$FAVOURITE")
+requireSubstring "$POST_DETAILS" "Name: test post 2"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --removeFavourite --elementCid "$FAVOURITE"
+checkPreviousCommand "Remove favourite"
+LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listFavourites)
+requireSubstring "$LISTING" "Found 0 favourites:"
+
 
 kill $PID1
 kill $PID2

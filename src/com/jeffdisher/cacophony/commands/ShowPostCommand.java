@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import java.io.PrintStream;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -9,6 +10,8 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
+import com.jeffdisher.cacophony.projection.IFavouritesReading;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.KeyException;
@@ -34,7 +37,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		// If we didn't have a cache or didn't find it, try the expensive path through the explicit cache.
 		if (null == post)
 		{
-			post = _checkExplicitCache(context);
+			post = _checkHeavyCaches(context);
 		}
 		Assert.assertTrue(null != post);
 		return post;
@@ -62,14 +65,32 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		return post;
 	}
 
-	private PostDetails _checkExplicitCache(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private PostDetails _checkHeavyCaches(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		PostDetails post;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			// Consult the cache - this never returns null but will throw on error.
-			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
-			// Everything in the explicit cache is cached.
+			// We will check the favourites cache here, too, as the explicit cache MUST be last.
+			// (we could use a read-only pass to check the favourites cache but no point in reading twice).
+			post = _checkFavouritesCache(access);
+			
+			if (null == post)
+			{
+				// Consult the explicit cache - this never returns null but will throw on error.
+				post = _checkExplicitCache(access);
+			}
+		}
+		return post;
+	}
+
+	private PostDetails _checkFavouritesCache(IReadingAccess access) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
+	{
+		IFavouritesReading favourites = access.readableFavouritesCache();
+		CachedRecordInfo info = favourites.getRecordInfo(_elementCid);
+		PostDetails post = null;
+		if (null != info)
+		{
+			// Everything in the favourites cache is cached.
 			StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 			post = new PostDetails(_elementCid
 					, true
@@ -84,6 +105,24 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 			);
 		}
 		return post;
+	}
+
+	private PostDetails _checkExplicitCache(IWritingAccess access) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
+	{
+		CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
+		// Everything in the explicit cache is cached.
+		StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+		return new PostDetails(_elementCid
+				, true
+				, record.getName()
+				, record.getDescription()
+				, record.getPublishedSecondsUtc()
+				, record.getDiscussion()
+				, record.getPublisherKey()
+				, info.thumbnailCid()
+				, info.videoCid()
+				, info.audioCid()
+		);
 	}
 
 
