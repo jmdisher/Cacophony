@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
@@ -30,7 +31,8 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// Make sure that this isn't a local user.
-			if (access.readHomeUserPublicKeys().contains(_publicKey))
+			if (access.readHomeUserData().stream()
+					.anyMatch((IReadingAccess.HomeUserTuple tuple) -> tuple.publicKey().equals(_publicKey)))
 			{
 				throw new UsageException("Cannot follow on of the home users");
 			}

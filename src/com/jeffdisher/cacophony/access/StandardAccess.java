@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.access;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -223,19 +224,19 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public Set<IpfsKey> readHomeUserPublicKeys()
-	{
-		return _channelData.getKeyNames().stream()
-				.map((String keyName) -> _channelData.getPublicKey(keyName))
-				.collect(Collectors.toSet())
-		;
-	}
-
-	@Override
 	public IFavouritesReading readableFavouritesCache()
 	{
 		Assert.assertTrue(null != _favouritesCache);
 		return _favouritesCache;
+	}
+
+	@Override
+	public List<IReadingAccess.HomeUserTuple> readHomeUserData()
+	{
+		return _channelData.getKeyNames().stream()
+				.map((String keyName) -> new IReadingAccess.HomeUserTuple(keyName, _channelData.getPublicKey(keyName), _channelData.getLastPublishedIndex(keyName)))
+				.collect(Collectors.toList())
+		;
 	}
 
 	// ----- Writing methods -----

@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.access;
 
-import java.util.Set;
+import java.util.List;
 
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -79,6 +79,8 @@ public interface IReadingAccess extends AutoCloseable
 	<R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder);
 
 	/**
+	 * NOTE:  Considers the home user given to the implementation when opened.
+	 * 
 	 * @return The last index which had been stored as the root (StreamIndex) and published (even if the publish didn't
 	 * succeed).
 	 */
@@ -102,6 +104,7 @@ public interface IReadingAccess extends AutoCloseable
 
 	/**
 	 * Republishes the last saved root element for this channel's key.
+	 * NOTE:  Considers the home user given to the implementation when opened.
 	 * 
 	 * @return The asynchronously-completed future.
 	 */
@@ -116,14 +119,17 @@ public interface IReadingAccess extends AutoCloseable
 	ConcurrentTransaction openConcurrentTransaction();
 
 	/**
-	 * @return The set of public keys of all the users managed in this instance.
-	 */
-	Set<IpfsKey> readHomeUserPublicKeys();
-
-	/**
 	 * Allows basic read-only access to the favourites data.
 	 * 
 	 * @return A reference to the restricted read-only interface to the favourites data projection.
 	 */
 	IFavouritesReading readableFavouritesCache();
+
+	/**
+	 * @return The list of tuples to describe the home users (can be empty).
+	 */
+	List<HomeUserTuple> readHomeUserData();
+
+
+	record HomeUserTuple(String keyName, IpfsKey publicKey, IpfsFile lastRoot) {}
 }

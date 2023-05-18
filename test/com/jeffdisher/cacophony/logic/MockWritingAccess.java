@@ -3,12 +3,14 @@ package com.jeffdisher.cacophony.logic;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -178,13 +180,13 @@ public class MockWritingAccess implements IWritingAccess
 	}
 
 	@Override
-	public Set<IpfsKey> readHomeUserPublicKeys()
+	public IFavouritesReading readableFavouritesCache()
 	{
 		throw new RuntimeException("Not Called");
 	}
 
 	@Override
-	public IFavouritesReading readableFavouritesCache()
+	public List<IReadingAccess.HomeUserTuple> readHomeUserData()
 	{
 		throw new RuntimeException("Not Called");
 	}
