@@ -52,7 +52,7 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 		if (null != result)
 		{
 			// Request the publication.
-			_background.requestPublish(result.getIndexToPublish());
+			_background.requestPublish(_context.keyName, result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
 			IpfsKey key = _context.publicKey;

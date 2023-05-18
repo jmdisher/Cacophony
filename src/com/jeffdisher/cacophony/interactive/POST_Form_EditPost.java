@@ -102,6 +102,6 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		}
 		
 		// Now, publish the update.
-		_background.requestPublish(result.getIndexToPublish());
+		_background.requestPublish(_context.keyName, result.getIndexToPublish());
 	}
 }

@@ -43,7 +43,7 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 			IpfsFile newRoot = result.getIndexToPublish();
 			// This should change unless they threw an exception.
 			Assert.assertTrue(null != newRoot);
-			_backgroundOperations.requestPublish(newRoot);
+			_backgroundOperations.requestPublish(_context.keyName, newRoot);
 		}
 	}
 }

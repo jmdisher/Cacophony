@@ -102,10 +102,20 @@ public class InteractiveServer
 		BackgroundOperations background = new BackgroundOperations(serverContext.environment, serverContext.logger, new BackgroundOperations.IOperationRunner()
 		{
 			@Override
-			public FuturePublish startPublish(IpfsFile newRoot)
+			public FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot)
 			{
+				// We need to fake-up a context since we are "acting as" the channel with the given keyName, not related to the selected channel.
+				ICommand.Context localContext = new ICommand.Context(serverContext.environment
+						, serverContext.logger
+						, serverContext.baseUrl
+						, serverContext.recordCache
+						, serverContext.userInfoCache
+						, serverContext.entryRegistry
+						, keyName
+						, publicKey
+				);
 				FuturePublish publish = null;
-				try (IWritingAccess access = StandardAccess.writeAccess(serverContext))
+				try (IWritingAccess access = StandardAccess.writeAccess(localContext))
 				{
 					publish = access.beginIndexPublish(newRoot);
 				}
@@ -151,7 +161,8 @@ public class InteractiveServer
 				}
 				return didRefresh;
 			}
-		}, statusHandoff, rootElement, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
+		}, statusHandoff, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
+		background.addChannel(startingContext.keyName, startingContext.publicKey, rootElement);
 		
 		// Load all the known followees into the background operations for background refresh.
 		try (IReadingAccess access = StandardAccess.readAccess(serverContext))

@@ -32,6 +32,8 @@ public class BackgroundOperations
 
 	// Instance variables which are shared between caller thread and background thread (can only be touched on monitor).
 	private boolean _handoff_keepRunning;
+	private String _handoff_keyName;
+	private IpfsKey _handoff_publicKey;
 	private IpfsFile _handoff_currentRoot;
 	private long _handoff_lastPublishedMillis;
 	private boolean _handoff_isPublishRunning;
@@ -42,7 +44,7 @@ public class BackgroundOperations
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
 
-	public BackgroundOperations(IEnvironment environment, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, IpfsFile lastPublished, long republishIntervalMillis, long followeeRefreshMillis)
+	public BackgroundOperations(IEnvironment environment, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, long republishIntervalMillis, long followeeRefreshMillis)
 	{
 		_environment = environment;
 		_connector = connector;
@@ -56,7 +58,7 @@ public class BackgroundOperations
 				if (null != operation.publishTarget)
 				{
 					publishLog = logger.logStart("Background start publish: " + operation.publishTarget);
-					publish = operations.startPublish(operation.publishTarget);
+					publish = operations.startPublish(_handoff_keyName, _handoff_publicKey, operation.publishTarget);
 					Assert.assertTrue(null != publish);
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
 				}
@@ -84,7 +86,6 @@ public class BackgroundOperations
 		
 		_background_nextOperationNumber = 1;
 		
-		_handoff_currentRoot = lastPublished;
 		// We will treat our startup as though we have never published before, since this isn't worth tracking in the data store.
 		_handoff_lastPublishedMillis = 0L;
 		_handoff_knownFollowees = new PriorityQueue<>(1, new Comparator<>() {
@@ -100,6 +101,11 @@ public class BackgroundOperations
 
 	public void startProcess()
 	{
+		// Make sure that this has been initialized.
+		Assert.assertTrue(null != _handoff_keyName);
+		Assert.assertTrue(null != _handoff_publicKey);
+		Assert.assertTrue(null != _handoff_currentRoot);
+		
 		_handoff_keepRunning = true;
 		_background.start();
 	}
@@ -122,17 +128,34 @@ public class BackgroundOperations
 		}
 	}
 
-	public void requestPublish(IpfsFile rootElement)
+	public synchronized void addChannel(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
+		// This data must be complete.
+		Assert.assertTrue(null != keyName);
+		Assert.assertTrue(null != publicKey);
 		Assert.assertTrue(null != rootElement);
+
+		// This MUST only be called once.
+		Assert.assertTrue(null == _handoff_keyName);
+		Assert.assertTrue(null == _handoff_publicKey);
+		Assert.assertTrue(null == _handoff_currentRoot);
 		
-		synchronized (this)
-		{
-			// We just set the root and clear the publish time so the background thread will pick this up.
-			_handoff_currentRoot = rootElement;
-			_handoff_lastPublishedMillis = 0L;
-			this.notifyAll();
-		}
+		_handoff_keyName = keyName;
+		_handoff_publicKey = publicKey;
+		_handoff_currentRoot = rootElement;
+	}
+
+	public synchronized void requestPublish(String keyName, IpfsFile rootElement)
+	{
+		// A publish root must always be provided.
+		Assert.assertTrue(null != rootElement);
+		// We must already have this registered.
+		Assert.assertTrue(_handoff_keyName.equals(keyName));
+		
+		// We just set the root and clear the publish time so the background thread will pick this up.
+		_handoff_currentRoot = rootElement;
+		_handoff_lastPublishedMillis = 0L;
+		this.notifyAll();
 	}
 
 	public void enqueueFolloweeRefresh(IpfsKey followeeKey, long lastRefreshMillis)
@@ -150,8 +173,10 @@ public class BackgroundOperations
 	/**
 	 * Blocks until any enqueued publish operations are complete.
 	 */
-	public synchronized void waitForPendingPublish()
+	public synchronized void waitForPendingPublish(String keyName)
 	{
+		// We must already have this registered.
+		Assert.assertTrue(_handoff_keyName.equals(keyName));
 		// We just want to make sure that the time of publish is non-zero (meaning it was picked up since we last
 		// requested it) and that there is no publish pending (since that means it hasn't completed yet).
 		while (_handoff_keepRunning && (0L == _handoff_lastPublishedMillis) && _handoff_isPublishRunning)
@@ -328,10 +353,12 @@ public class BackgroundOperations
 		/**
 		 * Requests that the publish of the given newRoot be started (completes asynchronously).
 		 * 
+		 * @param keyName The name of the home user's key to publish.
+		 * @param publicKey The public key of the home user being published.
 		 * @param newRoot The new root to publish for this user's key.
 		 * @return The asynchronously-completing publish operation (cannot be null).
 		 */
-		FuturePublish startPublish(IpfsFile newRoot);
+		FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot);
 		/**
 		 * Runs the refresh of the given followee, synchronously on the calling thread, returning true if there was a
 		 * success or false if something went wrong.

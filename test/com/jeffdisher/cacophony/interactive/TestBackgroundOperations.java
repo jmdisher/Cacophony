@@ -28,6 +28,9 @@ public class TestBackgroundOperations
 	private static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	private static final IpfsKey K3 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
+	private static final String KEY_NAME = "key";
+	private static final IpfsKey LOCAL_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo145");
+
 	// The dispatcher is expected to lock-step execution, so we synchronize the call as a simple approach.
 	private static final Consumer<Runnable> DISPATCHER = new Consumer<>() {
 		@Override
@@ -47,7 +50,8 @@ public class TestBackgroundOperations
 		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -60,10 +64,12 @@ public class TestBackgroundOperations
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		back.startProcess();
 		
 		// Enqueue one.
+		back.requestPublish(KEY_NAME, F1);
 		ops.returnOn(F1, publish);
 		publish.success();
 		
@@ -79,15 +85,16 @@ public class TestBackgroundOperations
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		back.startProcess();
 		
 		// Enqueue one, then another.
-		back.requestPublish(F1);
+		back.requestPublish(KEY_NAME, F1);
 		ops.returnOn(F1, publish1);
 		publish1.success();
 		ops.waitForConsume();
-		back.requestPublish(F2);
+		back.requestPublish(KEY_NAME, F2);
 		ops.returnOn(F2, publish2);
 		publish2.success();
 		
@@ -106,19 +113,20 @@ public class TestBackgroundOperations
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
 		statusHandoff.registerListener(beforeListener, 0);
 		
 		// Enqueue the one which may or may not be seen, then wait to set its success until we have set all the others.
-		back.requestPublish(F1);
+		back.requestPublish(KEY_NAME, F1);
 		ops.returnOn(F1, publishFirst);
 		ops.waitForConsume();
 		
-		back.requestPublish(F1);
-		back.requestPublish(F2);
-		back.requestPublish(F3);
+		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(KEY_NAME, F2);
+		back.requestPublish(KEY_NAME, F3);
 		
 		publishFirst.success();
 		ops.returnOn(F3, publishLast);
@@ -145,11 +153,12 @@ public class TestBackgroundOperations
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
-		back.requestPublish(F1);
+		back.requestPublish(KEY_NAME, F1);
 		ops.returnOn(F1, publishFirst);
 		ops.waitForConsume();
 		
@@ -179,7 +188,8 @@ public class TestBackgroundOperations
 			didRun[0] = true;
 		};
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		back.startProcess();
 		
 		// Enqueue one.
@@ -208,17 +218,18 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
-		back.requestPublish(F1);
+		back.requestPublish(KEY_NAME, F1);
 		ops.returnOn(F1, publishFirst);
 		ops.waitForConsume();
 		
 		// Now we know that the background thread is waiting for success to enqueue the next publish and refresh so the next iteration, it will run both.
-		back.requestPublish(F2);
+		back.requestPublish(KEY_NAME, F2);
 		ops.returnOn(F2, publishSecond);
 		back.enqueueFolloweeRefresh(K1, 1L);
 		ops.returnFolloweeOn(K1, refresher);
@@ -243,7 +254,8 @@ public class TestBackgroundOperations
 		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		
 		// We use a barrier and a reentrant call into the background operations in order to ensure that the next followee refresh value is enqueued before the previous (currently executing) one is finished.
 		int didRun[] = new int[1];
@@ -309,7 +321,8 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
@@ -355,7 +368,8 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
@@ -401,7 +415,8 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, F1, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
 		
@@ -442,7 +457,7 @@ public class TestBackgroundOperations
 		private Consumer<IpfsKey> _refresher;
 		
 		@Override
-		public synchronized FuturePublish startPublish(IpfsFile newRoot)
+		public synchronized FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot)
 		{
 			while (!newRoot.equals(_match))
 			{

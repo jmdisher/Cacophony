@@ -55,7 +55,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
 			// The publish is something we can wait on, asynchronously, in a different call.
-			_backgroundOperations.requestPublish(result.newIndexRoot());
+			_backgroundOperations.requestPublish(_context.keyName, result.newIndexRoot());
 			IpfsFile newElement = result.newRecordCid();
 			_context.entryRegistry.addLocalElement(_context.publicKey, newElement);
 			

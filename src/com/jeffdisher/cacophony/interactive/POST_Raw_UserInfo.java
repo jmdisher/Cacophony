@@ -42,7 +42,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 		if (null != result)
 		{
 			// Request the publication.
-			_background.requestPublish(result.getIndexToPublish());
+			_background.requestPublish(_context.keyName, result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
 			IpfsKey key = _context.publicKey;
