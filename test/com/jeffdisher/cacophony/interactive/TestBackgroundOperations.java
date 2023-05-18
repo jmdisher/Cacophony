@@ -51,7 +51,6 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
 		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
-		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -446,6 +445,41 @@ public class TestBackgroundOperations
 		// There should be 3 operations:  1 publish and 2 refreshes.
 		Assert.assertEquals(3, listener.started);
 		Assert.assertEquals(3, listener.ended);
+	}
+
+	@Test
+	public void multiChannelPublish() throws Throwable
+	{
+		// Do a normal start-up with one channel.
+		long republishIntervalMillis = 10L;
+		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
+		FuturePublish publish = new FuturePublish(F1);
+		TestOperations ops = new TestOperations();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, republishIntervalMillis, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
+		back.startProcess();
+		
+		// Enqueue one.
+		back.requestPublish(KEY_NAME, F1);
+		ops.returnOn(F1, publish);
+		publish.success();
+		ops.waitForConsume();
+		
+		// Now that it has run through, slightly update the time and add the other key, then wait for it to run.
+		String key2 = "key2";
+		env.currentTimeMillis += 5L;
+		back.addChannel(key2, K1, F2);
+		ops.returnOn(F2, publish);
+		ops.waitForConsume();
+		
+		// Now, advance the time until we see the first, again.
+		env.currentTimeMillis += 5L;
+		ops.returnOn(F1, publish);
+		ops.waitForConsume();
+		
+		back.shutdownProcess();
 	}
 
 

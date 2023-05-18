@@ -2,8 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import org.eclipse.jetty.util.resource.Resource;
 
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.interactive.InteractiveServer;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -29,13 +27,6 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	@Override
 	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context))
-		{
-			if (null == access.getLastRootElement())
-			{
-				throw new UsageException("Channel must first be created with --createNewChannel");
-			}
-		}
 		Resource staticResource = Resource.newClassPathResource("resources/site/");
 		boolean canChangeCommand = (CommandSelectionMode.DANGEROUS == _commandSelectionMode);
 		String processingCommand = (null != _overrideCommand)

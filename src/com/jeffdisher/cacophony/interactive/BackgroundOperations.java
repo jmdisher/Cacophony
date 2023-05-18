@@ -1,7 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
@@ -32,12 +34,9 @@ public class BackgroundOperations
 
 	// Instance variables which are shared between caller thread and background thread (can only be touched on monitor).
 	private boolean _handoff_keepRunning;
-	private String _handoff_keyName;
-	private IpfsKey _handoff_publicKey;
-	private IpfsFile _handoff_currentRoot;
-	private long _handoff_lastPublishedMillis;
-	private boolean _handoff_isPublishRunning;
 	private final PriorityQueue<SchedulableFollowee> _handoff_knownFollowees;
+	private final Map<String, ScheduleableRepublish> _handoff_localChannelsByName;
+	private String _handoff_currentlyPublishing;
 	private long _republishIntervalMillis;
 	private long _followeeRefreshMillis;
 
@@ -58,7 +57,7 @@ public class BackgroundOperations
 				if (null != operation.publishTarget)
 				{
 					publishLog = logger.logStart("Background start publish: " + operation.publishTarget);
-					publish = operations.startPublish(_handoff_keyName, _handoff_publicKey, operation.publishTarget);
+					publish = operations.startPublish(operation.publisherKeyName, operation.publisherKey, operation.publishTarget);
 					Assert.assertTrue(null != publish);
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
 				}
@@ -86,8 +85,6 @@ public class BackgroundOperations
 		
 		_background_nextOperationNumber = 1;
 		
-		// We will treat our startup as though we have never published before, since this isn't worth tracking in the data store.
-		_handoff_lastPublishedMillis = 0L;
 		_handoff_knownFollowees = new PriorityQueue<>(1, new Comparator<>() {
 			@Override
 			public int compare(SchedulableFollowee arg0, SchedulableFollowee arg1)
@@ -97,15 +94,11 @@ public class BackgroundOperations
 				return Long.signum(arg0.lastRefreshMillis - arg1.lastRefreshMillis);
 			}
 		});
+		_handoff_localChannelsByName = new HashMap<>();
 	}
 
 	public void startProcess()
 	{
-		// Make sure that this has been initialized.
-		Assert.assertTrue(null != _handoff_keyName);
-		Assert.assertTrue(null != _handoff_publicKey);
-		Assert.assertTrue(null != _handoff_currentRoot);
-		
 		_handoff_keepRunning = true;
 		_background.start();
 	}
@@ -130,19 +123,13 @@ public class BackgroundOperations
 
 	public synchronized void addChannel(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
-		// This data must be complete.
-		Assert.assertTrue(null != keyName);
-		Assert.assertTrue(null != publicKey);
-		Assert.assertTrue(null != rootElement);
-
-		// This MUST only be called once.
-		Assert.assertTrue(null == _handoff_keyName);
-		Assert.assertTrue(null == _handoff_publicKey);
-		Assert.assertTrue(null == _handoff_currentRoot);
-		
-		_handoff_keyName = keyName;
-		_handoff_publicKey = publicKey;
-		_handoff_currentRoot = rootElement;
+		// The same channel should never be redundantly added.
+		Assert.assertTrue(!_handoff_localChannelsByName.containsKey(keyName));
+		// We will treat our startup as though we have never published before, since this isn't worth tracking in the data store.
+		long lastPublishMillis = 0L;
+		ScheduleableRepublish localChannel = new ScheduleableRepublish(publicKey, rootElement, lastPublishMillis);
+		_handoff_localChannelsByName.put(keyName, localChannel);
+		this.notifyAll();
 	}
 
 	public synchronized void requestPublish(String keyName, IpfsFile rootElement)
@@ -150,11 +137,13 @@ public class BackgroundOperations
 		// A publish root must always be provided.
 		Assert.assertTrue(null != rootElement);
 		// We must already have this registered.
-		Assert.assertTrue(_handoff_keyName.equals(keyName));
+		Assert.assertTrue(_handoff_localChannelsByName.containsKey(keyName));
 		
-		// We just set the root and clear the publish time so the background thread will pick this up.
-		_handoff_currentRoot = rootElement;
-		_handoff_lastPublishedMillis = 0L;
+		// Just reset the publication time and add the new root.
+		long lastPublishMillis = 0L;
+		ScheduleableRepublish original = _handoff_localChannelsByName.remove(keyName);
+		ScheduleableRepublish updated = new ScheduleableRepublish(original.publicKey, rootElement, lastPublishMillis);
+		_handoff_localChannelsByName.put(keyName, updated);
 		this.notifyAll();
 	}
 
@@ -175,11 +164,12 @@ public class BackgroundOperations
 	 */
 	public synchronized void waitForPendingPublish(String keyName)
 	{
-		// We must already have this registered.
-		Assert.assertTrue(_handoff_keyName.equals(keyName));
 		// We just want to make sure that the time of publish is non-zero (meaning it was picked up since we last
-		// requested it) and that there is no publish pending (since that means it hasn't completed yet).
-		while (_handoff_keepRunning && (0L == _handoff_lastPublishedMillis) && _handoff_isPublishRunning)
+		// requested it) and that this key isn't currently republishing (since that means it hasn't completed yet).
+		// (we need to wait for the publish to finish since the publish time is set when it STARTS, not finishes)
+		ScheduleableRepublish ready = _handoff_localChannelsByName.get(keyName);
+		Assert.assertTrue(null != ready);
+		while (_handoff_keepRunning && (0L == ready.lastPublishMillis) && !keyName.equals(_handoff_currentlyPublishing))
 		{
 			try
 			{
@@ -266,23 +256,46 @@ public class BackgroundOperations
 		{
 			boolean shouldNotify = false;
 			// If we are coming back to find new work, the previous work must be done, so clear it and notify anyone waiting.
-			if (_handoff_isPublishRunning)
+			if (null != _handoff_currentlyPublishing)
 			{
-				_handoff_isPublishRunning = false;
+				_handoff_currentlyPublishing = null;
 				shouldNotify = true;
 			}
 			
 			// Determine if we have publish work to do.
-			IpfsFile publish = null;
+			String publishKeyName = null;
+			IpfsKey publisherKey = null;
+			IpfsFile publishRoot = null;
+			long nextDueRepublishMillis = Long.MAX_VALUE;
+			// We just walk the map since it is very rare that it has more than ~1 element.
+			// For the same reason, we don't care which one we get - if multiple are ready, we will get around to them.
+			for (Map.Entry<String, ScheduleableRepublish> elt : _handoff_localChannelsByName.entrySet())
+			{
+				// Before waiting, we want to see if we should perform any scheduler operations and then look at what kind of delay we should use.
+				ScheduleableRepublish thisPublish = elt.getValue();
+				long dueTimePublishMillis = thisPublish.lastPublishMillis + _republishIntervalMillis;
+				if (dueTimePublishMillis <= currentTimeMillis)
+				{
+					publishKeyName = elt.getKey();
+					publisherKey = thisPublish.publicKey;
+					publishRoot = thisPublish.rootElement;
+					break;
+				}
+				else if (dueTimePublishMillis < nextDueRepublishMillis)
+				{
+					// If we don't find anyone, see when the next one is due.
+					nextDueRepublishMillis = dueTimePublishMillis;
+				}
+			}
 			int publishNumber = -1;
-			// Before waiting, we want to see if we should perform any scheduler operations and then look at what kind of delay we should use.
-			long dueTimePublishMillis = _handoff_lastPublishedMillis + _republishIntervalMillis;
-			if (dueTimePublishMillis <= currentTimeMillis)
+			if (null != publishKeyName)
 			{
 				// The republish is due - set the current time as when we updated.
-				_handoff_lastPublishedMillis = currentTimeMillis;
+				ScheduleableRepublish original = _handoff_localChannelsByName.remove(publishKeyName);
+				ScheduleableRepublish updated = new ScheduleableRepublish(original.publicKey, original.rootElement, currentTimeMillis);
+				_handoff_localChannelsByName.put(publishKeyName, updated);
+				_handoff_currentlyPublishing = publishKeyName;
 				shouldNotify = true;
-				publish = _handoff_currentRoot;
 				publishNumber = _background_nextOperationNumber;
 				_background_nextOperationNumber += 1;
 			}
@@ -310,10 +323,11 @@ public class BackgroundOperations
 			}
 			
 			// If we don't have any work to do, figure out when something interesting might happen and wait.
-			if ((null != publish) || (null != refresh))
+			if ((null != publishRoot) || (null != refresh))
 			{
-				work = new RequestedOperation(
-						publish
+				work = new RequestedOperation(publishKeyName
+						, publisherKey
+						, publishRoot
 						, publishNumber
 						, refresh
 						, refreshNumber
@@ -321,7 +335,7 @@ public class BackgroundOperations
 			}
 			else
 			{
-				long nextDueMillis = _handoff_lastPublishedMillis + _republishIntervalMillis;
+				long nextDueMillis = nextDueRepublishMillis;
 				if (!_handoff_knownFollowees.isEmpty())
 				{
 					nextDueMillis = Math.min(nextDueMillis, _handoff_knownFollowees.peek().lastRefreshMillis + _followeeRefreshMillis);
@@ -338,7 +352,7 @@ public class BackgroundOperations
 					throw Assert.unexpected(e);
 				}
 				// In this case, we don't want to terminate so we need to return something but we leave it empty so we just get called with an updated timer.
-				work = new RequestedOperation(null, -1, null, -1);
+				work = new RequestedOperation(null, null, null, -1, null, -1);
 			}
 		}
 		return work;
@@ -371,8 +385,9 @@ public class BackgroundOperations
 	}
 
 
-	private static record RequestedOperation(
-			IpfsFile publishTarget
+	private static record RequestedOperation(String publisherKeyName
+			, IpfsKey publisherKey
+			, IpfsFile publishTarget
 			, int publishNumber
 			, IpfsKey followeeKey
 			, int followeeNumber
@@ -380,4 +395,6 @@ public class BackgroundOperations
 
 
 	private static record SchedulableFollowee(IpfsKey followee, long lastRefreshMillis) {}
+
+	private static record ScheduleableRepublish(IpfsKey publicKey, IpfsFile rootElement, long lastPublishMillis) {}
 }

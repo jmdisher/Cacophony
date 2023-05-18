@@ -57,14 +57,12 @@ public class InteractiveServer
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
 		
 		PrefsData prefs = null;
-		IpfsFile rootElement = null;
 		LocalRecordCache localRecordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry;
 		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();
-			rootElement = access.getLastRootElement();
 			IFolloweeWriting followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
 			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher, PER_USER_COMBINED_START_SIZE);
@@ -176,11 +174,17 @@ public class InteractiveServer
 				return didRefresh;
 			}
 		}, statusHandoff, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
-		background.addChannel(startingContext.keyName, startingContext.publicKey, rootElement);
 		
-		// Load all the known followees into the background operations for background refresh.
 		try (IReadingAccess access = StandardAccess.readAccess(serverContext))
 		{
+			// Load all the local channels.
+			List<IReadingAccess.HomeUserTuple> homeTuples = access.readHomeUserData();
+			for (IReadingAccess.HomeUserTuple tuple : homeTuples)
+			{
+				background.addChannel(tuple.keyName(), tuple.publicKey(), tuple.lastRoot());
+			}
+			
+			// Load all the known followees into the background operations for background refresh.
 			// We will also just request an update of every followee we have.
 			IFolloweeReading followees = access.readableFolloweeData();
 			for (IpfsKey followeeKey : followees.getAllKnownFollowees())

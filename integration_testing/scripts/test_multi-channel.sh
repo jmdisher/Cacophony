@@ -14,6 +14,7 @@ RESOURCES="$2"
 PATH_TO_JAR="$3"
 
 USER1=/tmp/user1
+COOKIES1=/tmp/cookies1
 
 rm -rf "$USER1"
 
@@ -37,6 +38,14 @@ requireSubstring "$LIST_SIZE" "9"
 echo "Make sure we don't see any channels..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
 requireSubstring "$CHANNEL_LIST" "Found 0 channels:"
+
+echo "Before creating any channels, make sure that the interactive server can be started and stopped..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
+SERVER_PID=$!
+waitForCacophonyStart 8001
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
+wait $SERVER_PID
 
 echo "Creating channel on node 1..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel
@@ -69,6 +78,14 @@ if [ $? -ne 1 ]; then
 	exit 1
 fi
 
+echo "Before deleting the channels, make sure that the interactive server can be started and stopped..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
+SERVER_PID=$!
+waitForCacophonyStart 8001
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
+wait $SERVER_PID
+
 echo "Delete the channel..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --deleteChannel
 checkPreviousCommand "delete test1"
@@ -83,7 +100,7 @@ LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "14"
 
 echo "Make sure that we see the expected output from descriptions and recommendations..."
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --readDescription)
+CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --readDescription >& /dev/null
 # We expect a usage error.
 if [ $? -ne 1 ]; then
 	exit 1
@@ -91,7 +108,7 @@ fi
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --readDescription)
 requireSubstring "$DESCRIPTION" "Name: Quick user"
 
-LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listRecommendations)
+CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listRecommendations >& /dev/null
 # We expect a usage error.
 if [ $? -ne 1 ]; then
 	exit 1

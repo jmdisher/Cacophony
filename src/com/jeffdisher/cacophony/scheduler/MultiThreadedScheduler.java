@@ -139,6 +139,9 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	@Override
 	public FuturePublish publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
 	{
+		Assert.assertTrue(null != keyName);
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != indexHash);
 		FuturePublish future = new FuturePublish(indexHash);
 		Runnable r = () -> {
 			try
