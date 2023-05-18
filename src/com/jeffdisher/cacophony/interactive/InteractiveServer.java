@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -54,7 +55,6 @@ public class InteractiveServer
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
-		IpfsKey ourPublicKey = startingContext.publicKey;
 		
 		PrefsData prefs = null;
 		IpfsFile rootElement = null;
@@ -69,16 +69,30 @@ public class InteractiveServer
 			followees.attachRefreshConnector(followeeRefreshConnector);
 			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher, PER_USER_COMBINED_START_SIZE);
 			
+			List<IReadingAccess.HomeUserTuple> homeTuples = access.readHomeUserData();
 			try
 			{
-				_populateInitialHandoffs(access, entryRegistryBuilder, ourPublicKey, rootElement, followees);
+				for (IReadingAccess.HomeUserTuple tuple : homeTuples)
+				{
+					entryRegistryBuilder.createConnector(tuple.publicKey());
+					_populateConnector(access, entryRegistryBuilder, tuple.publicKey(), tuple.lastRoot());
+				}
+				for (IpfsKey followeeKey : followees.getAllKnownFollowees())
+				{
+					entryRegistryBuilder.createConnector(followeeKey);
+					IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
+					_populateConnector(access, entryRegistryBuilder, followeeKey, oneRoot);
+				}
 			}
 			catch (IpfsConnectionException e)
 			{
 				// This is a start-up failure.
 				throw e;
 			}
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, ourPublicKey, rootElement);
+			for (IReadingAccess.HomeUserTuple tuple : homeTuples)
+			{
+				LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, tuple.publicKey(), tuple.lastRoot());
+			}
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, followees);
 			entryRegistry = entryRegistryBuilder.buildRegistry(
 					(IpfsFile elementHash) -> access.loadCached(elementHash, (byte[] data) -> GlobalData.deserializeRecord(data))
@@ -292,18 +306,6 @@ public class InteractiveServer
 		serverLog.logFinish("Background process shut down.");
 	}
 
-
-	private static void _populateInitialHandoffs(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey ourKey, IpfsFile ourRoot, IFolloweeReading followees) throws IpfsConnectionException
-	{
-		entryRegistryBuilder.createConnector(ourKey);
-		_populateConnector(access, entryRegistryBuilder, ourKey, ourRoot);
-		for (IpfsKey followeeKey : followees.getAllKnownFollowees())
-		{
-			entryRegistryBuilder.createConnector(followeeKey);
-			IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-			_populateConnector(access, entryRegistryBuilder, followeeKey, oneRoot);
-		}
-	}
 
 	private static void _populateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException
 	{
