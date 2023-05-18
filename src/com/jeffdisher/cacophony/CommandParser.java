@@ -102,12 +102,7 @@ public class CommandParser
 				, "Creates a new home user channel.  Required before running most other operations."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
-			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
-			if (null == keyName)
-			{
-				keyName = DEFAULT_KEY_NAME;
-			}
-			return new CreateChannelCommand(keyName);
+			return new CreateChannelCommand();
 		}),
 		UPDATE_DESCRIPTION(true, "--updateDescription"
 				, new ArgParameter[0]
@@ -556,13 +551,8 @@ public class CommandParser
 						+ " --updateDescription, and --startFollowing."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
-			String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
-			if (null == keyName)
-			{
-				keyName = DEFAULT_KEY_NAME;
-			}
 			String name = _optionalString(optional[0]);
-			return new QuickstartCommand(keyName, name);
+			return new QuickstartCommand(name);
 		}),
 		;
 		

@@ -240,7 +240,7 @@ public class TestInteractiveHelpers
 				, KEY_NAME
 				, null
 		);
-		new CreateChannelCommand(KEY_NAME).runInContext(context);
+		new CreateChannelCommand().runInContext(context);
 		
 		// Now, create a basic draft.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
@@ -390,7 +390,7 @@ public class TestInteractiveHelpers
 				, KEY_NAME
 				, null
 		);
-		new CreateChannelCommand(KEY_NAME).runInContext(context);
+		new CreateChannelCommand().runInContext(context);
 		
 		// Now, create a draft and attach audio.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());

@@ -28,7 +28,7 @@ public class TestRepublishCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
+		user.runCommand(null, new CreateChannelCommand());
 		
 		// Verify initial update.
 		IpfsFile update1 = user.getLastRootElement();

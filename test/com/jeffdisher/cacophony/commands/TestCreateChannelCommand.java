@@ -29,7 +29,7 @@ public class TestCreateChannelCommand
 	public void testUsage() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
-		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
+		CreateChannelCommand command = new CreateChannelCommand();
 		user1.runCommand(null, command);
 		
 		// Verify the states that should have changed.
@@ -62,7 +62,7 @@ public class TestCreateChannelCommand
 	public void testDuplicateFailure() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
-		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
+		CreateChannelCommand command = new CreateChannelCommand();
 		user1.runCommand(null, command);
 		try
 		{
