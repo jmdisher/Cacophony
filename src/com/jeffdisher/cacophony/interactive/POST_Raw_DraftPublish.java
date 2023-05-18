@@ -57,7 +57,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// The publish is something we can wait on, asynchronously, in a different call.
 			_backgroundOperations.requestPublish(result.newIndexRoot());
 			IpfsFile newElement = result.newRecordCid();
-			_context.entryRegistry.addLocalElement(newElement);
+			_context.entryRegistry.addLocalElement(_context.publicKey, newElement);
 			
 			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
 			// bit odd, since we could have updated this during the publish operation, but that would have required some

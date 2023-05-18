@@ -65,9 +65,9 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	private void _handleCorrectCase(HttpServletResponse response, IpfsFile eltCid, OnePost result)
 	{
 		// Delete the old entry and add the new one.
-		_context.entryRegistry.removeLocalElement(eltCid);
+		_context.entryRegistry.removeLocalElement(_context.publicKey, eltCid);
 		IpfsFile newEltCid = result.recordCid;
-		_context.entryRegistry.addLocalElement(newEltCid);
+		_context.entryRegistry.addLocalElement(_context.publicKey, newEltCid);
 		
 		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
 		// data, we still need to technically "move" them to the new record CID.

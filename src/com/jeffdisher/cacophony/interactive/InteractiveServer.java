@@ -80,8 +80,8 @@ public class InteractiveServer
 			}
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, ourPublicKey, rootElement);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, followees);
-			entryRegistry = entryRegistryBuilder.buildRegistry(ourPublicKey
-					, (IpfsFile elementHash) -> access.loadCached(elementHash, (byte[] data) -> GlobalData.deserializeRecord(data))
+			entryRegistry = entryRegistryBuilder.buildRegistry(
+					(IpfsFile elementHash) -> access.loadCached(elementHash, (byte[] data) -> GlobalData.deserializeRecord(data))
 			);
 		}
 		

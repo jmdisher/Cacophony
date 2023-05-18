@@ -33,7 +33,7 @@ public class TestEntryCacheRegistry
 		FakeAccess access = new FakeAccess();
 		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
 		builder.createConnector(K1);
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
 		FakeListener listener = new FakeListener();
 		FakeListener combined = new FakeListener();
@@ -56,7 +56,7 @@ public class TestEntryCacheRegistry
 		builder.createConnector(K2);
 		builder.addToUser(K1, F1);
 		builder.addToUser(K2, F1);
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
 		FakeListener listener1 = new FakeListener();
 		FakeListener listener2 = new FakeListener();
@@ -92,7 +92,7 @@ public class TestEntryCacheRegistry
 		{
 			builder.addToUser(K1, list[i]);
 		}
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
 		FakeListener listener = new FakeListener();
 		FakeListener combined = new FakeListener();
@@ -125,7 +125,7 @@ public class TestEntryCacheRegistry
 		{
 			builder.addToUser(K1, start[i]);
 		}
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
 		// Now, synthesize a new followee.
 		registry.createNewFollowee(K2);
@@ -153,7 +153,7 @@ public class TestEntryCacheRegistry
 		{
 			localAdded[i] = MockSingleNode.generateHash(new byte[] { (byte)(i + start.length) });
 			access.storeRecord(localAdded[i], i);
-			registry.addLocalElement(localAdded[i]);
+			registry.addLocalElement(K1, localAdded[i]);
 		}
 		
 		Assert.assertEquals(10, listener1.keysInOrder.size());
@@ -178,7 +178,7 @@ public class TestEntryCacheRegistry
 		FakeAccess access = new FakeAccess();
 		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
 		builder.createConnector(K1);
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
 		// Now, synthesize a new followee.
 		registry.createNewFollowee(K2);
@@ -190,7 +190,7 @@ public class TestEntryCacheRegistry
 		{
 			local[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
 			access.storeRecord(local[i], i);
-			registry.addLocalElement(local[i]);
+			registry.addLocalElement(K1, local[i]);
 			followee[i] = MockSingleNode.generateHash(new byte[] { (byte)(i * 2) });
 			access.storeRecord(followee[i], i);
 			registry.addFolloweeElement(K2, followee[i]);
@@ -199,7 +199,7 @@ public class TestEntryCacheRegistry
 		// Now, delete everything.
 		for (int i = 0; i < local.length; ++i)
 		{
-			registry.removeLocalElement(local[i]);
+			registry.removeLocalElement(K1, local[i]);
 			registry.removeFolloweeElement(K2, followee[i]);
 		}
 		
@@ -224,7 +224,7 @@ public class TestEntryCacheRegistry
 		FakeAccess access = new FakeAccess();
 		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
 		builder.createConnector(K1);
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
 		// Now, synthesize a new followee.
 		registry.createNewFollowee(K2);
@@ -236,7 +236,7 @@ public class TestEntryCacheRegistry
 		{
 			local[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
 			access.storeRecord(local[i], i);
-			registry.addLocalElement(local[i]);
+			registry.addLocalElement(K1, local[i]);
 			followee[i] = MockSingleNode.generateHash(new byte[] { (byte)(i * 2) });
 			access.storeRecord(followee[i], i);
 			registry.addFolloweeElement(K2, followee[i]);
@@ -253,7 +253,7 @@ public class TestEntryCacheRegistry
 		// Now, delete everything.
 		for (int i = 0; i < local.length; ++i)
 		{
-			registry.removeLocalElement(local[i]);
+			registry.removeLocalElement(K1, local[i]);
 			registry.removeFolloweeElement(K2, followee[i]);
 		}
 		
@@ -290,7 +290,7 @@ public class TestEntryCacheRegistry
 		{
 			builder.addToUser(K2, list[i]);
 		}
-		EntryCacheRegistry registry = builder.buildRegistry(K1, access);
+		EntryCacheRegistry registry = builder.buildRegistry(access);
 		registry.addFolloweeElement(K2, list[5]);
 		
 		FakeListener local1 = new FakeListener();
@@ -315,7 +315,7 @@ public class TestEntryCacheRegistry
 		// Now, remove everything.
 		for (int i = 0; i < list.length; ++i)
 		{
-			registry.removeLocalElement(list[i]);
+			registry.removeLocalElement(K1, list[i]);
 			if (i < 6)
 			{
 				registry.removeFolloweeElement(K2, list[i]);

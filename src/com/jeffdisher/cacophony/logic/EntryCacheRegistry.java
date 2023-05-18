@@ -30,14 +30,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class EntryCacheRegistry
 {
 	private final Consumer<Runnable> _dispatcher;
-	private final IpfsKey _localUserKey;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
 	private final HandoffConnector<IpfsFile, Void> _combinedConnector;
 	private final Map<IpfsFile, Integer> _combinedRefCounts;
 	private final Map<IpfsFile, Integer> _spilledRefCounts;
 
 	private EntryCacheRegistry(Consumer<Runnable> dispatcher
-			, IpfsKey localUserKey
 			, Map<IpfsKey
 			, HandoffConnector<IpfsFile, Void>> perUserConnectors
 			, HandoffConnector<IpfsFile, Void> combinedConnector
@@ -46,7 +44,6 @@ public class EntryCacheRegistry
 	)
 	{
 		_dispatcher = dispatcher;
-		_localUserKey = localUserKey;
 		_perUserConnectors = perUserConnectors;
 		_combinedConnector = combinedConnector;
 		_combinedRefCounts = combinedRefCounts;
@@ -84,8 +81,6 @@ public class EntryCacheRegistry
 	 */
 	public synchronized void removeFolloweeElement(IpfsKey followeeKey, IpfsFile elementHash)
 	{
-		// This isn't expected to be used for us.
-		Assert.assertTrue(!_localUserKey.equals(followeeKey));
 		_perUserConnectors.get(followeeKey).destroy(elementHash);
 		_removeCombined(elementHash);
 	}
@@ -93,22 +88,24 @@ public class EntryCacheRegistry
 	/**
 	 * Adds a new element for the local user.
 	 * 
+	 * @param homeUserPublicKey The public key of the home user.
 	 * @param elementHash The new element's hash.
 	 */
-	public synchronized void addLocalElement(IpfsFile elementHash)
+	public synchronized void addLocalElement(IpfsKey homeUserPublicKey, IpfsFile elementHash)
 	{
-		_perUserConnectors.get(_localUserKey).create(elementHash, null);
+		_perUserConnectors.get(homeUserPublicKey).create(elementHash, null);
 		_addCombined(elementHash);
 	}
 
 	/**
 	 * Removes an existing element for the local user.
 	 * 
+	 * @param homeUserPublicKey The public key of the home user.
 	 * @param elementHash The element's hash.
 	 */
-	public synchronized void removeLocalElement(IpfsFile elementHash)
+	public synchronized void removeLocalElement(IpfsKey homeUserPublicKey, IpfsFile elementHash)
 	{
-		_perUserConnectors.get(_localUserKey).destroy(elementHash);
+		_perUserConnectors.get(homeUserPublicKey).destroy(elementHash);
 		_removeCombined(elementHash);
 	}
 
@@ -284,15 +281,13 @@ public class EntryCacheRegistry
 		 * user so that it can determine how to sort them.
 		 * Note that this renders the receiver unusable (as a way to catch bugs).
 		 * 
-		 * @param localUserKey The local user's key (must have been explicitly registered).
 		 * @param recordLoader A function for loading requested elements from the network.
 		 * @return The new registry.
 		 * @throws IpfsConnectionException There was a problem contacting the network.
 		 */
-		public EntryCacheRegistry buildRegistry(IpfsKey localUserKey, Function<IpfsFile, FutureRead<StreamRecord>> recordLoader) throws IpfsConnectionException
+		public EntryCacheRegistry buildRegistry(Function<IpfsFile, FutureRead<StreamRecord>> recordLoader) throws IpfsConnectionException
 		{
 			Assert.assertTrue(!_done);
-			Assert.assertTrue(_perUserConnectors.containsKey(localUserKey));
 			// Walk the lists for user, combine them in one map with reference count (since there could be duplicates).
 			Set<IpfsFile> elementsToCombine = new HashSet<>();
 			Map<IpfsFile, Integer> combinedRefCounts = new HashMap<>();
@@ -340,7 +335,7 @@ public class EntryCacheRegistry
 			// We set the _done flag just to avoid errors of the builder still being in use.
 			// While it could be used to produce multiple registries, we don't use it that way so any further use is an error we want to catch.
 			_done = true;
-			return new EntryCacheRegistry(_dispatcher, localUserKey, _perUserConnectors, combinedConnector, combinedRefCounts, _spilledRefCount);
+			return new EntryCacheRegistry(_dispatcher, _perUserConnectors, combinedConnector, combinedRefCounts, _spilledRefCount);
 		}
 	}
 
