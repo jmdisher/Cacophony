@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
@@ -28,7 +29,9 @@ import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
+import com.jeffdisher.cacophony.scheduler.FutureCommand;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -47,6 +50,8 @@ public class InteractiveServer
 	public  static final String EVENT_API_PROTOCOL = "event_api";
 	// The number of most recent entries, for each user, which will be added to the combined list.
 	public static final int PER_USER_COMBINED_START_SIZE = 10;
+	// The number of threads to use in the CommandRunner.
+	public static final int COMMAND_RUNNER_THREAD_COUNT = 4;
 
 	public static void runServerUntilStop(Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
@@ -100,7 +105,7 @@ public class InteractiveServer
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
 		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry);
-		CommandRunner runner = new CommandRunner(serverContext);
+		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
@@ -130,10 +135,11 @@ public class InteractiveServer
 			{
 				// We just want to run the RefreshFolloweeCommand, since it internally does everything.
 				RefreshFolloweeCommand command = new RefreshFolloweeCommand(followeeKey);
+				FutureCommand<None> result = runner.runCommand(command);
 				boolean didRefresh;
 				try
 				{
-					command.runInContext(serverContext);
+					result.get();
 					didRefresh = true;
 				}
 				catch (IpfsConnectionException e)
@@ -155,6 +161,11 @@ public class InteractiveServer
 				{
 					// This shouldn't happen (we are calling it from an internal utility) but we may want to make sure
 					// that this can't happen as a result of some kind of race.
+					throw Assert.unexpected(e);
+				}
+				catch (CacophonyException e)
+				{
+					// A more specific exception would be caught, above.
 					throw Assert.unexpected(e);
 				}
 				return didRefresh;
@@ -179,6 +190,7 @@ public class InteractiveServer
 			}
 		}
 		background.startProcess();
+		runner.startThreads();
 		
 		DraftManager manager = serverContext.environment.getSharedDraftManager();
 		HandoffConnector<String, Long> videoProcessingConnector = new HandoffConnector<>(dispatcher);
@@ -292,6 +304,7 @@ public class InteractiveServer
 		serverLog.logOperation("Shutting down connector dispatcher...");
 		dispatcher.shutdown();
 		serverLog.logOperation("Shutting down background process...");
+		runner.shutdownThreads();
 		background.shutdownProcess();
 		serverLog.logFinish("Background process shut down.");
 	}
