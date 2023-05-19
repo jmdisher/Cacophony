@@ -27,6 +27,7 @@ import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -99,6 +100,7 @@ public class InteractiveServer
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
 		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry);
+		CommandRunner runner = new CommandRunner(serverContext);
 		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
@@ -207,19 +209,19 @@ public class InteractiveServer
 		validated.addWebSocketFactory("/server/events/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
 		validated.addWebSocketFactory("/server/events/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
 		validated.addGetHandler("/server/postHashes", 1, new GET_PostHashes(serverContext));
-		validated.addGetHandler("/server/recommendedKeys", 1, new GET_RecommendedKeys(serverContext));
-		validated.addGetHandler("/server/postStruct", 1, new GET_PostStruct(serverContext));
-		validated.addGetHandler("/server/unknownUser", 1, new GET_UnknownUserInfo(serverContext));
+		validated.addGetHandler("/server/recommendedKeys", 1, new GET_RecommendedKeys(runner));
+		validated.addGetHandler("/server/postStruct", 1, new GET_PostStruct(runner));
+		validated.addGetHandler("/server/unknownUser", 1, new GET_UnknownUserInfo(runner));
 		validated.addGetHandler("/server/userInfo", 1, new GET_UserInfo(serverContext));
 		
 		// Home user operations.
-		validated.addPostRawHandler("/home/republish", 0, new POST_Raw_Republish(serverContext, background));
-		validated.addPostFormHandler("/home/post/edit", 1, new POST_Form_EditPost(serverContext, background));
-		validated.addDeleteHandler("/home/post/delete", 1, new DELETE_Post(serverContext, background));
-		validated.addPostRawHandler("/home/recommend/add", 1, new POST_Raw_AddRecommendation(serverContext, background));
-		validated.addDeleteHandler("/home/recommend/remove", 1, new DELETE_RemoveRecommendation(serverContext, background));
-		validated.addPostFormHandler("/home/userInfo/info", 0, new POST_Form_UserInfo(serverContext, background));
-		validated.addPostRawHandler("/home/userInfo/image", 0, new POST_Raw_UserInfo(serverContext, background));
+		validated.addPostRawHandler("/home/republish", 0, new POST_Raw_Republish(runner, background));
+		validated.addPostFormHandler("/home/post/edit", 1, new POST_Form_EditPost(runner, background));
+		validated.addDeleteHandler("/home/post/delete", 1, new DELETE_Post(runner, background));
+		validated.addPostRawHandler("/home/recommend/add", 1, new POST_Raw_AddRecommendation(runner, background));
+		validated.addDeleteHandler("/home/recommend/remove", 1, new DELETE_RemoveRecommendation(runner, background));
+		validated.addPostFormHandler("/home/userInfo/info", 0, new POST_Form_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/userInfo/image", 0, new POST_Raw_UserInfo(runner, background));
 		validated.addGetHandler("/home/publicKey", 0, new GET_PublicKey(serverContext));
 		
 		// Draft operations.
@@ -257,9 +259,9 @@ public class InteractiveServer
 		validated.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(manager));
 		
 		// Followee operations.
-		validated.addGetHandler("/followees/keys", 0, new GET_FolloweeKeys(serverContext));
-		validated.addPostRawHandler("/followees/add", 1, new POST_Raw_AddFollowee(serverContext, background));
-		validated.addDeleteHandler("/followees/remove", 1, new DELETE_RemoveFollowee(serverContext, background));
+		validated.addGetHandler("/followees/keys", 0, new GET_FolloweeKeys(runner));
+		validated.addPostRawHandler("/followees/add", 1, new POST_Raw_AddFollowee(runner, background));
+		validated.addDeleteHandler("/followees/remove", 1, new DELETE_RemoveFollowee(runner, background));
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
 		validated.addWebSocketFactory("/followee/events/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
 		

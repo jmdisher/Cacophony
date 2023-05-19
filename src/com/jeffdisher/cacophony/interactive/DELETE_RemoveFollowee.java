@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,14 +17,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_RemoveFollowee(Context context
+	public DELETE_RemoveFollowee(CommandRunner runner
 			, BackgroundOperations backgroundOperations
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -38,14 +39,15 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 			if (didRemove)
 			{
 				StopFollowingCommand command = new StopFollowingCommand(userToRemove);
-				None result = InteractiveHelpers.runCommandAndHandleErrors(response
-						, _context
+				InteractiveHelpers.SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response
+						, _runner
 						, command
 				);
 				if (null != result)
 				{
-					_context.entryRegistry.removeFollowee(userToRemove);
-					_context.userInfoCache.removeUser(userToRemove);
+					Context context = result.context();
+					context.entryRegistry.removeFollowee(userToRemove);
+					context.userInfoCache.removeUser(userToRemove);
 				}
 			}
 			else

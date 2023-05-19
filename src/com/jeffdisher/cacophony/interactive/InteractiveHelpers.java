@@ -18,6 +18,8 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
+import com.jeffdisher.cacophony.scheduler.FutureCommand;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -436,19 +438,21 @@ public class InteractiveHelpers
 	 * 
 	 * @param <T> The return value of the command.
 	 * @param response Used for setting HTTP result codes (even in the success case).
-	 * @param context The context in which to run the command.
+	 * @param runner The CommandRunner to execute the command.
 	 * @param command The command to run.
-	 * @return The object returned by the command (null on failure).
+	 * @return A wrapper of the object returned by the command and the context where it executed.
 	 * @throws IOException There was an error interacting with the response object.
 	 */
-	public static <T extends ICommand.Result> T runCommandAndHandleErrors(HttpServletResponse response, Context context, ICommand<T> command) throws IOException
+	public static <T extends ICommand.Result> SuccessfulCommand<T> runCommandAndHandleErrors(HttpServletResponse response, CommandRunner runner, ICommand<T> command) throws IOException
 	{
-		T result = null;
+		SuccessfulCommand<T> result = null;
 		try
 		{
-			result = command.runInContext(context);
+			FutureCommand<T> future = runner.runCommand(command);
+			T output = future.get();
 			// The commands should only fail with exceptions, always returning non-null on success.
-			Assert.assertTrue(null != result);
+			Assert.assertTrue(null != output);
+			result = new SuccessfulCommand<T>(output, future.getContext());
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
 		catch (IpfsConnectionException e)
@@ -504,4 +508,7 @@ public class InteractiveHelpers
 			}
 		}
 	}
+
+
+	public static record SuccessfulCommand<T extends ICommand.Result>(T result, Context context) {}
 }

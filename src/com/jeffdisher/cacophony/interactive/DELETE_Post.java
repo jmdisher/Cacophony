@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -15,14 +16,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_Post implements ValidatedEntryPoints.DELETE
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_Post(Context context
+	public DELETE_Post(CommandRunner runner
 			, BackgroundOperations backgroundOperations
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -31,21 +32,23 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 	{
 		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
 		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(postHashToRemove);
-		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<ChangedRoot> success = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
-		if (null != result)
+		if (null != success)
 		{
+			ChangedRoot result = success.result();
+			Context context = success.context();
 			IpfsFile newRoot = result.getIndexToPublish();
 			// This should change unless they threw an exception.
 			Assert.assertTrue(null != newRoot);
 			
 			// Delete the entry for anyone listening.
-			_context.entryRegistry.removeLocalElement(_context.getSelectedKey(), postHashToRemove);
+			context.entryRegistry.removeLocalElement(context.getSelectedKey(), postHashToRemove);
 			
 			// Request a republish.
-			_backgroundOperations.requestPublish(_context.keyName, newRoot);
+			_backgroundOperations.requestPublish(context.keyName, newRoot);
 		}
 	}
 }

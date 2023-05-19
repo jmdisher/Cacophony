@@ -4,6 +4,7 @@ import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,14 +25,14 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_EMAIL = "EMAIL";
 	public static final String VAR_WEBSITE = "WEBSITE";
 
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _background;
 
-	public POST_Form_UserInfo(Context context
+	public POST_Form_UserInfo(CommandRunner runner
 			, BackgroundOperations background
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_background = background;
 	}
 
@@ -45,18 +46,20 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 		String website = formVariables.getIfSingle(VAR_WEBSITE);
 		
 		UpdateDescriptionCommand command = new UpdateDescriptionCommand(name, description, null, email, website);
-		ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
-		if (null != result)
+		if (null != success)
 		{
+			ChannelDescription result = success.result();
+			Context context = success.context();
 			// Request the publication.
-			_background.requestPublish(_context.keyName, result.getIndexToPublish());
+			_background.requestPublish(context.keyName, result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
-			IpfsKey key = _context.getSelectedKey();
-			_context.userInfoCache.setUserInfo(key
+			IpfsKey key = context.getSelectedKey();
+			context.userInfoCache.setUserInfo(key
 					, result.name
 					, result.description
 					, result.userPicCid

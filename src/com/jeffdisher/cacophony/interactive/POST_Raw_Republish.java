@@ -2,9 +2,9 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RepublishCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,14 +15,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _background;
 
-	public POST_Raw_Republish(Context context
+	public POST_Raw_Republish(CommandRunner runner
 			, BackgroundOperations background
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_background = background;
 	}
 
@@ -30,13 +30,13 @@ public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 	{
 		RepublishCommand command = new RepublishCommand();
-		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
 		if (null != result)
 		{
-			_background.requestPublish(_context.keyName, result.getIndexToPublish());
+			_background.requestPublish(result.context().keyName, result.result().getIndexToPublish());
 		}
 	}
 }

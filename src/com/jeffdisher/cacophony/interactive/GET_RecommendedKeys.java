@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonArray;
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ListRecommendationsCommand;
 import com.jeffdisher.cacophony.commands.results.KeyList;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,12 +15,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	
-	public GET_RecommendedKeys(Context context
+	public GET_RecommendedKeys(CommandRunner runner
 	)
 	{
-		_context = context;
+		_runner = runner;
 	}
 	
 	@Override
@@ -31,14 +31,14 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 		if (null != userToResolve)
 		{
 			ListRecommendationsCommand command = new ListRecommendationsCommand(userToResolve);
-			KeyList result = InteractiveHelpers.runCommandAndHandleErrors(response
-					, _context
+			InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response
+					, _runner
 					, command
 			);
 			if (null != result)
 			{
 				JsonArray array = new JsonArray();
-				for (IpfsKey key : result.keys)
+				for (IpfsKey key : result.result().keys)
 				{
 					array.add(key.toPublicKey());
 				}

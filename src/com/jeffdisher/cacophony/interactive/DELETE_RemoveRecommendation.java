@@ -1,8 +1,8 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -17,14 +17,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_RemoveRecommendation(Context context
+	public DELETE_RemoveRecommendation(CommandRunner runner
 			, BackgroundOperations backgroundOperations
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -33,16 +33,16 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 	{
 		IpfsKey userToRemove = IpfsKey.fromPublicKey(variables[0]);
 		RemoveRecommendationCommand command = new RemoveRecommendationCommand(userToRemove);
-		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
 		if (null != result)
 		{
-			IpfsFile newRoot = result.getIndexToPublish();
+			IpfsFile newRoot = result.result().getIndexToPublish();
 			// This should change unless they threw an exception.
 			Assert.assertTrue(null != newRoot);
-			_backgroundOperations.requestPublish(_context.keyName, newRoot);
+			_backgroundOperations.requestPublish(result.context().keyName, newRoot);
 		}
 	}
 }

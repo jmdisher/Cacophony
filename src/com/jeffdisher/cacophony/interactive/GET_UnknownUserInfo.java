@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,12 +22,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	
-	public GET_UnknownUserInfo(Context context
+	public GET_UnknownUserInfo(CommandRunner runner
 	)
 	{
-		_context = context;
+		_runner = runner;
 	}
 	
 	@Override
@@ -38,12 +38,13 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 		if (null != userToResolve)
 		{
 			ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
-			ChannelDescription result = InteractiveHelpers.runCommandAndHandleErrors(response
-					, _context
+			InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
+					, _runner
 					, command
 			);
-			if (null != result)
+			if (null != success)
 			{
+				ChannelDescription result = success.result();
 				JsonObject userInfo = JsonGenerationHelpers.userDescription(result.name
 						, result.description
 						, result.userPicUrl

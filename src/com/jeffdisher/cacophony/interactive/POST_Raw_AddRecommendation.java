@@ -1,8 +1,8 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -17,14 +17,14 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _backgroundOperations;
 
-	public POST_Raw_AddRecommendation(Context context
+	public POST_Raw_AddRecommendation(CommandRunner runner
 			, BackgroundOperations backgroundOperations
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_backgroundOperations = backgroundOperations;
 	}
 
@@ -34,16 +34,16 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 		IpfsKey userToAdd = IpfsKey.fromPublicKey(pathVariables[0]);
 		
 		AddRecommendationCommand command = new AddRecommendationCommand(userToAdd);
-		ChangedRoot result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
 		if (null != result)
 		{
-			IpfsFile newRoot = result.getIndexToPublish();
+			IpfsFile newRoot = result.result().getIndexToPublish();
 			// This should change unless they threw an exception.
 			Assert.assertTrue(null != newRoot);
-			_backgroundOperations.requestPublish(_context.keyName, newRoot);
+			_backgroundOperations.requestPublish(result.context().keyName, newRoot);
 		}
 	}
 }

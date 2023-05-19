@@ -5,6 +5,7 @@ import java.net.URL;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ShowPostCommand;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,12 +26,12 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	
-	public GET_PostStruct(Context context
+	public GET_PostStruct(CommandRunner runner
 	)
 	{
-		_context = context;
+		_runner = runner;
 	}
 	
 	@Override
@@ -38,12 +39,14 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
 		ShowPostCommand command = new ShowPostCommand(postToResolve);
-		ShowPostCommand.PostDetails result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<ShowPostCommand.PostDetails> success = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
-		if (null != result)
+		if (null != success)
 		{
+			ShowPostCommand.PostDetails result = success.result();
+			Context context = success.context();
 			JsonObject postStruct = new JsonObject();
 			postStruct.set("name", result.name());
 			postStruct.set("description", result.description());
@@ -53,9 +56,9 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 			postStruct.set("cached", result.isKnownToBeCached());
 			if (result.isKnownToBeCached())
 			{
-				postStruct.set("thumbnailUrl", _urlOrNull(_context.baseUrl, result.thumbnailCid()));
-				postStruct.set("videoUrl", _urlOrNull(_context.baseUrl, result.videoCid()));
-				postStruct.set("audioUrl", _urlOrNull(_context.baseUrl, result.audioCid()));
+				postStruct.set("thumbnailUrl", _urlOrNull(context.baseUrl, result.thumbnailCid()));
+				postStruct.set("videoUrl", _urlOrNull(context.baseUrl, result.videoCid()));
+				postStruct.set("audioUrl", _urlOrNull(context.baseUrl, result.audioCid()));
 			}
 			
 			response.setContentType("application/json");

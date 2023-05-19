@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.commands.EditPostCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.LeafFinder;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,14 +28,14 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_DESCRIPTION = "DESCRIPTION";
 	public static final String VAR_DISCUSSION_URL = "DISCUSSION_URL";
 
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _background;
 
-	public POST_Form_EditPost(Context context
+	public POST_Form_EditPost(CommandRunner runner
 			, BackgroundOperations background
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_background = background;
 	}
 
@@ -48,13 +49,15 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		String discussionUrl = formVariables.getIfSingle(VAR_DISCUSSION_URL);
 		
 		EditPostCommand command = new EditPostCommand(eltCid, name, description, discussionUrl);
-		OnePost result = InteractiveHelpers.runCommandAndHandleErrors(response
-				, _context
+		InteractiveHelpers.SuccessfulCommand<OnePost> success = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
 				, command
 		);
-		if (null != result)
+		if (null != success)
 		{
-			_handleCorrectCase(response, eltCid, result);
+			OnePost result = success.result();
+			Context context = success.context();
+			_handleCorrectCase(context, response, eltCid, result);
 			
 			// Output the new element CID.
 			response.setContentType("text/plain");
@@ -62,12 +65,12 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		}
 	}
 
-	private void _handleCorrectCase(HttpServletResponse response, IpfsFile eltCid, OnePost result)
+	private void _handleCorrectCase(Context context, HttpServletResponse response, IpfsFile eltCid, OnePost result)
 	{
 		// Delete the old entry and add the new one.
-		_context.entryRegistry.removeLocalElement(_context.getSelectedKey(), eltCid);
+		context.entryRegistry.removeLocalElement(context.getSelectedKey(), eltCid);
 		IpfsFile newEltCid = result.recordCid;
-		_context.entryRegistry.addLocalElement(_context.getSelectedKey(), newEltCid);
+		context.entryRegistry.addLocalElement(context.getSelectedKey(), newEltCid);
 		
 		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
 		// data, we still need to technically "move" them to the new record CID.
@@ -75,33 +78,33 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		LeafFinder leaves = LeafFinder.parseRecord(record);
 		if (null != leaves.thumbnail)
 		{
-			_context.recordCache.recordThumbnailReleased(eltCid, leaves.thumbnail);
+			context.recordCache.recordThumbnailReleased(eltCid, leaves.thumbnail);
 		}
 		if (null != leaves.audio)
 		{
-			_context.recordCache.recordAudioReleased(eltCid, leaves.audio);
+			context.recordCache.recordAudioReleased(eltCid, leaves.audio);
 		}
 		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
 		{
-			_context.recordCache.recordVideoReleased(eltCid, leaf.cid(), leaf.edgeSize());
+			context.recordCache.recordVideoReleased(eltCid, leaf.cid(), leaf.edgeSize());
 		}
-		_context.recordCache.recordMetaDataReleased(eltCid);
+		context.recordCache.recordMetaDataReleased(eltCid);
 		
-		_context.recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
+		context.recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
 		if (null != leaves.thumbnail)
 		{
-			_context.recordCache.recordThumbnailPinned(newEltCid, leaves.thumbnail);
+			context.recordCache.recordThumbnailPinned(newEltCid, leaves.thumbnail);
 		}
 		if (null != leaves.audio)
 		{
-			_context.recordCache.recordAudioPinned(newEltCid, leaves.audio);
+			context.recordCache.recordAudioPinned(newEltCid, leaves.audio);
 		}
 		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
 		{
-			_context.recordCache.recordVideoPinned(newEltCid, leaf.cid(), leaf.edgeSize());
+			context.recordCache.recordVideoPinned(newEltCid, leaf.cid(), leaf.edgeSize());
 		}
 		
 		// Now, publish the update.
-		_background.requestPublish(_context.keyName, result.getIndexToPublish());
+		_background.requestPublish(context.keyName, result.getIndexToPublish());
 	}
 }
