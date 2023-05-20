@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -66,7 +66,7 @@ public class StandardAccess implements IWritingAccess
 	 * @return The read access interface.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(ICommand.Context context) throws IpfsConnectionException
+	public static IReadingAccess readAccess(Context context) throws IpfsConnectionException
 	{
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
@@ -83,7 +83,7 @@ public class StandardAccess implements IWritingAccess
 	 * @return The write access interface.
 	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(ICommand.Context context) throws IpfsConnectionException
+	public static IWritingAccess writeAccess(Context context) throws IpfsConnectionException
 	{
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();

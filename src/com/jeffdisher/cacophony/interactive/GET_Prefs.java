@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -19,9 +19,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_Prefs implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_Prefs(ICommand.Context context
+	public GET_Prefs(Context context
 	)
 	{
 		_context = context;

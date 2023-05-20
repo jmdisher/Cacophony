@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.InputStream;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -18,10 +18,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _background;
 
-	public POST_Raw_UserInfo(ICommand.Context context
+	public POST_Raw_UserInfo(Context context
 			, BackgroundOperations background
 	)
 	{

@@ -21,7 +21,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements ICommand<ChannelDescription>
 {
 	@Override
-	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException, UsageException
+	public ChannelDescription runInContext(Context context) throws IpfsConnectionException, KeyException, ProtocolDataException, UsageException
 	{
 		// First, make sure that we find the relevant key (since they default to the local user).
 		IpfsKey keyToCheck = (null != _channelPublicKey)
@@ -48,7 +48,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	}
 
 
-	private ChannelDescription _checkKnownUserCache(ICommand.Context context, IpfsKey keyToCheck)
+	private ChannelDescription _checkKnownUserCache(Context context, IpfsKey keyToCheck)
 	{
 		// We have a cache when running in interactive mode.
 		context.logger.logVerbose("Check known user cache: " + keyToCheck);
@@ -70,7 +70,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		return result;
 	}
 
-	private ChannelDescription _checkKnownUsers(ICommand.Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
+	private ChannelDescription _checkKnownUsers(Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
 	{
 		// We don't have a cache when running in the direct command-line mode.
 		context.logger.logVerbose("Check known users directly: " + keyToCheck);
@@ -107,7 +107,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		return result;
 	}
 
-	private ChannelDescription _checkExplicitCache(ICommand.Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private ChannelDescription _checkExplicitCache(Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		ChannelDescription result;

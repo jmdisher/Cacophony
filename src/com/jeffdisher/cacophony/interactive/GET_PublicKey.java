@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,9 +11,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_PublicKey implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_PublicKey(ICommand.Context context
+	public GET_PublicKey(Context context
 	)
 	{
 		_context = context;

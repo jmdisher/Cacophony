@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonArray;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -15,9 +15,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_FolloweeKeys implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_FolloweeKeys(ICommand.Context context
+	public GET_FolloweeKeys(Context context
 	)
 	{
 		_context = context;

@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -16,10 +16,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_RemoveFollowee(ICommand.Context context
+	public DELETE_RemoveFollowee(Context context
 			, BackgroundOperations backgroundOperations
 	)
 	{

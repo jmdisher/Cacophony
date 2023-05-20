@@ -7,7 +7,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -29,9 +29,9 @@ public class WS_CombinedEntries implements ValidatedEntryPoints.WEB_SOCKET_FACTO
 	// We use this command to request we scroll back further.
 	private static final String COMMAND_SCROLL_BACK = "COMMAND_SCROLL_BACK";
 
-	private final ICommand.Context _context;
+	private final Context _context;
 
-	public WS_CombinedEntries(ICommand.Context context
+	public WS_CombinedEntries(Context context
 	)
 	{
 		_context = context;

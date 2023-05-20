@@ -16,7 +16,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 public record CleanCacheCommand() implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException
+	public None runInContext(Context context) throws IpfsConnectionException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{

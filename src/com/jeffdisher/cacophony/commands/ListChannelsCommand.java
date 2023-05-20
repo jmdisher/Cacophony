@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 public record ListChannelsCommand() implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException
+	public None runInContext(Context context) throws IpfsConnectionException
 	{
 		// We want a pretty low-level read which doesn't take into account the current context key so use the data model, directly.
 		LocalDataModel dataModel = context.environment.getSharedDataModel();

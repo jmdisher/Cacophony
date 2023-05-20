@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -16,10 +16,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _backgroundOperations;
 
-	public POST_Raw_AddFollowee(ICommand.Context context
+	public POST_Raw_AddFollowee(Context context
 			, BackgroundOperations backgroundOperations
 	)
 	{

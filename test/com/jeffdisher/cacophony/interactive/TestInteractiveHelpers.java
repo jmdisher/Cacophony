@@ -18,8 +18,8 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
-import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
@@ -231,7 +231,7 @@ public class TestInteractiveHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		ICommand.Context context = new ICommand.Context(env
+		Context context = new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -381,7 +381,7 @@ public class TestInteractiveHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		ICommand.Context context = new ICommand.Context(env
+		Context context = new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null

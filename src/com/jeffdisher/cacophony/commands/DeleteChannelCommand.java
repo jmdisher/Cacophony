@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record DeleteChannelCommand() implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		if (null == context.publicKey)
 		{

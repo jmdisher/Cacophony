@@ -25,7 +25,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPostCommand.PostDetails>
 {
 	@Override
-	public PostDetails runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
+	public PostDetails runInContext(Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
 	{
 		PostDetails post = null;
 		// First, check if we have a record cache and if it contains this.
@@ -44,7 +44,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 	}
 
 
-	private PostDetails _checkKnownCache(ICommand.Context context)
+	private PostDetails _checkKnownCache(Context context)
 	{
 		PostDetails post = null;
 		LocalRecordCache.Element element = context.recordCache.get(_elementCid);
@@ -65,7 +65,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		return post;
 	}
 
-	private PostDetails _checkHeavyCaches(ICommand.Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private PostDetails _checkHeavyCaches(Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		PostDetails post;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))

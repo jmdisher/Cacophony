@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RefreshNextFolloweeCommand() implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
 	{
 		ILogger log;
 		ConcurrentFolloweeRefresher refresher = null;

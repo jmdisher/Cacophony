@@ -24,7 +24,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand<KeyList>
 {
 	@Override
-	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException, UsageException
+	public KeyList runInContext(Context context) throws IpfsConnectionException, KeyException, ProtocolDataException, UsageException
 	{
 		// First, make sure that we find the relevant key (since they default to the local user).
 		IpfsKey keyToCheck = (null != _targetKey)
@@ -63,7 +63,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 	}
 
 
-	private StreamRecommendations _checkKnownUsers(ICommand.Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
+	private StreamRecommendations _checkKnownUsers(Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
 	{
 		// We don't have a cache when running in the direct command-line mode.
 		context.logger.logVerbose("Check known users directly: " + keyToCheck);
@@ -91,7 +91,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		return result;
 	}
 
-	private StreamRecommendations _checkExplicitCache(ICommand.Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private StreamRecommendations _checkExplicitCache(Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		StreamRecommendations result;

@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record ListFavouritesCommand() implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		// Look this up and add it to the cache or throw UsageException if it isn't a StreamRecord.
 		try (IReadingAccess access = StandardAccess.readAccess(context))

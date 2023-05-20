@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -20,9 +20,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_UserInfo implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_UserInfo(ICommand.Context context
+	public GET_UserInfo(Context context
 	)
 	{
 		_context = context;

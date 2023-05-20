@@ -27,7 +27,7 @@ public record QuickstartCommand(String _optionalChannelName) implements ICommand
 	private static final IpfsKey DEMO_CHANNEL_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnJ6qSdFeWsMDaivGJPPCVx8jiopn9jK7aUThhuQjhERku");
 
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		// There is always a key set.
 		Assert.assertTrue(null != context.keyName);

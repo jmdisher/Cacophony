@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -17,10 +17,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _backgroundOperations;
 
-	public POST_Raw_AddRecommendation(ICommand.Context context
+	public POST_Raw_AddRecommendation(Context context
 			, BackgroundOperations backgroundOperations
 	)
 	{

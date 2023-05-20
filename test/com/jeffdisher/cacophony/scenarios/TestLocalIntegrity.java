@@ -11,9 +11,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.DataDomain;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
-import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -49,7 +49,7 @@ public class TestLocalIntegrity
 		SilentLogger logger = new SilentLogger();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand();
-		createChannel.runInContext(new ICommand.Context(env
+		createChannel.runInContext(new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -80,7 +80,7 @@ public class TestLocalIntegrity
 		SilentLogger logger = new SilentLogger();
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand();
-		createChannel.runInContext(new ICommand.Context(env
+		createChannel.runInContext(new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -104,7 +104,7 @@ public class TestLocalIntegrity
 		PublishCommand publish = new PublishCommand("name", "description", null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
 		});
-		publish.runInContext(new ICommand.Context(env
+		publish.runInContext(new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -138,7 +138,7 @@ public class TestLocalIntegrity
 		
 		// Now, remove this entry.
 		RemoveEntryFromThisChannelCommand remove = new RemoveEntryFromThisChannelCommand(entry);
-		remove.runInContext(new ICommand.Context(env
+		remove.runInContext(new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null

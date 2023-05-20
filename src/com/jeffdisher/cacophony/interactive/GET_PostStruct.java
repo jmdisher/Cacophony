@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import java.net.URL;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ShowPostCommand;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -25,9 +25,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_PostStruct(ICommand.Context context
+	public GET_PostStruct(Context context
 	)
 	{
 		_context = context;

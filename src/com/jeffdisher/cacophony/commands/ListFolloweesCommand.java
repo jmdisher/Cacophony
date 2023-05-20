@@ -12,7 +12,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 public record ListFolloweesCommand() implements ICommand<KeyList>
 {
 	@Override
-	public KeyList runInContext(ICommand.Context context) throws IpfsConnectionException
+	public KeyList runInContext(Context context) throws IpfsConnectionException
 	{
 		KeyList result;
 		try (IReadingAccess access = StandardAccess.readAccess(context))

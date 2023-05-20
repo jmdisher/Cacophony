@@ -18,7 +18,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
 	{
 		if (null == _publicKey)
 		{
@@ -74,7 +74,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		return refresher;
 	}
 
-	private void _finish(ICommand.Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
+	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		long lastPollMillis = context.environment.currentTimeMillis();

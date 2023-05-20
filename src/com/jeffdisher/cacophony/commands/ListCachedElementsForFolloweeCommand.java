@@ -22,7 +22,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		if (null == _followeeKey)
 		{

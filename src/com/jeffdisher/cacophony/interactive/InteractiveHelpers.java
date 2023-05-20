@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
@@ -440,7 +441,7 @@ public class InteractiveHelpers
 	 * @return The object returned by the command (null on failure).
 	 * @throws IOException There was an error interacting with the response object.
 	 */
-	public static <T extends ICommand.Result> T runCommandAndHandleErrors(HttpServletResponse response, ICommand.Context context, ICommand<T> command) throws IOException
+	public static <T extends ICommand.Result> T runCommandAndHandleErrors(HttpServletResponse response, Context context, ICommand<T> command) throws IOException
 	{
 		T result = null;
 		try

@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
@@ -41,7 +42,7 @@ public class MockUserNode
 	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
 	private MultiThreadedScheduler _lazyScheduler;
 	private StandardEnvironment _lazyExecutor;
-	private ICommand.Context _lazyContext;
+	private Context _lazyContext;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
 	{
@@ -75,13 +76,13 @@ public class MockUserNode
 	public <T extends ICommand.Result> T runCommand(OutputStream captureStream, ICommand<T> command) throws Throwable
 	{
 		ILogger logger = _logger;
-		ICommand.Context defaultContext = _lazyContext();
-		ICommand.Context usedContext = defaultContext;
+		Context defaultContext = _lazyContext();
+		Context usedContext = defaultContext;
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
-			usedContext = new ICommand.Context(defaultContext.environment
+			usedContext = new Context(defaultContext.environment
 					, logger
 					, defaultContext.baseUrl
 					, null
@@ -239,11 +240,11 @@ public class MockUserNode
 		return _lazyExecutor;
 	}
 
-	private ICommand.Context _lazyContext()
+	private Context _lazyContext()
 	{
 		if (null == _lazyContext)
 		{
-			_lazyContext = new ICommand.Context(_lazyEnv()
+			_lazyContext = new Context(_lazyEnv()
 					, _logger
 					, DataDomain.FAKE_BASE_URL
 					, null

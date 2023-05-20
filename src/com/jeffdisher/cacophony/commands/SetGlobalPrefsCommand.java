@@ -18,7 +18,7 @@ public record SetGlobalPrefsCommand(int _edgeMax
 ) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{

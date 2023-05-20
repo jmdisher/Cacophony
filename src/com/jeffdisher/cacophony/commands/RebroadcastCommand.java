@@ -30,7 +30,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
+	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException, FailedDeserializationException, SizeConstraintException
 	{
 		if (null == _elementCid)
 		{

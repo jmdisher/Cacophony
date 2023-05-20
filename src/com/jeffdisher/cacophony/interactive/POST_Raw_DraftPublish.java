@@ -4,7 +4,7 @@ import java.io.FileNotFoundException;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
@@ -22,11 +22,11 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _backgroundOperations;
 	private final DraftManager _draftManager;
 	
-	public POST_Raw_DraftPublish(ICommand.Context context
+	public POST_Raw_DraftPublish(Context context
 			, BackgroundOperations backgroundOperations
 			, DraftManager draftManager
 	)

@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record ElementSubCommand(String mime, File filePath, int height, int width, boolean isSpecialImage) implements ICommand<ICommand.Result>
 {
 	@Override
-	public ICommand.Result runInContext(ICommand.Context context)
+	public ICommand.Result runInContext(Context context)
 	{
 		// This is not supposed to be actually called.
 		throw Assert.unreachable();

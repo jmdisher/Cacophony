@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -22,9 +22,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_PostHashes implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_PostHashes(ICommand.Context context
+	public GET_PostHashes(Context context
 	)
 	{
 		_context = context;

@@ -21,7 +21,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record EditPostCommand(IpfsFile _postToEdit, String _name, String _description, String _discussionUrl) implements ICommand<OnePost>
 {
 	@Override
-	public OnePost runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public OnePost runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		if ((null == _name) && (null == _description) && (null == _discussionUrl))
 		{

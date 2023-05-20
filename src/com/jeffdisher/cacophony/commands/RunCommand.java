@@ -25,7 +25,7 @@ public record RunCommand(String _overrideCommand, CommandSelectionMode _commandS
 	private static final String DEFAULT_COMMAND = "ffmpeg -i -  -c:v libvpx-vp9 -b:v 256k -filter:v fps=15 -c:a libopus -b:a 32k -f webm  -";
 
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		Resource staticResource = Resource.newClassPathResource("resources/site/");
 		boolean canChangeCommand = (CommandSelectionMode.DANGEROUS == _commandSelectionMode);

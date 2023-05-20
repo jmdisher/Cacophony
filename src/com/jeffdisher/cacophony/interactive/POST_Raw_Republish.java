@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RepublishCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 
@@ -15,10 +15,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _background;
 
-	public POST_Raw_Republish(ICommand.Context context
+	public POST_Raw_Republish(Context context
 			, BackgroundOperations background
 	)
 	{

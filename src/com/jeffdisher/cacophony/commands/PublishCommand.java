@@ -21,7 +21,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
+	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		if (null == _name)
 		{

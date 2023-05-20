@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
@@ -22,9 +22,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	
-	public GET_UnknownUserInfo(ICommand.Context context
+	public GET_UnknownUserInfo(Context context
 	)
 	{
 		_context = context;

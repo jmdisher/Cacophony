@@ -10,7 +10,7 @@ import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
@@ -47,7 +47,7 @@ public class InteractiveServer
 	// The number of most recent entries, for each user, which will be added to the combined list.
 	public static final int PER_USER_COMBINED_START_SIZE = 10;
 
-	public static void runServerUntilStop(ICommand.Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
+	public static void runServerUntilStop(Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
 		startingContext.logger.logVerbose("Setting up initial state before starting server...");
 		
@@ -98,7 +98,7 @@ public class InteractiveServer
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		ICommand.Context serverContext = new ICommand.Context(startingContext.environment
+		Context serverContext = new Context(startingContext.environment
 				, startingContext.logger
 				, startingContext.baseUrl
 				, localRecordCache
@@ -117,7 +117,7 @@ public class InteractiveServer
 			public FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot)
 			{
 				// We need to fake-up a context since we are "acting as" the channel with the given keyName, not related to the selected channel.
-				ICommand.Context localContext = new ICommand.Context(serverContext.environment
+				Context localContext = new Context(serverContext.environment
 						, serverContext.logger
 						, serverContext.baseUrl
 						, serverContext.recordCache

@@ -12,7 +12,7 @@ import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -81,7 +81,7 @@ public class TestJsonGenerationHelpers
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
-		ICommand.Context context = new ICommand.Context(executor
+		Context context = new Context(executor
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -130,7 +130,7 @@ public class TestJsonGenerationHelpers
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		ICommand.Context context = new ICommand.Context(executor
+		Context context = new Context(executor
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null

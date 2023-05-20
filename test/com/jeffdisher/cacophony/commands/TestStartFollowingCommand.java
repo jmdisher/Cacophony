@@ -82,7 +82,7 @@ public class TestStartFollowingCommand
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
-		ICommand.Context context = new ICommand.Context(executor
+		Context context = new Context(executor
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -141,7 +141,7 @@ public class TestStartFollowingCommand
 		boolean didFail = false;
 		try
 		{
-			command.runInContext(new ICommand.Context(executor
+			command.runInContext(new Context(executor
 					, logger
 					, DataDomain.FAKE_BASE_URL
 					, null

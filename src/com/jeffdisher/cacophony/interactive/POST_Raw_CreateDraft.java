@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 
@@ -15,10 +15,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final DraftManager _draftManager;
 	
-	public POST_Raw_CreateDraft(ICommand.Context context, DraftManager draftManager)
+	public POST_Raw_CreateDraft(Context context, DraftManager draftManager)
 	{
 		_context = context;
 		_draftManager = draftManager;

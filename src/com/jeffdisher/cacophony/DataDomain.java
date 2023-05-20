@@ -10,6 +10,7 @@ import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -127,7 +128,7 @@ public class DataDomain implements Closeable
 				, theirScheduler
 		);
 		ILogger theirLogger = new SilentLogger();
-		ICommand.Context theirContext = new ICommand.Context(theirEnv
+		Context theirContext = new Context(theirEnv
 				, theirLogger
 				, FAKE_BASE_URL
 				, null
@@ -154,7 +155,7 @@ public class DataDomain implements Closeable
 				, ourScheduler
 		);
 		ILogger ourLogger = new SilentLogger();
-		ICommand.Context ourContext = new ICommand.Context(ourEnv
+		Context ourContext = new Context(ourEnv
 				, ourLogger
 				, FAKE_BASE_URL
 				, null

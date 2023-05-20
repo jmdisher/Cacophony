@@ -16,7 +16,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		// Look this up and add it to the cache or throw UsageException if it isn't a StreamRecord.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))

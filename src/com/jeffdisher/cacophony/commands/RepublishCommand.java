@@ -16,7 +16,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RepublishCommand() implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		if (null == context.publicKey)
 		{

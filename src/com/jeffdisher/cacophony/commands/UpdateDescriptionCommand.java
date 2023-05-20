@@ -25,7 +25,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website) implements ICommand<ChannelDescription>
 {
 	@Override
-	public ChannelDescription runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public ChannelDescription runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		if (null == context.publicKey)
 		{

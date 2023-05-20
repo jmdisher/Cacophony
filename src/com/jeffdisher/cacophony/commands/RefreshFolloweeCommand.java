@@ -17,7 +17,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
 	{
 		if (null == _publicKey)
 		{
@@ -79,7 +79,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 		return refresher;
 	}
 
-	private void _finish(ICommand.Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException, KeyException
+	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
 		

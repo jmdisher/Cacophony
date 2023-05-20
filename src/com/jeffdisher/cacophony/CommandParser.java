@@ -10,6 +10,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.commands.AddFavouriteCommand;
 import com.jeffdisher.cacophony.commands.AddRecommendationCommand;
 import com.jeffdisher.cacophony.commands.CleanCacheCommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.DeleteChannelCommand;
 import com.jeffdisher.cacophony.commands.EditPostCommand;
@@ -420,7 +421,7 @@ public class CommandParser
 			return new ICommand<None>()
 			{
 				@Override
-				public None runInContext(ICommand.Context context)
+				public None runInContext(Context context)
 				{
 					System.out.println(channelPublicKey.toPublicKey());
 					return None.NONE;

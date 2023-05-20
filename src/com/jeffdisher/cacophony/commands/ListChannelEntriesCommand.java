@@ -28,7 +28,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand<None>
 {
 	@Override
-	public None runInContext(ICommand.Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
+	public None runInContext(Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{

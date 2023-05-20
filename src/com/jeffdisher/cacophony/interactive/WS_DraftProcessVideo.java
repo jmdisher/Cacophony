@@ -7,7 +7,7 @@ import java.time.Duration;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -26,11 +26,11 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final VideoProcessContainer _videoProcessContainer;
 	private final String _forcedCommand;
 	
-	public WS_DraftProcessVideo(ICommand.Context context, VideoProcessContainer videoProcessContainer, String forcedCommand)
+	public WS_DraftProcessVideo(Context context, VideoProcessContainer videoProcessContainer, String forcedCommand)
 	{
 		_context = context;
 		_videoProcessContainer = videoProcessContainer;

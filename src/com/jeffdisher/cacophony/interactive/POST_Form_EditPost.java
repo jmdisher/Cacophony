@@ -1,8 +1,8 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.breakwater.StringMultiMap;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.EditPostCommand;
-import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.LeafFinder;
@@ -27,10 +27,10 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_DESCRIPTION = "DESCRIPTION";
 	public static final String VAR_DISCUSSION_URL = "DISCUSSION_URL";
 
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _background;
 
-	public POST_Form_EditPost(ICommand.Context context
+	public POST_Form_EditPost(Context context
 			, BackgroundOperations background
 	)
 	{

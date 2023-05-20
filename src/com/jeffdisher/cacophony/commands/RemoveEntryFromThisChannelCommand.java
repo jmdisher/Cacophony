@@ -24,7 +24,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements ICommand<ChangedRoot>
 {
 	@Override
-	public ChangedRoot runInContext(ICommand.Context context) throws IpfsConnectionException, UsageException
+	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		if (null == _elementCid)
 		{

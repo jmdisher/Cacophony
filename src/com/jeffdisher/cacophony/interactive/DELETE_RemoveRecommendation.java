@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RemoveRecommendationCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -17,10 +17,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _backgroundOperations;
 
-	public DELETE_RemoveRecommendation(ICommand.Context context
+	public DELETE_RemoveRecommendation(Context context
 			, BackgroundOperations backgroundOperations
 	)
 	{

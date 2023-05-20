@@ -6,6 +6,7 @@ import java.net.URL;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -134,7 +135,7 @@ public class Cacophony {
 					// Create the executor and logger for our run and put them into the context.
 					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
-					ICommand.Context context = new ICommand.Context(executor
+					Context context = new Context(executor
 							, logger
 							, connectionData.second()
 							, null
@@ -214,7 +215,7 @@ public class Cacophony {
 		System.exit(EXIT_STATIC_ERROR);
 	}
 
-	private static boolean _handleResult(ICommand.Context context, ICommand.Result result)
+	private static boolean _handleResult(Context context, ICommand.Result result)
 	{
 		boolean didPublish = false;
 		// If there is a new root, publish it.

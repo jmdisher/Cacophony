@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.ILogger;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,10 +14,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_WaitPublish implements ValidatedEntryPoints.POST_Raw
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _backgroundOperations;
 	
-	public POST_Raw_WaitPublish(ICommand.Context context
+	public POST_Raw_WaitPublish(Context context
 			, BackgroundOperations backgroundOperations
 	)
 	{

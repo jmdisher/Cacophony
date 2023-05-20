@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.UsageException;
 
@@ -18,10 +18,10 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 {
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _operations;
 	
-	public POST_Prefs(ICommand.Context context
+	public POST_Prefs(Context context
 			, BackgroundOperations operations
 	)
 	{

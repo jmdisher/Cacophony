@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.breakwater.StringMultiMap;
-import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,10 +24,10 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 	public static final String VAR_EMAIL = "EMAIL";
 	public static final String VAR_WEBSITE = "WEBSITE";
 
-	private final ICommand.Context _context;
+	private final Context _context;
 	private final BackgroundOperations _background;
 
-	public POST_Form_UserInfo(ICommand.Context context
+	public POST_Form_UserInfo(Context context
 			, BackgroundOperations background
 	)
 	{
