@@ -101,12 +101,11 @@ public class CommandRunner
 	 */
 	public <T extends ICommand.Result> FutureCommand<T> runCommand(ICommand<T> command)
 	{
-		FutureCommand<T> future = new FutureCommand<>();
+		Context one = _sharedContext.cloneWithSelectedKey(_sharedContext.keyName);
+		FutureCommand<T> future = new FutureCommand<>(one);
 		_queue.enqueue(() -> {
-			Context one = _sharedContext.cloneWithSelectedKey(_sharedContext.keyName);
 			try
 			{
-				future.setContext(one);
 				T result = command.runInContext(one);
 				future.success(result);
 				// We don't expect this instance to change with the commands currently run in interactive mode.
@@ -131,12 +130,11 @@ public class CommandRunner
 	 */
 	public <T extends ICommand.Result> FutureCommand<T> runBlockedCommand(IpfsKey blockingKey, ICommand<T> command)
 	{
-		FutureCommand<T> future = new FutureCommand<>();
+		Context one = _sharedContext.cloneWithSelectedKey(_sharedContext.keyName);
+		FutureCommand<T> future = new FutureCommand<>(one);
 		Runnable runnable = () -> {
-			Context one = _sharedContext.cloneWithSelectedKey(_sharedContext.keyName);
 			try
 			{
-				future.setContext(one);
 				T result = command.runInContext(one);
 				future.success(result);
 				// We don't expect this instance to change with the commands currently run in interactive mode.

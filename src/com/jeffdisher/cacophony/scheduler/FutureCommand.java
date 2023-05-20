@@ -12,9 +12,15 @@ import com.jeffdisher.cacophony.types.CacophonyException;
  */
 public class FutureCommand<T>
 {
-	private Context _context;
+	public final Context context;
 	private T _result;
 	private CacophonyException _error;
+
+	public FutureCommand(Context context)
+	{
+		Assert.assertTrue(null != context);
+		this.context = context;
+	}
 
 	public synchronized T get() throws CacophonyException
 	{
@@ -35,19 +41,6 @@ public class FutureCommand<T>
 			throw _error;
 		}
 		return _result;
-	}
-
-	public void setContext(Context context)
-	{
-		// Can only be set once and must be valid.
-		Assert.assertTrue(null != context);
-		Assert.assertTrue(null == _context);
-		_context = context;
-	}
-
-	public Context getContext()
-	{
-		return _context;
 	}
 
 	public synchronized void success(T result)

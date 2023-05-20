@@ -456,7 +456,7 @@ public class InteractiveHelpers
 			T output = future.get();
 			// The commands should only fail with exceptions, always returning non-null on success.
 			Assert.assertTrue(null != output);
-			result = new SuccessfulCommand<T>(output, future.getContext());
+			result = new SuccessfulCommand<T>(output, future.context);
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
 		catch (IpfsConnectionException e)

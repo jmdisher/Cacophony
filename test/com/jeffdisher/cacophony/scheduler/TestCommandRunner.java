@@ -29,7 +29,7 @@ public class TestCommandRunner
 		command.shouldPass = true;
 		FutureCommand<None> result = runner.runCommand(command);
 		Assert.assertEquals(None.NONE, result.get());
-		Assert.assertEquals("name", result.getContext().keyName);
+		Assert.assertEquals("name", result.context.keyName);
 		runner.shutdownThreads();
 	}
 
@@ -53,7 +53,7 @@ public class TestCommandRunner
 			didThrow = true;
 		}
 		Assert.assertTrue(didThrow);
-		Assert.assertEquals("name", result.getContext().keyName);
+		Assert.assertEquals("name", result.context.keyName);
 		runner.shutdownThreads();
 	}
 
@@ -79,14 +79,14 @@ public class TestCommandRunner
 		
 		barrier1.await();
 		Assert.assertEquals(None.NONE, result1.get());
-		Assert.assertEquals("name", result1.getContext().keyName);
+		Assert.assertEquals("name", result1.context.keyName);
 		Assert.assertEquals(None.NONE, result2.get());
-		Assert.assertEquals("name", result2.getContext().keyName);
+		Assert.assertEquals("name", result2.context.keyName);
 		barrier2.await();
 		Assert.assertEquals(None.NONE, result3.get());
-		Assert.assertEquals("name", result3.getContext().keyName);
+		Assert.assertEquals("name", result3.context.keyName);
 		Assert.assertEquals(None.NONE, result4.get());
-		Assert.assertEquals("name", result4.getContext().keyName);
+		Assert.assertEquals("name", result4.context.keyName);
 		
 		runner.shutdownThreads();
 	}
