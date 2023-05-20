@@ -31,9 +31,9 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
-		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
+		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[1]);
 		
-		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(postHashToRemove);
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner

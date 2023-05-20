@@ -22,6 +22,14 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
+	API_loadPublicKey().then(key => {
+		$scope.homePublicKey = key;
+		ready($scope);
+	});
+}
+
+function ready($scope)
+{
 	let hashArg = readGetVar("elt");
 	API_getPost(hashArg).then(elt => {
 		postWasLoaded($scope, hashArg, elt);
@@ -67,7 +75,7 @@ function postWasLoaded($scope, hashArg, elt)
 			"DISCUSSION_URL": $scope.data["discussionUrl"],
 		};
 		$scope.inProgress = true;
-		REST.POST_asForm("/home/post/edit/" + hashArg, variables)
+		REST.POST_asForm("/home/post/edit/" + $scope.homePublicKey + "/" + hashArg, variables)
 			.then(response => response.text())
 			.then((elementHash) => {
 				$scope.inProgress = false;

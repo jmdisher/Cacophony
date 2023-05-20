@@ -46,7 +46,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.startRecommending = function(publicKey)
 	{
 		// We will send the request and then treat this like a new recommended key was loaded, on success.
-		REST.POST("/home/recommend/add/" + publicKey)
+		REST.POST("/home/recommend/add/" + $scope.homePublicKey + "/" + publicKey)
 			.then((response) => {
 				if (response.ok)
 				{
@@ -72,19 +72,19 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	let keyArg = readGetVar("publicKey");
-	if (keyArg !== undefined)
-	{
-		publicKeyLoaded($scope, keyArg, false);
-	}
-	else
-	{
-		// This is typically how we end up viewing the home user so we can change recommendations.
-		$scope.canChangeRecommendations = true;
-		API_loadPublicKey().then(key => {
+	API_loadPublicKey().then(key => {
+		$scope.homePublicKey = key;
+		let keyArg = readGetVar("publicKey");
+		if (keyArg !== undefined)
+		{
+			publicKeyLoaded($scope, keyArg, false);
+		}
+		else
+		{
+			// This is typically how we end up viewing the home user so we can change recommendations.
 			publicKeyLoaded($scope, key, true);
-		});
-	}
+		}
+	});
 }
 function publicKeyLoaded($scope, publicKey, shouldApply)
 {
@@ -124,7 +124,7 @@ function recommendedUsersLoaded($scope, recommended)
 	$scope.stopRecommending = function(user)
 	{
 		// When the delete returns, remove them from the list.
-		REST.DELETE("/home/recommend/remove/" + user.publicKey)
+		REST.DELETE("/home/recommend/remove/" + $scope.homePublicKey + "/" + user.publicKey)
 			.then((response) => {
 				if (response.ok)
 				{

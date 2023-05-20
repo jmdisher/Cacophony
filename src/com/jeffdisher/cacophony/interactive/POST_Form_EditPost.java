@@ -44,12 +44,12 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable
 	{
 		// Make sure that we have all the fields we want - we will assume that we need all the fields, just to keep things simple.
-		IpfsFile eltCid = IpfsFile.fromIpfsCid(pathVariables[0]);
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
+		IpfsFile eltCid = IpfsFile.fromIpfsCid(pathVariables[1]);
 		String name = formVariables.getIfSingle(VAR_NAME);
 		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
 		String discussionUrl = formVariables.getIfSingle(VAR_DISCUSSION_URL);
 		
-		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		EditPostCommand command = new EditPostCommand(eltCid, name, description, discussionUrl);
 		InteractiveHelpers.SuccessfulCommand<OnePost> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner

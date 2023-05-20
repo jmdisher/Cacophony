@@ -28,6 +28,7 @@ function xsrfLoaded($scope)
 	$scope.isHomeUser = false;
 	let keyArg = readGetVar("publicKey");
 	API_loadPublicKey().then(key => {
+		$scope.homePublicKey = key;
 		$scope.isHomeUser = (undefined === keyArg) || (key === keyArg);
 		let keyWeAreUsing = (keyArg !== undefined) ? keyArg : key;
 		publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
@@ -36,7 +37,7 @@ function xsrfLoaded($scope)
 	{
 		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
 		post.isDeleting = true;
-		REST.DELETE("/home/post/delete/" + post.elementHash);
+		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + post.elementHash);
 	}
 }
 function publicKeyLoaded($scope, publicKey, isHomeUser)
@@ -121,7 +122,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 			"EMAIL": (null !== $scope.editState.email) ? $scope.editState.email : "",
 			"WEBSITE": (null !== $scope.editState.website) ? $scope.editState.website : "",
 		};
-		REST.POST_asForm("/home/userInfo/info", variables)
+		REST.POST_asForm("/home/userInfo/info/" + $scope.homePublicKey, variables)
 			.then(function() {
 				$scope.description = $scope.editState;
 				$scope.inEditMode = false;
@@ -162,7 +163,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 	{
 		$scope.editState.saveInProgress = true;
 		
-		REST.POST_withBinary("/home/userInfo/image", $scope.editState.imageData)
+		REST.POST_withBinary("/home/userInfo/image/" + $scope.homePublicKey, $scope.editState.imageData)
 			.then(result => result.text())
 			.then(function(newUrl) {
 				$scope.inEditMode = false;

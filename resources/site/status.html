@@ -20,9 +20,9 @@ function stopServer(onComplete)
 		.then(data => data.text())
 		.then(onComplete);
 }
-function republish(onComplete)
+function republish($scope, onComplete)
 {
-	REST.POST("/home/republish")
+	REST.POST("/home/republish/" + $scope.homePublicKey)
 		.then(data => data.text())
 		.then(onComplete);
 }
@@ -45,7 +45,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.republishRoot = function()
 	{
 		// Republication requests are coalesced on the server and happen in the background so we don't bother with a representation of the request, in the UI.
-		republish(function(text){
+		republish($scope, function(text) {
 			$scope.$apply();
 		});
 	}
@@ -55,6 +55,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 	});
 });
 function xsrfLoaded($scope)
+{
+	API_loadPublicKey().then(key => {
+		$scope.homePublicKey = key;
+		ready($scope);
+	});
+}
+function ready($scope)
 {
 	API_getVersion().then(version => {
 		$scope.hash = version["hash"];

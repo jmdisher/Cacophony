@@ -227,9 +227,9 @@ echo "Check the manipulation of the recommended users"
 RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/recommendedKeys/$PUBLIC1")
 requireSubstring "$RECOMMENDED_KEYS" "[]"
 # Add the other user.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/recommend/add/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/recommend/add/$PUBLIC1/$PUBLIC2"
 checkPreviousCommand "add to recommended"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/recommend/add/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/recommend/add/$PUBLIC1/$PUBLIC2"
 if [ $? != 22 ]; then
 	exit 1
 fi
@@ -243,9 +243,9 @@ SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":6,\"value\""
 # Remove.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/recommend/remove/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/recommend/remove/$PUBLIC1/$PUBLIC2"
 checkPreviousCommand "remove from recommended"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/recommend/remove/$PUBLIC2"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/recommend/remove/$PUBLIC1/$PUBLIC2"
 if [ $? != 22 ]; then
 	exit 1
 fi
@@ -260,7 +260,7 @@ echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":7,\"value\""
 
 echo "Update description..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8001/home/userInfo/info"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=name&DESCRIPTION=My%20description&EMAIL=&WEBSITE=http%3A%2F%2Fexample.com" "http://127.0.0.1:8001/home/userInfo/info/$PUBLIC1"
 checkPreviousCommand "update description info"
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC1")
 requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":\"http://example.com\"}"
@@ -272,7 +272,7 @@ SAMPLE=$(cat "$WS_STATUS.out")
 echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":8,\"value\""
 
-NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8001/home/userInfo/image")
+NEW_URL=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: image/jpeg" --data "FAKE_IMAGE_DATA" "http://127.0.0.1:8001/home/userInfo/image/$PUBLIC1")
 checkPreviousCommand "update description image"
 requireSubstring "$NEW_URL" "http://127.0.0.1:8080/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd"
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC1")

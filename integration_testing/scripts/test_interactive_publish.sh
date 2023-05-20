@@ -296,10 +296,10 @@ ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
 echo "...working with draft $PUBLISH_ID"
 # First, make sure that giving an invalid type argument has no effect.
-ERROR=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/BOGUS)
+ERROR=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/BOGUS)
 requireSubstring "$ERROR" "Invalid draft type: \"BOGUS\""
 # Now, do it correctly.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/VIDEO
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/VIDEO
 
 echo "Waiting for draft publish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/waitPublish
@@ -347,7 +347,7 @@ requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":tr
 
 echo "Edit the post and make sure that we see the updates in both sockets and the post list..."
 OLD_POST_ID="$POST_ID"
-POST_ID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Edit%20Title&DESCRIPTION=Has%20Changed" http://127.0.0.1:8000/home/post/edit/$POST_ID)
+POST_ID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Edit%20Title&DESCRIPTION=Has%20Changed" http://127.0.0.1:8000/home/post/edit/$PUBLIC_KEY/$POST_ID)
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID")
@@ -371,7 +371,7 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
 echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/audio/upload/$PUBLISH_ID/ogg" audio
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLISH_ID/AUDIO
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/AUDIO
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 # We want to look for the second post so get field 4:  1 "2" 3 "4" 5
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 4)
@@ -418,7 +418,7 @@ STATUS_PAGE=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
 echo "Test that we can request another republish..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/home/republish"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/home/republish/$PUBLIC_KEY"
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
@@ -434,9 +434,9 @@ POST_TO_KEEP=$(echo "$POST_LIST" | cut -d "\"" -f 4)
 # Before deleting the post, we should see that it is known to be cached.
 TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE")
 requireSubstring "$TARGET_STRUCT" "\"cached\":true"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/home/post/delete/$POST_TO_DELETE"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/home/post/delete/$PUBLIC_KEY/$POST_TO_DELETE"
 checkPreviousCommand "DELETE post"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/home/post/delete/$POST_TO_DELETE" >& /dev/null
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/home/post/delete/$PUBLIC_KEY/$POST_TO_DELETE" >& /dev/null
 # 400 bad request.
 if [ $? != 22 ]; then
 	exit 1

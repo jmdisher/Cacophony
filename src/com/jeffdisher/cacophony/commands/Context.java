@@ -97,4 +97,25 @@ public class Context
 				, this.keyName
 		);
 	}
+
+	/**
+	 * Used as a reverse lookup of a given key to its home user key name.  This is used in some cases where the key must
+	 * be selected by name, but the actual key is passed around as the generalized parameter.
+	 * 
+	 * @param key The key.
+	 * @return The home user key name for this key, or null if it isn't found.
+	 */
+	public synchronized String findNameForKey(IpfsKey key)
+	{
+		String name = null;
+		for (Map.Entry<String, IpfsKey> elt : _keyNameMap.entrySet())
+		{
+			if (elt.getValue().equals(key))
+			{
+				name = elt.getKey();
+				break;
+			}
+		}
+		return name;
+	}
 }

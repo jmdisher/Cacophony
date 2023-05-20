@@ -227,13 +227,13 @@ public class InteractiveServer
 		validated.addGetHandler("/server/userInfo", 1, new GET_UserInfo(serverContext));
 		
 		// Home user operations.
-		validated.addPostRawHandler("/home/republish", 0, new POST_Raw_Republish(runner, background));
-		validated.addPostFormHandler("/home/post/edit", 1, new POST_Form_EditPost(runner, background));
-		validated.addDeleteHandler("/home/post/delete", 1, new DELETE_Post(runner, background));
-		validated.addPostRawHandler("/home/recommend/add", 1, new POST_Raw_AddRecommendation(runner, background));
-		validated.addDeleteHandler("/home/recommend/remove", 1, new DELETE_RemoveRecommendation(runner, background));
-		validated.addPostFormHandler("/home/userInfo/info", 0, new POST_Form_UserInfo(runner, background));
-		validated.addPostRawHandler("/home/userInfo/image", 0, new POST_Raw_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/republish", 1, new POST_Raw_Republish(runner, background));
+		validated.addPostFormHandler("/home/post/edit", 2, new POST_Form_EditPost(runner, background));
+		validated.addDeleteHandler("/home/post/delete", 2, new DELETE_Post(runner, background));
+		validated.addPostRawHandler("/home/recommend/add", 2, new POST_Raw_AddRecommendation(runner, background));
+		validated.addDeleteHandler("/home/recommend/remove", 2, new DELETE_RemoveRecommendation(runner, background));
+		validated.addPostFormHandler("/home/userInfo/info", 1, new POST_Form_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/userInfo/image", 1, new POST_Raw_UserInfo(runner, background));
 		validated.addGetHandler("/home/publicKey", 0, new GET_PublicKey(serverContext));
 		
 		// Draft operations.
@@ -242,7 +242,7 @@ public class InteractiveServer
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 2, new POST_Raw_DraftPublish(serverContext, background, manager));
+		validated.addPostRawHandler("/draft/publish", 3, new POST_Raw_DraftPublish(serverContext, background, manager));
 		validated.addPostRawHandler("/draft/waitPublish", 0, new POST_Raw_WaitPublish(serverContext, background));
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
 		validated.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(manager));

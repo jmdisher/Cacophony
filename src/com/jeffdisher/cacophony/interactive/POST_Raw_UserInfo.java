@@ -33,9 +33,9 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
 		InputStream input = request.getInputStream();
 		
-		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, null, null);
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner

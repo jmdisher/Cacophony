@@ -40,12 +40,12 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable
 	{
 		// Make sure that we have all the fields we want - we will assume that we need all the fields, just to keep things simple.
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
 		String name = formVariables.getIfSingle(VAR_NAME);
 		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
 		String email = formVariables.getIfSingle(VAR_EMAIL);
 		String website = formVariables.getIfSingle(VAR_WEBSITE);
 		
-		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		UpdateDescriptionCommand command = new UpdateDescriptionCommand(name, description, null, email, website);
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner

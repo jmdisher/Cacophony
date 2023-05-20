@@ -602,7 +602,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 		// We need to save-back the draft before publishing since the server publishes from the saved state.
 		saveDraft($scope.selectedDraft).then(function(data) {
 			// Now, begin the publish.
-			REST.POST("/draft/publish/" + $scope.selectedDraft.id + "/" + $scope.selectedDraft.type)
+			REST.POST("/draft/publish/" + $scope.homePublicKey + "/" + $scope.selectedDraft.id + "/" + $scope.selectedDraft.type)
 				.then(function(data) {
 					$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
 					$scope.selectedDraft = null;
@@ -797,20 +797,33 @@ GLOBAL_Application.controller('AppController', function($scope)
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
-		REST.GET("/allDrafts/all")
-			.then(data => data.json())
-			.then(json => {
-				$scope.drafts = json;
-				$scope.$apply();
-			});
-		REST.GET("/server/videoConfig")
-			.then(data => data.json())
-			.then(json => {
-				$scope.videoConfig = json;
-				$scope.$apply();
-			});
+		xsrfLoaded($scope);
 	});
 });
+
+function xsrfLoaded($scope)
+{
+	API_loadPublicKey().then(key => {
+		$scope.homePublicKey = key;
+		ready($scope);
+	});
+}
+
+function ready($scope)
+{
+	REST.GET("/allDrafts/all")
+		.then(data => data.json())
+		.then(json => {
+			$scope.drafts = json;
+			$scope.$apply();
+		});
+	REST.GET("/server/videoConfig")
+		.then(data => data.json())
+		.then(json => {
+			$scope.videoConfig = json;
+			$scope.$apply();
+		});
+}
 
 </script>
 

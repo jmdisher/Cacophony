@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,25 +40,28 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(_context))
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
+		String keyName = _context.findNameForKey(homePublicKey);
+		Context thisContext = _context.cloneWithSelectedKey(keyName);
+		try (IWritingAccess access = StandardAccess.writeAccess(thisContext))
 		{
-			int draftId = Integer.parseInt(pathVariables[0]);
-			PublishType type = PublishType.valueOf(pathVariables[1]);
+			int draftId = Integer.parseInt(pathVariables[1]);
+			PublishType type = PublishType.valueOf(pathVariables[2]);
 			
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(_context.logger
+			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(thisContext.logger
 					, access
 					, _draftManager
 					, draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
-					, _context.getSelectedKey()
+					, thisContext.getSelectedKey()
 			);
 			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
 			// The publish is something we can wait on, asynchronously, in a different call.
-			_backgroundOperations.requestPublish(_context.keyName, result.newIndexRoot());
+			_backgroundOperations.requestPublish(thisContext.keyName, result.newIndexRoot());
 			IpfsFile newElement = result.newRecordCid();
-			_context.entryRegistry.addLocalElement(_context.getSelectedKey(), newElement);
+			thisContext.entryRegistry.addLocalElement(thisContext.getSelectedKey(), newElement);
 			
 			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
 			// bit odd, since we could have updated this during the publish operation, but that would have required some
@@ -65,20 +69,20 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// verify that the assumptions around this are consistent.
 			// In the future, we may want to refactor this so that it can be more elegantly updated as the network read
 			// seems wrong.
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, _context.recordCache, newElement);
+			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, thisContext.recordCache, newElement);
 			
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
 		catch (NumberFormatException e)
 		{
 			// Draft ID invalid.
-			response.getWriter().println("Invalid draft ID: \"" + pathVariables[0] + "\"");
+			response.getWriter().println("Invalid draft ID: \"" + pathVariables[1] + "\"");
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 		catch (IllegalArgumentException e)
 		{
 			// Typically thrown by PublishType.valueOf.
-			response.getWriter().println("Invalid draft type: \"" + pathVariables[1] + "\"");
+			response.getWriter().println("Invalid draft type: \"" + pathVariables[2] + "\"");
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 		catch (FileNotFoundException e)
