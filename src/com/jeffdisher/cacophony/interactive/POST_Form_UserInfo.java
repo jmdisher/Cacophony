@@ -45,9 +45,11 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 		String email = formVariables.getIfSingle(VAR_EMAIL);
 		String website = formVariables.getIfSingle(VAR_WEBSITE);
 		
+		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		UpdateDescriptionCommand command = new UpdateDescriptionCommand(name, description, null, email, website);
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, homePublicKey
 				, command
 		);
 		if (null != success)

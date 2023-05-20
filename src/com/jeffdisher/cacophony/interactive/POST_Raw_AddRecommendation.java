@@ -33,9 +33,11 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 	{
 		IpfsKey userToAdd = IpfsKey.fromPublicKey(pathVariables[0]);
 		
+		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		AddRecommendationCommand command = new AddRecommendationCommand(userToAdd);
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, homePublicKey
 				, command
 		);
 		if (null != result)

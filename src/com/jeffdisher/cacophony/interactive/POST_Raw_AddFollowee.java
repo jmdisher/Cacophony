@@ -35,6 +35,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		StartFollowingCommand command = new StartFollowingCommand(userToAdd);
 		InteractiveHelpers.SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, userToAdd
 				, command
 		);
 		if (null != result)

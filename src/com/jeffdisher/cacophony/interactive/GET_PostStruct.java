@@ -41,6 +41,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 		ShowPostCommand command = new ShowPostCommand(postToResolve);
 		InteractiveHelpers.SuccessfulCommand<ShowPostCommand.PostDetails> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, null
 				, command
 		);
 		if (null != success)

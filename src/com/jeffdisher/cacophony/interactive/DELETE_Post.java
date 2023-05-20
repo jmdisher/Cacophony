@@ -5,6 +5,7 @@ import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,9 +32,12 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
 		IpfsFile postHashToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
+		
+		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		RemoveEntryFromThisChannelCommand command = new RemoveEntryFromThisChannelCommand(postHashToRemove);
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, homePublicKey
 				, command
 		);
 		if (null != success)

@@ -155,6 +155,17 @@ public class CommandRunner
 		return future;
 	}
 
+	/**
+	 * TODO: Remove this once all callers can use a parameter from outside since they shouldn't depend on this internal
+	 * state.
+	 * 
+	 * @return The currently-selected home key (can be null).
+	 */
+	public IpfsKey getCurrentHomeKey()
+	{
+		return _sharedContext.getSelectedKey();
+	}
+
 
 	private synchronized void _enqueueOrBlock(IpfsKey blockingKey, Runnable runnable)
 	{

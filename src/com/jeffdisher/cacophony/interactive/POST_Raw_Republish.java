@@ -32,6 +32,7 @@ public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 		RepublishCommand command = new RepublishCommand();
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, null
 				, command
 		);
 		if (null != result)

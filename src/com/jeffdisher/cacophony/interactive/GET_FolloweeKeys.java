@@ -29,6 +29,7 @@ public class GET_FolloweeKeys implements ValidatedEntryPoints.GET
 		ListFolloweesCommand command = new ListFolloweesCommand();
 		InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, null
 				, command
 		);
 		if (null != result)

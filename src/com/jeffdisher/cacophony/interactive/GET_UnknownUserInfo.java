@@ -40,6 +40,7 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 			ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
 			InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 					, _runner
+					, userToResolve
 					, command
 			);
 			if (null != success)

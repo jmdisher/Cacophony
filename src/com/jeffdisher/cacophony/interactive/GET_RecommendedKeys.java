@@ -33,6 +33,7 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 			ListRecommendationsCommand command = new ListRecommendationsCommand(userToResolve);
 			InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response
 					, _runner
+					, userToResolve
 					, command
 			);
 			if (null != result)

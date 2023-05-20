@@ -8,6 +8,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -48,9 +49,11 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
 		String discussionUrl = formVariables.getIfSingle(VAR_DISCUSSION_URL);
 		
+		IpfsKey homePublicKey = _runner.getCurrentHomeKey();
 		EditPostCommand command = new EditPostCommand(eltCid, name, description, discussionUrl);
 		InteractiveHelpers.SuccessfulCommand<OnePost> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
+				, homePublicKey
 				, command
 		);
 		if (null != success)

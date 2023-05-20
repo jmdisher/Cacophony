@@ -440,15 +440,19 @@ public class InteractiveHelpers
 	 * @param response Used for setting HTTP result codes (even in the success case).
 	 * @param runner The CommandRunner to execute the command.
 	 * @param command The command to run.
+	 * @param blockingKey The key to use as the blocking key for this command (null for no blocking).
 	 * @return A wrapper of the object returned by the command and the context where it executed.
 	 * @throws IOException There was an error interacting with the response object.
 	 */
-	public static <T extends ICommand.Result> SuccessfulCommand<T> runCommandAndHandleErrors(HttpServletResponse response, CommandRunner runner, ICommand<T> command) throws IOException
+	public static <T extends ICommand.Result> SuccessfulCommand<T> runCommandAndHandleErrors(HttpServletResponse response, CommandRunner runner, IpfsKey blockingKey, ICommand<T> command) throws IOException
 	{
 		SuccessfulCommand<T> result = null;
 		try
 		{
-			FutureCommand<T> future = runner.runCommand(command);
+			FutureCommand<T> future = (null != blockingKey)
+					? runner.runBlockedCommand(blockingKey, command)
+					: runner.runCommand(command)
+			;
 			T output = future.get();
 			// The commands should only fail with exceptions, always returning non-null on success.
 			Assert.assertTrue(null != output);
