@@ -55,7 +55,7 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 			_background.requestPublish(_context.keyName, result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
-			IpfsKey key = _context.publicKey;
+			IpfsKey key = _context.getSelectedKey();
 			_context.userInfoCache.setUserInfo(key
 					, result.name
 					, result.description

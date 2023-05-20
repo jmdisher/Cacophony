@@ -32,7 +32,7 @@ public record CreateChannelCommand() implements ICommand<ChangedRoot>
 		
 		// Make sure that we aren't going to over-write an existing structure.
 		// (note that the public key is read from storage so it being null means we have no channel for this name).
-		if (null != context.publicKey)
+		if (null != context.getSelectedKey())
 		{
 			throw new UsageException("Channel already exists for the IPFS key named: \"" + context.keyName + "\"");
 		}
@@ -47,7 +47,7 @@ public record CreateChannelCommand() implements ICommand<ChangedRoot>
 		setupLog.logFinish("Key setup done:  " + publicKey);
 		
 		// We need to modify the context with this new key.
-		context.publicKey = publicKey;
+		context.addKey(context.keyName, publicKey);
 		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;

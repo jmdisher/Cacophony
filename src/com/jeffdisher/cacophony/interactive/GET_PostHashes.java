@@ -36,7 +36,7 @@ public class GET_PostHashes implements ValidatedEntryPoints.GET
 		IpfsKey userToResolve = IpfsKey.fromPublicKey(variables[0]);
 		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
-			IpfsKey publicKey = _context.publicKey;
+			IpfsKey publicKey = _context.getSelectedKey();
 			IpfsFile lastPublishedIndex = access.getLastRootElement();
 			IFolloweeReading followees = access.readableFolloweeData();
 			JsonArray hashes = JsonGenerationHelpers.postHashes(access, publicKey, lastPublishedIndex, followees, userToResolve);

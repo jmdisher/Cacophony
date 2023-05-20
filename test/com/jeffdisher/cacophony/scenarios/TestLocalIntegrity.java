@@ -3,6 +3,8 @@ package com.jeffdisher.cacophony.scenarios;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -55,8 +57,8 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
+				, new HashMap<>()
 				, KEY_NAME1
-				, null
 		));
 		
 		// We expect 5 keys in the storage:
@@ -86,8 +88,8 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
+				, new HashMap<>()
 				, KEY_NAME1
-				, null
 		));
 		
 		// We expect the normal 5.
@@ -110,8 +112,8 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
+				, Map.of(KEY_NAME1, PUBLIC_KEY1)
 				, KEY_NAME1
-				, PUBLIC_KEY1
 		));
 		// We expect 7 keys in the storage:
 		// -index
@@ -144,8 +146,8 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
+				, Map.of(KEY_NAME1, PUBLIC_KEY1)
 				, KEY_NAME1
-				, PUBLIC_KEY1
 		));
 		
 		// We should see the same files from the original post.

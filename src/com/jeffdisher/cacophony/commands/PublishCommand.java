@@ -31,7 +31,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		{
 			throw new UsageException("Description must be provided");
 		}
-		if (null == context.publicKey)
+		if (null == context.getSelectedKey())
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
@@ -51,7 +51,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 					, _description
 					, _discussionUrl
 					, openElements
-					, context.publicKey
+					, context.getSelectedKey()
 			);
 			newRoot = result.newIndexRoot();
 			newElement = result.newRecordCid();

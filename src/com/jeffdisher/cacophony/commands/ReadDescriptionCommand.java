@@ -26,7 +26,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		// First, make sure that we find the relevant key (since they default to the local user).
 		IpfsKey keyToCheck = (null != _channelPublicKey)
 				? _channelPublicKey
-				: context.publicKey
+				: context.getSelectedKey()
 		;
 		if (null == keyToCheck)
 		{
@@ -79,7 +79,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		{
 			IpfsFile rootToLoad = null;
 			// First is to see if this is us.
-			if (keyToCheck.equals(context.publicKey))
+			if (keyToCheck.equals(context.getSelectedKey()))
 			{
 				rootToLoad = access.getLastRootElement();
 			}

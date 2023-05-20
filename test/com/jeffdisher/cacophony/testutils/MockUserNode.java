@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
@@ -82,20 +84,32 @@ public class MockUserNode
 		if (null != captureStream)
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
+			String keyName = defaultContext.keyName;
+			IpfsKey publicKey = defaultContext.getSelectedKey();
+			Map<String, IpfsKey> map = ((null != keyName) && (null != publicKey))
+					? Map.of(keyName, publicKey)
+					: Map.of()
+			;
 			usedContext = new Context(defaultContext.environment
 					, logger
 					, defaultContext.baseUrl
 					, null
 					, null
 					, null
-					, defaultContext.keyName
-					, defaultContext.publicKey
+					, map
+					, keyName
 			);
 		}
 		T result = command.runInContext(usedContext);
 		if (usedContext != defaultContext)
 		{
-			defaultContext.publicKey = usedContext.publicKey;
+			Assert.assertTrue(defaultContext.keyName.equals(usedContext.keyName));
+			IpfsKey newKey = usedContext.getSelectedKey();
+			IpfsKey initialKey = defaultContext.getSelectedKey();
+			if ((null != newKey) && (null == initialKey))
+			{
+				defaultContext.addKey(defaultContext.keyName, newKey);
+			}
 		}
 		_handleResult(result);
 		return logger.didErrorOccur()
@@ -250,8 +264,8 @@ public class MockUserNode
 					, null
 					, null
 					, null
+					, new HashMap<>()
 					, _localKeyName
-					, null
 			);
 		}
 		return _lazyContext;

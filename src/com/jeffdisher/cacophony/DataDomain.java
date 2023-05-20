@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.commands.Context;
@@ -134,8 +135,8 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
+				, new HashMap<>()
 				, keyName
-				, null
 		);
 		new CreateChannelCommand().runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
@@ -161,8 +162,8 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
+				, new HashMap<>()
 				, keyName
-				, null
 		);
 		new CreateChannelCommand().runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);

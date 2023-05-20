@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -88,8 +89,8 @@ public class TestStartFollowingCommand
 				, null
 				, null
 				, null
+				, Map.of(KEY_NAME, PUBLIC_KEY)
 				, KEY_NAME
-				, PUBLIC_KEY
 		);
 		command.runInContext(context);
 		
@@ -147,8 +148,8 @@ public class TestStartFollowingCommand
 					, null
 					, null
 					, null
+					, Map.of(KEY_NAME, PUBLIC_KEY)
 					, KEY_NAME
-					, PUBLIC_KEY
 			));
 		}
 		catch (ProtocolDataException e)

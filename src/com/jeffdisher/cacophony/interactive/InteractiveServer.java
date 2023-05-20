@@ -98,15 +98,7 @@ public class InteractiveServer
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		Context serverContext = new Context(startingContext.environment
-				, startingContext.logger
-				, startingContext.baseUrl
-				, localRecordCache
-				, userInfoCache
-				, entryRegistry
-				, startingContext.keyName
-				, startingContext.publicKey
-		);
+		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry);
 		
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
@@ -117,15 +109,7 @@ public class InteractiveServer
 			public FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot)
 			{
 				// We need to fake-up a context since we are "acting as" the channel with the given keyName, not related to the selected channel.
-				Context localContext = new Context(serverContext.environment
-						, serverContext.logger
-						, serverContext.baseUrl
-						, serverContext.recordCache
-						, serverContext.userInfoCache
-						, serverContext.entryRegistry
-						, keyName
-						, publicKey
-				);
+				Context localContext = serverContext.cloneWithSelectedKey(keyName);
 				FuturePublish publish = null;
 				try (IWritingAccess access = StandardAccess.writeAccess(localContext))
 				{

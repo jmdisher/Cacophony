@@ -21,7 +21,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		if (null == context.publicKey)
+		if (null == context.getSelectedKey())
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
@@ -47,6 +47,8 @@ public record DeleteChannelCommand() implements ICommand<None>
 			
 			access.unpin(indexCid);
 			access.deleteChannelData();
+			// We also want to clean up the context.
+			context.removeKey(context.keyName);
 		}
 		catch (FailedDeserializationException e)
 		{

@@ -27,7 +27,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		{
 			throw new UsageException("At least one field must be being changed");
 		}
-		if (null == context.publicKey)
+		if (null == context.getSelectedKey())
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}

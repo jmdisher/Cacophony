@@ -50,14 +50,14 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 					, draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
-					, _context.publicKey
+					, _context.getSelectedKey()
 			);
 			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
 			// The publish is something we can wait on, asynchronously, in a different call.
 			_backgroundOperations.requestPublish(_context.keyName, result.newIndexRoot());
 			IpfsFile newElement = result.newRecordCid();
-			_context.entryRegistry.addLocalElement(_context.publicKey, newElement);
+			_context.entryRegistry.addLocalElement(_context.getSelectedKey(), newElement);
 			
 			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
 			// bit odd, since we could have updated this during the publish operation, but that would have required some

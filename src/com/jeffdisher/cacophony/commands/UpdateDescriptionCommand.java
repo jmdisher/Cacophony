@@ -27,7 +27,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	@Override
 	public ChannelDescription runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		if (null == context.publicKey)
+		if (null == context.getSelectedKey())
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}

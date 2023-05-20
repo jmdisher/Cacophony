@@ -36,7 +36,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		{
 			throw new UsageException("Element CID must be provided");
 		}
-		if (null == context.publicKey)
+		if (null == context.getSelectedKey())
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}

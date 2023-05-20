@@ -71,7 +71,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		return new StandardAccess(context.environment, context.logger, reading, null, context.keyName, context.publicKey);
+		return new StandardAccess(context.environment, context.logger, reading, null, context.keyName, context.getSelectedKey());
 	}
 
 	/**
@@ -88,7 +88,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(context.environment, context.logger, writing, writing, context.keyName, context.publicKey);
+		return new StandardAccess(context.environment, context.logger, writing, writing, context.keyName, context.getSelectedKey());
 	}
 
 

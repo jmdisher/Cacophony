@@ -18,7 +18,7 @@ public record RepublishCommand() implements ICommand<ChangedRoot>
 	@Override
 	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		if (null == context.publicKey)
+		if (null == context.getSelectedKey())
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}

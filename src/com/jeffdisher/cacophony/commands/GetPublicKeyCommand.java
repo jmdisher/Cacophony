@@ -11,7 +11,7 @@ public record GetPublicKeyCommand() implements ICommand<None>
 	public None runInContext(Context context) throws IpfsConnectionException
 	{
 		ILogger log = context.logger.logStart("Public Key:");
-		log.logOperation("Public Key (other users can follow you with this): " + context.publicKey.toPublicKey());
+		log.logOperation("Public Key (other users can follow you with this): " + context.getSelectedKey().toPublicKey());
 		log.logFinish("");
 		return None.NONE;
 	}

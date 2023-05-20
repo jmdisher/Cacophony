@@ -3,6 +3,8 @@ package com.jeffdisher.cacophony;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -12,6 +14,7 @@ import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
+import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
@@ -125,11 +128,16 @@ public class Cacophony {
 					// Make sure that the local storage is in a sane state and load it into memory.
 					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), scheduler);
 					
-					// Look up our selected channel key (may be null if there is no such channel created).
-					IpfsKey publicKey;
+					// Fetch all the public key data for the known channels.
+					Map<String, IpfsKey> homeChannelKeys = new HashMap<>();
 					try (IReadOnlyLocalData reading = localDataModel.openForRead())
 					{
-						publicKey = reading.readLocalIndex().getPublicKey(keyName);
+						ChannelData channels = reading.readLocalIndex();
+						for (String oneName : channels.getKeyNames())
+						{
+							IpfsKey oneKey = channels.getPublicKey(oneName);
+							homeChannelKeys.put(oneName, oneKey);
+						}
 					}
 					
 					// Create the executor and logger for our run and put them into the context.
@@ -141,8 +149,8 @@ public class Cacophony {
 							, null
 							, null
 							, null
+							, homeChannelKeys
 							, keyName
-							, publicKey
 					);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).

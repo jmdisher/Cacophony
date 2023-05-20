@@ -29,7 +29,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		// First, make sure that we find the relevant key (since they default to the local user).
 		IpfsKey keyToCheck = (null != _targetKey)
 				? _targetKey
-				: context.publicKey
+				: context.getSelectedKey()
 		;
 		if (null == keyToCheck)
 		{
@@ -72,7 +72,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		{
 			IpfsFile rootToLoad = null;
 			// First is to see if this is us.
-			if (keyToCheck.equals(context.publicKey))
+			if (keyToCheck.equals(context.getSelectedKey()))
 			{
 				rootToLoad = access.getLastRootElement();
 			}

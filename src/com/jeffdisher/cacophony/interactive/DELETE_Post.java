@@ -42,7 +42,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 			Assert.assertTrue(null != newRoot);
 			
 			// Delete the entry for anyone listening.
-			_context.entryRegistry.removeLocalElement(_context.publicKey, postHashToRemove);
+			_context.entryRegistry.removeLocalElement(_context.getSelectedKey(), postHashToRemove);
 			
 			// Request a republish.
 			_backgroundOperations.requestPublish(_context.keyName, newRoot);

@@ -1,6 +1,8 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IEnvironment;
@@ -8,6 +10,7 @@ import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -24,17 +27,16 @@ public class Context
 	public final LocalUserInfoCache userInfoCache;
 	public final EntryCacheRegistry entryRegistry;
 	public final String keyName;
-	// The public key of the context, since it can be set when the channel is created.
-	public IpfsKey publicKey;
-	
+	private final Map<String, IpfsKey> _keyNameMap;
+
 	public Context(IEnvironment environment
 			, ILogger logger
 			, URL baseUrl
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, EntryCacheRegistry entryRegistry
+			, Map<String, IpfsKey> keyNameMap
 			, String keyName
-			, IpfsKey publicKey
 	)
 	{
 		this.environment = environment;
@@ -43,7 +45,56 @@ public class Context
 		this.recordCache = recordCache;
 		this.userInfoCache = userInfoCache;
 		this.entryRegistry = entryRegistry;
+		_keyNameMap = keyNameMap;
 		this.keyName = keyName;
-		this.publicKey = publicKey;
+	}
+
+	public IpfsKey getSelectedKey()
+	{
+		return _keyNameMap.get(this.keyName);
+	}
+
+	public synchronized void addKey(String name, IpfsKey key)
+	{
+		// We currently require that the name be the selected one.
+		Assert.assertTrue(this.keyName.equals(name));
+		Assert.assertTrue(!_keyNameMap.containsKey(name));
+		_keyNameMap.put(name, key);
+	}
+
+	public synchronized void removeKey(String name)
+	{
+		// We currently require that the name be the selected one.
+		Assert.assertTrue(this.keyName.equals(name));
+		Assert.assertTrue(_keyNameMap.containsKey(name));
+		_keyNameMap.remove(name);
+	}
+
+	public synchronized Context cloneWithSelectedKey(String keyName)
+	{
+		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
+		return new Context(this.environment
+				, this.logger
+				, this.baseUrl
+				, this.recordCache
+				, this.userInfoCache
+				, this.entryRegistry
+				, new HashMap<>(_keyNameMap)
+				, keyName
+		);
+	}
+
+	public synchronized Context cloneWithExtras(LocalRecordCache localRecordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry)
+	{
+		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
+		return new Context(this.environment
+				, this.logger
+				, this.baseUrl
+				, localRecordCache
+				, userInfoCache
+				, entryRegistry
+				, new HashMap<>(_keyNameMap)
+				, this.keyName
+		);
 	}
 }

@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -87,8 +88,8 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
+				, Map.of(KEY_NAME, PUBLIC_KEY1)
 				, KEY_NAME
-				, PUBLIC_KEY1
 		);
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
@@ -100,7 +101,7 @@ public class TestJsonGenerationHelpers
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.publicKey, indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.getSelectedKey(), indexFile);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
 		}
 		
@@ -136,8 +137,8 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
+				, Map.of(KEY_NAME, PUBLIC_KEY1)
 				, KEY_NAME
-				, PUBLIC_KEY1
 		);
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
@@ -162,7 +163,7 @@ public class TestJsonGenerationHelpers
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.publicKey, indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.getSelectedKey(), indexFile);
 			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
 		}
 		

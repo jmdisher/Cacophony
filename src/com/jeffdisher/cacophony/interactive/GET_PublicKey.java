@@ -24,7 +24,7 @@ public class GET_PublicKey implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		response.setContentType("text/plain");
-		IpfsKey key = _context.publicKey;
+		IpfsKey key = _context.getSelectedKey();
 		if (null != key)
 		{
 			response.setStatus(HttpServletResponse.SC_OK);
