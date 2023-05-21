@@ -39,6 +39,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 				, _runner
 				, homePublicKey
 				, command
+				, homePublicKey
 		);
 		if (null != success)
 		{

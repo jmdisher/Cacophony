@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.commands.RepublishCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,14 +32,12 @@ public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 	{
 		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
 		// Note that we don't republish with the blocking key since it is designed to not interact with on-IPFS user state.
-		// TODO:  Make this homePublicKey select the context once that functionality is expanded.
-		Assert.assertTrue(null != homePublicKey);
-		
 		RepublishCommand command = new RepublishCommand();
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, null
 				, command
+				, homePublicKey
 		);
 		if (null != result)
 		{

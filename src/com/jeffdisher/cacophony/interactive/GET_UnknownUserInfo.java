@@ -37,11 +37,13 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
 		if (null != userToResolve)
 		{
+			// While this could be a home user, we don't bother specializing that case, here.
 			ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
 			InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 					, _runner
 					, userToResolve
 					, command
+					, null
 			);
 			if (null != success)
 			{

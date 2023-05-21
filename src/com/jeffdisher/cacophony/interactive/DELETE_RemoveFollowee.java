@@ -43,6 +43,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 						, _runner
 						, null
 						, command
+						, null
 				);
 				if (null != result)
 				{

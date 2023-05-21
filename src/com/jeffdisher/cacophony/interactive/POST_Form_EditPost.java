@@ -55,6 +55,7 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 				, _runner
 				, homePublicKey
 				, command
+				, homePublicKey
 		);
 		if (null != success)
 		{

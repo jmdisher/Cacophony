@@ -43,6 +43,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 				, _runner
 				, null
 				, command
+				, null
 		);
 		if (null != success)
 		{

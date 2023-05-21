@@ -441,18 +441,24 @@ public class InteractiveHelpers
 	 * @param runner The CommandRunner to execute the command.
 	 * @param blockingKey The key to use as the blocking key for this command (null for no blocking).
 	 * @param command The command to run.
+	 * @param overrideKey If non-null, will be used to find the key name for the command's context.
 	 * @return A wrapper of the object returned by the command and the context where it executed.
 	 * @throws IOException There was an error interacting with the response object.
 	 */
-	public static <T extends ICommand.Result> SuccessfulCommand<T> runCommandAndHandleErrors(HttpServletResponse response, CommandRunner runner, IpfsKey blockingKey, ICommand<T> command) throws IOException
+	public static <T extends ICommand.Result> SuccessfulCommand<T> runCommandAndHandleErrors(HttpServletResponse response, CommandRunner runner, IpfsKey blockingKey, ICommand<T> command, IpfsKey overrideKey) throws IOException
 	{
 		SuccessfulCommand<T> result = null;
 		try
 		{
 			FutureCommand<T> future = (null != blockingKey)
-					? runner.runBlockedCommand(blockingKey, command, null)
-					: runner.runCommand(command, null)
+					? runner.runBlockedCommand(blockingKey, command, overrideKey)
+					: runner.runCommand(command, overrideKey)
 			;
+			if (null == future)
+			{
+				// This means that they override key is not known as a home user - same as a key resolve.
+				throw new KeyException(overrideKey, null);
+			}
 			T output = future.get();
 			// The commands should only fail with exceptions, always returning non-null on success.
 			Assert.assertTrue(null != output);

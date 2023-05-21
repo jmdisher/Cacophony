@@ -39,6 +39,7 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 				, _runner
 				, homePublicKey
 				, command
+				, homePublicKey
 		);
 		if (null != result)
 		{

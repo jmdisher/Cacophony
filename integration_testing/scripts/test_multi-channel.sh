@@ -77,12 +77,26 @@ RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m
 if [ $? -ne 1 ]; then
 	exit 1
 fi
+RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --getPublicKey)
+PUBLIC_KEY2=$(echo $RESULT_STRING | cut -d " " -f 14)
 
-echo "Before deleting the channels, make sure that the interactive server can be started and stopped..."
+echo "Before deleting the channels, make sure that the interactive server works..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
 waitForCacophonyStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
+
+echo "Prove that we can update these home users independently..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Test1%20User&DESCRIPTION=The%20test%20user" "http://127.0.0.1:8001/home/userInfo/info/$PUBLIC_KEY1"
+checkPreviousCommand "update description info: test1"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "DESCRIPTION=The%20quick%20user" "http://127.0.0.1:8001/home/userInfo/info/$PUBLIC_KEY2"
+checkPreviousCommand "update description info: quick"
+USER_INFO1=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC_KEY1")
+requireSubstring "$USER_INFO1" "{\"name\":\"Test1 User\",\"description\":\"The test user\","
+USER_INFO2=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC_KEY2")
+requireSubstring "$USER_INFO2" "{\"name\":\"Quick user\",\"description\":\"The quick user\","
+
+echo "We can now stop the server..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
 wait $SERVER_PID
 

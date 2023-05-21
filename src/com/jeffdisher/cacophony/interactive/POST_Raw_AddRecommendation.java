@@ -39,6 +39,7 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 				, _runner
 				, homePublicKey
 				, command
+				, homePublicKey
 		);
 		if (null != result)
 		{

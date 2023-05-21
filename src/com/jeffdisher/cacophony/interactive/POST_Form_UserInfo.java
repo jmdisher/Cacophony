@@ -51,6 +51,7 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 				, _runner
 				, homePublicKey
 				, command
+				, homePublicKey
 		);
 		if (null != success)
 		{
