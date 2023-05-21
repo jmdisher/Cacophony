@@ -97,25 +97,36 @@ public class CommandRunner
 	 * 
 	 * @param <T> The return type of the command.
 	 * @param command The command to run.
-	 * @return A future describing the command result/error and context where it was executed.
+	 * @param overrideKey If non-null, will be used to find the key name for the command's context.
+	 * @return A future describing the command result/error and context where it was executed (null if override failed).
 	 */
-	public <T extends ICommand.Result> FutureCommand<T> runCommand(ICommand<T> command)
+	public <T extends ICommand.Result> FutureCommand<T> runCommand(ICommand<T> command, IpfsKey overrideKey)
 	{
-		Context one = _sharedContext.cloneWithSelectedKey(_sharedContext.keyName);
-		FutureCommand<T> future = new FutureCommand<>(one);
-		_queue.enqueue(() -> {
-			try
-			{
-				T result = command.runInContext(one);
-				future.success(result);
-				// We don't expect this instance to change with the commands currently run in interactive mode.
-				Assert.assertTrue(_sharedContext.getSelectedKey() == one.getSelectedKey());
-			}
-			catch (CacophonyException e)
-			{
-				future.failure(e);
-			}
-		});
+		String keyName = (null != overrideKey)
+				? _sharedContext.findNameForKey(overrideKey)
+				: _sharedContext.keyName
+		;
+		FutureCommand<T> future;
+		if (null != keyName)
+		{
+			Context one = _sharedContext.cloneWithSelectedKey(keyName);
+			future = new FutureCommand<>(one);
+			_queue.enqueue(() -> {
+				try
+				{
+					T result = command.runInContext(one);
+					future.success(result);
+				}
+				catch (CacophonyException e)
+				{
+					future.failure(e);
+				}
+			});
+		}
+		else
+		{
+			future = null;
+		}
 		return future;
 	}
 
@@ -126,30 +137,41 @@ public class CommandRunner
 	 * @param <T> The return type of the command.
 	 * @param blockingKey The key which this command will treat as a mutex around scheduling and execution.
 	 * @param command The command to run.
-	 * @return A future describing the command result/error and context where it was executed.
+	 * @param overrideKey If non-null, will be used to find the key name for the command's context.
+	 * @return A future describing the command result/error and context where it was executed (null if override failed).
 	 */
-	public <T extends ICommand.Result> FutureCommand<T> runBlockedCommand(IpfsKey blockingKey, ICommand<T> command)
+	public <T extends ICommand.Result> FutureCommand<T> runBlockedCommand(IpfsKey blockingKey, ICommand<T> command, IpfsKey overrideKey)
 	{
-		Context one = _sharedContext.cloneWithSelectedKey(_sharedContext.keyName);
-		FutureCommand<T> future = new FutureCommand<>(one);
-		Runnable runnable = () -> {
-			try
-			{
-				T result = command.runInContext(one);
-				future.success(result);
-				// We don't expect this instance to change with the commands currently run in interactive mode.
-				Assert.assertTrue(_sharedContext.getSelectedKey() == one.getSelectedKey());
-			}
-			catch (CacophonyException e)
-			{
-				future.failure(e);
-			}
-			finally
-			{
-				_unblockKey(blockingKey);
-			}
-		};
-		_enqueueOrBlock(blockingKey, runnable);
+		String keyName = (null != overrideKey)
+				? _sharedContext.findNameForKey(overrideKey)
+				: _sharedContext.keyName
+		;
+		FutureCommand<T> future;
+		if (null != keyName)
+		{
+			Context one = _sharedContext.cloneWithSelectedKey(keyName);
+			future = new FutureCommand<>(one);
+			Runnable runnable = () -> {
+				try
+				{
+					T result = command.runInContext(one);
+					future.success(result);
+				}
+				catch (CacophonyException e)
+				{
+					future.failure(e);
+				}
+				finally
+				{
+					_unblockKey(blockingKey);
+				}
+			};
+			_enqueueOrBlock(blockingKey, runnable);
+		}
+		else
+		{
+			future = null;
+		}
 		return future;
 	}
 

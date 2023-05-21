@@ -135,7 +135,7 @@ public class InteractiveServer
 			{
 				// We just want to run the RefreshFolloweeCommand, since it internally does everything.
 				RefreshFolloweeCommand command = new RefreshFolloweeCommand(followeeKey);
-				FutureCommand<None> result = runner.runBlockedCommand(followeeKey, command);
+				FutureCommand<None> result = runner.runBlockedCommand(followeeKey, command, null);
 				boolean didRefresh;
 				try
 				{

@@ -439,8 +439,8 @@ public class InteractiveHelpers
 	 * @param <T> The return value of the command.
 	 * @param response Used for setting HTTP result codes (even in the success case).
 	 * @param runner The CommandRunner to execute the command.
-	 * @param command The command to run.
 	 * @param blockingKey The key to use as the blocking key for this command (null for no blocking).
+	 * @param command The command to run.
 	 * @return A wrapper of the object returned by the command and the context where it executed.
 	 * @throws IOException There was an error interacting with the response object.
 	 */
@@ -450,8 +450,8 @@ public class InteractiveHelpers
 		try
 		{
 			FutureCommand<T> future = (null != blockingKey)
-					? runner.runBlockedCommand(blockingKey, command)
-					: runner.runCommand(command)
+					? runner.runBlockedCommand(blockingKey, command, null)
+					: runner.runCommand(command, null)
 			;
 			T output = future.get();
 			// The commands should only fail with exceptions, always returning non-null on success.
