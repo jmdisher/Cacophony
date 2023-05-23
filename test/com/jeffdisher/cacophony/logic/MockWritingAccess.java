@@ -168,12 +168,6 @@ public class MockWritingAccess implements IWritingAccess
 	}
 
 	@Override
-	public FuturePublish republishIndex()
-	{
-		throw new RuntimeException("Not Called");
-	}
-
-	@Override
 	public ConcurrentTransaction openConcurrentTransaction()
 	{
 		throw new RuntimeException("Not Called");

@@ -103,14 +103,6 @@ public interface IReadingAccess extends AutoCloseable
 	FutureSize getSizeInBytes(IpfsFile cid);
 
 	/**
-	 * Republishes the last saved root element for this channel's key.
-	 * NOTE:  Considers the home user given to the implementation when opened.
-	 * 
-	 * @return The asynchronously-completed future.
-	 */
-	FuturePublish republishIndex();
-
-	/**
 	 * Requests that a new ConcurrentTransaction be opened, based on the scheduler and pin cache state of the receiver.
 	 * This must be later committed or rolled back by calling commitTransactionPinCanges in IWritingAccess.
 	 * 
@@ -129,6 +121,14 @@ public interface IReadingAccess extends AutoCloseable
 	 * @return The list of tuples to describe the home users (can be empty).
 	 */
 	List<HomeUserTuple> readHomeUserData();
+
+	/**
+	 * Requests that the given indexRoot be published under our key, to the IPFS network.
+	 * 
+	 * @param indexRoot The root to publish.
+	 * @return The asynchronous publish operation.
+	 */
+	FuturePublish beginIndexPublish(IpfsFile indexRoot);
 
 
 	record HomeUserTuple(String keyName, IpfsKey publicKey, IpfsFile lastRoot) {}

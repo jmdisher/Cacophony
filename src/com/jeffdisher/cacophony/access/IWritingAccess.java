@@ -10,7 +10,6 @@ import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
-import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -78,14 +77,6 @@ public interface IWritingAccess extends IReadingAccess
 	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
 	 */
 	void unpin(IpfsFile cid) throws IpfsConnectionException;
-
-	/**
-	 * Requests that the given indexRoot be published under our key, to the IPFS network.
-	 * 
-	 * @param indexRoot The root to publish.
-	 * @return The asynchronous publish operation.
-	 */
-	FuturePublish beginIndexPublish(IpfsFile indexRoot);
 
 	/**
 	 * Called when we wish to commit or rollback a ConcurrentTransaction.  This helper allows it to rationalize any pin

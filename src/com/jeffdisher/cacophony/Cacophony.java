@@ -6,7 +6,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
@@ -230,7 +230,7 @@ public class Cacophony {
 		IpfsFile newRoot = result.getIndexToPublish();
 		if (null != newRoot)
 		{
-			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			try (IReadingAccess access = StandardAccess.readAccess(context))
 			{
 				context.logger.logVerbose("Publishing " + newRoot + "...");
 				FuturePublish asyncPublish = access.beginIndexPublish(newRoot);

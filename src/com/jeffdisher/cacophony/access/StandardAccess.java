@@ -211,13 +211,6 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public FuturePublish republishIndex()
-	{
-		IpfsFile lastRoot = _channelData.getLastPublishedIndex(_keyName);
-		return _scheduler.publishIndex(_keyName, _publicKey, lastRoot);
-	}
-
-	@Override
 	public ConcurrentTransaction openConcurrentTransaction()
 	{
 		return new ConcurrentTransaction(_scheduler, _pinCache.snapshotPinnedSet());

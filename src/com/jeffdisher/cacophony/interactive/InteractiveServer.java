@@ -118,7 +118,7 @@ public class InteractiveServer
 				// We need to fake-up a context since we are "acting as" the channel with the given keyName, not related to the selected channel.
 				Context localContext = serverContext.cloneWithSelectedKey(keyName);
 				FuturePublish publish = null;
-				try (IWritingAccess access = StandardAccess.writeAccess(localContext))
+				try (IReadingAccess access = StandardAccess.readAccess(localContext))
 				{
 					publish = access.beginIndexPublish(newRoot);
 				}
