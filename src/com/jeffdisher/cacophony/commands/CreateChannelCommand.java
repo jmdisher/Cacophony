@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.KeyNameRules;
 
 
 public record CreateChannelCommand(String _keyName) implements ICommand<ChangedRoot>
@@ -33,6 +34,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		{
 			throw new UsageException("Channel already exists for the IPFS key named: \"" + _keyName + "\"");
 		}
+		KeyNameRules.validateKey(_keyName);
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.

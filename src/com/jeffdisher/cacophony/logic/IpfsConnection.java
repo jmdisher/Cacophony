@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.KeyNameRules;
 
 import io.ipfs.api.IPFS;
 import io.ipfs.api.KeyInfo;
@@ -85,7 +86,8 @@ public class IpfsConnection implements IConnection
 	@Override
 	public void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException
 	{
-		Assert.assertTrue(null != keyName);
+		// We expect that the caller already validated this name.
+		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		Assert.assertTrue(null != publicKey);
 		Assert.assertTrue(null != file);
 		
@@ -200,6 +202,8 @@ public class IpfsConnection implements IConnection
 	@Override
 	public IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException
 	{
+		// We expect that the caller already validated this name.
+		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		String context = "lookup";
 		try
 		{

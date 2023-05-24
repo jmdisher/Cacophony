@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.KeyNameRules;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
@@ -139,7 +140,8 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	@Override
 	public FuturePublish publishIndex(String keyName, IpfsKey publicKey, IpfsFile indexHash)
 	{
-		Assert.assertTrue(null != keyName);
+		// We expect that the caller already validated this name.
+		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		Assert.assertTrue(null != publicKey);
 		Assert.assertTrue(null != indexHash);
 		FuturePublish future = new FuturePublish(indexHash);
@@ -240,6 +242,8 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	@Override
 	public FutureKey getOrCreatePublicKey(String keyName)
 	{
+		// We expect that the caller already validated this name.
+		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		FutureKey future = new FutureKey();
 		Runnable r = () -> {
 			try

@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.KeyNameRules;
 
 
 /**
@@ -56,6 +57,8 @@ public class ProjectionBuilder implements IMiscUses, IFolloweeDecoding
 		// This is a version 2 data model so assert that we didn't already define the singular channel.
 		Assert.assertTrue(_channel.getKeyNames().isEmpty());
 		Assert.assertTrue(null == _keyName);
+		// This would be invalid data.
+		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		// We just store the name and populate the config later (that way, if there is no root, we don't define the channel).
 		_keyName = keyName;
 	}

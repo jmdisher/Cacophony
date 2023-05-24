@@ -39,6 +39,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.KeyNameRules;
 
 
 /**
@@ -164,6 +165,11 @@ public class StandardAccess implements IWritingAccess
 		
 		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
+		if (null != keyName)
+		{
+			// This should have been checked before we got here.
+			Assert.assertTrue(KeyNameRules.isValidKey(keyName));
+		}
 		INetworkScheduler scheduler = environment.getSharedScheduler();
 		Assert.assertTrue(null != scheduler);
 		
