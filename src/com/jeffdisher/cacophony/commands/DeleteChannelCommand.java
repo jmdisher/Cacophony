@@ -48,7 +48,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			access.unpin(indexCid);
 			access.deleteChannelData();
 			// We also want to clean up the context.
-			context.removeKey(context.keyName);
+			context.setSelectedKey(null);
 		}
 		catch (FailedDeserializationException e)
 		{

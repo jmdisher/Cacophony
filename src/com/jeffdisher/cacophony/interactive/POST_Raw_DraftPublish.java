@@ -41,8 +41,8 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
 		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
-		String keyName = _context.findNameForKey(homePublicKey);
-		Context thisContext = _context.cloneWithSelectedKey(keyName);
+		// We will try to override with the given public key, which will cause an exception on StandardAccess if it isn't really a home key.
+		Context thisContext = _context.cloneWithSelectedKey(homePublicKey);
 		try (IWritingAccess access = StandardAccess.writeAccess(thisContext))
 		{
 			int draftId = Integer.parseInt(pathVariables[1]);

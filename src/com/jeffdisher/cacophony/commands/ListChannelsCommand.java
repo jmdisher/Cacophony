@@ -28,7 +28,7 @@ public record ListChannelsCommand() implements ICommand<None>
 			{
 				IpfsKey publicKey = data.getPublicKey(keyName);
 				IpfsFile lastRoot = data.getLastPublishedIndex(keyName);
-				boolean isSelected = keyName.equals(context.keyName);
+				boolean isSelected = publicKey.equals(context.getSelectedKey());
 				
 				ILogger one = log.logStart("Key name: " + keyName + (isSelected ? " (SELECTED)" : ""));
 				one.logOperation("Public key: " + publicKey);

@@ -116,7 +116,7 @@ public class InteractiveServer
 			public FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot)
 			{
 				// We need to fake-up a context since we are "acting as" the channel with the given keyName, not related to the selected channel.
-				Context localContext = serverContext.cloneWithSelectedKey(keyName);
+				Context localContext = serverContext.cloneWithSelectedKey(publicKey);
 				FuturePublish publish = null;
 				try (IReadingAccess access = StandardAccess.readAccess(localContext))
 				{

@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -88,10 +87,9 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
-				, Map.of(KEY_NAME, PUBLIC_KEY1)
-				, KEY_NAME
+				, PUBLIC_KEY1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, PUBLIC_KEY1))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
@@ -137,10 +135,9 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
-				, Map.of(KEY_NAME, PUBLIC_KEY1)
-				, KEY_NAME
+				, PUBLIC_KEY1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, PUBLIC_KEY1))
 		{
 			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);

@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.scheduler;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -31,7 +29,7 @@ public class TestCommandRunner
 		command.shouldPass = true;
 		FutureCommand<None> result = runner.runCommand(command, null);
 		Assert.assertEquals(None.NONE, result.get());
-		Assert.assertEquals("name", result.context.keyName);
+		Assert.assertEquals(K1, result.context.getSelectedKey());
 		runner.shutdownThreads();
 	}
 
@@ -55,7 +53,7 @@ public class TestCommandRunner
 			didThrow = true;
 		}
 		Assert.assertTrue(didThrow);
-		Assert.assertEquals("name", result.context.keyName);
+		Assert.assertEquals(K1, result.context.getSelectedKey());
 		runner.shutdownThreads();
 	}
 
@@ -81,14 +79,14 @@ public class TestCommandRunner
 		
 		barrier1.await();
 		Assert.assertEquals(None.NONE, result1.get());
-		Assert.assertEquals("name", result1.context.keyName);
+		Assert.assertEquals(K1, result1.context.getSelectedKey());
 		Assert.assertEquals(None.NONE, result2.get());
-		Assert.assertEquals("name", result2.context.keyName);
+		Assert.assertEquals(K1, result2.context.getSelectedKey());
 		barrier2.await();
 		Assert.assertEquals(None.NONE, result3.get());
-		Assert.assertEquals("name", result3.context.keyName);
+		Assert.assertEquals(K1, result3.context.getSelectedKey());
 		Assert.assertEquals(None.NONE, result4.get());
-		Assert.assertEquals("name", result4.context.keyName);
+		Assert.assertEquals(K1, result4.context.getSelectedKey());
 		
 		runner.shutdownThreads();
 	}
@@ -148,17 +146,13 @@ public class TestCommandRunner
 	@Test
 	public void keyOverride() throws Throwable
 	{
-		Map<String, IpfsKey> keys = new HashMap<>();
-		keys.put("name", K1);
-		keys.put("next", K2);
 		Context context = new Context(null
 				, null
 				, null
 				, null
 				, null
 				, null
-				, keys
-				, "name"
+				, K1
 		);
 		CommandRunner runner = new CommandRunner(context, 1);
 		runner.startThreads();
@@ -180,8 +174,7 @@ public class TestCommandRunner
 				, null
 				, null
 				, null
-				, new HashMap<>()
-				, "name"
+				, K1
 		);
 	}
 

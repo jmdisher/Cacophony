@@ -71,7 +71,9 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
-		return new StandardAccess(context.environment, context.logger, reading, null, context.keyName, context.getSelectedKey());
+		IpfsKey selectedKey = context.getSelectedKey();
+		String keyName = _findKeyName(reading, selectedKey);
+		return new StandardAccess(context.environment, context.logger, reading, null, keyName, selectedKey);
 	}
 
 	/**
@@ -88,7 +90,46 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(context.environment, context.logger, writing, writing, context.keyName, context.getSelectedKey());
+		IpfsKey selectedKey = context.getSelectedKey();
+		String keyName = _findKeyName(writing, selectedKey);
+		return new StandardAccess(context.environment, context.logger, writing, writing, keyName, selectedKey);
+	}
+
+	/**
+	 * Requests write access with key overrides.
+	 * This is a special-case of writeAccess(Context) used for initial channel creation.
+	 * 
+	 * @param context The current command context.
+	 * @return The write access interface.
+	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
+	 */
+	public static IWritingAccess writeAccessWithKeyOverride(Context context, String keyName, IpfsKey selectedKey) throws IpfsConnectionException
+	{
+		LocalDataModel dataModel = context.environment.getSharedDataModel();
+		IReadWriteLocalData writing = dataModel.openForWrite();
+		
+		return new StandardAccess(context.environment, context.logger, writing, writing, keyName, selectedKey);
+	}
+
+	private static String _findKeyName(IReadOnlyLocalData data, IpfsKey publicKey)
+	{
+		// We want to verify that this publicKey _IS_ a home key (or else we will throw).
+		String keyName = null;
+		if (null != publicKey)
+		{
+			ChannelData localIndex = data.readLocalIndex();
+			for (String homeKeyName : localIndex.getKeyNames())
+			{
+				if (localIndex.getPublicKey(homeKeyName).equals(publicKey))
+				{
+					keyName = homeKeyName;
+					break;
+				}
+			}
+			// This would just be a static error to get this far and be missing a key name (where did we get the original key?)
+			Assert.assertTrue(null != keyName);
+		}
+		return keyName;
 	}
 
 

@@ -102,14 +102,14 @@ public class CommandRunner
 	 */
 	public <T extends ICommand.Result> FutureCommand<T> runCommand(ICommand<T> command, IpfsKey overrideKey)
 	{
-		String keyName = (null != overrideKey)
-				? _sharedContext.findNameForKey(overrideKey)
-				: _sharedContext.keyName
+		IpfsKey keyToChoose = (null != overrideKey)
+				? overrideKey
+				: _sharedContext.getSelectedKey()
 		;
 		FutureCommand<T> future;
-		if (null != keyName)
+		if (null != keyToChoose)
 		{
-			Context one = _sharedContext.cloneWithSelectedKey(keyName);
+			Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
 			future = new FutureCommand<>(one);
 			_queue.enqueue(() -> {
 				try
@@ -142,14 +142,14 @@ public class CommandRunner
 	 */
 	public <T extends ICommand.Result> FutureCommand<T> runBlockedCommand(IpfsKey blockingKey, ICommand<T> command, IpfsKey overrideKey)
 	{
-		String keyName = (null != overrideKey)
-				? _sharedContext.findNameForKey(overrideKey)
-				: _sharedContext.keyName
+		IpfsKey keyToChoose = (null != overrideKey)
+				? overrideKey
+				: _sharedContext.getSelectedKey()
 		;
 		FutureCommand<T> future;
-		if (null != keyName)
+		if (null != keyToChoose)
 		{
-			Context one = _sharedContext.cloneWithSelectedKey(keyName);
+			Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
 			future = new FutureCommand<>(one);
 			Runnable runnable = () -> {
 				try

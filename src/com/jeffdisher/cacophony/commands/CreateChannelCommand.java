@@ -43,15 +43,13 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		Assert.assertTrue(null != publicKey);
 		setupLog.logFinish("Key setup done:  " + publicKey);
 		
-		// We need to modify the context with this new key.
-		context.addKey(_keyName, publicKey);
-		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, _keyName, publicKey))
 		{
 			newRoot = _runCore(context.environment, access);
 		}
+		context.setSelectedKey(publicKey);
 		log.logFinish("Initial state published to Cacophony!");
 		return new ChangedRoot(newRoot);
 	}

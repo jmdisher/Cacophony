@@ -3,8 +3,6 @@ package com.jeffdisher.cacophony;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -124,30 +122,11 @@ public class Cacophony {
 					// Make sure that the local storage is in a sane state and load it into memory.
 					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), scheduler);
 					
-					// Fetch all the public key data for the known channels.
-					Map<String, IpfsKey> homeChannelKeys = new HashMap<>();
-					try (IReadOnlyLocalData reading = localDataModel.openForRead())
-					{
-						ChannelData channels = reading.readLocalIndex();
-						for (String oneName : channels.getKeyNames())
-						{
-							IpfsKey oneKey = channels.getPublicKey(oneName);
-							homeChannelKeys.put(oneName, oneKey);
-						}
-					}
-					
 					// Create the executor and logger for our run and put them into the context.
 					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler);
 					StandardLogger logger = StandardLogger.topLogger(System.out);
-					Context context = new Context(executor
-							, logger
-							, connectionData.second()
-							, null
-							, null
-							, null
-							, homeChannelKeys
-							, keyName
-					);
+					URL baseUrl = connectionData.second();
+					Context context = _createContext(keyName, localDataModel, executor, logger, baseUrl);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);
@@ -209,6 +188,27 @@ public class Cacophony {
 		{
 			errorStart();
 		}
+	}
+
+	private static Context _createContext(String keyName, LocalDataModel localDataModel, StandardEnvironment executor, StandardLogger logger, URL baseUrl)
+	{
+		// We want to see if the key name we are working with is one which exists for us (could be null).
+		IpfsKey selectedHomeKey = null;
+		try (IReadOnlyLocalData reading = localDataModel.openForRead())
+		{
+			ChannelData channels = reading.readLocalIndex();
+			selectedHomeKey = channels.getPublicKey(keyName);
+		}
+		
+		Context context = new Context(executor
+				, logger
+				, baseUrl
+				, null
+				, null
+				, null
+				, selectedHomeKey
+		);
+		return context;
 	}
 
 	private static void errorStart()
