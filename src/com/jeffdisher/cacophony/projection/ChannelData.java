@@ -59,6 +59,8 @@ public class ChannelData
 	public void initializeChannelState(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
 		Assert.assertTrue(!_homeChannelsByKeyName.containsKey(keyName));
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != rootElement);
 		_homeChannelsByKeyName.put(keyName, new Pair<>(publicKey, rootElement));
 	}
 
@@ -88,6 +90,9 @@ public class ChannelData
 
 	public void setLastPublishedIndex(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
+		Assert.assertTrue(null != keyName);
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != rootElement);
 		_homeChannelsByKeyName.put(keyName, new Pair<>(publicKey, rootElement));
 	}
 

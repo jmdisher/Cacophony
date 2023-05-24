@@ -32,7 +32,7 @@ public class TestV2V3
 	public void channelData() throws Throwable
 	{
 		ChannelData channelData = ChannelData.create();
-		channelData.initializeChannelState("key", K1, null);
+		channelData.initializeChannelState("key", K1, F1);
 		channelData.setLastPublishedIndex("key", K1, F2);
 		byte[] v2 = _serializeV2(channelData, null, null);
 		

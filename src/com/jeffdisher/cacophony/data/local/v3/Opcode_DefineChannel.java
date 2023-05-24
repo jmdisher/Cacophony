@@ -22,6 +22,9 @@ public record Opcode_DefineChannel(String keyName, IpfsKey publicKey, IpfsFile l
 			String keyName = deserializer.readString();
 			IpfsKey publicKey = deserializer.readKey();
 			IpfsFile latestRoot = deserializer.readCid();
+			Assert.assertTrue(null != keyName);
+			Assert.assertTrue(null != publicKey);
+			Assert.assertTrue(null != latestRoot);
 			return new Opcode_DefineChannel(keyName, publicKey, latestRoot);
 		};
 	}
