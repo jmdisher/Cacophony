@@ -454,11 +454,8 @@ public class InteractiveHelpers
 					? runner.runBlockedCommand(blockingKey, command, overrideKey)
 					: runner.runCommand(command, overrideKey)
 			;
-			if (null == future)
-			{
-				// This means that they override key is not known as a home user - same as a key resolve.
-				throw new KeyException(overrideKey, null);
-			}
+			// These always return a future.
+			Assert.assertTrue(null != future);
 			T output = future.get();
 			// The commands should only fail with exceptions, always returning non-null on success.
 			Assert.assertTrue(null != output);

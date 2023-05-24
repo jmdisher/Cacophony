@@ -106,27 +106,19 @@ public class CommandRunner
 				? overrideKey
 				: _sharedContext.getSelectedKey()
 		;
-		FutureCommand<T> future;
-		if (null != keyToChoose)
-		{
-			Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
-			future = new FutureCommand<>(one);
-			_queue.enqueue(() -> {
-				try
-				{
-					T result = command.runInContext(one);
-					future.success(result);
-				}
-				catch (CacophonyException e)
-				{
-					future.failure(e);
-				}
-			});
-		}
-		else
-		{
-			future = null;
-		}
+		Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
+		FutureCommand<T> future = new FutureCommand<>(one);
+		_queue.enqueue(() -> {
+			try
+			{
+				T result = command.runInContext(one);
+				future.success(result);
+			}
+			catch (CacophonyException e)
+			{
+				future.failure(e);
+			}
+		});
 		return future;
 	}
 
@@ -146,32 +138,24 @@ public class CommandRunner
 				? overrideKey
 				: _sharedContext.getSelectedKey()
 		;
-		FutureCommand<T> future;
-		if (null != keyToChoose)
-		{
-			Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
-			future = new FutureCommand<>(one);
-			Runnable runnable = () -> {
-				try
-				{
-					T result = command.runInContext(one);
-					future.success(result);
-				}
-				catch (CacophonyException e)
-				{
-					future.failure(e);
-				}
-				finally
-				{
-					_unblockKey(blockingKey);
-				}
-			};
-			_enqueueOrBlock(blockingKey, runnable);
-		}
-		else
-		{
-			future = null;
-		}
+		Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
+		FutureCommand<T> future = new FutureCommand<>(one);
+		Runnable runnable = () -> {
+			try
+			{
+				T result = command.runInContext(one);
+				future.success(result);
+			}
+			catch (CacophonyException e)
+			{
+				future.failure(e);
+			}
+			finally
+			{
+				_unblockKey(blockingKey);
+			}
+		};
+		_enqueueOrBlock(blockingKey, runnable);
 		return future;
 	}
 
