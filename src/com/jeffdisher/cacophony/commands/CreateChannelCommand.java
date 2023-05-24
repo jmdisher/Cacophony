@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
@@ -28,12 +29,6 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 	@Override
 	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		// Make sure that we aren't going to over-write an existing structure.
-		// (note that the public key is read from storage so it being null means we have no channel for this name).
-		if (null != context.getSelectedKey())
-		{
-			throw new UsageException("Channel already exists for the IPFS key named: \"" + _keyName + "\"");
-		}
 		KeyNameRules.validateKey(_keyName);
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
@@ -49,6 +44,14 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, _keyName, publicKey))
 		{
+			// Make sure that this isn't something which already exists.
+			for (IReadingAccess.HomeUserTuple tuple : access.readHomeUserData())
+			{
+				if (tuple.keyName().equals(_keyName))
+				{
+					throw new UsageException("Channel already exists for the IPFS key named: \"" + _keyName + "\"");
+				}
+			}
 			newRoot = _runCore(context.environment, access);
 		}
 		context.setSelectedKey(publicKey);
