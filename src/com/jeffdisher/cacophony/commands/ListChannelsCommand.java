@@ -1,42 +1,81 @@
 package com.jeffdisher.cacophony.commands;
 
+import java.io.PrintStream;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
-public record ListChannelsCommand() implements ICommand<None>
+public record ListChannelsCommand() implements ICommand<ListChannelsCommand.ChannelList>
 {
 	@Override
-	public None runInContext(Context context) throws IpfsConnectionException
+	public ChannelList runInContext(Context context) throws IpfsConnectionException
 	{
 		// We want a pretty low-level read which doesn't take into account the current context key so use the data model, directly.
 		LocalDataModel dataModel = context.environment.getSharedDataModel();
+		ChannelList list;
 		try (IReadOnlyLocalData reading = dataModel.openForRead())
 		{
 			ChannelData data = reading.readLocalIndex();
 			Set<String> keyNames = data.getKeyNames();
-			ILogger log = context.logger.logStart("Found " + keyNames.size() + " channels:");
-			for (String keyName : keyNames)
-			{
-				IpfsKey publicKey = data.getPublicKey(keyName);
-				IpfsFile lastRoot = data.getLastPublishedIndex(keyName);
-				boolean isSelected = publicKey.equals(context.getSelectedKey());
-				
-				ILogger one = log.logStart("Key name: " + keyName + (isSelected ? " (SELECTED)" : ""));
-				one.logOperation("Public key: " + publicKey);
-				one.logOperation("Last published root: " + lastRoot);
-				one.logFinish("");
-			}
-			log.logFinish("");
+			OneChannel[] channels = keyNames.stream()
+					.map((String keyName) -> {
+						IpfsKey publicKey = data.getPublicKey(keyName);
+						IpfsFile lastRoot = data.getLastPublishedIndex(keyName);
+						boolean isSelected = publicKey.equals(context.getSelectedKey());
+						return new OneChannel(keyName, publicKey, lastRoot, isSelected);
+					})
+					.collect(Collectors.toList())
+					.toArray((int size) -> new OneChannel[size])
+			;
+			list = new ChannelList(channels);
 		}
-		return None.NONE;
+		return list;
+	}
+
+
+	public static class ChannelList implements ICommand.Result
+	{
+		private final OneChannel[] _channels;
+		
+		public ChannelList(OneChannel[] channels)
+		{
+			_channels = channels;
+		}
+		@Override
+		public IpfsFile getIndexToPublish()
+		{
+			// Nothing changed.
+			return null;
+		}
+		@Override
+		public void writeHumanReadable(PrintStream output)
+		{
+			output.println("Found " + _channels.length + " channels:");
+			for (OneChannel channel : _channels)
+			{
+				output.println("Key name: " + channel.keyName + (channel.isSelected ? " (SELECTED)" : ""));
+				output.println("\tPublic key: " + channel.publicKey);
+				output.println("\tLast published root: " + channel.lastPublishedRoot);
+			}
+		}
+		public OneChannel[] getChannels()
+		{
+			return _channels;
+		}
+	}
+
+	public static record OneChannel(String keyName
+			, IpfsKey publicKey
+			, IpfsFile lastPublishedRoot
+			, boolean isSelected
+	)
+	{
 	}
 }
