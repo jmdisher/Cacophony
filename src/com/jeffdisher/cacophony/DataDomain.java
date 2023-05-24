@@ -138,7 +138,7 @@ public class DataDomain implements Closeable
 				, new HashMap<>()
 				, keyName
 		);
-		new CreateChannelCommand().runInContext(theirContext);
+		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
 		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
 		IpfsFile newRoot = result.getIndexToPublish();
@@ -165,7 +165,7 @@ public class DataDomain implements Closeable
 				, new HashMap<>()
 				, keyName
 		);
-		new CreateChannelCommand().runInContext(ourContext);
+		new CreateChannelCommand(keyName).runInContext(ourContext);
 		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
 		us.publish(keyName, ourKey, newRoot);
 		new StartFollowingCommand(theirKey).runInContext(ourContext);

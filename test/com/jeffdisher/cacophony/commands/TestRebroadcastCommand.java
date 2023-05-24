@@ -40,10 +40,10 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.runCommand(null, new CreateChannelCommand());
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
-		user2.runCommand(null, new CreateChannelCommand());
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
 		
 		// Publish something we can copy.
@@ -85,9 +85,9 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.runCommand(null, new CreateChannelCommand());
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
-		user2.runCommand(null, new CreateChannelCommand());
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Publish something we can copy.
 		File fakeVideo = FOLDER.newFile();
@@ -126,7 +126,7 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channel and publish an entry.
-		user.runCommand(null, new CreateChannelCommand());
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		File fakeVideo = FOLDER.newFile();
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
@@ -167,9 +167,9 @@ public class TestRebroadcastCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.runCommand(null, new CreateChannelCommand());
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
-		user2.runCommand(null, new CreateChannelCommand());
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Publish something we can copy.
 		File fakeVideo = FOLDER.newFile();

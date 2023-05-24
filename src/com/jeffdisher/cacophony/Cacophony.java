@@ -107,11 +107,7 @@ public class Cacophony {
 				{
 					ipfsConnectString = DEFAULT_IPFS_CONNECT;
 				}
-				String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
-				if (null == keyName)
-				{
-					keyName = CommandParser.DEFAULT_KEY_NAME;
-				}
+				String keyName = CommandParser.getKeyNameFromEnv();
 				
 				// Make sure we get ownership of the lock file.
 				MultiThreadedScheduler scheduler = null;

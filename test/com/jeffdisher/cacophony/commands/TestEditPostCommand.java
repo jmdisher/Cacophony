@@ -118,7 +118,7 @@ public class TestEditPostCommand
 		PublishCommand command = new PublishCommand(name, "description", discussionUrl, elements);
 		
 		// We need to create the channel first so we will just use the command to do that.
-		boolean didPass = (null != user.runCommand(null, new CreateChannelCommand()));
+		boolean didPass = (null != user.runCommand(null, new CreateChannelCommand(KEY_NAME)));
 		Assert.assertTrue(didPass);
 		
 		// Now, run the publish command.

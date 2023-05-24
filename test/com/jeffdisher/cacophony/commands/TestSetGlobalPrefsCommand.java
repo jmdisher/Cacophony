@@ -25,7 +25,7 @@ public class TestSetGlobalPrefsCommand
 		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user.runCommand(null, new CreateChannelCommand());
+		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Verify initial update.
 		Assert.assertNotNull(user.getLastRootElement());

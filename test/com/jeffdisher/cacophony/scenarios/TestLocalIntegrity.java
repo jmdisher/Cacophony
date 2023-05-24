@@ -50,7 +50,7 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node, scheduler);
 		SilentLogger logger = new SilentLogger();
 		
-		CreateChannelCommand createChannel = new CreateChannelCommand();
+		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -81,7 +81,7 @@ public class TestLocalIntegrity
 		IEnvironment env = _createSingleNode(node, scheduler);
 		SilentLogger logger = new SilentLogger();
 		
-		CreateChannelCommand createChannel = new CreateChannelCommand();
+		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(new Context(env
 				, logger
 				, DataDomain.FAKE_BASE_URL

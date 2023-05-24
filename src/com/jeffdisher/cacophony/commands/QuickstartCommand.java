@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -17,7 +16,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * It is just to get things up and running quickly but this may be removed in the future, since it requires hard-coded
  * data and is inflexible.
  */
-public record QuickstartCommand(String _optionalChannelName) implements ICommand<ChangedRoot>
+public record QuickstartCommand(String _keyName, String _optionalChannelName) implements ICommand<ChangedRoot>
 {
 	/**
 	 * This is the Cacophony "demo channel" public key.
@@ -29,13 +28,10 @@ public record QuickstartCommand(String _optionalChannelName) implements ICommand
 	@Override
 	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		// There is always a key set.
-		Assert.assertTrue(null != context.keyName);
-		
 		// We need to create the channel, no matter what else we plan to do.
 		// This will throw UsageException if the channel already exists.
 		ILogger log = context.logger.logStart("Quickstart:  Creating channel...");
-		CreateChannelCommand createCommand = new CreateChannelCommand();
+		CreateChannelCommand createCommand = new CreateChannelCommand(_keyName);
 		IpfsFile finalUpdatedRoot = createCommand.runInContext(context).getIndexToPublish();
 		log.logFinish("Done!");
 		

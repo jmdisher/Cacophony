@@ -29,7 +29,7 @@ public class TestListChannelEntriesCommand
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user1.runCommand(null, new CreateChannelCommand());
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Check that we can list entries with null key.
 		user1.runCommand(null, new ListChannelEntriesCommand(null));
@@ -55,8 +55,8 @@ public class TestListChannelEntriesCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channels.
-		user1.runCommand(null, new CreateChannelCommand());
-		user2.runCommand(null, new CreateChannelCommand());
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Check that we can ask about someone we aren't following who does exist.
 		user2.runCommand(null, new ListChannelEntriesCommand(PUBLIC_KEY1));
@@ -72,8 +72,8 @@ public class TestListChannelEntriesCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channels.
-		user1.runCommand(null, new CreateChannelCommand());
-		user2.runCommand(null, new CreateChannelCommand());
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
+		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Make an entry with no leaves and one with a big leaf.
 		user1.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[0]));

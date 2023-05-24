@@ -22,32 +22,29 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record CreateChannelCommand() implements ICommand<ChangedRoot>
+public record CreateChannelCommand(String _keyName) implements ICommand<ChangedRoot>
 {
 	@Override
 	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		// There is always a key set.
-		Assert.assertTrue(null != context.keyName);
-		
 		// Make sure that we aren't going to over-write an existing structure.
 		// (note that the public key is read from storage so it being null means we have no channel for this name).
 		if (null != context.getSelectedKey())
 		{
-			throw new UsageException("Channel already exists for the IPFS key named: \"" + context.keyName + "\"");
+			throw new UsageException("Channel already exists for the IPFS key named: \"" + _keyName + "\"");
 		}
 		
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
-		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + context.keyName + "\"");
+		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + _keyName + "\"");
 		IConnection connection = context.environment.getConnection();
-		IpfsKey publicKey = connection.getOrCreatePublicKey(context.keyName);
+		IpfsKey publicKey = connection.getOrCreatePublicKey(_keyName);
 		// This will fail with exception, never null.
 		Assert.assertTrue(null != publicKey);
 		setupLog.logFinish("Key setup done:  " + publicKey);
 		
 		// We need to modify the context with this new key.
-		context.addKey(context.keyName, publicKey);
+		context.addKey(_keyName, publicKey);
 		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		IpfsFile newRoot;

@@ -59,7 +59,7 @@ public class MockUserNode
 	{
 		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
 		
-		CreateChannelCommand createChannel = new CreateChannelCommand();
+		CreateChannelCommand createChannel = new CreateChannelCommand(keyName);
 		ICommand.Result result = createChannel.runInContext(_lazyContext());
 		_handleResult(result);
 		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);

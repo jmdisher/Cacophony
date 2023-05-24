@@ -79,7 +79,7 @@ public class TestPublishCommand
 		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
-		user1.runCommand(null, new CreateChannelCommand());
+		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Now, run the publish command.
 		user1.runCommand(null, command);

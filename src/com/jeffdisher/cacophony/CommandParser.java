@@ -103,7 +103,8 @@ public class CommandParser
 				, "Creates a new home user channel.  Required before running most other operations."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
-			return new CreateChannelCommand();
+			String keyName = CommandParser.getKeyNameFromEnv();
+			return new CreateChannelCommand(keyName);
 		}),
 		UPDATE_DESCRIPTION(true, "--updateDescription"
 				, new ArgParameter[0]
@@ -552,8 +553,9 @@ public class CommandParser
 						+ " --updateDescription, and --startFollowing."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
+			String keyName = CommandParser.getKeyNameFromEnv();
 			String name = _optionalString(optional[0]);
-			return new QuickstartCommand(name);
+			return new QuickstartCommand(keyName, name);
 		}),
 		;
 		
@@ -809,6 +811,21 @@ public class CommandParser
 				}
 			}
 		}
+	}
+
+	/**
+	 * Looks up the key name from the environment variable, defaulting if not found.
+	 * 
+	 * @return The key name to use.
+	 */
+	public static String getKeyNameFromEnv()
+	{
+		String keyName = System.getenv(EnvVars.ENV_VAR_CACOPHONY_KEY_NAME);
+		if (null == keyName)
+		{
+			keyName = CommandParser.DEFAULT_KEY_NAME;
+		}
+		return keyName;
 	}
 
 
