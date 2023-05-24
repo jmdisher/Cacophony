@@ -236,6 +236,7 @@ public class InteractiveServer
 		validated.addPostRawHandler("/home/userInfo/image", 1, new POST_Raw_UserInfo(runner, background));
 		validated.addGetHandler("/home/publicKey", 0, new GET_PublicKey(serverContext));
 		validated.addGetHandler("/home/channels", 0, new GET_HomeChannels(runner));
+		validated.addPostRawHandler("/home/channel/set", 1, new POST_Raw_SetChannel(serverContext));
 		
 		// Draft operations.
 		validated.addGetHandler("/allDrafts/all", 0, new GET_Drafts(manager));
