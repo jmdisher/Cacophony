@@ -46,7 +46,7 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 			IpfsFile newRoot = result.result().getIndexToPublish();
 			// This should change unless they threw an exception.
 			Assert.assertTrue(null != newRoot);
-			_backgroundOperations.requestPublish(result.context().keyName, newRoot);
+			_backgroundOperations.requestPublish(result.context().getSelectedKey(), newRoot);
 		}
 	}
 }

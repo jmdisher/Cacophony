@@ -41,7 +41,7 @@ public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 		);
 		if (null != result)
 		{
-			_background.requestPublish(result.context().keyName, result.result().getIndexToPublish());
+			_background.requestPublish(result.context().getSelectedKey(), result.result().getIndexToPublish());
 		}
 	}
 }

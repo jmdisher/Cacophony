@@ -57,12 +57,12 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 		{
 			ChannelDescription result = success.result();
 			Context context = success.context();
+			IpfsKey selectedKey = context.getSelectedKey();
 			// Request the publication.
-			_background.requestPublish(context.keyName, result.getIndexToPublish());
+			_background.requestPublish(selectedKey, result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
-			IpfsKey key = context.getSelectedKey();
-			context.userInfoCache.setUserInfo(key
+			context.userInfoCache.setUserInfo(selectedKey
 					, result.name
 					, result.description
 					, result.userPicCid

@@ -48,7 +48,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			ChannelDescription result = success.result();
 			Context context = success.context();
 			// Request the publication.
-			_background.requestPublish(context.keyName, result.getIndexToPublish());
+			_background.requestPublish(context.getSelectedKey(), result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
 			IpfsKey key = context.getSelectedKey();

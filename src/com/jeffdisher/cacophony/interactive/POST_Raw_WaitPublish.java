@@ -30,7 +30,7 @@ public class POST_Raw_WaitPublish implements ValidatedEntryPoints.POST_Raw
 	{
 		ILogger log = _context.logger.logStart("Waiting for publish to complete...");
 		// We can now wait for the publish to complete, now that we have closed all the local state.
-		_backgroundOperations.waitForPendingPublish(_context.keyName);
+		_backgroundOperations.waitForPendingPublish(_context.getSelectedKey());
 		log.logFinish("Done!");
 		
 		response.setStatus(HttpServletResponse.SC_OK);

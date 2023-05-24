@@ -35,8 +35,8 @@ public class BackgroundOperations
 	// Instance variables which are shared between caller thread and background thread (can only be touched on monitor).
 	private boolean _handoff_keepRunning;
 	private final PriorityQueue<SchedulableFollowee> _handoff_knownFollowees;
-	private final Map<String, ScheduleableRepublish> _handoff_localChannelsByName;
-	private String _handoff_currentlyPublishing;
+	private final Map<IpfsKey, ScheduleableRepublish> _handoff_localChannelsByKey;
+	private IpfsKey _handoff_currentlyPublishing;
 	private long _republishIntervalMillis;
 	private long _followeeRefreshMillis;
 
@@ -94,7 +94,7 @@ public class BackgroundOperations
 				return Long.signum(arg0.lastRefreshMillis - arg1.lastRefreshMillis);
 			}
 		});
-		_handoff_localChannelsByName = new HashMap<>();
+		_handoff_localChannelsByKey = new HashMap<>();
 	}
 
 	public void startProcess()
@@ -124,26 +124,26 @@ public class BackgroundOperations
 	public synchronized void addChannel(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
 		// The same channel should never be redundantly added.
-		Assert.assertTrue(!_handoff_localChannelsByName.containsKey(keyName));
+		Assert.assertTrue(!_handoff_localChannelsByKey.containsKey(publicKey));
 		// We will treat our startup as though we have never published before, since this isn't worth tracking in the data store.
 		long lastPublishMillis = 0L;
-		ScheduleableRepublish localChannel = new ScheduleableRepublish(publicKey, rootElement, lastPublishMillis);
-		_handoff_localChannelsByName.put(keyName, localChannel);
+		ScheduleableRepublish localChannel = new ScheduleableRepublish(keyName, publicKey, rootElement, lastPublishMillis);
+		_handoff_localChannelsByKey.put(publicKey, localChannel);
 		this.notifyAll();
 	}
 
-	public synchronized void requestPublish(String keyName, IpfsFile rootElement)
+	public synchronized void requestPublish(IpfsKey publicKey, IpfsFile rootElement)
 	{
 		// A publish root must always be provided.
 		Assert.assertTrue(null != rootElement);
 		// We must already have this registered.
-		Assert.assertTrue(_handoff_localChannelsByName.containsKey(keyName));
+		Assert.assertTrue(_handoff_localChannelsByKey.containsKey(publicKey));
 		
 		// Just reset the publication time and add the new root.
 		long lastPublishMillis = 0L;
-		ScheduleableRepublish original = _handoff_localChannelsByName.remove(keyName);
-		ScheduleableRepublish updated = new ScheduleableRepublish(original.publicKey, rootElement, lastPublishMillis);
-		_handoff_localChannelsByName.put(keyName, updated);
+		ScheduleableRepublish original = _handoff_localChannelsByKey.remove(publicKey);
+		ScheduleableRepublish updated = new ScheduleableRepublish(original.keyName, publicKey, rootElement, lastPublishMillis);
+		_handoff_localChannelsByKey.put(publicKey, updated);
 		this.notifyAll();
 	}
 
@@ -162,14 +162,14 @@ public class BackgroundOperations
 	/**
 	 * Blocks until any enqueued publish operations are complete.
 	 */
-	public synchronized void waitForPendingPublish(String keyName)
+	public synchronized void waitForPendingPublish(IpfsKey publicKey)
 	{
 		// We just want to make sure that the time of publish is non-zero (meaning it was picked up since we last
 		// requested it) and that this key isn't currently republishing (since that means it hasn't completed yet).
 		// (we need to wait for the publish to finish since the publish time is set when it STARTS, not finishes)
-		ScheduleableRepublish ready = _handoff_localChannelsByName.get(keyName);
+		ScheduleableRepublish ready = _handoff_localChannelsByKey.get(publicKey);
 		Assert.assertTrue(null != ready);
-		while (_handoff_keepRunning && (0L == ready.lastPublishMillis) && !keyName.equals(_handoff_currentlyPublishing))
+		while (_handoff_keepRunning && (0L == ready.lastPublishMillis) && !publicKey.equals(_handoff_currentlyPublishing))
 		{
 			try
 			{
@@ -269,14 +269,13 @@ public class BackgroundOperations
 			long nextDueRepublishMillis = Long.MAX_VALUE;
 			// We just walk the map since it is very rare that it has more than ~1 element.
 			// For the same reason, we don't care which one we get - if multiple are ready, we will get around to them.
-			for (Map.Entry<String, ScheduleableRepublish> elt : _handoff_localChannelsByName.entrySet())
+			for (ScheduleableRepublish thisPublish : _handoff_localChannelsByKey.values())
 			{
 				// Before waiting, we want to see if we should perform any scheduler operations and then look at what kind of delay we should use.
-				ScheduleableRepublish thisPublish = elt.getValue();
 				long dueTimePublishMillis = thisPublish.lastPublishMillis + _republishIntervalMillis;
 				if (dueTimePublishMillis <= currentTimeMillis)
 				{
-					publishKeyName = elt.getKey();
+					publishKeyName = thisPublish.keyName;
 					publisherKey = thisPublish.publicKey;
 					publishRoot = thisPublish.rootElement;
 					break;
@@ -288,13 +287,13 @@ public class BackgroundOperations
 				}
 			}
 			int publishNumber = -1;
-			if (null != publishKeyName)
+			if (null != publisherKey)
 			{
 				// The republish is due - set the current time as when we updated.
-				ScheduleableRepublish original = _handoff_localChannelsByName.remove(publishKeyName);
-				ScheduleableRepublish updated = new ScheduleableRepublish(original.publicKey, original.rootElement, currentTimeMillis);
-				_handoff_localChannelsByName.put(publishKeyName, updated);
-				_handoff_currentlyPublishing = publishKeyName;
+				ScheduleableRepublish original = _handoff_localChannelsByKey.remove(publisherKey);
+				ScheduleableRepublish updated = new ScheduleableRepublish(publishKeyName, publisherKey, original.rootElement, currentTimeMillis);
+				_handoff_localChannelsByKey.put(publisherKey, updated);
+				_handoff_currentlyPublishing = publisherKey;
 				shouldNotify = true;
 				publishNumber = _background_nextOperationNumber;
 				_background_nextOperationNumber += 1;
@@ -396,5 +395,5 @@ public class BackgroundOperations
 
 	private static record SchedulableFollowee(IpfsKey followee, long lastRefreshMillis) {}
 
-	private static record ScheduleableRepublish(IpfsKey publicKey, IpfsFile rootElement, long lastPublishMillis) {}
+	private static record ScheduleableRepublish(String keyName, IpfsKey publicKey, IpfsFile rootElement, long lastPublishMillis) {}
 }

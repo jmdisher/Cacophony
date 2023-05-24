@@ -68,7 +68,7 @@ public class TestBackgroundOperations
 		back.startProcess();
 		
 		// Enqueue one.
-		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(LOCAL_KEY, F1);
 		ops.returnOn(F1, publish);
 		publish.success();
 		
@@ -89,11 +89,11 @@ public class TestBackgroundOperations
 		back.startProcess();
 		
 		// Enqueue one, then another.
-		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(LOCAL_KEY, F1);
 		ops.returnOn(F1, publish1);
 		publish1.success();
 		ops.waitForConsume();
-		back.requestPublish(KEY_NAME, F2);
+		back.requestPublish(LOCAL_KEY, F2);
 		ops.returnOn(F2, publish2);
 		publish2.success();
 		
@@ -119,13 +119,13 @@ public class TestBackgroundOperations
 		statusHandoff.registerListener(beforeListener, 0);
 		
 		// Enqueue the one which may or may not be seen, then wait to set its success until we have set all the others.
-		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(LOCAL_KEY, F1);
 		ops.returnOn(F1, publishFirst);
 		ops.waitForConsume();
 		
-		back.requestPublish(KEY_NAME, F1);
-		back.requestPublish(KEY_NAME, F2);
-		back.requestPublish(KEY_NAME, F3);
+		back.requestPublish(LOCAL_KEY, F1);
+		back.requestPublish(LOCAL_KEY, F2);
+		back.requestPublish(LOCAL_KEY, F3);
 		
 		publishFirst.success();
 		ops.returnOn(F3, publishLast);
@@ -157,7 +157,7 @@ public class TestBackgroundOperations
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
-		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(LOCAL_KEY, F1);
 		ops.returnOn(F1, publishFirst);
 		ops.waitForConsume();
 		
@@ -223,12 +223,12 @@ public class TestBackgroundOperations
 		back.startProcess();
 		
 		// Enqueue the first, wait for consume but do not yet set success.
-		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(LOCAL_KEY, F1);
 		ops.returnOn(F1, publishFirst);
 		ops.waitForConsume();
 		
 		// Now we know that the background thread is waiting for success to enqueue the next publish and refresh so the next iteration, it will run both.
-		back.requestPublish(KEY_NAME, F2);
+		back.requestPublish(LOCAL_KEY, F2);
 		ops.returnOn(F2, publishSecond);
 		back.enqueueFolloweeRefresh(K1, 1L);
 		ops.returnFolloweeOn(K1, refresher);
@@ -462,7 +462,7 @@ public class TestBackgroundOperations
 		back.startProcess();
 		
 		// Enqueue one.
-		back.requestPublish(KEY_NAME, F1);
+		back.requestPublish(LOCAL_KEY, F1);
 		ops.returnOn(F1, publish);
 		publish.success();
 		ops.waitForConsume();

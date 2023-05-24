@@ -53,7 +53,7 @@ public class DELETE_Post implements ValidatedEntryPoints.DELETE
 			context.entryRegistry.removeLocalElement(context.getSelectedKey(), postHashToRemove);
 			
 			// Request a republish.
-			_backgroundOperations.requestPublish(context.keyName, newRoot);
+			_backgroundOperations.requestPublish(context.getSelectedKey(), newRoot);
 		}
 	}
 }

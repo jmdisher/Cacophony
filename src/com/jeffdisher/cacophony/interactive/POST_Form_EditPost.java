@@ -72,9 +72,10 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 	private void _handleCorrectCase(Context context, HttpServletResponse response, IpfsFile eltCid, OnePost result)
 	{
 		// Delete the old entry and add the new one.
-		context.entryRegistry.removeLocalElement(context.getSelectedKey(), eltCid);
+		IpfsKey selectedKey = context.getSelectedKey();
+		context.entryRegistry.removeLocalElement(selectedKey, eltCid);
 		IpfsFile newEltCid = result.recordCid;
-		context.entryRegistry.addLocalElement(context.getSelectedKey(), newEltCid);
+		context.entryRegistry.addLocalElement(selectedKey, newEltCid);
 		
 		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
 		// data, we still need to technically "move" them to the new record CID.
@@ -109,6 +110,6 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		}
 		
 		// Now, publish the update.
-		_background.requestPublish(context.keyName, result.getIndexToPublish());
+		_background.requestPublish(selectedKey, result.getIndexToPublish());
 	}
 }
