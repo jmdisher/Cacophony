@@ -190,8 +190,7 @@ public class MockSingleNode implements IConnection
 	@Override
 	public void deletePublicKey(String keyName) throws IpfsConnectionException
 	{
-		// Not used.
-		throw Assert.unreachable();
+		_keys.remove(keyName);
 	}
 
 

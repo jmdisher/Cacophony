@@ -14,8 +14,11 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -51,6 +54,20 @@ public class MockUserNode
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(draftsDir);
 		_logger = new SilentLogger();
+	}
+
+	public void setContextCaches(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry)
+	{
+		// This will force the context to be created.
+		Assert.assertTrue(null == _lazyContext);
+		_lazyContext = new Context(_lazyEnv()
+				, _logger
+				, DataDomain.FAKE_BASE_URL
+				, recordCache
+				, userInfoCache
+				, entryRegistry
+				, null
+		);
 	}
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable

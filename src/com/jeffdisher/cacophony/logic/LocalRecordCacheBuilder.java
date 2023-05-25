@@ -180,6 +180,11 @@ public class LocalRecordCacheBuilder
 		_fetchDataForLocalUserElement(recordCache, cid, record);
 	}
 
+	public static void populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, StreamDescription description)
+	{
+		_populateUserInfoFromDescription(cache, key, description);
+	}
+
 
 	private static void _populateElementMapFromLocalUserRoot(IReadingAccess access, LocalRecordCache recordCache, StreamRecords records) throws IpfsConnectionException
 	{

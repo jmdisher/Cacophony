@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -21,7 +22,8 @@ public record DeleteChannelCommand() implements ICommand<None>
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		if (null == context.getSelectedKey())
+		IpfsKey userToDelete = context.getSelectedKey();
+		if (null == userToDelete)
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
@@ -47,14 +49,21 @@ public record DeleteChannelCommand() implements ICommand<None>
 			
 			access.unpin(indexCid);
 			access.deleteChannelData();
-			// We also want to clean up the context.
-			context.setSelectedKey(null);
 		}
 		catch (FailedDeserializationException e)
 		{
 			// This is our own well-formed data so we don't expect this error.
 			throw Assert.unexpected(e);
 		}
+		
+		// If the cache exists, populate it.
+		if (null != context.userInfoCache)
+		{
+			context.userInfoCache.removeUser(userToDelete);
+		}
+		
+		// We also want to clean up the context.
+		context.setSelectedKey(null);
 		return None.NONE;
 	}
 

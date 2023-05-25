@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -41,6 +42,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		setupLog.logFinish("Key setup done:  " + publicKey);
 		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
+		StreamDescription description;
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, _keyName, publicKey))
 		{
@@ -52,17 +54,25 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 					throw new UsageException("Channel already exists for the IPFS key named: \"" + _keyName + "\"");
 				}
 			}
-			newRoot = _runCore(context.environment, access);
+			// Create the empty description, recommendations, record stream, and index.
+			description = _defaultDescription(access);
+			newRoot = _runCore(context.environment, access, description);
 		}
+		
+		// If the cache exists, populate it.
+		if (null != context.userInfoCache)
+		{
+			LocalRecordCacheBuilder.populateUserInfoFromDescription(context.userInfoCache, publicKey, description);
+		}
+		
 		context.setSelectedKey(publicKey);
 		log.logFinish("Initial state published to Cacophony!");
 		return new ChangedRoot(newRoot);
 	}
 
 
-	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access) throws IpfsConnectionException
+	private StreamDescription _defaultDescription(IWritingAccess access) throws IpfsConnectionException
 	{
-		// Create the empty description, recommendations, record stream, and index.
 		StreamDescription description = new StreamDescription();
 		description.setName("Unnamed");
 		description.setDescription("Description forthcoming");
@@ -70,7 +80,11 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		Assert.assertTrue(null != pictureStream);
 		IpfsFile pictureHash = access.uploadAndPin(pictureStream);
 		description.setPicture(pictureHash.toSafeString());
-		
+		return description;
+	}
+
+	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access, StreamDescription description) throws IpfsConnectionException
+	{
 		StreamRecommendations recommendations = new StreamRecommendations();
 		
 		StreamRecords records = new StreamRecords();

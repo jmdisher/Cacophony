@@ -1,0 +1,99 @@
+package com.jeffdisher.cacophony.scenarios;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.DeleteChannelCommand;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
+import com.jeffdisher.cacophony.testutils.MockUserNode;
+import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
+
+
+/**
+ * Tests related to multi-channel home data manipulation with populated Context cache objects (effectively simulating a
+ * sequence of commands in interactive mode as it just sits on top of the commands).
+ */
+public class TestMultiChannelContextCaches
+{
+	@ClassRule
+	public static TemporaryFolder FOLDER = new TemporaryFolder();
+
+	private static final String KEY_NAME1 = "keyName1";
+	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
+
+	@Test
+	public void createDestroyOneUser() throws Throwable
+	{
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode home = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		LocalRecordCache recordCache = new LocalRecordCache();
+		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
+		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry);
+		
+		// Create the channel.
+		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
+		
+		// Check the status of the caches.
+		CombinedListener combined = new CombinedListener();
+		Assert.assertEquals(0, recordCache.getKeys().size());
+		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		Assert.assertNotNull(elt);
+		entryRegistry.getCombinedConnector().registerListener(combined, 0);
+		Assert.assertEquals(0, combined.entries.size());
+		
+		// Delete the channel.
+		home.runCommand(null, new DeleteChannelCommand());
+		
+		// Check the caches.
+		Assert.assertEquals(0, recordCache.getKeys().size());
+		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		Assert.assertNull(elt);
+		Assert.assertEquals(0, combined.entries.size());
+		
+		home.shutdown();
+	}
+
+
+	private static class CombinedListener implements IHandoffListener<IpfsFile, Void>
+	{
+		public Set<IpfsFile> entries = new HashSet<>();
+		
+		@Override
+		public boolean create(IpfsFile key, Void value, boolean isNewest)
+		{
+			Assert.assertFalse(this.entries.contains(key));
+			this.entries.add(key);
+			return true;
+		}
+		@Override
+		public boolean update(IpfsFile key, Void value)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public boolean destroy(IpfsFile key)
+		{
+			Assert.assertTrue(this.entries.contains(key));
+			this.entries.remove(key);
+			return true;
+		}
+		@Override
+		public boolean specialChanged(String special)
+		{
+			throw new AssertionError("Not in test");
+		}
+	}
+}
