@@ -8,7 +8,7 @@ import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
@@ -21,10 +21,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<ChangedRoot>
+public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<OnePost>
 {
 	@Override
-	public ChangedRoot runInContext(Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
+	public OnePost runInContext(Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
 		if (null == _name)
 		{
@@ -79,7 +79,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		log.logOperation("New element: " + newElement);
 		log.logFinish("Publish completed!");
-		return new ChangedRoot(newRoot);
+		return new OnePost(newRoot, newElement, newRecord);
 	}
 
 

@@ -4,8 +4,6 @@ import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.EditPostCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -61,55 +59,13 @@ public class POST_Form_EditPost implements ValidatedEntryPoints.POST_Form
 		{
 			OnePost result = success.result();
 			Context context = success.context();
-			_handleCorrectCase(context, response, eltCid, result);
+			
+			// Now, publish the update.
+			_background.requestPublish(context.getSelectedKey(), result.getIndexToPublish());
 			
 			// Output the new element CID.
 			response.setContentType("text/plain");
 			response.getWriter().print(result.recordCid.toSafeString());
 		}
-	}
-
-	private void _handleCorrectCase(Context context, HttpServletResponse response, IpfsFile eltCid, OnePost result)
-	{
-		// Delete the old entry and add the new one.
-		IpfsKey selectedKey = context.getSelectedKey();
-		context.entryRegistry.removeLocalElement(selectedKey, eltCid);
-		IpfsFile newEltCid = result.recordCid;
-		context.entryRegistry.addLocalElement(selectedKey, newEltCid);
-		
-		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
-		// data, we still need to technically "move" them to the new record CID.
-		StreamRecord record = result.streamRecord;
-		LeafFinder leaves = LeafFinder.parseRecord(record);
-		if (null != leaves.thumbnail)
-		{
-			context.recordCache.recordThumbnailReleased(eltCid, leaves.thumbnail);
-		}
-		if (null != leaves.audio)
-		{
-			context.recordCache.recordAudioReleased(eltCid, leaves.audio);
-		}
-		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-		{
-			context.recordCache.recordVideoReleased(eltCid, leaf.cid(), leaf.edgeSize());
-		}
-		context.recordCache.recordMetaDataReleased(eltCid);
-		
-		context.recordCache.recordMetaDataPinned(newEltCid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
-		if (null != leaves.thumbnail)
-		{
-			context.recordCache.recordThumbnailPinned(newEltCid, leaves.thumbnail);
-		}
-		if (null != leaves.audio)
-		{
-			context.recordCache.recordAudioPinned(newEltCid, leaves.audio);
-		}
-		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-		{
-			context.recordCache.recordVideoPinned(newEltCid, leaf.cid(), leaf.edgeSize());
-		}
-		
-		// Now, publish the update.
-		_background.requestPublish(selectedKey, result.getIndexToPublish());
 	}
 }
