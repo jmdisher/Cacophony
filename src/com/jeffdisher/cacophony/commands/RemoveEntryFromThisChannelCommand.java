@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -30,7 +31,8 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			throw new UsageException("Element CID must be provided");
 		}
-		if (null == context.getSelectedKey())
+		IpfsKey userToEdit = context.getSelectedKey();
+		if (null == userToEdit)
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
@@ -45,6 +47,12 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			{
 				throw new UsageException("Unknown post");
 			}
+			// We want to remove this from anyone listening, if their is a listener registered.
+			if (null != context.entryRegistry)
+			{
+				context.entryRegistry.removeLocalElement(userToEdit, _elementCid);
+			}
+			
 			log.logFinish("Entry removed: " + _elementCid);
 		}
 		return new ChangedRoot(newRoot);
