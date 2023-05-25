@@ -78,14 +78,14 @@ public class InteractiveServer
 			{
 				for (IReadingAccess.HomeUserTuple tuple : homeTuples)
 				{
-					entryRegistryBuilder.createConnector(tuple.publicKey());
-					_populateConnector(access, entryRegistryBuilder, tuple.publicKey(), tuple.lastRoot());
+					IpfsKey homeUserKey = tuple.publicKey();
+					IpfsFile homeUserRoot = tuple.lastRoot();
+					_createAndPopulateConnector(access, entryRegistryBuilder, homeUserKey, homeUserRoot);
 				}
 				for (IpfsKey followeeKey : followees.getAllKnownFollowees())
 				{
-					entryRegistryBuilder.createConnector(followeeKey);
 					IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-					_populateConnector(access, entryRegistryBuilder, followeeKey, oneRoot);
+					_createAndPopulateConnector(access, entryRegistryBuilder, followeeKey, oneRoot);
 				}
 			}
 			catch (IpfsConnectionException e)
@@ -314,8 +314,9 @@ public class InteractiveServer
 	}
 
 
-	private static void _populateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException
+	private static void _createAndPopulateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException
 	{
+		entryRegistryBuilder.createConnector(key);
 		ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
 		StreamRecords records;
 		try

@@ -16,7 +16,32 @@ PATH_TO_JAR="$3"
 USER1=/tmp/user1
 COOKIES1=/tmp/cookies1
 
+WS_COMBINED=/tmp/combined
+
 rm -rf "$USER1"
+
+rm -f "$WS_COMBINED".*
+
+
+# Makes a text post as the given user.
+# 1) user public key.
+# 2) text title.
+function makeTextPost()
+{
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: user_public_key text_title"
+		exit 1
+	fi
+	PUBLIC_KEY="$1"
+	TITLE="$2"
+	
+	CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/allDrafts/new)
+	# We need to parse out the ID (look for '{"id":2107961294,')
+	ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
+	ID=$(echo $ID_PARSE)
+	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=$TITLE&DESCRIPTION=empty" "http://127.0.0.1:8001/draft/$ID"
+	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/draft/publish/$PUBLIC_KEY/$ID/TEXT_ONLY"
+}
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
 cp "$PATH_TO_JAR" Cacophony.jar
@@ -85,6 +110,7 @@ CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java
 SERVER_PID=$!
 waitForCacophonyStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
+XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Prove that we can update these home users independently..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Test1%20User&DESCRIPTION=The%20test%20user" "http://127.0.0.1:8001/home/userInfo/info/$PUBLIC_KEY1"
@@ -107,31 +133,61 @@ checkPreviousCommand "select quick"
 CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/home/publicKey")
 requireSubstring "$CHECKED_KEY" "$PUBLIC_KEY2"
 
-echo "Create the new channel, do some basic interactions to verify it works, then delete it..."
+echo "Listen to the combined view while we make changes to the user list..."
+mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear"
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/server/events/combined/entries" "event_api" "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear" &
+COMBINED_PID=$!
+cat "$WS_COMBINED.out" > /dev/null
+
+echo "Create the new channel and do some basic interactions to verify it works..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/new/LATE_KEY"
 checkPreviousCommand "create new"
 CHANNEL_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/home/channels")
 CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/home/publicKey")
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"LATE_KEY\",\"publicKey\":\"$CHECKED_KEY\","
+
+echo "Add a post by each user and verify that we see them all in the combined socket..."
+makeTextPost "$PUBLIC_KEY1" "post1"
+makeTextPost "$PUBLIC_KEY2" "post2"
+makeTextPost "$CHECKED_KEY" "post3"
+SAMPLE=$(cat "$WS_COMBINED.out")
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+SAMPLE=$(cat "$WS_COMBINED.out")
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+SAMPLE=$(cat "$WS_COMBINED.out")
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+
+echo "Delete the added channel and test1..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/channel/delete/$CHECKED_KEY"
-checkPreviousCommand "delete channel"
+checkPreviousCommand "delete LATE_KEY channel"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/channel/delete/$PUBLIC_KEY1"
+checkPreviousCommand "delete test1 channel"
+
+# We expect to see a delete for each of these users since their posts should disappear.
+SAMPLE=$(cat "$WS_COMBINED.out")
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+SAMPLE=$(cat "$WS_COMBINED.out")
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 
 echo "We can now stop the server..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
 wait $SERVER_PID
-
-echo "Delete the channel..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --deleteChannel
-checkPreviousCommand "delete test1"
+echo -n "-WAIT" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+wait $COMBINED_PID
 
 echo "Make sure we see only one channel..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
 requireSubstring "$CHANNEL_LIST" "Found 1 channels:"
 requireSubstring "$CHANNEL_LIST" "Key name: quick"
 
-echo "Count the pins after the creation (14 = 9 + 5 (index, recommendations, records, description, pic))..."
+echo "Count the pins after the creation (15 = 9 + 5 (index, recommendations, records, description, pic) + 1 elt)..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "14"
+requireSubstring "$LIST_SIZE" "15"
 
 echo "Make sure that we see the expected output from descriptions and recommendations..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --readDescription >& /dev/null
