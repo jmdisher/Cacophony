@@ -103,7 +103,7 @@ public class PublishHelpers
 		
 		callerLog.logVerbose("Saving and publishing new index");
 		IpfsFile newRoot = modifier.commitNewRoot();
-		return new PublishResult(newRoot, recordHash);
+		return new PublishResult(newRoot, recordHash, record);
 	}
 
 
@@ -116,5 +116,5 @@ public class PublishHelpers
 
 	public static record PublishElement(String mime, InputStream fileData, int height, int width, boolean isSpecialImage) {}
 
-	public static record PublishResult(IpfsFile newIndexRoot, IpfsFile newRecordCid) {}
+	public static record PublishResult(IpfsFile newIndexRoot, IpfsFile newRecordCid, StreamRecord newRecord) {}
 }

@@ -170,15 +170,14 @@ public class LocalRecordCacheBuilder
 	/**
 	 * Updates an existing cache with information related to a new post made by the local user.
 	 * 
-	 * @param access Network access.
 	 * @param recordCache The cache to modify.
 	 * @param cid The CID of the new StreamRecord.
+	 * @param record The new record.
 	 * @throws IpfsConnectionException
 	 */
-	public static void updateCacheWithNewUserPost(IReadingAccess access, LocalRecordCache recordCache, IpfsFile cid) throws IpfsConnectionException
+	public static void updateCacheWithNewUserPost(LocalRecordCache recordCache, IpfsFile cid, StreamRecord record) throws IpfsConnectionException
 	{
-		FutureRead<StreamRecord> future = access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
-		_fetchDataForLocalUserElement(recordCache, future, cid);
+		_fetchDataForLocalUserElement(recordCache, cid, record);
 	}
 
 
@@ -199,7 +198,17 @@ public class LocalRecordCacheBuilder
 		for (FutureRead<StreamRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
-			_fetchDataForLocalUserElement(recordCache, future, cid);
+			StreamRecord record;
+			try
+			{
+				record = future.get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// We can't see this for data we posted.
+				throw Assert.unexpected(e);
+			}
+			_fetchDataForLocalUserElement(recordCache, cid, record);
 		}
 	}
 
@@ -236,19 +245,8 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException
+	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, IpfsFile cid, StreamRecord record) throws IpfsConnectionException
 	{
-		StreamRecord record;
-		try
-		{
-			record = future.get();
-		}
-		catch (FailedDeserializationException e)
-		{
-			// We can't see this for data we posted.
-			throw Assert.unexpected(e);
-		}
-		
 		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
 		
 		// If this is a local user, state that all the files are cached.

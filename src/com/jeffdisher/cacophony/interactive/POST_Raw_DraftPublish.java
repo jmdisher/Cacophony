@@ -63,13 +63,7 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			IpfsFile newElement = result.newRecordCid();
 			thisContext.entryRegistry.addLocalElement(thisContext.getSelectedKey(), newElement);
 			
-			// We are going to re-read this element from the network in order to update the LocalRecordCache.  This is a
-			// bit odd, since we could have updated this during the publish operation, but that would have required some
-			// very specialized plumbing.  Additionally, this allows us to use the existing initialization code and
-			// verify that the assumptions around this are consistent.
-			// In the future, we may want to refactor this so that it can be more elegantly updated as the network read
-			// seems wrong.
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(access, thisContext.recordCache, newElement);
+			LocalRecordCacheBuilder.updateCacheWithNewUserPost(thisContext.recordCache, newElement, result.newRecord());
 			
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
