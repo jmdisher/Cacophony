@@ -2,14 +2,12 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.FileNotFoundException;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.Context;
+import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
-import com.jeffdisher.cacophony.logic.PublishHelpers;
-import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,16 +21,16 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 {
-	private final Context _context;
+	private final CommandRunner _runner;
 	private final BackgroundOperations _backgroundOperations;
 	private final DraftManager _draftManager;
 	
-	public POST_Raw_DraftPublish(Context context
+	public POST_Raw_DraftPublish(CommandRunner runner
 			, BackgroundOperations backgroundOperations
 			, DraftManager draftManager
 	)
 	{
-		_context = context;
+		_runner = runner;
 		_backgroundOperations = backgroundOperations;
 		_draftManager = draftManager;
 	}
@@ -41,31 +39,19 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
 	{
 		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
-		// We will try to override with the given public key, which will cause an exception on StandardAccess if it isn't really a home key.
-		Context thisContext = _context.cloneWithSelectedKey(homePublicKey);
-		try (IWritingAccess access = StandardAccess.writeAccess(thisContext))
+		
+		int draftId = 0;
+		PublishCommand command = null;
+		try
 		{
-			int draftId = Integer.parseInt(pathVariables[1]);
+			// First, we will use the draft manager to construct the publish command.
+			draftId = Integer.parseInt(pathVariables[1]);
 			PublishType type = PublishType.valueOf(pathVariables[2]);
-			
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(thisContext.logger
-					, access
-					, _draftManager
-					, draftId
+			command = _draftManager.prepareToPublishDraft(draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
-					, thisContext.getSelectedKey()
 			);
-			InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
 			
-			// The publish is something we can wait on, asynchronously, in a different call.
-			_backgroundOperations.requestPublish(thisContext.getSelectedKey(), result.newIndexRoot());
-			IpfsFile newElement = result.newRecordCid();
-			thisContext.entryRegistry.addLocalElement(thisContext.getSelectedKey(), newElement);
-			
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(thisContext.recordCache, newElement, result.newRecord());
-			
-			response.setStatus(HttpServletResponse.SC_OK);
 		}
 		catch (NumberFormatException e)
 		{
@@ -82,6 +68,26 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 		catch (FileNotFoundException e)
 		{
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		}
+		
+		if (null != command)
+		{
+			// Now, run the publish.
+			InteractiveHelpers.SuccessfulCommand<OnePost> success = InteractiveHelpers.runCommandAndHandleErrors(response
+					, _runner
+					, homePublicKey
+					, command
+					, homePublicKey
+			);
+			if (null != success)
+			{
+				// If successful, we delete the draft.
+				Assert.assertTrue(draftId > 0);
+				InteractiveHelpers.deleteExistingDraft(_draftManager, draftId);
+				
+				// The publish is something we can wait on, asynchronously, in a different call.
+				_backgroundOperations.requestPublish(success.context().getSelectedKey(), success.result().getIndexToPublish());
+			}
 		}
 	}
 

@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -117,6 +120,94 @@ public class DraftManager
 		{
 			wrapper.migrateDraft();
 		}
+	}
+
+	/**
+	 * Returns the ready-to-run command to publish the draft.  This operation is read-only and doesn't change the draft.
+	 * This may be removed/changed in the future as it is oddly specific to this one application, but avoids adding lots
+	 * of other information to the draft interfaces in order to implement this externally.
+	 * 
+	 * @param id The draft ID.
+	 * @param shouldPublishVideo True if we should publish video.
+	 * @param shouldPublishAudio True if we should publish audio.
+	 * @return The command which can be run to publish the draft.
+	 * @throws FileNotFoundException The draft is unknown.
+	 */
+	public synchronized PublishCommand prepareToPublishDraft(int id
+			, boolean shouldPublishVideo
+			, boolean shouldPublishAudio
+	) throws FileNotFoundException
+	{
+		Assert.assertTrue(id > 0);
+		DraftWrapper wrapper = _sharedWrappers.get(id);
+		if (null == wrapper)
+		{
+			throw new FileNotFoundException("Unknown draft: " + id);
+		}
+		
+		// We want to look up the required file attachments.
+		Draft draft = wrapper.loadDraft();
+		SizedElement video = null;
+		File videoFile = null;
+		if (shouldPublishVideo)
+		{
+			video = draft.processedVideo();
+			videoFile = wrapper.existingProcessedVideoFile();
+			if (null == video)
+			{
+				Assert.assertTrue(null == videoFile);
+				video = draft.originalVideo();
+				videoFile = wrapper.existingOriginalVideoFile();
+			}
+		}
+		SizedElement audio = null;
+		File audioFile = null;
+		if (shouldPublishAudio)
+		{
+			audio = draft.audio();
+			audioFile = wrapper.existingAudioFile();
+		}
+		SizedElement thumbnail = draft.thumbnail();
+		int elementCount = 0;
+		if (null != thumbnail)
+		{
+			elementCount += 1;
+		}
+		if (null != video)
+		{
+			elementCount += 1;
+		}
+		if (null != audio)
+		{
+			elementCount += 1;
+		}
+		ElementSubCommand[] subElements = new ElementSubCommand[elementCount];
+		int index = 0;
+		if (null != thumbnail)
+		{
+			File thumbnailFile = wrapper.existingThumbnailFile();
+			Assert.assertTrue(null != thumbnailFile);
+			// Note that the dimensions are technically only used by the video but we will attach them here, anyway.
+			subElements[index] = new ElementSubCommand(thumbnail.mime(), thumbnailFile, thumbnail.height(), thumbnail.width(), true);
+			index += 1;
+		}
+		if (null != video)
+		{
+			Assert.assertTrue(null != videoFile);
+			subElements[index] = new ElementSubCommand(video.mime(), videoFile, video.height(), video.width(), false);
+			index += 1;
+		}
+		if (null != audio)
+		{
+			Assert.assertTrue(null != audioFile);
+			subElements[index] = new ElementSubCommand(audio.mime(), audioFile, audio.height(), audio.width(), false);
+			index += 1;
+		}
+		
+		String name = draft.title();
+		String description = draft.description();
+		String discussionUrl = draft.discussionUrl();
+		return new PublishCommand(name, description, discussionUrl, subElements);
 	}
 
 

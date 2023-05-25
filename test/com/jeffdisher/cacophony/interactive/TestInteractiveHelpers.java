@@ -20,6 +20,8 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
@@ -28,7 +30,6 @@ import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
-import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
@@ -250,8 +251,9 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false, PUBLIC_KEY);
-			access.beginIndexPublish(result.newIndexRoot());
+			PublishCommand publish = draftManager.prepareToPublishDraft(id, true, false);
+			OnePost result = publish.runInContext(context);
+			access.beginIndexPublish(result.getIndexToPublish());
 		}
 		
 		// Verify the data is on the node.
@@ -288,8 +290,9 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, true, false, PUBLIC_KEY);
-			access.beginIndexPublish(result.newIndexRoot());
+			PublishCommand publish = draftManager.prepareToPublishDraft(id, true, false);
+			OnePost result = publish.runInContext(context);
+			access.beginIndexPublish(result.getIndexToPublish());
 		}
 		
 		// Verify that we see both.
@@ -334,8 +337,9 @@ public class TestInteractiveHelpers
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, false, PUBLIC_KEY);
-			access.beginIndexPublish(result.newIndexRoot());
+			PublishCommand publish = draftManager.prepareToPublishDraft(id, false, false);
+			OnePost result = publish.runInContext(context);
+			access.beginIndexPublish(result.getIndexToPublish());
 		}
 		
 		// Verify that the new entry has no attachments.
@@ -406,8 +410,9 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishHelpers.PublishResult result = InteractiveHelpers.postExistingDraft(logger, access, draftManager, id, false, true, PUBLIC_KEY);
-			access.beginIndexPublish(result.newIndexRoot());
+			PublishCommand publish = draftManager.prepareToPublishDraft(id, false, true);
+			OnePost result = publish.runInContext(context);
+			access.beginIndexPublish(result.getIndexToPublish());
 		}
 		
 		// Verify the data is on the node.

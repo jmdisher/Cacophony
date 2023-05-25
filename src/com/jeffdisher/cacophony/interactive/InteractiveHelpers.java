@@ -9,15 +9,12 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
-import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.scheduler.FutureCommand;
 import com.jeffdisher.cacophony.types.CacophonyException;
@@ -25,7 +22,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.types.VersionException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -129,118 +125,6 @@ public class InteractiveHelpers
 	public static boolean deleteExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		return draftManager.deleteExistingDraft(draftId);
-	}
-	public static PublishHelpers.PublishResult postExistingDraft(ILogger logger
-			, IWritingAccess access
-			, DraftManager draftManager
-			, int draftId
-			, boolean shouldPublishVideo
-			, boolean shouldPublishAudio
-			, IpfsKey publisherKey
-	) throws FileNotFoundException
-	{
-		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
-		if (null == wrapper)
-		{
-			throw new FileNotFoundException();
-		}
-		Draft draft = wrapper.loadDraft();
-		SizedElement video = null;
-		InputStream videoInput = null;
-		if (shouldPublishVideo)
-		{
-			video = draft.processedVideo();
-			videoInput = wrapper.readProcessedVideo();
-			if (null == video)
-			{
-				Assert.assertTrue(null == videoInput);
-				video = draft.originalVideo();
-				videoInput = wrapper.readOriginalVideo();
-			}
-		}
-		SizedElement audio = null;
-		InputStream audioInput = null;
-		if (shouldPublishAudio)
-		{
-			audio = draft.audio();
-			audioInput = wrapper.readAudio();
-		}
-		SizedElement thumbnail = draft.thumbnail();
-		int elementCount = 0;
-		if (null != thumbnail)
-		{
-			elementCount += 1;
-		}
-		if (null != video)
-		{
-			elementCount += 1;
-		}
-		if (null != audio)
-		{
-			elementCount += 1;
-		}
-		PublishHelpers.PublishElement[] subElements = new PublishHelpers.PublishElement[elementCount];
-		int index = 0;
-		if (null != thumbnail)
-		{
-			InputStream thumbnailInput = wrapper.readThumbnail();
-			Assert.assertTrue(null != thumbnailInput);
-			subElements[index] = new PublishHelpers.PublishElement(thumbnail.mime(), thumbnailInput, thumbnail.height(), thumbnail.width(), true);
-			index += 1;
-		}
-		if (null != video)
-		{
-			Assert.assertTrue(null != videoInput);
-			subElements[index] = new PublishHelpers.PublishElement(video.mime(), videoInput, video.height(), video.width(), false);
-			index += 1;
-		}
-		if (null != audio)
-		{
-			Assert.assertTrue(null != audioInput);
-			subElements[index] = new PublishHelpers.PublishElement(audio.mime(), audioInput, audio.height(), audio.width(), false);
-			index += 1;
-		}
-		
-		PublishHelpers.PublishResult result;
-		ILogger log = logger.logStart("Publishing draft");
-		try
-		{
-			// The draft can have empty strings or null (only due to old versions) for discussionURL but we want to pass null in those cases to not attach it.
-			String discussionUrl = draft.discussionUrl();
-			if ((null != discussionUrl) && discussionUrl.isEmpty())
-			{
-				discussionUrl = null;
-			}
-			result = PublishHelpers.uploadFileAndUpdateTracking(log
-					, access
-					, draft.title()
-					, draft.description()
-					, discussionUrl
-					, subElements
-					, publisherKey
-			);
-			log.logFinish("Publish success!");
-		}
-		catch (IpfsConnectionException e)
-		{
-			log.logFinish("Publish command failed with IpfsConnectionException: " + e.getLocalizedMessage());
-			e.printStackTrace();
-			// TODO:  Determine how to best handle a failure here.
-			throw Assert.unexpected(e);
-		}
-		catch (SizeConstraintException e)
-		{
-			log.logFinish("Publish command failed due to an element being too large to store: " + e.getLocalizedMessage());
-			e.printStackTrace();
-			// This really shouldn't happen - it would mean that we were missing a static limit somewhere in the code.
-			throw Assert.unexpected(e);
-		}
-		finally
-		{
-			closeElementFiles(subElements);
-		}
-		
-		return result;
 	}
 
 	// --- Methods related to thumbnails.
@@ -493,27 +377,6 @@ public class InteractiveHelpers
 			throw Assert.unexpected(e);
 		}
 		return result;
-	}
-
-
-	private static void closeElementFiles(PublishHelpers.PublishElement[] elements)
-	{
-		for (PublishHelpers.PublishElement element : elements)
-		{
-			if (null != element)
-			{
-				InputStream file = element.fileData();
-				try
-				{
-					file.close();
-				}
-				catch (IOException e)
-				{
-					// We don't know how this fails on close.
-					throw Assert.unexpected(e);
-				}
-			}
-		}
 	}
 
 

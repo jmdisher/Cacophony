@@ -246,6 +246,26 @@ public class DraftWrapper implements IDraftWrapper
 		}
 	}
 
+	public synchronized File existingThumbnailFile()
+	{
+		return _existingFile(_thumbTracking);
+	}
+
+	public synchronized File existingOriginalVideoFile()
+	{
+		return _existingFile(_originalTracking);
+	}
+
+	public synchronized File existingProcessedVideoFile()
+	{
+		return _existingFile(_processedTracking);
+	}
+
+	public synchronized File existingAudioFile()
+	{
+		return _existingFile(_audioTracking);
+	}
+
 
 	private File _draftFile()
 	{
@@ -267,9 +287,9 @@ public class DraftWrapper implements IDraftWrapper
 			}
 		}
 		InputStream stream = null;
-		File file = new File(_directory, tracking.fileName);
+		File file = _existingFile(tracking);
 		// We want to return null on missing file, not throw, since some cases use function objects to access this.
-		if (file.exists())
+		if (null != file)
 		{
 			try
 			{
@@ -287,6 +307,15 @@ public class DraftWrapper implements IDraftWrapper
 			}
 		}
 		return stream;
+	}
+
+	private File _existingFile(ReferenceTuple tracking)
+	{
+		File file = new File(_directory, tracking.fileName);
+		return file.exists()
+				? file
+				: null
+		;
 	}
 
 	private OutputStream _writeCase(ReferenceTuple tracking)
@@ -332,17 +361,14 @@ public class DraftWrapper implements IDraftWrapper
 				throw Assert.unexpected(e);
 			}
 		}
-		File file = new File(_directory, tracking.fileName);
-		boolean didExist = true;
-		if (file.exists())
+		File file = _existingFile(tracking);
+		if (null != file)
 		{
 			boolean didDelete = file.delete();
 			// We don't know why this would fail.
 			Assert.assertTrue(didDelete);
-			// We just want to say this was a success if we tried.
-			didExist = true;
 		}
-		return didExist;
+		return (null != file);
 	}
 
 	private synchronized void _internal_processNotifyHandler(Runnable handler)
