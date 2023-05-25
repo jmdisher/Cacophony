@@ -110,6 +110,28 @@ public class EntryCacheRegistry
 	}
 
 	/**
+	 * Registers a new home user.
+	 * 
+	 * @param userToAdd The key of the user to add.
+	 */
+	public synchronized void createHomeUser(IpfsKey userToAdd)
+	{
+		Assert.assertTrue(!_perUserConnectors.containsKey(userToAdd));
+		_perUserConnectors.put(userToAdd, new HandoffConnector<IpfsFile, Void>(_dispatcher));
+	}
+
+	/**
+	 * Unregisters an existing home user.
+	 * 
+	 * @param userToRemove The key of the user to remove.
+	 */
+	public synchronized void removeHomeUser(IpfsKey userToRemove)
+	{
+		Assert.assertTrue(_perUserConnectors.containsKey(userToRemove));
+		_perUserConnectors.remove(userToRemove);
+	}
+
+	/**
 	 * Registers a new followee.
 	 * 
 	 * @param userToAdd The key of the user to add.
@@ -247,7 +269,10 @@ public class EntryCacheRegistry
 		public void createConnector(IpfsKey user)
 		{
 			Assert.assertTrue(!_done);
+			Assert.assertTrue(!_perUserConnectors.containsKey(user));
 			_perUserConnectors.put(user, new HandoffConnector<IpfsFile, Void>(_dispatcher));
+			Assert.assertTrue(!_entriesToCombinePerUser.containsKey(user));
+			_entriesToCombinePerUser.put(user, new ArrayList<>());
 		}
 		
 		/**
@@ -260,10 +285,6 @@ public class EntryCacheRegistry
 		{
 			Assert.assertTrue(!_done);
 			_perUserConnectors.get(user).create(elementCid, null);
-			if (!_entriesToCombinePerUser.containsKey(user))
-			{
-				_entriesToCombinePerUser.put(user, new ArrayList<>());
-			}
 			List<IpfsFile> combine = _entriesToCombinePerUser.get(user);
 			combine.add(elementCid);
 			if (combine.size() > _toCachePerUser)

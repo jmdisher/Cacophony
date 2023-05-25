@@ -94,6 +94,7 @@ public class LocalRecordCache
 			refCount = 1;
 			videos = new VideoReference[0];
 		}
+		Assert.assertTrue(!_cache.containsKey(cid));
 		_cache.put(cid, new InternalElement(refCount
 				, name
 				, description
@@ -137,6 +138,13 @@ public class LocalRecordCache
 					, previous.audioRef
 					, previous.videos
 			));
+		}
+		else
+		{
+			// We are dropping this so make sure that all the previous leaves have been released.
+			Assert.assertTrue(0 == previous.thumbnailRef);
+			Assert.assertTrue(0 == previous.audioRef);
+			Assert.assertTrue(0 == previous.videos.length);
 		}
 	}
 

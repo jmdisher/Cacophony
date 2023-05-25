@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.scenarios;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -10,6 +12,8 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.DeleteChannelCommand;
+import com.jeffdisher.cacophony.commands.ElementSubCommand;
+import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -53,6 +57,46 @@ public class TestMultiChannelContextCaches
 		Assert.assertNotNull(elt);
 		entryRegistry.getCombinedConnector().registerListener(combined, 0);
 		Assert.assertEquals(0, combined.entries.size());
+		
+		// Delete the channel.
+		home.runCommand(null, new DeleteChannelCommand());
+		
+		// Check the caches.
+		Assert.assertEquals(0, recordCache.getKeys().size());
+		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		Assert.assertNull(elt);
+		Assert.assertEquals(0, combined.entries.size());
+		
+		home.shutdown();
+	}
+
+	@Test
+	public void postAsOneUser() throws Throwable
+	{
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode home = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		LocalRecordCache recordCache = new LocalRecordCache();
+		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
+		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry);
+		
+		// Create the channel.
+		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
+		
+		// Make a basic publish.
+		File thumbnail = FOLDER.newFile();
+		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
+		home.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[] {
+				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
+		}));
+		
+		// Check the status of the caches.
+		CombinedListener combined = new CombinedListener();
+		Assert.assertEquals(1, recordCache.getKeys().size());
+		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		Assert.assertNotNull(elt);
+		entryRegistry.getCombinedConnector().registerListener(combined, 0);
+		Assert.assertEquals(1, combined.entries.size());
 		
 		// Delete the channel.
 		home.runCommand(null, new DeleteChannelCommand());

@@ -64,6 +64,10 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		{
 			LocalRecordCacheBuilder.populateUserInfoFromDescription(context.userInfoCache, publicKey, description);
 		}
+		if (null != context.entryRegistry)
+		{
+			context.entryRegistry.createHomeUser(publicKey);
+		}
 		
 		context.setSelectedKey(publicKey);
 		log.logFinish("Initial state published to Cacophony!");

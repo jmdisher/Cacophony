@@ -9,10 +9,13 @@ import java.io.InputStream;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.logic.PublishHelpers;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -31,7 +34,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 		{
 			throw new UsageException("Description must be provided");
 		}
-		if (null == context.getSelectedKey())
+		IpfsKey publicKey = context.getSelectedKey();
+		if (null == publicKey)
 		{
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
@@ -42,6 +46,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		PublishHelpers.PublishElement[] openElements = openElementFiles(context.logger, _elements);
 		IpfsFile newRoot;
 		IpfsFile newElement;
+		StreamRecord newRecord;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
@@ -51,14 +56,25 @@ public record PublishCommand(String _name, String _description, String _discussi
 					, _description
 					, _discussionUrl
 					, openElements
-					, context.getSelectedKey()
+					, publicKey
 			);
 			newRoot = result.newIndexRoot();
 			newElement = result.newRecordCid();
+			newRecord = result.newRecord();
 		}
 		finally
 		{
 			closeElementFiles(openElements);
+		}
+		
+		// Update the caches, if they exist.
+		if (null != context.entryRegistry)
+		{
+			context.entryRegistry.addLocalElement(publicKey, newElement);
+		}
+		if (null != context.recordCache)
+		{
+			LocalRecordCacheBuilder.updateCacheWithNewUserPost(context.recordCache, newElement, newRecord);
 		}
 		
 		log.logOperation("New element: " + newElement);

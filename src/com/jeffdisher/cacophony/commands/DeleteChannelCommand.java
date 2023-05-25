@@ -10,6 +10,9 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.logic.LeafFinder;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -44,7 +47,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			
 			IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
 			StreamRecords records = access.loadCached(recordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
-			_handleRecords(access, records);
+			_handleRecords(access, userToDelete, context.entryRegistry, context.recordCache, records);
 			access.unpin(recordsCid);
 			
 			access.unpin(indexCid);
@@ -61,6 +64,10 @@ public record DeleteChannelCommand() implements ICommand<None>
 		{
 			context.userInfoCache.removeUser(userToDelete);
 		}
+		if (null != context.entryRegistry)
+		{
+			context.entryRegistry.removeHomeUser(userToDelete);
+		}
 		
 		// We also want to clean up the context.
 		context.setSelectedKey(null);
@@ -75,20 +82,48 @@ public record DeleteChannelCommand() implements ICommand<None>
 		access.unpin(pic);
 	}
 
-	private void _handleRecords(IWritingAccess access, StreamRecords records) throws FailedDeserializationException, IpfsConnectionException
+	private void _handleRecords(IWritingAccess access, IpfsKey publicKey, EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, StreamRecords records) throws FailedDeserializationException, IpfsConnectionException
 	{
 		// We need to walk all the records and then walk every leaf in each one.
 		for (String rawCid : records.getRecord())
 		{
 			IpfsFile recordCid = IpfsFile.fromIpfsCid(rawCid);
-			StreamRecord record = access.loadCached(recordCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
-			_handleRecord(access, record);
+			_handleRecord(access, recordCache, recordCid);
+			if (null != entryRegistry)
+			{
+				entryRegistry.removeLocalElement(publicKey, recordCid);
+			}
+			if (null != recordCache)
+			{
+				recordCache.recordMetaDataReleased(recordCid);
+			}
+			access.unpin(recordCid);
 		}
 	}
 
 
-	private void _handleRecord(IWritingAccess access, StreamRecord record) throws IpfsConnectionException
+	private void _handleRecord(IWritingAccess access, LocalRecordCache recordCache, IpfsFile recordCid) throws IpfsConnectionException, FailedDeserializationException
 	{
+		StreamRecord record = access.loadCached(recordCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+		
+		// If there is a cache, account for what is being removed.
+		if (null != recordCache)
+		{
+			LeafFinder leaves = LeafFinder.parseRecord(record);
+			if (null != leaves.thumbnail)
+			{
+				recordCache.recordThumbnailReleased(recordCid, leaves.thumbnail);
+			}
+			if (null != leaves.audio)
+			{
+				recordCache.recordAudioReleased(recordCid, leaves.audio);
+			}
+			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+			{
+				recordCache.recordVideoReleased(recordCid, leaf.cid(), leaf.edgeSize());
+			}
+		}
+		
 		for (DataElement leaf : record.getElements().getElement())
 		{
 			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
