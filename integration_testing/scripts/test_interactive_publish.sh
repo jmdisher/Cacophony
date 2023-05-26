@@ -396,6 +396,16 @@ if [ "$EVENT_POST_ID" != "$POST_ID" ]; then
 	exit 1
 fi
 
+echo "See what happens if we add this post to our favourites..."
+FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
+requireSubstring "$FAVOURITES_LIST" "[]"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/favourites/add/$POST_ID"
+FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
+requireSubstring "$FAVOURITES_LIST" "[\"$POST_ID\"]"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XDELETE "http://127.0.0.1:8000/favourites/remove/$POST_ID"
+FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
+requireSubstring "$FAVOURITES_LIST" "[]"
+
 echo "Check the list of followee keys for this user"
 FOLLOWEE_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/followees/keys")
 requireSubstring "$FOLLOWEE_KEYS" "[]"

@@ -42,6 +42,10 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 				Assert.assertTrue(null != info);
 				favourites.addStreamRecord(_elementCid, info);
 			}
+			else
+			{
+				throw new UsageException("Post is already favourite");
+			}
 		}
 		return None.NONE;
 	}

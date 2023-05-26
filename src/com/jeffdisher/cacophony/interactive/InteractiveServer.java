@@ -281,6 +281,11 @@ public class InteractiveServer
 		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
 		validated.addWebSocketFactory("/followee/events/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
 		
+		// Favourites operations.
+		validated.addGetHandler("/favourites/list", 0, new GET_FavouritesHashes(serverContext));
+		validated.addPostRawHandler("/favourites/add", 1, new POST_Raw_AddFavourite(runner));
+		validated.addDeleteHandler("/favourites/remove", 1, new DELETE_RemoveFavourite(runner));
+		
 		// Start the server.
 		ILogger serverLog = serverContext.logger.logStart("Starting server...");
 		server.start();
