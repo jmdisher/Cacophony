@@ -128,18 +128,51 @@ public class TestExplicitCacheData
 		Assert.assertEquals(1, pinCount.get(F5).intValue());
 	}
 
+	@Test
+	public void verifySuccessiveSerialization() throws Throwable
+	{
+		ExplicitCacheData start = new ExplicitCacheData();
+		// These are overlapping in ways we would never normally see but the cache doesn't care.
+		// The only CID it cares about is the first one - the location of the element it is describing.
+		_addStreamRecord(start, F1, F2, null, null, 5L);
+		start.addUserInfo(F5, F2, F3, F4, 10L);
+		ExplicitCacheData explicitCache = _codec(start);
+		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
+		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(F5);
+		
+		// Verify that serializing always gives the same result.
+		byte[] serial1 = _serialize(explicitCache);
+		byte[] serial2 = _serialize(explicitCache);
+		Assert.assertArrayEquals(serial1, serial2);
+		
+		// Verify that serialization doesn't break anything.
+		Assert.assertEquals(F2, recordInfo.thumbnailCid());
+		Assert.assertNull(recordInfo.videoCid());
+		Assert.assertNull(recordInfo.audioCid());
+		Assert.assertEquals(F4, userInfo.userPicCid());
+		Assert.assertEquals(10L, userInfo.combinedSizeBytes());
+		int unpinCount[] = new int[1];
+		explicitCache.purgeCacheToSize((IpfsFile unpin) -> unpinCount[0] += 1, 4L);
+		Assert.assertEquals(6, unpinCount[0]);
+	}
 
-	private static ExplicitCacheData _codec(ExplicitCacheData start) throws IOException
+
+	private static byte[] _serialize(ExplicitCacheData start) throws IOException
 	{
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
 		{
 			start.serializeToOpcodeWriter(writer);
 		}
-		
+		return out.toByteArray();
+	}
+
+	private static ExplicitCacheData _codec(ExplicitCacheData start) throws IOException
+	{
+		byte[] bytes = _serialize(start);
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
 		OpcodeContext context = new OpcodeContext(null, null, null, null, explicitCache);
-		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
+		try (ByteArrayInputStream input = new ByteArrayInputStream(bytes))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);
 		}

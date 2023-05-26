@@ -48,13 +48,13 @@ public class ExplicitCacheData
 			// Check what this is.
 			if (_userInfo.containsKey(elt))
 			{
-				UserInfo info = _userInfo.remove(elt);
+				UserInfo info = _userInfo.get(elt);
 				writer.writeOpcode(new Opcode_ExplicitUserInfo(info.indexCid, info.recommendationsCid, info.descriptionCid, info.userPicCid, info.combinedSizeBytes));
 			}
 			else
 			{
 				Assert.assertTrue(_recordInfo.containsKey(elt));
-				CachedRecordInfo info = _recordInfo.remove(elt);
+				CachedRecordInfo info = _recordInfo.get(elt);
 				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
 			}
 		}
