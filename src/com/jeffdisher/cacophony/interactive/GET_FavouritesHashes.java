@@ -1,12 +1,11 @@
 package com.jeffdisher.cacophony.interactive;
 
-import java.util.Set;
+import java.util.List;
 
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
-import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -34,11 +33,10 @@ public class GET_FavouritesHashes implements ValidatedEntryPoints.GET
 		{
 			JsonArray array = new JsonArray();
 			IFavouritesReading favourites = access.readableFavouritesCache();
-			Set<CachedRecordInfo> records = favourites.getRecords();
-			for (CachedRecordInfo record : records)
+			List<IpfsFile> keys = favourites.getRecordFiles();
+			for (IpfsFile key : keys)
 			{
-				IpfsFile recordCid = record.streamCid();
-				array.add(recordCid.toSafeString());
+				array.add(key.toSafeString());
 			}
 			response.setContentType("application/json");
 			response.getWriter().print(array.toString());

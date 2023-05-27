@@ -54,8 +54,7 @@ function newHashAppeared($scope, hash)
 		"name": "Loading...",
 		"publisherKey": null,
 	};
-	// NOTE:  The favourites aren't returned in a specific order so it doesn't matter how we add these to the list.
-	// We use unshift just because they will likely end up in a "oldest first" list in later changes to the RPC and we want "newest first", but this is currently arbitrary.
+	// Favourites are returned in the order they were added but we want to put the most recent addition at the top of the screen so unshift.
 	$scope.posts.unshift(placeholder);
 	
 	API_getPost(hash).then(elt => {

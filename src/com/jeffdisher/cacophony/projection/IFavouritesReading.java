@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.projection;
 
-import java.util.Set;
+import java.util.List;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -19,7 +19,7 @@ public interface IFavouritesReading
 	CachedRecordInfo getRecordInfo(IpfsFile recordCid);
 
 	/**
-	 * @return The set of all records in the favourites cache.
+	 * @return The list of all record files in the cache, in the order they were added.
 	 */
-	Set<CachedRecordInfo> getRecords();
+	List<IpfsFile> getRecordFiles();
 }

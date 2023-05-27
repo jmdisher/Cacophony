@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.util.Set;
+import java.util.List;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -21,10 +22,11 @@ public record ListFavouritesCommand() implements ICommand<None>
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFavouritesReading favourites = access.readableFavouritesCache();
-			Set<CachedRecordInfo> records = favourites.getRecords();
-			ILogger logger = context.logger.logStart("Found " + records.size() + " favourites:");
-			for (CachedRecordInfo record : records)
+			List<IpfsFile> keys = favourites.getRecordFiles();
+			ILogger logger = context.logger.logStart("Found " + keys.size() + " favourites:");
+			for (IpfsFile key : keys)
 			{
+				CachedRecordInfo record = favourites.getRecordInfo(key);
 				ILogger elt = logger.logStart("Record: " + record.streamCid());
 				if (null != record.thumbnailCid())
 				{

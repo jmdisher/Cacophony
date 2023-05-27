@@ -1,9 +1,10 @@
 package com.jeffdisher.cacophony.projection;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
@@ -23,10 +24,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class FavouritesCacheData implements IFavouritesReading
 {
 	private final Map<IpfsFile, CachedRecordInfo> _recordInfo;
+	private final List<IpfsFile> _additionOrder;
 
 	public FavouritesCacheData()
 	{
 		_recordInfo = new HashMap<>();
+		_additionOrder = new ArrayList<>();
 	}
 
 	/**
@@ -37,10 +40,10 @@ public class FavouritesCacheData implements IFavouritesReading
 	 */
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
 	{
-		for (Map.Entry<IpfsFile, CachedRecordInfo> elt : _recordInfo.entrySet())
+		for (IpfsFile key : _additionOrder)
 		{
-			CachedRecordInfo info = elt.getValue();
-			writer.writeOpcode(new Opcode_FavouriteStreamRecord(elt.getKey(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
+			CachedRecordInfo info = _recordInfo.get(key);
+			writer.writeOpcode(new Opcode_FavouriteStreamRecord(key, info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
 		}
 	}
 
@@ -85,6 +88,7 @@ public class FavouritesCacheData implements IFavouritesReading
 	{
 		Assert.assertTrue(!_recordInfo.containsKey(streamCid));
 		_recordInfo.put(streamCid, info);
+		_additionOrder.add(streamCid);
 	}
 
 	/**
@@ -95,7 +99,17 @@ public class FavouritesCacheData implements IFavouritesReading
 	 */
 	public CachedRecordInfo removeStreamRecord(IpfsFile streamCid)
 	{
-		return _recordInfo.remove(streamCid);
+		boolean didRemove = _additionOrder.remove(streamCid);
+		CachedRecordInfo removed = _recordInfo.remove(streamCid);
+		if (didRemove)
+		{
+			Assert.assertTrue(null != removed);
+		}
+		else
+		{
+			Assert.assertTrue(null == removed);
+		}
+		return removed;
 	}
 
 	@Override
@@ -105,8 +119,8 @@ public class FavouritesCacheData implements IFavouritesReading
 	}
 
 	@Override
-	public Set<CachedRecordInfo> getRecords()
+	public List<IpfsFile> getRecordFiles()
 	{
-		return Set.copyOf(_recordInfo.values());
+		return List.copyOf(_additionOrder);
 	}
 }
