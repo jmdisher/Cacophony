@@ -24,6 +24,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 function xsrfLoaded($scope)
 {
 	let hashArg = readGetVar("elt");
+	$scope.elementHash = hashArg;
 	API_getPost(hashArg).then(elt => {
 		postWasLoaded($scope, elt);
 	});
@@ -75,6 +76,36 @@ function postWasLoaded($scope, elt)
 			a.src = $scope.audioUrl;
 		}
 	}
+	
+	// We will also store information around whether or not this is in the favourites list but we need to load that information so set it to null while uncertain.
+	$scope.isFavourite = null;
+	REST.GET("/favourites/list")
+		.then(data => data.json())
+		.then(hashArray => {
+			$scope.isFavourite = false;
+			for (let hash of hashArray)
+			{
+				if ($scope.elementHash === hash)
+				{
+					$scope.isFavourite = true;
+					break;
+				}
+			}
+			$scope.$apply();
+		});
+	$scope.addFavourite = function(post)
+	{
+		// We will just act like this immediately completed.
+		$scope.isFavourite = true;
+		REST.POST("/favourites/add/" + $scope.elementHash);
+	}
+	$scope.deleteFavourite = function(post)
+	{
+		// We will just act like this immediately completed.
+		$scope.isFavourite = false;
+		REST.DELETE("/favourites/remove/" + $scope.elementHash);
+	}
+	
 	$scope.$apply();
 }
 </script>
@@ -91,6 +122,7 @@ function postWasLoaded($scope, elt)
 			<li class="nav-item"><a class="nav-link" href="user.html">This User</a></li>
 			<li class="nav-item"><a class="nav-link" href="recommending.html">Recommended Users</a></li>
 			<li class="nav-item"><a class="nav-link" href="following.html">Users you Follow</a></li>
+			<li class="nav-item"><a class="nav-link" href="favourites.html">Favourites</a></li>
 			<li class="nav-item"><a class="nav-link" href="publish.html">Publish or Create Draft</a></li>
 			<li class="nav-item"><a class="nav-link" href="status.html">Server Status</a></li>
 		</ul>
@@ -121,6 +153,14 @@ function postWasLoaded($scope, elt)
 			</div>
 			<div class="row card card-body" ng-show="discussionUrl">
 				<a ng-href="{{discussionUrl}}">View discussion on {{discussionHost}}</a>
+			</div>
+			<div class="btn-group" ng-show="true === isFavourite">
+				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Remove from favourites</button>
+				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteFavourite()">Confirm</a></li></ul>
+			</div>
+			<div class="btn-group" ng-show="false === isFavourite">
+				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Add to favourites</button>
+				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="addFavourite()">Confirm</a></li></ul>
 			</div>
 		</div>
 	</div>
