@@ -31,7 +31,16 @@ function xsrfLoaded($scope)
 		$scope.homePublicKey = key;
 		$scope.isHomeUser = (undefined === keyArg) || (key === keyArg);
 		let keyWeAreUsing = (keyArg !== undefined) ? keyArg : key;
-		publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
+		// This keyWeAreUsing should only be null if no specific key was provided and we have no selected home user.
+		if (null !== keyWeAreUsing)
+		{
+			publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
+		}
+		else
+		{
+			$scope.publicKey = keyWeAreUsing;
+			$scope.$apply();
+		}
 	});
 	$scope.deletePost = function(post)
 	{
@@ -331,7 +340,7 @@ function stopCamera(video_preview, stream)
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
-		<div class="col-md-9">
+		<div class="col-md-9" ng-show="null !== publicKey">
 			<div class="row card" ng-show="!inEditMode">
 				<h5 class="card-header">{{description.name}}</h5>
 				<div class="card-body container row">
@@ -404,6 +413,9 @@ function stopCamera(video_preview, stream)
 				</div>
 			</div>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
+		</div>
+		<div class="col-md-9" ng-show="null === publicKey">
+			<strong>No home user selected.</strong>
 		</div>
 	</div>
 </div>

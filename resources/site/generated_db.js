@@ -1,12 +1,24 @@
 // This is actually a static page to call the back-end REST interfaces, when running in interactive mode, but is replaced by the generated file when running in the offline mode.
 // This file depends on rest.js being loaded, as it uses its REST global variable.  We can't use modules to load this dependency since that breaks in "file://" URLs, which the offline mode uses.
 
+// Loads the currently-selected public key from the server, null if there is no selected key (usually because there are no users).
 function API_loadPublicKey()
 {
 	return new Promise(resolve => {
 		REST.GET("/home/publicKey")
-			.then(result => result.text())
-			.then(text => resolve(text));
+			.then(function(result)
+			{
+				if (result.ok)
+				{
+					result.text().then(text => resolve(text));
+				}
+				else
+				{
+					// Annoyingly, it seems like this error is still logged, even though we are handling it.
+					resolve(null);
+				}
+			})
+		;
 	});
 }
 

@@ -161,7 +161,7 @@ function ready($scope)
 				<span class="badge text-bg-success" ng-show="null !== socket">Server Online</span>
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>
 				<div class="btn-group" role="group">
-					<button class="btn btn-primary" ng-show="null !== socket" ng-click="republishRoot()">Republish Root Element</button><br/>
+					<button class="btn btn-primary" ng-show="(null !== socket) && (null !== homePublicKey)" ng-click="republishRoot()">Republish Root Element</button><br/>
 					<button class="btn btn-danger" ng-show="null !== socket" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
 				</div>
 			</div>

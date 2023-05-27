@@ -805,7 +805,15 @@ function xsrfLoaded($scope)
 {
 	API_loadPublicKey().then(key => {
 		$scope.homePublicKey = key;
-		ready($scope);
+		if (null !== key)
+		{
+			ready($scope);
+		}
+		else
+		{
+			// There is no selected home user.
+			$scope.$apply();
+		}
 	});
 }
 
@@ -857,7 +865,7 @@ function ready($scope)
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
-		<div class="card card-body col-md-6">
+		<div class="card card-body col-md-6" ng-show="null !== homePublicKey">
 			<em ng-show="null == drafts">Loading drafts...</em>
 			<div class="row" ng-show="null != drafts">Drafts ({{drafts.length}}):<br />
 				<ul>
@@ -871,11 +879,14 @@ function ready($scope)
 				</ul>
 			</div>
 		</div>
-		<div class="card card-body col-md-3">
+		<div class="card card-body col-md-3" ng-show="null !== homePublicKey">
 			<button class="btn btn-small btn-success" ng-click="createNewDraft()" ng-disabled="inProgress">New Draft</button><br />
 		</div>
+		<div class="col-md-9" ng-show="null === homePublicKey">
+			<strong>No home user selected.</strong>
+		</div>
 	</div>
-	<div class="row">
+	<div class="row" ng-show="null !== homePublicKey">
 		<div class="col-md-12">
 			<div class="card card-body" ng-show="null == selectedDraft">
 				Select a draft to see details.

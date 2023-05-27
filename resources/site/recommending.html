@@ -82,7 +82,16 @@ function xsrfLoaded($scope)
 		else
 		{
 			// This is typically how we end up viewing the home user so we can change recommendations.
-			publicKeyLoaded($scope, key, true);
+			if (null !== key)
+			{
+				publicKeyLoaded($scope, key, true);
+			}
+			else
+			{
+				// There is no home user.
+				$scope.publicKey = key;
+				$scope.$apply();
+			}
 		}
 	});
 }
@@ -204,7 +213,7 @@ function addKeyToList(list, key, onPopulate)
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
-		<div class="col-md-9">
+		<div class="col-md-9" ng-show="null !== publicKey">
 			<div class="input-group mb-3" ng-show="canChangeRecommendations">
 				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()" ng-disabled="inProgress">Check User</button>
 				<input type="text" class="form-control" ng-model="unknownUserKey" ng-disabled="inProgress" aria-label="User Public Key" aria-describedby="public-key">
@@ -242,6 +251,9 @@ function addKeyToList(list, key, onPopulate)
 					</div>
 				</div>
 			</div>
+		</div>
+		<div class="col-md-9" ng-show="null === publicKey">
+			<strong>No home user selected.</strong>
 		</div>
 	</div>
 </div>
