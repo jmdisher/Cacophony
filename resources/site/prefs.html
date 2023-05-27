@@ -27,6 +27,7 @@ function xsrfLoaded($scope)
 		$scope.followCacheGB = prefs["followerCacheBytes"] / 1000000000;
 		$scope.republishIntervalMinutes = (prefs["republishIntervalMillis"] / 1000 / 60);
 		$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
+		$scope.explicitCacheGB = prefs["explicitCacheTargetBytes"] / 1000000000;
 		$scope.$apply();
 	});
 	
@@ -38,6 +39,7 @@ function xsrfLoaded($scope)
 			"followerCacheBytes": ($scope.followCacheGB * 1000000000),
 			"republishIntervalMillis": ($scope.republishIntervalMinutes * 1000 * 60),
 			"followeeRefreshMillis": ($scope.followeeRefreshMinutes * 1000 * 60),
+			"explicitCacheTargetBytes":  ($scope.explicitCacheGB * 1000000000)
 		};
 		return REST.POST_asForm("/server/prefs", variables);
 	}
@@ -91,6 +93,10 @@ function xsrfLoaded($scope)
 			<div class="input-group mb-3">
 				<span class="input-group-text" id="refresh-interval">Followee refresh interval (minutes)</span>
 				<input type="text" class="form-control" ng-model="followeeRefreshMinutes" ng-disabled="inProgress" aria-label="Followee refresh interval (minutes)" aria-describedby="refresh-interval">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="follow-cache">Explicit cache target size (GB)</span>
+				<input type="text" class="form-control" ng-model="explicitCacheGB" ng-disabled="inProgress" aria-label="Explicit cache target size (GB)" aria-describedby="explicit-cache">
 			</div>
 			<div class="row"><button type="button" class="btn btn-success" ng-click="savePrefs()" ng-disabled="inProgress">Save Preferences</button></div>
 		</div>

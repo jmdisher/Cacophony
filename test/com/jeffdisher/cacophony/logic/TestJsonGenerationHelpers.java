@@ -61,7 +61,7 @@ public class TestJsonGenerationHelpers
 	{
 		PrefsData prefs = PrefsData.defaultPrefs();
 		JsonObject data = JsonGenerationHelpers.prefs(prefs);
-		Assert.assertEquals("{\"edgeSize\":1280,\"followerCacheBytes\":10000000000,\"republishIntervalMillis\":43200000,\"followeeRefreshMillis\":3600000}", data.toString());
+		Assert.assertEquals("{\"edgeSize\":1280,\"followerCacheBytes\":10000000000,\"republishIntervalMillis\":43200000,\"followeeRefreshMillis\":3600000,\"explicitCacheTargetBytes\":1000000000}", data.toString());
 	}
 
 	@Test

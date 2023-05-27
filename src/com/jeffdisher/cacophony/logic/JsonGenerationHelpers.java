@@ -83,6 +83,7 @@ public class JsonGenerationHelpers
 		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes);
 		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
 		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
+		dataPrefs.set("explicitCacheTargetBytes", prefs.explicitCacheTargetBytes);
 		return dataPrefs;
 	}
 

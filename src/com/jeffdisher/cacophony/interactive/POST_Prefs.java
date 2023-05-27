@@ -37,11 +37,13 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 		long followerCacheBytes = Long.parseLong(formVariables.getIfSingle("followerCacheBytes"));
 		long republishIntervalMillis = Long.parseLong(formVariables.getIfSingle("republishIntervalMillis"));
 		long followeeRefreshMillis = Long.parseLong(formVariables.getIfSingle("followeeRefreshMillis"));
+		long explicitCacheTargetBytes = Long.parseLong(formVariables.getIfSingle("explicitCacheTargetBytes"));
 		// Check parameters.
 		if ((edgeSize < 0)
 				|| (followerCacheBytes < 1_000_000_000L)
 				|| (republishIntervalMillis < 60_000L)
 				|| (followeeRefreshMillis < 60_000L)
+				|| (explicitCacheTargetBytes < 1_000_000_000L)
 		)
 		{
 			// We will basically consider this a usage error (caught as general bad request, below).
@@ -56,6 +58,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 			prefs.followCacheTargetBytes = followerCacheBytes;
 			prefs.republishIntervalMillis = republishIntervalMillis;
 			prefs.followeeRefreshMillis = followeeRefreshMillis;
+			prefs.explicitCacheTargetBytes = explicitCacheTargetBytes;
 			access.writePrefs(prefs);
 		}
 		response.setStatus(HttpServletResponse.SC_OK);

@@ -412,12 +412,12 @@ requireSubstring "$FOLLOWEE_KEYS" "[]"
 
 echo "Check that we can read the preferences"
 PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/prefs")
-requireSubstring "$PREFS" "{\"edgeSize\":1280,\"followerCacheBytes\":10000000000,\"republishIntervalMillis\":43200000,\"followeeRefreshMillis\":3600000}"
+requireSubstring "$PREFS" "{\"edgeSize\":1280,\"followerCacheBytes\":10000000000,\"republishIntervalMillis\":43200000,\"followeeRefreshMillis\":3600000,\"explicitCacheTargetBytes\":1000000000}"
 
 echo "Check that we can edit the preferences"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "edgeSize=500&followerCacheBytes=2000000000&republishIntervalMillis=70000&followeeRefreshMillis=80000" http://127.0.0.1:8000/server/prefs
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "edgeSize=500&followerCacheBytes=2000000000&republishIntervalMillis=70000&followeeRefreshMillis=80000&explicitCacheTargetBytes=1000000001" http://127.0.0.1:8000/server/prefs
 PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/prefs")
-requireSubstring "$PREFS" "{\"edgeSize\":500,\"followerCacheBytes\":2000000000,\"republishIntervalMillis\":70000,\"followeeRefreshMillis\":80000}"
+requireSubstring "$PREFS" "{\"edgeSize\":500,\"followerCacheBytes\":2000000000,\"republishIntervalMillis\":70000,\"followeeRefreshMillis\":80000,\"explicitCacheTargetBytes\":1000000001}"
 
 echo "Check that we can read the version"
 VERSION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/version")
