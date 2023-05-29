@@ -74,7 +74,13 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		, function(hash, value, isNewest)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
-			newHashAppeared($scope, hash, isNewest);
+			addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
+			if (!isNewest)
+			{
+				// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
+				$scope.allowScrollBack = true;
+			}
+			$scope.$apply();
 		}
 		// No Update.
 		, null
@@ -225,53 +231,6 @@ function userInfoForUserLoaded($scope, userInfo)
 	$scope.description = userInfo;
 	$scope.$apply();
 }
-function newHashAppeared($scope, hash, isNewest)
-{
-	// Add empty objects to the array since we will replace them asynchronously.
-	let placeholder = {
-		"cached": false,
-		"elementHash": hash,
-		"name": "Loading...",
-	};
-	// We want to build this backward so that the most recent additions are at the top of the screen.
-	if (isNewest)
-	{
-		$scope.posts.unshift(placeholder);
-	}
-	else
-	{
-		$scope.posts.push(placeholder);
-		// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
-		$scope.allowScrollBack = true;
-	}
-	API_getPost(hash).then(elt => {
-		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
-		let description = elt["description"];
-		if (description.length > 135)
-		{
-			// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
-			description = description.slice(0, 130) + "...";
-		}
-		// We can't update the placeholder since the $apply() won't see nested updates so replace this.
-		let object = {
-			"cached": elt["cached"],
-			"elementHash": hash,
-			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
-			"name": elt["name"],
-			"description": description,
-			"isDeleting": false,
-		}
-		if (elt["cached"])
-		{
-			object["thumbnailUrl"] = elt["thumbnailUrl"];
-		}
-		// We need to replace the index due to the earlier mention of $apply.
-		let index = findIndex($scope.posts, placeholder);
-		$scope.posts[index] = object;
-		$scope.$apply();
-	});
-	$scope.$apply();
-}
 function oldHashRemoved($scope, key)
 {
 	let index = $scope.posts.findIndex(function(currentValue, index, arr)
@@ -280,13 +239,6 @@ function oldHashRemoved($scope, key)
 	}, key);
 	$scope.posts.splice(index, 1);
 	$scope.$apply();
-}
-function findIndex(array, element)
-{
-	return array.findIndex(function(currentValue, index, arr)
-	{
-		return currentValue === element;
-	}, element);
 }
 function startCamera()
 {
