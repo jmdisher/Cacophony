@@ -20,9 +20,9 @@ function stopServer(onComplete)
 		.then(data => data.text())
 		.then(onComplete);
 }
-function republish($scope, onComplete)
+function republish($scope, publicKey, onComplete)
 {
-	REST.POST("/home/republish/" + $scope.homePublicKey)
+	REST.POST("/home/republish/" + publicKey)
 		.then(data => data.text())
 		.then(onComplete);
 }
@@ -42,10 +42,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 			$scope.$apply();
 		});
 	}
-	$scope.republishRoot = function()
+	$scope.republishRoot = function(homeTuple)
 	{
-		// Republication requests are coalesced on the server and happen in the background so we don't bother with a representation of the request, in the UI.
-		republish($scope, function(text) {
+		republish($scope, homeTuple.publicKey, function(text) {
 			$scope.$apply();
 		});
 	}
@@ -56,13 +55,24 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	API_loadPublicKey().then(key => {
-		$scope.homePublicKey = key;
-		ready($scope);
-	});
-}
-function ready($scope)
-{
+	REST.GET("/home/channels")
+		.then((response) => response.json())
+		.then((data) => {
+			// We will create the array but only add to it once each user info is loaded.
+			$scope.homeUserDescriptions = [];
+			for (let tuple of data)
+			{
+				API_getInfoForUser(tuple.publicKey).then(userInfo => {
+					// Inject the additional home channel info into the structure.
+					userInfo.publicKey = tuple.publicKey;
+					userInfo.keyName = tuple.keyName;
+					$scope.homeUserDescriptions.push(userInfo);
+					$scope.$apply();
+				});
+			}
+		})
+	;
+	
 	API_getVersion().then(version => {
 		$scope.hash = version["hash"];
 		$scope.version = version["version"];
@@ -160,9 +170,23 @@ function ready($scope)
 			<div class="row card card-body">
 				<span class="badge text-bg-success" ng-show="null !== socket">Server Online</span>
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>
-				<div class="btn-group" role="group">
-					<button class="btn btn-primary" ng-show="(null !== socket) && (null !== homePublicKey)" ng-click="republishRoot()">Republish Root Element</button><br/>
-					<button class="btn btn-danger" ng-show="null !== socket" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
+				<button class="btn btn-danger" ng-show="null !== socket" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
+			</div>
+			<div class="row" ng-repeat="userInfo in homeUserDescriptions">
+				<div class="card" ng-show="!inEditMode">
+					<h5 class="card-header">{{userInfo.name}}</h5>
+					<div class="card-body row">
+						<div class="col-md-3">
+							<img class="img-fluid" ng-src="{{userInfo.userPicUrl}}" />
+						</div>
+						<div class="col-md-9">
+							Public Key: <strong>{{userInfo.publicKey}}</strong><br />
+							IPFS key name: <strong>{{userInfo.keyName}}</strong><br />
+							Description: <strong>{{userInfo.description}}</strong><br />
+							More info: <a href="user.html?publicKey={{userInfo.publicKey}}">{{userInfo.name}}</a><br />
+							<button class="btn btn-primary" ng-click="republishRoot(userInfo)">Republish Root for {{userInfo.name}}</button>
+						</div>
+					</div>
 				</div>
 			</div>
 			<div class="row card card-body" ng-repeat="state in states">
