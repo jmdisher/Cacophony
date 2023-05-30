@@ -125,7 +125,9 @@ requireSubstring "$USER_INFO2" "{\"name\":\"Quick user\",\"description\":\"The q
 echo "Check the list of home channels..."
 CHANNEL_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/home/channels")
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"quick\",\"publicKey\":\"$PUBLIC_KEY2\","
+requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Quick user\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\"}"
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"test1\",\"publicKey\":\"$PUBLIC_KEY1\","
+requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Test1 User\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\"}"
 
 echo "Make sure that we can set the quick user as selected..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/set/$PUBLIC_KEY2"

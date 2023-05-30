@@ -6,10 +6,12 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record ListChannelsCommand() implements ICommand<ListChannelsCommand.ChannelList>
@@ -29,7 +31,19 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 						IpfsKey publicKey = data.getPublicKey(keyName);
 						IpfsFile lastRoot = data.getLastPublishedIndex(keyName);
 						boolean isSelected = publicKey.equals(context.getSelectedKey());
-						return new OneChannel(keyName, publicKey, lastRoot, isSelected);
+						// If we have a userInfoCache, populate the additional data we would see to describe them.
+						String name = null;
+						String userPicUrl = null;
+						if (null != context.userInfoCache)
+						{
+							LocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(publicKey);
+							// While we _should_ always see this in the cache, if present, race conditions might mean we
+							// don't but we at least want to observe that case, if it happens.
+							Assert.assertTrue(null != cached);
+							name = cached.name();
+							userPicUrl = context.baseUrl + cached.userPicCid().toSafeString();
+						}
+						return new OneChannel(keyName, publicKey, lastRoot, isSelected, name, userPicUrl);
 					})
 					.collect(Collectors.toList())
 					.toArray((int size) -> new OneChannel[size])
@@ -63,6 +77,8 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 				output.println("Key name: " + channel.keyName + (channel.isSelected ? " (SELECTED)" : ""));
 				output.println("\tPublic key: " + channel.publicKey);
 				output.println("\tLast published root: " + channel.lastPublishedRoot);
+				output.println("\tName: " + ((null != channel.optionalName) ? channel.optionalName : "(unknown)"));
+				output.println("\tUser pic URL: " + ((null != channel.optionalUserPicUrl) ? channel.optionalUserPicUrl : "(unknown)"));
 			}
 		}
 		public OneChannel[] getChannels()
@@ -75,6 +91,8 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 			, IpfsKey publicKey
 			, IpfsFile lastPublishedRoot
 			, boolean isSelected
+			, String optionalName
+			, String optionalUserPicUrl
 	)
 	{
 	}

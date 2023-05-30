@@ -58,18 +58,8 @@ function xsrfLoaded($scope)
 	REST.GET("/home/channels")
 		.then((response) => response.json())
 		.then((data) => {
-			// We will create the array but only add to it once each user info is loaded.
-			$scope.homeUserDescriptions = [];
-			for (let tuple of data)
-			{
-				API_getInfoForUser(tuple.publicKey).then(userInfo => {
-					// Inject the additional home channel info into the structure.
-					userInfo.publicKey = tuple.publicKey;
-					userInfo.keyName = tuple.keyName;
-					$scope.homeUserDescriptions.push(userInfo);
-					$scope.$apply();
-				});
-			}
+			$scope.homeUserDescriptions = data;
+			$scope.$apply();
 		})
 	;
 	
@@ -182,7 +172,6 @@ function xsrfLoaded($scope)
 						<div class="col-md-9">
 							Public Key: <strong>{{userInfo.publicKey}}</strong><br />
 							IPFS key name: <strong>{{userInfo.keyName}}</strong><br />
-							Description: <strong>{{userInfo.description}}</strong><br />
 							More info: <a href="user.html?publicKey={{userInfo.publicKey}}">{{userInfo.name}}</a><br />
 							<button class="btn btn-primary" ng-click="republishRoot(userInfo)">Republish Root for {{userInfo.name}}</button>
 						</div>

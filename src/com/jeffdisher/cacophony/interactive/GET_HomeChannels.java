@@ -18,6 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * -"publicKey" (String) - the channel's public key
  * -"lastPublishedRoot" (String) - the IPFS CID of the last published channel root (StreamIndex)
  * -"isSelected" (boolean) - true if this is the currently selected channel
+ * -"name" (String) - the name, cached from the description
+ * -"userPicUrl" (String) - the picture URL, cached from the description
  */
 public class GET_HomeChannels implements ValidatedEntryPoints.GET
 {
@@ -58,6 +60,8 @@ public class GET_HomeChannels implements ValidatedEntryPoints.GET
 		object.add("publicKey", channel.publicKey().toPublicKey());
 		object.add("lastPublishedRoot", channel.lastPublishedRoot().toSafeString());
 		object.add("isSelected", channel.isSelected());
+		object.add("name", channel.optionalName());
+		object.add("userPicUrl", channel.optionalUserPicUrl());
 		return object;
 	}
 }
