@@ -22,14 +22,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	API_loadPublicKey().then(key => {
-		$scope.homePublicKey = key;
-		ready($scope);
-	});
-}
-
-function ready($scope)
-{
 	let hashArg = readGetVar("elt");
 	API_getPost(hashArg).then(elt => {
 		postWasLoaded($scope, hashArg, elt);
@@ -47,6 +39,8 @@ function postWasLoaded($scope, hashArg, elt)
 	$scope.videoUrl = elt["videoUrl"];
 	$scope.audioUrl = elt["audioUrl"];
 	$scope.thumbnailUrl = elt["thumbnailUrl"];
+	// We will assume that this is a home user (how else did we get here - will fail if we try to update something we didn't post).
+	$scope.publisherKey = elt["publisherKey"];
 	$scope.inProgress = false;
 	
 	if (null !== $scope.videoUrl)
@@ -75,7 +69,7 @@ function postWasLoaded($scope, hashArg, elt)
 			"DISCUSSION_URL": $scope.data["discussionUrl"],
 		};
 		$scope.inProgress = true;
-		REST.POST_asForm("/home/post/edit/" + $scope.homePublicKey + "/" + hashArg, variables)
+		REST.POST_asForm("/home/post/edit/" + $scope.publisherKey + "/" + hashArg, variables)
 			.then(response => response.text())
 			.then((elementHash) => {
 				$scope.inProgress = false;

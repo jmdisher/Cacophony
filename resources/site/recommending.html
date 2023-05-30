@@ -72,37 +72,70 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	API_loadPublicKey().then(key => {
-		$scope.homePublicKey = key;
-		let keyArg = readGetVar("publicKey");
-		if (keyArg !== undefined)
-		{
-			publicKeyLoaded($scope, keyArg, false);
-		}
-		else
-		{
-			// This is typically how we end up viewing the home user so we can change recommendations.
-			if (null !== key)
+	let keyArg = readGetVar("publicKey");
+	
+	// Start with no selection.
+	$scope.homeUserDescriptions = [];
+	$scope.homePublicKey = null;
+	$scope.selectedUserTitle = null;
+	
+	REST.GET("/home/channels")
+		.then((response) => response.json())
+		.then((data) => {
+			// See which user is selected (could be none of them).
+			for (let user of data)
 			{
-				publicKeyLoaded($scope, key, true);
+				// We want to create a readable description of a user so we will just add that to the structure.
+				user["title"] = user["name"] + " (key name: " + user["keyName"] + ")";
+				if (user["isSelected"])
+				{
+					$scope.homePublicKey = user["publicKey"];
+					$scope.selectedUserTitle = user["title"];
+				}
 			}
-			else
+			$scope.homeUserDescriptions = data;
+			// If there was no argument, we want to default to whatever this is.
+			if (undefined === keyArg)
 			{
-				// There is no home user.
-				$scope.publicKey = key;
+				// This is typically how we end up viewing the home user so we can change recommendations.
+				if (null !== $scope.homePublicKey)
+				{
+					publicKeyLoaded($scope, $scope.homePublicKey);
+				}
+				else
+				{
+					// There is no home user.
+					$scope.publicKey = $scope.homePublicKey;
+				}
+				$scope.canChangeRecommendations = true;
 				$scope.$apply();
 			}
-		}
-	});
+			
+			$scope.$apply();
+		})
+	;
+	$scope.selectUser = function(userStruct)
+	{
+		$scope.homePublicKey = userStruct["publicKey"];
+		$scope.selectedUserTitle = userStruct["title"];
+		REST.POST("/home/channel/set/" + $scope.homePublicKey);
+		
+		// We should update the page with this selection.
+		publicKeyLoaded($scope, $scope.homePublicKey);
+		$scope.canChangeRecommendations = true;
+	}
+	
+	// If there was a key arg, we want to load it as the key.
+	if (keyArg !== undefined)
+	{
+		publicKeyLoaded($scope, keyArg);
+	}
+	$scope.$apply();
 }
-function publicKeyLoaded($scope, publicKey, shouldApply)
+function publicKeyLoaded($scope, publicKey)
 {
 	$scope.publicKey = publicKey;
 	$scope.thisUserName = "Unknown User";
-	if (shouldApply)
-	{
-		$scope.$apply();
-	}
 	API_getInfoForUser(publicKey).then(userInfo => {
 		userInfoForUserLoaded($scope, userInfo);
 	});
@@ -212,6 +245,12 @@ function addKeyToList(list, key, onPopulate)
 			<div class="row"><a class="btn" href="favourites.html">Favourites</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
+			<div class="row btn-group">
+				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>
+				<ul class="dropdown-menu">
+					<li ng-repeat="user in homeUserDescriptions"><a class="dropdown-item" ng-click="selectUser(user)">{{user.title}}</a></li>
+				</ul>
+			</div>
 		</div>
 		<div class="col-md-9" ng-show="null !== publicKey">
 			<div class="input-group mb-3" ng-show="canChangeRecommendations">

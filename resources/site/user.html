@@ -27,81 +27,61 @@ function xsrfLoaded($scope)
 	// We need to see if there is a "publicKey" argument and compare it to our public key to see if this is the local user (or just user our public key if the arg isn't there).
 	$scope.isHomeUser = false;
 	let keyArg = readGetVar("publicKey");
-	API_loadPublicKey().then(key => {
-		$scope.homePublicKey = key;
-		$scope.isHomeUser = (undefined === keyArg) || (key === keyArg);
-		let keyWeAreUsing = (keyArg !== undefined) ? keyArg : key;
-		// This keyWeAreUsing should only be null if no specific key was provided and we have no selected home user.
-		if (null !== keyWeAreUsing)
-		{
-			publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
-		}
-		else
-		{
-			$scope.publicKey = keyWeAreUsing;
+	
+	
+	// Start with no selection.
+	$scope.homeUserDescriptions = [];
+	$scope.homePublicKey = null;
+	$scope.selectedUserTitle = null;
+	
+	REST.GET("/home/channels")
+		.then((response) => response.json())
+		.then((data) => {
+			// See which user is selected (could be none of them).
+			for (let user of data)
+			{
+				// We want to create a readable description of a user so we will just add that to the structure.
+				user["title"] = user["name"] + " (key name: " + user["keyName"] + ")";
+				if (user["isSelected"])
+				{
+					$scope.homePublicKey = user["publicKey"];
+					$scope.selectedUserTitle = user["title"];
+				}
+			}
+			$scope.homeUserDescriptions = data;
+			
+			$scope.isHomeUser = (undefined === keyArg) || ($scope.homePublicKey === keyArg);
+			let keyWeAreUsing = (keyArg !== undefined) ? keyArg : $scope.homePublicKey;
+			// This keyWeAreUsing should only be null if no specific key was provided and we have no selected home user.
+			if (null !== keyWeAreUsing)
+			{
+				publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
+			}
+			else
+			{
+				$scope.publicKey = keyWeAreUsing;
+			}
 			$scope.$apply();
-		}
-	});
+		})
+	;
+	$scope.selectUser = function(userStruct)
+	{
+		$scope.homePublicKey = userStruct["publicKey"];
+		$scope.selectedUserTitle = userStruct["title"];
+		REST.POST("/home/channel/set/" + $scope.homePublicKey);
+		
+		// We should update the page with this selection.
+		$scope.isHomeUser = true;
+		publicKeyLoaded($scope, $scope.homePublicKey, $scope.isHomeUser);
+	}
+	
 	$scope.deletePost = function(post)
 	{
 		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
 		post.isDeleting = true;
 		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + post.elementHash);
 	}
-}
-function publicKeyLoaded($scope, publicKey, isHomeUser)
-{
-	let video_preview = document.getElementById("video_preview");
-	let canvas = document.getElementById("canvas");
-	let entrySocket = null;
 	
-	$scope.publicKey = publicKey;
-	API_getInfoForUser(publicKey).then(userInfo => {
-		userInfoForUserLoaded($scope, userInfo);
-	});
-	$scope.posts = [];
-	$scope.specialString = null;
-	// We will only enable the scroll back once we see some backward entries being loaded (the initial load) so that it stays enabled if there is nothing.
-	$scope.allowScrollBack = false;
-	EVENTS_API.userEntries(publicKey
-		// Socket open.
-		, function(socket)
-		{
-			// We will hold on to the socket so we can use it to request a scroll back.
-			entrySocket = socket;
-		}
-		// Create.
-		, function(hash, value, isNewest)
-		{
-			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
-			addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
-			if (!isNewest)
-			{
-				// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
-				$scope.allowScrollBack = true;
-			}
-			$scope.$apply();
-		}
-		// No Update.
-		, null
-		// Delete.
-		, function(hash)
-		{
-			// Remove this from the list.
-			oldHashRemoved($scope, hash);
-		}
-		// Special
-		, function(string)
-		{
-			// This normally is used when refreshing.
-			$scope.specialString = string;
-			$scope.$apply();
-		}
-		// Close.
-		, function(event)
-		{
-		}
-	);
 	$scope.enterEditMode = function()
 	{
 		// Create the edit state copy.
@@ -222,9 +202,66 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 	{
 		// We will disable the scoll back until some older entries are loaded.
 		$scope.allowScrollBack = false;
-		entrySocket.send("COMMAND_SCROLL_BACK");
+		$scope.entrySocket.send("COMMAND_SCROLL_BACK");
 	}
-	$scope.$apply();
+}
+function publicKeyLoaded($scope, publicKey, isHomeUser)
+{
+	let video_preview = document.getElementById("video_preview");
+	let canvas = document.getElementById("canvas");
+	// If there previously was an event socket, close it.
+	if (undefined !== $scope.eventSocket)
+	{
+		$scope.eventSocket.close();
+	}
+	
+	$scope.publicKey = publicKey;
+	API_getInfoForUser(publicKey).then(userInfo => {
+		userInfoForUserLoaded($scope, userInfo);
+	});
+	$scope.posts = [];
+	$scope.specialString = null;
+	// We will only enable the scroll back once we see some backward entries being loaded (the initial load) so that it stays enabled if there is nothing.
+	$scope.allowScrollBack = false;
+	$scope.eventSocket = EVENTS_API.userEntries(publicKey
+		// Socket open.
+		, function(socket)
+		{
+			// We will hold on to the socket so we can use it to request a scroll back.
+			$scope.entrySocket = socket;
+		}
+		// Create.
+		, function(hash, value, isNewest)
+		{
+			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
+			addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
+			if (!isNewest)
+			{
+				// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
+				$scope.allowScrollBack = true;
+			}
+			$scope.$apply();
+		}
+		// No Update.
+		, null
+		// Delete.
+		, function(hash)
+		{
+			// Remove this from the list.
+			oldHashRemoved($scope, hash);
+		}
+		// Special
+		, function(string)
+		{
+			// This normally is used when refreshing.
+			$scope.specialString = string;
+			$scope.$apply();
+		}
+		// Close.
+		, function(event)
+		{
+		}
+	);
 }
 function userInfoForUserLoaded($scope, userInfo)
 {
@@ -291,6 +328,12 @@ function stopCamera(video_preview, stream)
 			<div class="row"><a class="btn" href="favourites.html">Favourites</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
+			<div class="row btn-group">
+				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>
+				<ul class="dropdown-menu">
+					<li ng-repeat="user in homeUserDescriptions"><a class="dropdown-item" ng-click="selectUser(user)">{{user.title}}</a></li>
+				</ul>
+			</div>
 		</div>
 		<div class="col-md-9" ng-show="null !== publicKey">
 			<div class="row card" ng-show="!inEditMode">

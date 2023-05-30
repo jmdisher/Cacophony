@@ -803,22 +803,37 @@ GLOBAL_Application.controller('AppController', function($scope)
 
 function xsrfLoaded($scope)
 {
-	API_loadPublicKey().then(key => {
-		$scope.homePublicKey = key;
-		if (null !== key)
-		{
-			ready($scope);
-		}
-		else
-		{
-			// There is no selected home user.
+	// Start with no selection.
+	$scope.homeUserDescriptions = [];
+	$scope.homePublicKey = null;
+	$scope.selectedUserTitle = null;
+	
+	REST.GET("/home/channels")
+		.then((response) => response.json())
+		.then((data) => {
+			// See which user is selected (could be none of them).
+			for (let user of data)
+			{
+				// We want to create a readable description of a user so we will just add that to the structure.
+				user["title"] = user["name"] + " (key name: " + user["keyName"] + ")";
+				if (user["isSelected"])
+				{
+					$scope.homePublicKey = user["publicKey"];
+					$scope.selectedUserTitle = user["title"];
+				}
+			}
+			$scope.homeUserDescriptions = data;
 			$scope.$apply();
-		}
-	});
-}
-
-function ready($scope)
-{
+		})
+	;
+	$scope.selectUser = function(userStruct)
+	{
+		$scope.homePublicKey = userStruct["publicKey"];
+		$scope.selectedUserTitle = userStruct["title"];
+		REST.POST("/home/channel/set/" + $scope.homePublicKey);
+	}
+	
+	// We can proceed to load the other data, concurrently.
 	REST.GET("/allDrafts/all")
 		.then(data => data.json())
 		.then(json => {
@@ -864,6 +879,12 @@ function ready($scope)
 			<div class="row"><a class="btn" href="favourites.html">Favourites</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
+			<div class="row btn-group">
+				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>
+				<ul class="dropdown-menu">
+					<li ng-repeat="user in homeUserDescriptions"><a class="dropdown-item" ng-click="selectUser(user)">{{user.title}}</a></li>
+				</ul>
+			</div>
 		</div>
 		<div class="card card-body col-md-6" ng-show="null !== homePublicKey">
 			<em ng-show="null == drafts">Loading drafts...</em>
@@ -1003,10 +1024,10 @@ function ready($scope)
 					<input type="text" class="form-control" placeholder="(no link)" ng-model="selectedDraft.discussionUrl"></input><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress">Publish without video</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress">Publish with original video</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress">Publish with processed video</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.audio.byteSize > 0) && ('AUDIO' === selectedDraft.type)" ng-disabled="inProgress">Publish with audio</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress || (null === homePublicKey)">Publish without video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with original video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with processed video</button>
+						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.audio.byteSize > 0) && ('AUDIO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with audio</button>
 					</div>
 				</div>
 			</div>
