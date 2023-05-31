@@ -482,6 +482,64 @@ public class TestBackgroundOperations
 		back.shutdownProcess();
 	}
 
+	@Test
+	public void multiChannelDeletes() throws Throwable
+	{
+		// Do a normal start-up with one channel.
+		long republishIntervalMillis = 10L;
+		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
+		FuturePublish publish = new FuturePublish(F1);
+		TestOperations ops = new TestOperations();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, republishIntervalMillis, 20L);
+		back.addChannel(KEY_NAME, LOCAL_KEY, F1);
+		back.startProcess();
+		
+		// Enqueue one.
+		back.requestPublish(LOCAL_KEY, F1);
+		ops.returnOn(F1, publish);
+		publish.success();
+		ops.waitForConsume();
+		back.removeChannel(LOCAL_KEY);
+		
+		// Now that it has run through, slightly update the time and add the other key, then wait for it to run.
+		String key2 = "key2";
+		env.currentTimeMillis += 5L;
+		back.addChannel(key2, K1, F2);
+		ops.returnOn(F2, publish);
+		ops.waitForConsume();
+		back.removeChannel(K1);
+		
+		back.shutdownProcess();
+	}
+
+	@Test
+	public void channelThrashing() throws Throwable
+	{
+		// We just want to add/request/remove channels over and over to flush out race conditions.
+		long republishIntervalMillis = 10L;
+		MockEnvironment env = new MockEnvironment();
+		SilentLogger logger = new SilentLogger();
+		TestOperations ops = new TestOperations();
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
+		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, republishIntervalMillis, 20L);
+		back.startProcess();
+		
+		for (int i = 0; i < 100; ++i)
+		{
+			FuturePublish publish = new FuturePublish(F1);
+			back.addChannel(KEY_NAME, LOCAL_KEY, F1);
+			back.requestPublish(LOCAL_KEY, F1);
+			ops.returnOn(F1, publish);
+			ops.waitForConsume();
+			back.removeChannel(LOCAL_KEY);
+			publish.success();
+		}
+		
+		back.shutdownProcess();
+	}
+
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{

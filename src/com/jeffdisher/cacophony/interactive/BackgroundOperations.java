@@ -121,6 +121,14 @@ public class BackgroundOperations
 		}
 	}
 
+	/**
+	 * Adds a new channel to be periodically republished, in the background.  This is synchronized since the local
+	 * channel map in a hand-off point.
+	 * 
+	 * @param keyName The name used for this key on the IPFS node.
+	 * @param publicKey The actual public key.
+	 * @param rootElement The initial StreamIndex CID.
+	 */
 	public synchronized void addChannel(String keyName, IpfsKey publicKey, IpfsFile rootElement)
 	{
 		// The same channel should never be redundantly added.
@@ -130,6 +138,20 @@ public class BackgroundOperations
 		ScheduleableRepublish localChannel = new ScheduleableRepublish(keyName, publicKey, rootElement, lastPublishMillis);
 		_handoff_localChannelsByKey.put(publicKey, localChannel);
 		this.notifyAll();
+	}
+
+	/**
+	 * Removes an existing channel from those republished, in the background.  This is synchronized since the local
+	 * channel map in a hand-off point.
+	 * 
+	 * @param publicKey The actual public key.
+	 */
+	public synchronized void removeChannel(IpfsKey publicKey)
+	{
+		// We expect the channel to be here.
+		Assert.assertTrue(_handoff_localChannelsByKey.containsKey(publicKey));
+		// We can just remove this.  Any pending operations will complete but not re-add since the re-schedule is done when selected.
+		_handoff_localChannelsByKey.remove(publicKey);
 	}
 
 	public synchronized void requestPublish(IpfsKey publicKey, IpfsFile rootElement)
