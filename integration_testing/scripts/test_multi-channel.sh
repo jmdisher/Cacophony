@@ -142,11 +142,12 @@ COMBINED_PID=$!
 cat "$WS_COMBINED.out" > /dev/null
 
 echo "Create the new channel and do some basic interactions to verify it works..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/new/LATE_KEY"
+NEW_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/new/LATE_KEY")
 checkPreviousCommand "create new"
 CHANNEL_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/home/channels")
 CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/home/publicKey")
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"LATE_KEY\",\"publicKey\":\"$CHECKED_KEY\","
+requireSubstring "$NEW_KEY" "$CHECKED_KEY"
 
 echo "Add a post by each user and verify that we see them all in the combined socket..."
 makeTextPost "$PUBLIC_KEY1" "post1"
@@ -162,11 +163,23 @@ SAMPLE=$(cat "$WS_COMBINED.out")
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
 echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 
-echo "Delete the added channel and test1..."
+echo "Request a republish of the added channel and test1 and immediately delete them..."
+# This should mean that the delete is likely happening while the refresh is still waiting to complete, so it should demonstrate that this case is handled.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/set/$CHECKED_KEY"
+checkPreviousCommand "select CHECKED_KEY"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/home/republish/$CHECKED_KEY"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/home/republish/$PUBLIC_KEY1"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/channel/delete/$CHECKED_KEY"
 checkPreviousCommand "delete LATE_KEY channel"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/set/$PUBLIC_KEY1"
+checkPreviousCommand "select PUBLIC_KEY1"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/channel/delete/$PUBLIC_KEY1"
 checkPreviousCommand "delete test1 channel"
+# Deleting these should unselect everything so this should be a 404.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XGET "http://127.0.0.1:8001/home/publicKey" >& /dev/null
+if [ $? != 22 ]; then
+	exit 1
+fi
 
 # We expect to see a delete for each of these users since their posts should disappear.
 SAMPLE=$(cat "$WS_COMBINED.out")

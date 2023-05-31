@@ -51,6 +51,8 @@ public class POST_Raw_NewChannel implements ValidatedEntryPoints.POST_Raw
 			_context.setSelectedKey(selectedKey);
 			_background.addChannel(keyName, selectedKey, result.result().getIndexToPublish());
 			response.setStatus(HttpServletResponse.SC_OK);
+			response.setContentType("text/plain");
+			response.getWriter().print(selectedKey.toPublicKey());
 		}
 	}
 }

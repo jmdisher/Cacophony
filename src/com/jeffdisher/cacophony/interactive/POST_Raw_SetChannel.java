@@ -1,8 +1,11 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
+import java.util.Set;
+
 import com.jeffdisher.cacophony.commands.Context;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,18 +31,14 @@ public class POST_Raw_SetChannel implements ValidatedEntryPoints.POST_Raw
 	{
 		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
 		
-		// Check that this key exists.
+		// Check that this key exists (we need to use a low-level accessor since we might not currently have something selected).
 		boolean didFind = false;
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
+		LocalDataModel dataModel = _context.environment.getSharedDataModel();
+		try (IReadOnlyLocalData reading = dataModel.openForRead())
 		{
-			for (IReadingAccess.HomeUserTuple tuple : access.readHomeUserData())
-			{
-				if (homePublicKey.equals(tuple.publicKey()))
-				{
-					didFind = true;
-					break;
-				}
-			}
+			ChannelData data = reading.readLocalIndex();
+			Set<String> keyNames = data.getKeyNames();
+			didFind = keyNames.stream().anyMatch((String keyName) -> homePublicKey.equals(data.getPublicKey(keyName)));
 		}
 		if (didFind)
 		{
