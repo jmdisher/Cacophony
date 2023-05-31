@@ -34,6 +34,10 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.canPressStop = true;
 	$scope.socket = null;
 	$scope.states = [];
+	$scope.newChannel = {
+		keyName: "",
+		isPosting: false,
+	};
 	
 	$scope.stopServer = function()
 	{
@@ -47,6 +51,33 @@ GLOBAL_Application.controller('AppController', function($scope)
 		republish($scope, homeTuple.publicKey, function(text) {
 			$scope.$apply();
 		});
+	}
+	$scope.createNewChannel = function()
+	{
+		$scope.newChannel.isPosting = true;
+		REST.POST("/home/channel/new/" + encodeURI($scope.newChannel.keyName))
+			.then(function(result) {
+				if (result.ok)
+				{
+					// Switch to the new user.
+					result.text().then(text => {
+						window.location.href = "user.html?publicKey=" + text;
+					});
+				}
+				else
+				{
+					alert("error");
+				}
+				$scope.newChannel.isPosting = false;
+				$scope.$apply();
+			});
+	}
+	$scope.deleteChannel = function(userInfo)
+	{
+		// Send the delete but also remove this from the list, right away.
+		REST.DELETE("/home/channel/delete/" + userInfo.publicKey);
+		let index = $scope.homeUserDescriptions.indexOf(userInfo);
+		$scope.homeUserDescriptions.splice(index, 1);
 	}
 	
 	API_getXsrf().then(function() {
@@ -162,6 +193,10 @@ function xsrfLoaded($scope)
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>
 				<button class="btn btn-danger" ng-show="null !== socket" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
 			</div>
+			<div class="row card card-body">
+				New channel key name:  <input type="text" class="form-control" ng-model="newChannel.keyName" ng-disabled="newChannel.isPosting"></input>
+				<button class="btn btn-sm btn-danger" ng-disabled="newChannel.isPosting" ng-click="createNewChannel()">Create Channel</button><br/>
+			</div>
 			<div class="row" ng-repeat="userInfo in homeUserDescriptions">
 				<div class="card" ng-show="!inEditMode">
 					<h5 class="card-header">{{userInfo.name}}</h5>
@@ -174,6 +209,10 @@ function xsrfLoaded($scope)
 							IPFS key name: <strong>{{userInfo.keyName}}</strong><br />
 							More info: <a href="user.html?publicKey={{userInfo.publicKey}}">{{userInfo.name}}</a><br />
 							<button class="btn btn-primary" ng-click="republishRoot(userInfo)">Republish Root for {{userInfo.name}}</button>
+							<div class="btn-group">
+								<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Delete Channel</button>
+								<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteChannel(userInfo)">Confirm</a></li></ul>
+							</div>
 						</div>
 					</div>
 				</div>
