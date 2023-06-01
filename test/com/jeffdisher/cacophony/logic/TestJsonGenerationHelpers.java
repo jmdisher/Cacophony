@@ -43,9 +43,9 @@ public class TestJsonGenerationHelpers
 {
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
-	public static final IpfsFile FILE1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-	public static final IpfsFile FILE2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
-	public static final IpfsFile FILE3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
+	public static final IpfsFile FILE1 = MockSingleNode.generateHash(new byte[] {1});
+	public static final IpfsFile FILE2 = MockSingleNode.generateHash(new byte[] {2});
+	public static final IpfsFile FILE3 = MockSingleNode.generateHash(new byte[] {3});
 	private static final String KEY_NAME = "keyName";
 
 	@Test

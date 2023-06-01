@@ -18,7 +18,7 @@ public class TestRemoveEntryFromThisChannelCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsFile MISC_FILE = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
+	private static final IpfsFile MISC_FILE = MockSingleNode.generateHash(new byte[] {1});
 
 	@Test
 	public void testMissingChannel() throws Throwable

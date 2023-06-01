@@ -29,7 +29,7 @@ public class TestEditPostCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsFile FAKE_ELT = IpfsFile.fromIpfsCid("QmdKwHjDNCDbZWUTu5fAceQMLmDhnpoRcHGNYW3rurJ1ef");
+	private static final IpfsFile FAKE_ELT = MockSingleNode.generateHash(new byte[] {1});
 
 	@Test
 	public void testMatch() throws Throwable

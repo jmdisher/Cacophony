@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.testutils.MockEnvironment;
 import com.jeffdisher.cacophony.testutils.MockKeys;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -22,10 +23,9 @@ public class TestBackgroundOperations
 {
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
-	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
-	public static final IpfsFile F3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
-
+	public static final IpfsFile F1 = MockSingleNode.generateHash(new byte[] {1});
+	public static final IpfsFile F2 = MockSingleNode.generateHash(new byte[] {2});
+	public static final IpfsFile F3 = MockSingleNode.generateHash(new byte[] {3});
 	private static final String KEY_NAME = "key";
 
 	// The dispatcher is expected to lock-step execution, so we synchronize the call as a simple approach.

@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder.Projections;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockNetworkScheduler;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -22,9 +23,9 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public class TestV2V3
 {
-	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
-	public static final IpfsFile F3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
+	public static final IpfsFile F1 = MockSingleNode.generateHash(new byte[] {1});
+	public static final IpfsFile F2 = MockSingleNode.generateHash(new byte[] {2});
+	public static final IpfsFile F3 = MockSingleNode.generateHash(new byte[] {3});
 
 	@Test
 	public void channelData() throws Throwable

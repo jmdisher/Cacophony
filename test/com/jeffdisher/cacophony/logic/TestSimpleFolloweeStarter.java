@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.types.KeyException;
 
 public class TestSimpleFolloweeStarter
 {
+	// These values were determined experimentally to fit with the data in this test, not just random values.
 	private static final IpfsFile EXPECTED_ROOT = IpfsFile.fromIpfsCid("QmRuFGRb7LoJGrAWjmZUmjVATxgzdLGVW2muLeCFSLWzjZ");
 	private static final IpfsFile EXPECTED_FAKE = IpfsFile.fromIpfsCid("QmR7Yp8rMWxBmVFidiV6CB4vRixxRfjiZcULtaCYnKAvtP");
 

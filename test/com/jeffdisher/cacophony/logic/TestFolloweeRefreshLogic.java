@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +26,12 @@ import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.testutils.MockKeys;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
-
-import io.ipfs.cid.Cid;
 
 
 public class TestFolloweeRefreshLogic
@@ -401,7 +399,7 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		byte[] raw = new byte[(int)SizeLimits.MAX_INDEX_SIZE_BYTES + 1];
-		IpfsFile rawHash = _fakeHash(raw);
+		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		
 		_commonSizeCheck(data, rawHash);
@@ -413,11 +411,11 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		byte[] raw = new byte[(int)SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES + 1];
-		IpfsFile rawHash = _fakeHash(raw);
+		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		
 		byte[] userPic = new byte[] {'a','b','c'};
-		IpfsFile userPicFile = _fakeHash(userPic);
+		IpfsFile userPicFile = MockSingleNode.generateHash(userPic);
 		data.put(userPicFile, userPic);
 		
 		IpfsFile descriptionHash = _store_StreamDescription(data, userPicFile);
@@ -435,7 +433,7 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		byte[] raw = new byte[(int)SizeLimits.MAX_DESCRIPTION_SIZE_BYTES + 1];
-		IpfsFile rawHash = _fakeHash(raw);
+		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		
 		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
@@ -453,13 +451,13 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		byte[] raw = new byte[(int)SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES + 1];
-		IpfsFile rawHash = _fakeHash(raw);
+		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		
 		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
 		
 		byte[] userPic = new byte[] {'a','b','c'};
-		IpfsFile userPicFile = _fakeHash(userPic);
+		IpfsFile userPicFile = MockSingleNode.generateHash(userPic);
 		data.put(userPicFile, userPic);
 		
 		IpfsFile descriptionHash = _store_StreamDescription(data, userPicFile);
@@ -475,7 +473,7 @@ public class TestFolloweeRefreshLogic
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		byte[] raw = new byte[(int)SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES + 1];
-		IpfsFile rawHash = _fakeHash(raw);
+		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		
 		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
@@ -512,7 +510,7 @@ public class TestFolloweeRefreshLogic
 		// Now, add an illegally-sized element and verify that we fail the refresh.
 		IpfsFile oldIndex = index;
 		byte[] raw = new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1];
-		IpfsFile rawHash = _fakeHash(raw);
+		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		index = _addElementToStream(data, index, rawHash);
 		originalElements = result;
@@ -583,7 +581,7 @@ public class TestFolloweeRefreshLogic
 	{
 		// We build a fake user.
 		byte[] userPic = new byte[] {'a','b','c'};
-		IpfsFile userPicFile = _fakeHash(userPic);
+		IpfsFile userPicFile = MockSingleNode.generateHash(userPic);
 		data.put(userPicFile, userPic);
 		
 		IpfsFile recommendationsHash = _store_StreamRecommendations(data);
@@ -600,7 +598,7 @@ public class TestFolloweeRefreshLogic
 	{
 		StreamRecommendations recommendations = new StreamRecommendations();
 		byte[] serialized = GlobalData.serializeRecommendations(recommendations);
-		IpfsFile recommendationsHash = _fakeHash(serialized);
+		IpfsFile recommendationsHash = MockSingleNode.generateHash(serialized);
 		data.put(recommendationsHash, serialized);
 		return recommendationsHash;
 	}
@@ -613,7 +611,7 @@ public class TestFolloweeRefreshLogic
 		description.setDescription("description");
 		description.setPicture(userPicFile.toSafeString());
 		serialized = GlobalData.serializeDescription(description);
-		IpfsFile descriptionHash = _fakeHash(serialized);
+		IpfsFile descriptionHash = MockSingleNode.generateHash(serialized);
 		data.put(descriptionHash, serialized);
 		return descriptionHash;
 	}
@@ -623,7 +621,7 @@ public class TestFolloweeRefreshLogic
 		byte[] serialized;
 		StreamRecords records = new StreamRecords();
 		serialized = GlobalData.serializeRecords(records);
-		IpfsFile recordsHash = _fakeHash(serialized);
+		IpfsFile recordsHash = MockSingleNode.generateHash(serialized);
 		data.put(recordsHash, serialized);
 		return recordsHash;
 	}
@@ -637,7 +635,7 @@ public class TestFolloweeRefreshLogic
 		index.setRecommendations(recommendationsHash.toSafeString());
 		index.setRecords(recordsHash.toSafeString());
 		serialized = GlobalData.serializeIndex(index);
-		IpfsFile indexHash = _fakeHash(serialized);
+		IpfsFile indexHash = MockSingleNode.generateHash(serialized);
 		data.put(indexHash, serialized);
 		return indexHash;
 	}
@@ -653,7 +651,7 @@ public class TestFolloweeRefreshLogic
 		DataArray array = new DataArray();
 		if (null != thumbnail)
 		{
-			IpfsFile thumbnailHash = _fakeHash(thumbnail);
+			IpfsFile thumbnailHash = MockSingleNode.generateHash(thumbnail);
 			data.put(thumbnailHash, thumbnail);
 			DataElement element = new DataElement();
 			element.setMime("image/jpeg");
@@ -663,7 +661,7 @@ public class TestFolloweeRefreshLogic
 		}
 		if (null != video)
 		{
-			IpfsFile videoHash = _fakeHash(video);
+			IpfsFile videoHash = MockSingleNode.generateHash(video);
 			data.put(videoHash, video);
 			DataElement element = new DataElement();
 			element.setMime("video/webm");
@@ -674,7 +672,7 @@ public class TestFolloweeRefreshLogic
 		}
 		record.setElements(array);
 		byte[] serialized = GlobalData.serializeRecord(record);
-		IpfsFile recordHash = _fakeHash(serialized);
+		IpfsFile recordHash = MockSingleNode.generateHash(serialized);
 		Assert.assertNull(data.put(recordHash, serialized));
 		return recordHash;
 	}
@@ -688,13 +686,13 @@ public class TestFolloweeRefreshLogic
 		records.getRecord().add(recordHash.toSafeString());
 		byte[] serialized = GlobalData.serializeRecords(records);
 		Assert.assertNotNull(data.remove(recordsHash));
-		recordsHash = _fakeHash(serialized);
+		recordsHash = MockSingleNode.generateHash(serialized);
 		Assert.assertNull(data.put(recordsHash, serialized));
 		
 		index.setRecords(recordsHash.toSafeString());
 		serialized = GlobalData.serializeIndex(index);
 		Assert.assertNotNull(data.remove(indexHash));
-		indexHash = _fakeHash(serialized);
+		indexHash = MockSingleNode.generateHash(serialized);
 		Assert.assertNull(data.put(indexHash, serialized));
 		return indexHash;
 	}
@@ -709,13 +707,13 @@ public class TestFolloweeRefreshLogic
 		Assert.assertTrue(recordList.remove(recordHash.toSafeString()));
 		byte[] serialized = GlobalData.serializeRecords(records);
 		Assert.assertNotNull(data.remove(recordsHash));
-		recordsHash = _fakeHash(serialized);
+		recordsHash = MockSingleNode.generateHash(serialized);
 		Assert.assertNull(data.put(recordsHash, serialized));
 		
 		index.setRecords(recordsHash.toSafeString());
 		serialized = GlobalData.serializeIndex(index);
 		Assert.assertNotNull(data.remove(indexHash));
-		indexHash = _fakeHash(serialized);
+		indexHash = MockSingleNode.generateHash(serialized);
 		Assert.assertNull(data.put(indexHash, serialized));
 		return indexHash;
 	}
@@ -741,20 +739,6 @@ public class TestFolloweeRefreshLogic
 		IpfsFile recordsHash = IpfsFile.fromIpfsCid(index.getRecords());
 		StreamRecords records = GlobalData.deserializeRecords(data.get(recordsHash));
 		return records.getRecord().stream().map((String rawCid) -> IpfsFile.fromIpfsCid(rawCid)).collect(Collectors.toList()).toArray((int size) -> new IpfsFile[size]);
-	}
-
-	private static IpfsFile _fakeHash(byte[] data)
-	{
-		String prefix = "12204deaa860e7feea3df33b6fd9426c705bcaeaac05eaeb4a69c4421304";
-		int hashcode = Arrays.hashCode(data);
-		long unsigned = Integer.toUnsignedLong(hashcode);
-		long hex = ((0xFF & (unsigned >> 24)) << 24) | ((0xFF & (unsigned >> 16)) << 16) | ((0xFF & (unsigned >> 8)) << 8) | (0xFF & unsigned);
-		String hexString = Long.toHexString(hex);
-		while (hexString.length() < 8)
-		{
-			hexString = "0" + hexString;
-		}
-		return IpfsFile.fromIpfsCid(Cid.fromHex(prefix + hexString).toBase58());
 	}
 
 
@@ -1041,7 +1025,7 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public IpfsFile uploadNewData(byte[] data) throws IpfsConnectionException
 		{
-			IpfsFile hash = _fakeHash(data);
+			IpfsFile hash = MockSingleNode.generateHash(data);
 			Assert.assertFalse(_data.containsKey(hash));
 			Assert.assertFalse(_metaDataPinCount.containsKey(hash));
 			_data.put(hash, data);

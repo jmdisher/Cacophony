@@ -4,13 +4,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.testutils.MockKeys;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 public class TestLocalUserInfoCache
 {
-	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
-	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
+	public static final IpfsFile F1 = MockSingleNode.generateHash(new byte[] {1});
+	public static final IpfsFile F2 = MockSingleNode.generateHash(new byte[] {2});
 
 	@Test
 	public void testEmpty() throws Throwable
