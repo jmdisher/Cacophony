@@ -10,15 +10,13 @@ import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestCommandRunner
 {
-	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
-
 	@Test
 	public void basicPass() throws Throwable
 	{
@@ -29,7 +27,7 @@ public class TestCommandRunner
 		command.shouldPass = true;
 		FutureCommand<None> result = runner.runCommand(command, null);
 		Assert.assertEquals(None.NONE, result.get());
-		Assert.assertEquals(K1, result.context.getSelectedKey());
+		Assert.assertEquals(MockKeys.K1, result.context.getSelectedKey());
 		runner.shutdownThreads();
 	}
 
@@ -53,7 +51,7 @@ public class TestCommandRunner
 			didThrow = true;
 		}
 		Assert.assertTrue(didThrow);
-		Assert.assertEquals(K1, result.context.getSelectedKey());
+		Assert.assertEquals(MockKeys.K1, result.context.getSelectedKey());
 		runner.shutdownThreads();
 	}
 
@@ -79,14 +77,14 @@ public class TestCommandRunner
 		
 		barrier1.await();
 		Assert.assertEquals(None.NONE, result1.get());
-		Assert.assertEquals(K1, result1.context.getSelectedKey());
+		Assert.assertEquals(MockKeys.K1, result1.context.getSelectedKey());
 		Assert.assertEquals(None.NONE, result2.get());
-		Assert.assertEquals(K1, result2.context.getSelectedKey());
+		Assert.assertEquals(MockKeys.K1, result2.context.getSelectedKey());
 		barrier2.await();
 		Assert.assertEquals(None.NONE, result3.get());
-		Assert.assertEquals(K1, result3.context.getSelectedKey());
+		Assert.assertEquals(MockKeys.K1, result3.context.getSelectedKey());
 		Assert.assertEquals(None.NONE, result4.get());
-		Assert.assertEquals(K1, result4.context.getSelectedKey());
+		Assert.assertEquals(MockKeys.K1, result4.context.getSelectedKey());
 		
 		runner.shutdownThreads();
 	}
@@ -113,13 +111,13 @@ public class TestCommandRunner
 		CountingCommand count2_3 = new CountingCommand(count2, null);
 		TestCommand blank2 = new TestCommand(true, null);
 		
-		FutureCommand<None> f1_1 = runner.runBlockedCommand(K1, count1_1, null);
-		FutureCommand<None> f1_2 = runner.runBlockedCommand(K1, count1_2, null);
-		FutureCommand<None> f1_3 = runner.runBlockedCommand(K1, count1_3, null);
+		FutureCommand<None> f1_1 = runner.runBlockedCommand(MockKeys.K1, count1_1, null);
+		FutureCommand<None> f1_2 = runner.runBlockedCommand(MockKeys.K1, count1_2, null);
+		FutureCommand<None> f1_3 = runner.runBlockedCommand(MockKeys.K1, count1_3, null);
 		FutureCommand<None> fb1 = runner.runCommand(blank1, null);
-		FutureCommand<None> f2_1 = runner.runBlockedCommand(K2, count2_1, null);
-		FutureCommand<None> f2_2 = runner.runBlockedCommand(K2, count2_2, null);
-		FutureCommand<None> f2_3 = runner.runBlockedCommand(K2, count2_3, null);
+		FutureCommand<None> f2_1 = runner.runBlockedCommand(MockKeys.K2, count2_1, null);
+		FutureCommand<None> f2_2 = runner.runBlockedCommand(MockKeys.K2, count2_2, null);
+		FutureCommand<None> f2_3 = runner.runBlockedCommand(MockKeys.K2, count2_3, null);
 		FutureCommand<None> fb2 = runner.runCommand(blank2, null);
 		runner.startThreads();
 		
@@ -152,16 +150,16 @@ public class TestCommandRunner
 				, null
 				, null
 				, null
-				, K1
+				, MockKeys.K1
 		);
 		CommandRunner runner = new CommandRunner(context, 1);
 		runner.startThreads();
 		KeyList result1 = runner.runCommand(new KeyCapture(), null).get();
-		KeyList result2 = runner.runCommand(new KeyCapture(), K1).get();
-		KeyList result3 = runner.runCommand(new KeyCapture(), K2).get();
-		Assert.assertEquals(K1, result1.keys[0]);
-		Assert.assertEquals(K1, result2.keys[0]);
-		Assert.assertEquals(K2, result3.keys[0]);
+		KeyList result2 = runner.runCommand(new KeyCapture(), MockKeys.K1).get();
+		KeyList result3 = runner.runCommand(new KeyCapture(), MockKeys.K2).get();
+		Assert.assertEquals(MockKeys.K1, result1.keys[0]);
+		Assert.assertEquals(MockKeys.K1, result2.keys[0]);
+		Assert.assertEquals(MockKeys.K2, result3.keys[0]);
 		runner.shutdownThreads();
 	}
 
@@ -174,7 +172,7 @@ public class TestCommandRunner
 				, null
 				, null
 				, null
-				, K1
+				, MockKeys.K1
 		);
 	}
 

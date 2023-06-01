@@ -13,23 +13,20 @@ import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestV3Data
 {
-	private static final IpfsKey KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	private static final IpfsKey KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
-
 	@Test
 	public void testCommonData() throws Throwable
 	{
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
 		{
-			writer.writeOpcode(new Opcode_DefineChannel("key name", KEY1, MockSingleNode.generateHash(new byte[] {1, 2, 3})));
+			writer.writeOpcode(new Opcode_DefineChannel("key name", MockKeys.K1, MockSingleNode.generateHash(new byte[] {1, 2, 3})));
 			writer.writeOpcode(new Opcode_SetPrefsInt(PrefsData.INT_VIDEO_EDGE, 1));
 			writer.writeOpcode(new Opcode_SetPrefsLong(PrefsData.LONG_FOLLOW_CACHE_BYTES, 2L));
 		}
@@ -60,9 +57,9 @@ public class TestV3Data
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
 		{
-			writer.writeOpcode(new Opcode_SetFolloweeState(KEY1, root1, 0L));
-			writer.writeOpcode(new Opcode_SetFolloweeState(KEY2, root2, 1L));
-			writer.writeOpcode(new Opcode_AddFolloweeElement(KEY2, elt1, image1, null, 5L));
+			writer.writeOpcode(new Opcode_SetFolloweeState(MockKeys.K1, root1, 0L));
+			writer.writeOpcode(new Opcode_SetFolloweeState(MockKeys.K2, root2, 1L));
+			writer.writeOpcode(new Opcode_AddFolloweeElement(MockKeys.K2, elt1, image1, null, 5L));
 		}
 		
 		ChannelData channels = ChannelData.create();
@@ -77,9 +74,9 @@ public class TestV3Data
 		}
 		
 		Assert.assertEquals(2, followees.getAllKnownFollowees().size());
-		Assert.assertEquals(root1, followees.getLastFetchedRootForFollowee(KEY1));
-		Assert.assertEquals(root2, followees.getLastFetchedRootForFollowee(KEY2));
-		Map<IpfsFile, FollowingCacheElement> elts = followees.snapshotAllElementsForFollowee(KEY2);
+		Assert.assertEquals(root1, followees.getLastFetchedRootForFollowee(MockKeys.K1));
+		Assert.assertEquals(root2, followees.getLastFetchedRootForFollowee(MockKeys.K2));
+		Map<IpfsFile, FollowingCacheElement> elts = followees.snapshotAllElementsForFollowee(MockKeys.K2);
 		Assert.assertEquals(1, elts.size());
 		Assert.assertEquals(image1, elts.get(elt1).imageHash());
 	}

@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -47,9 +48,7 @@ public class TestPinConsistency
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME1 = "keyName1";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 	private static final String KEY_NAME2 = "keyName2";
-	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142");
 
 	/**
 	 * Demonstrates what happens when a followee is successfully added, then fails to be found, then updates, and can be
@@ -59,17 +58,17 @@ public class TestPinConsistency
 	public void followeeNotFound() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
 		// Break the key and try to refresh.
-		user2.timeoutKey(PUBLIC_KEY2);
+		user2.timeoutKey(MockKeys.K2);
 		boolean didSucceed;
 		try
 		{
-			user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+			user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 			didSucceed = true;
 		}
 		catch (KeyException e)
@@ -83,7 +82,7 @@ public class TestPinConsistency
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -99,8 +98,8 @@ public class TestPinConsistency
 	public void followeeElementMissing() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
@@ -109,11 +108,11 @@ public class TestPinConsistency
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		byte[] recordData = _readAndBreakElement(user2, PUBLIC_KEY2);
+		byte[] recordData = _readAndBreakElement(user2, MockKeys.K2);
 		boolean didFail = false;
 		try
 		{
-			user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+			user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -124,7 +123,7 @@ public class TestPinConsistency
 		
 		// Re-add the record data and refresh again.
 		user2.storeDataToNode(recordData);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -141,17 +140,17 @@ public class TestPinConsistency
 	public void followeeElementTooBig() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
 		// Manually update the stream with something too big, then refresh.
-		_uploadAsRecord(user2, PUBLIC_KEY2, new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1]);
+		_uploadAsRecord(user2, MockKeys.K2, new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1]);
 		boolean didFail = false;
 		try
 		{
-			user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+			user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		}
 		catch (SizeConstraintException e)
 		{
@@ -160,12 +159,12 @@ public class TestPinConsistency
 		Assert.assertTrue(didFail);
 		
 		// Delete the post and create a normal one.
-		_removeAllRecords(user2, PUBLIC_KEY2);
+		_removeAllRecords(user2, MockKeys.K2);
 		String videoFileString = "VIDEO FILE\n";
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -182,8 +181,8 @@ public class TestPinConsistency
 	public void followeeLeafUnreachable() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
@@ -192,13 +191,13 @@ public class TestPinConsistency
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		_breakImageLeaf(user2, PUBLIC_KEY2);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		_breakImageLeaf(user2, MockKeys.K2);
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Make another post which references the same file, and refresh.
 		publishCommand = _createPublishCommand("entry 2", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -214,8 +213,8 @@ public class TestPinConsistency
 	public void addRemoveFolloweeNoOverlap() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
@@ -224,10 +223,10 @@ public class TestPinConsistency
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Stop following them.
-		user1.runCommand(null, new StopFollowingCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new StopFollowingCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -244,8 +243,8 @@ public class TestPinConsistency
 	public void addRemoveFolloweeLocalOverlap() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User", "Description", "User pic\n".getBytes());
@@ -254,7 +253,7 @@ public class TestPinConsistency
 		user2.createChannel(KEY_NAME2, "User", "Description", "User pic\n".getBytes());
 		
 		// Verify that user 1 can follow user 2.
-		user1.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new StartFollowingCommand(MockKeys.K2));
 		
 		// Make the same post as user 1 and 2, the refresh.
 		String videoFileString = "VIDEO FILE\n";
@@ -262,10 +261,10 @@ public class TestPinConsistency
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user1.runCommand(null, publishCommand);
 		user2.runCommand(null, publishCommand);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Stop following them.
-		user1.runCommand(null, new StopFollowingCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new StopFollowingCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -281,7 +280,7 @@ public class TestPinConsistency
 	public void addRemovePost() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User", "Description", "User pic\n".getBytes());
@@ -293,7 +292,7 @@ public class TestPinConsistency
 		user1.runCommand(null, publishCommand);
 		
 		// Delete the post.
-		IpfsFile post = _getMostRecendRecord(user1, PUBLIC_KEY1);
+		IpfsFile post = _getMostRecendRecord(user1, MockKeys.K1);
 		user1.runCommand(null, new RemoveEntryFromThisChannelCommand(post));
 		
 		// Verify integrity of user 1.
@@ -309,7 +308,7 @@ public class TestPinConsistency
 	public void addRemovePostWithOverlap() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User", "Description", "User pic\n".getBytes());
@@ -323,7 +322,7 @@ public class TestPinConsistency
 		user1.runCommand(null, publishCommand2);
 		
 		// Delete the second post.
-		IpfsFile post = _getMostRecendRecord(user1, PUBLIC_KEY1);
+		IpfsFile post = _getMostRecendRecord(user1, MockKeys.K1);
 		user1.runCommand(null, new RemoveEntryFromThisChannelCommand(post));
 		
 		// Verify integrity of user 1.
@@ -339,7 +338,7 @@ public class TestPinConsistency
 	public void changeUserPic() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User", "Description", "User pic\n".getBytes());
@@ -361,17 +360,17 @@ public class TestPinConsistency
 	public void addRecommendation() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
 		// Add the recommendation.
-		AddRecommendationCommand command = new AddRecommendationCommand(PUBLIC_KEY2);
+		AddRecommendationCommand command = new AddRecommendationCommand(MockKeys.K2);
 		user1.runCommand(null, command);
 		
 		// Stop following them.
-		user1.runCommand(null, new StopFollowingCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new StopFollowingCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -387,8 +386,8 @@ public class TestPinConsistency
 	public void rebroadcastAndDelete() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		_commonSetup(user1, user2);
 		
@@ -397,10 +396,10 @@ public class TestPinConsistency
 		String imageFileString = "IMAGE\n";
 		PublishCommand publishCommand = _createPublishCommand("entry 1", imageFileString, videoFileString);
 		user2.runCommand(null, publishCommand);
-		user1.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
 		// Rebroadcast.
-		IpfsFile post = _getMostRecendRecord(user2, PUBLIC_KEY2);
+		IpfsFile post = _getMostRecendRecord(user2, MockKeys.K2);
 		RebroadcastCommand command = new RebroadcastCommand(post);
 		user1.runCommand(null, command);
 		
@@ -409,7 +408,7 @@ public class TestPinConsistency
 		user2.runCommand(null, new RemoveEntryFromThisChannelCommand(post));
 		
 		// Stop following them.
-		user1.runCommand(null, new StopFollowingCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new StopFollowingCommand(MockKeys.K2));
 		
 		// Verify integrity of user 1.
 		user1.assertConsistentPinCache();
@@ -445,7 +444,7 @@ public class TestPinConsistency
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
 		
 		// Verify that user 1 can follow user 2.
-		user1.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user1.runCommand(null, new StartFollowingCommand(MockKeys.K2));
 	}
 
 	private byte[] _readAndBreakElement(MockUserNode userNode, IpfsKey publicKey) throws FailedDeserializationException, IpfsConnectionException

@@ -10,14 +10,13 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 
 
 public class TestSimpleFolloweeStarter
 {
-	private static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final IpfsFile EXPECTED_ROOT = IpfsFile.fromIpfsCid("QmRuFGRb7LoJGrAWjmZUmjVATxgzdLGVW2muLeCFSLWzjZ");
 	private static final IpfsFile EXPECTED_FAKE = IpfsFile.fromIpfsCid("QmR7Yp8rMWxBmVFidiV6CB4vRixxRfjiZcULtaCYnKAvtP");
 
@@ -40,9 +39,9 @@ public class TestSimpleFolloweeStarter
 		Assert.assertEquals(0, access.pins.values().size());
 		Assert.assertEquals(EXPECTED_ROOT, root);
 		
-		access.oneKey = K1;
+		access.oneKey = MockKeys.K1;
 		access.oneRoot = root;
-		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, K1);
+		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, MockKeys.K1);
 		Assert.assertEquals(EXPECTED_FAKE, file);
 		// We expect that an extra 2 elements were uploaded (the fake StreamRecords and the fake StreamIndex).
 		Assert.assertEquals(8, access.data.size());
@@ -54,8 +53,8 @@ public class TestSimpleFolloweeStarter
 	public void testFailedResolve() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
-		access.oneKey = K1;
-		SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, K1);
+		access.oneKey = MockKeys.K1;
+		SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, MockKeys.K1);
 		Assert.fail();
 	}
 
@@ -72,7 +71,7 @@ public class TestSimpleFolloweeStarter
 		record.setName("post");
 		record.setDescription("record description");
 		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(K1.toPublicKey());
+		record.setPublisherKey(MockKeys.K1.toPublicKey());
 		record.setElements(new DataArray());
 		
 		StreamRecords records = new StreamRecords();

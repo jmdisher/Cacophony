@@ -12,9 +12,9 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder.Projections;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockNetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -22,8 +22,6 @@ import com.jeffdisher.cacophony.types.IpfsKey;
  */
 public class TestV2V3
 {
-	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 	public static final IpfsFile F3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
@@ -32,8 +30,8 @@ public class TestV2V3
 	public void channelData() throws Throwable
 	{
 		ChannelData channelData = ChannelData.create();
-		channelData.initializeChannelState("key", K1, F1);
-		channelData.setLastPublishedIndex("key", K1, F2);
+		channelData.initializeChannelState("key", MockKeys.K1, F1);
+		channelData.setLastPublishedIndex("key", MockKeys.K1, F2);
 		byte[] v2 = _serializeV2(channelData, null, null);
 		
 		Tuple tuple2 = _deserializeV2(v2);
@@ -52,22 +50,22 @@ public class TestV2V3
 	public void followeeData() throws Throwable
 	{
 		FolloweeData followeeData = FolloweeData.createEmpty();
-		followeeData.createNewFollowee(K1, F1, 0L);
-		followeeData.addElement(K1, new FollowingCacheElement(F2, F3, null, 5L));
+		followeeData.createNewFollowee(MockKeys.K1, F1, 0L);
+		followeeData.addElement(MockKeys.K1, new FollowingCacheElement(F2, F3, null, 5L));
 		byte[] v2 = _serializeV2(null, null, followeeData);
 		
 		Tuple tuple2 = _deserializeV2(v2);
 		Assert.assertEquals(1, tuple2.followeeData.getAllKnownFollowees().size());
-		Assert.assertEquals(K1, tuple2.followeeData.getAllKnownFollowees().iterator().next());
-		Assert.assertEquals(1, tuple2.followeeData.snapshotAllElementsForFollowee(K1).size());
-		Assert.assertEquals(F3, tuple2.followeeData.snapshotAllElementsForFollowee(K1).get(F2).imageHash());
+		Assert.assertEquals(MockKeys.K1, tuple2.followeeData.getAllKnownFollowees().iterator().next());
+		Assert.assertEquals(1, tuple2.followeeData.snapshotAllElementsForFollowee(MockKeys.K1).size());
+		Assert.assertEquals(F3, tuple2.followeeData.snapshotAllElementsForFollowee(MockKeys.K1).get(F2).imageHash());
 		byte[] v3 = _serializeV3(tuple2.channelData, tuple2.prefsData, tuple2.followeeData);
 		
 		Tuple tuple3 = _deserializeV3(v3);
 		Assert.assertEquals(1, tuple3.followeeData.getAllKnownFollowees().size());
-		Assert.assertEquals(K1, tuple3.followeeData.getAllKnownFollowees().iterator().next());
-		Assert.assertEquals(1, tuple3.followeeData.snapshotAllElementsForFollowee(K1).size());
-		Assert.assertEquals(F3, tuple3.followeeData.snapshotAllElementsForFollowee(K1).get(F2).imageHash());
+		Assert.assertEquals(MockKeys.K1, tuple3.followeeData.getAllKnownFollowees().iterator().next());
+		Assert.assertEquals(1, tuple3.followeeData.snapshotAllElementsForFollowee(MockKeys.K1).size());
+		Assert.assertEquals(F3, tuple3.followeeData.snapshotAllElementsForFollowee(MockKeys.K1).get(F2).imageHash());
 	}
 
 	@Test
@@ -118,7 +116,7 @@ public class TestV2V3
 	{
 		ByteArrayInputStream inStream = new ByteArrayInputStream(data);
 		MockNetworkScheduler scheduler = new MockNetworkScheduler();
-		scheduler.addKey("key", K1);
+		scheduler.addKey("key", MockKeys.K1);
 		Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(scheduler, inStream);
 		return new Tuple(projections.channel(), projections.prefs(), projections.followee());
 	}

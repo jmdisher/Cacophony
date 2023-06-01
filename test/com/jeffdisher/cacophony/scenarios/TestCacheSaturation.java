@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -29,16 +30,14 @@ public class TestCacheSaturation
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME0 = "keyName0";
-	private static final IpfsKey PUBLIC_KEY0 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14Y");
 	private static final String KEY_NAME1 = "keyName1";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 	@Test
 	public void testIncrementalAddingOneFollowee() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, swarm);
-		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, swarm);
+		User user0 = new User(KEY_NAME0, MockKeys.K0, swarm);
+		User user1 = new User(KEY_NAME1, MockKeys.K1, swarm);
 		
 		user0.createChannel(0);
 		user1.createChannel(1);
@@ -75,8 +74,8 @@ public class TestCacheSaturation
 	public void testIncrementalSaturationOneFollowee() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, swarm);
-		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, swarm);
+		User user0 = new User(KEY_NAME0, MockKeys.K0, swarm);
+		User user1 = new User(KEY_NAME1, MockKeys.K1, swarm);
 		
 		user0.createChannel(0);
 		user1.createChannel(1);
@@ -114,8 +113,8 @@ public class TestCacheSaturation
 	public void testInitialSaturationOneFollowee() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		User user0 = new User(KEY_NAME0, PUBLIC_KEY0, swarm);
-		User user1 = new User(KEY_NAME1, PUBLIC_KEY1, swarm);
+		User user0 = new User(KEY_NAME0, MockKeys.K0, swarm);
+		User user1 = new User(KEY_NAME1, MockKeys.K1, swarm);
 		
 		user0.createChannel(0);
 		user1.createChannel(1);

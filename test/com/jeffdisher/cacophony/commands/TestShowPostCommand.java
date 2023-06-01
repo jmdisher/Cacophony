@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -26,17 +27,16 @@ public class TestShowPostCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 	@Test
 	public void validPost() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode writeNode = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode writeNode = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		String title = "valid post";
 		byte[] fakeImage = "image".getBytes();
 		MockUserNode readNode = new MockUserNode(null, null, new MockSingleNode(swarm), FOLDER.newFolder());
-		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, PUBLIC_KEY1);
+		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, MockKeys.K1);
 		
 		// Make sure that we see no error when this is valid.
 		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid));
@@ -52,7 +52,7 @@ public class TestShowPostCommand
 	@Test
 	public void oversizedPost() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		IpfsFile postCid = user1.storeDataToNode(new byte[(int)SizeLimits.MAX_RECORD_SIZE_BYTES + 1]);
 		
 		// We should see an error.
@@ -74,7 +74,7 @@ public class TestShowPostCommand
 	@Test
 	public void corruptPost() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		IpfsFile postCid = user1.storeDataToNode(new byte[] { 1, 2, 3, 4 });
 		
 		// We should see an error.

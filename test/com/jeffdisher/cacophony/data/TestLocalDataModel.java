@@ -24,6 +24,7 @@ import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -35,8 +36,6 @@ public class TestLocalDataModel
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
-	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
 	public static final IpfsFile F1 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 	public static final IpfsFile F2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 	public static final IpfsFile F3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
@@ -193,9 +192,9 @@ public class TestLocalDataModel
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
 			FolloweeData followees = access.readFollowIndex();
-			followees.createNewFollowee(K1, F1, 0L);
-			followees.addElement(K1, new FollowingCacheElement(F1, F2, null, 5L));
-			followees.updateExistingFollowee(K1, F1, 1L);
+			followees.createNewFollowee(MockKeys.K1, F1, 0L);
+			followees.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5L));
+			followees.updateExistingFollowee(MockKeys.K1, F1, 1L);
 			access.writeFollowIndex(followees);
 			PinCacheData pinCache = access.readGlobalPinCache();
 			pinCache.addRef(F1);
@@ -215,7 +214,7 @@ public class TestLocalDataModel
 		Set<IpfsKey> knownKeys = followees.getAllKnownFollowees();
 		Assert.assertEquals(1, knownKeys.size());
 		IpfsKey followee = knownKeys.iterator().next();
-		Assert.assertEquals(K1, followee);
+		Assert.assertEquals(MockKeys.K1, followee);
 		Assert.assertEquals(F1, followees.getLastFetchedRootForFollowee(followee));
 		
 	}
@@ -323,7 +322,7 @@ public class TestLocalDataModel
 		{
 			ChannelData channels = reader.readLocalIndex();
 			Assert.assertEquals(0, channels.getKeyNames().size());
-			channels.setLastPublishedIndex("key1", K1, F1);
+			channels.setLastPublishedIndex("key1", MockKeys.K1, F1);
 		}
 		
 		try (IReadWriteLocalData reader = model.openForWrite())

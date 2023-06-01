@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
@@ -36,22 +37,20 @@ public class TestFollowUpdates
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME1 = "keyName1";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 	private static final String KEY_NAME2 = "keyName2";
-	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo142");
 
 	@Test
 	public void testFirstFetchOneElement() throws Throwable
 	{
 		// Node 1.
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -73,17 +72,17 @@ public class TestFollowUpdates
 		Assert.assertNull(user2.loadDataFromNode(imageFileHash));
 		
 		// User2:  Follow and verify the data is loaded.
-		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
+		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(MockKeys.K1);
 		user2.runCommand(null, startFollowingCommand);
 		// (for version 2.1, start follow doesn't fetch the data)
-		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(PUBLIC_KEY1);
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(MockKeys.K1);
 		user2.runCommand(null, initialRefresh);
 		
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
+		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(MockKeys.K1);
 		user2.runCommand(captureStream, listCommand);
-		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
+		String elementCid = _getFirstElementCid(user1, MockKeys.K1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
 		
 		// Verify that these elements are now in User2's data store.
@@ -108,13 +107,13 @@ public class TestFollowUpdates
 	{
 		// Node 1.
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -130,17 +129,17 @@ public class TestFollowUpdates
 		IpfsFile imageFileHash = MockSingleNode.generateHash(imageFileString.getBytes());
 		
 		// User2:  Follow and verify the data is loaded.
-		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
+		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(MockKeys.K1);
 		user2.runCommand(null, startFollowingCommand);
 		// (for version 2.1, start follow doesn't fetch the data)
-		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(PUBLIC_KEY1);
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(MockKeys.K1);
 		user2.runCommand(null, initialRefresh);
 		
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
+		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(MockKeys.K1);
 		user2.runCommand(captureStream, listCommand);
-		String elementCid = _getFirstElementCid(user1, PUBLIC_KEY1);
+		String elementCid = _getFirstElementCid(user1, MockKeys.K1);
 		Assert.assertTrue(new String(captureStream.toByteArray()).contains("Element CID: " + elementCid + " (image: " + imageFileHash.toSafeString() + ", leaf: " + videoFileHash.toSafeString() + ")\n"));
 		
 		// Verify that these elements are now in User2's data store.
@@ -150,7 +149,7 @@ public class TestFollowUpdates
 		Assert.assertEquals(imageFileString, new String(verify));
 		
 		// Now, stop following them and verify that all of this data has been removed from the local store but is still on the remote store.
-		StopFollowingCommand stopFollowingCommand = new StopFollowingCommand(PUBLIC_KEY1);
+		StopFollowingCommand stopFollowingCommand = new StopFollowingCommand(MockKeys.K1);
 		user2.runCommand(null, stopFollowingCommand);
 		verify = user1.loadDataFromNode(videoFileHash);
 		Assert.assertEquals(videoFileString, new String(verify));
@@ -175,13 +174,13 @@ public class TestFollowUpdates
 	{
 		// Node 1.
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 1.
 		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
 		
 		// Node 2
-		MockUserNode user2 = new MockUserNode(KEY_NAME2, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create user 2.
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
@@ -190,25 +189,25 @@ public class TestFollowUpdates
 		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L, 0L, 0L, 0L));
 		
 		// Start following before the upload so we can refresh on each update, meaning we will get both with no eviction or change of not caching.
-		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(PUBLIC_KEY1);
+		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(MockKeys.K1);
 		user2.runCommand(null, startFollowingCommand);
 		// (for version 2.1, start follow doesn't fetch the data)
-		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(PUBLIC_KEY1);
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(MockKeys.K1);
 		user2.runCommand(null, initialRefresh);
 		
 		// Upload 2 elements with multiple sizes.
 		// Note that we need to refresh after each one to make sure it actually caches both (otherwise, it will randomly skip older entries to avoid over-filling the cache).
 		PublishCommand publishCommand = _createMultiPublishCommand("entry 1", "IMAGE 1\n", new String[] {"VIDEO FILE 640\n", "VIDEO FILE 1024\n"}, new int[] { 640, 1024 } );
 		user1.runCommand(null, publishCommand);
-		user2.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY1));
+		user2.runCommand(null, new RefreshFolloweeCommand(MockKeys.K1));
 		publishCommand = _createMultiPublishCommand("entry 2", "IMAGE 2\n", new String[] {"VIDEO FILE 320\n", "VIDEO FILE next 640\n"}, new int[] { 320, 640 } );
 		user1.runCommand(null, publishCommand);
-		user2.runCommand(null, new RefreshFolloweeCommand(PUBLIC_KEY1));
+		user2.runCommand(null, new RefreshFolloweeCommand(MockKeys.K1));
 		
 		// User2:  Follow and verify the data is loaded.
 		// (capture the output to verify the element is in the list)
 		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(PUBLIC_KEY1);
+		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(MockKeys.K1);
 		user2.runCommand(captureStream, listCommand);
 		String capturedString = new String(captureStream.toByteArray());
 		
@@ -234,7 +233,7 @@ public class TestFollowUpdates
 
 	private static String _getFirstElementCid(MockUserNode userNode, IpfsKey publicKey) throws IpfsConnectionException, FailedDeserializationException
 	{
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(userNode.resolveKeyOnNode(PUBLIC_KEY1)));
+		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(userNode.resolveKeyOnNode(MockKeys.K1)));
 		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		return records.getRecord().get(0);
 	}

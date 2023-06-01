@@ -22,11 +22,11 @@ import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -36,14 +36,13 @@ public class TestLocalIntegrity
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME1 = "keyName1";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 	@Test
 	public void testInitialCreation() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
-		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
+		node.addNewKey(KEY_NAME1, MockKeys.K1);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		IEnvironment env = _createSingleNode(node, scheduler);
 		SilentLogger logger = new SilentLogger();
@@ -73,7 +72,7 @@ public class TestLocalIntegrity
 	{
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
-		node.addNewKey(KEY_NAME1, PUBLIC_KEY1);
+		node.addNewKey(KEY_NAME1, MockKeys.K1);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		IEnvironment env = _createSingleNode(node, scheduler);
 		SilentLogger logger = new SilentLogger();
@@ -108,7 +107,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
-				, PUBLIC_KEY1
+				, MockKeys.K1
 		));
 		// We expect 7 keys in the storage:
 		// -index
@@ -141,7 +140,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
-				, PUBLIC_KEY1
+				, MockKeys.K1
 		));
 		
 		// We should see the same files from the original post.

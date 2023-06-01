@@ -21,11 +21,11 @@ import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -38,13 +38,12 @@ public class TestMultiChannelContextCaches
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME1 = "keyName1";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 	@Test
 	public void createDestroyOneUser() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode home = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode home = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
@@ -56,7 +55,7 @@ public class TestMultiChannelContextCaches
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();
 		Assert.assertEquals(0, recordCache.getKeys().size());
-		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNotNull(elt);
 		entryRegistry.getCombinedConnector().registerListener(combined, 0);
 		Assert.assertEquals(0, combined.entries.size());
@@ -66,7 +65,7 @@ public class TestMultiChannelContextCaches
 		
 		// Check the caches.
 		Assert.assertEquals(0, recordCache.getKeys().size());
-		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNull(elt);
 		Assert.assertEquals(0, combined.entries.size());
 		
@@ -77,7 +76,7 @@ public class TestMultiChannelContextCaches
 	public void postAsOneUser() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode home = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode home = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
@@ -96,7 +95,7 @@ public class TestMultiChannelContextCaches
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();
 		Assert.assertEquals(1, recordCache.getKeys().size());
-		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNotNull(elt);
 		entryRegistry.getCombinedConnector().registerListener(combined, 0);
 		Assert.assertEquals(1, combined.entries.size());
@@ -106,7 +105,7 @@ public class TestMultiChannelContextCaches
 		
 		// Check the caches.
 		Assert.assertEquals(0, recordCache.getKeys().size());
-		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNull(elt);
 		Assert.assertEquals(0, combined.entries.size());
 		
@@ -117,7 +116,7 @@ public class TestMultiChannelContextCaches
 	public void editAsOneUser() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode home = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode home = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
@@ -136,7 +135,7 @@ public class TestMultiChannelContextCaches
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();
 		Assert.assertEquals(1, recordCache.getKeys().size());
-		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNotNull(elt);
 		entryRegistry.getCombinedConnector().registerListener(combined, 0);
 		Assert.assertEquals(1, combined.entries.size());
@@ -146,7 +145,7 @@ public class TestMultiChannelContextCaches
 		
 		// Check the caches.
 		Assert.assertEquals(1, recordCache.getKeys().size());
-		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNotNull(elt);
 		Assert.assertEquals(1, combined.entries.size());
 		
@@ -155,7 +154,7 @@ public class TestMultiChannelContextCaches
 		
 		// Check the caches.
 		Assert.assertEquals(0, recordCache.getKeys().size());
-		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNull(elt);
 		Assert.assertEquals(0, combined.entries.size());
 		
@@ -166,7 +165,7 @@ public class TestMultiChannelContextCaches
 	public void removeAsOneUser() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode home = new MockUserNode(KEY_NAME1, PUBLIC_KEY1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode home = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
@@ -185,7 +184,7 @@ public class TestMultiChannelContextCaches
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();
 		Assert.assertEquals(1, recordCache.getKeys().size());
-		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		LocalUserInfoCache.Element elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNotNull(elt);
 		entryRegistry.getCombinedConnector().registerListener(combined, 0);
 		Assert.assertEquals(1, combined.entries.size());
@@ -195,7 +194,7 @@ public class TestMultiChannelContextCaches
 		
 		// Check the caches.
 		Assert.assertEquals(0, recordCache.getKeys().size());
-		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNotNull(elt);
 		Assert.assertEquals(0, combined.entries.size());
 		
@@ -204,7 +203,7 @@ public class TestMultiChannelContextCaches
 		
 		// Check the caches.
 		Assert.assertEquals(0, recordCache.getKeys().size());
-		elt = userInfoCache.getUserInfo(PUBLIC_KEY1);
+		elt = userInfoCache.getUserInfo(MockKeys.K1);
 		Assert.assertNull(elt);
 		Assert.assertEquals(0, combined.entries.size());
 		

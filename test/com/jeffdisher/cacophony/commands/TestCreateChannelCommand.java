@@ -10,11 +10,11 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -23,17 +23,16 @@ public class TestCreateChannelCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 	@Test
 	public void testUsage() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
 		user1.runCommand(null, command);
 		
 		// Verify the states that should have changed.
-		IpfsFile root = user1.resolveKeyOnNode(PUBLIC_KEY);
+		IpfsFile root = user1.resolveKeyOnNode(MockKeys.K1);
 		Assert.assertTrue(user1.isInPinCache(root));
 		StreamIndex index = GlobalData.deserializeIndex(user1.loadDataFromNode(root));
 		Assert.assertEquals(1, index.getVersion());
@@ -61,7 +60,7 @@ public class TestCreateChannelCommand
 	@Test
 	public void testDuplicateFailure() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		CreateChannelCommand command = new CreateChannelCommand(KEY_NAME);
 		user1.runCommand(null, command);
 		try

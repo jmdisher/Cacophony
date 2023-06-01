@@ -28,6 +28,7 @@ import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
@@ -46,8 +47,6 @@ public class TestJsonGenerationHelpers
 	public static final IpfsFile FILE2 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCG");
 	public static final IpfsFile FILE3 = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeCC");
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 
 	@Test
 	public void testDataVersion() throws Throwable
@@ -69,7 +68,7 @@ public class TestJsonGenerationHelpers
 	{
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
-		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
+		remoteConnection.addNewKey(KEY_NAME, MockKeys.K1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
@@ -87,9 +86,9 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
-				, PUBLIC_KEY1
+				, MockKeys.K1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, PUBLIC_KEY1))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, MockKeys.K1))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
@@ -115,7 +114,7 @@ public class TestJsonGenerationHelpers
 	{
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode remoteConnection = new MockSingleNode(swarm);
-		remoteConnection.addNewKey(KEY_NAME, PUBLIC_KEY1);
+		remoteConnection.addNewKey(KEY_NAME, MockKeys.K1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
@@ -135,21 +134,21 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
-				, PUBLIC_KEY1
+				, MockKeys.K1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, PUBLIC_KEY1))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, MockKeys.K1))
 		{
-			recordFile = _storeEntry(access, "entry1", PUBLIC_KEY1);
+			recordFile = _storeEntry(access, "entry1", MockKeys.K1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);
 			
-			followeeRecordFile = _storeEntry(access, "entry2", PUBLIC_KEY2);
+			followeeRecordFile = _storeEntry(access, "entry2", MockKeys.K2);
 			// We want to create an oversized record to make sure that it is not in cached list.
 			IpfsFile oversizeRecordFile = access.uploadAndPin(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]));
 			
 			IFolloweeWriting followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
-			followIndex.createNewFollowee(PUBLIC_KEY2, followeeIndexFile, 1L);
-			followIndex.addElement(PUBLIC_KEY2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
+			followIndex.createNewFollowee(MockKeys.K2, followeeIndexFile, 1L);
+			followIndex.addElement(MockKeys.K2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();

@@ -33,12 +33,12 @@ import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
 import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestInteractiveHelpers
@@ -47,7 +47,6 @@ public class TestInteractiveHelpers
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 
 	@Test
@@ -221,7 +220,7 @@ public class TestInteractiveHelpers
 		IConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "sub"));
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
-		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
+		connection.addNewKey(KEY_NAME, MockKeys.K1);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
@@ -373,7 +372,7 @@ public class TestInteractiveHelpers
 		IConfigFileSystem fileSystem = new RealConfigFileSystem(new File(FOLDER.newFolder(), "sub"));
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
-		connection.addNewKey(KEY_NAME, PUBLIC_KEY);
+		connection.addNewKey(KEY_NAME, MockKeys.K1);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()

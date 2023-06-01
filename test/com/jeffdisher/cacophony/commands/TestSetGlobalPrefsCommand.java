@@ -6,10 +6,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestSetGlobalPrefsCommand
@@ -17,12 +17,11 @@ public class TestSetGlobalPrefsCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 
 	@Test
 	public void testSetPrefs() throws Throwable
 	{
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));

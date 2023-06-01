@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,9 +26,6 @@ import com.jeffdisher.cacophony.types.KeyException;
 
 public class TestExplicitCacheLogic
 {
-	public static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	public static final IpfsKey K2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14W");
-
 	@Test
 	public void userNotFound() throws Throwable
 	{
@@ -36,7 +34,7 @@ public class TestExplicitCacheLogic
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadUserInfo(access, K1);
+			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 			didFail = false;
 		}
 		catch (KeyException e)
@@ -55,8 +53,8 @@ public class TestExplicitCacheLogic
 	public void foundUser() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
-		_populateWithEmpty(access, K1, "userPic".getBytes());
-		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, K1);
+		_populateWithEmpty(access, MockKeys.K1, "userPic".getBytes());
+		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 		Assert.assertNotNull(userInfo);
 		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
 		Assert.assertEquals(3, access.sizeAndReadPerformed);
@@ -70,13 +68,13 @@ public class TestExplicitCacheLogic
 		// Make sure that missing data causes this to fail and leave the pin counts unchanged.
 		MockWritingAccess access = new MockWritingAccess();
 		byte[] userPic = "userPic".getBytes();
-		_populateWithEmpty(access, K1, userPic);
+		_populateWithEmpty(access, MockKeys.K1, userPic);
 		access.unpin(MockSingleNode.generateHash(userPic));
 		int startPin = _countPins(access);
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadUserInfo(access, K1);
+			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -97,13 +95,13 @@ public class TestExplicitCacheLogic
 	{
 		// Make sure that missing data causes this to fail and leave the pin counts unchanged.
 		MockWritingAccess access = new MockWritingAccess();
-		_populateWithEmpty(access, K1, "userPic".getBytes());
+		_populateWithEmpty(access, MockKeys.K1, "userPic".getBytes());
 		access.unpin(MockSingleNode.generateHash(GlobalData.serializeRecommendations(new StreamRecommendations())));
 		int startPin = _countPins(access);
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadUserInfo(access, K1);
+			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -146,7 +144,7 @@ public class TestExplicitCacheLogic
 	public void noLeafRecord() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, K1, "name", null, null, 0, null);
+		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", null, null, 0, null);
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record);
 		// We just see the one size check and load.
@@ -163,7 +161,7 @@ public class TestExplicitCacheLogic
 	public void videoRecord() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record);
 		// We just see the 3 size checks and the record load.
@@ -180,7 +178,7 @@ public class TestExplicitCacheLogic
 	public void audioRecord() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, K1, "name", null, null, 0, "audio".getBytes());
+		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", null, null, 0, "audio".getBytes());
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
 		Assert.assertNotNull(record);
 		// We just see the 2 size checks and the record load.
@@ -199,7 +197,7 @@ public class TestExplicitCacheLogic
 		MockWritingAccess access = new MockWritingAccess();
 		// Break the video leaf and make sure we fail and don't change pin counts.
 		byte[] videoData = "video".getBytes();
-		IpfsFile cid = _populateStreamRecord(access, K1, "name", "thumb".getBytes(), videoData, 10, null);
+		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", "thumb".getBytes(), videoData, 10, null);
 		access.unpin(MockSingleNode.generateHash(videoData));
 		int startPin = _countPins(access);
 		boolean didFail;

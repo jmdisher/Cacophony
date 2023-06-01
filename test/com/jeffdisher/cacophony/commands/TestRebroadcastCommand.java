@@ -12,12 +12,12 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -27,8 +27,6 @@ public class TestRebroadcastCommand
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-	private static final IpfsKey PUBLIC_KEY2 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo141");
 	private static final IpfsFile MISC_FILE = IpfsFile.fromIpfsCid("QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG");
 
 
@@ -36,15 +34,15 @@ public class TestRebroadcastCommand
 	public void testRebroadcastFromFollowee() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// We need to add the followees.
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
-		user.runCommand(null, new StartFollowingCommand(PUBLIC_KEY2));
+		user.runCommand(null, new StartFollowingCommand(MockKeys.K2));
 		
 		// Publish something we can copy.
 		File fakeVideo = FOLDER.newFile();
@@ -58,18 +56,18 @@ public class TestRebroadcastCommand
 		user.runCommand(null, new RefreshNextFolloweeCommand());
 		
 		// Verify that our record list is empty.
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(PUBLIC_KEY)));
+		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
 		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		Assert.assertEquals(0, records.getRecord().size());
 		
 		// Now, rebroadcast this and verify that the new element is in our list.
-		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(PUBLIC_KEY2)));
+		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K2)));
 		records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
 		user.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
 		
 		// Verify that our record list now contains this.
-		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(PUBLIC_KEY)));
+		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
 		records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		Assert.assertEquals(recordToRebroadcast.toSafeString(), records.getRecord().get(0));
 		
@@ -81,8 +79,8 @@ public class TestRebroadcastCommand
 	public void testRebroadcastUnknown() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -100,18 +98,18 @@ public class TestRebroadcastCommand
 		}));
 		
 		// Verify that our record list is empty.
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(PUBLIC_KEY)));
+		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
 		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		Assert.assertEquals(0, records.getRecord().size());
 		
 		// Now, rebroadcast this and verify that the new element is in our list.
-		index = GlobalData.deserializeIndex(user2.loadDataFromNode(user2.resolveKeyOnNode(PUBLIC_KEY2)));
+		index = GlobalData.deserializeIndex(user2.loadDataFromNode(user2.resolveKeyOnNode(MockKeys.K2)));
 		records = GlobalData.deserializeRecords(user2.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
 		user.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
 		
 		// Verify that our record list now contains this.
-		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(PUBLIC_KEY)));
+		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
 		records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		Assert.assertEquals(recordToRebroadcast.toSafeString(), records.getRecord().get(0));
 		
@@ -123,7 +121,7 @@ public class TestRebroadcastCommand
 	public void testRebroadcastOurDuplicate() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// Create the channel and publish an entry.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -137,7 +135,7 @@ public class TestRebroadcastCommand
 		}));
 		
 		// Now, rebroadcast this and verify it is a failure.
-		IpfsFile initialRoot = user.resolveKeyOnNode(PUBLIC_KEY);
+		IpfsFile initialRoot = user.resolveKeyOnNode(MockKeys.K1);
 		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(initialRoot));
 		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		Assert.assertEquals(1, records.getRecord().size());
@@ -154,7 +152,7 @@ public class TestRebroadcastCommand
 		Assert.assertTrue(didFail);
 		
 		// Verify that our record list is unchanged.
-		Assert.assertEquals(initialRoot, user.resolveKeyOnNode(PUBLIC_KEY));
+		Assert.assertEquals(initialRoot, user.resolveKeyOnNode(MockKeys.K1));
 		
 		user.shutdown();
 	}
@@ -163,8 +161,8 @@ public class TestRebroadcastCommand
 	public void testRebroadcastBrokenElement() throws Throwable
 	{
 		MockSwarm swarm = new MockSwarm();
-		MockUserNode user2 = new MockUserNode(KEY_NAME, PUBLIC_KEY2, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		// We need to create the channel first so we will just use the command to do that.
 		user.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -182,13 +180,13 @@ public class TestRebroadcastCommand
 		}));
 		
 		// Verify that our record list is empty.
-		IpfsFile initialRoot = user.resolveKeyOnNode(PUBLIC_KEY);
+		IpfsFile initialRoot = user.resolveKeyOnNode(MockKeys.K1);
 		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(initialRoot));
 		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		Assert.assertEquals(0, records.getRecord().size());
 		
 		// Now, rebroadcast this and verify that the new element is in our list.
-		index = GlobalData.deserializeIndex(user2.loadDataFromNode(user2.resolveKeyOnNode(PUBLIC_KEY2)));
+		index = GlobalData.deserializeIndex(user2.loadDataFromNode(user2.resolveKeyOnNode(MockKeys.K2)));
 		records = GlobalData.deserializeRecords(user2.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
 		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
 		StreamRecord recordToExamine = GlobalData.deserializeRecord(user2.loadDataFromNode(recordToRebroadcast));
@@ -208,7 +206,7 @@ public class TestRebroadcastCommand
 		Assert.assertTrue(didFail);
 		
 		// Verify that we didn't change anything, as the rebroadcast would fail.
-		Assert.assertEquals(initialRoot, user.resolveKeyOnNode(PUBLIC_KEY));
+		Assert.assertEquals(initialRoot, user.resolveKeyOnNode(MockKeys.K1));
 		Assert.assertNull(user.loadDataFromNode(recordToRebroadcast));
 		Assert.assertNull(user.loadDataFromNode(IpfsFile.fromIpfsCid(recordToExamine.getElements().getElement().get(1).getCid())));
 		
@@ -219,7 +217,7 @@ public class TestRebroadcastCommand
 	@Test
 	public void testMissingChannel() throws Throwable
 	{
-		MockUserNode user1 = new MockUserNode(KEY_NAME, PUBLIC_KEY, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
+		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		RebroadcastCommand command = new RebroadcastCommand(MISC_FILE);
 		try
 		{

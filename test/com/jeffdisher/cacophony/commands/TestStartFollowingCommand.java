@@ -23,6 +23,7 @@ import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
@@ -37,9 +38,7 @@ public class TestStartFollowingCommand
 	@ClassRule
 	public static TemporaryFolder FOLDER = new TemporaryFolder();
 	private static final String KEY_NAME = "keyName";
-	private static final IpfsKey PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
 	private static final String REMOTE_KEY_NAME = "remoteKey";
-	private static final IpfsKey REMOTE_PUBLIC_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14f");
 
 	@Test
 	public void testUsage() throws Throwable
@@ -50,11 +49,11 @@ public class TestStartFollowingCommand
 		_configureCluster(
 				new MockSingleNode[] { remoteConnection, sharedConnection}
 				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
-				, new IpfsKey[] { REMOTE_PUBLIC_KEY, PUBLIC_KEY}
+				, new IpfsKey[] { MockKeys.K2, MockKeys.K1}
 		);
 		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
 		
-		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
+		StartFollowingCommand command = new StartFollowingCommand(MockKeys.K2);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
@@ -81,7 +80,7 @@ public class TestStartFollowingCommand
 		originalRootData.setRecords(originalRecordsCid.toSafeString());
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
-		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
+		remoteConnection.publish(REMOTE_KEY_NAME, MockKeys.K2, originalRoot);
 		Context context = new Context(executor
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -119,12 +118,12 @@ public class TestStartFollowingCommand
 		_configureCluster(
 				new MockSingleNode[] { remoteConnection, sharedConnection}
 				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
-				, new IpfsKey[] { REMOTE_PUBLIC_KEY, PUBLIC_KEY}
+				, new IpfsKey[] { MockKeys.K2, MockKeys.K1}
 		);
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_INDEX_SIZE_BYTES + 1)]));
-		remoteConnection.publish(REMOTE_KEY_NAME, REMOTE_PUBLIC_KEY, originalRoot);
+		remoteConnection.publish(REMOTE_KEY_NAME, MockKeys.K2, originalRoot);
 		
-		StartFollowingCommand command = new StartFollowingCommand(REMOTE_PUBLIC_KEY);
+		StartFollowingCommand command = new StartFollowingCommand(MockKeys.K2);
 		// We are expecting the error to be logged so we want to capture the output to make sure we see it.
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());

@@ -26,10 +26,10 @@ import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -38,8 +38,6 @@ import io.ipfs.cid.Cid;
 
 public class TestFolloweeRefreshLogic
 {
-	private static final IpfsKey DUMMY_KEY = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
-
 	@Test
 	public void testNewEmptyFollow() throws Throwable
 	{
@@ -651,7 +649,7 @@ public class TestFolloweeRefreshLogic
 		record.setName(name);
 		record.setDescription("nothing");
 		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(DUMMY_KEY.toPublicKey());
+		record.setPublisherKey(MockKeys.K1.toPublicKey());
 		DataArray array = new DataArray();
 		if (null != thumbnail)
 		{
