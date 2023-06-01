@@ -36,12 +36,7 @@ public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, l
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.followees().createNewFollowee(this.followeeKey, this.indexRoot);
-		// If this has a non-zero time, update the update time.
-		if (this.lastPollMillis > 0L)
-		{
-			context.followees().updateExistingFollowee(this.followeeKey, this.indexRoot, this.lastPollMillis);
-		}
+		context.followees().createNewFollowee(this.followeeKey, this.indexRoot, this.lastPollMillis);
 	}
 
 	@Override

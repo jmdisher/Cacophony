@@ -193,7 +193,7 @@ public class TestLocalDataModel
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
 			FolloweeData followees = access.readFollowIndex();
-			followees.createNewFollowee(K1, F1);
+			followees.createNewFollowee(K1, F1, 0L);
 			followees.addElement(K1, new FollowingCacheElement(F1, F2, null, 5L));
 			followees.updateExistingFollowee(K1, F1, 1L);
 			access.writeFollowIndex(followees);

@@ -52,7 +52,7 @@ public class TestV2V3
 	public void followeeData() throws Throwable
 	{
 		FolloweeData followeeData = FolloweeData.createEmpty();
-		followeeData.createNewFollowee(K1, F1);
+		followeeData.createNewFollowee(K1, F1, 0L);
 		followeeData.addElement(K1, new FollowingCacheElement(F2, F3, null, 5L));
 		byte[] v2 = _serializeV2(null, null, followeeData);
 		
