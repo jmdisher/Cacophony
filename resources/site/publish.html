@@ -12,6 +12,7 @@
 <script src="./rest.js" type="text/javascript"></script>
 <script src="./generated_db.js" type="text/javascript"></script>
 <script src="./event_api.js" type="text/javascript"></script>
+<script src="./bindings.js" type="text/javascript"></script>
 <script type="text/javascript">
 function startCamera(height, width, fps)
 {
@@ -335,8 +336,7 @@ function onProcessingSocketClose(scope, processed_review, event, ignoreError)
 }
 
 
-// We will create an Angular controller and populate it with data from generated_db.js.
-var GLOBAL_Application = angular.module('App', []);
+// GLOBAL_Application is defined in bindings.js.
 GLOBAL_Application.controller('AppController', function($scope)
 {
 	let canvas = document.getElementById('canvas');
