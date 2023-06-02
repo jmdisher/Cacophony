@@ -806,7 +806,6 @@ function xsrfLoaded($scope)
 	// Start with no selection.
 	$scope.homeUserDescriptions = [];
 	$scope.homePublicKey = null;
-	$scope.selectedUserTitle = null;
 	
 	REST.GET("/home/channels")
 		.then((response) => response.json())
@@ -814,22 +813,18 @@ function xsrfLoaded($scope)
 			// See which user is selected (could be none of them).
 			for (let user of data)
 			{
-				// We want to create a readable description of a user so we will just add that to the structure.
-				user["title"] = user["name"] + " (key name: " + user["keyName"] + ")";
 				if (user["isSelected"])
 				{
 					$scope.homePublicKey = user["publicKey"];
-					$scope.selectedUserTitle = user["title"];
 				}
 			}
 			$scope.homeUserDescriptions = data;
 			$scope.$apply();
 		})
 	;
-	$scope.selectUser = function(userStruct)
+	$scope.selectUserKey = function(publicKey)
 	{
-		$scope.homePublicKey = userStruct["publicKey"];
-		$scope.selectedUserTitle = userStruct["title"];
+		$scope.homePublicKey = publicKey;
 		REST.POST("/home/channel/set/" + $scope.homePublicKey);
 	}
 	
@@ -879,12 +874,7 @@ function xsrfLoaded($scope)
 			<div class="row"><a class="btn" href="favourites.html">Favourites</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
-			<div class="row btn-group">
-				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>
-				<ul class="dropdown-menu">
-					<li ng-repeat="user in homeUserDescriptions"><a class="dropdown-item" ng-click="selectUser(user)">{{user.title}}</a></li>
-				</ul>
-			</div>
+			<caco-channel-selector channel-tuples="homeUserDescriptions" on-select-user="selectUserKey"></caco-channel-selector>
 		</div>
 		<div class="card card-body col-md-6" ng-show="null !== homePublicKey">
 			<em ng-show="null == drafts">Loading drafts...</em>
