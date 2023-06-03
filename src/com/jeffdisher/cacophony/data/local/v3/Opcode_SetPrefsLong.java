@@ -32,21 +32,35 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 	@Override
 	public void apply(OpcodeContext context)
 	{
+		PrefsData prefs = context.prefs();
+		Assert.assertTrue(null != prefs);
 		if (this.key.equals(PrefsData.LONG_FOLLOW_CACHE_BYTES))
 		{
-			context.prefs().followCacheTargetBytes = this.value;
+			prefs.followCacheTargetBytes = this.value;
 		}
 		else if (this.key.equals(PrefsData.LONG_REPUBLISH_INTERVAL_MILLIS))
 		{
-			context.prefs().republishIntervalMillis = this.value;
+			prefs.republishIntervalMillis = this.value;
 		}
 		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_REFRESH_MILLIS))
 		{
-			context.prefs().followeeRefreshMillis = this.value;
+			prefs.followeeRefreshMillis = this.value;
 		}
 		else if (this.key.equals(PrefsData.LONG_EXPLICIT_CACHE_BYTES))
 		{
-			context.prefs().explicitCacheTargetBytes = this.value;
+			prefs.explicitCacheTargetBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_THUMBNAIL_BYTES))
+		{
+			prefs.followeeRecordThumbnailMaxBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_AUDIO_BYTES))
+		{
+			prefs.followeeRecordAudioMaxBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_VIDEO_BYTES))
+		{
+			prefs.followeeRecordVideoMaxBytes = this.value;
 		}
 		else
 		{

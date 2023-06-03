@@ -15,6 +15,9 @@ public record SetGlobalPrefsCommand(int _edgeMax
 		, long _republishIntervalMillis
 		, long _followeeRefreshMillis
 		, long _explicitCacheTargetBytes
+		, long _followeeThumbnailMaxBytes
+		, long _followeeAudioMaxBytes
+		, long _followeeVideoMaxBytes
 ) implements ICommand<None>
 {
 	@Override
@@ -58,6 +61,21 @@ public record SetGlobalPrefsCommand(int _edgeMax
 			prefs.explicitCacheTargetBytes = _explicitCacheTargetBytes;
 			didChange = true;
 		}
+		if (_followeeThumbnailMaxBytes > 0L)
+		{
+			prefs.followeeRecordThumbnailMaxBytes = _followeeThumbnailMaxBytes;
+			didChange = true;
+		}
+		if (_followeeAudioMaxBytes > 0L)
+		{
+			prefs.followeeRecordAudioMaxBytes = _followeeAudioMaxBytes;
+			didChange = true;
+		}
+		if (_followeeVideoMaxBytes > 0L)
+		{
+			prefs.followeeRecordVideoMaxBytes = _followeeVideoMaxBytes;
+			didChange = true;
+		}
 		if (didChange)
 		{
 			access.writePrefs(prefs);
@@ -65,6 +83,9 @@ public record SetGlobalPrefsCommand(int _edgeMax
 			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
 			log.logOperation("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
 			log.logOperation("Explicit cache target size: " + MiscHelpers.humanReadableBytes(prefs.explicitCacheTargetBytes));
+			log.logOperation("Followee record thumbnail max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
+			log.logOperation("Followee record audio max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordAudioMaxBytes));
+			log.logOperation("Followee record video max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordVideoMaxBytes));
 			log.logFinish("Update saved");
 		}
 		else

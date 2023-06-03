@@ -351,6 +351,12 @@ public class FolloweeRefreshLogic
 					try
 					{
 						data.thumbnailSizeBytes = data.thumbnailSizeFuture.get();
+						// Make sure that this isn't over our preference limit.
+						if (data.thumbnailSizeBytes > prefs.followeeRecordThumbnailMaxBytes)
+						{
+							bothLoaded = false;
+							support.logMessage("Record " + data.elementCid + " is being skipped since its thumbnail is " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
+						}
 					}
 					catch (IpfsConnectionException e)
 					{
@@ -365,6 +371,16 @@ public class FolloweeRefreshLogic
 					try
 					{
 						data.leafSizeBytes = data.leafSizeFuture.get();
+						// Make sure that this isn't over our preference limit.
+						long relevantSizeBytes = data.leafHash.equals(data.audioLeafHash)
+								? prefs.followeeRecordAudioMaxBytes
+								: prefs.followeeRecordVideoMaxBytes
+						;
+						if (data.leafSizeBytes > relevantSizeBytes)
+						{
+							bothLoaded = false;
+							support.logMessage("Record " + data.elementCid + " is being skipped since its leaf is " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(relevantSizeBytes));
+						}
 					}
 					catch (IpfsConnectionException e)
 					{

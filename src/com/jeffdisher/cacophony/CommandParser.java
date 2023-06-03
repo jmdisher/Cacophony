@@ -392,6 +392,18 @@ public class CommandParser
 						, "The target size of the explicit cache (that is, how much space is used for caching videos"
 							+ " and images for miscellaneous look-ups) in bytes (accepts k, m, g suffixes)"
 					)
+					, new ArgParameter("--followeeThumbnailMaxBytes", ParameterType.LONG_BYTES
+						, "The maximum size, in bytes, a followee record's thumbnail can be before it will be"
+							+ " skipped during automatic caching"
+					)
+					, new ArgParameter("--followeeAudioMaxBytes", ParameterType.LONG_BYTES
+						, "The maximum size, in bytes, a followee record's audio attachment can be before it will be"
+							+ " skipped during automatic caching"
+					)
+					, new ArgParameter("--followeeVideoMaxBytes", ParameterType.LONG_BYTES
+						, "The maximum size, in bytes, a followee record's video attachment can be before it will be"
+							+ " skipped during automatic caching"
+					)
 				}
 				, "Updates preferences related to the Cacophony installation."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -401,11 +413,17 @@ public class CommandParser
 			long republishIntervalMillis = _optionalLong(optional[2], 0L);
 			long followeeRefreshMillis = _optionalLong(optional[3], 0L);
 			long explicitCacheTargetBytes = _optionalLong(optional[4], 0L);
+			long followeeThumbnailMaxBytes = _optionalLong(optional[5], 0L);
+			long followeeAudioMaxBytes = _optionalLong(optional[6], 0L);
+			long followeeVideoMaxBytes = _optionalLong(optional[7], 0L);
 			return new SetGlobalPrefsCommand(edgeMaxPixels
 					, followCacheTargetBytes
 					, republishIntervalMillis
 					, followeeRefreshMillis
 					, explicitCacheTargetBytes
+					, followeeThumbnailMaxBytes
+					, followeeAudioMaxBytes
+					, followeeVideoMaxBytes
 			);
 		}),
 		CANONICALIZE_KEY(true, "--canonicalizeKey"

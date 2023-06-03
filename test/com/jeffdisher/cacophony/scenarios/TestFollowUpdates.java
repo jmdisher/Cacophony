@@ -186,7 +186,7 @@ public class TestFollowUpdates
 		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
 		
 		// Set our preferences for requested video sizes - 640 pixel edge and make sure the data limit is high enough to capture everything.
-		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L, 0L, 0L, 0L));
+		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L, 0L, 0L, 0L, 0L, 0L, 0L));
 		
 		// Start following before the upload so we can refresh on each update, meaning we will get both with no eviction or change of not caching.
 		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(MockKeys.K1);
@@ -226,6 +226,64 @@ public class TestFollowUpdates
 		Assert.assertNotNull(user1.loadDataFromNode(missingVideo2Hash));
 		Assert.assertNull(user2.loadDataFromNode(missingVideo1Hash));
 		Assert.assertNull(user2.loadDataFromNode(missingVideo2Hash));
+		user1.shutdown();
+		user2.shutdown();
+	}
+
+	@Test
+	public void failWithSizeLimits() throws Throwable
+	{
+		// Node 1.
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		
+		// Create user 1.
+		user1.createChannel(KEY_NAME1, "User 1", "Description 1", "User pic 1\n".getBytes());
+		
+		// Node 2
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
+		
+		// Create user 2.
+		user2.createChannel(KEY_NAME2, "User 2", "Description 2", "User pic 2\n".getBytes());
+		
+		// Set the preferences in order to restrict the sizes we will allow, so we can see this rejected later.
+		String passingImage = "IMAGE\n";
+		String passingVideo = "VIDEO FILE\n";
+		long followeeThumbnailMaxBytes = passingImage.length();
+		long followeeVideoMaxBytes = passingVideo.length();
+		// Set our preferences for requested video sizes - 640 pixel edge and make sure the data limit is high enough to capture everything.
+		user2.runCommand(null, new SetGlobalPrefsCommand(640, 1_000_000L, 0L, 0L, 0L, followeeThumbnailMaxBytes, 0L, followeeVideoMaxBytes));
+		
+		// Start following before the upload so we can refresh on each update, meaning we will get both with no eviction or change of not caching.
+		StartFollowingCommand startFollowingCommand = new StartFollowingCommand(MockKeys.K1);
+		user2.runCommand(null, startFollowingCommand);
+		// (for version 2.1, start follow doesn't fetch the data)
+		RefreshFolloweeCommand initialRefresh = new RefreshFolloweeCommand(MockKeys.K1);
+		user2.runCommand(null, initialRefresh);
+		
+		// Create 3 posts:  One to accept, one with an over-sized thumbnail, one with over-sized video.
+		PublishCommand acceptCommand = _createMultiPublishCommand("accepted", passingImage, new String[] { passingVideo }, new int[] { 640 } );
+		PublishCommand failThumbCommand = _createMultiPublishCommand("failing thumbnail", "PRE_" + passingImage, new String[] { passingVideo }, new int[] { 640 } );
+		PublishCommand failVideoCommand = _createMultiPublishCommand("failing video", passingImage, new String[] { "PRE_" + passingVideo }, new int[] { 640 } );
+		IpfsFile acceptElement = user1.runCommand(null, acceptCommand).recordCid;
+		IpfsFile thumbElement = user1.runCommand(null, failThumbCommand).recordCid;
+		IpfsFile videoElement = user1.runCommand(null, failVideoCommand).recordCid;
+		user2.runCommand(null, new RefreshFolloweeCommand(MockKeys.K1));
+		
+		// User2:  Follow and verify the data is loaded.
+		// (capture the output to verify the element is in the list)
+		ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
+		ListCachedElementsForFolloweeCommand listCommand = new ListCachedElementsForFolloweeCommand(MockKeys.K1);
+		user2.runCommand(captureStream, listCommand);
+		String capturedString = new String(captureStream.toByteArray());
+		
+		IpfsFile thumbHash = MockSingleNode.generateHash(passingImage.getBytes());
+		IpfsFile videoHash = MockSingleNode.generateHash(passingVideo.getBytes());
+		
+		Assert.assertTrue(capturedString.contains(acceptElement.toSafeString() + " (image: " + thumbHash.toSafeString() + ", leaf: " + videoHash.toSafeString() + ")\n"));
+		Assert.assertTrue(capturedString.contains(thumbElement.toSafeString() + " (not cached)\n"));
+		Assert.assertTrue(capturedString.contains(videoElement.toSafeString() + " (not cached)\n"));
+		
 		user1.shutdown();
 		user2.shutdown();
 	}
