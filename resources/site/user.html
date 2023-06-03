@@ -70,11 +70,10 @@ function xsrfLoaded($scope)
 		publicKeyLoaded($scope, $scope.homePublicKey, $scope.isHomeUser);
 	}
 	
-	$scope.deletePost = function(post)
+	$scope.deletePostKey = function(elementHash)
 	{
 		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
-		post.isDeleting = true;
-		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + post.elementHash);
+		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + elementHash);
 	}
 	
 	$scope.enterEditMode = function()
@@ -376,27 +375,7 @@ function stopCamera(video_preview, stream)
 				</div>
 			</div>
 			<h3 ng-show="null !== specialString">{{specialString}}</h3>
-			<div ng-repeat="post in posts" class="row card">
-				<h5 class="card-header">{{post.name}} (Posted on {{post.readableDate}})</h5>
-				<div class="card-body container row">
-					<div class="col-md-4" ng-show="{{post.cached}}">
-						<a href="play.html?elt={{post.elementHash}}"><img class="img-fluid" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
-					</div>
-					<div class="col-md-4" ng-hide="{{post.cached}}">
-						<a href="play.html?elt={{post.elementHash}}">(not cached)</a>
-					</div>
-					<div class="col-md-8">
-						{{post.description}}<br />
-						<div class="btn-group" role="group" ng-show="isHomeUser">
-							<div class="btn-group">
-								<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="post.isDeleting">Delete Post</button>
-								<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deletePost(post)">Confirm</a></li></ul>
-							</div>
-							<a class="btn btn-small btn-warning" ng-href="/basic_edit.html?elt={{post.elementHash}}">Edit Post</a>
-						</div>
-					</div>
-				</div>
-			</div>
+			<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isHomeUser" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post-mutable>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 		<div class="col-md-9" ng-show="null === publicKey">

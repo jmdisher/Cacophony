@@ -113,20 +113,7 @@ function oldHashRemoved($scope, key)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
-			<div ng-repeat="post in posts" class="row card">
-				<h5 class="card-header">{{post.name}} (Posted by <caco-user-link public-key="post.publisherKey"></caco-user-link> on {{post.readableDate}})</h5>
-				<div class="card-body container row">
-					<div class="col-md-4" ng-show="{{post.cached}}">
-						<a href="play.html?elt={{post.elementHash}}"><img class="img-fluid" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
-					</div>
-					<div class="col-md-4" ng-hide="{{post.cached}}">
-						<a href="play.html?elt={{post.elementHash}}">(not cached)</a>
-					</div>
-					<div class="col-md-8">
-						{{post.description}}<br />
-					</div>
-				</div>
-			</div>
+			<caco-post ng-repeat="post in posts" post-tuple="post"></caco-post-mutable>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 	</div>

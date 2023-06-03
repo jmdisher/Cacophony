@@ -34,13 +34,12 @@ function xsrfLoaded($scope)
 			}
 			$scope.$apply();
 		});
-	$scope.deleteFavourite = function(post)
+	$scope.deleteFavouriteKey = function(publicKey)
 	{
 		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
-		post.isDeleting = true;
-		REST.DELETE("/favourites/remove/" + post.elementHash)
+		REST.DELETE("/favourites/remove/" + publicKey)
 			.then(data => {
-				oldHashRemoved($scope, post.elementHash);
+				oldHashRemoved($scope, publicKey);
 				$scope.$apply();
 			});
 	}
@@ -87,24 +86,7 @@ function oldHashRemoved($scope, key)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
-			<div ng-repeat="post in posts" class="row card">
-				<h5 class="card-header">{{post.name}} (Posted by <caco-user-link public-key="post.publisherKey"></caco-user-link> on {{post.readableDate}})</h5>
-				<div class="card-body container row">
-					<div class="col-md-4" ng-show="{{post.cached}}">
-						<a href="play.html?elt={{post.elementHash}}"><img class="img-fluid" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>
-					</div>
-					<div class="col-md-4" ng-hide="{{post.cached}}">
-						<a href="play.html?elt={{post.elementHash}}">(not cached)</a>
-					</div>
-					<div class="col-md-8">
-						{{post.description}}<br />
-						<div class="btn-group" role="group">
-							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="post.isDeleting">Delete Favourite</button>
-							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteFavourite(post)">Confirm</a></li></ul>
-						</div>
-					</div>
-				</div>
-			</div>
+			<caco-post ng-repeat="post in posts" post-tuple="post" danger-name="Delete Favourite" on-danger-key="deleteFavouriteKey"></caco-post-mutable>
 		</div>
 	</div>
 </div>
