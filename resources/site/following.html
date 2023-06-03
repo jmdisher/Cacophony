@@ -25,28 +25,19 @@ GLOBAL_Application.controller('AppController', function($scope)
 		? arg_queryKey
 		: ""
 	;
-	$scope.unknownUser = null;
-	$scope.inProgress = false;
+	$scope.selectedUserKey = null;
 	
 	$scope.checkUnknownUser = function()
 	{
-		$scope.inProgress = true;
-		GLOBAL_UnknownUserLoader.loadTuple($scope.unknownUserKey)
-			.then((tuple) => {
-				$scope.unknownUser = tuple;
-				$scope.inProgress = false;
-				$scope.$apply();
-			});
+		$scope.selectedUserKey = $scope.unknownUserKey;
 	}
 	
 	$scope.startFollowing = function(publicKey)
 	{
 		// We will send the request and wait for the create to come in from the WebSocket.
-		$scope.inProgress = true;
 		REST.POST("/followees/add/" + publicKey)
 			.then((response) => {
-				$scope.inProgress = false;
-				$scope.unknownUser = null;
+				$scope.selectedUserKey = null;
 				$scope.$apply();
 			});
 	}
@@ -187,24 +178,10 @@ function beginPopulating($scope)
 		</div>
 		<div class="col-md-9">
 			<div class="input-group mb-3">
-				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()" ng-disabled="inProgress">Check User</button>
-				<input type="text" class="form-control" ng-model="unknownUserKey" ng-disabled="inProgress" aria-label="User Public Key" aria-describedby="public-key">
+				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()">Check User</button>
+				<input type="text" class="form-control" ng-model="unknownUserKey" aria-label="User Public Key" aria-describedby="public-key">
 			</div>
-			<div class="card" ng-show="null !== unknownUser">
-				<h5 class="card-header">{{unknownUser.name}}</h5>
-				<div class="card-body row">
-					<div class="col-md-4">
-						<img class="img-fluid" ng-src="{{unknownUser.userPicUrl}}" />
-					</div>
-					<div class="col-md-8">
-						Public Key: <strong>{{unknownUser.publicKey}}</strong><br />
-						Description: <strong>{{unknownUser.description}}</strong><br />
-						Email: <span ng-show="{{null == unknownUser.email}}">(not provided)</span><span ng-show="{{null !== unknownUser.email}}"><a ng-href="mailto:{{unknownUser.email}}">{{unknownUser.email}}</a></span><br />
-						Website: <span ng-show="{{null == unknownUser.website}}">(not provided)</span><span ng-show="{{null !== unknownUser.website}}"><a ng-href="{{unknownUser.website}}">{{unknownUser.website}}</a></span><br />
-						<button class="btn btn-small btn-success" ng-click="startFollowing(unknownUser.publicKey)" ng-disabled="inProgress">Start Following User</button><br />
-					</div>
-				</div>
-			</div>
+			<caco-unknown-user ng-show="null !== selectedUserKey" public-key="selectedUserKey" success-name="Start Following User" on-success-key="startFollowing"></caco-unknown-user>
 			
 			<h3>Users you Follow</h3>
 			<div ng-repeat="user in following" class="card">

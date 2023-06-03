@@ -184,5 +184,59 @@ GLOBAL_Application.directive('cacoPost', [function()
 	}
 }]);
 
-
+let _template_unknownUser = ''
+	+ '<div class="card">'
+	+ '	<h5 class="card-header">{{tuple.name}}</h5>'
+	+ '	<div class="card-body row">'
+	+ '		<div class="col-md-4">'
+	+ '			<img class="img-fluid" ng-src="{{tuple.userPicUrl}}" />'
+	+ '		</div>'
+	+ '		<div class="col-md-8">'
+	+ '			Public Key: <strong>{{tuple.publicKey}}</strong><br />'
+	+ '			Description: <strong>{{tuple.description}}</strong><br />'
+	+ '			Email: <span ng-show="{{null == tuple.email}}">(not provided)</span><span ng-show="{{null !== tuple.email}}"><a ng-href="mailto:{{tuple.email}}">{{tuple.email}}</a></span><br />'
+	+ '			Website: <span ng-show="{{null == tuple.website}}">(not provided)</span><span ng-show="{{null !== tuple.website}}"><a ng-href="{{tuple.website}}">{{tuple.website}}</a></span><br />'
+	+ '			<button class="btn btn-small btn-success" ng-click="onSuccess()" ng-disabled="isSuccessActive">{{successName}}</button><br />'
+	+ '		</div>'
+	+ '	</div>'
+	+ '</div>'
+;
+GLOBAL_Application.directive('cacoUnknownUser', ['UnknownUserLoader', function(UnknownUserLoader)
+{
+	// NOTES:
+	return {
+		restrict: 'E',
+		scope: {
+			publicKey: '=publicKey',
+			successName: '@successName',
+			onSuccessKey: '&onSuccessKey',
+		},
+		replace: true,
+		template: _template_unknownUser,
+		link: function(scope, element, attrs)
+		{
+			scope.isSuccessActive = false;
+			scope.tuple = {
+				name : "Loading...",
+			};
+			
+			scope.onSuccess = function()
+			{
+				scope.isSuccessActive = true;
+				scope.onSuccessKey()(scope.publicKey);
+			}
+			
+			scope.$watch('publicKey', function(newValue, oldValue)
+			{
+				if ((undefined !== newValue) && (null !== newValue))
+				{
+					UnknownUserLoader(newValue).then((userTuple) => {
+						scope.tuple = userTuple;
+						scope.$apply();
+					});
+				}
+			});
+		}
+	}
+}]);
 
