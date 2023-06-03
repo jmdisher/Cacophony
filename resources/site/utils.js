@@ -25,6 +25,7 @@ function readGetVar(name)
 // "readableData"
 // "isDeleting"
 // "thumbnailUrl"
+// "publisherKey"
 function addElementHashToArray(array, hash, isNewest, updateCallback)
 {
 	// Add empty objects to the array since we will replace them asynchronously.
@@ -57,6 +58,7 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
 			"name": elt["name"],
 			"description": description,
+			"publisherKey": elt["publisherKey"],
 			"isDeleting": false,
 		}
 		if (elt["cached"])

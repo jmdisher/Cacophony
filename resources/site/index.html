@@ -27,7 +27,6 @@ function xsrfLoaded($scope)
 	let entrySocket = null;
 	
 	$scope.posts = [];
-	$scope.userNameMap = {};
 	// We will only enable the scroll back once we see some backward entries being loaded (the initial load) so that it stays enabled if there is nothing.
 	$scope.allowScrollBack = false;
 	EVENTS_API.combinedEntries(
@@ -115,7 +114,7 @@ function oldHashRemoved($scope, key)
 		</div>
 		<div class="col-md-9">
 			<div ng-repeat="post in posts" class="row card">
-				<h5 class="card-header">{{post.name}} (Posted by <a href="user.html?publicKey={{post.publisherKey}}">{{userNameMap[post.publisherKey]}}</a> on {{post.readableDate}})</h5>
+				<h5 class="card-header">{{post.name}} (Posted by <caco-user-link public-key="post.publisherKey"></caco-user-link> on {{post.readableDate}})</h5>
 				<div class="card-body container row">
 					<div class="col-md-4" ng-show="{{post.cached}}">
 						<a href="play.html?elt={{post.elementHash}}"><img class="img-fluid" ng-src="{{post.thumbnailUrl}}" alt="{{post.name}}"/></a>

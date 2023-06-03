@@ -48,6 +48,10 @@ var GLOBAL_UnknownUserLoader = {
 	},
 };
 
+// Define the factory methods for dependency injection.
+// For UnknownUserLoader, we want to return a helper pointing to the shared instance since it has a cache.
+GLOBAL_Application.factory('UnknownUserLoader', [function() { return function(publicKey) {return GLOBAL_UnknownUserLoader.loadTuple(publicKey); } ; }]);
+
 let _template_channelSelector = ''
 	+ '<div class="row btn-group">'
 	+ '	<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>'
@@ -101,3 +105,36 @@ GLOBAL_Application.directive('cacoChannelSelector', [function()
 		}
 	}
 }]);
+
+let _template_userLink = '<a href="user.html?publicKey={{publicKey}}">{{name}}</a>';
+GLOBAL_Application.directive('cacoUserLink', ['UnknownUserLoader', function(UnknownUserLoader)
+{
+	// NOTES:
+	// -publicKey - the public key of an unknown user.
+	return {
+		restrict: 'E',
+		scope: {
+			publicKey: '=publicKey',
+		},
+		replace: true,
+		template: _template_userLink,
+		link: function(scope, element, attrs)
+		{
+			scope.name = 'Loading...';
+			scope.$watch('publicKey', function(newValue, oldValue)
+			{
+				if (undefined !== newValue)
+				{
+					UnknownUserLoader(newValue).then((userTuple) => {
+						scope.name = userTuple["name"];
+						scope.$apply();
+					});
+				}
+			});
+		}
+	}
+}]);
+
+
+
+
