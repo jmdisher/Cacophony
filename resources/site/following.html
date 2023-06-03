@@ -31,22 +31,12 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.checkUnknownUser = function()
 	{
 		$scope.inProgress = true;
-		REST.GET("/server/unknownUser/" + $scope.unknownUserKey)
-			.then((response) => {
+		GLOBAL_UnknownUserLoader.loadTuple($scope.unknownUserKey)
+			.then((tuple) => {
+				$scope.unknownUser = tuple;
 				$scope.inProgress = false;
 				$scope.$apply();
-				if (!response.ok)
-				{
-					throw response.status;
-				}
-				return response.json();
-			})
-			.then((data) => {
-				$scope.unknownUser = data;
-				$scope.unknownUser.publicKey = $scope.unknownUserKey;
-				$scope.$apply();
-			})
-			.catch((errorCode) => alert("Key is either invalid or could not be resolved.  Error code " + errorCode));
+			});
 	}
 	
 	$scope.startFollowing = function(publicKey)

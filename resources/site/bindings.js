@@ -3,6 +3,51 @@
 // The GLOBAL_Application is the main exported symbol.
 var GLOBAL_Application = angular.module('App', []);
 
+// We put this user resolution helper here since it will later become part of the injected dependencies.
+var GLOBAL_UnknownUserLoader = {
+	map: {},
+	// Returns a promise which resolve the tuple for the user (null if not found).  The tuple elements are documented in GET_UnknownUserInfo.java (except for publicKey which is injected here).
+	// -name
+	// -description
+	// -userPicUrl
+	// -email
+	// -website
+	// -publicKey
+	loadTuple: function(publicKey)
+	{
+		return new Promise(resolve => {
+			let tuple = this.map[publicKey];
+			if (undefined === tuple)
+			{
+				// Load this from server.
+				REST.GET("/server/unknownUser/" + publicKey)
+					.then((response) => {
+						if (!response.ok)
+						{
+							throw response.status;
+						}
+						return response.json();
+					})
+					.then((data) => {
+						// We want to inject the public key, just for convenience.
+						data["publicKey"] = publicKey;
+						// Store this in the shared map.
+						this.map[publicKey] = data;
+						resolve(data);
+					})
+					// On error, just report null.
+					.catch((errorCode) => resolve(null));
+				
+			}
+			else
+			{
+				// Call in the next event loop iteration.
+				window.setTimeout(function() { resolve(tuple); });
+			}
+		});
+	},
+};
+
 let _template_channelSelector = ''
 	+ '<div class="row btn-group">'
 	+ '	<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>'
