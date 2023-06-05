@@ -98,6 +98,22 @@ public class TestFavouritesCacheData
 		Assert.assertFalse(walker.hasNext());
 	}
 
+	@Test
+	public void checkSize() throws Throwable
+	{
+		FavouritesCacheData start = new FavouritesCacheData();
+		addStreamRecord(start, F1, F2, null, null, 5L);
+		addStreamRecord(start, F2, F2, F3, null, 20L);
+		addStreamRecord(start, F3, null, null, null, 1L);
+		addStreamRecord(start, F4, F2, null, null, 5L);
+		addStreamRecord(start, F5, F2, F4, null, 25L);
+		Assert.assertEquals(5L + 20L + 1L + 5L + 25L, start.getFavouritesSizeBytes());
+		FavouritesCacheData favourites = _codec(start);
+		Assert.assertEquals(5L + 20L + 1L + 5L + 25L, favourites.getFavouritesSizeBytes());
+		favourites.removeStreamRecord(F3);
+		Assert.assertEquals(5L + 20L + 5L + 25L, favourites.getFavouritesSizeBytes());
+	}
+
 
 	private static FavouritesCacheData _codec(FavouritesCacheData start) throws IOException
 	{

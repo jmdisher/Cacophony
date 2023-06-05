@@ -22,4 +22,9 @@ public interface IFavouritesReading
 	 * @return The list of all record files in the cache, in the order they were added.
 	 */
 	List<IpfsFile> getRecordFiles();
+
+	/**
+	 * @return The size of all the favourite elements, in bytes.
+	 */
+	long getFavouritesSizeBytes();
 }

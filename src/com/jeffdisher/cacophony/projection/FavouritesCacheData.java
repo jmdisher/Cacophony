@@ -123,4 +123,13 @@ public class FavouritesCacheData implements IFavouritesReading
 	{
 		return List.copyOf(_additionOrder);
 	}
+
+	@Override
+	public long getFavouritesSizeBytes()
+	{
+		return _recordInfo.values().stream()
+				.mapToLong((CachedRecordInfo elt) -> elt.combinedSizeBytes())
+				.sum()
+		;
+	}
 }
