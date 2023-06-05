@@ -211,6 +211,14 @@ public class ExplicitCacheData
 		}
 	}
 
+	/**
+	 * @return The total size of the explicit cache, in bytes.
+	 */
+	public long getCacheSizeBytes()
+	{
+		return _totalCacheInBytes;
+	};
 
-	public static record UserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) {};
+
+	public static record UserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) {}
 }

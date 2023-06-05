@@ -136,6 +136,18 @@ public class ExplicitCacheLogic
 		return info;
 	}
 
+	/**
+	 * Just a helper to read the total size from ExplicitCacheData.
+	 * 
+	 * @param access Write-access to local storage.
+	 * @return The total size of the explicitly cached data, in bytes.
+	 */
+	public static long getExplicitCacheSize(IWritingAccess access)
+	{
+		ExplicitCacheData data = access.writableExplicitCache();
+		return data.getCacheSizeBytes();
+	}
+
 
 	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, PrefsData prefs)
 	{
