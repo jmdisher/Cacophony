@@ -33,17 +33,23 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable
 	{
-		int edgeSize = _parseInt(formVariables, "edgeSize");
-		long followerCacheBytes = _parseLong(formVariables, "followerCacheBytes");
+		int videoEdgePixelMax = _parseInt(formVariables, "videoEdgePixelMax");
+		long followCacheTargetBytes = _parseLong(formVariables, "followCacheTargetBytes");
 		long republishIntervalMillis = _parseLong(formVariables, "republishIntervalMillis");
 		long followeeRefreshMillis = _parseLong(formVariables, "followeeRefreshMillis");
 		long explicitCacheTargetBytes = _parseLong(formVariables, "explicitCacheTargetBytes");
+		long followeeRecordThumbnailMaxBytes = _parseLong(formVariables, "followeeRecordThumbnailMaxBytes");
+		long followeeRecordAudioMaxBytes = _parseLong(formVariables, "followeeRecordAudioMaxBytes");
+		long followeeRecordVideoMaxBytes = _parseLong(formVariables, "followeeRecordVideoMaxBytes");
 		// Check parameters.
-		if ((edgeSize < 0)
-				|| (followerCacheBytes < 1_000_000_000L)
+		if ((videoEdgePixelMax < 0)
+				|| (followCacheTargetBytes < 1_000_000L)
 				|| (republishIntervalMillis < 60_000L)
 				|| (followeeRefreshMillis < 60_000L)
-				|| (explicitCacheTargetBytes < 1_000_000_000L)
+				|| (explicitCacheTargetBytes < 1_000_000L)
+				|| (followeeRecordThumbnailMaxBytes < 1_000_000L)
+				|| (followeeRecordAudioMaxBytes < 1_000_000L)
+				|| (followeeRecordVideoMaxBytes < 1_000_000L)
 		)
 		{
 			// We will basically consider this a usage error (caught as general bad request, below).
@@ -54,11 +60,14 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 		{
 			PrefsData prefs = access.readPrefs();
 			didChangeIntervals = ((prefs.republishIntervalMillis != republishIntervalMillis) || (prefs.followeeRefreshMillis != followeeRefreshMillis));
-			prefs.videoEdgePixelMax = edgeSize;
-			prefs.followCacheTargetBytes = followerCacheBytes;
+			prefs.videoEdgePixelMax = videoEdgePixelMax;
+			prefs.followCacheTargetBytes = followCacheTargetBytes;
 			prefs.republishIntervalMillis = republishIntervalMillis;
 			prefs.followeeRefreshMillis = followeeRefreshMillis;
 			prefs.explicitCacheTargetBytes = explicitCacheTargetBytes;
+			prefs.followeeRecordThumbnailMaxBytes = followeeRecordThumbnailMaxBytes;
+			prefs.followeeRecordAudioMaxBytes = followeeRecordAudioMaxBytes;
+			prefs.followeeRecordVideoMaxBytes = followeeRecordVideoMaxBytes;
 			access.writePrefs(prefs);
 		}
 		response.setStatus(HttpServletResponse.SC_OK);

@@ -14,8 +14,14 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Returns the owning user's preferences as a JSON struct:
- * -edgeSize (int)
- * -followerCacheBytes (long)
+ * -videoEdgePixelMax (int)
+ * -followCacheTargetBytes (long)
+ * -republishIntervalMillis (long)
+ * -followeeRefreshMillis (long)
+ * -explicitCacheTargetBytes (long)
+ * -followeeRecordThumbnailMaxBytes (long)
+ * -followeeRecordAudioMaxBytes (long)
+ * -followeeRecordVideoMaxBytes (long)
  */
 public class GET_Prefs implements ValidatedEntryPoints.GET
 {

@@ -53,7 +53,16 @@ public class JsonGenerationHelpers
 
 	public static JsonObject prefs(PrefsData prefs)
 	{
-		return _dataPrefs(prefs);
+		JsonObject dataPrefs = new JsonObject();
+		dataPrefs.set("videoEdgePixelMax", prefs.videoEdgePixelMax);
+		dataPrefs.set("followCacheTargetBytes", prefs.followCacheTargetBytes);
+		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
+		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
+		dataPrefs.set("explicitCacheTargetBytes", prefs.explicitCacheTargetBytes);
+		dataPrefs.set("followeeRecordThumbnailMaxBytes", prefs.followeeRecordThumbnailMaxBytes);
+		dataPrefs.set("followeeRecordAudioMaxBytes", prefs.followeeRecordAudioMaxBytes);
+		dataPrefs.set("followeeRecordVideoMaxBytes", prefs.followeeRecordVideoMaxBytes);
+		return dataPrefs;
 	}
 
 	public static JsonObject userDescription(String name, String description, String userPicUrl, String emailOrNull, String websiteOrNull)
@@ -74,17 +83,6 @@ public class JsonGenerationHelpers
 		dataVersion.set("hash", Version.HASH);
 		dataVersion.set("version", Version.TAG);
 		return dataVersion;
-	}
-
-	private static JsonObject _dataPrefs(PrefsData prefs)
-	{
-		JsonObject dataPrefs = new JsonObject();
-		dataPrefs.set("edgeSize", prefs.videoEdgePixelMax);
-		dataPrefs.set("followerCacheBytes", prefs.followCacheTargetBytes);
-		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
-		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
-		dataPrefs.set("explicitCacheTargetBytes", prefs.explicitCacheTargetBytes);
-		return dataPrefs;
 	}
 
 	private static IpfsFile _getLastKnownIndexForKey(IpfsKey ourPublicKey, IpfsFile lastPublishedIndex, IFolloweeReading followees, IpfsKey userToResolve)
