@@ -13,6 +13,7 @@ import com.jeffdisher.breakwater.IWebSocketFactory;
 import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -150,6 +151,11 @@ public class ValidatedEntryPoints
 			try
 			{
 				task.run();
+			}
+			catch (UsageException e)
+			{
+				// If it common to see usage exceptions thrown for things like missing parameters so handle that here.
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			}
 			catch (IpfsConnectionException e)
 			{

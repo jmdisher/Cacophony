@@ -33,11 +33,11 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable
 	{
-		int edgeSize = Integer.parseInt(formVariables.getIfSingle("edgeSize"));
-		long followerCacheBytes = Long.parseLong(formVariables.getIfSingle("followerCacheBytes"));
-		long republishIntervalMillis = Long.parseLong(formVariables.getIfSingle("republishIntervalMillis"));
-		long followeeRefreshMillis = Long.parseLong(formVariables.getIfSingle("followeeRefreshMillis"));
-		long explicitCacheTargetBytes = Long.parseLong(formVariables.getIfSingle("explicitCacheTargetBytes"));
+		int edgeSize = _parseInt(formVariables, "edgeSize");
+		long followerCacheBytes = _parseLong(formVariables, "followerCacheBytes");
+		long republishIntervalMillis = _parseLong(formVariables, "republishIntervalMillis");
+		long followeeRefreshMillis = _parseLong(formVariables, "followeeRefreshMillis");
+		long explicitCacheTargetBytes = _parseLong(formVariables, "explicitCacheTargetBytes");
 		// Check parameters.
 		if ((edgeSize < 0)
 				|| (followerCacheBytes < 1_000_000_000L)
@@ -66,6 +66,31 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 		if (didChangeIntervals)
 		{
 			_operations.intervalsWereUpdated(republishIntervalMillis, followeeRefreshMillis);
+		}
+	}
+
+
+	private int _parseInt(StringMultiMap<String> formVariables, String key) throws UsageException
+	{
+		try
+		{
+			return Integer.parseInt(formVariables.getIfSingle(key));
+		}
+		catch (NumberFormatException e)
+		{
+			throw new UsageException("Invalid parameter for: \"" + key + "\"");
+		}
+	}
+
+	private long _parseLong(StringMultiMap<String> formVariables, String key) throws UsageException
+	{
+		try
+		{
+			return Long.parseLong(formVariables.getIfSingle(key));
+		}
+		catch (NumberFormatException e)
+		{
+			throw new UsageException("Invalid parameter for: \"" + key + "\"");
 		}
 	}
 }
