@@ -22,7 +22,7 @@ function readGetVar(name)
 // "elementHash"
 // "name"
 // "description"
-// "readableData"
+// "readableDate"
 // "isDeleting"
 // "thumbnailUrl"
 // "publisherKey"
@@ -33,6 +33,11 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 		"cached": false,
 		"elementHash": hash,
 		"name": "Loading...",
+		"description": "Loading...",
+		"readableDate": "Loading...",
+		"isDeleting": false,
+		"thumbnailUrl": null,
+		"publisherKey": null,
 	};
 	// We want to build this backward so that the most recent additions are at the top of the screen.
 	if (isNewest)

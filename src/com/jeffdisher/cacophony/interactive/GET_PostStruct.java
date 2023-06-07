@@ -17,12 +17,12 @@ import jakarta.servlet.http.HttpServletResponse;
  * -cached (boolean)
  * -name (string)
  * -description (string)
- * -publishedSecondsUts (long)
+ * -publishedSecondsUtc (long)
  * -discussionUrl (string)
  * -publisherKey (string)
- * (if cached) -thumbnailUrl (string)
- * (if cached) -videoUrl (string)
- * (if cached) -audioUrl (string)
+ * -thumbnailUrl (string) - can be null (null if not cached)
+ * -videoUrl (string) - can be null (null if not cached)
+ * -audioUrl (string) - can be null (null if not cached)
  */
 public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
@@ -56,12 +56,9 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 			postStruct.set("discussionUrl", result.discussionUrl());
 			postStruct.set("publisherKey", result.publisherKey());
 			postStruct.set("cached", result.isKnownToBeCached());
-			if (result.isKnownToBeCached())
-			{
-				postStruct.set("thumbnailUrl", _urlOrNull(context.baseUrl, result.thumbnailCid()));
-				postStruct.set("videoUrl", _urlOrNull(context.baseUrl, result.videoCid()));
-				postStruct.set("audioUrl", _urlOrNull(context.baseUrl, result.audioCid()));
-			}
+			postStruct.set("thumbnailUrl", _urlOrNull(context.baseUrl, result.thumbnailCid()));
+			postStruct.set("videoUrl", _urlOrNull(context.baseUrl, result.videoCid()));
+			postStruct.set("audioUrl", _urlOrNull(context.baseUrl, result.audioCid()));
 			
 			response.setContentType("application/json");
 			response.setStatus(HttpServletResponse.SC_OK);

@@ -123,7 +123,8 @@ GLOBAL_Application.directive('cacoUserLink', ['UnknownUserLoader', function(Unkn
 			scope.name = 'Loading...';
 			scope.$watch('publicKey', function(newValue, oldValue)
 			{
-				if (undefined !== newValue)
+				// We see undefined in cases where the binding isn't yet available but null in the cases where some kinds of placeholder data are plumbed through.
+				if ((null !== undefined) && (null !== newValue))
 				{
 					UnknownUserLoader(newValue).then((userTuple) => {
 						scope.name = userTuple["name"];

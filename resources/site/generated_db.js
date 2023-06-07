@@ -40,6 +40,16 @@ function API_getRecommendedUsers(publicKey)
 	});
 }
 
+// Returns an object describing the post with the given hash, via a promise.  Implementation of this is in GET_PostStruct.java and defines these keys:
+// -cached (boolean)
+// -name (string)
+// -description (string)
+// -publishedSecondsUtc (long)
+// -discussionUrl (string)
+// -publisherKey (string)
+// -thumbnailUrl (string)
+// -videoUrl (string)
+// -audioUrl (string)
 function API_getPost(hash)
 {
 	return new Promise(resolve => {
