@@ -39,6 +39,21 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		{
 			post = _checkHeavyCaches(context);
 		}
+		else if (!post.isKnownToBeCached)
+		{
+			// See if we can override this with a more concretely cached element from the explicit cache.
+			// TODO:  Remove this access call when we optimize explicit cache access.
+			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			{
+				CachedRecordInfo existingInfo = ExplicitCacheLogic.getExistingRecordInfo(access, _elementCid);
+				// This can be null since we are just checking if it already has the info.
+				if (null != existingInfo)
+				{
+					post = _buildDetailsWithCachedInfo(access, existingInfo);
+				}
+				// (if not, we will just default to the non-cached version).
+			}
+		}
 		Assert.assertTrue(null != post);
 		return post;
 	}
@@ -91,18 +106,7 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		if (null != info)
 		{
 			// Everything in the favourites cache is cached.
-			StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
-			post = new PostDetails(_elementCid
-					, true
-					, record.getName()
-					, record.getDescription()
-					, record.getPublishedSecondsUtc()
-					, record.getDiscussion()
-					, record.getPublisherKey()
-					, info.thumbnailCid()
-					, info.videoCid()
-					, info.audioCid()
-			);
+			post = _buildDetailsWithCachedInfo(access, info);
 		}
 		return post;
 	}
@@ -111,6 +115,11 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 	{
 		CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
 		// Everything in the explicit cache is cached.
+		return _buildDetailsWithCachedInfo(access, info);
+	}
+
+	private PostDetails _buildDetailsWithCachedInfo(IReadingAccess access, CachedRecordInfo info) throws IpfsConnectionException, FailedDeserializationException
+	{
 		StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
 		return new PostDetails(_elementCid
 				, true

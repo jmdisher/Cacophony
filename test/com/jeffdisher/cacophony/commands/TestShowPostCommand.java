@@ -10,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -91,6 +92,51 @@ public class TestShowPostCommand
 		Assert.assertTrue(didFail);
 		
 		user1.shutdown();
+	}
+
+	@Test
+	public void explicitCached() throws Throwable
+	{
+		// We want to show that we still load the full data from the explicit cache, even if the recordCache has a non-cached version.
+		// Set everything up as normal.
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode writeNode = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		String title = "valid post";
+		byte[] fakeImage = "image".getBytes();
+		MockUserNode readNode = new MockUserNode(null, null, new MockSingleNode(swarm), FOLDER.newFolder());
+		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, MockKeys.K1);
+		
+		// We want to create a special context which allows us to slide in a LocalRecordCache.
+		LocalRecordCache specialRecordCache = new LocalRecordCache();
+		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1.toPublicKey(), 1);
+		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null);
+		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
+		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid).runInContext(specialContext);
+		Assert.assertEquals(title, details.name());
+		Assert.assertFalse(details.isKnownToBeCached());
+		Assert.assertNull(details.thumbnailCid());
+		Assert.assertNull(details.audioCid());
+		Assert.assertNull(details.videoCid());
+		
+		// Now, run with the normal context which doesn't have this cache, showing that we will populate it into the explicit cache.
+		details = readNode.runCommand(null, new ShowPostCommand(postCid));
+		Assert.assertEquals(title, details.name());
+		Assert.assertTrue(details.isKnownToBeCached());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
+		Assert.assertNull(details.audioCid());
+		Assert.assertNull(details.videoCid());
+		
+		// Now, use the special context again but observe that we still read through to the explicit cache and see the full result.
+		// (this approach doesn't force the cache but will use the cached value if it is there and the value it has isn't fully cached).
+		details = new ShowPostCommand(postCid).runInContext(specialContext);
+		Assert.assertEquals(title, details.name());
+		Assert.assertTrue(details.isKnownToBeCached());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
+		Assert.assertNull(details.audioCid());
+		Assert.assertNull(details.videoCid());
+		
+		readNode.shutdown();
+		// Write node never started.
 	}
 
 

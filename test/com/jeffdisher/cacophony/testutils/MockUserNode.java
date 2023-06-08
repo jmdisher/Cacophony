@@ -224,6 +224,11 @@ public class MockUserNode
 		return _lazyScheduler;
 	}
 
+	public Context getContext()
+	{
+		return _lazyContext();
+	}
+
 
 	private void _handleResult(ICommand.Result result) throws IpfsConnectionException
 	{
