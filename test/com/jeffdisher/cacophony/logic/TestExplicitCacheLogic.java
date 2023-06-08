@@ -218,6 +218,17 @@ public class TestExplicitCacheLogic
 		Assert.assertEquals(1, access.sizeAndReadPerformed);
 	}
 
+	@Test
+	public void existingRecord() throws Throwable
+	{
+		MockWritingAccess access = new MockWritingAccess();
+		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", null, null, 0, null);
+		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(access, cid));
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+		Assert.assertNotNull(record);
+		Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(access, cid));
+	}
+
 
 	private static void _populateWithEmpty(MockWritingAccess access, IpfsKey publishKey, byte[] userPic) throws Throwable
 	{

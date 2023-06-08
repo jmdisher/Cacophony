@@ -148,6 +148,21 @@ public class ExplicitCacheLogic
 		return data.getCacheSizeBytes();
 	}
 
+	/**
+	 * Returns the record with the given recordCid, returning null if the explicit cache doesn't have information about
+	 * it.
+	 * NOTE:  Will NOT load from the network.
+	 * 
+	 * @param access Write-access to local storage and the network.
+	 * @param recordCid The CID of the record.
+	 * @return The info for this StreamRecord (null if unknown).
+	 */
+	public static CachedRecordInfo getExistingRecordInfo(IWritingAccess access, IpfsFile recordCid)
+	{
+		ExplicitCacheData data = access.writableExplicitCache();
+		return data.getRecordInfo(recordCid);
+	}
+
 
 	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, PrefsData prefs)
 	{
