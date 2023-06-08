@@ -50,10 +50,10 @@ function API_getRecommendedUsers(publicKey)
 // -thumbnailUrl (string)
 // -videoUrl (string)
 // -audioUrl (string)
-function API_getPost(hash)
+function API_getPost(hash, forceCache)
 {
 	return new Promise(resolve => {
-		REST.GET("/server/postStruct/" + hash)
+		REST.GET("/server/postStruct/" + hash + "/" + (forceCache ? "FORCE" : "OPTIONAL"))
 			.then(result => result.json())
 			.then(json => resolve(json));
 	});

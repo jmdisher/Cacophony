@@ -13,6 +13,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 
 /**
+ * URL parameters:
+ * [0] - postToResolve (CID)
+ * [1] - cacheOption (String - "FORCE" or "OPTIONAL")
+ * 
  * Returns a single post as a JSON struct:
  * -cached (boolean)
  * -name (string)
@@ -26,6 +30,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class GET_PostStruct implements ValidatedEntryPoints.GET
 {
+	public static final String CACHE_FORCE = "FORCE";
+	public static final String CACHE_OPTIONAL = "OPTIONAL";
+
 	private final CommandRunner _runner;
 	
 	public GET_PostStruct(CommandRunner runner
@@ -38,8 +45,22 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		// TODO:  Change the forceCache when we add the parameter here.
-		boolean forceCache = false;
+		String cacheOption = variables[1];
+		boolean forceCache = cacheOption.equals(CACHE_FORCE);
+		if (forceCache || cacheOption.equals(CACHE_OPTIONAL))
+		{
+			_handle(response, postToResolve, forceCache);
+		}
+		else
+		{
+			// The second parameter is incorrect.
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+		}
+	}
+
+
+	private void _handle(HttpServletResponse response, IpfsFile postToResolve, boolean forceCache) throws Throwable
+	{
 		ShowPostCommand command = new ShowPostCommand(postToResolve, forceCache);
 		InteractiveHelpers.SuccessfulCommand<ShowPostCommand.PostDetails> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
@@ -67,7 +88,6 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 			response.getWriter().print(postStruct.toString());
 		}
 	}
-
 
 	private static String _urlOrNull(URL baseUrl, IpfsFile cid)
 	{

@@ -157,7 +157,7 @@ function API_getRecommendedUsers(publicKey)
 	});
 }
 
-function API_getPost(hash)
+function API_getPost(hash, forceCache)
 {
 	return new Promise(resolve => {
 		setTimeout(() => {

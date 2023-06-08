@@ -25,9 +25,11 @@ function xsrfLoaded($scope)
 {
 	let hashArg = readGetVar("elt");
 	$scope.elementHash = hashArg;
-	API_getPost(hashArg).then(elt => {
+	// We start by loading it without caching and merely present the option in the case where it isn't cached.
+	API_getPost($scope.elementHash, false).then(elt => {
 		postWasLoaded($scope, elt);
 	});
+	setupEnvironment($scope);
 }
 function postWasLoaded($scope, elt)
 {
@@ -48,6 +50,7 @@ function postWasLoaded($scope, elt)
 		}
 	}
 	$scope.cached = elt["cached"];
+	$scope.isForcingCache = false;
 	
 	// We don't use Angular for the description since we may need to process it.
 	let descriptionElement = document.getElementById("description");
@@ -77,6 +80,11 @@ function postWasLoaded($scope, elt)
 		}
 	}
 	
+	$scope.$apply();
+}
+
+function setupEnvironment($scope)
+{
 	// We will also store information around whether or not this is in the favourites list but we need to load that information so set it to null while uncertain.
 	$scope.isFavourite = null;
 	REST.GET("/favourites/list")
@@ -104,6 +112,14 @@ function postWasLoaded($scope, elt)
 		// We will just act like this immediately completed.
 		$scope.isFavourite = false;
 		REST.DELETE("/favourites/remove/" + $scope.elementHash);
+	}
+	$scope.populateCache = function()
+	{
+		$scope.isForcingCache = true;
+		// Force cache, this time.
+		API_getPost($scope.elementHash, true).then(elt => {
+			postWasLoaded($scope, elt);
+		});
 	}
 	
 	$scope.$apply();
@@ -140,7 +156,8 @@ function postWasLoaded($scope, elt)
 			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
 		</div>
 		<div class="row card card-body" ng-hide="cached">
-			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong>
+			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong><br />
+			<button class="btn btn-success" ng-disabled="isForcingCache" ng-click="populateCache()">Populate Cache</button><br />
 		</div>
 		<div class="row card card-body">
 			<strong>{{name}}</strong><br />

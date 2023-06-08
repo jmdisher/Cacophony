@@ -48,7 +48,7 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 	{
 		array.push(placeholder);
 	}
-	API_getPost(hash).then(elt => {
+	API_getPost(hash, false).then(elt => {
 		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
 		let description = elt["description"];
 		if (description.length > 135)

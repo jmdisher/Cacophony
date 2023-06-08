@@ -222,7 +222,7 @@ public class InteractiveServer
 		validated.addWebSocketFactory("/server/events/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
 		validated.addGetHandler("/server/postHashes", 1, new GET_PostHashes(serverContext));
 		validated.addGetHandler("/server/recommendedKeys", 1, new GET_RecommendedKeys(runner));
-		validated.addGetHandler("/server/postStruct", 1, new GET_PostStruct(runner));
+		validated.addGetHandler("/server/postStruct", 2, new GET_PostStruct(runner));
 		validated.addGetHandler("/server/unknownUser", 1, new GET_UnknownUserInfo(runner));
 		validated.addGetHandler("/server/userInfo", 1, new GET_UserInfo(serverContext));
 		validated.addGetHandler("/server/caches", 0, new GET_CacheStats(serverContext));
