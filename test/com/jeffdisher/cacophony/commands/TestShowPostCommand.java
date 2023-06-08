@@ -40,7 +40,7 @@ public class TestShowPostCommand
 		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, MockKeys.K1);
 		
 		// Make sure that we see no error when this is valid.
-		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid));
+		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid, false));
 		Assert.assertEquals(title, details.name());
 		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
 		Assert.assertNull(details.audioCid());
@@ -60,7 +60,7 @@ public class TestShowPostCommand
 		boolean didFail;
 		try
 		{
-			user1.runCommand(null, new ShowPostCommand(postCid));
+			user1.runCommand(null, new ShowPostCommand(postCid, false));
 			didFail = false;
 		}
 		catch (SizeConstraintException e)
@@ -82,7 +82,7 @@ public class TestShowPostCommand
 		boolean didFail;
 		try
 		{
-			user1.runCommand(null, new ShowPostCommand(postCid));
+			user1.runCommand(null, new ShowPostCommand(postCid, false));
 			didFail = false;
 		}
 		catch (FailedDeserializationException e)
@@ -111,7 +111,7 @@ public class TestShowPostCommand
 		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1.toPublicKey(), 1);
 		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null);
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
-		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid).runInContext(specialContext);
+		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
 		Assert.assertFalse(details.isKnownToBeCached());
 		Assert.assertNull(details.thumbnailCid());
@@ -119,7 +119,7 @@ public class TestShowPostCommand
 		Assert.assertNull(details.videoCid());
 		
 		// Now, run with the normal context which doesn't have this cache, showing that we will populate it into the explicit cache.
-		details = readNode.runCommand(null, new ShowPostCommand(postCid));
+		details = readNode.runCommand(null, new ShowPostCommand(postCid, false));
 		Assert.assertEquals(title, details.name());
 		Assert.assertTrue(details.isKnownToBeCached());
 		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
@@ -128,7 +128,51 @@ public class TestShowPostCommand
 		
 		// Now, use the special context again but observe that we still read through to the explicit cache and see the full result.
 		// (this approach doesn't force the cache but will use the cached value if it is there and the value it has isn't fully cached).
-		details = new ShowPostCommand(postCid).runInContext(specialContext);
+		details = new ShowPostCommand(postCid, false).runInContext(specialContext);
+		Assert.assertEquals(title, details.name());
+		Assert.assertTrue(details.isKnownToBeCached());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
+		Assert.assertNull(details.audioCid());
+		Assert.assertNull(details.videoCid());
+		
+		readNode.shutdown();
+		// Write node never started.
+	}
+
+	@Test
+	public void forceCache() throws Throwable
+	{
+		// We want to show that forceCache will force a full cache for partially-cached elements.
+		// Set everything up as normal.
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode writeNode = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		String title = "valid post";
+		byte[] fakeImage = "image".getBytes();
+		MockUserNode readNode = new MockUserNode(null, null, new MockSingleNode(swarm), FOLDER.newFolder());
+		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, MockKeys.K1);
+		
+		// We want to create a special context which allows us to slide in a LocalRecordCache.
+		LocalRecordCache specialRecordCache = new LocalRecordCache();
+		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1.toPublicKey(), 1);
+		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null);
+		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
+		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
+		Assert.assertEquals(title, details.name());
+		Assert.assertFalse(details.isKnownToBeCached());
+		Assert.assertNull(details.thumbnailCid());
+		Assert.assertNull(details.audioCid());
+		Assert.assertNull(details.videoCid());
+		
+		// Now, show that we DO see the cached variant if requested.
+		details = new ShowPostCommand(postCid, true).runInContext(specialContext);
+		Assert.assertEquals(title, details.name());
+		Assert.assertTrue(details.isKnownToBeCached());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
+		Assert.assertNull(details.audioCid());
+		Assert.assertNull(details.videoCid());
+		
+		// Re-run without that argument to see that we now see the cached result.
+		details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
 		Assert.assertTrue(details.isKnownToBeCached());
 		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());

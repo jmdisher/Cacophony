@@ -38,7 +38,9 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
 		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		ShowPostCommand command = new ShowPostCommand(postToResolve);
+		// TODO:  Change the forceCache when we add the parameter here.
+		boolean forceCache = false;
+		ShowPostCommand command = new ShowPostCommand(postToResolve, forceCache);
 		InteractiveHelpers.SuccessfulCommand<ShowPostCommand.PostDetails> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, null

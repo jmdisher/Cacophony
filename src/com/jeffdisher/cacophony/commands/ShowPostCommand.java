@@ -21,8 +21,9 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * This command is really just meant to the be the command-line analogue of GET_PostStruct for testing purposes.
+ * The _forceCache argument will cause the call to explicitly cache any leaves which aren't already cached.
  */
-public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPostCommand.PostDetails>
+public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) implements ICommand<ShowPostCommand.PostDetails>
 {
 	@Override
 	public PostDetails runInContext(Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
@@ -32,6 +33,11 @@ public record ShowPostCommand(IpfsFile _elementCid) implements ICommand<ShowPost
 		if (null != context.recordCache)
 		{
 			post = _checkKnownCache(context);
+			// If we found the post, we want to force cached data, and we know that this post isn't cached, ignore the non-cached reference.
+			if ((null != post) && _forceCache && !post.isKnownToBeCached)
+			{
+				post = null;
+			}
 		}
 		
 		// If we didn't have a cache or didn't find it, try the expensive path through the explicit cache.

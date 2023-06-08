@@ -338,7 +338,9 @@ public class CommandParser
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsFile elementCid = required[0].parse(IpfsFile.class);
-			return new ShowPostCommand(elementCid);
+			// "forceCache" only changes behaviour when we have recordCache, which is not used in command-line mode.
+			boolean forceCache = false;
+			return new ShowPostCommand(elementCid, forceCache);
 		}),
 		ADD_FAVOURITE(true, "--addFavourite"
 				, new ArgParameter[] { new ArgParameter("--elementCid", ParameterType.CID
