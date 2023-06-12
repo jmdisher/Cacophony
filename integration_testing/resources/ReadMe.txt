@@ -7,11 +7,11 @@ To use this:
 
 Example:
 -mkdir seed
--IPFS_PATH=seed /mnt/data/ipfs/go-ipfs/ipfs init
+-IPFS_PATH=seed /mnt/data/ipfs/kubo/ipfs init
 -cp swarm.key seed/
 -cp seed_config seed/config
 -mkdir node1
--IPFS_PATH=node1 /mnt/data/ipfs/go-ipfs/ipfs init
+-IPFS_PATH=node1 /mnt/data/ipfs/kubo/ipfs init
 -cp swarm.key node1/
 -cp node1_config node1/config
 

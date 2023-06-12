@@ -2,7 +2,11 @@ package com.jeffdisher.cacophony.logic;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -297,18 +303,36 @@ public class IpfsConnection implements IConnection
 		}
 	}
 
-	private IpfsFile _resolve(IpfsKey key) throws IpfsConnectionException, AssertionError
+	private IpfsFile _resolve(IpfsKey key) throws IpfsConnectionException
 	{
+		// The key must exist.
 		Assert.assertTrue(null != key);
+		
+		// We can't use the IPFS library for this since we need to specify "nocache=true" or else we tend to get stale data, as of Kubo 0.20.0.
+		String fullUrl = "http://" + _defaultConnection.host + ":" + _defaultConnection.port + "/api/v0/name/resolve"
+				+ "?arg=" + key.toPublicKey()
+				+ "&nocache=true"
+		;
 		try
 		{
-			String publishedPath = _defaultConnection.name.resolve(key.getMultihash());
+			HttpURLConnection connection = (HttpURLConnection) new URL(fullUrl).openConnection();
+			connection.setRequestMethod("POST");
+			connection.setRequestProperty("Content-Type", "application/json");
+			// We use the same timeouts as _defaultConnection:  https://github.com/ipfs-shipyard/java-ipfs-http-client/blob/master/src/main/java/io/ipfs/api/IPFS.java
+			connection.setConnectTimeout(10_000);
+			connection.setReadTimeout(60_000);
+			connection.setDoOutput(true);
+			byte[] rawData = connection.getInputStream().readAllBytes();
+			// Parse the data as JSON and get the "Path" key to extract the IPFS path.
+			JsonObject object = Json.parse(new String(rawData, StandardCharsets.UTF_8)).asObject();
+			String publishedPath = object.getString("Path", null);
 			String published = publishedPath.substring(publishedPath.lastIndexOf("/") + 1);
 			return IpfsFile.fromIpfsCid(published);
 		}
-		catch (RuntimeException e)
+		catch (MalformedURLException e)
 		{
-			throw _handleIpfsRuntimeException("resolve", key, e);
+			// This would be a static error.
+			throw Assert.unexpected(e);
 		}
 		catch (IOException e)
 		{

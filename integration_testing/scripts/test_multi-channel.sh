@@ -56,9 +56,9 @@ echo "Daemon 1: $PID1"
 echo "Pausing for startup..."
 waitForIpfsStart "$PATH_TO_IPFS" 1
 
-echo "Count the number of pins (by default, the system seems to start with 9)..."
+echo "Count the number of pins (by default, the system seems to start with 1, as of 0.20.0 - 0.9.1 seemed to start with 9)..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "9"
+requireSubstring "$LIST_SIZE" "1"
 
 echo "Make sure we don't see any channels..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
@@ -76,9 +76,9 @@ echo "Creating channel on node 1..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel1"
 
-echo "Count the pins after the creation (14 = 9 + 5 (index, recommendations, records, description, pic))..."
+echo "Count the pins after the creation (6 = 1 + 5 (index, recommendations, records, description, pic))..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "14"
+requireSubstring "$LIST_SIZE" "6"
 
 echo "Quickstart another channel..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --quickstart --name "Quick user"
@@ -90,9 +90,9 @@ requireSubstring "$CHANNEL_LIST" "Found 2 channels:"
 requireSubstring "$CHANNEL_LIST" "Key name: test1 (SELECTED)"
 requireSubstring "$CHANNEL_LIST" "Key name: quick"
 
-echo "Count the pins after the creation (16 = 9 + 5 (index, recommendations, records, description, pic) + 2 (index, description))..."
+echo "Count the pins after the creation (8 = 1 + 5 (index, recommendations, records, description, pic) + 2 (index, description))..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "16"
+requireSubstring "$LIST_SIZE" "8"
 
 echo "Verify that we aren't allowed to start following a home user..."
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --getPublicKey)
@@ -200,9 +200,9 @@ CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1
 requireSubstring "$CHANNEL_LIST" "Found 1 channels:"
 requireSubstring "$CHANNEL_LIST" "Key name: quick"
 
-echo "Count the pins after the creation (15 = 9 + 5 (index, recommendations, records, description, pic) + 1 elt)..."
+echo "Count the pins after the creation (7 = 1 + 5 (index, recommendations, records, description, pic) + 1 elt)..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "15"
+requireSubstring "$LIST_SIZE" "7"
 
 echo "Make sure that we see the expected output from descriptions and recommendations..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --readDescription >& /dev/null
@@ -229,9 +229,9 @@ echo "Make sure we don't see any channels..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
 requireSubstring "$CHANNEL_LIST" "Found 0 channels:"
 
-echo "Count the pins after the delete (should be back to default 9)..."
+echo "Count the pins after the delete (should be back to default 1)..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "9"
+requireSubstring "$LIST_SIZE" "1"
 
 
 kill $PID1

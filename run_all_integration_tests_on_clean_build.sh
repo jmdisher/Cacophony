@@ -14,8 +14,8 @@ echo -e "\033[34;40mRunning integration tests...\033[00m"
 
 for ENTRY in `ls ./integration_testing/scripts/test_*.sh`
 do
-	echo -e "\033[34;40m$ENTRY /mnt/data/ipfs/go-ipfs/ipfs ./integration_testing/resources/ ./build/Cacophony.jar\033[00m"
-	"$ENTRY" "/mnt/data/ipfs/go-ipfs/ipfs" "./integration_testing/resources/" "./build/Cacophony.jar"
+	echo -e "\033[34;40m$ENTRY /mnt/data/ipfs/kubo/ipfs ./integration_testing/resources/ ./build/Cacophony.jar\033[00m"
+	"$ENTRY" "/mnt/data/ipfs/kubo/ipfs" "./integration_testing/resources/" "./build/Cacophony.jar"
 	checkPreviousCommand "$ENTRY"
 done
 
