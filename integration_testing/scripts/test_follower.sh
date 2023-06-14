@@ -35,6 +35,10 @@ echo "Pausing for startup..."
 waitForIpfsStart "$PATH_TO_IPFS" 1
 waitForIpfsStart "$PATH_TO_IPFS" 2
 
+# Verify that the swarm is stable.
+verifySwarmWorks "$PATH_TO_IPFS" "$PID1"
+PID1="$RET"
+
 echo "Creating Cacophony instance1..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel"

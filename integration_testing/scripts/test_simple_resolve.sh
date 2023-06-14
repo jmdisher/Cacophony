@@ -35,6 +35,10 @@ echo "Pausing for startup..."
 waitForIpfsStart "$PATH_TO_IPFS" 1
 waitForIpfsStart "$PATH_TO_IPFS" 2
 
+# Verify that the swarm is stable.
+verifySwarmWorks "$PATH_TO_IPFS" "$PID1"
+PID1="$RET"
+
 echo "Make sure we don't see any channels..."
 CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --listChannels)
 requireSubstring "$CHANNEL_LIST" "Found 0 channels:"

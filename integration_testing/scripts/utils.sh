@@ -123,6 +123,63 @@ function waitForIpfsStart()
 			fi
 		fi
 	done
+	sleep 1
+}
+
+# Verifies that the IPFS swarm is working correctly by adding files until they can be seen across the network.
+# This is to work around an intermittent failure observed in tests where the nodes sometimes come up connected to each other and able to agree on which node has data, but unable to actually move the data over the network.
+# Args:
+# 1) path_to_ipfs
+# 2) node1_pid
+# Returns the PID of node 1 (whether restarted or not) in RET.
+function verifySwarmWorks()
+{
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: path_to_ipfs node1_pid"
+		exit 1
+	fi
+	P_PATH_TO_IPFS="$1"
+	P_PID1="$2"
+	P_REPO1=$(getIpfsRepoPath "1")
+	P_REPO2=$(getIpfsRepoPath "2")
+	
+	# We first test upload to 1 and fetch from 2 (as this is the common pattern we use and the one which seems to fail).
+	date > /tmp/date_test
+	HASH_DATE=$(IPFS_PATH="$P_REPO1" "$P_PATH_TO_IPFS" add --quieter /tmp/date_test)
+	IPFS_PATH="$P_REPO2" "$P_PATH_TO_IPFS" --timeout 1s cat "$HASH_DATE" >& /dev/null
+	if [[ "$?" == 0 ]]; then
+		echo "Swarm is correct (1->2)"
+	else
+		echo "Swarm check failed - restarting node 1..."
+		IPFS_PATH="$P_REPO1" "$P_PATH_TO_IPFS" shutdown
+		wait $P_PID1
+		startIpfsInstance "$P_PATH_TO_IPFS" 1
+		P_PID1="$RET"
+		echo "Daemon 1: $P_PID1"
+
+		waitForIpfsStart "$P_PATH_TO_IPFS" 1
+		
+		# Now, verify that we can fetch after restart (longer timeout since this is expected to pass).
+		IPFS_PATH="$P_REPO2" "$P_PATH_TO_IPFS" --timeout 10s cat "$HASH_DATE" >& /dev/null
+		if [[ "$?" == 0 ]]; then
+			echo "Works after restart (1->2)"
+		else
+			echo "Still failing after restart!"
+			exit 1
+		fi
+	fi
+	
+	# Now we verify that we can go from 2 to 1 (we give this one a longer timeout since this is expected to pass).
+	echo "Constant" > /tmp/const_test
+	HASH_CONST=$(IPFS_PATH="$P_REPO2" "$P_PATH_TO_IPFS" add --quieter /tmp/const_test)
+	IPFS_PATH="$P_REPO1" "$P_PATH_TO_IPFS" --timeout 10s cat "$HASH_CONST" >& /dev/null
+	if [[ "$?" == 0 ]]; then
+		echo "Verified (2->1)"
+	else
+		echo "Reverse swarm stability failed!"
+		exit 1
+	fi
+	RET="$P_PID1"
 }
 
 # Waits for the interactive Cacophony server on the given port to start.  Args:
