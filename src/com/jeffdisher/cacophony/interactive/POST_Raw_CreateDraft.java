@@ -31,7 +31,7 @@ public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 		response.setStatus(HttpServletResponse.SC_OK);
 		
 		// Generate an ID - should be random so just get some bits from the time.
-		int id = Math.abs((int)(_context.environment.currentTimeMillis() >> 8L));
+		int id = Math.abs((int)(_context.currentTimeMillisGenerator.getAsLong() >> 8L));
 		Draft draft = InteractiveHelpers.createNewDraft(_draftManager, id);
 		response.getWriter().print(draft.toJson().toString());
 	}

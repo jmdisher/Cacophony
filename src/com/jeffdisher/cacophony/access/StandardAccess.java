@@ -14,7 +14,6 @@ import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
@@ -69,12 +68,12 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IReadingAccess readAccess(Context context) throws IpfsConnectionException
 	{
-		LocalDataModel dataModel = context.environment.getSharedDataModel();
+		LocalDataModel dataModel = context.sharedDataModel;
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
 		IpfsKey selectedKey = context.getSelectedKey();
 		String keyName = _findKeyName(reading, selectedKey);
-		return new StandardAccess(context.environment, context.logger, reading, null, keyName, selectedKey);
+		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, reading, null, keyName, selectedKey);
 	}
 
 	/**
@@ -88,12 +87,12 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess writeAccess(Context context) throws IpfsConnectionException
 	{
-		LocalDataModel dataModel = context.environment.getSharedDataModel();
+		LocalDataModel dataModel = context.sharedDataModel;
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
 		IpfsKey selectedKey = context.getSelectedKey();
 		String keyName = _findKeyName(writing, selectedKey);
-		return new StandardAccess(context.environment, context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey);
 	}
 
 	/**
@@ -106,10 +105,10 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess writeAccessWithKeyOverride(Context context, String keyName, IpfsKey selectedKey) throws IpfsConnectionException
 	{
-		LocalDataModel dataModel = context.environment.getSharedDataModel();
+		LocalDataModel dataModel = context.sharedDataModel;
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(context.environment, context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey);
 	}
 
 	private static String _findKeyName(IReadOnlyLocalData data, IpfsKey publicKey)
@@ -152,7 +151,7 @@ public class StandardAccess implements IWritingAccess
 	private final ExplicitCacheData _explicitCache;
 	private boolean _didAccessExplicitCache;
 
-	private StandardAccess(IEnvironment environment, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey) throws IpfsConnectionException
+	private StandardAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey) throws IpfsConnectionException
 	{
 		PinCacheData pinCache = readOnly.readGlobalPinCache();
 		Assert.assertTrue(null != pinCache);
@@ -163,14 +162,12 @@ public class StandardAccess implements IWritingAccess
 		FavouritesCacheData favouritesCache = readOnly.readFavouritesCache();
 		Assert.assertTrue(null != favouritesCache);
 		
-		IConnection connection = environment.getConnection();
 		Assert.assertTrue(null != connection);
 		if (null != keyName)
 		{
 			// This should have been checked before we got here.
 			Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		}
-		INetworkScheduler scheduler = environment.getSharedScheduler();
 		Assert.assertTrue(null != scheduler);
 		
 		_logger = logger;

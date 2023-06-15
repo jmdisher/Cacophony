@@ -33,7 +33,7 @@ public class POST_Raw_SetChannel implements ValidatedEntryPoints.POST_Raw
 		
 		// Check that this key exists (we need to use a low-level accessor since we might not currently have something selected).
 		boolean didFind = false;
-		LocalDataModel dataModel = _context.environment.getSharedDataModel();
+		LocalDataModel dataModel = _context.sharedDataModel;
 		try (IReadOnlyLocalData reading = dataModel.openForRead())
 		{
 			ChannelData data = reading.readLocalIndex();

@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -35,7 +34,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
 		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + _keyName + "\"");
-		IConnection connection = context.environment.getConnection();
+		IConnection connection = context.basicConnection;
 		IpfsKey publicKey = connection.getOrCreatePublicKey(_keyName);
 		// This will fail with exception, never null.
 		Assert.assertTrue(null != publicKey);
@@ -56,7 +55,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 			}
 			// Create the empty description, recommendations, record stream, and index.
 			description = _defaultDescription(access);
-			newRoot = _runCore(context.environment, access, description);
+			newRoot = _runCore(access, description);
 		}
 		
 		// If the cache exists, populate it.
@@ -87,7 +86,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		return description;
 	}
 
-	private IpfsFile _runCore(IEnvironment environment, IWritingAccess access, StreamDescription description) throws IpfsConnectionException
+	private IpfsFile _runCore(IWritingAccess access, StreamDescription description) throws IpfsConnectionException
 	{
 		StreamRecommendations recommendations = new StreamRecommendations();
 		

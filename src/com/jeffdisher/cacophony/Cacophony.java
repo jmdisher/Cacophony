@@ -10,12 +10,12 @@ import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
+import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -123,10 +123,17 @@ public class Cacophony {
 					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), scheduler);
 					
 					// Create the executor and logger for our run and put them into the context.
-					StandardEnvironment executor = new StandardEnvironment(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory(), localDataModel, connection, scheduler);
+					DraftManager draftManager = new DraftManager(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory());
 					StandardLogger logger = StandardLogger.topLogger(System.out);
 					URL baseUrl = connectionData.second();
-					Context context = _createContext(keyName, localDataModel, executor, logger, baseUrl);
+					Context context = _createContext(keyName
+							, localDataModel
+							, draftManager
+							, connection
+							, scheduler
+							, logger
+							, baseUrl
+					);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);
@@ -190,7 +197,14 @@ public class Cacophony {
 		}
 	}
 
-	private static Context _createContext(String keyName, LocalDataModel localDataModel, StandardEnvironment executor, StandardLogger logger, URL baseUrl)
+	private static Context _createContext(String keyName
+			, LocalDataModel localDataModel
+			, DraftManager draftManager
+			, IConnection connection
+			, MultiThreadedScheduler scheduler
+			, StandardLogger logger
+			, URL baseUrl
+	)
 	{
 		// We want to see if the key name we are working with is one which exists for us (could be null).
 		IpfsKey selectedHomeKey = null;
@@ -200,7 +214,11 @@ public class Cacophony {
 			selectedHomeKey = channels.getPublicKey(keyName);
 		}
 		
-		Context context = new Context(executor
+		Context context = new Context(draftManager
+				, localDataModel
+				, connection
+				, scheduler
+				, () -> System.currentTimeMillis()
 				, logger
 				, baseUrl
 				, null

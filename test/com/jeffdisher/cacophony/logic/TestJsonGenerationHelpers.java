@@ -72,15 +72,14 @@ public class TestJsonGenerationHelpers
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
-				, model
-				, remoteConnection
-				, scheduler
-		);
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile indexFile = null;
-		Context context = new Context(executor
+		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
+				, model
+				, remoteConnection
+				, scheduler
+				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -118,17 +117,16 @@ public class TestJsonGenerationHelpers
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(remoteConnection, 1);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
-				, model
-				, remoteConnection
-				, scheduler
-		);
 		SilentLogger logger = new SilentLogger();
 		
 		IpfsFile recordFile = null;
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
-		Context context = new Context(executor
+		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
+				, model
+				, remoteConnection
+				, scheduler
+				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null

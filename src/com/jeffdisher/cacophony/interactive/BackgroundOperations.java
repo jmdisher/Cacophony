@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.function.LongSupplier;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
-import com.jeffdisher.cacophony.logic.IEnvironment;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -28,7 +28,6 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
 public class BackgroundOperations
 {
 	// Instance variables which are never written after construction (safe everywhere).
-	private final IEnvironment _environment;
 	private final HandoffConnector<Integer, String> _connector;
 	private final Thread _background;
 
@@ -43,12 +42,11 @@ public class BackgroundOperations
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
 
-	public BackgroundOperations(IEnvironment environment, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, long republishIntervalMillis, long followeeRefreshMillis)
+	public BackgroundOperations(LongSupplier currentTimeMillisGenerator, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, long republishIntervalMillis, long followeeRefreshMillis)
 	{
-		_environment = environment;
 		_connector = connector;
 		_background = MiscHelpers.createThread(() -> {
-			RequestedOperation operation = _background_consumeNextOperation(_environment.currentTimeMillis());
+			RequestedOperation operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong());
 			while (null != operation)
 			{
 				// If we have a publish operation, start that first, since that typically takes a long time.
@@ -77,7 +75,7 @@ public class BackgroundOperations
 					_connector.destroy(operation.publishNumber);
 					publishLog.logFinish("Background end publish: " + operation.publishTarget + ((null == error) ? " SUCCESS" : (" FAILED with " + error)));
 				}
-				operation = _background_consumeNextOperation(_environment.currentTimeMillis());
+				operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong());
 			}
 		}, "Background Operations");
 		_republishIntervalMillis = republishIntervalMillis;

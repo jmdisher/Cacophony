@@ -77,7 +77,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
 	{
 		IFolloweeWriting followees = access.writableFolloweeData();
-		long lastPollMillis = context.environment.currentTimeMillis();
+		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
 		try
 		{
 			refresher.finishRefresh(access, context.recordCache, context.userInfoCache, followees, lastPollMillis);

@@ -31,7 +31,6 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
@@ -223,15 +222,14 @@ public class TestInteractiveHelpers
 		connection.addNewKey(KEY_NAME, MockKeys.K1);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
-		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
-				, model
-				, connection
-				, scheduler
-		);
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		Context context = new Context(env
+		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
+				, model
+				, connection
+				, scheduler
+				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -375,15 +373,14 @@ public class TestInteractiveHelpers
 		connection.addNewKey(KEY_NAME, MockKeys.K1);
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
-		StandardEnvironment env = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
-				, model
-				, connection
-				, scheduler
-		);
 		SilentLogger logger = new SilentLogger();
 		
 		// First, create a channel so the channel is set up.
-		Context context = new Context(env
+		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
+				, model
+				, connection
+				, scheduler
+				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null

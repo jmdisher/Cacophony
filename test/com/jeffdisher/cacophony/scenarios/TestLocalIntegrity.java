@@ -18,8 +18,6 @@ import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockKeys;
@@ -27,6 +25,7 @@ import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -44,18 +43,12 @@ public class TestLocalIntegrity
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, MockKeys.K1);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		IEnvironment env = _createSingleNode(node, scheduler);
-		SilentLogger logger = new SilentLogger();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
+		Context context = _createSingleNode(model, node, scheduler, null);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
-		createChannel.runInContext(new Context(env
-				, logger
-				, DataDomain.FAKE_BASE_URL
-				, null
-				, null
-				, null
-				, null
-		));
+		createChannel.runInContext(context);
 		
 		// We expect 5 keys in the storage:
 		// -index
@@ -74,18 +67,12 @@ public class TestLocalIntegrity
 		MockSingleNode node = new MockSingleNode(swarm);
 		node.addNewKey(KEY_NAME1, MockKeys.K1);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		IEnvironment env = _createSingleNode(node, scheduler);
-		SilentLogger logger = new SilentLogger();
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
+		Context context = _createSingleNode(model, node, scheduler, null);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
-		createChannel.runInContext(new Context(env
-				, logger
-				, DataDomain.FAKE_BASE_URL
-				, null
-				, null
-				, null
-				, null
-		));
+		createChannel.runInContext(context);
 		
 		// We expect the normal 5.
 		Set<IpfsFile> initialFiles = node.getStoredFileSet();
@@ -101,14 +88,7 @@ public class TestLocalIntegrity
 		PublishCommand publish = new PublishCommand("name", "description", null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
 		});
-		publish.runInContext(new Context(env
-				, logger
-				, DataDomain.FAKE_BASE_URL
-				, null
-				, null
-				, null
-				, MockKeys.K1
-		));
+		publish.runInContext(_createSingleNode(model, node, scheduler, MockKeys.K1));
 		// We expect 7 keys in the storage:
 		// -index
 		// -recommendations
@@ -134,14 +114,7 @@ public class TestLocalIntegrity
 		
 		// Now, remove this entry.
 		RemoveEntryFromThisChannelCommand remove = new RemoveEntryFromThisChannelCommand(entry);
-		remove.runInContext(new Context(env
-				, logger
-				, DataDomain.FAKE_BASE_URL
-				, null
-				, null
-				, null
-				, MockKeys.K1
-		));
+		remove.runInContext(_createSingleNode(model, node, scheduler, MockKeys.K1));
 		
 		// We should see the same files from the original post.
 		Set<IpfsFile> afterRemoveFiles = node.getStoredFileSet();
@@ -151,14 +124,20 @@ public class TestLocalIntegrity
 	}
 
 
-	private static IEnvironment _createSingleNode(IConnection serverData, MultiThreadedScheduler scheduler) throws UsageException, IOException
+	private static Context _createSingleNode(LocalDataModel model, IConnection serverData, MultiThreadedScheduler scheduler, IpfsKey selectedKey) throws UsageException, IOException
 	{
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
-		return new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
+		SilentLogger logger = new SilentLogger();
+		return new Context(null
 				, model
 				, serverData
 				, scheduler
+				, () -> System.currentTimeMillis()
+				, logger
+				, DataDomain.FAKE_BASE_URL
+				, null
+				, null
+				, null
+				, selectedKey
 		);
 	}
 }

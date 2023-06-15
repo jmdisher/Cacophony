@@ -14,12 +14,12 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -44,7 +44,6 @@ public class MockUserNode
 
 	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
 	private MultiThreadedScheduler _lazyScheduler;
-	private StandardEnvironment _lazyExecutor;
 	private Context _lazyContext;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
@@ -60,7 +59,23 @@ public class MockUserNode
 	{
 		// This will force the context to be created.
 		Assert.assertTrue(null == _lazyContext);
-		_lazyContext = new Context(_lazyEnv()
+		Assert.assertTrue(null == _lazyScheduler);
+		_lazyScheduler = new MultiThreadedScheduler(_sharedConnection, 1);
+		LocalDataModel model;
+		try
+		{
+			model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler);
+		}
+		catch (UsageException e)
+		{
+			// We don't expect this in the test.
+			throw Assert.unexpected(e);
+		}
+		_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
+				, model
+				, _sharedConnection
+				, _lazyScheduler
+				, () -> System.currentTimeMillis()
 				, _logger
 				, DataDomain.FAKE_BASE_URL
 				, recordCache
@@ -100,7 +115,11 @@ public class MockUserNode
 		{
 			logger = StandardLogger.topLogger(new PrintStream(captureStream));
 			IpfsKey publicKey = defaultContext.getSelectedKey();
-			usedContext = new Context(defaultContext.environment
+			usedContext = new Context(defaultContext.sharedDraftManager
+					, defaultContext.sharedDataModel
+					, defaultContext.basicConnection
+					, defaultContext.scheduler
+					, defaultContext.currentTimeMillisGenerator
 					, logger
 					, defaultContext.baseUrl
 					, null
@@ -191,11 +210,9 @@ public class MockUserNode
 	public void shutdown()
 	{
 		Assert.assertTrue(null != _lazyScheduler);
-		Assert.assertTrue(null != _lazyExecutor);
 		Assert.assertTrue(null != _lazyContext);
 		_lazyScheduler.shutdown();
 		_lazyScheduler = null;
-		_lazyExecutor = null;
 		_lazyContext = null;
 	}
 
@@ -239,9 +256,9 @@ public class MockUserNode
 		}
 	}
 
-	private StandardEnvironment _lazyEnv()
+	private Context _lazyContext()
 	{
-		if (null == _lazyExecutor)
+		if (null == _lazyContext)
 		{
 			Assert.assertTrue(null == _lazyScheduler);
 			_lazyScheduler = new MultiThreadedScheduler(_sharedConnection, 1);
@@ -255,20 +272,11 @@ public class MockUserNode
 				// We don't expect this in the test.
 				throw Assert.unexpected(e);
 			}
-			_lazyExecutor = new StandardEnvironment(_fileSystem.getDraftsTopLevelDirectory()
+			_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
 					, model
 					, _sharedConnection
 					, _lazyScheduler
-			);
-		}
-		return _lazyExecutor;
-	}
-
-	private Context _lazyContext()
-	{
-		if (null == _lazyContext)
-		{
-			_lazyContext = new Context(_lazyEnv()
+					, () -> System.currentTimeMillis()
 					, _logger
 					, DataDomain.FAKE_BASE_URL
 					, null

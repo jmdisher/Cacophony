@@ -1,12 +1,16 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.net.URL;
+import java.util.function.LongSupplier;
 
+import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
-import com.jeffdisher.cacophony.logic.IEnvironment;
+import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
@@ -17,7 +21,11 @@ import com.jeffdisher.cacophony.types.IpfsKey;
  */
 public class Context
 {
-	public final IEnvironment environment;
+	public final DraftManager sharedDraftManager;
+	public final LocalDataModel sharedDataModel;
+	public final IConnection basicConnection;
+	public final INetworkScheduler scheduler;
+	public final LongSupplier currentTimeMillisGenerator;
 	public final ILogger logger;
 	public final URL baseUrl;
 	public final LocalRecordCache recordCache;
@@ -25,7 +33,11 @@ public class Context
 	public final EntryCacheRegistry entryRegistry;
 	private IpfsKey _selectedKey;
 
-	public Context(IEnvironment environment
+	public Context(DraftManager sharedDraftManager
+			, LocalDataModel sharedDataModel
+			, IConnection basicConnection
+			, INetworkScheduler scheduler
+			, LongSupplier currentTimeMillisGenerator
 			, ILogger logger
 			, URL baseUrl
 			, LocalRecordCache recordCache
@@ -34,7 +46,11 @@ public class Context
 			, IpfsKey selectedKey
 	)
 	{
-		this.environment = environment;
+		this.sharedDraftManager = sharedDraftManager;
+		this.sharedDataModel = sharedDataModel;
+		this.basicConnection = basicConnection;
+		this.scheduler = scheduler;
+		this.currentTimeMillisGenerator = currentTimeMillisGenerator;
 		this.logger = logger;
 		this.baseUrl = baseUrl;
 		this.recordCache = recordCache;
@@ -57,7 +73,11 @@ public class Context
 	public synchronized Context cloneWithSelectedKey(IpfsKey selectedKey)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
-		return new Context(this.environment
+		return new Context(this.sharedDraftManager
+				, this.sharedDataModel
+				, this.basicConnection
+				, this.scheduler
+				, this.currentTimeMillisGenerator
 				, this.logger
 				, this.baseUrl
 				, this.recordCache
@@ -70,7 +90,11 @@ public class Context
 	public synchronized Context cloneWithExtras(LocalRecordCache localRecordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
-		return new Context(this.environment
+		return new Context(this.sharedDraftManager
+				, this.sharedDataModel
+				, this.basicConnection
+				, this.scheduler
+				, this.currentTimeMillisGenerator
 				, this.logger
 				, this.baseUrl
 				, localRecordCache

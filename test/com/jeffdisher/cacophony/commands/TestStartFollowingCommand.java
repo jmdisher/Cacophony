@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
+import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
@@ -57,11 +57,6 @@ public class TestStartFollowingCommand
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
-				, localDataModel
-				, sharedConnection
-				, scheduler
-		);
 		SilentLogger logger = new SilentLogger();
 		
 		StreamDescription originalDescriptionData = new StreamDescription();
@@ -81,7 +76,11 @@ public class TestStartFollowingCommand
 		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, MockKeys.K2, originalRoot);
-		Context context = new Context(executor
+		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
+				, localDataModel
+				, sharedConnection
+				, scheduler
+				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
 				, null
@@ -129,17 +128,16 @@ public class TestStartFollowingCommand
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
-		StandardEnvironment executor = new StandardEnvironment(fileSystem.getDraftsTopLevelDirectory()
-				, localDataModel
-				, sharedConnection
-				, scheduler
-		);
 		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream));
 		
 		boolean didFail = false;
 		try
 		{
-			command.runInContext(new Context(executor
+			command.runInContext(new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
+					, localDataModel
+					, sharedConnection
+					, scheduler
+					, () -> System.currentTimeMillis()
 					, logger
 					, DataDomain.FAKE_BASE_URL
 					, null

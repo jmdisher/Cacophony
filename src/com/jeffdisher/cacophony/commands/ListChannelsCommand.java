@@ -20,7 +20,7 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 	public ChannelList runInContext(Context context) throws IpfsConnectionException
 	{
 		// We want a pretty low-level read which doesn't take into account the current context key so use the data model, directly.
-		LocalDataModel dataModel = context.environment.getSharedDataModel();
+		LocalDataModel dataModel = context.sharedDataModel;
 		ChannelList list;
 		try (IReadOnlyLocalData reading = dataModel.openForRead())
 		{

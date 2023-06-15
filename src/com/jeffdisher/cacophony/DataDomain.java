@@ -19,12 +19,12 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.IpfsConnection;
 import com.jeffdisher.cacophony.logic.RealConfigFileSystem;
-import com.jeffdisher.cacophony.logic.StandardEnvironment;
 import com.jeffdisher.cacophony.logic.Uploader;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
@@ -122,13 +122,12 @@ public class DataDomain implements Closeable
 		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(ourFileSystem.getDraftsTopLevelDirectory());
 		MultiThreadedScheduler theirScheduler = new MultiThreadedScheduler(them, 2);
 		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, theirScheduler);
-		StandardEnvironment theirEnv = new StandardEnvironment(theirFileSystem.getDraftsTopLevelDirectory()
+		ILogger theirLogger = new SilentLogger();
+		Context theirContext = new Context(new DraftManager(theirFileSystem.getDraftsTopLevelDirectory())
 				, theirDataModel
 				, them
 				, theirScheduler
-		);
-		ILogger theirLogger = new SilentLogger();
-		Context theirContext = new Context(theirEnv
+				, () -> System.currentTimeMillis()
 				, theirLogger
 				, FAKE_BASE_URL
 				, null
@@ -148,13 +147,12 @@ public class DataDomain implements Closeable
 		us.addNewKey(keyName, ourKey);
 		MultiThreadedScheduler ourScheduler = new MultiThreadedScheduler(us, 2);
 		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ourScheduler);
-		StandardEnvironment ourEnv = new StandardEnvironment(ourFileSystem.getDraftsTopLevelDirectory()
+		ILogger ourLogger = new SilentLogger();
+		Context ourContext = new Context(new DraftManager(ourFileSystem.getDraftsTopLevelDirectory())
 				, ourDataModel
 				, us
 				, ourScheduler
-		);
-		ILogger ourLogger = new SilentLogger();
-		Context ourContext = new Context(ourEnv
+				, () -> System.currentTimeMillis()
 				, ourLogger
 				, FAKE_BASE_URL
 				, null

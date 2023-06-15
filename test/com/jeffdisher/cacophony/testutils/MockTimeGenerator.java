@@ -1,48 +1,22 @@
 package com.jeffdisher.cacophony.testutils;
 
-import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.IEnvironment;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import java.util.function.LongSupplier;
+
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public class MockEnvironment implements IEnvironment
+/**
+ * A specialized implementation of the time generator to provide a thread interlock for tests which want precise control
+ * over timing.
+ */
+public class MockTimeGenerator implements LongSupplier
 {
 	public long currentTimeMillis = 1000L;
 	private boolean timeObserved = false;
 
-	@Override
-	public INetworkScheduler getSharedScheduler()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
 
 	@Override
-	public DraftManager getSharedDraftManager()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
-	public LocalDataModel getSharedDataModel()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
-	public IConnection getConnection()
-	{
-		// Not used in test.
-		throw Assert.unreachable();
-	}
-
-	@Override
-	public synchronized long currentTimeMillis()
+	public synchronized long getAsLong()
 	{
 		long millis = this.currentTimeMillis;
 		this.timeObserved = true;

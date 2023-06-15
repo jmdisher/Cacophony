@@ -11,9 +11,9 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.testutils.MockEnvironment;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockTimeGenerator;
 import com.jeffdisher.cacophony.testutils.SilentLogger;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -43,11 +43,11 @@ public class TestBackgroundOperations
 	@Test
 	public void noOperations() throws Throwable
 	{
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.startProcess();
 		back.shutdownProcess();
 	}
@@ -55,12 +55,12 @@ public class TestBackgroundOperations
 	@Test
 	public void oneOperation() throws Throwable
 	{
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		back.startProcess();
 		
@@ -75,13 +75,13 @@ public class TestBackgroundOperations
 	@Test
 	public void sequentialOperations() throws Throwable
 	{
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish1 = new FuturePublish(F1);
 		FuturePublish publish2 = new FuturePublish(F2);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		back.startProcess();
 		
@@ -103,13 +103,13 @@ public class TestBackgroundOperations
 		// This one is somewhat non-deterministic in that the first element added may be seen, or could be overwritten.
 		// We do know that none of the others will be seen, but then the last will ALWAYS be seen.
 		// We will verify this by only setting success on the first and last.
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishLast = new FuturePublish(F3);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		TestListener beforeListener = new TestListener();
 		back.startProcess();
@@ -144,12 +144,12 @@ public class TestBackgroundOperations
 	public void testPartialListening() throws Throwable
 	{
 		// We want to enqueue some operations, then install a listener and verify it gets the callbacks for the earliest operations.
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		back.startProcess();
 		
@@ -173,7 +173,7 @@ public class TestBackgroundOperations
 	@Test
 	public void oneRefresh() throws Throwable
 	{
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		publishFirst.success();
@@ -184,7 +184,7 @@ public class TestBackgroundOperations
 			didRun[0] = true;
 		};
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		back.startProcess();
 		
@@ -202,7 +202,7 @@ public class TestBackgroundOperations
 	public void refreshAndPublish() throws Throwable
 	{
 		// We will publish, then use the delay that causes to install both a publish and a refresh so we can see what happens when they both run.
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publishFirst = new FuturePublish(F1);
 		FuturePublish publishSecond = new FuturePublish(F2);
@@ -214,7 +214,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
@@ -246,11 +246,11 @@ public class TestBackgroundOperations
 	public void sortingAssumptions() throws Throwable
 	{
 		// Just make sure that our understanding of the sorting Comparator is correct.
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		
 		// We use a barrier and a reentrant call into the background operations in order to ensure that the next followee refresh value is enqueued before the previous (currently executing) one is finished.
@@ -305,7 +305,7 @@ public class TestBackgroundOperations
 		// Unfortunately, since this uses the actual monitor with a timed wait, we need to use some real delays for the test.
 		// While we could use an external monitor, it would complicate the code in the BackgroundOperations further, so we won't.
 		// The down-side to using this real delay should only be that the test could actually test nothing, if running too slowly (seems to not happen, in practice).
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		// We will just use a single publish, and will repeat it, but it will always be left with success.
 		FuturePublish publish = new FuturePublish(F1);
@@ -317,7 +317,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
@@ -331,7 +331,7 @@ public class TestBackgroundOperations
 		ops.waitForConsume();
 		
 		// Allow time to progress - we are using 10 and 20 for the delays, so just skip it past that.
-		env.incrementTimeAndWaitForObservation(20L);
+		generator.incrementTimeAndWaitForObservation(20L);
 		ops.returnOn(F1, publish);
 		ops.returnFolloweeOn(MockKeys.K1, refresher);
 		ops.waitForConsume();
@@ -349,7 +349,7 @@ public class TestBackgroundOperations
 	{
 		// Enqueue 2 followees, allow them both to refresh, then request a refresh for one of them and see that it
 		// happens immediately.
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
@@ -364,7 +364,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
@@ -399,7 +399,7 @@ public class TestBackgroundOperations
 	@Test
 	public void addRemoveFollowee() throws Throwable
 	{
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		publish.success();
@@ -411,7 +411,7 @@ public class TestBackgroundOperations
 		TestOperations ops = new TestOperations();
 		TestListener listener = new TestListener();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, 10L, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, 10L, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		statusHandoff.registerListener(listener, 0);
 		back.startProcess();
@@ -449,12 +449,12 @@ public class TestBackgroundOperations
 	{
 		// Do a normal start-up with one channel.
 		long republishIntervalMillis = 10L;
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, republishIntervalMillis, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, republishIntervalMillis, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		back.startProcess();
 		
@@ -466,13 +466,13 @@ public class TestBackgroundOperations
 		
 		// Now that it has run through, slightly update the time and add the other key, then wait for it to run.
 		String key2 = "key2";
-		env.currentTimeMillis += 5L;
+		generator.currentTimeMillis += 5L;
 		back.addChannel(key2, MockKeys.K1, F2);
 		ops.returnOn(F2, publish);
 		ops.waitForConsume();
 		
 		// Now, advance the time until we see the first, again.
-		env.currentTimeMillis += 5L;
+		generator.currentTimeMillis += 5L;
 		ops.returnOn(F1, publish);
 		ops.waitForConsume();
 		
@@ -484,12 +484,12 @@ public class TestBackgroundOperations
 	{
 		// Do a normal start-up with one channel.
 		long republishIntervalMillis = 10L;
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		FuturePublish publish = new FuturePublish(F1);
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, republishIntervalMillis, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, republishIntervalMillis, 20L);
 		back.addChannel(KEY_NAME, MockKeys.K4, F1);
 		back.startProcess();
 		
@@ -502,7 +502,7 @@ public class TestBackgroundOperations
 		
 		// Now that it has run through, slightly update the time and add the other key, then wait for it to run.
 		String key2 = "key2";
-		env.currentTimeMillis += 5L;
+		generator.currentTimeMillis += 5L;
 		back.addChannel(key2, MockKeys.K1, F2);
 		ops.returnOn(F2, publish);
 		ops.waitForConsume();
@@ -516,11 +516,11 @@ public class TestBackgroundOperations
 	{
 		// We just want to add/request/remove channels over and over to flush out race conditions.
 		long republishIntervalMillis = 10L;
-		MockEnvironment env = new MockEnvironment();
+		MockTimeGenerator generator = new MockTimeGenerator();
 		SilentLogger logger = new SilentLogger();
 		TestOperations ops = new TestOperations();
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
-		BackgroundOperations back = new BackgroundOperations(env, logger, ops, statusHandoff, republishIntervalMillis, 20L);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, republishIntervalMillis, 20L);
 		back.startProcess();
 		
 		for (int i = 0; i < 100; ++i)

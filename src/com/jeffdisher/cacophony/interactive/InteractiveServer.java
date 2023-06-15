@@ -110,7 +110,7 @@ public class InteractiveServer
 		// We will create a handoff connector for the status operations from the background operations.
 		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(dispatcher);
 		// We need to create an instance of the shared BackgroundOperations (which will eventually move higher in the stack).
-		BackgroundOperations background = new BackgroundOperations(serverContext.environment, serverContext.logger, new BackgroundOperations.IOperationRunner()
+		BackgroundOperations background = new BackgroundOperations(serverContext.currentTimeMillisGenerator, serverContext.logger, new BackgroundOperations.IOperationRunner()
 		{
 			@Override
 			public FuturePublish startPublish(String keyName, IpfsKey publicKey, IpfsFile newRoot)
@@ -192,7 +192,7 @@ public class InteractiveServer
 		background.startProcess();
 		runner.startThreads();
 		
-		DraftManager manager = serverContext.environment.getSharedDraftManager();
+		DraftManager manager = serverContext.sharedDraftManager;
 		HandoffConnector<String, Long> videoProcessingConnector = new HandoffConnector<>(dispatcher);
 		VideoProcessContainer videoProcessContainer = new VideoProcessContainer(manager, videoProcessingConnector);
 		
