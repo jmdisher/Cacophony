@@ -46,6 +46,9 @@ public class MockSingleNode implements IConnection
 	private final Map<IpfsFile, byte[]> _data;
 	private final MockSwarm _swarm;
 
+	// Public fields which are just for accounting.
+	public int pinCalls;
+
 	public MockSingleNode(MockSwarm swarm)
 	{
 		_keys = new HashMap<>();
@@ -84,7 +87,7 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
-	public IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException
+	public IpfsFile storeData(InputStream dataStream)
 	{
 		byte[] data;
 		try
@@ -154,6 +157,7 @@ public class MockSingleNode implements IConnection
 	@Override
 	public void pin(IpfsFile cid) throws IpfsConnectionException
 	{
+		this.pinCalls += 1;
 		// If we were told to pin this, we shouldn't already have it locally.
 		Assert.assertTrue(!_data.containsKey(cid));
 		// Find the data.

@@ -12,9 +12,10 @@ import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.projection.ProjectionBuilder.Projections;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockKeys;
-import com.jeffdisher.cacophony.testutils.MockNetworkScheduler;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -116,9 +117,18 @@ public class TestV2V3
 	private Tuple _deserializeV2(byte[] data) throws IOException
 	{
 		ByteArrayInputStream inStream = new ByteArrayInputStream(data);
-		MockNetworkScheduler scheduler = new MockNetworkScheduler();
-		scheduler.addKey("key", MockKeys.K1);
-		Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(scheduler, inStream);
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		node.addNewKey("key", MockKeys.K1);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Projections projections;
+		try
+		{
+			projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(scheduler, inStream);
+		}
+		finally
+		{
+			scheduler.shutdown();
+		}
 		return new Tuple(projections.channel(), projections.prefs(), projections.followee());
 	}
 

@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.access;
 
+import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -7,8 +8,9 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.testutils.MockNetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -21,47 +23,63 @@ public class TestConcurrentTransaction
 	@Test
 	public void createAndCommitEmpty() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Collections.emptySet());
 		transaction.commit(target);
 		Assert.assertTrue(target.changedPinCounts.isEmpty());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(0, network.addedPinCount());
+		Assert.assertEquals(0, node.pinCalls);
+		Assert.assertEquals(0, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void createAndCommitOnePin() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		MockSingleNode node = new MockSingleNode(swarm);
+		IpfsFile targetFile = upstream.storeData(new ByteArrayInputStream(new byte[] { 1 }));
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Collections.emptySet());
-		transaction.pin(F1).get();
+		transaction.pin(targetFile).get();
 		transaction.commit(target);
 		Assert.assertEquals(1, target.changedPinCounts.size());
 		Assert.assertEquals(1, target.changedPinCounts.get(F1).intValue());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(1, network.addedPinCount());
+		Assert.assertEquals(1, node.pinCalls);
+		Assert.assertEquals(1, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void createAndRollbackOnePin() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		MockSingleNode node = new MockSingleNode(swarm);
+		IpfsFile targetFile = upstream.storeData(new ByteArrayInputStream(new byte[] { 1 }));
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Collections.emptySet());
-		transaction.pin(F1).get();
+		transaction.pin(targetFile).get();
 		transaction.rollback(target);
 		Assert.assertTrue(target.changedPinCounts.isEmpty());
 		Assert.assertEquals(1, target.falsePins.size());
+		Assert.assertEquals(1, node.pinCalls);
 		// StandardAccess would normally revert the pin so here we only see that it went through.
-		Assert.assertEquals(1, network.addedPinCount());
+		Assert.assertEquals(1, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void unpinMultipleCommit() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(F1, F2, F3));
 		transaction.unpin(F1);
@@ -71,13 +89,16 @@ public class TestConcurrentTransaction
 		Assert.assertEquals(-1, target.changedPinCounts.get(F1).intValue());
 		Assert.assertEquals(-1, target.changedPinCounts.get(F2).intValue());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(0, network.addedPinCount());
+		Assert.assertEquals(0, node.pinCalls);
+		Assert.assertEquals(0, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void unpinMultipleRollback() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(F1, F2, F3));
 		transaction.unpin(F1);
@@ -85,13 +106,16 @@ public class TestConcurrentTransaction
 		transaction.rollback(target);
 		Assert.assertTrue(target.changedPinCounts.isEmpty());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(0, network.addedPinCount());
+		Assert.assertEquals(0, node.pinCalls);
+		Assert.assertEquals(0, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void changePinCommit() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(F1, F2, F3));
 		transaction.pin(F1).get();
@@ -101,13 +125,16 @@ public class TestConcurrentTransaction
 		Assert.assertEquals(1, target.changedPinCounts.get(F1).intValue());
 		Assert.assertEquals(-1, target.changedPinCounts.get(F2).intValue());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(0, network.addedPinCount());
+		Assert.assertEquals(0, node.pinCalls);
+		Assert.assertEquals(0, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void changePinRollback() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(F1, F2, F3));
 		transaction.pin(F1).get();
@@ -115,19 +142,24 @@ public class TestConcurrentTransaction
 		transaction.rollback(target);
 		Assert.assertTrue(target.changedPinCounts.isEmpty());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(0, network.addedPinCount());
+		Assert.assertEquals(0, node.pinCalls);
+		Assert.assertEquals(0, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 	@Test
 	public void loadTesting() throws Throwable
 	{
-		MockNetworkScheduler network = new MockNetworkScheduler();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		MockSingleNode node = new MockSingleNode(swarm);
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		FakeWritingAccess target = new FakeWritingAccess();
-		IpfsFile data1 = network.storeData("one  ".getBytes());
+		IpfsFile data1 = upstream.storeData(new ByteArrayInputStream("one  ".getBytes()));
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(data1));
 		Assert.assertEquals(5L, transaction.getSizeInBytes(data1).get());
 		transaction.pin(data1).get();
-		IpfsFile data2 = network.storeData("two   ".getBytes());
+		IpfsFile data2 = upstream.storeData(new ByteArrayInputStream("two   ".getBytes()));
 		transaction.pin(data2).get();
 		Assert.assertEquals(6L, transaction.getSizeInBytes(data2).get());
 		Assert.assertEquals("one  ", transaction.loadCached(data1, (byte[] data) -> new String(data)).get());
@@ -138,7 +170,9 @@ public class TestConcurrentTransaction
 		Assert.assertEquals(1, target.changedPinCounts.get(data1).intValue());
 		Assert.assertEquals(1, target.changedPinCounts.get(data2).intValue());
 		Assert.assertTrue(target.falsePins.isEmpty());
-		Assert.assertEquals(1, network.addedPinCount());
+		Assert.assertEquals(1, node.pinCalls);
+		Assert.assertEquals(1, node.getStoredFileSet().size());
+		network.shutdown();
 	}
 
 
