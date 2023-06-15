@@ -9,11 +9,24 @@ import com.jeffdisher.cacophony.utils.Assert;
  * The asynchronously-returned result of a network read call.
  * @param <D> The data type returned from the read.
  */
-public class FutureRead<D>
+public class FutureRead<D> implements IObservableFuture
 {
+	private boolean _wasObserved = false;
 	private D _data;
 	private IpfsConnectionException _connectionException;
 	private FailedDeserializationException _decodingException;
+
+	@Override
+	public boolean wasObserved()
+	{
+		return _wasObserved;
+	}
+
+	@Override
+	public synchronized void waitForCompletion()
+	{
+		_waitForCompletion();
+	}
 
 	/**
 	 * Blocks for the asynchronous operation to complete.
@@ -24,18 +37,7 @@ public class FutureRead<D>
 	 */
 	public synchronized D get() throws IpfsConnectionException, FailedDeserializationException
 	{
-		while ((null == _data) && (null == _connectionException) && (null == _decodingException))
-		{
-			try
-			{
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				// We don't use interruption in this system.
-				throw Assert.unexpected(e);
-			}
-		}
+		_waitForCompletion();
 		if (null != _connectionException)
 		{
 			throw _connectionException;
@@ -78,5 +80,23 @@ public class FutureRead<D>
 	{
 		_decodingException = exception;
 		this.notifyAll();
+	}
+
+
+	private void _waitForCompletion()
+	{
+		while ((null == _data) && (null == _connectionException) && (null == _decodingException))
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't use interruption in this system.
+				throw Assert.unexpected(e);
+			}
+		}
+		_wasObserved = true;
 	}
 }

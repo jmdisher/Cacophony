@@ -1,8 +1,10 @@
 package com.jeffdisher.cacophony.access;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +13,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.IObservableFuture;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -39,23 +42,31 @@ public class ConcurrentTransaction
 	private final Map<IpfsFile, Integer> _changedPinCounts;
 	private final Set<IpfsFile> _networkPins;
 
+	// We track any asynchronous operations we started so that we can verify that they were all observed, on commit or rollback.
+	private final List<IObservableFuture> _futures;
+
 	public ConcurrentTransaction(INetworkScheduler scheduler, Set<IpfsFile> existingPin)
 	{
 		_scheduler = scheduler;
 		_existingPin = existingPin;
 		_changedPinCounts = new HashMap<>();
 		_networkPins = new HashSet<>();
+		_futures = new ArrayList<>();
 	}
 
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
-		return _scheduler.getSizeInBytes(cid);
+		FutureSize result = _scheduler.getSizeInBytes(cid);
+		_futures.add(result);
+		return result;
 	}
 
 	public <R> FutureRead<R> loadCached(IpfsFile cid, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(_existingPin.contains(cid) || (_changedPinCounts.get(cid) > 0));
-		return _scheduler.readData(cid, decoder);
+		FutureRead<R> result = _scheduler.readData(cid, decoder);
+		_futures.add(result);
+		return result;
 	}
 
 	public FuturePin pin(IpfsFile cid)
@@ -75,6 +86,7 @@ public class ConcurrentTransaction
 		{
 			// We don't think anyone has pinned this yet, so pin it on the network.
 			result = _scheduler.pin(cid);
+			_futures.add(result);
 			// We record this so that we can tell the write access to undo it on rollback.
 			boolean isNew = _networkPins.add(cid);
 			Assert.assertTrue(isNew);
@@ -96,12 +108,24 @@ public class ConcurrentTransaction
 
 	public void commit(IStateResolver target)
 	{
+		// Make sure that the caller has consumed everything.
+		for (IObservableFuture observable : _futures)
+		{
+			Assert.assertTrue(observable.wasObserved());
+		}
 		// Commit back with updated counts.
 		target.commitTransactionPinCanges(_changedPinCounts, Collections.emptySet());
 	}
 
 	public void rollback(IStateResolver target)
 	{
+		// The futures may not have been observed but we still want them to complete in case, for example, the rollback
+		// needs to unpin something the transaction decided to pin which hasn't completed yet (could cause a leak on the
+		// IPFS node).
+		for (IObservableFuture observable : _futures)
+		{
+			observable.waitForCompletion();
+		}
 		// Rollback with an empty map - this way, we will change nothing but allow the access to know we are done (if they were tracking us).
 		target.commitTransactionPinCanges(Collections.emptyMap(), _networkPins);
 	}

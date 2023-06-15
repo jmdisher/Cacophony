@@ -10,13 +10,26 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Note that this is largely identical to FuturePublish so these calls which return nothing but success may be
  * coalesced in the future (currently kept distinct just for clarity of intent).
  */
-public class FuturePin
+public class FuturePin implements IObservableFuture
 {
 	// We store the actual file reference as a public field, just because it is a common pattern that this may be needed.
 	public final IpfsFile cid;
 
+	private boolean _wasObserved = false;
 	private boolean _didSucceed;
 	private IpfsConnectionException _exception;
+
+	@Override
+	public boolean wasObserved()
+	{
+		return _wasObserved;
+	}
+
+	@Override
+	public synchronized void waitForCompletion()
+	{
+		_waitForCompletion();
+	}
 
 	/**
 	 * Creates the FuturePin object, setting the given cid as the public "cid" field for future reads.  Note that the
@@ -36,18 +49,7 @@ public class FuturePin
 	 */
 	public synchronized void get() throws IpfsConnectionException
 	{
-		while (!_didSucceed && (null == _exception))
-		{
-			try
-			{
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				// We don't use interruption in this system.
-				throw Assert.unexpected(e);
-			}
-		}
+		_waitForCompletion();
 		if (null != _exception)
 		{
 			throw _exception;
@@ -72,5 +74,23 @@ public class FuturePin
 	{
 		_exception = exception;
 		this.notifyAll();
+	}
+
+
+	private void _waitForCompletion()
+	{
+		while (!_didSucceed && (null == _exception))
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't use interruption in this system.
+				throw Assert.unexpected(e);
+			}
+		}
+		_wasObserved = true;
 	}
 }

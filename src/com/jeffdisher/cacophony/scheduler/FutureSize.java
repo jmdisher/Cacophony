@@ -7,10 +7,23 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * The asynchronously-returned result of a network size call.
  */
-public class FutureSize
+public class FutureSize implements IObservableFuture
 {
+	private boolean _wasObserved = false;
 	private long _sizeInBytes = -1L;
 	private IpfsConnectionException _exception;
+
+	@Override
+	public boolean wasObserved()
+	{
+		return _wasObserved;
+	}
+
+	@Override
+	public synchronized void waitForCompletion()
+	{
+		_waitForCompletion();
+	}
 
 	/**
 	 * Blocks for the asynchronous operation to complete.
@@ -20,18 +33,7 @@ public class FutureSize
 	 */
 	public synchronized long get() throws IpfsConnectionException
 	{
-		while ((-1L == _sizeInBytes) && (null == _exception))
-		{
-			try
-			{
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				// We don't use interruption in this system.
-				throw Assert.unexpected(e);
-			}
-		}
+		_waitForCompletion();
 		if (null != _exception)
 		{
 			throw _exception;
@@ -60,5 +62,23 @@ public class FutureSize
 	{
 		_exception = exception;
 		this.notifyAll();
+	}
+
+
+	private void _waitForCompletion()
+	{
+		while ((-1L == _sizeInBytes) && (null == _exception))
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't use interruption in this system.
+				throw Assert.unexpected(e);
+			}
+		}
+		_wasObserved = true;
 	}
 }

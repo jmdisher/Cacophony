@@ -36,7 +36,7 @@ public class TestConcurrentTransaction
 		MockNetworkScheduler network = new MockNetworkScheduler();
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Collections.emptySet());
-		transaction.pin(F1);
+		transaction.pin(F1).get();
 		transaction.commit(target);
 		Assert.assertEquals(1, target.changedPinCounts.size());
 		Assert.assertEquals(1, target.changedPinCounts.get(F1).intValue());
@@ -50,7 +50,7 @@ public class TestConcurrentTransaction
 		MockNetworkScheduler network = new MockNetworkScheduler();
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Collections.emptySet());
-		transaction.pin(F1);
+		transaction.pin(F1).get();
 		transaction.rollback(target);
 		Assert.assertTrue(target.changedPinCounts.isEmpty());
 		Assert.assertEquals(1, target.falsePins.size());
@@ -94,7 +94,7 @@ public class TestConcurrentTransaction
 		MockNetworkScheduler network = new MockNetworkScheduler();
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(F1, F2, F3));
-		transaction.pin(F1);
+		transaction.pin(F1).get();
 		transaction.unpin(F2);
 		transaction.commit(target);
 		Assert.assertEquals(2, target.changedPinCounts.size());
@@ -110,7 +110,7 @@ public class TestConcurrentTransaction
 		MockNetworkScheduler network = new MockNetworkScheduler();
 		FakeWritingAccess target = new FakeWritingAccess();
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(F1, F2, F3));
-		transaction.pin(F1);
+		transaction.pin(F1).get();
 		transaction.unpin(F2);
 		transaction.rollback(target);
 		Assert.assertTrue(target.changedPinCounts.isEmpty());
@@ -126,9 +126,9 @@ public class TestConcurrentTransaction
 		IpfsFile data1 = network.storeData("one  ".getBytes());
 		ConcurrentTransaction transaction = new ConcurrentTransaction(network, Set.of(data1));
 		Assert.assertEquals(5L, transaction.getSizeInBytes(data1).get());
-		transaction.pin(data1);
+		transaction.pin(data1).get();
 		IpfsFile data2 = network.storeData("two   ".getBytes());
-		transaction.pin(data2);
+		transaction.pin(data2).get();
 		Assert.assertEquals(6L, transaction.getSizeInBytes(data2).get());
 		Assert.assertEquals("one  ", transaction.loadCached(data1, (byte[] data) -> new String(data)).get());
 		Assert.assertEquals("two   ", transaction.loadCached(data2, (byte[] data) -> new String(data)).get());
