@@ -122,12 +122,6 @@ public class InteractiveServer
 				{
 					publish = access.beginIndexPublish(newRoot);
 				}
-				catch (IpfsConnectionException e)
-				{
-					// We want to push this error through to the finish by synthesizing a publish.
-					publish = new FuturePublish(newRoot);
-					publish.failure(e);
-				}
 				return publish;
 			}
 			@Override

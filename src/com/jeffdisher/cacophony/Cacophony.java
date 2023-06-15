@@ -253,10 +253,6 @@ public class Cacophony {
 				CommandHelpers.commonWaitForPublish(context.logger, asyncPublish);
 				didPublish = true;
 			}
-			catch (IpfsConnectionException e)
-			{
-				// If this happens, we will just report the warning that we couldn't publish.
-			}
 		}
 		else
 		{

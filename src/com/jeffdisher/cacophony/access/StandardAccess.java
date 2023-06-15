@@ -64,9 +64,8 @@ public class StandardAccess implements IWritingAccess
 	 * 
 	 * @param context The current command context.
 	 * @return The read access interface.
-	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IReadingAccess readAccess(Context context) throws IpfsConnectionException
+	public static IReadingAccess readAccess(Context context)
 	{
 		LocalDataModel dataModel = context.sharedDataModel;
 		IReadOnlyLocalData reading = dataModel.openForRead();
@@ -83,9 +82,8 @@ public class StandardAccess implements IWritingAccess
 	 * 
 	 * @param context The current command context.
 	 * @return The write access interface.
-	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccess(Context context) throws IpfsConnectionException
+	public static IWritingAccess writeAccess(Context context)
 	{
 		LocalDataModel dataModel = context.sharedDataModel;
 		IReadWriteLocalData writing = dataModel.openForWrite();
@@ -101,9 +99,8 @@ public class StandardAccess implements IWritingAccess
 	 * 
 	 * @param context The current command context.
 	 * @return The write access interface.
-	 * @throws IpfsConnectionException If there was an issue contacting the IPFS server.
 	 */
-	public static IWritingAccess writeAccessWithKeyOverride(Context context, String keyName, IpfsKey selectedKey) throws IpfsConnectionException
+	public static IWritingAccess writeAccessWithKeyOverride(Context context, String keyName, IpfsKey selectedKey)
 	{
 		LocalDataModel dataModel = context.sharedDataModel;
 		IReadWriteLocalData writing = dataModel.openForWrite();
@@ -151,7 +148,7 @@ public class StandardAccess implements IWritingAccess
 	private final ExplicitCacheData _explicitCache;
 	private boolean _didAccessExplicitCache;
 
-	private StandardAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey) throws IpfsConnectionException
+	private StandardAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey)
 	{
 		PinCacheData pinCache = readOnly.readGlobalPinCache();
 		Assert.assertTrue(null != pinCache);
