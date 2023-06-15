@@ -138,6 +138,8 @@ public class MockWritingAccess implements IWritingAccess
 	@Override
 	public FutureResolve resolvePublicKey(IpfsKey keyToResolve)
 	{
+		// We expect that this is only called with the user we are configured to resolve.
+		Assert.assertEquals(this.oneKey, keyToResolve);
 		FutureResolve resolve = new FutureResolve(keyToResolve);
 		if (null != this.oneRoot)
 		{

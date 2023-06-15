@@ -30,6 +30,9 @@ public class TestExplicitCacheLogic
 	public void userNotFound() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
+		// Set this as the known key but with a null root.
+		access.oneKey = MockKeys.K1;
+		access.oneRoot = null;
 		int startPin = _countPins(access);
 		boolean didFail;
 		try
