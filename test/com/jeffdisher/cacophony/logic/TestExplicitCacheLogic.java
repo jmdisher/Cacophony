@@ -3,8 +3,14 @@ package com.jeffdisher.cacophony.logic;
 import java.io.ByteArrayInputStream;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.Context;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -16,26 +22,34 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
+import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestExplicitCacheLogic
 {
+	@ClassRule
+	public static TemporaryFolder FOLDER = new TemporaryFolder();
+
 	@Test
 	public void userNotFound() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		// Set this as the known key but with a null root.
-		access.oneKey = MockKeys.K1;
-		access.oneRoot = null;
-		int startPin = _countPins(access);
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		int startPin = node.pinCalls;
 		boolean didFail;
-		try
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 			didFail = false;
@@ -45,37 +59,57 @@ public class TestExplicitCacheLogic
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
-		int endPin = _countPins(access);
+		int endPin = node.pinCalls;
 		Assert.assertEquals(startPin, endPin);
 		// We failed to resolve so we shouldn't read anything.
-		Assert.assertEquals(0, access.sizeChecksPerformed);
-		Assert.assertEquals(0, access.sizeAndReadPerformed);
+		Assert.assertEquals(0, node.sizeCalls);
+		Assert.assertEquals(0, node.loadCalls);
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void foundUser() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		_populateWithEmpty(access, MockKeys.K1, "userPic".getBytes());
-		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		_populateWithEmpty(upstream, MockKeys.K1, "userPic".getBytes());
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		ExplicitCacheData.UserInfo userInfo;
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			userInfo = ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
+		}
 		Assert.assertNotNull(userInfo);
 		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
-		Assert.assertEquals(3, access.sizeAndReadPerformed);
-		// While ForeignChannelReader implicitly does size checks, those are below the Access interface level so we only see the explicit checks on pic, index, description, and recommendations.
-		Assert.assertEquals(4, access.sizeChecksPerformed);
+		Assert.assertEquals(3, node.loadCalls);
+		// We see size checks come from 2 different locations:
+		// ForeignChannelReader: (3) index, description, recommendations
+		// ExplicitCacheLogic: (4) userpic, index, recommendations, description
+		Assert.assertEquals(7, node.sizeCalls);
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void missingUserPic() throws Throwable
 	{
 		// Make sure that missing data causes this to fail and leave the pin counts unchanged.
-		MockWritingAccess access = new MockWritingAccess();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
 		byte[] userPic = "userPic".getBytes();
-		_populateWithEmpty(access, MockKeys.K1, userPic);
-		access.unpin(MockSingleNode.generateHash(userPic));
-		int startPin = _countPins(access);
+		_populateWithEmpty(upstream, MockKeys.K1, userPic);
+		upstream.rm(MockSingleNode.generateHash(userPic));
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		int startPin = node.pinCalls;
 		boolean didFail;
-		try
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 			didFail = false;
@@ -85,24 +119,33 @@ public class TestExplicitCacheLogic
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
-		int endPin = _countPins(access);
+		int endPin = node.pinCalls;
 		Assert.assertEquals(startPin, endPin);
-		// We only explicitly check the size of the pic, but read and check index, description, recommendations.
-		Assert.assertEquals(1, access.sizeChecksPerformed);
-		Assert.assertEquals(3, access.sizeAndReadPerformed);
-		
+		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
+		Assert.assertEquals(3, node.loadCalls);
+		// We see size checks come from 2 different locations:
+		// ForeignChannelReader: (3) index, description, recommendations
+		// ExplicitCacheLogic: (1) userpic (we fail before getting on to the other elements)
+		Assert.assertEquals(4, node.sizeCalls);
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void missingRecommendations() throws Throwable
 	{
 		// Make sure that missing data causes this to fail and leave the pin counts unchanged.
-		MockWritingAccess access = new MockWritingAccess();
-		_populateWithEmpty(access, MockKeys.K1, "userPic".getBytes());
-		access.unpin(MockSingleNode.generateHash(GlobalData.serializeRecommendations(new StreamRecommendations())));
-		int startPin = _countPins(access);
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		_populateWithEmpty(upstream, MockKeys.K1, "userPic".getBytes());
+		upstream.rm(MockSingleNode.generateHash(GlobalData.serializeRecommendations(new StreamRecommendations())));
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		int startPin = node.pinCalls;
 		boolean didFail;
-		try
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
 			didFail = false;
@@ -112,21 +155,26 @@ public class TestExplicitCacheLogic
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
-		int endPin = _countPins(access);
+		int endPin = node.pinCalls;
 		Assert.assertEquals(startPin, endPin);
-		// We don't check the sizes since we fail in the pins.
-		Assert.assertEquals(0, access.sizeChecksPerformed);
-		// Read index, description, recommendations.
-		Assert.assertEquals(3, access.sizeAndReadPerformed);
+		// We see 2 load attempts:  index, description.  Then, we fail on the recommendations size check.
+		Assert.assertEquals(2, node.loadCalls);
+		// ForeignChannelReader: (3) index, description, recommendations
+		Assert.assertEquals(3, node.sizeCalls);
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void recordNotFound() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		int startPin = _countPins(access);
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		int startPin = node.pinCalls;
 		boolean didFail;
-		try
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			ExplicitCacheLogic.loadRecordInfo(access, MockSingleNode.generateHash(new byte[] {1}));
 			didFail = false;
@@ -136,75 +184,112 @@ public class TestExplicitCacheLogic
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
-		int endPin = _countPins(access);
+		int endPin = node.pinCalls;
 		Assert.assertEquals(startPin, endPin);
-		// We use the single check which combines these.
-		Assert.assertEquals(0, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
+		// We directly check the record and see the failure in the size call, before the load call.
+		Assert.assertEquals(0, node.loadCalls);
+		Assert.assertEquals(1, node.sizeCalls);
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void noLeafRecord() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", null, null, 0, null);
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record);
-		// We just see the one size check and load.
-		Assert.assertEquals(1, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
-		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record2);
-		Assert.assertEquals(1, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record);
+			// We check the size of the record before load and then when building total.
+			Assert.assertEquals(1, node.loadCalls);
+			Assert.assertEquals(2, node.sizeCalls);
+			// A second attempt should be a cache hit and not touch the network.
+			CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record2);
+			Assert.assertEquals(1, node.loadCalls);
+			Assert.assertEquals(2, node.sizeCalls);
+		}
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void videoRecord() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record);
-		// We just see the 3 size checks and the record load.
-		Assert.assertEquals(3, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
-		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record2);
-		Assert.assertEquals(3, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record);
+			// We check the record size, load it, then total record, thumbnail, and video.
+			Assert.assertEquals(1, node.loadCalls);
+			Assert.assertEquals(4, node.sizeCalls);
+			// A second attempt should be a cache hit and not touch the network.
+			CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record2);
+			Assert.assertEquals(1, node.loadCalls);
+			Assert.assertEquals(4, node.sizeCalls);
+		}
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void audioRecord() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", null, null, 0, "audio".getBytes());
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record);
-		// We just see the 2 size checks and the record load.
-		Assert.assertEquals(2, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
-		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record2);
-		Assert.assertEquals(2, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, "audio".getBytes());
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record);
+			// We check the record size, load it, then total record and audio.
+			Assert.assertEquals(1, node.loadCalls);
+			Assert.assertEquals(3, node.sizeCalls);
+			// A second attempt should be a cache hit and not touch the network.
+			CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record2);
+			Assert.assertEquals(1, node.loadCalls);
+			Assert.assertEquals(3, node.sizeCalls);
+		}
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void brokenRecordLeaf() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
 		// Break the video leaf and make sure we fail and don't change pin counts.
 		byte[] videoData = "video".getBytes();
-		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", "thumb".getBytes(), videoData, 10, null);
-		access.unpin(MockSingleNode.generateHash(videoData));
-		int startPin = _countPins(access);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), videoData, 10, null);
+		upstream.rm(MockSingleNode.generateHash(videoData));
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		int startPin = node.getStoredFileSet().size();
 		boolean didFail;
-		try
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			ExplicitCacheLogic.loadRecordInfo(access, cid);
 			didFail = false;
@@ -214,44 +299,58 @@ public class TestExplicitCacheLogic
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
-		int endPin = _countPins(access);
+		int endPin = node.getStoredFileSet().size();
 		Assert.assertEquals(startPin, endPin);
-		// We only read the record and check the size of the record before accessing the leaves.  We check the size after pin success so we don't check the video size.
-		Assert.assertEquals(2, access.sizeChecksPerformed);
-		Assert.assertEquals(1, access.sizeAndReadPerformed);
+		// We should see that pin calls were made, but were reverted.
+		Assert.assertEquals(3, node.pinCalls);
+		// We check the record size, load it, then total record, thumb, and the video pin fails before we check it.
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(3, node.sizeCalls);
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void existingRecord() throws Throwable
 	{
-		MockWritingAccess access = new MockWritingAccess();
-		IpfsFile cid = _populateStreamRecord(access, MockKeys.K1, "name", null, null, 0, null);
-		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(access, cid));
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-		Assert.assertNotNull(record);
-		Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(access, cid));
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(access, cid));
+			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
+			Assert.assertNotNull(record);
+			Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(access, cid));
+		}
+		scheduler.shutdown();
 	}
 
 
-	private static void _populateWithEmpty(MockWritingAccess access, IpfsKey publishKey, byte[] userPic) throws Throwable
+	private static void _populateWithEmpty(MockSingleNode node, IpfsKey publishKey, byte[] userPic) throws Throwable
 	{
 		StreamDescription desc = new StreamDescription();
 		desc.setName("name");
 		desc.setDescription("description");
-		desc.setPicture(_storeWithString(access, userPic));
+		desc.setPicture(_storeWithString(node, userPic));
 		StreamRecords records = new StreamRecords();
 		StreamRecommendations recom = new StreamRecommendations();
 		StreamIndex index = new StreamIndex();
 		index.setVersion(1);
-		index.setDescription(_storeWithString(access, GlobalData.serializeDescription(desc)));
-		index.setRecords(_storeWithString(access, GlobalData.serializeRecords(records)));
-		index.setRecommendations(_storeWithString(access, GlobalData.serializeRecommendations(recom)));
-		IpfsFile root = _storeData(access, GlobalData.serializeIndex(index));
-		access.oneKey = publishKey;
-		access.oneRoot = root;
+		index.setDescription(_storeWithString(node, GlobalData.serializeDescription(desc)));
+		index.setRecords(_storeWithString(node, GlobalData.serializeRecords(records)));
+		index.setRecommendations(_storeWithString(node, GlobalData.serializeRecommendations(recom)));
+		IpfsFile root = _storeData(node, GlobalData.serializeIndex(index));
+		
+		node.addNewKey("key", publishKey);
+		node.publish("key", publishKey, root);
 	}
 
-	private static IpfsFile _populateStreamRecord(MockWritingAccess access, IpfsKey publisherKey, String title, byte[] thumb, byte[] video, int videoDimensions, byte[] audio) throws Throwable
+	private static IpfsFile _populateStreamRecord(MockSingleNode node, IpfsKey publisherKey, String title, byte[] thumb, byte[] video, int videoDimensions, byte[] audio) throws Throwable
 	{
 		DataArray elements = new DataArray();
 		if (null != thumb)
@@ -259,7 +358,7 @@ public class TestExplicitCacheLogic
 			DataElement element = new DataElement();
 			element.setSpecial(ElementSpecialType.IMAGE);
 			element.setMime("image/jpeg");
-			element.setCid(_storeWithString(access, thumb));
+			element.setCid(_storeWithString(node, thumb));
 			elements.getElement().add(element);
 		}
 		if (null != video)
@@ -268,14 +367,14 @@ public class TestExplicitCacheLogic
 			element.setMime("video/webm");
 			element.setHeight(videoDimensions);
 			element.setWidth(videoDimensions);
-			element.setCid(_storeWithString(access, video));
+			element.setCid(_storeWithString(node, video));
 			elements.getElement().add(element);
 		}
 		if (null != audio)
 		{
 			DataElement element = new DataElement();
 			element.setMime("audio/ogg");
-			element.setCid(_storeWithString(access, audio));
+			element.setCid(_storeWithString(node, audio));
 			elements.getElement().add(element);
 		}
 		
@@ -285,26 +384,34 @@ public class TestExplicitCacheLogic
 		streamRecord.setPublisherKey(publisherKey.toPublicKey());
 		streamRecord.setPublishedSecondsUtc(1L);
 		streamRecord.setElements(elements);
-		return _storeData(access, GlobalData.serializeRecord(streamRecord));
+		return _storeData(node, GlobalData.serializeRecord(streamRecord));
 	}
 
-	private static String _storeWithString(MockWritingAccess access, byte[] data) throws Throwable
+	private static String _storeWithString(MockSingleNode node, byte[] data) throws Throwable
 	{
-		return _storeData(access, data).toSafeString();
+		return _storeData(node, data).toSafeString();
 	}
 
-	private static IpfsFile _storeData(MockWritingAccess access, byte[] data) throws Throwable
+	private static IpfsFile _storeData(MockSingleNode node, byte[] data) throws Throwable
 	{
-		return access.uploadAndPin(new ByteArrayInputStream(data));
+		return node.storeData(new ByteArrayInputStream(data));
 	}
 
-	private static int _countPins(MockWritingAccess access)
+	private static Context _createContext(IConnection connection, INetworkScheduler network) throws UsageException
 	{
-		int count = 0;
-		for (Integer i : access.pins.values())
-		{
-			count += i;
-		}
-		return count;
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(new MemoryConfigFileSystem(null), network);
+		Context context = new Context(null
+				, model
+				, connection
+				, network
+				, () -> System.currentTimeMillis()
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+		);
+		return context;
 	}
 }

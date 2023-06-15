@@ -48,6 +48,8 @@ public class MockSingleNode implements IConnection
 
 	// Public fields which are just for accounting.
 	public int pinCalls;
+	public int sizeCalls;
+	public int loadCalls;
 
 	public MockSingleNode(MockSwarm swarm)
 	{
@@ -107,6 +109,7 @@ public class MockSingleNode implements IConnection
 	@Override
 	public byte[] loadData(IpfsFile file) throws IpfsConnectionException
 	{
+		this.loadCalls += 1;
 		return _networkLoadData(file);
 	}
 
@@ -145,6 +148,7 @@ public class MockSingleNode implements IConnection
 	@Override
 	public long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException
 	{
+		this.sizeCalls += 1;
 		byte[] data = _networkLoadData(cid);
 		if (null == data)
 		{
