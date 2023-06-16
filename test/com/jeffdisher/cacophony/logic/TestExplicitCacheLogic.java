@@ -7,8 +7,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -49,9 +47,9 @@ public class TestExplicitCacheLogic
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try
 		{
-			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
+			ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
 			didFail = false;
 		}
 		catch (KeyException e)
@@ -78,11 +76,7 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = _createContext(node, scheduler);
 		
-		ExplicitCacheData.UserInfo userInfo;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
-		{
-			userInfo = ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
-		}
+		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
 		Assert.assertNotNull(userInfo);
 		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
 		Assert.assertEquals(3, node.loadCalls);
@@ -109,9 +103,9 @@ public class TestExplicitCacheLogic
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try
 		{
-			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
+			ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -145,9 +139,9 @@ public class TestExplicitCacheLogic
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try
 		{
-			ExplicitCacheLogic.loadUserInfo(access, MockKeys.K1);
+			ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -174,9 +168,9 @@ public class TestExplicitCacheLogic
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try
 		{
-			ExplicitCacheLogic.loadRecordInfo(access, MockSingleNode.generateHash(new byte[] {1}));
+			ExplicitCacheLogic.loadRecordInfo(context, MockSingleNode.generateHash(new byte[] {1}));
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -203,19 +197,16 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = _createContext(node, scheduler);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
-		{
-			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record);
-			// We check the size of the record before load and then when building total.
-			Assert.assertEquals(1, node.loadCalls);
-			Assert.assertEquals(2, node.sizeCalls);
-			// A second attempt should be a cache hit and not touch the network.
-			CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record2);
-			Assert.assertEquals(1, node.loadCalls);
-			Assert.assertEquals(2, node.sizeCalls);
-		}
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record);
+		// We check the size of the record before load and then when building total.
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(2, node.sizeCalls);
+		// A second attempt should be a cache hit and not touch the network.
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record2);
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(2, node.sizeCalls);
 		scheduler.shutdown();
 	}
 
@@ -230,19 +221,16 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = _createContext(node, scheduler);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
-		{
-			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record);
-			// We check the record size, load it, then total record, thumbnail, and video.
-			Assert.assertEquals(1, node.loadCalls);
-			Assert.assertEquals(4, node.sizeCalls);
-			// A second attempt should be a cache hit and not touch the network.
-			CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record2);
-			Assert.assertEquals(1, node.loadCalls);
-			Assert.assertEquals(4, node.sizeCalls);
-		}
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record);
+		// We check the record size, load it, then total record, thumbnail, and video.
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(4, node.sizeCalls);
+		// A second attempt should be a cache hit and not touch the network.
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record2);
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(4, node.sizeCalls);
 		scheduler.shutdown();
 	}
 
@@ -257,19 +245,16 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = _createContext(node, scheduler);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
-		{
-			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record);
-			// We check the record size, load it, then total record and audio.
-			Assert.assertEquals(1, node.loadCalls);
-			Assert.assertEquals(3, node.sizeCalls);
-			// A second attempt should be a cache hit and not touch the network.
-			CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record2);
-			Assert.assertEquals(1, node.loadCalls);
-			Assert.assertEquals(3, node.sizeCalls);
-		}
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record);
+		// We check the record size, load it, then total record and audio.
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(3, node.sizeCalls);
+		// A second attempt should be a cache hit and not touch the network.
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record2);
+		Assert.assertEquals(1, node.loadCalls);
+		Assert.assertEquals(3, node.sizeCalls);
 		scheduler.shutdown();
 	}
 
@@ -289,9 +274,9 @@ public class TestExplicitCacheLogic
 		
 		int startPin = node.getStoredFileSet().size();
 		boolean didFail;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try
 		{
-			ExplicitCacheLogic.loadRecordInfo(access, cid);
+			ExplicitCacheLogic.loadRecordInfo(context, cid);
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -320,13 +305,10 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = _createContext(node, scheduler);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
-		{
-			Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(access, cid));
-			CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(access, cid);
-			Assert.assertNotNull(record);
-			Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(access, cid));
-		}
+		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context, cid));
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record);
+		Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(context, cid));
 		scheduler.shutdown();
 	}
 

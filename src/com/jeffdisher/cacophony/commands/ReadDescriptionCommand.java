@@ -110,11 +110,11 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	private ChannelDescription _checkExplicitCache(Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
+		// Consult the cache - this never returns null but will throw on error.
+		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, keyToCheck);
 		ChannelDescription result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			// Consult the cache - this never returns null but will throw on error.
-			ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, keyToCheck);
 			// Everything in the explicit cache is cached.
 			StreamDescription description = access.loadCached(userInfo.descriptionCid(), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 			String userPicUrl = context.baseUrl + userInfo.userPicCid().toSafeString();

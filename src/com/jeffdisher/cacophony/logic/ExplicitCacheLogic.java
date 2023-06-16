@@ -1,6 +1,8 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
@@ -48,7 +50,7 @@ public class ExplicitCacheLogic
 	 * NOTE:  The user is still resolved before checking the cache to avoid cases where an old version of the user info
 	 * would never be dropped from the cache since it keeps being "found".
 	 * 
-	 * @param access Write-access to local storage and the network.
+	 * @param context The context.
 	 * @param publicKey The public key of the user.
 	 * @return The info for this user (never null).
 	 * @throws KeyException The key could not be resolved.
@@ -56,11 +58,95 @@ public class ExplicitCacheLogic
 	 * @throws IpfsConnectionException There was a problem accessing the network (could be a timeout due to not finding
 	 * the data).
 	 */
-	public static ExplicitCacheData.UserInfo loadUserInfo(IWritingAccess access, IpfsKey publicKey) throws KeyException, ProtocolDataException, IpfsConnectionException
+	public static ExplicitCacheData.UserInfo loadUserInfo(Context context, IpfsKey publicKey) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
-		Assert.assertTrue(null != access);
+		Assert.assertTrue(null != context);
 		Assert.assertTrue(null != publicKey);
 		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			return _loadUserInfo(access, publicKey);
+		}
+	}
+
+	/**
+	 * Loads the info describing the StreamRecord with the given recordCid.
+	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
+	 * recently used.
+	 * 
+	 * @param context The context.
+	 * @param recordCid The CID of the record.
+	 * @return The info for this StreamRecord (never null).
+	 * @throws ProtocolDataException The data found was corrupt.
+	 * @throws IpfsConnectionException There was a problem accessing the network (could be a timeout due to not finding
+	 * the data).
+	 */
+	public static CachedRecordInfo loadRecordInfo(Context context, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	{
+		Assert.assertTrue(null != context);
+		Assert.assertTrue(null != recordCid);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			return _loadRecordInfo(access, recordCid);
+		}
+	}
+
+	/**
+	 * Just a helper to read the total size from ExplicitCacheData.
+	 * 
+	 * @param context The context.
+	 * @return The total size of the explicitly cached data, in bytes.
+	 */
+	public static long getExplicitCacheSize(Context context)
+	{
+		Assert.assertTrue(null != context);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			ExplicitCacheData data = access.writableExplicitCache();
+			return data.getCacheSizeBytes();
+		}
+	}
+
+	/**
+	 * Returns the record with the given recordCid, returning null if the explicit cache doesn't have information about
+	 * it.
+	 * NOTE:  Will NOT load from the network.
+	 * 
+	 * @param context The context.
+	 * @param recordCid The CID of the record.
+	 * @return The info for this StreamRecord (null if unknown).
+	 */
+	public static CachedRecordInfo getExistingRecordInfo(Context context, IpfsFile recordCid)
+	{
+		Assert.assertTrue(null != context);
+		
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			ExplicitCacheData data = access.writableExplicitCache();
+			return data.getRecordInfo(recordCid);
+		}
+	}
+
+
+	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, PrefsData prefs)
+	{
+		data.purgeCacheToSize((IpfsFile evict) -> {
+			try
+			{
+				access.unpin(evict);
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This is just a local contact problem so just log it.
+				System.err.println("WARNING:  Failure in unpin, will need to be removed manually: " + evict);
+			}
+		}, prefs.explicitCacheTargetBytes);
+	}
+
+	private static ExplicitCacheData.UserInfo _loadUserInfo(IWritingAccess access, IpfsKey publicKey) throws KeyException, ProtocolDataException, IpfsConnectionException
+	{
 		IpfsFile root = access.resolvePublicKey(publicKey).get();
 		// This will fail instead of returning null.
 		Assert.assertTrue(null != root);
@@ -105,19 +191,7 @@ public class ExplicitCacheLogic
 		return info;
 	}
 
-	/**
-	 * Loads the info describing the StreamRecord with the given recordCid.
-	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
-	 * recently used.
-	 * 
-	 * @param access Write-access to local storage and the network.
-	 * @param recordCid The CID of the record.
-	 * @return The info for this StreamRecord (never null).
-	 * @throws ProtocolDataException The data found was corrupt.
-	 * @throws IpfsConnectionException There was a problem accessing the network (could be a timeout due to not finding
-	 * the data).
-	 */
-	public static CachedRecordInfo loadRecordInfo(IWritingAccess access, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	private static CachedRecordInfo _loadRecordInfo(IWritingAccess access, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
 	{
 		ExplicitCacheData data = access.writableExplicitCache();
 		CachedRecordInfo info = data.getRecordInfo(recordCid);
@@ -134,48 +208,5 @@ public class ExplicitCacheLogic
 			_purgeExcess(access, data, prefs);
 		}
 		return info;
-	}
-
-	/**
-	 * Just a helper to read the total size from ExplicitCacheData.
-	 * 
-	 * @param access Write-access to local storage.
-	 * @return The total size of the explicitly cached data, in bytes.
-	 */
-	public static long getExplicitCacheSize(IWritingAccess access)
-	{
-		ExplicitCacheData data = access.writableExplicitCache();
-		return data.getCacheSizeBytes();
-	}
-
-	/**
-	 * Returns the record with the given recordCid, returning null if the explicit cache doesn't have information about
-	 * it.
-	 * NOTE:  Will NOT load from the network.
-	 * 
-	 * @param access Write-access to local storage and the network.
-	 * @param recordCid The CID of the record.
-	 * @return The info for this StreamRecord (null if unknown).
-	 */
-	public static CachedRecordInfo getExistingRecordInfo(IWritingAccess access, IpfsFile recordCid)
-	{
-		ExplicitCacheData data = access.writableExplicitCache();
-		return data.getRecordInfo(recordCid);
-	}
-
-
-	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, PrefsData prefs)
-	{
-		data.purgeCacheToSize((IpfsFile evict) -> {
-			try
-			{
-				access.unpin(evict);
-			}
-			catch (IpfsConnectionException e)
-			{
-				// This is just a local contact problem so just log it.
-				System.err.println("WARNING:  Failure in unpin, will need to be removed manually: " + evict);
-			}
-		}, prefs.explicitCacheTargetBytes);
 	}
 }

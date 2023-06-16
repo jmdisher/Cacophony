@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
@@ -30,11 +30,10 @@ public class GET_CacheStats implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
 	{
-		// TODO:  Replace this with IReadingAccess once a read-only interface to the explicit cache is created.
-		try (IWritingAccess access = StandardAccess.writeAccess(_context))
+		long explicitCacheBytes = ExplicitCacheLogic.getExplicitCacheSize(_context);
+		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			long followeeCacheBytes = CacheHelpers.getCurrentCacheSizeBytes(access.readableFolloweeData());
-			long explicitCacheBytes = ExplicitCacheLogic.getExplicitCacheSize(access);
 			long favouritesSizeBytes = access.readableFavouritesCache().getFavouritesSizeBytes();
 			JsonObject stats = new JsonObject();
 			stats.add("followeeCacheBytes", followeeCacheBytes);

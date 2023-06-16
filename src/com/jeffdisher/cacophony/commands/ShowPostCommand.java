@@ -48,12 +48,11 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		else if (!post.isKnownToBeCached)
 		{
 			// See if we can override this with a more concretely cached element from the explicit cache.
-			// TODO:  Remove this access call when we optimize explicit cache access.
-			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			CachedRecordInfo existingInfo = ExplicitCacheLogic.getExistingRecordInfo(context, _elementCid);
+			// This can be null since we are just checking if it already has the info.
+			if (null != existingInfo)
 			{
-				CachedRecordInfo existingInfo = ExplicitCacheLogic.getExistingRecordInfo(access, _elementCid);
-				// This can be null since we are just checking if it already has the info.
-				if (null != existingInfo)
+				try (IReadingAccess access = StandardAccess.readAccess(context))
 				{
 					post = _buildDetailsWithCachedInfo(access, existingInfo);
 				}
@@ -94,12 +93,12 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			// We will check the favourites cache here, too, as the explicit cache MUST be last.
 			// (we could use a read-only pass to check the favourites cache but no point in reading twice).
 			post = _checkFavouritesCache(access);
-			
-			if (null == post)
-			{
-				// Consult the explicit cache - this never returns null but will throw on error.
-				post = _checkExplicitCache(access);
-			}
+		}
+		
+		if (null == post)
+		{
+			// Consult the explicit cache - this never returns null but will throw on error.
+			post = _checkExplicitCache(context);
 		}
 		return post;
 	}
@@ -117,11 +116,14 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		return post;
 	}
 
-	private PostDetails _checkExplicitCache(IWritingAccess access) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
+	private PostDetails _checkExplicitCache(Context context) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
 	{
-		CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(access, _elementCid);
-		// Everything in the explicit cache is cached.
-		return _buildDetailsWithCachedInfo(access, info);
+		CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(context, _elementCid);
+		try (IReadingAccess access = StandardAccess.readAccess(context))
+		{
+			// Everything in the explicit cache is cached.
+			return _buildDetailsWithCachedInfo(access, info);
+		}
 	}
 
 	private PostDetails _buildDetailsWithCachedInfo(IReadingAccess access, CachedRecordInfo info) throws IpfsConnectionException, FailedDeserializationException

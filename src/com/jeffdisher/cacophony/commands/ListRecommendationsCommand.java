@@ -94,11 +94,12 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 	private StreamRecommendations _checkExplicitCache(Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
+		// Consult the cache - this never returns null but will throw on error.
+		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, keyToCheck);
+		
 		StreamRecommendations result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			// Consult the cache - this never returns null but will throw on error.
-			ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(access, keyToCheck);
 			// Everything in the explicit cache is cached.
 			result = access.loadCached(userInfo.recommendationsCid(), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
 		}
