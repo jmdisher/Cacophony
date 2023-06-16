@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import java.util.Map;
-import java.util.Set;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
@@ -236,10 +235,7 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(_didRun);
 		Assert.assertTrue(!_didFinish);
 		
-		ConcurrentTransaction.IStateResolver resolver = (Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins) ->
-		{
-			access.commitTransactionPinCanges(changedPinCounts, falsePins);
-		};
+		ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 		if (_isSuccess)
 		{
 			if (_isDelete)

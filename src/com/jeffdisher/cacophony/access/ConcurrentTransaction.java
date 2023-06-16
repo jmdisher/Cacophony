@@ -138,4 +138,19 @@ public class ConcurrentTransaction
 	{
 		void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins);
 	}
+
+
+	/**
+	 * Non-testing cases all use the same state resolver so this helper is used to create it.
+	 * 
+	 * @param access The writing access which will be the target of the commit.
+	 * @return The resolver which can be used for commit or rollback.
+	 */
+	public static IStateResolver buildCommonResolver(IWritingAccess access)
+	{
+		return (Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins) ->
+		{
+			access.commitTransactionPinCanges(changedPinCounts, falsePins);
+		};
+	}
 }
