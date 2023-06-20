@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
+import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -287,6 +288,12 @@ public class MockWritingAccess implements IWritingAccess
 	public void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins)
 	{
 		throw new RuntimeException("Not Called");
+	}
+
+	@Override
+	public IExplicitCacheReading readableExplicitCache()
+	{
+		return this.explicitCacheData;
 	}
 
 	@Override

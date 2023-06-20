@@ -20,7 +20,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * The explicit data cache for user info and stream records.  Internally, this manages an LRU and can be told to purge
  * down to a certain size.
  */
-public class ExplicitCacheData
+public class ExplicitCacheData implements IExplicitCacheReading
 {
 	// When something is used, it is removed from the list and re-added at the end.
 	// This means that element 0 is "least recently used".
@@ -136,12 +136,7 @@ public class ExplicitCacheData
 		_totalCacheInBytes += recordInfo.combinedSizeBytes();
 	}
 
-	/**
-	 * Reads the UserInfo of the given user's indexCid.  On success, marks the record as most recently used.
-	 * 
-	 * @param indexCid The CID of the user's StreamIndex.
-	 * @return The UserInfo for the user (null if not found).
-	 */
+	@Override
 	public UserInfo getUserInfo(IpfsFile indexCid)
 	{
 		UserInfo info = _userInfo.get(indexCid);
@@ -153,12 +148,7 @@ public class ExplicitCacheData
 		return info;
 	}
 
-	/**
-	 * Reads the CachedRecordInfo of the given StreamRecord's recordCid.  On success, marks the record as most recently used.
-	 * 
-	 * @param recordCid The CID of the StreamRecord.
-	 * @return The CachedRecordInfo for the record (null if not found).
-	 */
+	@Override
 	public CachedRecordInfo getRecordInfo(IpfsFile recordCid)
 	{
 		CachedRecordInfo info = _recordInfo.get(recordCid);
@@ -212,9 +202,7 @@ public class ExplicitCacheData
 		}
 	}
 
-	/**
-	 * @return The total size of the explicit cache, in bytes.
-	 */
+	@Override
 	public long getCacheSizeBytes()
 	{
 		return _totalCacheInBytes;

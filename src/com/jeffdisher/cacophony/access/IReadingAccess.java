@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.access;
 
 import java.util.List;
 
+import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -104,6 +105,12 @@ public interface IReadingAccess extends AutoCloseable, IBasicNetworkOps
 	 */
 	FuturePublish beginIndexPublish(IpfsFile indexRoot);
 
+	/**
+	 * Note that LRU updates to the explicit cache will be discarded if only using it in read-only mode.
+	 * 
+	 * @return The read-only interface for the shared explicit cache instance.
+	 */
+	IExplicitCacheReading readableExplicitCache();
 
 	record HomeUserTuple(String keyName, IpfsKey publicKey, IpfsFile lastRoot) {}
 }

@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
+import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
@@ -8,6 +9,7 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -103,9 +105,9 @@ public class ExplicitCacheLogic
 	{
 		Assert.assertTrue(null != context);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			ExplicitCacheData data = access.writableExplicitCache();
+			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getCacheSizeBytes();
 		}
 	}
@@ -123,9 +125,9 @@ public class ExplicitCacheLogic
 	{
 		Assert.assertTrue(null != context);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			ExplicitCacheData data = access.writableExplicitCache();
+			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getRecordInfo(recordCid);
 		}
 	}

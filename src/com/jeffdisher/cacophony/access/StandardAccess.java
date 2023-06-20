@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -179,10 +180,7 @@ public class StandardAccess implements IWritingAccess
 		_followeeData = followeeData;
 		_channelData = localIndex;
 		_favouritesCache = favouritesCache;
-		_explicitCache = (null != readWrite)
-				? readWrite.readExplicitCache()
-				: null
-		;
+		_explicitCache = readOnly.readExplicitCache();
 	}
 
 	@Override
@@ -355,6 +353,13 @@ public class StandardAccess implements IWritingAccess
 	public FuturePublish beginIndexPublish(IpfsFile indexRoot)
 	{
 		return _scheduler.publishIndex(_keyName, _publicKey, indexRoot);
+	}
+
+	@Override
+	public IExplicitCacheReading readableExplicitCache()
+	{
+		Assert.assertTrue(null != _explicitCache);
+		return _explicitCache;
 	}
 
 	@Override
