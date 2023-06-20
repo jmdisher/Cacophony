@@ -18,9 +18,9 @@ public class CommonRecordPinning
 {
 	/**
 	 * The common helper for loading and pinning a record.
-	 * NOTE:  The caller is responsible for committing the transaction, whether it returns or throws.
+	 * NOTE:  The caller is responsible for committing or rolling back the transaction, whether it returns or throws.
 	 * 
-	 * @param transaction The transaction for accessing the network (caller must commit on return or throw).
+	 * @param transaction The transaction for accessing the network (caller must commit or roll back).
 	 * @param videoEdgePixelMax The preferred edge size of the video to pin.
 	 * @param recordCid The CID of the record.
 	 * @return The info for this StreamRecord (never null).
@@ -52,44 +52,25 @@ public class CommonRecordPinning
 				? transaction.pin(audioCid)
 				: null
 		;
-		// We want to revert all the pins if any of these fail.
-		try
+		
+		// Since we are relying on the transaction, the caller can rollback if we fail so we don't need to handle specialized revert, here.
+		pinRecord.get();
+		long combinedSizeBytes = transaction.getSizeInBytes(recordCid).get();
+		if (null != pinThumbnail)
 		{
-			pinRecord.get();
-			long combinedSizeBytes = transaction.getSizeInBytes(recordCid).get();
-			if (null != pinThumbnail)
-			{
-				pinThumbnail.get();
-				combinedSizeBytes += transaction.getSizeInBytes(thumbnailCid).get();
-			}
-			if (null != pinVideo)
-			{
-				pinVideo.get();
-				combinedSizeBytes += transaction.getSizeInBytes(videoCid).get();
-			}
-			if (null != pinAudio)
-			{
-				pinAudio.get();
-				combinedSizeBytes += transaction.getSizeInBytes(audioCid).get();
-			}
-			return new CachedRecordInfo(recordCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
+			pinThumbnail.get();
+			combinedSizeBytes += transaction.getSizeInBytes(thumbnailCid).get();
 		}
-		catch (IpfsConnectionException e)
+		if (null != pinVideo)
 		{
-			transaction.unpin(recordCid);
-			if (null != thumbnailCid)
-			{
-				transaction.unpin(thumbnailCid);
-			}
-			if (null != videoCid)
-			{
-				transaction.unpin(videoCid);
-			}
-			if (null != audioCid)
-			{
-				transaction.unpin(audioCid);
-			}
-			throw e;
+			pinVideo.get();
+			combinedSizeBytes += transaction.getSizeInBytes(videoCid).get();
 		}
+		if (null != pinAudio)
+		{
+			pinAudio.get();
+			combinedSizeBytes += transaction.getSizeInBytes(audioCid).get();
+		}
+		return new CachedRecordInfo(recordCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
 	}
 }

@@ -201,14 +201,16 @@ public class ExplicitCacheLogic
 			// Find and populate the cache.
 			PrefsData prefs = access.readPrefs();
 			ConcurrentTransaction transaction = access.openConcurrentTransaction();
+			ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 			try
 			{
 				info = CommonRecordPinning.loadAndPinRecord(transaction, prefs.videoEdgePixelMax, recordCid);
-			}
-			finally
-			{
-				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 				transaction.commit(resolver);
+			}
+			catch (ProtocolDataException | IpfsConnectionException e)
+			{
+				transaction.rollback(resolver);
+				throw e;
 			}
 			// This is never null - throws on error.
 			Assert.assertTrue(null != info);

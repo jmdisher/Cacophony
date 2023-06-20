@@ -27,25 +27,21 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 			{
 				// We can add this so use the common logic.
 				CachedRecordInfo info;
+				ConcurrentTransaction transaction = access.openConcurrentTransaction();
+				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 				try
 				{
-					ConcurrentTransaction transaction = access.openConcurrentTransaction();
-					try
-					{
-						info = CommonRecordPinning.loadAndPinRecord(transaction, access.readPrefs().videoEdgePixelMax, _elementCid);
-					}
-					finally
-					{
-						ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-						transaction.commit(resolver);
-					}
+					info = CommonRecordPinning.loadAndPinRecord(transaction, access.readPrefs().videoEdgePixelMax, _elementCid);
+					transaction.commit(resolver);
 				}
 				catch (ProtocolDataException e)
 				{
+					transaction.rollback(resolver);
 					throw new UsageException("Record could not be parsed");
 				}
 				catch (IpfsConnectionException e)
 				{
+					transaction.rollback(resolver);
 					throw e;
 				}
 				// The helper never returns null.
