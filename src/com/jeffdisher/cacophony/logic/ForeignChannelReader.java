@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
-import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IBasicNetworkOps;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -24,7 +24,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class ForeignChannelReader
 {
-	private final IReadingAccess _access;
+	private final IBasicNetworkOps _access;
 	private final IpfsFile _root;
 	private final boolean _isCached;
 
@@ -40,7 +40,7 @@ public class ForeignChannelReader
 	 * @param root The CID of the root StreamIndex element.
 	 * @param isCached True if the cache-checking helper should be used, false if we assume it isn't in local cache.
 	 */
-	public ForeignChannelReader(IReadingAccess access, IpfsFile root, boolean isCached)
+	public ForeignChannelReader(IBasicNetworkOps access, IpfsFile root, boolean isCached)
 	{
 		_access = access;
 		_root = root;

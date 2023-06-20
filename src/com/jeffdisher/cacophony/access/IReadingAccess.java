@@ -5,12 +5,9 @@ import java.util.List;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
-import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -20,7 +17,7 @@ import com.jeffdisher.cacophony.types.IpfsKey;
  * The aspects of the access design which require read access to the local storage (even if they seem network-only -
  * some network operations require reading the local storage state).
  */
-public interface IReadingAccess extends AutoCloseable
+public interface IReadingAccess extends AutoCloseable, IBasicNetworkOps
 {
 	/**
 	 * We implement AudoCloseable so we can use the try-with-resources idiom but we have no need for the exception so
@@ -54,29 +51,6 @@ public interface IReadingAccess extends AutoCloseable
 	 * @throws IpfsConnectionException There was an error connecting to IPFS.
 	 */
 	void requestIpfsGc() throws IpfsConnectionException;
-
-	/**
-	 * Loads the given file, decoding it into and instance of R, but asserting that it is pinned on the local node.
-	 * 
-	 * @param <R> The type to ultimately return.
-	 * @param file The file to load.
-	 * @param decoder The decoder helper to invoke on the returned bytes.
-	 * @return The loaded and decoded instance.
-	 */
-	<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
-
-	/**
-	 * Loads the given file, first checking it isn't too big, decoding it into and instance of R, but assuming that it
-	 * is NOT pinned on the local node.
-	 * 
-	 * @param <R> The type to ultimately return.
-	 * @param file The file to load.
-	 * @param context The name to use to describe this, if there is an error.
-	 * @param maxSizeInBytes The maximum size of the resource, in bytes, in order for it to be loaded (must be positive).
-	 * @param decoder The decoder helper to invoke on the returned bytes.
-	 * @return The loaded and decoded instance.
-	 */
-	<R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder);
 
 	/**
 	 * NOTE:  Considers the home user given to the implementation when opened.

@@ -36,7 +36,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * TODO:  Develop a mechanism for in-flight transactions to block unpinning in the write access, forcing them to
  * complete only after all transactions have completed.
  */
-public class ConcurrentTransaction
+public class ConcurrentTransaction implements IBasicNetworkOps
 {
 	private final INetworkScheduler _scheduler;
 	private final Set<IpfsFile> _existingPin;
@@ -62,6 +62,7 @@ public class ConcurrentTransaction
 		return result;
 	}
 
+	@Override
 	public <R> FutureRead<R> loadCached(IpfsFile cid, DataDeserializer<R> decoder)
 	{
 		Assert.assertTrue(_existingPin.contains(cid) || (_changedPinCounts.get(cid) > 0));
@@ -70,6 +71,7 @@ public class ConcurrentTransaction
 		return result;
 	}
 
+	@Override
 	public <R> FutureSizedRead<R> loadNotCached(IpfsFile cid, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
 	{
 		FutureSizedRead<R> result = _scheduler.readDataWithSizeCheck(cid, context, maxSizeInBytes, decoder);
