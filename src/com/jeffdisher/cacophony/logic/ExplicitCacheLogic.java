@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
@@ -199,7 +200,16 @@ public class ExplicitCacheLogic
 		{
 			// Find and populate the cache.
 			PrefsData prefs = access.readPrefs();
-			info = CommonRecordPinning.loadAndPinRecord(access, prefs.videoEdgePixelMax, recordCid);
+			ConcurrentTransaction transaction = access.openConcurrentTransaction();
+			try
+			{
+				info = CommonRecordPinning.loadAndPinRecord(transaction, prefs.videoEdgePixelMax, recordCid);
+			}
+			finally
+			{
+				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+				transaction.commit(resolver);
+			}
 			// This is never null - throws on error.
 			Assert.assertTrue(null != info);
 			data.addStreamRecord(recordCid, info);

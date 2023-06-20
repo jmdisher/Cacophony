@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
+import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.IObservableFuture;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -65,6 +66,13 @@ public class ConcurrentTransaction
 	{
 		Assert.assertTrue(_existingPin.contains(cid) || (_changedPinCounts.get(cid) > 0));
 		FutureRead<R> result = _scheduler.readData(cid, decoder);
+		_futures.add(result);
+		return result;
+	}
+
+	public <R> FutureSizedRead<R> loadNotCached(IpfsFile cid, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
+	{
+		FutureSizedRead<R> result = _scheduler.readDataWithSizeCheck(cid, context, maxSizeInBytes, decoder);
 		_futures.add(result);
 		return result;
 	}

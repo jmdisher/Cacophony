@@ -10,28 +10,30 @@ import com.jeffdisher.cacophony.utils.Assert;
  * The asynchronously-returned result of a network read call.
  * @param <D> The data type returned from the read.
  */
-public class FutureSizedRead<D> implements ICommonFutureRead<D>
+public class FutureSizedRead<D> implements ICommonFutureRead<D>, IObservableFuture
 {
+	private boolean _wasObserved = false;
 	private D _data;
 	private IpfsConnectionException _connectionException;
 	private SizeConstraintException _sizeConstraintException;
 	private FailedDeserializationException _decodingException;
 
 	@Override
+	public boolean wasObserved()
+	{
+		return _wasObserved;
+	}
+
+	@Override
+	public synchronized void waitForCompletion()
+	{
+		_waitForCompletion();
+	}
+
+	@Override
 	public synchronized D get() throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
-		while ((null == _data) && (null == _connectionException) && (null == _sizeConstraintException) && (null == _decodingException))
-		{
-			try
-			{
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				// We don't use interruption in this system.
-				throw Assert.unexpected(e);
-			}
-		}
+		_waitForCompletion();
 		if (null != _connectionException)
 		{
 			throw _connectionException;
@@ -89,5 +91,23 @@ public class FutureSizedRead<D> implements ICommonFutureRead<D>
 	{
 		_decodingException = exception;
 		this.notifyAll();
+	}
+
+
+	private void _waitForCompletion()
+	{
+		while ((null == _data) && (null == _connectionException) && (null == _sizeConstraintException) && (null == _decodingException))
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't use interruption in this system.
+				throw Assert.unexpected(e);
+			}
+		}
+		_wasObserved = true;
 	}
 }

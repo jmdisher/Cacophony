@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
+import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
@@ -28,7 +29,16 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 				CachedRecordInfo info;
 				try
 				{
-					info = CommonRecordPinning.loadAndPinRecord(access, access.readPrefs().videoEdgePixelMax, _elementCid);
+					ConcurrentTransaction transaction = access.openConcurrentTransaction();
+					try
+					{
+						info = CommonRecordPinning.loadAndPinRecord(transaction, access.readPrefs().videoEdgePixelMax, _elementCid);
+					}
+					finally
+					{
+						ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+						transaction.commit(resolver);
+					}
 				}
 				catch (ProtocolDataException e)
 				{
