@@ -163,15 +163,18 @@ public class MockSingleNode implements IConnection
 	{
 		this.pinCalls += 1;
 		// If we were told to pin this, we shouldn't already have it locally.
-		Assert.assertTrue(!_data.containsKey(cid));
-		// Find the data.
-		byte[] data = _networkLoadData(cid);
-		// If we don't see the data, we will synthesize the exception the user would normally see (it would appear as a timeout).
-		if (null == data)
+		// Some concurrent options result in redundant pin calls.
+		if (!_data.containsKey(cid))
 		{
-			throw new IpfsConnectionException("pin", cid, null);
+			// Find the data.
+			byte[] data = _networkLoadData(cid);
+			// If we don't see the data, we will synthesize the exception the user would normally see (it would appear as a timeout).
+			if (null == data)
+			{
+				throw new IpfsConnectionException("pin", cid, null);
+			}
+			_data.put(cid, data);
 		}
-		_data.put(cid, data);
 	}
 
 	@Override
