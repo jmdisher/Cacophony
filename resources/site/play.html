@@ -54,8 +54,7 @@ function postWasLoaded($scope, elt)
 	
 	// We don't use Angular for the description since we may need to process it.
 	let descriptionElement = document.getElementById("description");
-	descriptionElement.innerText = elt["description"];
-	descriptionElement.innerHTML = descriptionElement.innerHTML.replace(/\/n/g, "<br />");
+	renderLongTextIntoElement(descriptionElement, elt["description"]);
 	
 	if ($scope.cached)
 	{

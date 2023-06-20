@@ -78,3 +78,10 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 	});
 }
 
+function renderLongTextIntoElement(element, longText)
+{
+	// We write the data in as text (meaning it won't change the meaning of the DOM), then we replace the new lines with explicit break tags in the HTML.
+	// We do it in this order for security reasons:  Any other tags in the text will be rendered as text instead of modifying the DOM, so only the <br /> we add will modify it.
+	element.innerText = longText;
+	element.innerHTML = element.innerHTML.replace(/\/n/g, "<br />");
+}

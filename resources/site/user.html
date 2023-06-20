@@ -116,6 +116,7 @@ function xsrfLoaded($scope)
 				$scope.description = $scope.editState;
 				$scope.inEditMode = false;
 				$scope.$apply();
+				updateDescriptionText($scope.editState.description);
 			})
 		;
 	};
@@ -261,6 +262,7 @@ function userInfoForUserLoaded($scope, userInfo)
 {
 	$scope.description = userInfo;
 	$scope.$apply();
+	updateDescriptionText(userInfo.description);
 }
 function oldHashRemoved($scope, key)
 {
@@ -290,6 +292,12 @@ function stopCamera(video_preview, stream)
 {
 	video_preview.srcObject = null;
 	stream.getTracks().forEach(function(track) { track.stop(); });
+}
+function updateDescriptionText(descriptionText)
+{
+	// We don't use Angular for the description since we may need to process it.
+	let descriptionElement = document.getElementById("description");
+	renderLongTextIntoElement(descriptionElement, descriptionText);
 }
 </script>
 
@@ -332,10 +340,24 @@ function stopCamera(video_preview, stream)
 						<img class="img-fluid" ng-src="{{description.userPicUrl}}" />
 					</div>
 					<div class="col-md-8">
-						Public Key: <strong>{{publicKey}}</strong><br />
-						Description: <strong>{{description.description}}</strong><br />
-						Email: <span ng-show="null === description.email">(not provided)</span><span ng-show="null !== description.email"><a ng-href="mailto:{{description.email}}">{{description.email}}</a></span><br />
-						Website: <span ng-show="null === description.website">(not provided)</span><span ng-show="null !== description.website"><a ng-href="{{description.website}}">{{description.website}}</a></span><br />
+						<div class="card">
+							<h5 class="card-header">Public Key:</h5>
+							<div class="card-body">{{publicKey}}</div>
+						</div>
+						<div class="card" ng-show="null !== description.email">
+							<h5 class="card-header">Email:</h5>
+							<div class="card-body"><a ng-href="mailto:{{description.email}}">{{description.email}}</a></div>
+						</div>
+						<div class="card" ng-show="null !== description.website">
+							<h5 class="card-header">Website:</h5>
+							<div class="card-body"><a ng-href="{{description.website}}">{{description.website}}</a></div>
+						</div>
+						<div class="card">
+							<h5 class="card-header">Description:</h5>
+							<div class="card-body" id="description">
+								<!-- This is populated by expanding the newlines, not directly as a binding -->
+							</div>
+						</div>
 						<button class="btn btn-primary" ng-click="enterEditMode()" ng-show="isHomeUser">Edit Info</button><br />
 						<a ng-href="recommending.html?publicKey={{publicKey}}">Recommended Users</a><br />
 					</div>
@@ -347,10 +369,6 @@ function stopCamera(video_preview, stream)
 					<input type="text" class="form-control" ng-model="editState.name" ng-disabled="editState.saveInProgress" aria-label="Name">
 				</div>
 				<div class="input-group mb-3">
-					<span class="input-group-text">Description</span>
-					<input type="text" class="form-control" ng-model="editState.description" ng-disabled="editState.saveInProgress" aria-label="Description">
-				</div>
-				<div class="input-group mb-3">
 					<span class="input-group-text">E-Mail address</span>
 					<input type="text" class="form-control" ng-model="editState.email" ng-disabled="editState.saveInProgress" aria-label="E-Mail address">
 				</div>
@@ -358,16 +376,25 @@ function stopCamera(video_preview, stream)
 					<span class="input-group-text">Website</span>
 					<input type="text" class="form-control" ng-model="editState.website" ng-disabled="editState.saveInProgress" aria-label="Website">
 				</div>
-				<div class="card card-body">
-					<canvas id="canvas" ng-show="null === editState.videoStream"></canvas><br />
-					<video id="video_preview" ng-show="null !== editState.videoStream" playsinline autoplay muted></video><br />
-					Upload user pic from filesystem: <input type="file" accept="image/*" id="pic_upload_selector" /><br />
-					<div class="btn-group" role="group" aria-label="Camera">
-						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-enabled="null === editState.videoStream">Start Camera</button>
-						<button type="button" class="btn btn-success" ng-click="capturePicture()" ng-enabled="null !== editState.videoStream">Capture Picture</button>
-						<button type="button" class="btn btn-secondary" ng-click="stopCamera()" ng-enabled="null !== editState.videoStream">Stop Camera</button>
-					</div>
+			</div>
+			<div class="row card" ng-show="inEditMode">
+				<h5 class="card-header">Description:</h5>
+				<div class="card-body container row">
+					<textarea rows="12" ng-model="editState.description" ng-disabled="editState.saveInProgress"></textarea>
 				</div>
+			</div>
+			<div class="row card card-body" ng-show="inEditMode">
+				<h5 class="card-header">User picture:</h5>
+				<canvas id="canvas" ng-show="null === editState.videoStream"></canvas><br />
+				<video id="video_preview" ng-show="null !== editState.videoStream" playsinline autoplay muted></video><br />
+				Upload user pic from filesystem: <input type="file" accept="image/*" id="pic_upload_selector" /><br />
+				<div class="btn-group" role="group" aria-label="Camera">
+					<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-enabled="null === editState.videoStream">Start Camera</button>
+					<button type="button" class="btn btn-success" ng-click="capturePicture()" ng-enabled="null !== editState.videoStream">Capture Picture</button>
+					<button type="button" class="btn btn-secondary" ng-click="stopCamera()" ng-enabled="null !== editState.videoStream">Stop Camera</button>
+				</div>
+			</div>
+			<div class="row card card-body" ng-show="inEditMode">
 				<div class="btn-group" role="group" aria-label="Save">
 					<button type="button" class="btn btn-primary" ng-click="saveDataEdit()" ng-disabled="editState.saveInProgress">Save Data Changes</button>
 					<button type="button" class="btn btn-primary" ng-click="saveUserPic()" ng-disabled="editState.saveInProgress">Save Picture</button>
