@@ -42,6 +42,9 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  * in a decision to follow the user, thus putting the cached entry in the followee cache.  In that case, later calls to
  * find it will resolve it in those fast-path caches hitting before this cache is checked, allowing it to age out and be
  * purged.
+ * Note that this implementation will internally request whatever kind of data locking access is required for what it
+ * needs to accomplish and will avoid doing heavy network operations under lock, relying on transactions for those cases
+ * where it would need to write-back storage due to changes it has made to what is pinned on the local node.
  */
 public class ExplicitCacheLogic
 {
@@ -66,10 +69,65 @@ public class ExplicitCacheLogic
 		Assert.assertTrue(null != context);
 		Assert.assertTrue(null != publicKey);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		IpfsFile root;
+		ExplicitCacheData.UserInfo info;
+		ConcurrentTransaction transaction = null;
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			return _loadUserInfo(access, publicKey);
+			root = access.resolvePublicKey(publicKey).get();
+			// This will fail instead of returning null.
+			Assert.assertTrue(null != root);
+			IExplicitCacheReading data = access.readableExplicitCache();
+			info = data.getUserInfo(root);
+			if (null == info)
+			{
+				transaction = access.openConcurrentTransaction();
+			}
 		}
+		
+		if (null != transaction)
+		{
+			Assert.assertTrue(null == info);
+			ExplicitCacheData.UserInfo potential;
+			try
+			{
+				potential = _loadUserInfo(transaction, root);
+			}
+			catch (ProtocolDataException | IpfsConnectionException e)
+			{
+				try (IWritingAccess access = StandardAccess.writeAccess(context))
+				{
+					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+					transaction.rollback(resolver);
+				}
+				throw e;
+			}
+			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			{
+				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+				ExplicitCacheData data = access.writableExplicitCache();
+				info = data.getUserInfo(root);
+				if (null == info)
+				{
+					// Add this to the structure, creating the official result.
+					info = data.addUserInfo(potential.indexCid(), potential.recommendationsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
+					
+					// Commit the transaction.
+					transaction.commit(resolver);
+					
+					// Purge any overflow.
+					PrefsData prefs = access.readPrefs();
+					_purgeExcess(access, data, prefs);
+				}
+				else
+				{
+					// We will just use this one so rollback the transaction as its network operations will be redundant.
+					transaction.rollback(resolver);
+				}
+			}
+		}
+		Assert.assertTrue(null != info);
+		return info;
 	}
 
 	/**
@@ -89,10 +147,65 @@ public class ExplicitCacheLogic
 		Assert.assertTrue(null != context);
 		Assert.assertTrue(null != recordCid);
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		CachedRecordInfo info;
+		int videoEdgePixelMax = 0;
+		ConcurrentTransaction transaction = null;
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			return _loadRecordInfo(access, recordCid);
+			IExplicitCacheReading data = access.readableExplicitCache();
+			info = data.getRecordInfo(recordCid);
+			if (null == info)
+			{
+				transaction = access.openConcurrentTransaction();
+				videoEdgePixelMax = access.readPrefs().videoEdgePixelMax;
+			}
 		}
+		
+		if (null != transaction)
+		{
+			Assert.assertTrue(null == info);
+			Assert.assertTrue(videoEdgePixelMax > 0);
+			CachedRecordInfo potential;
+			try
+			{
+				potential = _loadRecordInfo(transaction, videoEdgePixelMax, recordCid);
+			}
+			catch (ProtocolDataException | IpfsConnectionException e)
+			{
+				try (IWritingAccess access = StandardAccess.writeAccess(context))
+				{
+					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+					transaction.rollback(resolver);
+				}
+				throw e;
+			}
+			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			{
+				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+				ExplicitCacheData data = access.writableExplicitCache();
+				info = data.getRecordInfo(recordCid);
+				if (null == info)
+				{
+					// Add this to the structure.
+					data.addStreamRecord(recordCid, potential);
+					info = potential;
+					
+					// Commit the transaction.
+					transaction.commit(resolver);
+					
+					// Purge any overflow.
+					PrefsData prefs = access.readPrefs();
+					_purgeExcess(access, data, prefs);
+				}
+				else
+				{
+					// We will just use this one so rollback the transaction as its network operations will be redundant.
+					transaction.rollback(resolver);
+				}
+			}
+		}
+		Assert.assertTrue(null != info);
+		return info;
 	}
 
 	/**
@@ -148,79 +261,43 @@ public class ExplicitCacheLogic
 		}, prefs.explicitCacheTargetBytes);
 	}
 
-	private static ExplicitCacheData.UserInfo _loadUserInfo(IWritingAccess access, IpfsKey publicKey) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private static ExplicitCacheData.UserInfo _loadUserInfo(ConcurrentTransaction transaction, IpfsFile root) throws ProtocolDataException, IpfsConnectionException
 	{
-		IpfsFile root = access.resolvePublicKey(publicKey).get();
-		// This will fail instead of returning null.
-		Assert.assertTrue(null != root);
-		ExplicitCacheData data = access.writableExplicitCache();
-		ExplicitCacheData.UserInfo info = data.getUserInfo(root);
-		if (null == info)
+		// First, read all of the data to make sure that it is valid.
+		ForeignChannelReader reader = new ForeignChannelReader(transaction, root, false);
+		StreamIndex index = reader.loadIndex();
+		StreamDescription description = reader.loadDescription();
+		// (recommendations is something we don't use but will pin later so we want to know it is valid)
+		reader.loadRecommendations();
+		// We need to check the user pic, explicitly.
+		IpfsFile userPicCid = IpfsFile.fromIpfsCid(description.getPicture());
+		long picSize = transaction.getSizeInBytes(userPicCid).get();
+		if (picSize > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
 		{
-			// Find and populate the cache.
-			// First, read all of the data to make sure that it is valid.
-			ForeignChannelReader reader = new ForeignChannelReader(access, root, false);
-			StreamIndex index = reader.loadIndex();
-			StreamDescription description = reader.loadDescription();
-			// (recommendations is something we don't use but will pin later so we want to know it is valid)
-			reader.loadRecommendations();
-			// We need to check the user pic, explicitly.
-			IpfsFile userPicCid = IpfsFile.fromIpfsCid(description.getPicture());
-			long picSize = access.getSizeInBytes(userPicCid).get();
-			if (picSize > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
-			{
-				throw new SizeConstraintException("explicit user pic", picSize, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
-			}
-			// Now, pin everything and update the cache.
-			FuturePin pinIndex = access.pin(root);
-			FuturePin pinRecommendations = access.pin(IpfsFile.fromIpfsCid(index.getRecommendations()));
-			FuturePin pinDescription = access.pin(IpfsFile.fromIpfsCid(index.getDescription()));
-			FuturePin pinUserPic = access.pin(userPicCid);
-			pinIndex.get();
-			pinRecommendations.get();
-			pinDescription.get();
-			pinUserPic.get();
-			long combinedSizeBytes = access.getSizeInBytes(pinIndex.cid).get()
-					+ access.getSizeInBytes(pinRecommendations.cid).get()
-					+ access.getSizeInBytes(pinDescription.cid).get()
-					+ picSize
-			;
-			info = data.addUserInfo(pinIndex.cid, pinRecommendations.cid, pinDescription.cid, userPicCid, combinedSizeBytes);
-			
-			// Purge any overflow.
-			PrefsData prefs = access.readPrefs();
-			_purgeExcess(access, data, prefs);
+			throw new SizeConstraintException("explicit user pic", picSize, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
 		}
-		return info;
+		// Now, pin everything and update the cache.
+		FuturePin pinIndex = transaction.pin(root);
+		FuturePin pinRecommendations = transaction.pin(IpfsFile.fromIpfsCid(index.getRecommendations()));
+		FuturePin pinDescription = transaction.pin(IpfsFile.fromIpfsCid(index.getDescription()));
+		FuturePin pinUserPic = transaction.pin(userPicCid);
+		pinIndex.get();
+		pinRecommendations.get();
+		pinDescription.get();
+		pinUserPic.get();
+		long combinedSizeBytes = transaction.getSizeInBytes(pinIndex.cid).get()
+				+ transaction.getSizeInBytes(pinRecommendations.cid).get()
+				+ transaction.getSizeInBytes(pinDescription.cid).get()
+				+ picSize
+		;
+		return new ExplicitCacheData.UserInfo(pinIndex.cid, pinRecommendations.cid, pinDescription.cid, userPicCid, combinedSizeBytes);
 	}
 
-	private static CachedRecordInfo _loadRecordInfo(IWritingAccess access, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	private static CachedRecordInfo _loadRecordInfo(ConcurrentTransaction transaction, int videoEdgePixelMax, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
 	{
-		ExplicitCacheData data = access.writableExplicitCache();
-		CachedRecordInfo info = data.getRecordInfo(recordCid);
-		if (null == info)
-		{
-			// Find and populate the cache.
-			PrefsData prefs = access.readPrefs();
-			ConcurrentTransaction transaction = access.openConcurrentTransaction();
-			ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-			try
-			{
-				info = CommonRecordPinning.loadAndPinRecord(transaction, prefs.videoEdgePixelMax, recordCid);
-				transaction.commit(resolver);
-			}
-			catch (ProtocolDataException | IpfsConnectionException e)
-			{
-				transaction.rollback(resolver);
-				throw e;
-			}
-			// This is never null - throws on error.
-			Assert.assertTrue(null != info);
-			data.addStreamRecord(recordCid, info);
-			
-			// Purge any overflow.
-			_purgeExcess(access, data, prefs);
-		}
+		CachedRecordInfo info = CommonRecordPinning.loadAndPinRecord(transaction, videoEdgePixelMax, recordCid);
+		// This is never null - throws on error.
+		Assert.assertTrue(null != info);
 		return info;
 	}
 }

@@ -30,6 +30,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
+import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
@@ -309,6 +310,129 @@ public class TestExplicitCacheLogic
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
 		Assert.assertNotNull(record);
 		Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(context, cid));
+		scheduler.shutdown();
+	}
+
+	@Test
+	public void concurrentUser() throws Throwable
+	{
+		// We want to start multiple threads, operating on the same data store (acting as concurrent requests on the
+		// same running server) and have them all perform the same request, verifying that the final state has the same
+		// state cached on the local node.
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		_populateWithEmpty(upstream, MockKeys.K1, "userPic".getBytes());
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		Thread[] threads = new Thread[10];
+		for (int i = 0; i < threads.length; ++i)
+		{
+			threads[i] = new Thread(() -> {
+				ExplicitCacheData.UserInfo userInfo;
+				try
+				{
+					userInfo = ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
+				}
+				catch (ProtocolDataException e)
+				{
+					// Not expected.
+					throw new AssertionError(e);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// Not expected.
+					throw new AssertionError(e);
+				}
+				catch (KeyException e)
+				{
+					// Not expected.
+					throw new AssertionError(e);
+				}
+				Assert.assertNotNull(userInfo);
+			});
+		}
+		for (int i = 0; i < threads.length; ++i)
+		{
+			threads[i].start();
+		}
+		for (int i = 0; i < threads.length; ++i)
+		{
+			threads[i].join();
+		}
+		// While we pin all 4 elements (index, recommendations, description, picture), we don't actually load the picture.
+		Assert.assertEquals(4, node.getStoredFileSet().size());
+		
+		// This test is somewhat racy so we know that we will see between 1 and 10 load attempts (usually 10), but we expect each attempt to have a consistent multiple.
+		Assert.assertTrue(node.loadCalls >= 3);
+		Assert.assertTrue(node.loadCalls <= (3 * threads.length));
+		// We see size checks come from 2 different locations:
+		// ForeignChannelReader: (3) index, description, recommendations
+		// ExplicitCacheLogic: (4) userpic, index, recommendations, description
+		Assert.assertTrue(node.sizeCalls >= 7);
+		Assert.assertTrue(node.sizeCalls <= (7 * threads.length));
+		int multiple = node.loadCalls / 3;
+		Assert.assertEquals(7 * multiple, node.sizeCalls);
+		scheduler.shutdown();
+	}
+
+	@Test
+	public void concurrentRecord() throws Throwable
+	{
+		// We want to start multiple threads, operating on the same data store (acting as concurrent requests on the
+		// same running server) and have them all perform the same request, verifying that the final state has the same
+		// state cached on the local node.
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		Thread[] threads = new Thread[10];
+		for (int i = 0; i < threads.length; ++i)
+		{
+			threads[i] = new Thread(() -> {
+				CachedRecordInfo record;
+				try
+				{
+					record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+				}
+				catch (ProtocolDataException e)
+				{
+					// Not expected.
+					throw new AssertionError(e);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// Not expected.
+					throw new AssertionError(e);
+				}
+				Assert.assertNotNull(record);
+			});
+		}
+		for (int i = 0; i < threads.length; ++i)
+		{
+			threads[i].start();
+		}
+		for (int i = 0; i < threads.length; ++i)
+		{
+			threads[i].join();
+		}
+		// We check the record size, load it, then total record, thumbnail, and video.
+		// We know that this results in 3 pins (the record, the thumbnail, and video):
+		Assert.assertEquals(3, node.getStoredFileSet().size());
+		// We should see up to 10x the usual count, since each thread does the same thing, even if only 1 writes-back.
+		// (this will usually be 10x but can technically be as low as 1x, but we expect the right multiples).
+		Assert.assertTrue(node.loadCalls >= 1);
+		Assert.assertTrue(node.loadCalls <= threads.length);
+		Assert.assertTrue(node.sizeCalls >= 4);
+		Assert.assertTrue(node.sizeCalls <= (4 * threads.length));
+		// We expect X * 1 for loads, so that is our multiple.
+		Assert.assertEquals(node.sizeCalls, 4 * node.loadCalls);
 		scheduler.shutdown();
 	}
 
