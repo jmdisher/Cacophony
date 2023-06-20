@@ -16,9 +16,9 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class LoadedStorage implements IReadWriteLocalData
 {
-	public static IReadOnlyLocalData openReadOnly(UnlockRead readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, FavouritesCacheData favouritesCache)
+	public static IReadOnlyLocalData openReadOnly(UnlockRead readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
 	{
-		return new LoadedStorage(readLock, null, localIndex, globalPinCache, followIndex, globalPrefs, favouritesCache, null);
+		return new LoadedStorage(readLock, null, localIndex, globalPinCache, followIndex, globalPrefs, favouritesCache, explicitCache);
 	}
 
 	public static IReadWriteLocalData openReadWrite(UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
@@ -92,6 +92,13 @@ public class LoadedStorage implements IReadWriteLocalData
 	}
 
 	@Override
+	public ExplicitCacheData readExplicitCache()
+	{
+		Assert.assertTrue(_isOpen);
+		return _explicitCache;
+	}
+
+	@Override
 	public void close()
 	{
 		Assert.assertTrue(_isOpen);
@@ -144,14 +151,6 @@ public class LoadedStorage implements IReadWriteLocalData
 		Assert.assertTrue(null != _writeLock);
 		_followIndex = followIndex;
 		_changed_followIndex = true;
-	}
-
-	@Override
-	public ExplicitCacheData readExplicitCache()
-	{
-		Assert.assertTrue(_isOpen);
-		Assert.assertTrue(null != _writeLock);
-		return _explicitCache;
 	}
 
 	@Override

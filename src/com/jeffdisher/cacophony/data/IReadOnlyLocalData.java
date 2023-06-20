@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.data;
 
 import com.jeffdisher.cacophony.projection.ChannelData;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
@@ -21,6 +22,14 @@ public interface IReadOnlyLocalData extends AutoCloseable
 	PinCacheData readGlobalPinCache();
 	FolloweeData readFollowIndex();
 	FavouritesCacheData readFavouritesCache();
+	/**
+	 * Note that the explicit cache is technically being modified, even when only read, since it maintains an internal
+	 * least-recently-used element order.  This means that, while the can be used in a purely read-only way, the LRU
+	 * updates will be discarded if not explicitly written-back.
+	 * 
+	 * @return The explicit cache.
+	 */
+	ExplicitCacheData readExplicitCache();
 	/**
 	 * We implement AudoCloseable so we can use the try-with-resources idiom but we have no need for the exception so
 	 * we override the close() not to throw it.

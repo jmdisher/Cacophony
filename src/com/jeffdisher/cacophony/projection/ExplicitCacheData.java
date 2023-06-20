@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
@@ -23,6 +25,7 @@ public class ExplicitCacheData
 	// When something is used, it is removed from the list and re-added at the end.
 	// This means that element 0 is "least recently used".
 	private final List<IpfsFile> _lru;
+	private final Lock _lruLock;
 	private final Map<IpfsFile, UserInfo> _userInfo;
 	private final Map<IpfsFile, CachedRecordInfo> _recordInfo;
 	private long _totalCacheInBytes;
@@ -30,6 +33,7 @@ public class ExplicitCacheData
 	public ExplicitCacheData()
 	{
 		_lru = new ArrayList<>();
+		_lruLock = new ReentrantLock();
 		_userInfo = new HashMap<>();
 		_recordInfo = new HashMap<>();
 	}
@@ -144,8 +148,7 @@ public class ExplicitCacheData
 		if (null != info)
 		{
 			// Re-sort this as recently used.
-			_lru.remove(indexCid);
-			_lru.add(indexCid);
+			_updateLru(indexCid);
 		}
 		return info;
 	}
@@ -161,9 +164,7 @@ public class ExplicitCacheData
 		CachedRecordInfo info = _recordInfo.get(recordCid);
 		if (null != info)
 		{
-			// Re-sort this as recently used.
-			_lru.remove(recordCid);
-			_lru.add(recordCid);
+			_updateLru(recordCid);
 		}
 		return info;
 	}
@@ -218,6 +219,22 @@ public class ExplicitCacheData
 	{
 		return _totalCacheInBytes;
 	};
+
+
+	private void _updateLru(IpfsFile cid)
+	{
+		_lruLock.lock();
+		try
+		{
+			// Re-sort this as recently used.
+			_lru.remove(cid);
+			_lru.add(cid);
+		}
+		finally
+		{
+			_lruLock.unlock();
+		}
+	}
 
 
 	public static record UserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) {}

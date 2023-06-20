@@ -19,7 +19,6 @@ public interface IReadWriteLocalData extends IReadOnlyLocalData
 	void writeGlobalPrefs(PrefsData prefs);
 	void writeGlobalPinCache(PinCacheData pinCache);
 	void writeFollowIndex(FolloweeData followIndex);
-	ExplicitCacheData readExplicitCache();
 	void writeExplicitCache(ExplicitCacheData explicitCache);
 	void writeFavouritesCache(FavouritesCacheData favouritesCache);
 }

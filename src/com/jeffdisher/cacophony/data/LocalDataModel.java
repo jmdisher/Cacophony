@@ -251,7 +251,7 @@ public class LocalDataModel
 	{
 		Lock lock = _readWriteLock.readLock();
 		lock.lock();
-		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache);
+		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
 	/**
