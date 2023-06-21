@@ -211,7 +211,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 	}
 	
 	$scope.publicKey = publicKey;
-	API_getInfoForUser(publicKey).then(userInfo => {
+	GLOBAL_UnknownUserLoader.loadTuple(publicKey).then(userInfo => {
 		userInfoForUserLoaded($scope, userInfo);
 	});
 	$scope.posts = [];

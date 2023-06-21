@@ -114,7 +114,7 @@ function publicKeyLoaded($scope, publicKey)
 {
 	$scope.publicKey = publicKey;
 	$scope.thisUserName = "Unknown User";
-	API_getInfoForUser(publicKey).then(userInfo => {
+	GLOBAL_UnknownUserLoader.loadTuple(publicKey).then(userInfo => {
 		userInfoForUserLoaded($scope, userInfo);
 	});
 	REST.GET("/server/recommendedKeys/" + publicKey)
@@ -177,7 +177,7 @@ function addKeyToList(list, key, onPopulate)
 		"publicKey": key,
 	};
 	let nextIndex = list.push(placeholder);
-	API_getInfoForUser(key).then(elt => {
+	GLOBAL_UnknownUserLoader.loadTuple(key).then(elt => {
 		if (undefined !== elt)
 		{
 			// We can't update the placeholder since the $apply() won't see nested updates so replace this.

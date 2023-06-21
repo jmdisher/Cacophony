@@ -93,7 +93,7 @@ function beginPopulating($scope)
 			}
 			keyToObjectMap[key] = object;
 			
-			API_getInfoForUser(key).then(elt => {
+			GLOBAL_UnknownUserLoader.loadTuple(key).then(elt => {
 				object["name"] = elt["name"];
 				object["description"] = elt["description"];
 				object["userPicUrl"] = elt["userPicUrl"];
