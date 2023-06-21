@@ -33,6 +33,7 @@ function xsrfLoaded($scope)
 function postWasLoaded($scope, elt)
 {
 	$scope.name = elt["name"];
+	$scope.publisherKey = elt["publisherKey"];
 	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
 	$scope.discussionUrl = elt["discussionUrl"];
 	$scope.discussionHost = null;
@@ -159,7 +160,7 @@ function setupEnvironment($scope)
 		</div>
 		<div class="row card card-body">
 			<strong>{{name}}</strong><br />
-			<em>(posted: {{readableDate}})</em><br />
+			<span>Posted by <caco-user-link public-key="publisherKey"></caco-user-link> <em>({{readableDate}})</em></span><br />
 		</div>
 	</div>
 	<div class="row justify-content-md-center">
