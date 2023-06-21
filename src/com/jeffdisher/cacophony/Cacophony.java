@@ -124,7 +124,8 @@ public class Cacophony {
 					
 					// Create the executor and logger for our run and put them into the context.
 					DraftManager draftManager = new DraftManager(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory());
-					StandardLogger logger = StandardLogger.topLogger(System.out);
+					boolean verbose = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_VERBOSE));
+					StandardLogger logger = StandardLogger.topLogger(System.out, verbose);
 					URL baseUrl = connectionData.second();
 					Context context = _createContext(keyName
 							, localDataModel

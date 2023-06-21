@@ -128,7 +128,7 @@ public class TestStartFollowingCommand
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
-		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream));
+		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream), false);
 		
 		boolean didFail = false;
 		try

@@ -5,9 +5,9 @@ import java.io.PrintStream;
 
 public class StandardLogger implements ILogger
 {
-	public static StandardLogger topLogger(PrintStream stream)
+	public static StandardLogger topLogger(PrintStream stream, boolean verbose)
 	{
-		return new StandardLogger(null, stream, "");
+		return new StandardLogger(null, stream, "", verbose);
 	}
 
 
@@ -15,17 +15,20 @@ public class StandardLogger implements ILogger
 	private final StandardLogger _parent;
 	private final PrintStream _stream;
 	private final String _prefix;
+	private final boolean _verbose;
 	private int _nextOperationCounter;
 	private boolean _errorOccurred;
 
 	private StandardLogger(StandardLogger parent
 			, PrintStream stream
 			, String prefix
+			, boolean verbose
 	)
 	{
 		_parent = parent;
 		_stream = stream;
 		_prefix = prefix;
+		_verbose = verbose;
 		_nextOperationCounter = 0;
 	}
 
@@ -36,7 +39,7 @@ public class StandardLogger implements ILogger
 		_nextOperationCounter += 1;
 		String prefix = "" + operationNumber;
 		_stream.println(">" + prefix + "> " + openingMessage);
-		return new StandardLogger(this, _stream, prefix);
+		return new StandardLogger(this, _stream, prefix, _verbose);
 	}
 
 	@Override
@@ -59,7 +62,10 @@ public class StandardLogger implements ILogger
 	@Override
 	public void logVerbose(String message)
 	{
-		_stream.println("*" + _prefix + "* " + message);
+		if (_verbose)
+		{
+			_stream.println("*" + _prefix + "* " + message);
+		}
 	}
 
 	@Override

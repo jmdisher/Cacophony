@@ -30,4 +30,9 @@ public class EnvVars
 	 * set, a default will be assumed (which should work for nearly all non-testing use-cases).
 	 */
 	public static final String ENV_VAR_CACOPHONY_IPFS_CONNECT = "CACOPHONY_IPFS_CONNECT";
+
+	/**
+	 * Enables verbose console logging.  If not set, verbose logs will not be written to the console.
+	 */
+	public static final String ENV_VAR_CACOPHONY_VERBOSE = "CACOPHONY_VERBOSE";
 }

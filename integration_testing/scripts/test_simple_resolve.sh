@@ -104,7 +104,7 @@ requireSubstring "$DESCRIPTION" "Name: NAME1"
 
 echo "Verify that the answer for something which should not exist makes sense..."
 # Redirect error since it logs the exception.
-DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV 2> /dev/null)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_VERBOSE="" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV 2> /dev/null)
 requireSubstring "$DESCRIPTION" "Check explicit cache: IpfsKey(z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV)"
 
 kill $PID1

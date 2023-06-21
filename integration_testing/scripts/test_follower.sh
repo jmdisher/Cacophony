@@ -90,7 +90,7 @@ CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java
 checkPreviousCommand "publishSingleVideo"
 
 echo "Refresh followee"
-REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
+REFRESH_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_VERBOSE="" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1")
 requireSubstring "$REFRESH_OUTPUT" "-thumbnail 524.29 kB (524288 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "-leaf 2.10 MB (2097152 bytes)"
 requireSubstring "$REFRESH_OUTPUT" "<1< Refresh successful!"

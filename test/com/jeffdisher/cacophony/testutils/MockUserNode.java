@@ -113,7 +113,7 @@ public class MockUserNode
 		// See if we want to override the output capture.
 		if (null != captureStream)
 		{
-			logger = StandardLogger.topLogger(new PrintStream(captureStream));
+			logger = StandardLogger.topLogger(new PrintStream(captureStream), false);
 			IpfsKey publicKey = defaultContext.getSelectedKey();
 			usedContext = new Context(defaultContext.sharedDraftManager
 					, defaultContext.sharedDataModel
