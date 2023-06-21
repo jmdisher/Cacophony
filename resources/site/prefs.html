@@ -22,18 +22,20 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	API_getPrefs().then(prefs => {
-		// We need to process some of these for UI clarity.
-		$scope.videoEdgePixelMax = prefs["videoEdgePixelMax"];
-		$scope.followCacheTargetMB = prefs["followCacheTargetBytes"] / 1000000;
-		$scope.republishIntervalMinutes = (prefs["republishIntervalMillis"] / 1000 / 60);
-		$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
-		$scope.explicitCacheTargetMB = prefs["explicitCacheTargetBytes"] / 1000000;
-		$scope.followeeRecordThumbnailMaxMB = prefs["followeeRecordThumbnailMaxBytes"] / 1000000;
-		$scope.followeeRecordAudioMaxMB = prefs["followeeRecordAudioMaxBytes"] / 1000000;
-		$scope.followeeRecordVideoMaxMB = prefs["followeeRecordVideoMaxBytes"] / 1000000;
-		$scope.$apply();
-	});
+	REST.GET("/server/prefs")
+		.then(result => result.json())
+		.then(prefs => {
+			// We need to process some of these for UI clarity.
+			$scope.videoEdgePixelMax = prefs["videoEdgePixelMax"];
+			$scope.followCacheTargetMB = prefs["followCacheTargetBytes"] / 1000000;
+			$scope.republishIntervalMinutes = (prefs["republishIntervalMillis"] / 1000 / 60);
+			$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
+			$scope.explicitCacheTargetMB = prefs["explicitCacheTargetBytes"] / 1000000;
+			$scope.followeeRecordThumbnailMaxMB = prefs["followeeRecordThumbnailMaxBytes"] / 1000000;
+			$scope.followeeRecordAudioMaxMB = prefs["followeeRecordAudioMaxBytes"] / 1000000;
+			$scope.followeeRecordVideoMaxMB = prefs["followeeRecordVideoMaxBytes"] / 1000000;
+			$scope.$apply();
+		});
 	
 	$scope.inProgress = false;
 	$scope.savePrefs = function()

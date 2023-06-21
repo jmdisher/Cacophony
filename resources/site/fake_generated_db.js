@@ -130,15 +130,6 @@ var DATA_following = [
 
 
 // Note that we will temporarily just pass this data back, asynchronously, to get the rest of the code into the async shape required for the interactive mode to eventually fetch this from REST, not the generated file.
-function API_loadPublicKey()
-{
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve(DATA_common["publicKey"]);
-		});
-	});
-}
-
 function API_getInfoForUser(publicKey)
 {
 	return new Promise(resolve => {
@@ -148,47 +139,11 @@ function API_getInfoForUser(publicKey)
 	});
 }
 
-function API_getRecommendedUsers(publicKey)
-{
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve(DATA_recommended[publicKey]);
-		});
-	});
-}
-
 function API_getPost(hash, forceCache)
 {
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve(DATA_elements[hash]);
-		});
-	});
-}
-
-function API_getFollowedKeys()
-{
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve(DATA_following);
-		});
-	});
-}
-
-function API_getPrefs()
-{
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve(DATA_prefs);
-		});
-	});
-}
-
-function API_getVersion()
-{
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve(DATA_version);
 		});
 	});
 }

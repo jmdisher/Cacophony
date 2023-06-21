@@ -117,9 +117,11 @@ function publicKeyLoaded($scope, publicKey)
 	API_getInfoForUser(publicKey).then(userInfo => {
 		userInfoForUserLoaded($scope, userInfo);
 	});
-	API_getRecommendedUsers(publicKey).then(recommendedKeys => {
-		recommendedUsersLoaded($scope, recommendedKeys);
-	});
+	REST.GET("/server/recommendedKeys/" + publicKey)
+		.then(result => result.json())
+		.then(recommendedKeys => {
+			recommendedUsersLoaded($scope, recommendedKeys);
+		});
 }
 function userInfoForUserLoaded($scope, userInfo)
 {

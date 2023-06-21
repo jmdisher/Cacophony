@@ -95,11 +95,13 @@ function xsrfLoaded($scope)
 		})
 	;
 	
-	API_getVersion().then(version => {
-		$scope.hash = version["hash"];
-		$scope.version = version["version"];
-		$scope.$apply();
-	});
+	REST.GET("/server/version")
+		.then(result => result.json())
+		.then(version => {
+			$scope.hash = version["hash"];
+			$scope.version = version["version"];
+			$scope.$apply();
+		});
 	
 	// Create a placeholder struct.
 	$scope.caches = {
