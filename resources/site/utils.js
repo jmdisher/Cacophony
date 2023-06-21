@@ -85,3 +85,32 @@ function renderLongTextIntoElement(element, longText)
 	element.innerText = longText;
 	element.innerHTML = element.innerHTML.replace(/\/n/g, "<br />");
 }
+
+// Returns an object describing the post with the given hash, via a promise.  Implementation of this is in GET_PostStruct.java and defines these keys:
+// -cached (boolean)
+// -name (string)
+// -description (string)
+// -publishedSecondsUtc (long)
+// -discussionUrl (string)
+// -publisherKey (string)
+// -thumbnailUrl (string)
+// -videoUrl (string)
+// -audioUrl (string)
+function API_getPost(hash, forceCache)
+{
+	return new Promise(resolve => {
+		REST.GET("/server/postStruct/" + hash + "/" + (forceCache ? "FORCE" : "OPTIONAL"))
+			.then(result => result.json())
+			.then(json => resolve(json));
+	});
+}
+
+// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
+function API_getXsrf()
+{
+	return new Promise(resolve => {
+		REST.POST("/server/cookie")
+			.then(resolve);
+	});
+}
+
