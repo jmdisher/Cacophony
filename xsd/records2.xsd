@@ -1,0 +1,16 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:caco="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/records2.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/records2.xsd" elementFormDefault="qualified">
+	<xs:element name="records" type="caco:CacophonyRecords"/>
+
+	<xs:simpleType name="IpfsCid">
+		<xs:restriction base="xs:string">
+			<xs:length value="46" />
+			<xs:pattern value="Qm[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="CacophonyRecords">
+		<xs:sequence>
+			<!-- Each "record" is interpreted as a link to a CacophonyRecord instance. -->
+			<xs:element name="record" type="caco:IpfsCid" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

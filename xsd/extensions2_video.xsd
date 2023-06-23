@@ -1,0 +1,30 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:caco="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/extensions2_video.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/extensions2_video.xsd" elementFormDefault="qualified">
+	<xs:element name="video" type="caco:CacophonyExtensionVideo"/>
+
+	<xs:simpleType name="IpfsCid">
+		<xs:restriction base="xs:string">
+			<xs:length value="46" />
+			<xs:pattern value="Qm[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="MimeString">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:maxLength value="64" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="VideoFormat">
+		<xs:sequence>
+			<!-- "cid" points directly at the stored video data. -->
+			<xs:element name="cid" type="caco:IpfsCid" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="mime" type="caco:MimeString" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="height" type="xs:int" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="width" type="xs:int" minOccurs="1" maxOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="CacophonyExtensionVideo">
+		<xs:sequence>
+			<xs:element name="format" type="caco:VideoFormat" minOccurs="1" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

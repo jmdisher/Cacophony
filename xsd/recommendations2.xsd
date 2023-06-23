@@ -1,0 +1,15 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:caco="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/recommendations2.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/recommendations2.xsd" elementFormDefault="qualified">
+	<xs:element name="recommendations" type="caco:CacophonyRecommendations"/>
+
+	<xs:simpleType name="IpfsPublicKey">
+		<xs:restriction base="xs:string">
+			<xs:length value="55" />
+			<xs:pattern value="z[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="CacophonyRecommendations">
+		<xs:sequence>
+			<xs:element name="user" type="caco:IpfsPublicKey" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

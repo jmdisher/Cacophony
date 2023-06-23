@@ -1,0 +1,35 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:caco="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/root2.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/root2.xsd" elementFormDefault="qualified">
+	<xs:element name="root" type="caco:CacophonyRoot"/>
+
+	<xs:simpleType name="IpfsCid">
+		<xs:restriction base="xs:string">
+			<xs:length value="46" />
+			<xs:pattern value="Qm[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="DataTypeName">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:maxLength value="255" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="DataReference">
+		<xs:simpleContent>
+			<xs:extension base="caco:IpfsCid">
+				<xs:attribute name="type" type="caco:DataTypeName" use="required" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="CacophonyRoot">
+		<xs:sequence>
+			<xs:element name="version" type="xs:int" minOccurs="1" maxOccurs="1"/>
+			<!-- The data's value points to the type-defined data element (must be ignored and preserved by applications which don't understand the type).
+				Types supported by reference implementation:
+				-"cacophony.description" - https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/description2.xsd
+				-"cacophony.recommendations" - https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/recommendations2.xsd
+				-"cacophony.records" - https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/records2.xsd
+			-->
+			<xs:element name="data" type="caco:DataReference" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

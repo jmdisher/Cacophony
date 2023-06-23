@@ -1,0 +1,71 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:caco="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/record2.xsd" targetNamespace="https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/record2.xsd" elementFormDefault="qualified">
+	<xs:element name="record" type="caco:CacophonyRecord"/>
+
+	<xs:simpleType name="IpfsCid">
+		<xs:restriction base="xs:string">
+			<xs:length value="46" />
+			<xs:pattern value="Qm[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="IpfsPublicKey">
+		<xs:restriction base="xs:string">
+			<xs:length value="55" />
+			<xs:pattern value="z[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="MimeString">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:maxLength value="64" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="SmallString">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:maxLength value="128" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="LongString">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:maxLength value="32768" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="ExtensionTypeName">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:maxLength value="255" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="ThumbnailReference">
+		<xs:simpleContent>
+			<xs:extension base="caco:IpfsCid">
+				<xs:attribute name="mime" type="caco:MimeString" use="required" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType mixed="true" name="ExtensionReference">
+		<xs:sequence>
+			<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="type" type="caco:ExtensionTypeName" use="required" />
+	</xs:complexType>
+	<xs:complexType name="CacophonyRecord">
+		<xs:sequence>
+			<xs:element name="name" type="caco:SmallString" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="description" type="caco:LongString" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="publishedSecondsUtc" type="xs:long" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="discussionUrl" type="xs:anyURI" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="publisherKey" type="caco:IpfsPublicKey" minOccurs="1" maxOccurs="1"/>
+			<!-- "thumbnail" is interpreted as a link to an image. -->
+			<xs:element name="thumbnail" type="caco:ThumbnailReference" minOccurs="0" maxOccurs="1"/>
+			<!-- The extension's value points to the type-defined extension data (must be ignored and preserved by applications which don't understand the type).
+				Types supported by reference implementation:
+				-"cacophony.video" - Videa/audio attachments (for multiple resolutions)
+			-->
+			<xs:element name="extension" type="caco:ExtensionReference" minOccurs="0" maxOccurs="1"/>
+			<!-- "feature" is interpreted as a link to a CacophonyRecord instance. -->
+			<xs:element name="replyTo" type="caco:IpfsCid" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>
