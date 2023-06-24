@@ -5,9 +5,7 @@ import java.util.Iterator;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -91,14 +89,14 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			// The ChannelModified updates the interior elements but not the leaf StreamRecord nodes or leaves.
 			// This means we need to read the dead record from the network, and unpin it and any leaves, manually.
 			// Start the read, do the update and commit new root before proceeding.
-			FutureRead<StreamRecord> deadRecordFuture = access.loadCached(postToRemove, (byte[] data) -> GlobalData.deserializeRecord(data));
+			FutureRead<AbstractRecord> deadRecordFuture = access.loadCached(postToRemove, AbstractRecord.DESERIALIZER);
 			
 			// Update the channel structure, unpinning dropped data.
 			modifier.storeRecords(records);
 			newRoot = modifier.commitNewRoot();
 			
 			// Now, unpin this data and update the LocalRecordCache.
-			StreamRecord deadRecord;
+			AbstractRecord deadRecord;
 			try
 			{
 				deadRecord = deadRecordFuture.get();
@@ -127,10 +125,17 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 				}
 			}
 			// Unpin everything, no matter what it means.
-			for (DataElement leaf : deadRecord.getElements().getElement())
+			if (null != deadRecord.getThumbnailCid())
 			{
-				IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-				access.unpin(leafCid);
+				access.unpin(deadRecord.getThumbnailCid());
+			}
+			if (null != deadRecord.getVideoExtension())
+			{
+				for (AbstractRecord.Leaf leaf : deadRecord.getVideoExtension())
+				{
+					IpfsFile leafCid = leaf.cid();
+					access.unpin(leafCid);
+				}
 			}
 			if (null != recordCache)
 			{

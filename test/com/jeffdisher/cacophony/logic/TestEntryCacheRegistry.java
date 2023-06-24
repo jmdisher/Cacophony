@@ -9,8 +9,7 @@ import java.util.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.global.record.DataArray;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.testutils.MockKeys;
@@ -368,7 +367,7 @@ public class TestEntryCacheRegistry
 		}
 	}
 
-	private static class FakeAccess implements Function<IpfsFile, FutureRead<StreamRecord>>
+	private static class FakeAccess implements Function<IpfsFile, FutureRead<AbstractRecord>>
 	{
 		private final Map<IpfsFile, Long> _publishTimesForRecords = new HashMap<>();
 		public void storeRecord(IpfsFile cid, long time)
@@ -376,17 +375,16 @@ public class TestEntryCacheRegistry
 			_publishTimesForRecords.put(cid, time);
 		}
 		@Override
-		public FutureRead<StreamRecord> apply(IpfsFile file)
+		public FutureRead<AbstractRecord> apply(IpfsFile file)
 		{
 			Assert.assertTrue(_publishTimesForRecords.containsKey(file));
-			FutureRead<StreamRecord> read = new FutureRead<>();
-			StreamRecord newRecord = new StreamRecord();
+			FutureRead<AbstractRecord> read = new FutureRead<>();
+			AbstractRecord newRecord = AbstractRecord.createNew();
 			newRecord.setName("name");
 			newRecord.setDescription("description");
 			// We ignore the key so just use anything.
-			newRecord.setPublisherKey(MockKeys.K1.toPublicKey());
+			newRecord.setPublisherKey(MockKeys.K1);
 			newRecord.setPublishedSecondsUtc(_publishTimesForRecords.get(file));
-			newRecord.setElements(new DataArray());
 			read.success(newRecord);
 			return read;
 		}

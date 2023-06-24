@@ -1,13 +1,12 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.DataArray;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -22,7 +21,7 @@ public class TestLeafFinder
 	@Test
 	public void testNone() throws Throwable
 	{
-		StreamRecord record = _emptyRecord();
+		AbstractRecord record = _emptyRecord();
 		record = _verify(record);
 		LeafFinder finder = LeafFinder.parseRecord(record);
 		Assert.assertNull(finder.thumbnail);
@@ -34,7 +33,7 @@ public class TestLeafFinder
 	@Test
 	public void testThumbOneVideo() throws Throwable
 	{
-		StreamRecord record = _emptyRecord();
+		AbstractRecord record = _emptyRecord();
 		_add(record, F1, "image/jpeg", null, true);
 		_add(record, F2, "video/webm", new int[] { 640, 480 }, false);
 		record = _verify(record);
@@ -50,10 +49,10 @@ public class TestLeafFinder
 	@Test
 	public void testOneOfEach() throws Throwable
 	{
-		StreamRecord record = _emptyRecord();
+		AbstractRecord record = _emptyRecord();
 		_add(record, F1, "image/jpeg", null, true);
 		_add(record, F2, "video/webm", new int[] { 640, 480 }, false);
-		_add(record, F3, "audio/ogg", null, false);
+		_add(record, F3, "audio/ogg", new int[] { 0, 0 }, false);
 		record = _verify(record);
 		LeafFinder finder = LeafFinder.parseRecord(record);
 		Assert.assertEquals(F1, finder.thumbnail);
@@ -67,7 +66,7 @@ public class TestLeafFinder
 	@Test
 	public void testTwoVideos() throws Throwable
 	{
-		StreamRecord record = _emptyRecord();
+		AbstractRecord record = _emptyRecord();
 		_add(record, F1, "video/webm", new int[] { 640, 480 }, false);
 		_add(record, F2, "video/webm", new int[] { 1280, 720 }, false);
 		record = _verify(record);
@@ -85,7 +84,7 @@ public class TestLeafFinder
 	@Test
 	public void testTwoVideosReverse() throws Throwable
 	{
-		StreamRecord record = _emptyRecord();
+		AbstractRecord record = _emptyRecord();
 		_add(record, F1, "video/webm", new int[] { 1280, 720 }, false);
 		_add(record, F2, "video/webm", new int[] { 640, 480 }, false);
 		record = _verify(record);
@@ -103,7 +102,7 @@ public class TestLeafFinder
 	@Test
 	public void testTwoVideosSameSize() throws Throwable
 	{
-		StreamRecord record = _emptyRecord();
+		AbstractRecord record = _emptyRecord();
 		_add(record, F1, "video/webm", new int[] { 640, 480 }, false);
 		_add(record, F2, "video/mp4", new int[] { 640, 480 }, false);
 		record = _verify(record);
@@ -118,36 +117,39 @@ public class TestLeafFinder
 	}
 
 
-	private static StreamRecord _emptyRecord()
+	private static AbstractRecord _emptyRecord()
 	{
-		StreamRecord record = new StreamRecord();
+		AbstractRecord record = AbstractRecord.createNew();
 		record.setName("name");
 		record.setDescription("Description");
-		record.setElements(new DataArray());
-		record.setPublisherKey(MockKeys.K1.toPublicKey());
+		record.setPublisherKey(MockKeys.K1);
 		record.setPublishedSecondsUtc(1L);
 		return record;
 	}
 
-	private static void _add(StreamRecord record, IpfsFile cid, String mime, int[] dimensions, boolean special)
+	private static void _add(AbstractRecord record, IpfsFile cid, String mime, int[] dimensions, boolean special)
 	{
-		DataElement element = new DataElement();
-		element.setCid(cid.toSafeString());
-		element.setMime(mime);
-		if (null != dimensions)
-		{
-			element.setHeight(dimensions[0]);
-			element.setWidth(dimensions[1]);
-		}
 		if (special)
 		{
-			element.setSpecial(ElementSpecialType.IMAGE);
+			record.setThumbnail(mime, cid);
 		}
-		record.getElements().getElement().add(element);
+		else
+		{
+			List<AbstractRecord.Leaf> leaves = record.getVideoExtension();
+			List<AbstractRecord.Leaf> newLeaves = new ArrayList<>();
+			if (null != leaves)
+			{
+				newLeaves.addAll(leaves);
+			}
+			AbstractRecord.Leaf leaf = new AbstractRecord.Leaf(cid, mime, dimensions[0], dimensions[1]);
+			newLeaves.add(leaf);
+			record.setVideoExtension(newLeaves);
+		}
 	}
 
-	private static StreamRecord _verify(StreamRecord record) throws Throwable
+	private static AbstractRecord _verify(AbstractRecord record) throws Throwable
 	{
-		return GlobalData.deserializeRecord(GlobalData.serializeRecord(record));
+		byte[] data = record.serializeV1();
+		return AbstractRecord.DESERIALIZER.apply(data);
 	}
 }

@@ -4,11 +4,10 @@ import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.LeafFinder;
@@ -104,7 +103,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 
 	private void _handleRecord(IWritingAccess access, LocalRecordCache recordCache, IpfsFile recordCid) throws IpfsConnectionException, FailedDeserializationException
 	{
-		StreamRecord record = access.loadCached(recordCid, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+		AbstractRecord record = access.loadCached(recordCid, AbstractRecord.DESERIALIZER).get();
 		
 		// If there is a cache, account for what is being removed.
 		if (null != recordCache)
@@ -124,10 +123,17 @@ public record DeleteChannelCommand() implements ICommand<None>
 			}
 		}
 		
-		for (DataElement leaf : record.getElements().getElement())
+		if (null != record.getThumbnailCid())
 		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
-			access.unpin(leafCid);
+			access.unpin(record.getThumbnailCid());
+		}
+		if (null != record.getVideoExtension())
+		{
+			for (AbstractRecord.Leaf leaf : record.getVideoExtension())
+			{
+				IpfsFile leafCid = leaf.cid();
+				access.unpin(leafCid);
+			}
 		}
 	}
 }

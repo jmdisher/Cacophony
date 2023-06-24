@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -20,33 +19,32 @@ public class LeafFinder
 	 * @param record The record to parse.
 	 * @return The populated LeafFinder.
 	 */
-	public static LeafFinder parseRecord(StreamRecord record)
+	public static LeafFinder parseRecord(AbstractRecord record)
 	{
 		// We want to find all the videos, a single thumbnail, and a single audio element.  There can be 0 of any of these.
 		
-		IpfsFile thumbnail = null;
+		IpfsFile thumbnail = record.getThumbnailCid();
 		IpfsFile audio = null;
 		List<VideoLeaf> videos = new ArrayList<>();
+		List<AbstractRecord.Leaf> extension = record.getVideoExtension();
 		
-		for (DataElement elt : record.getElements().getElement())
+		if (null != extension)
 		{
-			IpfsFile eltCid = IpfsFile.fromIpfsCid(elt.getCid());
-			String mime = elt.getMime();
-			if (null != elt.getSpecial())
+			for (AbstractRecord.Leaf elt : extension)
 			{
-				// There shouldn't be more than one of these, but the data could be untrusted so will just take the last.
-				thumbnail = eltCid;
-			}
-			else if (mime.startsWith("video/"))
-			{
-				// We constrain video selection based on the maximum edge size so find that here.
-				int biggestEdge = Math.max(elt.getWidth(), elt.getHeight());
-				videos.add(new VideoLeaf(eltCid, mime, biggestEdge));
-			}
-			else if (mime.startsWith("audio/"))
-			{
-				// If there are multiple audio attachments, we will just grab the last one (since that use-case isn't currently defined).
-				audio = eltCid;
+				IpfsFile eltCid = elt.cid();
+				String mime = elt.mime();
+				if (mime.startsWith("video/"))
+				{
+					// We constrain video selection based on the maximum edge size so find that here.
+					int biggestEdge = Math.max(elt.width(), elt.height());
+					videos.add(new VideoLeaf(eltCid, mime, biggestEdge));
+				}
+				else if (mime.startsWith("audio/"))
+				{
+					// If there are multiple audio attachments, we will just grab the last one (since that use-case isn't currently defined).
+					audio = eltCid;
+				}
 			}
 		}
 		

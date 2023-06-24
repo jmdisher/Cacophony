@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
@@ -19,8 +19,8 @@ public class RawElementData
 	public FutureSize futureSize;
 	public long size;
 	public FuturePin futureElementPin;
-	public FutureRead<StreamRecord> futureRecord;
-	public StreamRecord record;
+	public FutureRead<AbstractRecord> futureRecord;
+	public AbstractRecord record;
 	
 	public IpfsFile thumbnailHash;
 	public IpfsFile leafHash;

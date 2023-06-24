@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.commands.results;
 import java.io.PrintStream;
 
 import com.jeffdisher.cacophony.commands.ICommand;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -16,9 +16,9 @@ public class OnePost implements ICommand.Result
 {
 	private final IpfsFile _newRoot;
 	public final IpfsFile recordCid;
-	public final StreamRecord streamRecord;
+	public final AbstractRecord streamRecord;
 
-	public OnePost(IpfsFile newRoot, IpfsFile recordCid, StreamRecord streamRecord)
+	public OnePost(IpfsFile newRoot, IpfsFile recordCid, AbstractRecord streamRecord)
 	{
 		Assert.assertTrue(null != recordCid);
 		Assert.assertTrue(null != streamRecord);

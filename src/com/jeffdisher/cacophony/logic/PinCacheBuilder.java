@@ -4,12 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.breakwater.utilities.Assert;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
@@ -21,6 +19,7 @@ import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -113,15 +112,23 @@ public class PinCacheBuilder
 
 	private void _addHomeUser(IpfsFile lastRootElement) throws FailedDeserializationException, SizeConstraintException, IpfsConnectionException
 	{
-		List<FutureRead<StreamRecord>> futures = _commonStart(lastRootElement, true);
+		List<FutureRead<AbstractRecord>> futures = _commonStart(lastRootElement, true);
 		
 		// For the home user, we want to just pin all the leaf elements, since we host them all.
-		for (FutureRead<StreamRecord> future : futures)
+		for (FutureRead<AbstractRecord> future : futures)
 		{
-			StreamRecord record = future.get();
-			for (DataElement elt : record.getElements().getElement())
+			AbstractRecord record = future.get();
+			if (null != record.getThumbnailCid())
 			{
-				_pin(IpfsFile.fromIpfsCid(elt.getCid()));
+				_pin(record.getThumbnailCid());
+			}
+			List<AbstractRecord.Leaf> leaves = record.getVideoExtension();
+			if (null != leaves)
+			{
+				for (AbstractRecord.Leaf leaf : leaves)
+				{
+					_pin(leaf.cid());
+				}
 			}
 		}
 	}
@@ -146,7 +153,7 @@ public class PinCacheBuilder
 		}
 	}
 
-	private List<FutureRead<StreamRecord>> _commonStart(IpfsFile indexFile, boolean fetchRecords) throws FailedDeserializationException, IpfsConnectionException
+	private List<FutureRead<AbstractRecord>> _commonStart(IpfsFile indexFile, boolean fetchRecords) throws FailedDeserializationException, IpfsConnectionException
 	{
 		_pin(indexFile);
 		// We know that everything reachable from a root is valid, here, since it is either our own data or a followee root which we already validated.
@@ -162,14 +169,14 @@ public class PinCacheBuilder
 		_pin(IpfsFile.fromIpfsCid(description.getPicture()));
 		StreamRecords records = _scheduler.readData(recordsFile, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		
-		List<FutureRead<StreamRecord>> futures = fetchRecords ? new ArrayList<>() : null;
+		List<FutureRead<AbstractRecord>> futures = fetchRecords ? new ArrayList<>() : null;
 		for (String rawRecord : records.getRecord())
 		{
 			IpfsFile recordFile = IpfsFile.fromIpfsCid(rawRecord);
 			_pin(recordFile);
 			if (fetchRecords)
 			{
-				futures.add(_scheduler.readData(recordFile, (byte[] data) -> GlobalData.deserializeRecord(data)));
+				futures.add(_scheduler.readData(recordFile, AbstractRecord.DESERIALIZER));
 			}
 		}
 		return futures;

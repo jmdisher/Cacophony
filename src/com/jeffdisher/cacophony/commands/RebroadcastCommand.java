@@ -6,9 +6,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -19,7 +17,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
-import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -57,7 +54,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			}
 			
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
-			StreamRecord record = access.loadNotCached(_elementCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+			AbstractRecord record = access.loadNotCached(_elementCid, "record", AbstractRecord.SIZE_LIMIT_BYTES, AbstractRecord.DESERIALIZER).get();
 			
 			// The record makes sense so pin it and everything it references (will throw on error).
 			_pinReachableData(context.logger, access, record);
@@ -71,16 +68,25 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 	}
 
 
-	private void _pinReachableData(ILogger logger, IWritingAccess access, StreamRecord record) throws IpfsConnectionException
+	private void _pinReachableData(ILogger logger, IWritingAccess access, AbstractRecord record) throws IpfsConnectionException
 	{
 		ILogger log = logger.logStart("Pinning StreamRecord " + _elementCid);
 		List<FuturePin> pins = new ArrayList<>();
 		pins.add(access.pin(_elementCid));
-		for (DataElement elt : record.getElements().getElement())
+		if (null != record.getThumbnailCid())
 		{
-			IpfsFile file = IpfsFile.fromIpfsCid(elt.getCid());
-			log.logOperation("Pinning leaf " + file);
-			pins.add(access.pin(file));
+			log.logOperation("Pinning thumbnail " + record.getThumbnailCid());
+			pins.add(access.pin(record.getThumbnailCid()));
+		}
+		List<AbstractRecord.Leaf> leaves = record.getVideoExtension();
+		if (null != leaves)
+		{
+			for (AbstractRecord.Leaf leaf : leaves)
+			{
+				IpfsFile file = leaf.cid();
+				log.logOperation("Pinning leaf " + file);
+				pins.add(access.pin(file));
+			}
 		}
 		IpfsConnectionException pinException = null;
 		log.logVerbose("Waiting for pins...");

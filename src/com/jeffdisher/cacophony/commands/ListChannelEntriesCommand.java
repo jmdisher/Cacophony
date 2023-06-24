@@ -6,10 +6,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.DataArray;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -22,7 +19,6 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.Assert;
-import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements ICommand<None>
@@ -77,9 +73,9 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		for (String rawCid : records.getRecord())
 		{
 			IpfsFile recordCid = IpfsFile.fromIpfsCid(rawCid);
-			ICommonFutureRead<StreamRecord> future = (isCached
-					? new SyntheticRead<>(access.loadCached(recordCid, (byte[] data) -> GlobalData.deserializeRecord(data)))
-					: access.loadNotCached(recordCid, "record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecord(data))
+			ICommonFutureRead<AbstractRecord> future = (isCached
+					? new SyntheticRead<>(access.loadCached(recordCid, AbstractRecord.DESERIALIZER))
+					: access.loadNotCached(recordCid, "record", AbstractRecord.SIZE_LIMIT_BYTES, AbstractRecord.DESERIALIZER)
 			);
 			asyncRecords.add(new AsyncRecord(rawCid, future));
 		}
@@ -88,12 +84,19 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		ILogger log = logger.logStart("Found " + asyncRecords.size() + " records:");
 		for (AsyncRecord asyncRecord : asyncRecords)
 		{
-			StreamRecord record = asyncRecord.future.get();
+			AbstractRecord record = asyncRecord.future.get();
 			ILogger log2 = log.logStart("element " + asyncRecord.recordCid + ": " + record.getName());
-			DataArray array = record.getElements();
-			for (DataElement element : array.getElement())
+			if (null != record.getThumbnailCid())
 			{
-				log2.logOperation("\t" + element.getCid() + " - " + element.getMime());
+				log2.logOperation("\tThumbnail: " + record.getThumbnailCid().toSafeString());
+			}
+			List<AbstractRecord.Leaf> leaves = record.getVideoExtension();
+			if (null != leaves)
+			{
+				for (AbstractRecord.Leaf leaf : leaves)
+				{
+					log2.logOperation("\t" + leaf.cid().toSafeString() + " - " + leaf.mime());
+				}
 			}
 			log2.logFinish("");
 		}
@@ -101,7 +104,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	}
 
 
-	private static record AsyncRecord(String recordCid, ICommonFutureRead<StreamRecord> future)
+	private static record AsyncRecord(String recordCid, ICommonFutureRead<AbstractRecord> future)
 	{
 	}
 }

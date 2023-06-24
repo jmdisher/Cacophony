@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -309,14 +309,14 @@ public class FolloweeRefreshLogic
 				data.size = data.futureSize.get();
 				// If this element is too big, we won't pin it or consider caching it (this is NOT refresh failure).
 				// Note that this means any path which directly reads this element should check the size to see if it is present.
-				if (data.size <= SizeLimits.MAX_RECORD_SIZE_BYTES)
+				if (data.size <= AbstractRecord.SIZE_LIMIT_BYTES)
 				{
 					data.futureElementPin = support.addMetaDataToFollowCache(data.elementCid);
 					newRecordsBeingProcessedSizeChecked.add(data);
 				}
 				else
 				{
-					throw new SizeConstraintException("record", data.size, SizeLimits.MAX_RECORD_SIZE_BYTES);
+					throw new SizeConstraintException("record", data.size, AbstractRecord.SIZE_LIMIT_BYTES);
 				}
 			}
 			newRecordsBeingProcessedInitial = null;
@@ -330,9 +330,9 @@ public class FolloweeRefreshLogic
 				data.futureElementPin.get();
 				data.futureElementPin = null;
 				// We pinned this so the read should be pretty-well instantaneous.
-				data.record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
+				data.record = support.loadCached(data.elementCid, AbstractRecord.DESERIALIZER).get();
 				// Report that we pinned it.
-				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussion(), IpfsKey.fromPublicKey(data.record.getPublisherKey()), data.record.getElements().getElement().size());
+				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussionUrl(), data.record.getPublisherKey(), data.record.getExternalElementCount());
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
 				_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
 				newRecordsBeingProcessedCalculatingLeaves.add(data);
@@ -536,7 +536,7 @@ public class FolloweeRefreshLogic
 		;
 	}
 
-	private static void _selectLeavesForElement(IRefreshSupport support, RawElementData data, StreamRecord record, int videoEdgePixelMax)
+	private static void _selectLeavesForElement(IRefreshSupport support, RawElementData data, AbstractRecord record, int videoEdgePixelMax)
 	{
 		IpfsFile imageHash = null;
 		IpfsFile videoHash = null;

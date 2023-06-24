@@ -6,8 +6,7 @@ import java.util.List;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.OnePost;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
@@ -76,13 +75,13 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		List<String> recordList = records.getRecord();
 		IpfsFile newRoot = null;
 		IpfsFile newEltCid = null;
-		StreamRecord record = null;
+		AbstractRecord record = null;
 		if (recordList.contains(postToEdit.toSafeString()))
 		{
 			// Found this, so replace it.
 			try
 			{
-				record = access.loadCached(postToEdit, (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+				record = access.loadCached(postToEdit, AbstractRecord.DESERIALIZER).get();
 			}
 			catch (FailedDeserializationException e)
 			{
@@ -101,16 +100,17 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			{
 				if (discussionUrl.isEmpty())
 				{
-					record.setDiscussion(null);
+					record.setDiscussionUrl(null);
 				}
 				else
 				{
-					record.setDiscussion(discussionUrl);
+					record.setDiscussionUrl(discussionUrl);
 				}
 			}
 			try
 			{
-				newEltCid = access.uploadAndPin(new ByteArrayInputStream(GlobalData.serializeRecord(record)));
+				byte[] data = record.serializeV1();
+				newEltCid = access.uploadAndPin(new ByteArrayInputStream(data));
 			}
 			catch (SizeConstraintException e)
 			{
@@ -132,7 +132,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		;
 	}
 
-	private static void _handleCacheUpdates(EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, IpfsKey publicKey, IpfsFile oldCid, IpfsFile newCid, StreamRecord newStreamRecord)
+	private static void _handleCacheUpdates(EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, IpfsKey publicKey, IpfsFile oldCid, IpfsFile newCid, AbstractRecord newStreamRecord)
 	{
 		// NOTE:  This assumes that the leaves are the same between the old/new records.
 		
@@ -162,7 +162,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			}
 			recordCache.recordMetaDataReleased(oldCid);
 			
-			recordCache.recordMetaDataPinned(newCid, newStreamRecord.getName(), newStreamRecord.getDescription(), newStreamRecord.getPublishedSecondsUtc(), newStreamRecord.getDiscussion(), IpfsKey.fromPublicKey(newStreamRecord.getPublisherKey()), newStreamRecord.getElements().getElement().size());
+			recordCache.recordMetaDataPinned(newCid, newStreamRecord.getName(), newStreamRecord.getDescription(), newStreamRecord.getPublishedSecondsUtc(), newStreamRecord.getDiscussionUrl(), newStreamRecord.getPublisherKey(), newStreamRecord.getExternalElementCount());
 			if (null != leaves.thumbnail)
 			{
 				recordCache.recordThumbnailPinned(newCid, leaves.thumbnail);
@@ -179,7 +179,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 	}
 
 
-	public static record Result(IpfsFile newRoot, IpfsFile newRecordCid, StreamRecord newRecord)
+	public static record Result(IpfsFile newRoot, IpfsFile newRecordCid, AbstractRecord newRecord)
 	{
 	}
 }

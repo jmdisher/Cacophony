@@ -1,14 +1,12 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
-import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -31,7 +29,7 @@ public class CommonRecordPinning
 	public static CachedRecordInfo loadAndPinRecord(ConcurrentTransaction transaction, int videoEdgePixelMax, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
 	{
 		// Find and populate the cache.
-		StreamRecord record = transaction.loadNotCached(recordCid, "explicit record", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] bytes) -> GlobalData.deserializeRecord(bytes)).get();
+		AbstractRecord record = transaction.loadNotCached(recordCid, "record", AbstractRecord.SIZE_LIMIT_BYTES, AbstractRecord.DESERIALIZER).get();
 		LeafFinder leafFinder = LeafFinder.parseRecord(record);
 		IpfsFile thumbnailCid = leafFinder.thumbnail;
 		LeafFinder.VideoLeaf videoLeaf = leafFinder.largestVideoWithLimit(videoEdgePixelMax);

@@ -5,8 +5,7 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
@@ -129,14 +128,14 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 
 	private PostDetails _buildDetailsWithCachedInfo(IReadingAccess access, CachedRecordInfo info) throws IpfsConnectionException, FailedDeserializationException
 	{
-		StreamRecord record = access.loadCached(info.streamCid(), (byte[] data) -> GlobalData.deserializeRecord(data)).get();
+		AbstractRecord record = access.loadCached(info.streamCid(), AbstractRecord.DESERIALIZER).get();
 		return new PostDetails(_elementCid
 				, true
 				, record.getName()
 				, record.getDescription()
 				, record.getPublishedSecondsUtc()
-				, record.getDiscussion()
-				, IpfsKey.fromPublicKey(record.getPublisherKey())
+				, record.getDiscussionUrl()
+				, record.getPublisherKey()
 				, info.thumbnailCid()
 				, info.videoCid()
 				, info.audioCid()

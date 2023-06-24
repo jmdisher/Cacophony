@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -306,7 +306,7 @@ public class EntryCacheRegistry
 		 * @return The new registry.
 		 * @throws IpfsConnectionException There was a problem contacting the network.
 		 */
-		public EntryCacheRegistry buildRegistry(Function<IpfsFile, FutureRead<StreamRecord>> recordLoader) throws IpfsConnectionException
+		public EntryCacheRegistry buildRegistry(Function<IpfsFile, FutureRead<AbstractRecord>> recordLoader) throws IpfsConnectionException
 		{
 			Assert.assertTrue(!_done);
 			// Walk the lists for user, combine them in one map with reference count (since there could be duplicates).
@@ -325,13 +325,13 @@ public class EntryCacheRegistry
 			List<Partial1> partials1 = new ArrayList<>();
 			for (IpfsFile elt : elementsToCombine)
 			{
-				FutureRead<StreamRecord> future = recordLoader.apply(elt);
+				FutureRead<AbstractRecord> future = recordLoader.apply(elt);
 				partials1.add(new Partial1(elt, future));
 			}
 			List<Partial2> partials2 = new ArrayList<>();
 			for (Partial1 part1 : partials1)
 			{
-				StreamRecord record;
+				AbstractRecord record;
 				try
 				{
 					record = part1.future.get();
@@ -361,6 +361,6 @@ public class EntryCacheRegistry
 	}
 
 
-	private static record Partial1(IpfsFile elt, FutureRead<StreamRecord> future) {}
+	private static record Partial1(IpfsFile elt, FutureRead<AbstractRecord> future) {}
 	private static record Partial2(IpfsFile elt, long publishedSecondsUtc) {}
 }

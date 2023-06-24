@@ -8,16 +8,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.OnePost;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.DataArray;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -56,19 +53,20 @@ public record PublishCommand(String _name, String _description, String _discussi
 		Assert.assertTrue(null != openElements);
 		IpfsFile newRoot;
 		IpfsFile newElement;
-		StreamRecord newRecord;
+		AbstractRecord newRecord;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// We expect that this context exists.
 			Assert.assertTrue(null != access.getLastRootElement());
 			
 			// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
-			DataArray array = _uploadAttachments(access, log, openElements);
+			List<AbstractRecord.Leaf> array = new ArrayList<>();
+			Thumbnail thumbnail = _uploadAttachments(array, access, log, openElements);
 			
 			// Assemble and upload the new StreamRecord.
-			StreamRecord record = _createRecord(array, publicKey);
-			byte[] rawRecord = GlobalData.serializeRecord(record);
-			IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(rawRecord));
+			AbstractRecord record = _createRecord(thumbnail, array, publicKey);
+			byte[] data = record.serializeV1();
+			IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(data));
 			
 			// Now, update the channel data structure.
 			newRoot = _modifyUserStream(access, recordHash);
@@ -126,9 +124,9 @@ public record PublishCommand(String _name, String _description, String _discussi
 		return elements;
 	}
 
-	private DataArray _uploadAttachments(IWritingAccess access, ILogger log, PublishElement[] openElements) throws IpfsConnectionException
+	private Thumbnail _uploadAttachments(List<AbstractRecord.Leaf> out_array, IWritingAccess access, ILogger log, PublishElement[] openElements) throws IpfsConnectionException
 	{
-		DataArray array = new DataArray();
+		Thumbnail thumbnail = null;
 		for (PublishElement elt : openElements)
 		{
 			ILogger eltLog = log.logStart("-Element: " + elt);
@@ -136,32 +134,43 @@ public record PublishCommand(String _name, String _description, String _discussi
 			// the caller, just to cover error cases before getting this far.
 			IpfsFile uploaded = access.uploadAndPin(elt.fileData);
 			
-			DataElement element = new DataElement();
-			element.setCid(uploaded.toSafeString());
-			element.setMime(elt.mime());
-			element.setHeight(elt.height());
-			element.setWidth(elt.width());
 			if (elt.isSpecialImage())
 			{
-				element.setSpecial(ElementSpecialType.IMAGE);
+				Assert.assertTrue(null == thumbnail);
+				thumbnail = new Thumbnail(elt.mime, uploaded);
 			}
-			array.getElement().add(element);
+			else
+			{
+				AbstractRecord.Leaf oneLeaf = new AbstractRecord.Leaf(uploaded
+						, elt.mime()
+						, elt.height()
+						, elt.width()
+				);
+				out_array.add(oneLeaf);
+			}
 			eltLog.logFinish("-Done!");
 		}
-		return array;
+		return thumbnail;
 	}
 
-	private StreamRecord _createRecord(DataArray attachmentArray, IpfsKey publicKey)
+	private AbstractRecord _createRecord(Thumbnail thumbnail, List<AbstractRecord.Leaf> attachmentArray, IpfsKey publicKey)
 	{
-		StreamRecord record = new StreamRecord();
+		AbstractRecord record = AbstractRecord.createNew();
 		record.setName(_name);
 		record.setDescription(_description);
 		if (null != _discussionUrl)
 		{
-			record.setDiscussion(_discussionUrl);
+			record.setDiscussionUrl(_discussionUrl);
 		}
-		record.setElements(attachmentArray);
-		record.setPublisherKey(publicKey.toPublicKey());
+		if (null != thumbnail)
+		{
+			record.setThumbnail(thumbnail.mime, thumbnail.cid);
+		}
+		if (!attachmentArray.isEmpty())
+		{
+			record.setVideoExtension(attachmentArray);
+		}
+		record.setPublisherKey(publicKey);
 		// The published time is in seconds since the Epoch, in UTC.
 		record.setPublishedSecondsUtc(_currentUtcEpochSeconds());
 		return record;
@@ -213,4 +222,5 @@ public record PublishCommand(String _name, String _description, String _discussi
 
 
 	private static record PublishElement(String mime, InputStream fileData, int height, int width, boolean isSpecialImage) {}
+	private static record Thumbnail(String mime, IpfsFile cid) {}
 }

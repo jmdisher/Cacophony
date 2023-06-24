@@ -6,11 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -20,7 +19,6 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
-import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
@@ -175,7 +173,7 @@ public class LocalRecordCacheBuilder
 	 * @param record The new record.
 	 * @throws IpfsConnectionException
 	 */
-	public static void updateCacheWithNewUserPost(LocalRecordCache recordCache, IpfsFile cid, StreamRecord record) throws IpfsConnectionException
+	public static void updateCacheWithNewUserPost(LocalRecordCache recordCache, IpfsFile cid, AbstractRecord record) throws IpfsConnectionException
 	{
 		_fetchDataForLocalUserElement(recordCache, cid, record);
 	}
@@ -190,20 +188,20 @@ public class LocalRecordCacheBuilder
 	{
 		// Everything is always cached for the local user.
 		List<String> rawCids = records.getRecord();
-		List<FutureRead<StreamRecord>> loads = new ArrayList<>();
+		List<FutureRead<AbstractRecord>> loads = new ArrayList<>();
 		for (String rawCid : rawCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Since we posted this, we know it is a valid size.
-			Assert.assertTrue(access.getSizeInBytes(cid).get() < SizeLimits.MAX_RECORD_SIZE_BYTES);
-			FutureRead<StreamRecord> future = access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+			Assert.assertTrue(access.getSizeInBytes(cid).get() < AbstractRecord.SIZE_LIMIT_BYTES);
+			FutureRead<AbstractRecord> future = access.loadCached(cid, AbstractRecord.DESERIALIZER);
 			loads.add(future);
 		}
 		Iterator<String> cidIterator = rawCids.iterator();
-		for (FutureRead<StreamRecord> future : loads)
+		for (FutureRead<AbstractRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
-			StreamRecord record;
+			AbstractRecord record;
 			try
 			{
 				record = future.get();
@@ -223,19 +221,19 @@ public class LocalRecordCacheBuilder
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
 		//  displayed for all of them - we will currently ignore that case and only add the last entry).
 		List<String> rawCids = records.getRecord();
-		List<FutureRead<StreamRecord>> loads = new ArrayList<>();
+		List<FutureRead<AbstractRecord>> loads = new ArrayList<>();
 		for (String rawCid : rawCids)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
-			if (access.getSizeInBytes(cid).get() < SizeLimits.MAX_RECORD_SIZE_BYTES)
+			if (access.getSizeInBytes(cid).get() < AbstractRecord.SIZE_LIMIT_BYTES)
 			{
-				FutureRead<StreamRecord> future = access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecord(data));
+				FutureRead<AbstractRecord> future = access.loadCached(cid, AbstractRecord.DESERIALIZER);
 				loads.add(future);
 			}
 		}
 		Iterator<String> cidIterator = rawCids.iterator();
-		for (FutureRead<StreamRecord> future : loads)
+		for (FutureRead<AbstractRecord> future : loads)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
 			try
@@ -250,9 +248,9 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, IpfsFile cid, StreamRecord record) throws IpfsConnectionException
+	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, IpfsFile cid, AbstractRecord record) throws IpfsConnectionException
 	{
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), IpfsKey.fromPublicKey(record.getPublisherKey()), record.getElements().getElement().size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussionUrl(), record.getPublisherKey(), record.getExternalElementCount());
 		
 		// If this is a local user, state that all the files are cached.
 		LeafFinder leaves = LeafFinder.parseRecord(record);
@@ -270,12 +268,12 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _fetchDataForFolloweeElement(IReadingAccess access, LocalRecordCache recordCache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<StreamRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
+	private static void _fetchDataForFolloweeElement(IReadingAccess access, LocalRecordCache recordCache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<AbstractRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
 	{
-		StreamRecord record = future.get();
-		List<DataElement> elements = record.getElements().getElement();
+		AbstractRecord record = future.get();
+		List<AbstractRecord.Leaf> elements = record.getVideoExtension();
 		
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), IpfsKey.fromPublicKey(record.getPublisherKey()), elements.size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussionUrl(), record.getPublisherKey(), record.getExternalElementCount());
 		
 		// If this is a followee, then check for the appropriate leaves.
 		// (note that we want to double-count with local user, if both - since the pin cache will do that).
@@ -295,11 +293,11 @@ public class LocalRecordCacheBuilder
 				{
 					// We want to record the size so go find it.
 					int maxEdge = 0;
-					for (DataElement leaf : elements)
+					for (AbstractRecord.Leaf leaf : elements)
 					{
-						if (leafCid.equals(IpfsFile.fromIpfsCid(leaf.getCid())))
+						if (leafCid.equals(leaf.cid()))
 						{
-							maxEdge = Math.max(leaf.getHeight(), leaf.getWidth());
+							maxEdge = Math.max(leaf.height(), leaf.width());
 						}
 					}
 					Assert.assertTrue(maxEdge > 0);
@@ -318,15 +316,15 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static String _findMimeForLeaf(List<DataElement> elements, IpfsFile target)
+	private static String _findMimeForLeaf(List<AbstractRecord.Leaf> elements, IpfsFile target)
 	{
 		String mime = null;
-		for (DataElement leaf : elements)
+		for (AbstractRecord.Leaf leaf : elements)
 		{
-			IpfsFile leafCid = IpfsFile.fromIpfsCid(leaf.getCid());
+			IpfsFile leafCid = leaf.cid();
 			if (target.equals(leafCid))
 			{
-				mime = leaf.getMime();
+				mime = leaf.mime();
 			}
 		}
 		Assert.assertTrue(null != mime);
