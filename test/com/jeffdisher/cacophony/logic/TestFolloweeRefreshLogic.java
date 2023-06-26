@@ -529,9 +529,7 @@ public class TestFolloweeRefreshLogic
 			didAdd = false;
 		}
 		Assert.assertFalse(didAdd);
-		result = testSupport.getList();
-		Assert.assertEquals(0, result.length);
-		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
+		testSupport.clearAfterFailure();
 		data.remove(rawHash);
 		
 		// Now, replace it with a valid element (with no leaves) and see that we do see this pin but also the unpin of the previous (vacuous unpin).
@@ -539,17 +537,12 @@ public class TestFolloweeRefreshLogic
 		index = _removeElementFromStream(data, index, rawHash);
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		originalElements = result;
-		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
-		// We will end up trying to remove something we never pinned, due to the size, so set that in the support.
-		testSupport.nonPinnedElement = rawHash;
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
-		// Make sure we observed this non-pin action.
-		Assert.assertNull(testSupport.nonPinnedElement);
 	}
 
 
@@ -754,7 +747,6 @@ public class TestFolloweeRefreshLogic
 		private final List<IpfsFile> _newElementsPinned = new ArrayList<>();
 		
 		// Miscellaneous other checks.
-		public IpfsFile nonPinnedElement;
 		public String lastName;
 		
 		public TestSupport(Map<IpfsFile, byte[]> upstreamData, FollowingCacheElement[] initial)
@@ -816,6 +808,13 @@ public class TestFolloweeRefreshLogic
 			IpfsFile[] array = _newElementsPinned.toArray((int size) -> new IpfsFile[size]);
 			_newElementsPinned.clear();
 			return array;
+		}
+		public void clearAfterFailure()
+		{
+			_deferredMetaUnpin.clear();
+			_deferredFileUnpin.clear();
+			_list.clear();
+			_newElementsPinned.clear();
 		}
 		@Override
 		public void logMessage(String message)
@@ -880,11 +879,7 @@ public class TestFolloweeRefreshLogic
 		@Override
 		public void deferredRemoveMetaDataFromFollowCache(IpfsFile cid)
 		{
-			// Note that we will not add this if we know it is one we are missing.
-			if (!cid.equals(this.nonPinnedElement))
-			{
-				_deferredMetaUnpin.add(cid);
-			}
+			_deferredMetaUnpin.add(cid);
 		}
 		@Override
 		public FuturePin addFileToFollowCache(IpfsFile cid)
@@ -985,16 +980,8 @@ public class TestFolloweeRefreshLogic
 					match = i;
 				}
 			}
-			if (match >= 0)
-			{
-				_list.remove(match);
-			}
-			else
-			{
-				// If we didn't find it, make sure this is one we know we didn't pin.
-				Assert.assertEquals(this.nonPinnedElement, elementHash);
-				this.nonPinnedElement = null;
-			}
+			Assert.assertTrue(match >= 0);
+			_list.remove(match);
 		}
 		@Override
 		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
