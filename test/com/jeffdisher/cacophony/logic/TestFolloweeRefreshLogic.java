@@ -33,6 +33,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.SizeLimits2;
 
 
 public class TestFolloweeRefreshLogic
@@ -451,7 +452,7 @@ public class TestFolloweeRefreshLogic
 	{
 		// Start following an empty user.
 		Map<IpfsFile, byte[]> data = new HashMap<>();
-		byte[] raw = new byte[(int)SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES + 1];
+		byte[] raw = new byte[(int)SizeLimits2.MAX_RECORDS_SIZE_BYTES + 1];
 		IpfsFile rawHash = MockSingleNode.generateHash(raw);
 		data.put(rawHash, raw);
 		

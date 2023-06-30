@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.SizeLimits2;
 
 
 public class TestForeignChannelReader
@@ -131,7 +132,7 @@ public class TestForeignChannelReader
 		
 		IpfsFile descriptionHash = _store_StreamDescription(store);
 		
-		byte[] raw = new byte[(int)SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES + 1];
+		byte[] raw = new byte[(int)SizeLimits2.MAX_RECORDS_SIZE_BYTES + 1];
 		IpfsFile recordsHash = store.apply(raw);
 		
 		IpfsFile index = _store_StreamIndex(store, recommendationsHash, descriptionHash, recordsHash);

@@ -8,11 +8,17 @@ import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
+import com.jeffdisher.cacophony.data.global.v2.extensions.CacophonyExtensionVideo;
+import com.jeffdisher.cacophony.data.global.v2.extensions.VideoFormat;
+import com.jeffdisher.cacophony.data.global.v2.record.CacophonyRecord;
+import com.jeffdisher.cacophony.data.global.v2.record.ThumbnailReference;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.SizeLimits2;
 
 
 /**
@@ -26,8 +32,13 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class AbstractRecord
 {
-	public static final long SIZE_LIMIT_BYTES = SizeLimits.MAX_RECORD_SIZE_BYTES;
-	public static final DataDeserializer<AbstractRecord> DESERIALIZER = (byte[] data) -> _convertRecord(GlobalData.deserializeRecord(data)); 
+	public static final long SIZE_LIMIT_BYTES = SizeLimits2.MAX_RECORD_SIZE_BYTES;
+	public static final DataDeserializer<AbstractRecord> DESERIALIZER = (byte[] data) -> _commonMultiVersionLoad(data);
+
+	static {
+		// We must make sure that these sizes are the same.
+		Assert.assertTrue(SizeLimits2.MAX_RECORD_SIZE_BYTES == SizeLimits.MAX_RECORD_SIZE_BYTES);
+	}
 
 	/**
 	 * @return A new empty record.
@@ -42,11 +53,32 @@ public class AbstractRecord
 				, null
 				, null
 				, null
+				, null
 		);
 	}
 
 
-	private static AbstractRecord _convertRecord(StreamRecord recordV1)
+	private static AbstractRecord _commonMultiVersionLoad(byte[] data) throws FailedDeserializationException
+	{
+		AbstractRecord converted;
+		try
+		{
+			// We check for version 2, first.
+			CacophonyExtendedRecord recordV2 = GlobalData2.deserializeRecord(data);
+			converted = _convertRecordV2(recordV2);
+		}
+		catch (FailedDeserializationException e)
+		{
+			// We will try version 1.
+			StreamRecord recordV1 = GlobalData.deserializeRecord(data);
+			converted = _convertRecordV1(recordV1);
+		}
+		
+		// We would have loaded one of them or thrown.
+		return converted;
+	}
+
+	private static AbstractRecord _convertRecordV1(StreamRecord recordV1)
 	{
 		List<Leaf> splitArray = new ArrayList<>();
 		IpfsFile thumbnailCid = _splitAttachments(splitArray, recordV1);
@@ -59,7 +91,66 @@ public class AbstractRecord
 				, recordV1.getPublishedSecondsUtc()
 				, thumbnailMime
 				, thumbnailCid
+				, null
 				, (splitArray.isEmpty() ? null : splitArray)
+		);
+	}
+
+	private static AbstractRecord _convertRecordV2(CacophonyExtendedRecord recordV2) throws FailedDeserializationException
+	{
+		CacophonyRecord record = recordV2.record();
+		CacophonyExtensionVideo video = recordV2.video();
+		
+		// The record must exist but the video extension can be null.
+		Assert.assertTrue(null != record);
+		ThumbnailReference thumb = record.getThumbnail();
+		String thumbnailMime = null;
+		IpfsFile thumbnailCid = null;
+		if (null != thumb)
+		{
+			thumbnailMime = thumb.getMime();
+			// We want to make sure that this is a valid CID.
+			thumbnailCid = IpfsFile.fromIpfsCid(thumb.getValue());
+			if (null == thumbnailCid)
+			{
+				throw new FailedDeserializationException(ThumbnailReference.class);
+			}
+		}
+		
+		IpfsFile replyToRecordCid = (null != record.getReplyTo())
+				? IpfsFile.fromIpfsCid(record.getReplyTo())
+				: null
+		;
+		List<Leaf> videoArray = null;
+		if (null != video)
+		{
+			videoArray = new ArrayList<>();
+			for (VideoFormat format : video.getFormat())
+			{
+				IpfsFile cid = IpfsFile.fromIpfsCid(format.getCid());
+				if (null == cid)
+				{
+					throw new FailedDeserializationException(VideoFormat.class);
+				}
+				videoArray.add(new Leaf(cid
+						, format.getMime()
+						, format.getHeight()
+						, format.getWidth()
+				));
+			}
+			// We would have failed to parse if this were empty.
+			Assert.assertTrue(!videoArray.isEmpty());
+		}
+		
+		return new AbstractRecord(record.getName()
+				, record.getDescription()
+				, record.getDiscussionUrl()
+				, IpfsKey.fromPublicKey(record.getPublisherKey())
+				, record.getPublishedSecondsUtc()
+				, thumbnailMime
+				, thumbnailCid
+				, replyToRecordCid
+				, videoArray
 		);
 	}
 
@@ -96,6 +187,7 @@ public class AbstractRecord
 	private long _publishedSecondsUtc;
 	private String _thumbnailMime;
 	private IpfsFile _thumbnailCid;
+	private IpfsFile _replyToRecord;
 	private List<Leaf> _leaves;
 
 	private AbstractRecord(String name
@@ -105,6 +197,7 @@ public class AbstractRecord
 			, long publishedSecondsUtc
 			, String thumbnailMime
 			, IpfsFile thumbnailCid
+			, IpfsFile replyToRecord
 			, List<Leaf> leaves
 	)
 	{
@@ -117,6 +210,7 @@ public class AbstractRecord
 		_publishedSecondsUtc = publishedSecondsUtc;
 		_thumbnailMime = thumbnailMime;
 		_thumbnailCid = thumbnailCid;
+		_replyToRecord = replyToRecord;
 		_leaves = leaves;
 	}
 
@@ -234,6 +328,25 @@ public class AbstractRecord
 	}
 
 	/**
+	 * @return The CID of the record to which this is a response (could be null).
+	 */
+	public IpfsFile getReplyTo()
+	{
+		return _replyToRecord;
+	}
+
+	/**
+	 * Sets the CID of the record to which this post is a response.
+	 * 
+	 * @param recordCid The CID of the record (could be null).
+	 */
+	public void setReplyTo(IpfsFile recordCid)
+	{
+		Assert.assertTrue(null != recordCid);
+		_replyToRecord = recordCid;
+	}
+
+	/**
 	 * @return The list of elements in the video extension (null if there is no video extension).
 	 */
 	public List<Leaf> getVideoExtension()
@@ -313,6 +426,62 @@ public class AbstractRecord
 		}
 		record.setElements(array);
 		return GlobalData.serializeRecord(record);
+	}
+
+	/**
+	 * Serializes the instance as a V2 CacophonyRecord (including CacophonyExtensionVideo, if applicable), returning the
+	 * resulting byte array.
+	 * 
+	 * @return The byte array of the serialized instance
+	 * @throws SizeConstraintException The instance was too big to fit within limits, once serialized.
+	 */
+	public byte[] serializeV2() throws SizeConstraintException
+	{
+		CacophonyRecord record = new CacophonyRecord();
+		Assert.assertTrue(!_name.isEmpty());
+		record.setName(_name);
+		if (null != _description)
+		{
+			Assert.assertTrue(!_description.isEmpty());
+			record.setDescription(_description);
+		}
+		Assert.assertTrue(_publishedSecondsUtc > 0L);
+		record.setPublishedSecondsUtc(_publishedSecondsUtc);
+		if (null != _discussionUrl)
+		{
+			Assert.assertTrue(!_discussionUrl.isEmpty());
+			record.setDiscussionUrl(_discussionUrl);
+		}
+		Assert.assertTrue(null != _publisherKey);
+		record.setPublisherKey(_publisherKey.toPublicKey());
+		if (null != _replyToRecord)
+		{
+			record.setReplyTo(_replyToRecord.toSafeString());
+		}
+		if (null != _thumbnailCid)
+		{
+			Assert.assertTrue(!_thumbnailMime.isEmpty());
+			ThumbnailReference ref = new ThumbnailReference();
+			ref.setMime(_thumbnailMime);
+			ref.setValue(_thumbnailCid.toSafeString());
+			record.setThumbnail(ref);
+		}
+		CacophonyExtensionVideo extension = null;
+		if (null != _leaves)
+		{
+			Assert.assertTrue(!_leaves.isEmpty());
+			extension = new CacophonyExtensionVideo();
+			for (Leaf leaf : _leaves)
+			{
+				VideoFormat video = new VideoFormat();
+				video.setCid(leaf.cid.toSafeString());
+				video.setHeight(leaf.height);
+				video.setWidth(leaf.width);
+				video.setMime(leaf.mime);
+				extension.getFormat().add(video);
+			}
+		}
+		return GlobalData2.serializeRecord(new CacophonyExtendedRecord(record, extension));
 	}
 
 
