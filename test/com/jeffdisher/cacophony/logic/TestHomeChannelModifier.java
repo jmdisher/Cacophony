@@ -158,6 +158,7 @@ public class TestHomeChannelModifier
 		StreamRecords records = new StreamRecords();
 		StreamRecommendations recom = new StreamRecommendations();
 		StreamIndex index = new StreamIndex();
+		index.setVersion(1);
 		index.setDescription(_storeWithString(access, GlobalData.serializeDescription(desc)));
 		index.setRecords(_storeWithString(access, GlobalData.serializeRecords(records)));
 		index.setRecommendations(_storeWithString(access, GlobalData.serializeRecommendations(recom)));

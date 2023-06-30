@@ -18,7 +18,7 @@ import com.jeffdisher.cacophony.types.KeyException;
 public class TestSimpleFolloweeStarter
 {
 	// These values were determined experimentally to fit with the data in this test, not just random values.
-	private static final IpfsFile EXPECTED_ROOT = IpfsFile.fromIpfsCid("QmRuFGRb7LoJGrAWjmZUmjVATxgzdLGVW2muLeCFSLWzjZ");
+	private static final IpfsFile EXPECTED_ROOT = IpfsFile.fromIpfsCid("QmaAXpSHKmT9HeLSMF2anZy1XgcEPPBTQfJ3R9pkds1mJP");
 	private static final IpfsFile EXPECTED_FAKE = IpfsFile.fromIpfsCid("QmR7Yp8rMWxBmVFidiV6CB4vRixxRfjiZcULtaCYnKAvtP");
 
 	@Test
@@ -80,6 +80,7 @@ public class TestSimpleFolloweeStarter
 		
 		StreamRecommendations recom = new StreamRecommendations();
 		StreamIndex index = new StreamIndex();
+		index.setVersion(1);
 		index.setDescription(_storeWithString(access, GlobalData.serializeDescription(desc)));
 		index.setRecords(_storeWithString(access, GlobalData.serializeRecords(records)));
 		index.setRecommendations(_storeWithString(access, GlobalData.serializeRecommendations(recom)));

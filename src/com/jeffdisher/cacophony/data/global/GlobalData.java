@@ -86,6 +86,12 @@ public class GlobalData {
 			Unmarshaller un = jaxb.createUnmarshaller();
 			un.setSchema(INDEX_SCHEMA);
 			result = (StreamIndex) un.unmarshal(new ByteArrayInputStream(data));
+			
+			// If we see an unexpected version, we want to throw an exception since we shouldn't proceed to look at this.
+			if (1 != result.getVersion())
+			{
+				throw new FailedDeserializationException(StreamIndex.class);
+			}
 		} catch (JAXBException e) {
 			throw new FailedDeserializationException(StreamIndex.class);
 		}

@@ -11,6 +11,8 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
@@ -143,6 +145,29 @@ public class TestForeignChannelReader
 			Assert.assertNotNull(reader.loadRecords());
 		}
 		catch (SizeConstraintException e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+	}
+
+	@Test
+	public void badVersion() throws Throwable
+	{
+		MockWritingAccess access = new MockWritingAccess();
+		StreamIndex index = new StreamIndex();
+		index.setVersion(2);
+		index.setDescription(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		index.setRecommendations(MockSingleNode.generateHash(new byte[] { 2 }).toSafeString());
+		index.setRecords(MockSingleNode.generateHash(new byte[] { 3 }).toSafeString());
+		IpfsFile indexRoot = access.storeWithoutPin(GlobalData.serializeIndex(index));
+		ForeignChannelReader reader = new ForeignChannelReader(access, indexRoot, false);
+		boolean didFail = false;
+		try
+		{
+			Assert.assertNotNull(reader.loadIndex());
+		}
+		catch (FailedDeserializationException e)
 		{
 			didFail = true;
 		}
