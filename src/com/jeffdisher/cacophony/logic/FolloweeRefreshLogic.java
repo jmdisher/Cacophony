@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -146,7 +146,7 @@ public class FolloweeRefreshLogic
 		IpfsFile newRecommendationsElement = _cidOrNull(newIndex.getRecommendations());
 		_checkSizeInline(support, "recommendations", newRecommendationsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 		support.addMetaDataToFollowCache(newRecommendationsElement).get();
-		StreamRecommendations newRecommendations = support.loadCached(newRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+		AbstractRecommendations newRecommendations = support.loadCached(newRecommendationsElement, AbstractRecommendations.DESERIALIZER).get();
 		Assert.assertTrue(null != newRecommendations);
 		
 		// Notify the support that this user is either new or has changed its description.
@@ -209,12 +209,12 @@ public class FolloweeRefreshLogic
 		// Check if the root changed.
 		if ((null == oldRecommendationsElement) || !oldRecommendationsElement.equals(newRecommendationsElement))
 		{
-			StreamRecommendations oldRecommendations = null;
-			StreamRecommendations newRecommendations = null;
+			AbstractRecommendations oldRecommendations = null;
+			AbstractRecommendations newRecommendations = null;
 			if (null != oldRecommendationsElement)
 			{
 				support.deferredRemoveMetaDataFromFollowCache(oldRecommendationsElement);
-				oldRecommendations = support.loadCached(oldRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+				oldRecommendations = support.loadCached(oldRecommendationsElement, AbstractRecommendations.DESERIALIZER).get();
 			}
 			if (null != newRecommendationsElement)
 			{
@@ -222,7 +222,7 @@ public class FolloweeRefreshLogic
 				_checkSizeInline(support, "recommendations", newRecommendationsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 				
 				support.addMetaDataToFollowCache(newRecommendationsElement).get();
-				newRecommendations = support.loadCached(newRecommendationsElement, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+				newRecommendations = support.loadCached(newRecommendationsElement, AbstractRecommendations.DESERIALIZER).get();
 			}
 			
 			// The recommendations have nothing else to cache so we just make sure that they were consistently loaded (since we wanted to prove they could be parsed correctly).

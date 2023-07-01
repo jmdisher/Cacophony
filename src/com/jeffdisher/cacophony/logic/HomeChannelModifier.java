@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -32,7 +32,7 @@ public class HomeChannelModifier
 {
 	private final IWritingAccess _access;
 	private Tuple<StreamIndex> _index;
-	private Tuple<StreamRecommendations> _recommendations;
+	private Tuple<AbstractRecommendations> _recommendations;
 	private Tuple<AbstractRecords> _records;
 	private Tuple<StreamDescription> _description;
 
@@ -41,15 +41,15 @@ public class HomeChannelModifier
 		_access = access;
 	}
 
-	public StreamRecommendations loadRecommendations() throws IpfsConnectionException
+	public AbstractRecommendations loadRecommendations() throws IpfsConnectionException
 	{
 		if (null == _recommendations)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
-			StreamRecommendations elt;
+			AbstractRecommendations elt;
 			try
 			{
-				elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+				elt = _access.loadCached(cid, AbstractRecommendations.DESERIALIZER).get();
 			}
 			catch (FailedDeserializationException e)
 			{
@@ -61,7 +61,7 @@ public class HomeChannelModifier
 		return _recommendations.element;
 	}
 
-	public void storeRecommendations(StreamRecommendations elt)
+	public void storeRecommendations(AbstractRecommendations elt)
 	{
 		Assert.assertTrue(null != _recommendations);
 		_recommendations = new Tuple<>(elt, _recommendations.originalCid, true);
@@ -195,7 +195,7 @@ public class HomeChannelModifier
 		IpfsFile cid = null;
 		if ((null != _recommendations) && _recommendations.needsUpdate)
 		{
-			byte[] data = GlobalData.serializeRecommendations(_recommendations.element);
+			byte[] data = _recommendations.element.serializeV1();
 			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_recommendations.originalCid);
 			_recommendations = null;

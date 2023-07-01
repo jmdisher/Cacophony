@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -55,14 +55,14 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = modifier.loadRecommendations();
+		AbstractRecommendations recommendations = modifier.loadRecommendations();
 		
 		// Verify that they are already in the list.
 		IpfsFile newRoot = null;
-		if (recommendations.getUser().contains(userToRemove.toPublicKey()))
+		if (recommendations.getUserList().contains(userToRemove))
 		{
 			// Remove the channel.
-			recommendations.getUser().remove(userToRemove.toPublicKey());
+			recommendations.removeUser(userToRemove);
 			
 			// Update and commit the structure.
 			modifier.storeRecommendations(recommendations);

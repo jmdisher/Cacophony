@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -13,6 +14,7 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 public class TestHomeChannelModifier
@@ -36,7 +38,7 @@ public class TestHomeChannelModifier
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		StreamDescription desc = modifier.loadDescription();
 		AbstractRecords records = modifier.loadRecords();
-		StreamRecommendations recom = modifier.loadRecommendations();
+		AbstractRecommendations recom = modifier.loadRecommendations();
 		Assert.assertNotNull(desc);
 		Assert.assertNotNull(records);
 		Assert.assertNotNull(recom);
@@ -96,14 +98,14 @@ public class TestHomeChannelModifier
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamRecommendations recom = modifier.loadRecommendations();
-		recom.getUser().add("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
+		AbstractRecommendations recom = modifier.loadRecommendations();
+		recom.addUser(IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"));
 		modifier.storeRecommendations(recom);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
 		modifier = new HomeChannelModifier(access);
 		recom = modifier.loadRecommendations();
-		Assert.assertEquals(1, recom.getUser().size());
+		Assert.assertEquals(1, recom.getUserList().size());
 		Assert.assertEquals(4, access.data.size());
 		Assert.assertEquals(4, _countPins(access));
 		Assert.assertEquals(2, access.writes);

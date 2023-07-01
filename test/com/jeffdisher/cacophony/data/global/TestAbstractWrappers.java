@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.data.global;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
 import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
@@ -105,5 +106,29 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals(1, middle.getRecordList().size());
 		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getRecordList().get(0));
+	}
+
+	@Test
+	public void emptyRecommendations() throws Throwable
+	{
+		StreamRecommendations recommendations = new StreamRecommendations();
+		byte[] data = GlobalData.serializeRecommendations(recommendations);
+		AbstractRecommendations middle = AbstractRecommendations.DESERIALIZER.apply(data);
+		byte[] data2 = middle.serializeV1();
+		Assert.assertArrayEquals(data, data2);
+	}
+
+	@Test
+	public void smallRecommendations() throws Throwable
+	{
+		StreamRecommendations recommendations = new StreamRecommendations();
+		recommendations.getUser().add(MockKeys.K0.toPublicKey());
+		byte[] data = GlobalData.serializeRecommendations(recommendations);
+		AbstractRecommendations middle = AbstractRecommendations.DESERIALIZER.apply(data);
+		byte[] data2 = middle.serializeV1();
+		Assert.assertArrayEquals(data, data2);
+		
+		Assert.assertEquals(1, middle.getUserList().size());
+		Assert.assertEquals(MockKeys.K0, middle.getUserList().get(0));
 	}
 }

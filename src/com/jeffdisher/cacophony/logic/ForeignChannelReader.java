@@ -1,11 +1,11 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IBasicNetworkOps;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
 import com.jeffdisher.cacophony.scheduler.SyntheticRead;
@@ -29,7 +29,7 @@ public class ForeignChannelReader
 	private final boolean _isCached;
 
 	private StreamIndex _index;
-	private StreamRecommendations _recommendations;
+	private AbstractRecommendations _recommendations;
 	private AbstractRecords _records;
 	private StreamDescription _description;
 
@@ -66,12 +66,12 @@ public class ForeignChannelReader
 	 * @throws ProtocolDataException The data was too big couldn't be parsed.
 	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
 	 */
-	public StreamRecommendations loadRecommendations() throws ProtocolDataException, IpfsConnectionException
+	public AbstractRecommendations loadRecommendations() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _recommendations)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
-			_recommendations = _loadHelper(cid, "recommendations", SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			_recommendations = _loadHelper(cid, "recommendations", AbstractRecommendations.SIZE_LIMIT_BYTES, AbstractRecommendations.DESERIALIZER).get();
 		}
 		return _recommendations;
 	}

@@ -7,11 +7,11 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
@@ -88,7 +88,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 
 	private IpfsFile _runCore(IWritingAccess access, StreamDescription description) throws IpfsConnectionException
 	{
-		StreamRecommendations recommendations = new StreamRecommendations();
+		AbstractRecommendations recommendations = AbstractRecommendations.createNew();
 		
 		AbstractRecords records = AbstractRecords.createNew();
 		
@@ -107,7 +107,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		byte[] rawRecommendations;
 		try
 		{
-			rawRecommendations = GlobalData.serializeRecommendations(recommendations);
+			rawRecommendations = recommendations.serializeV1();
 		}
 		catch (SizeConstraintException e)
 		{

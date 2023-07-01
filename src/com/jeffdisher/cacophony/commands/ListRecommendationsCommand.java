@@ -7,8 +7,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.KeyList;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
@@ -37,7 +36,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		}
 		
 		// We start by checking for known users.
-		StreamRecommendations recommendations = _checkKnownUsers(context, keyToCheck);
+		AbstractRecommendations recommendations = _checkKnownUsers(context, keyToCheck);
 		
 		// If we don't know anything about this user, take the explicit read-through cache (requires write-access).
 		if (null == recommendations)
@@ -48,11 +47,8 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		// If there was an error, it would have thrown.
 		Assert.assertTrue(null != recommendations);
 		// Note that we will filter the keys since some of them could be invalid.
-		List<String> rawKeys = recommendations.getUser();
+		List<IpfsKey> rawKeys = recommendations.getUserList();
 		IpfsKey[] keys = rawKeys.stream()
-				.map(
-						(String raw) -> IpfsKey.fromPublicKey(raw)
-				)
 				.filter(
 						(IpfsKey key) -> (null != key)
 				)
@@ -63,11 +59,11 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 	}
 
 
-	private StreamRecommendations _checkKnownUsers(Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
+	private AbstractRecommendations _checkKnownUsers(Context context, IpfsKey keyToCheck) throws IpfsConnectionException, ProtocolDataException
 	{
 		// We don't have a cache when running in the direct command-line mode.
 		context.logger.logVerbose("Check known users directly: " + keyToCheck);
-		StreamRecommendations result = null;
+		AbstractRecommendations result = null;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IpfsFile rootToLoad = null;
@@ -91,17 +87,17 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		return result;
 	}
 
-	private StreamRecommendations _checkExplicitCache(Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
+	private AbstractRecommendations _checkExplicitCache(Context context, IpfsKey keyToCheck) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		// Consult the cache - this never returns null but will throw on error.
 		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, keyToCheck);
 		
-		StreamRecommendations result;
+		AbstractRecommendations result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// Everything in the explicit cache is cached.
-			result = access.loadCached(userInfo.recommendationsCid(), (byte[] data) -> GlobalData.deserializeRecommendations(data)).get();
+			result = access.loadCached(userInfo.recommendationsCid(), AbstractRecommendations.DESERIALIZER).get();
 		}
 		return result;
 	}

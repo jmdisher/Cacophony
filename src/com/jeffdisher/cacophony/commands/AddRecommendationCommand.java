@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -55,13 +55,13 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing recommendations list.
-		StreamRecommendations recommendations = modifier.loadRecommendations();
+		AbstractRecommendations recommendations = modifier.loadRecommendations();
 		
 		// Verify that we didn't already add them.
 		IpfsFile newRoot = null;
-		if (!recommendations.getUser().contains(userToAdd.toPublicKey()))
+		if (!recommendations.getUserList().contains(userToAdd))
 		{
-			recommendations.getUser().add(userToAdd.toPublicKey());
+			recommendations.addUser(userToAdd);
 			
 			// Update and commit the structure.
 			modifier.storeRecommendations(recommendations);
