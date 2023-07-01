@@ -6,7 +6,7 @@ import java.io.InputStream;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -54,7 +54,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			ILogger log = context.logger.logStart("Updating channel description...");
 			result = _run(access, _name, _description, _pictureStream, _email, _website);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
-			IpfsFile pictureCid = IpfsFile.fromIpfsCid(result.updatedStreamDescription().getPicture());
+			IpfsFile pictureCid = result.updatedStreamDescription().getPicCid();
 			Assert.assertTrue(access.isInPinCached(pictureCid));
 			pictureUrl = context.baseUrl + pictureCid.toSafeString();
 			log.logFinish("Update completed!");
@@ -75,11 +75,11 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				}
 			}
 		}
-		StreamDescription updated = result.updatedStreamDescription();
+		AbstractDescription updated = result.updatedStreamDescription();
 		return new ChannelDescription(result.newRoot()
 				, updated.getName()
 				, updated.getDescription()
-				, IpfsFile.fromIpfsCid(updated.getPicture())
+				, updated.getPicCid()
 				, updated.getEmail()
 				, updated.getWebsite()
 				, pictureUrl
@@ -110,7 +110,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing description since we might be only partially updating it.
-		StreamDescription descriptionObject = modifier.loadDescription();
+		AbstractDescription descriptionObject = modifier.loadDescription();
 		IpfsFile pictureToUnpin = null;
 		
 		if (null != name)
@@ -132,8 +132,9 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				access.unpin(pictureHash);
 				throw new UsageException("Picture too big (is " + MiscHelpers.humanReadableBytes(sizeInBytes) + ", limit " + MiscHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
 			}
-			pictureToUnpin = IpfsFile.fromIpfsCid(descriptionObject.getPicture());
-			descriptionObject.setPicture(pictureHash.toSafeString());
+			pictureToUnpin = descriptionObject.getPicCid();
+			// TODO:  Plumb the mime in here.
+			descriptionObject.setUserPic("image/jpeg", pictureHash);
 		}
 		if (null != email)
 		{
@@ -174,7 +175,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	}
 
 
-	public static record Result(IpfsFile newRoot, StreamDescription updatedStreamDescription)
+	public static record Result(IpfsFile newRoot, AbstractDescription updatedStreamDescription)
 	{
 	}
 }

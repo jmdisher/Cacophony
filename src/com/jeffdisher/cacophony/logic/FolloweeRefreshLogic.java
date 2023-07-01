@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -135,10 +135,10 @@ public class FolloweeRefreshLogic
 		
 		// Load the description.
 		IpfsFile newDescriptionElement = _cidOrNull(newIndex.getDescription());
-		_checkSizeInline(support, "description", newDescriptionElement, SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
+		_checkSizeInline(support, "description", newDescriptionElement, AbstractDescription.SIZE_LIMIT_BYTES);
 		support.addMetaDataToFollowCache(newDescriptionElement).get();
-		StreamDescription newDescription = support.loadCached(newDescriptionElement, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
-		IpfsFile userPicCid = IpfsFile.fromIpfsCid(newDescription.getPicture());
+		AbstractDescription newDescription = support.loadCached(newDescriptionElement, AbstractDescription.DESERIALIZER).get();
+		IpfsFile userPicCid = newDescription.getPicCid();
 		_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
 		support.addMetaDataToFollowCache(userPicCid).get();
 		
@@ -177,21 +177,21 @@ public class FolloweeRefreshLogic
 			if (null != oldDescriptionElement)
 			{
 				support.deferredRemoveMetaDataFromFollowCache(oldDescriptionElement);
-				StreamDescription oldDescription = support.loadCached(oldDescriptionElement, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+				AbstractDescription oldDescription = support.loadCached(oldDescriptionElement, AbstractDescription.DESERIALIZER).get();
 				// The descriptions always contain a picture reference (often the default but never nothing) which we cache as meta-data.
-				support.deferredRemoveMetaDataFromFollowCache(IpfsFile.fromIpfsCid(oldDescription.getPicture()));
+				support.deferredRemoveMetaDataFromFollowCache(oldDescription.getPicCid());
 			}
 			if (null != newDescriptionElement)
 			{
 				// Make sure that this isn't too big.
-				_checkSizeInline(support, "description", newDescriptionElement, SizeLimits.MAX_DESCRIPTION_SIZE_BYTES);
+				_checkSizeInline(support, "description", newDescriptionElement, AbstractDescription.SIZE_LIMIT_BYTES);
 				
 				support.addMetaDataToFollowCache(newDescriptionElement).get();
-				StreamDescription newDescription = support.loadCached(newDescriptionElement, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+				AbstractDescription newDescription = support.loadCached(newDescriptionElement, AbstractDescription.DESERIALIZER).get();
 				
 				// The descriptions always contain a picture reference (often the default but never nothing) which we cache as meta-data.
 				// Make sure that this isn't too big.
-				IpfsFile userPicCid = IpfsFile.fromIpfsCid(newDescription.getPicture());
+				IpfsFile userPicCid = newDescription.getPicCid();
 				_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
 				support.addMetaDataToFollowCache(userPicCid).get();
 				

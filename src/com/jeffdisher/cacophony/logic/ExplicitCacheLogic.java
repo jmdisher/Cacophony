@@ -5,7 +5,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
@@ -266,11 +266,11 @@ public class ExplicitCacheLogic
 		// First, read all of the data to make sure that it is valid.
 		ForeignChannelReader reader = new ForeignChannelReader(transaction, root, false);
 		StreamIndex index = reader.loadIndex();
-		StreamDescription description = reader.loadDescription();
+		AbstractDescription description = reader.loadDescription();
 		// (recommendations is something we don't use but will pin later so we want to know it is valid)
 		reader.loadRecommendations();
 		// We need to check the user pic, explicitly.
-		IpfsFile userPicCid = IpfsFile.fromIpfsCid(description.getPicture());
+		IpfsFile userPicCid = description.getPicCid();
 		long picSize = transaction.getSizeInBytes(userPicCid).get();
 		if (picSize > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
 		{

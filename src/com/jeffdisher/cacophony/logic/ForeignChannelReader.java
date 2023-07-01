@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IBasicNetworkOps;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
@@ -31,7 +31,7 @@ public class ForeignChannelReader
 	private StreamIndex _index;
 	private AbstractRecommendations _recommendations;
 	private AbstractRecords _records;
-	private StreamDescription _description;
+	private AbstractDescription _description;
 
 	/**
 	 * Creates the new reader.
@@ -100,12 +100,12 @@ public class ForeignChannelReader
 	 * @throws ProtocolDataException The data was too big couldn't be parsed.
 	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
 	 */
-	public StreamDescription loadDescription() throws ProtocolDataException, IpfsConnectionException
+	public AbstractDescription loadDescription() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _description)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
-			_description = _loadHelper(cid, "description", SizeLimits.MAX_DESCRIPTION_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			_description = _loadHelper(cid, "description", SizeLimits.MAX_DESCRIPTION_SIZE_BYTES, AbstractDescription.DESERIALIZER).get();
 		}
 		return _description;
 	}

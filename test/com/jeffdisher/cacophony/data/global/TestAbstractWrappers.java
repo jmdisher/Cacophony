@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.data.global;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
@@ -130,5 +131,47 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals(1, middle.getUserList().size());
 		Assert.assertEquals(MockKeys.K0, middle.getUserList().get(0));
+	}
+
+	@Test
+	public void emptyDescription() throws Throwable
+	{
+		// We need to set some minimal values for the encoding to work.
+		StreamDescription description = new StreamDescription();
+		description.setName("name");
+		description.setDescription("description");
+		description.setPicture(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		byte[] data = GlobalData.serializeDescription(description);
+		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
+		byte[] data2 = middle.serializeV1();
+		Assert.assertArrayEquals(data, data2);
+		
+		Assert.assertEquals("name", middle.getName());
+		Assert.assertEquals("description", middle.getDescription());
+		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getPicCid());
+		// We use "image/jpeg" as the synthetic mime.
+		Assert.assertEquals("image/jpeg", middle.getPicMime());
+	}
+
+	@Test
+	public void fullDescription() throws Throwable
+	{
+		StreamDescription description = new StreamDescription();
+		description.setName("name");
+		description.setDescription("description");
+		description.setEmail("test@example.com");
+		description.setWebsite("http://example.com");
+		description.setPicture(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		byte[] data = GlobalData.serializeDescription(description);
+		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
+		byte[] data2 = middle.serializeV1();
+		Assert.assertArrayEquals(data, data2);
+		
+		Assert.assertEquals("name", middle.getName());
+		Assert.assertEquals("description", middle.getDescription());
+		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getPicCid());
+		Assert.assertEquals("image/jpeg", middle.getPicMime());
+		Assert.assertEquals("test@example.com", middle.getEmail());
+		Assert.assertEquals("http://example.com", middle.getWebsite());
 	}
 }

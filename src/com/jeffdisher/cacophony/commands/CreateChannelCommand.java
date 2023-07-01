@@ -7,10 +7,9 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -41,7 +40,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		setupLog.logFinish("Key setup done:  " + publicKey);
 		
 		ILogger log = context.logger.logStart("Creating initial channel state...");
-		StreamDescription description;
+		AbstractDescription description;
 		IpfsFile newRoot;
 		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, _keyName, publicKey))
 		{
@@ -74,19 +73,19 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 	}
 
 
-	private StreamDescription _defaultDescription(IWritingAccess access) throws IpfsConnectionException
+	private AbstractDescription _defaultDescription(IWritingAccess access) throws IpfsConnectionException
 	{
-		StreamDescription description = new StreamDescription();
+		AbstractDescription description = AbstractDescription.createNew();
 		description.setName("Unnamed");
 		description.setDescription("Description forthcoming");
 		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
 		Assert.assertTrue(null != pictureStream);
 		IpfsFile pictureHash = access.uploadAndPin(pictureStream);
-		description.setPicture(pictureHash.toSafeString());
+		description.setUserPic("image/png", pictureHash);
 		return description;
 	}
 
-	private IpfsFile _runCore(IWritingAccess access, StreamDescription description) throws IpfsConnectionException
+	private IpfsFile _runCore(IWritingAccess access, AbstractDescription description) throws IpfsConnectionException
 	{
 		AbstractRecommendations recommendations = AbstractRecommendations.createNew();
 		
@@ -96,7 +95,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		byte[] rawDescription;
 		try
 		{
-			rawDescription = GlobalData.serializeDescription(description);
+			rawDescription = description.serializeV1();
 		}
 		catch (SizeConstraintException e)
 		{

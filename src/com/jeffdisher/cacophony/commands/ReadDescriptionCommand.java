@@ -4,8 +4,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
@@ -92,12 +91,12 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 			{
 				// We know that this user is cached.
 				ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, true);
-				StreamDescription description = reader.loadDescription();
-				String userPicUrl = context.baseUrl + description.getPicture();
+				AbstractDescription description = reader.loadDescription();
+				String userPicUrl = context.baseUrl + description.getPicCid().toSafeString();
 				result = new ChannelDescription(null
 						, description.getName()
 						, description.getDescription()
-						, IpfsFile.fromIpfsCid(description.getPicture())
+						, description.getPicCid()
 						, description.getEmail()
 						, description.getWebsite()
 						, userPicUrl
@@ -116,12 +115,12 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			// Everything in the explicit cache is cached.
-			StreamDescription description = access.loadCached(userInfo.descriptionCid(), (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			AbstractDescription description = access.loadCached(userInfo.descriptionCid(), AbstractDescription.DESERIALIZER).get();
 			String userPicUrl = context.baseUrl + userInfo.userPicCid().toSafeString();
 			result = new ChannelDescription(null
 					, description.getName()
 					, description.getDescription()
-					, IpfsFile.fromIpfsCid(description.getPicture())
+					, description.getPicCid()
 					, description.getEmail()
 					, description.getWebsite()
 					, userPicUrl

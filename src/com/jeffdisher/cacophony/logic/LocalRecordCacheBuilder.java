@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -48,11 +48,11 @@ public class LocalRecordCacheBuilder
 		
 		// Load the records and info underneath all of these.
 		FutureRead<AbstractRecords> localUserRecords;
-		FutureRead<StreamDescription> localUserDescription;
+		FutureRead<AbstractDescription> localUserDescription;
 		try
 		{
 			localUserRecords = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getRecords()), AbstractRecords.DESERIALIZER);
-			localUserDescription = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
+			localUserDescription = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getDescription()), AbstractDescription.DESERIALIZER);
 		}
 		catch (FailedDeserializationException e)
 		{
@@ -62,7 +62,7 @@ public class LocalRecordCacheBuilder
 		
 		// Now that the data is accessible, populate the cache.
 		AbstractRecords localStreamRecords;
-		StreamDescription localStreamDescription;
+		AbstractDescription localStreamDescription;
 		try
 		{
 			localStreamRecords = localUserRecords.get();
@@ -103,7 +103,7 @@ public class LocalRecordCacheBuilder
 		
 		// Load the records and info underneath all of these.
 		List<FutureKey<AbstractRecords>> followeeRecords = new ArrayList<>();
-		List<FutureKey<StreamDescription>> followeeDescriptions = new ArrayList<>();
+		List<FutureKey<AbstractDescription>> followeeDescriptions = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : followeeIndices)
 		{
 			StreamIndex index;
@@ -120,7 +120,7 @@ public class LocalRecordCacheBuilder
 			{
 				FutureRead<AbstractRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), AbstractRecords.DESERIALIZER);
 				followeeRecords.add(new FutureKey<>(future.publicKey, records));
-				FutureRead<StreamDescription> description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
+				FutureRead<AbstractDescription> description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), AbstractDescription.DESERIALIZER);
 				followeeDescriptions.add(new FutureKey<>(future.publicKey, description));
 			}
 		}
@@ -145,9 +145,9 @@ public class LocalRecordCacheBuilder
 				_populateElementMapFromFolloweeUserRoot(access, recordCache, elementsCachedForUser, followeeRecordsElt);
 			}
 		}
-		for (FutureKey<StreamDescription> future : followeeDescriptions)
+		for (FutureKey<AbstractDescription> future : followeeDescriptions)
 		{
-			StreamDescription description;
+			AbstractDescription description;
 			try
 			{
 				description = future.future.get();
@@ -178,7 +178,7 @@ public class LocalRecordCacheBuilder
 		_fetchDataForLocalUserElement(recordCache, cid, record);
 	}
 
-	public static void populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, StreamDescription description)
+	public static void populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, AbstractDescription description)
 	{
 		_populateUserInfoFromDescription(cache, key, description);
 	}
@@ -329,12 +329,12 @@ public class LocalRecordCacheBuilder
 		return mime;
 	}
 
-	private static void _populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, StreamDescription description)
+	private static void _populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, AbstractDescription description)
 	{
 		cache.setUserInfo(key
 				, description.getName()
 				, description.getDescription()
-				, IpfsFile.fromIpfsCid(description.getPicture())
+				, description.getPicCid()
 				, description.getEmail()
 				, description.getWebsite()
 		);

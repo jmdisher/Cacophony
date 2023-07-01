@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
@@ -36,7 +37,7 @@ public class TestHomeChannelModifier
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamDescription desc = modifier.loadDescription();
+		AbstractDescription desc = modifier.loadDescription();
 		AbstractRecords records = modifier.loadRecords();
 		AbstractRecommendations recom = modifier.loadRecommendations();
 		Assert.assertNotNull(desc);
@@ -58,7 +59,7 @@ public class TestHomeChannelModifier
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamDescription desc = modifier.loadDescription();
+		AbstractDescription desc = modifier.loadDescription();
 		desc.setName("updated name");
 		modifier.storeDescription(desc);
 		IpfsFile root = modifier.commitNewRoot();

@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -34,7 +34,7 @@ public class HomeChannelModifier
 	private Tuple<StreamIndex> _index;
 	private Tuple<AbstractRecommendations> _recommendations;
 	private Tuple<AbstractRecords> _records;
-	private Tuple<StreamDescription> _description;
+	private Tuple<AbstractDescription> _description;
 
 	public HomeChannelModifier(IWritingAccess access)
 	{
@@ -93,15 +93,15 @@ public class HomeChannelModifier
 		_records = new Tuple<>(elt, _records.originalCid, true);
 	}
 
-	public StreamDescription loadDescription() throws IpfsConnectionException
+	public AbstractDescription loadDescription() throws IpfsConnectionException
 	{
 		if (null == _description)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
-			StreamDescription elt;
+			AbstractDescription elt;
 			try
 			{
-				elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+				elt = _access.loadCached(cid, AbstractDescription.DESERIALIZER).get();
 			}
 			catch (FailedDeserializationException e)
 			{
@@ -113,7 +113,7 @@ public class HomeChannelModifier
 		return _description.element;
 	}
 
-	public void storeDescription(StreamDescription elt)
+	public void storeDescription(AbstractDescription elt)
 	{
 		Assert.assertTrue(null != _description);
 		_description = new Tuple<>(elt, _description.originalCid, true);
@@ -221,7 +221,7 @@ public class HomeChannelModifier
 		IpfsFile cid = null;
 		if ((null != _description) && _description.needsUpdate)
 		{
-			byte[] data = GlobalData.serializeDescription(_description.element);
+			byte[] data = _description.element.serializeV1();
 			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_description.originalCid);
 			_description = null;

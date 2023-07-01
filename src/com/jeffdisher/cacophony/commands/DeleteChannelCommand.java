@@ -4,10 +4,10 @@ import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.LeafFinder;
@@ -40,7 +40,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			access.unpin(recommendationsCid);
 			
 			IpfsFile descriptionCid = IpfsFile.fromIpfsCid(index.getDescription());
-			StreamDescription description = access.loadCached(descriptionCid, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
+			AbstractDescription description = access.loadCached(descriptionCid, AbstractDescription.DESERIALIZER).get();
 			_handleDescription(access, description);
 			access.unpin(descriptionCid);
 			
@@ -74,10 +74,10 @@ public record DeleteChannelCommand() implements ICommand<None>
 	}
 
 
-	private void _handleDescription(IWritingAccess access, StreamDescription description) throws IpfsConnectionException
+	private void _handleDescription(IWritingAccess access, AbstractDescription description) throws IpfsConnectionException
 	{
 		// We just need the user pic.
-		IpfsFile pic = IpfsFile.fromIpfsCid(description.getPicture());
+		IpfsFile pic = description.getPicCid();
 		access.unpin(pic);
 	}
 
