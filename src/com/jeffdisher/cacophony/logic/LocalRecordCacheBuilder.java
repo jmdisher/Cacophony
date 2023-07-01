@@ -7,10 +7,10 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -47,11 +47,11 @@ public class LocalRecordCacheBuilder
 		FutureRead<StreamIndex> localUserIndex = access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data));
 		
 		// Load the records and info underneath all of these.
-		FutureRead<StreamRecords> localUserRecords;
+		FutureRead<AbstractRecords> localUserRecords;
 		FutureRead<StreamDescription> localUserDescription;
 		try
 		{
-			localUserRecords = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+			localUserRecords = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getRecords()), AbstractRecords.DESERIALIZER);
 			localUserDescription = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
 		}
 		catch (FailedDeserializationException e)
@@ -61,7 +61,7 @@ public class LocalRecordCacheBuilder
 		}
 		
 		// Now that the data is accessible, populate the cache.
-		StreamRecords localStreamRecords;
+		AbstractRecords localStreamRecords;
 		StreamDescription localStreamDescription;
 		try
 		{
@@ -102,7 +102,7 @@ public class LocalRecordCacheBuilder
 		}
 		
 		// Load the records and info underneath all of these.
-		List<FutureKey<StreamRecords>> followeeRecords = new ArrayList<>();
+		List<FutureKey<AbstractRecords>> followeeRecords = new ArrayList<>();
 		List<FutureKey<StreamDescription>> followeeDescriptions = new ArrayList<>();
 		for (FutureKey<StreamIndex> future : followeeIndices)
 		{
@@ -118,7 +118,7 @@ public class LocalRecordCacheBuilder
 			}
 			if (null != index)
 			{
-				FutureRead<StreamRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), (byte[] data) -> GlobalData.deserializeRecords(data));
+				FutureRead<AbstractRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), AbstractRecords.DESERIALIZER);
 				followeeRecords.add(new FutureKey<>(future.publicKey, records));
 				FutureRead<StreamDescription> description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), (byte[] data) -> GlobalData.deserializeDescription(data));
 				followeeDescriptions.add(new FutureKey<>(future.publicKey, description));
@@ -126,10 +126,10 @@ public class LocalRecordCacheBuilder
 		}
 		
 		// Now that the data is accessible, populate the cache.
-		for (FutureKey<StreamRecords> future : followeeRecords)
+		for (FutureKey<AbstractRecords> future : followeeRecords)
 		{
 			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = followees.snapshotAllElementsForFollowee(future.publicKey);
-			StreamRecords followeeRecordsElt;
+			AbstractRecords followeeRecordsElt;
 			try
 			{
 				followeeRecordsElt = future.future.get();
@@ -184,23 +184,22 @@ public class LocalRecordCacheBuilder
 	}
 
 
-	private static void _populateElementMapFromLocalUserRoot(IReadingAccess access, LocalRecordCache recordCache, StreamRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromLocalUserRoot(IReadingAccess access, LocalRecordCache recordCache, AbstractRecords records) throws IpfsConnectionException
 	{
 		// Everything is always cached for the local user.
-		List<String> rawCids = records.getRecord();
+		List<IpfsFile> cids = records.getRecordList();
 		List<FutureRead<AbstractRecord>> loads = new ArrayList<>();
-		for (String rawCid : rawCids)
+		for (IpfsFile cid: cids)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Since we posted this, we know it is a valid size.
 			Assert.assertTrue(access.getSizeInBytes(cid).get() < AbstractRecord.SIZE_LIMIT_BYTES);
 			FutureRead<AbstractRecord> future = access.loadCached(cid, AbstractRecord.DESERIALIZER);
 			loads.add(future);
 		}
-		Iterator<String> cidIterator = rawCids.iterator();
+		Iterator<IpfsFile> cidIterator = cids.iterator();
 		for (FutureRead<AbstractRecord> future : loads)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
+			IpfsFile cid = cidIterator.next();
 			AbstractRecord record;
 			try
 			{
@@ -215,16 +214,15 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, LocalRecordCache recordCache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, StreamRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, LocalRecordCache recordCache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, AbstractRecords records) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
 		//  displayed for all of them - we will currently ignore that case and only add the last entry).
-		List<String> rawCids = records.getRecord();
+		List<IpfsFile> cids = records.getRecordList();
 		List<FutureRead<AbstractRecord>> loads = new ArrayList<>();
-		for (String rawCid : rawCids)
+		for (IpfsFile cid : cids)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawCid);
 			// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
 			if (access.getSizeInBytes(cid).get() < AbstractRecord.SIZE_LIMIT_BYTES)
 			{
@@ -232,10 +230,10 @@ public class LocalRecordCacheBuilder
 				loads.add(future);
 			}
 		}
-		Iterator<String> cidIterator = rawCids.iterator();
+		Iterator<IpfsFile> cidIterator = cids.iterator();
 		for (FutureRead<AbstractRecord> future : loads)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(cidIterator.next());
+			IpfsFile cid = cidIterator.next();
 			try
 			{
 				_fetchDataForFolloweeElement(access, recordCache, elementsCachedForUser, future, cid);

@@ -1,12 +1,10 @@
 package com.jeffdisher.cacophony.commands;
 
-import java.util.Iterator;
-
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LeafFinder;
@@ -68,20 +66,9 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	private static IpfsFile _run(IWritingAccess access, LocalRecordCache recordCache, IpfsFile postToRemove) throws IpfsConnectionException
 	{
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamRecords records = modifier.loadRecords();
+		AbstractRecords records = modifier.loadRecords();
 		
-		boolean didRemove = false;
-		Iterator<String> rawIterator = records.getRecord().iterator();
-		while (rawIterator.hasNext())
-		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(rawIterator.next());
-			if (postToRemove.equals(cid))
-			{
-				rawIterator.remove();
-				Assert.assertTrue(!didRemove);
-				didRemove = true;
-			}
-		}
+		boolean didRemove = records.removeRecord(postToRemove);
 		
 		IpfsFile newRoot = null;
 		if (didRemove)

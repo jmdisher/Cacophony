@@ -1,13 +1,12 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
-import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.LeafFinder;
@@ -71,12 +70,11 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		// make such a mistake easy).
 		// Then, we will create a replacement StreamRecord element and replace the old one, in-place.
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamRecords records = modifier.loadRecords();
-		List<String> recordList = records.getRecord();
+		AbstractRecords records = modifier.loadRecords();
 		IpfsFile newRoot = null;
 		IpfsFile newEltCid = null;
 		AbstractRecord record = null;
-		if (recordList.contains(postToEdit.toSafeString()))
+		if (records.removeRecord(postToEdit))
 		{
 			// Found this, so replace it.
 			try
@@ -118,9 +116,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 				throw Assert.unexpected(e);
 			}
 			
-			int index = recordList.indexOf(postToEdit.toSafeString());
-			recordList.remove(index);
-			recordList.add(index, newEltCid.toSafeString());
+			records.addRecord(newEltCid);
 			
 			modifier.storeRecords(records);
 			newRoot = modifier.commitNewRoot();

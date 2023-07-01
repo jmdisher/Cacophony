@@ -1,11 +1,11 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IBasicNetworkOps;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
 import com.jeffdisher.cacophony.scheduler.SyntheticRead;
@@ -30,7 +30,7 @@ public class ForeignChannelReader
 
 	private StreamIndex _index;
 	private StreamRecommendations _recommendations;
-	private StreamRecords _records;
+	private AbstractRecords _records;
 	private StreamDescription _description;
 
 	/**
@@ -77,18 +77,18 @@ public class ForeignChannelReader
 	}
 
 	/**
-	 * Lazily loads the StreamRecords and returns it, loading the StreamIndex to do so if not already loaded.
+	 * Lazily loads the AbstractRecords and returns it, loading the StreamIndex to do so if not already loaded.
 	 * 
-	 * @return The StreamRecords (never null).
+	 * @return The AbstractRecords (never null).
 	 * @throws ProtocolDataException The data was too big couldn't be parsed.
 	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
 	 */
-	public StreamRecords loadRecords() throws ProtocolDataException, IpfsConnectionException
+	public AbstractRecords loadRecords() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _records)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
-			_records = _loadHelper(cid, "records", SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			_records = _loadHelper(cid, "records", AbstractRecords.SIZE_LIMIT_BYTES, AbstractRecords.DESERIALIZER).get();
 		}
 		return _records;
 	}

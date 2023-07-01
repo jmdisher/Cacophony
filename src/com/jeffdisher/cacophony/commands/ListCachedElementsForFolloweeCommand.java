@@ -6,7 +6,7 @@ import java.util.Map;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -46,7 +46,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 			IpfsFile root = followees.getLastFetchedRootForFollowee(_followeeKey);
 			
 			ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
-			StreamRecords records;
+			AbstractRecords records;
 			try
 			{
 				records = reader.loadRecords();
@@ -56,11 +56,11 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 				// We should not have already cached this if it was corrupt.
 				throw Assert.unexpected(e);
 			}
-			List<String> recordList = records.getRecord();
+			List<IpfsFile> recordList = records.getRecordList();
 			ILogger log = logger.logStart("Followee has " + recordList.size() + " elements:");
-			for(String elementCid : recordList)
+			for(IpfsFile elementCid : recordList)
 			{
-				FollowingCacheElement element = cachedElements.get(IpfsFile.fromIpfsCid(elementCid));
+				FollowingCacheElement element = cachedElements.get(elementCid);
 				String suffix = null;
 				if (null != element)
 				{
@@ -78,7 +78,7 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 				{
 					suffix = "(not cached)";
 				}
-				log.logOperation("Element CID: " + elementCid + " " + suffix);
+				log.logOperation("Element CID: " + elementCid.toSafeString() + " " + suffix);
 			}
 			log.logFinish("");
 		}

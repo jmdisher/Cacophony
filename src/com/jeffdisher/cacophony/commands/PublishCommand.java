@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
@@ -179,15 +179,14 @@ public record PublishCommand(String _name, String _description, String _discussi
 	private IpfsFile _modifyUserStream(IWritingAccess access, IpfsFile recordHash) throws IpfsConnectionException
 	{
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamRecords records = modifier.loadRecords();
-		List<String> recordCids = records.getRecord();
-		String newRecordCid = recordHash.toSafeString();
+		AbstractRecords records = modifier.loadRecords();
+		List<IpfsFile> recordCids = records.getRecordList();
 		// This assertion is just to avoid some corner-cases which can happen in testing but have no obvious meaning in real usage.
 		// This can happen when 2 posts are made before the time has advanced.
 		// While the record list is allowed to contain duplicates, this is usually just the result of a test running too quickly or being otherwise incorrect.
 		// (We could make this into an actual error case if it were meaningful).
-		Assert.assertTrue(!recordCids.contains(newRecordCid));
-		recordCids.add(newRecordCid);
+		Assert.assertTrue(!recordCids.contains(recordHash));
+		records.addRecord(recordHash);
 		
 		// Save the updated records and index.
 		modifier.storeRecords(records);

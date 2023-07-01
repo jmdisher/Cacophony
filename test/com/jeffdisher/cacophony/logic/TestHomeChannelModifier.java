@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -34,7 +35,7 @@ public class TestHomeChannelModifier
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		StreamDescription desc = modifier.loadDescription();
-		StreamRecords records = modifier.loadRecords();
+		AbstractRecords records = modifier.loadRecords();
 		StreamRecommendations recom = modifier.loadRecommendations();
 		Assert.assertNotNull(desc);
 		Assert.assertNotNull(records);
@@ -75,14 +76,14 @@ public class TestHomeChannelModifier
 		_populateWithEmpty(access);
 		access.writes = 0;
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
-		StreamRecords records = modifier.loadRecords();
-		records.getRecord().add(MockSingleNode.generateHash("fake post".getBytes()).toSafeString());
+		AbstractRecords records = modifier.loadRecords();
+		records.addRecord(MockSingleNode.generateHash("fake post".getBytes()));
 		modifier.storeRecords(records);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
 		modifier = new HomeChannelModifier(access);
 		records = modifier.loadRecords();
-		Assert.assertEquals(1, records.getRecord().size());
+		Assert.assertEquals(1, records.getRecordList().size());
 		Assert.assertEquals(4, access.data.size());
 		Assert.assertEquals(4, _countPins(access));
 		Assert.assertEquals(2, access.writes);

@@ -8,11 +8,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -153,8 +153,8 @@ public class FolloweeRefreshLogic
 		support.followeeDescriptionNewOrUpdated(newDescription.getName(), newDescription.getDescription(), userPicCid, newDescription.getEmail(), newDescription.getWebsite());
 		
 		// (we ignore the records element and create a fake one - this allows the expensive part of the refresh to be decoupled from the initial follow).
-		StreamRecords fakeRecords = new StreamRecords();
-		IpfsFile fakeRecordsCid = support.uploadNewData(GlobalData.serializeRecords(fakeRecords));
+		AbstractRecords fakeRecords = AbstractRecords.createNew();
+		IpfsFile fakeRecordsCid = support.uploadNewData(fakeRecords.serializeV1());
 		StreamIndex fakeIndex = new StreamIndex();
 		fakeIndex.setVersion(1);
 		fakeIndex.setDescription(newDescriptionElement.toSafeString());
@@ -248,17 +248,17 @@ public class FolloweeRefreshLogic
 			if (null != newRecordsElement)
 			{
 				// Make sure that this isn't too big.
-				_checkSizeInline(support, "records", newRecordsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
+				_checkSizeInline(support, "records", newRecordsElement, AbstractRecords.SIZE_LIMIT_BYTES);
 				
 				support.addMetaDataToFollowCache(newRecordsElement).get();
 			}
-			StreamRecords oldRecords = _loadRecords(support, oldRecordsElement);
-			StreamRecords newRecords = _loadRecords(support, newRecordsElement);
+			AbstractRecords oldRecords = _loadRecords(support, oldRecordsElement);
+			AbstractRecords newRecords = _loadRecords(support, newRecordsElement);
 			
 			// The records is the complex case since we need to walk the record lists, compare them (since it may have
 			// grown or shrunk) and then determine what actual data to cache from within the records.
-			Set<IpfsFile> oldRecordSet = oldRecords.getRecord().stream().map((String raw) -> IpfsFile.fromIpfsCid(raw)).collect(Collectors.toSet());
-			List<IpfsFile> newRecordList = newRecords.getRecord().stream().map((String raw) -> IpfsFile.fromIpfsCid(raw)).collect(Collectors.toList());
+			Set<IpfsFile> oldRecordSet = oldRecords.getRecordList().stream().collect(Collectors.toSet());
+			List<IpfsFile> newRecordList = newRecords.getRecordList().stream().collect(Collectors.toList());
 			Set<IpfsFile> removedRecords = new HashSet<>();
 			removedRecords.addAll(oldRecordSet);
 			removedRecords.removeAll(newRecordList);
@@ -528,11 +528,11 @@ public class FolloweeRefreshLogic
 		;
 	}
 
-	private static StreamRecords _loadRecords(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException, FailedDeserializationException
+	private static AbstractRecords _loadRecords(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException, FailedDeserializationException
 	{
 		return (null != element)
-				? support.loadCached(element, (byte[] data) -> GlobalData.deserializeRecords(data)).get()
-				: new StreamRecords()
+				? support.loadCached(element, AbstractRecords.DESERIALIZER).get()
+				: AbstractRecords.createNew()
 		;
 	}
 

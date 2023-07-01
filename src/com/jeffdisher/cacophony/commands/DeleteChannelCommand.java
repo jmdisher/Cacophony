@@ -5,10 +5,10 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -45,7 +45,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			access.unpin(descriptionCid);
 			
 			IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
-			StreamRecords records = access.loadCached(recordsCid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			AbstractRecords records = access.loadCached(recordsCid, AbstractRecords.DESERIALIZER).get();
 			_handleRecords(access, userToDelete, context.entryRegistry, context.recordCache, records);
 			access.unpin(recordsCid);
 			
@@ -81,12 +81,11 @@ public record DeleteChannelCommand() implements ICommand<None>
 		access.unpin(pic);
 	}
 
-	private void _handleRecords(IWritingAccess access, IpfsKey publicKey, EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, StreamRecords records) throws FailedDeserializationException, IpfsConnectionException
+	private void _handleRecords(IWritingAccess access, IpfsKey publicKey, EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, AbstractRecords records) throws FailedDeserializationException, IpfsConnectionException
 	{
 		// We need to walk all the records and then walk every leaf in each one.
-		for (String rawCid : records.getRecord())
+		for (IpfsFile recordCid : records.getRecordList())
 		{
-			IpfsFile recordCid = IpfsFile.fromIpfsCid(rawCid);
 			_handleRecord(access, recordCache, recordCid);
 			if (null != entryRegistry)
 			{

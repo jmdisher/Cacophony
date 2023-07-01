@@ -7,7 +7,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -45,10 +45,9 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			HomeChannelModifier modifier = new HomeChannelModifier(access);
 			
 			// First, load our existing stream to make sure that this isn't a duplicate.
-			StreamRecords records = modifier.loadRecords();
-			String elementCidString = _elementCid.toSafeString();
-			List<String> rawRecordCids = records.getRecord();
-			if (rawRecordCids.contains(elementCidString))
+			AbstractRecords records = modifier.loadRecords();
+			List<IpfsFile> recordCids = records.getRecordList();
+			if (recordCids.contains(_elementCid))
 			{
 				throw new UsageException("Element is already posted to channel: " + _elementCid);
 			}
@@ -60,7 +59,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			_pinReachableData(context.logger, access, record);
 			
 			// Add this element to the records and write it back.
-			rawRecordCids.add(elementCidString);
+			records.addRecord(_elementCid);
 			modifier.storeRecords(records);
 			newRoot = modifier.commitNewRoot();
 		}

@@ -7,7 +7,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
@@ -66,18 +66,17 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 			isCached = true;
 		}
 		ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, isCached);
-		StreamRecords records = reader.loadRecords();
+		AbstractRecords records = reader.loadRecords();
 		
 		// Start the async StreamRecord loads.
 		List<AsyncRecord> asyncRecords = new ArrayList<>();
-		for (String rawCid : records.getRecord())
+		for (IpfsFile recordCid : records.getRecordList())
 		{
-			IpfsFile recordCid = IpfsFile.fromIpfsCid(rawCid);
 			ICommonFutureRead<AbstractRecord> future = (isCached
 					? new SyntheticRead<>(access.loadCached(recordCid, AbstractRecord.DESERIALIZER))
 					: access.loadNotCached(recordCid, "record", AbstractRecord.SIZE_LIMIT_BYTES, AbstractRecord.DESERIALIZER)
 			);
-			asyncRecords.add(new AsyncRecord(rawCid, future));
+			asyncRecords.add(new AsyncRecord(recordCid, future));
 		}
 		
 		// Walk the elements, reading each element.
@@ -85,7 +84,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 		for (AsyncRecord asyncRecord : asyncRecords)
 		{
 			AbstractRecord record = asyncRecord.future.get();
-			ILogger log2 = log.logStart("element " + asyncRecord.recordCid + ": " + record.getName());
+			ILogger log2 = log.logStart("element " + asyncRecord.recordCid.toSafeString() + ": " + record.getName());
 			if (null != record.getThumbnailCid())
 			{
 				log2.logOperation("\tThumbnail: " + record.getThumbnailCid().toSafeString());
@@ -104,7 +103,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	}
 
 
-	private static record AsyncRecord(String recordCid, ICommonFutureRead<AbstractRecord> future)
+	private static record AsyncRecord(IpfsFile recordCid, ICommonFutureRead<AbstractRecord> future)
 	{
 	}
 }

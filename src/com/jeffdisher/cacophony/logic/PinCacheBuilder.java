@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
@@ -167,12 +167,11 @@ public class PinCacheBuilder
 		
 		StreamDescription description = _scheduler.readData(descriptionFile, (byte[] data) -> GlobalData.deserializeDescription(data)).get();
 		_pin(IpfsFile.fromIpfsCid(description.getPicture()));
-		StreamRecords records = _scheduler.readData(recordsFile, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+		AbstractRecords records = _scheduler.readData(recordsFile, AbstractRecords.DESERIALIZER).get();
 		
 		List<FutureRead<AbstractRecord>> futures = fetchRecords ? new ArrayList<>() : null;
-		for (String rawRecord : records.getRecord())
+		for (IpfsFile recordFile : records.getRecordList())
 		{
-			IpfsFile recordFile = IpfsFile.fromIpfsCid(rawRecord);
 			_pin(recordFile);
 			if (fetchRecords)
 			{

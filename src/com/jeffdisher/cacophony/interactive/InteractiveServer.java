@@ -14,7 +14,7 @@ import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
@@ -318,7 +318,7 @@ public class InteractiveServer
 	{
 		entryRegistryBuilder.createConnector(key);
 		ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
-		StreamRecords records;
+		AbstractRecords records;
 		try
 		{
 			records = reader.loadRecords();
@@ -328,9 +328,8 @@ public class InteractiveServer
 			// We should not have already cached this if it was corrupt.
 			throw Assert.unexpected(e);
 		}
-		for (String raw : records.getRecord())
+		for (IpfsFile cid : records.getRecordList())
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(raw);
 			entryRegistryBuilder.addToUser(key, cid);
 		}
 	}

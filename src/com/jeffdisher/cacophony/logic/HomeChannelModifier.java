@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -33,7 +33,7 @@ public class HomeChannelModifier
 	private final IWritingAccess _access;
 	private Tuple<StreamIndex> _index;
 	private Tuple<StreamRecommendations> _recommendations;
-	private Tuple<StreamRecords> _records;
+	private Tuple<AbstractRecords> _records;
 	private Tuple<StreamDescription> _description;
 
 	public HomeChannelModifier(IWritingAccess access)
@@ -67,15 +67,15 @@ public class HomeChannelModifier
 		_recommendations = new Tuple<>(elt, _recommendations.originalCid, true);
 	}
 
-	public StreamRecords loadRecords() throws IpfsConnectionException
+	public AbstractRecords loadRecords() throws IpfsConnectionException
 	{
 		if (null == _records)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
-			StreamRecords elt;
+			AbstractRecords elt;
 			try
 			{
-				elt = _access.loadCached(cid, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+				elt = _access.loadCached(cid, AbstractRecords.DESERIALIZER).get();
 			}
 			catch (FailedDeserializationException e)
 			{
@@ -87,7 +87,7 @@ public class HomeChannelModifier
 		return _records.element;
 	}
 
-	public void storeRecords(StreamRecords elt)
+	public void storeRecords(AbstractRecords elt)
 	{
 		Assert.assertTrue(null != _records);
 		_records = new Tuple<>(elt, _records.originalCid, true);
@@ -208,7 +208,7 @@ public class HomeChannelModifier
 		IpfsFile cid = null;
 		if ((null != _records) && _records.needsUpdate)
 		{
-			byte[] data = GlobalData.serializeRecords(_records.element);
+			byte[] data = _records.element.serializeV1();
 			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_records.originalCid);
 			_records = null;
