@@ -88,7 +88,7 @@ public class ForeignChannelReader
 		if (null == _records)
 		{
 			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
-			_records = _loadHelper(cid, "records", SizeLimits.MAX_RECORD_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
+			_records = _loadHelper(cid, "records", SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeRecords(data)).get();
 		}
 		return _records;
 	}
