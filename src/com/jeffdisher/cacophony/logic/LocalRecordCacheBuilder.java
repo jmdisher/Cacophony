@@ -252,7 +252,7 @@ public class LocalRecordCacheBuilder
 
 	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, IpfsFile cid, StreamRecord record) throws IpfsConnectionException
 	{
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), record.getElements().getElement().size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), IpfsKey.fromPublicKey(record.getPublisherKey()), record.getElements().getElement().size());
 		
 		// If this is a local user, state that all the files are cached.
 		LeafFinder leaves = LeafFinder.parseRecord(record);
@@ -275,7 +275,7 @@ public class LocalRecordCacheBuilder
 		StreamRecord record = future.get();
 		List<DataElement> elements = record.getElements().getElement();
 		
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), record.getPublisherKey(), elements.size());
+		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussion(), IpfsKey.fromPublicKey(record.getPublisherKey()), elements.size());
 		
 		// If this is a followee, then check for the appropriate leaves.
 		// (note that we want to double-count with local user, if both - since the pin cache will do that).

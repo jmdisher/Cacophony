@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -135,7 +136,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 				, record.getDescription()
 				, record.getPublishedSecondsUtc()
 				, record.getDiscussion()
-				, record.getPublisherKey()
+				, IpfsKey.fromPublicKey(record.getPublisherKey())
 				, info.thumbnailCid()
 				, info.videoCid()
 				, info.audioCid()
@@ -149,7 +150,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			, String description
 			, long publishedSecondsUtc
 			, String discussionUrl
-			, String publisherKey
+			, IpfsKey publisherKey
 			, IpfsFile thumbnailCid
 			, IpfsFile videoCid
 			, IpfsFile audioCid
@@ -173,7 +174,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			{
 				output.println("\tDiscussion URL: " + this.discussionUrl);
 			}
-			output.println("\tPublisher: " + this.publisherKey);
+			output.println("\tPublisher: " + this.publisherKey.toPublicKey());
 			if (null != this.thumbnailCid)
 			{
 				output.println("\tThumbnail: " + this.thumbnailCid);

@@ -30,6 +30,7 @@ import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
@@ -827,7 +828,7 @@ public class TestFolloweeRefreshLogic
 			this.lastName = name;
 		}
 		@Override
-		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)
+		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, int leafReferenceCount)
 		{
 			_newElementsPinned.add(elementHash);
 		}

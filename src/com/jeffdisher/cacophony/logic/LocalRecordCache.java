@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -71,7 +72,7 @@ public class LocalRecordCache
 	 * @param publisherKey The key of the element publisher.
 	 * @param leafElementCount The number of leaf elements referenced.
 	 */
-	public synchronized void recordMetaDataPinned(IpfsFile cid, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafElementCount)
+	public synchronized void recordMetaDataPinned(IpfsFile cid, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, int leafElementCount)
 	{
 		int refCount = 0;
 		IpfsFile thumbnail = null;
@@ -388,7 +389,7 @@ public class LocalRecordCache
 			, String description
 			, long publishedSecondsUtc
 			, String discussionUrl
-			, String publisherKey
+			, IpfsKey publisherKey
 			, IpfsFile thumbnailCid
 			, IpfsFile videoCid
 			, IpfsFile audioCid
@@ -405,7 +406,7 @@ public class LocalRecordCache
 			, String description
 			, long publishedSecondsUtc
 			, String discussionUrl
-			, String publisherKey
+			, IpfsKey publisherKey
 			, int leafElementCount
 			, IpfsFile thumbnail
 			, int thumbnailRef

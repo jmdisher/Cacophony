@@ -103,7 +103,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		});
 	}
 	@Override
-	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount)
+	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, int leafReferenceCount)
 	{
 		if (null != _entryRegistry)
 		{

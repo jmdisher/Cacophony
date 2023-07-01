@@ -22,6 +22,7 @@ import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
@@ -331,7 +332,7 @@ public class FolloweeRefreshLogic
 				// We pinned this so the read should be pretty-well instantaneous.
 				data.record = support.loadCached(data.elementCid, (byte[] raw) -> GlobalData.deserializeRecord(raw)).get();
 				// Report that we pinned it.
-				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussion(), data.record.getPublisherKey(), data.record.getElements().getElement().size());
+				support.newElementPinned(data.elementCid, data.record.getName(), data.record.getDescription(), data.record.getPublishedSecondsUtc(), data.record.getDiscussion(), IpfsKey.fromPublicKey(data.record.getPublisherKey()), data.record.getElements().getElement().size());
 				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
 				_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
 				newRecordsBeingProcessedCalculatingLeaves.add(data);
@@ -638,7 +639,7 @@ public class FolloweeRefreshLogic
 		 * @param publisherKey The key of the element publisher.
 		 * @param leafReferenceCount The number of attached leaves (thumbnail, audio, videos, etc).
 		 */
-		void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, String publisherKey, int leafReferenceCount);
+		void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, int leafReferenceCount);
 		/**
 		 * Requests that a piece of XML meta-data be pinned locally.  This could be the element or some other
 		 * intermediary data.

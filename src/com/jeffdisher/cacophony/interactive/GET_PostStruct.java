@@ -77,7 +77,7 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 			postStruct.set("description", result.description());
 			postStruct.set("publishedSecondsUtc", result.publishedSecondsUtc());
 			postStruct.set("discussionUrl", result.discussionUrl());
-			postStruct.set("publisherKey", result.publisherKey());
+			postStruct.set("publisherKey", result.publisherKey().toPublicKey());
 			postStruct.set("cached", result.isKnownToBeCached());
 			postStruct.set("thumbnailUrl", _urlOrNull(context.baseUrl, result.thumbnailCid()));
 			postStruct.set("videoUrl", _urlOrNull(context.baseUrl, result.videoCid()));
