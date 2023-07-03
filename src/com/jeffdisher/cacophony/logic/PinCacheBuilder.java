@@ -5,10 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
@@ -157,12 +156,12 @@ public class PinCacheBuilder
 	{
 		_pin(indexFile);
 		// We know that everything reachable from a root is valid, here, since it is either our own data or a followee root which we already validated.
-		StreamIndex index = _scheduler.readData(indexFile, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
-		IpfsFile descriptionFile = IpfsFile.fromIpfsCid(index.getDescription());
+		AbstractIndex index = _scheduler.readData(indexFile, AbstractIndex.DESERIALIZER).get();
+		IpfsFile descriptionFile = index.descriptionCid;
 		_pin(descriptionFile);
-		IpfsFile recommendationsFile = IpfsFile.fromIpfsCid(index.getRecommendations());
+		IpfsFile recommendationsFile = index.recommendationsCid;
 		_pin(recommendationsFile);
-		IpfsFile recordsFile = IpfsFile.fromIpfsCid(index.getRecords());
+		IpfsFile recordsFile = index.recordsCid;
 		_pin(recordsFile);
 		
 		AbstractDescription description = _scheduler.readData(descriptionFile, AbstractDescription.DESERIALIZER).get();

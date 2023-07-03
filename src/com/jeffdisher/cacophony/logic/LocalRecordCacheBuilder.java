@@ -7,10 +7,9 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -44,15 +43,15 @@ public class LocalRecordCacheBuilder
 	) throws IpfsConnectionException
 	{
 		// First, fetch the local user.
-		FutureRead<StreamIndex> localUserIndex = access.loadCached(lastPublishedIndex, (byte[] data) -> GlobalData.deserializeIndex(data));
+		FutureRead<AbstractIndex> localUserIndex = access.loadCached(lastPublishedIndex, AbstractIndex.DESERIALIZER);
 		
 		// Load the records and info underneath all of these.
 		FutureRead<AbstractRecords> localUserRecords;
 		FutureRead<AbstractDescription> localUserDescription;
 		try
 		{
-			localUserRecords = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getRecords()), AbstractRecords.DESERIALIZER);
-			localUserDescription = access.loadCached(IpfsFile.fromIpfsCid(localUserIndex.get().getDescription()), AbstractDescription.DESERIALIZER);
+			localUserRecords = access.loadCached(localUserIndex.get().recordsCid, AbstractRecords.DESERIALIZER);
+			localUserDescription = access.loadCached(localUserIndex.get().descriptionCid, AbstractDescription.DESERIALIZER);
 		}
 		catch (FailedDeserializationException e)
 		{
@@ -95,18 +94,18 @@ public class LocalRecordCacheBuilder
 	) throws IpfsConnectionException
 	{
 		// Fetch the followees.
-		List<FutureKey<StreamIndex>> followeeIndices = new ArrayList<>();
+		List<FutureKey<AbstractIndex>> followeeIndices = new ArrayList<>();
 		for(IpfsKey followee : followees.getAllKnownFollowees())
 		{
-			followeeIndices.add(new FutureKey<>(followee, access.loadCached(followees.getLastFetchedRootForFollowee(followee), (byte[] data) -> GlobalData.deserializeIndex(data))));
+			followeeIndices.add(new FutureKey<>(followee, access.loadCached(followees.getLastFetchedRootForFollowee(followee), AbstractIndex.DESERIALIZER)));
 		}
 		
 		// Load the records and info underneath all of these.
 		List<FutureKey<AbstractRecords>> followeeRecords = new ArrayList<>();
 		List<FutureKey<AbstractDescription>> followeeDescriptions = new ArrayList<>();
-		for (FutureKey<StreamIndex> future : followeeIndices)
+		for (FutureKey<AbstractIndex> future : followeeIndices)
 		{
-			StreamIndex index;
+			AbstractIndex index;
 			try
 			{
 				index = future.future.get();
@@ -118,9 +117,9 @@ public class LocalRecordCacheBuilder
 			}
 			if (null != index)
 			{
-				FutureRead<AbstractRecords> records = access.loadCached(IpfsFile.fromIpfsCid(index.getRecords()), AbstractRecords.DESERIALIZER);
+				FutureRead<AbstractRecords> records = access.loadCached(index.recordsCid, AbstractRecords.DESERIALIZER);
 				followeeRecords.add(new FutureKey<>(future.publicKey, records));
-				FutureRead<AbstractDescription> description = access.loadCached(IpfsFile.fromIpfsCid(index.getDescription()), AbstractDescription.DESERIALIZER);
+				FutureRead<AbstractDescription> description = access.loadCached(index.descriptionCid, AbstractDescription.DESERIALIZER);
 				followeeDescriptions.add(new FutureKey<>(future.publicKey, description));
 			}
 		}

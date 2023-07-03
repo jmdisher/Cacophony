@@ -5,10 +5,9 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -33,18 +32,18 @@ public record DeleteChannelCommand() implements ICommand<None>
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			IpfsFile indexCid = access.getLastRootElement();
-			StreamIndex index = access.loadCached(indexCid, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			AbstractIndex index = access.loadCached(indexCid, AbstractIndex.DESERIALIZER).get();
 			
-			IpfsFile recommendationsCid = IpfsFile.fromIpfsCid(index.getRecommendations());
+			IpfsFile recommendationsCid = index.recommendationsCid;
 			// Recommendations has no other info so we don't need to load it.
 			access.unpin(recommendationsCid);
 			
-			IpfsFile descriptionCid = IpfsFile.fromIpfsCid(index.getDescription());
+			IpfsFile descriptionCid = index.descriptionCid;
 			AbstractDescription description = access.loadCached(descriptionCid, AbstractDescription.DESERIALIZER).get();
 			_handleDescription(access, description);
 			access.unpin(descriptionCid);
 			
-			IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
+			IpfsFile recordsCid = index.recordsCid;
 			AbstractRecords records = access.loadCached(recordsCid, AbstractRecords.DESERIALIZER).get();
 			_handleRecords(access, userToDelete, context.entryRegistry, context.recordCache, records);
 			access.unpin(recordsCid);

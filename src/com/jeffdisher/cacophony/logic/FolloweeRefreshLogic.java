@@ -8,11 +8,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -84,24 +83,24 @@ public class FolloweeRefreshLogic
 			if (null != newIndexElement)
 			{
 				// Make sure that this isn't too big.
-				_checkSizeInline(support, "index", newIndexElement, SizeLimits.MAX_INDEX_SIZE_BYTES);
+				_checkSizeInline(support, "index", newIndexElement, AbstractIndex.SIZE_LIMIT_BYTES);
 				
 				// Add it to the cache before we proceed.
 				support.addMetaDataToFollowCache(newIndexElement).get();
 			}
-			StreamIndex oldIndex = _loadIndex(support, oldIndexElement);
-			StreamIndex newIndex = _loadIndex(support, newIndexElement);
+			AbstractIndex oldIndex = _loadIndex(support, oldIndexElement);
+			AbstractIndex newIndex = _loadIndex(support, newIndexElement);
 			
-			IpfsFile oldDescriptionElement = _cidOrNull(oldIndex.getDescription());
-			IpfsFile newDescriptionElement = _cidOrNull(newIndex.getDescription());
+			IpfsFile oldDescriptionElement = oldIndex.descriptionCid;
+			IpfsFile newDescriptionElement = newIndex.descriptionCid;
 			_refreshDescription(support, oldDescriptionElement, newDescriptionElement);
 			
-			IpfsFile oldRecommendationsElement = _cidOrNull(oldIndex.getRecommendations());
-			IpfsFile newRecommendationsElement = _cidOrNull(newIndex.getRecommendations());
+			IpfsFile oldRecommendationsElement = oldIndex.recommendationsCid;
+			IpfsFile newRecommendationsElement = newIndex.recommendationsCid;
 			_refreshRecommendations(support, oldRecommendationsElement, newRecommendationsElement);
 			
-			IpfsFile oldRecordsElement = _cidOrNull(oldIndex.getRecords());
-			IpfsFile newRecordsElement = _cidOrNull(newIndex.getRecords());
+			IpfsFile oldRecordsElement = oldIndex.recordsCid;
+			IpfsFile newRecordsElement = newIndex.recordsCid;
 			_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
 		}
 	}
@@ -131,10 +130,10 @@ public class FolloweeRefreshLogic
 		
 		// Load the root element - we will NOT cache this, since we are going to use a hacked variant.
 		// (since we are using the not-cached loader, it will do our size check for us)
-		StreamIndex newIndex = support.loadNotCached(newIndexElement, "index", SizeLimits.MAX_INDEX_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+		AbstractIndex newIndex = support.loadNotCached(newIndexElement, "index", AbstractIndex.SIZE_LIMIT_BYTES, AbstractIndex.DESERIALIZER).get();
 		
 		// Load the description.
-		IpfsFile newDescriptionElement = _cidOrNull(newIndex.getDescription());
+		IpfsFile newDescriptionElement = newIndex.descriptionCid;
 		_checkSizeInline(support, "description", newDescriptionElement, AbstractDescription.SIZE_LIMIT_BYTES);
 		support.addMetaDataToFollowCache(newDescriptionElement).get();
 		AbstractDescription newDescription = support.loadCached(newDescriptionElement, AbstractDescription.DESERIALIZER).get();
@@ -143,7 +142,7 @@ public class FolloweeRefreshLogic
 		support.addMetaDataToFollowCache(userPicCid).get();
 		
 		// Load the recommendations.
-		IpfsFile newRecommendationsElement = _cidOrNull(newIndex.getRecommendations());
+		IpfsFile newRecommendationsElement = newIndex.recommendationsCid;
 		_checkSizeInline(support, "recommendations", newRecommendationsElement, SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES);
 		support.addMetaDataToFollowCache(newRecommendationsElement).get();
 		AbstractRecommendations newRecommendations = support.loadCached(newRecommendationsElement, AbstractRecommendations.DESERIALIZER).get();
@@ -155,12 +154,12 @@ public class FolloweeRefreshLogic
 		// (we ignore the records element and create a fake one - this allows the expensive part of the refresh to be decoupled from the initial follow).
 		AbstractRecords fakeRecords = AbstractRecords.createNew();
 		IpfsFile fakeRecordsCid = support.uploadNewData(fakeRecords.serializeV1());
-		StreamIndex fakeIndex = new StreamIndex();
-		fakeIndex.setVersion(1);
-		fakeIndex.setDescription(newDescriptionElement.toSafeString());
-		fakeIndex.setRecommendations(newRecommendationsElement.toSafeString());
-		fakeIndex.setRecords(fakeRecordsCid.toSafeString());
-		IpfsFile fakeIndexCid = support.uploadNewData(GlobalData.serializeIndex(fakeIndex));
+		AbstractIndex fakeIndex = AbstractIndex.createNew();
+		fakeIndex.version = 1;
+		fakeIndex.descriptionCid = newDescriptionElement;
+		fakeIndex.recommendationsCid = newRecommendationsElement;
+		fakeIndex.recordsCid = fakeRecordsCid;
+		IpfsFile fakeIndexCid = support.uploadNewData(fakeIndex.serializeV1());
 		
 		return fakeIndexCid;
 	}
@@ -520,11 +519,11 @@ public class FolloweeRefreshLogic
 		return finalSelection;
 	}
 
-	private static StreamIndex _loadIndex(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException, FailedDeserializationException
+	private static AbstractIndex _loadIndex(IRefreshSupport support, IpfsFile element) throws IpfsConnectionException, FailedDeserializationException
 	{
 		return (null != element)
-				? support.loadCached(element, (byte[] data) -> GlobalData.deserializeIndex(data)).get()
-				: new StreamIndex()
+				? support.loadCached(element, AbstractIndex.DESERIALIZER).get()
+				: AbstractIndex.createNew()
 		;
 	}
 
@@ -568,14 +567,6 @@ public class FolloweeRefreshLogic
 			data.leafHash = leafHash;
 			data.leafSizeFuture = support.getSizeInBytes(leafHash);
 		}
-	}
-
-	private static IpfsFile _cidOrNull(String rawCid)
-	{
-		return (null != rawCid)
-				? IpfsFile.fromIpfsCid(rawCid)
-				: null
-		;
 	}
 
 	private static void _checkSizeInline(_ICommonSupport support, String context, IpfsFile element, long sizeLimit) throws IpfsConnectionException, SizeConstraintException

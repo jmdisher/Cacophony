@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -47,14 +47,14 @@ public interface IWritingAccess extends IReadingAccess
 	IpfsFile uploadAndPin(InputStream dataToSave) throws IpfsConnectionException;
 
 	/**
-	 * Uploads the new StreamIndex and updates local tracking.
+	 * Uploads the new AbstractIndex and updates local tracking.
 	 * Note that this doesn't republish the new index, as that needs to be explicitly done.
 	 * 
 	 * @param streamIndex The new stream index.
 	 * @return The CID of the published index.
 	 * @throws IpfsConnectionException If there was a problem contacting the IPFS node.
 	 */
-	IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException;
+	IpfsFile uploadIndexAndUpdateTracking(AbstractIndex streamIndex) throws IpfsConnectionException;
 
 	/**
 	 * Requests that the given cid be pinned on the local node.  Since a pin operation can be a very long-running

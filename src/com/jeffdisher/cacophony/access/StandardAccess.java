@@ -11,8 +11,7 @@ import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
@@ -298,13 +297,13 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
-	public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
+	public IpfsFile uploadIndexAndUpdateTracking(AbstractIndex streamIndex) throws IpfsConnectionException
 	{
 		Assert.assertTrue(null != _readWrite);
 		byte[] serializedIndex;
 		try
 		{
-			serializedIndex = GlobalData.serializeIndex(streamIndex);
+			serializedIndex = streamIndex.serializeV1();
 		}
 		catch (SizeConstraintException e)
 		{

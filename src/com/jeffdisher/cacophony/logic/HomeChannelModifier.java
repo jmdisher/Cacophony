@@ -6,10 +6,9 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -31,7 +30,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class HomeChannelModifier
 {
 	private final IWritingAccess _access;
-	private Tuple<StreamIndex> _index;
+	private Tuple<AbstractIndex> _index;
 	private Tuple<AbstractRecommendations> _recommendations;
 	private Tuple<AbstractRecords> _records;
 	private Tuple<AbstractDescription> _description;
@@ -45,7 +44,7 @@ public class HomeChannelModifier
 	{
 		if (null == _recommendations)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
+			IpfsFile cid = _getIndex().recommendationsCid;
 			AbstractRecommendations elt;
 			try
 			{
@@ -71,7 +70,7 @@ public class HomeChannelModifier
 	{
 		if (null == _records)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
+			IpfsFile cid = _getIndex().recordsCid;
 			AbstractRecords elt;
 			try
 			{
@@ -97,7 +96,7 @@ public class HomeChannelModifier
 	{
 		if (null == _description)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
+			IpfsFile cid = _getIndex().descriptionCid;
 			AbstractDescription elt;
 			try
 			{
@@ -133,7 +132,7 @@ public class HomeChannelModifier
 	{
 		// For us to get this far, we must have at least loaded something.
 		Assert.assertTrue(null != _index);
-		StreamIndex index = _index.element;
+		AbstractIndex index = _index.element;
 		boolean mustWrite = _index.needsUpdate;
 		
 		// Note that even if these changes are not actually changing the CID, we still want to balance uploadAndPin with unpin.
@@ -155,17 +154,17 @@ public class HomeChannelModifier
 		
 		if (null != recommendations)
 		{
-			index.setRecommendations(recommendations.toSafeString());
+			index.recommendationsCid = recommendations;
 			mustWrite = true;
 		}
 		if (null != records)
 		{
-			index.setRecords(records.toSafeString());
+			index.recordsCid = records;
 			mustWrite = true;
 		}
 		if (null != description)
 		{
-			index.setDescription(description.toSafeString());
+			index.descriptionCid = description;
 			mustWrite = true;
 		}
 		
@@ -229,15 +228,15 @@ public class HomeChannelModifier
 		return cid;
 	}
 
-	private StreamIndex _getIndex() throws IpfsConnectionException
+	private AbstractIndex _getIndex() throws IpfsConnectionException
 	{
 		if (null == _index)
 		{
 			IpfsFile root = _access.getLastRootElement();
-			StreamIndex index;
+			AbstractIndex index;
 			try
 			{
-				index = _access.loadCached(root, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+				index = _access.loadCached(root, AbstractIndex.DESERIALIZER).get();
 			}
 			catch (FailedDeserializationException e)
 			{

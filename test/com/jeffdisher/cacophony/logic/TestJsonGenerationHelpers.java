@@ -14,9 +14,9 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.LocalDataModel;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
@@ -191,11 +191,11 @@ public class TestJsonGenerationHelpers
 		description.setPicture(picFile.toSafeString());
 		data = GlobalData.serializeDescription(description);
 		IpfsFile descriptionFile = access.uploadAndPin(new ByteArrayInputStream(data));
-		StreamIndex index = new StreamIndex();
-		index.setDescription(descriptionFile.toSafeString());
-		index.setRecommendations(recommendationsFile.toSafeString());
-		index.setRecords(recordsFile.toSafeString());
-		index.setVersion(1);
+		AbstractIndex index = AbstractIndex.createNew();
+		index.descriptionCid = descriptionFile;
+		index.recommendationsCid = recommendationsFile;
+		index.recordsCid = recordsFile;
+		index.version = 1;
 		
 		IpfsFile indexHash = null;
 		// Note that we only want to store this _as_ the index if this is the owner of the storage, since this helper is sometimes used to simulate followee refresh.
@@ -208,7 +208,7 @@ public class TestJsonGenerationHelpers
 		}
 		else
 		{
-			indexHash = access.uploadAndPin(new ByteArrayInputStream(GlobalData.serializeIndex(index)));
+			indexHash = access.uploadAndPin(new ByteArrayInputStream(index.serializeV1()));
 		}
 		return indexHash;
 	}

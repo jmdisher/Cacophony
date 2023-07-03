@@ -8,9 +8,9 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
@@ -130,11 +130,11 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		IpfsFile hashRecords = access.uploadAndPin(new ByteArrayInputStream(rawRecords));
 		
 		// Create the new local index.
-		StreamIndex streamIndex = new StreamIndex();
-		streamIndex.setVersion(1);
-		streamIndex.setDescription(hashDescription.toSafeString());
-		streamIndex.setRecommendations(hashRecommendations.toSafeString());
-		streamIndex.setRecords(hashRecords.toSafeString());
+		AbstractIndex streamIndex = AbstractIndex.createNew();
+		streamIndex.version = 1;
+		streamIndex.descriptionCid = hashDescription;
+		streamIndex.recommendationsCid = hashRecommendations;
+		streamIndex.recordsCid = hashRecords;
 		
 		return access.uploadIndexAndUpdateTracking(streamIndex);
 	}

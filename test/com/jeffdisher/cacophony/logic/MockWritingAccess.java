@@ -12,8 +12,7 @@ import org.junit.Assert;
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
@@ -222,12 +221,12 @@ public class MockWritingAccess implements IWritingAccess
 	}
 
 	@Override
-	public IpfsFile uploadIndexAndUpdateTracking(StreamIndex streamIndex) throws IpfsConnectionException
+	public IpfsFile uploadIndexAndUpdateTracking(AbstractIndex streamIndex) throws IpfsConnectionException
 	{
 		byte[] data;
 		try
 		{
-			data = GlobalData.serializeIndex(streamIndex);
+			data = streamIndex.serializeV1();
 		}
 		catch (SizeConstraintException e)
 		{

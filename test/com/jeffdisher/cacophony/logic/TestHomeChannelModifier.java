@@ -6,11 +6,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
@@ -161,17 +161,17 @@ public class TestHomeChannelModifier
 		desc.setPicture(MockSingleNode.generateHash("fake picture cid source".getBytes()).toSafeString());
 		StreamRecords records = new StreamRecords();
 		StreamRecommendations recom = new StreamRecommendations();
-		StreamIndex index = new StreamIndex();
-		index.setVersion(1);
-		index.setDescription(_storeWithString(access, GlobalData.serializeDescription(desc)));
-		index.setRecords(_storeWithString(access, GlobalData.serializeRecords(records)));
-		index.setRecommendations(_storeWithString(access, GlobalData.serializeRecommendations(recom)));
+		AbstractIndex index = AbstractIndex.createNew();
+		index.version = 1;
+		index.descriptionCid = _store(access, GlobalData.serializeDescription(desc));
+		index.recordsCid = _store(access, GlobalData.serializeRecords(records));
+		index.recommendationsCid = _store(access, GlobalData.serializeRecommendations(recom));
 		access.uploadIndexAndUpdateTracking(index);
 	}
 
-	private static String _storeWithString(MockWritingAccess access, byte[] data) throws Throwable
+	private static IpfsFile _store(MockWritingAccess access, byte[] data) throws Throwable
 	{
-		return access.uploadAndPin(new ByteArrayInputStream(data)).toSafeString();
+		return access.uploadAndPin(new ByteArrayInputStream(data));
 	}
 
 	private static int _countPins(MockWritingAccess access)

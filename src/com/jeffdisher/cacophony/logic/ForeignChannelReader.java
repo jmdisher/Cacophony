@@ -2,10 +2,9 @@ package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IBasicNetworkOps;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.ICommonFutureRead;
 import com.jeffdisher.cacophony.scheduler.SyntheticRead;
@@ -28,7 +27,7 @@ public class ForeignChannelReader
 	private final IpfsFile _root;
 	private final boolean _isCached;
 
-	private StreamIndex _index;
+	private AbstractIndex _index;
 	private AbstractRecommendations _recommendations;
 	private AbstractRecords _records;
 	private AbstractDescription _description;
@@ -54,7 +53,7 @@ public class ForeignChannelReader
 	 * @throws ProtocolDataException The data was too big couldn't be parsed.
 	 * @throws IpfsConnectionException There was an error (or timeout) contacting the server.
 	 */
-	public StreamIndex loadIndex() throws ProtocolDataException, IpfsConnectionException 
+	public AbstractIndex loadIndex() throws ProtocolDataException, IpfsConnectionException 
 	{
 		return _getIndex();
 	}
@@ -70,7 +69,7 @@ public class ForeignChannelReader
 	{
 		if (null == _recommendations)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecommendations());
+			IpfsFile cid = _getIndex().recommendationsCid;
 			_recommendations = _loadHelper(cid, "recommendations", AbstractRecommendations.SIZE_LIMIT_BYTES, AbstractRecommendations.DESERIALIZER).get();
 		}
 		return _recommendations;
@@ -87,7 +86,7 @@ public class ForeignChannelReader
 	{
 		if (null == _records)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getRecords());
+			IpfsFile cid = _getIndex().recordsCid;
 			_records = _loadHelper(cid, "records", AbstractRecords.SIZE_LIMIT_BYTES, AbstractRecords.DESERIALIZER).get();
 		}
 		return _records;
@@ -104,18 +103,18 @@ public class ForeignChannelReader
 	{
 		if (null == _description)
 		{
-			IpfsFile cid = IpfsFile.fromIpfsCid(_getIndex().getDescription());
+			IpfsFile cid = _getIndex().descriptionCid;
 			_description = _loadHelper(cid, "description", SizeLimits.MAX_DESCRIPTION_SIZE_BYTES, AbstractDescription.DESERIALIZER).get();
 		}
 		return _description;
 	}
 
 
-	private StreamIndex _getIndex() throws ProtocolDataException, IpfsConnectionException
+	private AbstractIndex _getIndex() throws ProtocolDataException, IpfsConnectionException
 	{
 		if (null == _index)
 		{
-			_index = _loadHelper(_root, "index", SizeLimits.MAX_INDEX_SIZE_BYTES, (byte[] data) -> GlobalData.deserializeIndex(data)).get();
+			_index = _loadHelper(_root, "index", AbstractIndex.SIZE_LIMIT_BYTES, AbstractIndex.DESERIALIZER).get();
 		}
 		return _index;
 	}

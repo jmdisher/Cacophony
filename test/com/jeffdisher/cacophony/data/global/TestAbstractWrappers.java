@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
+import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.DataElement;
@@ -12,6 +13,7 @@ import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 public class TestAbstractWrappers
@@ -173,5 +175,27 @@ public class TestAbstractWrappers
 		Assert.assertEquals("image/jpeg", middle.getPicMime());
 		Assert.assertEquals("test@example.com", middle.getEmail());
 		Assert.assertEquals("http://example.com", middle.getWebsite());
+	}
+
+	@Test
+	public void basicIndex() throws Throwable
+	{
+		IpfsFile description = MockSingleNode.generateHash(new byte[] { 1 });
+		IpfsFile recommendations = MockSingleNode.generateHash(new byte[] { 2 });
+		IpfsFile records = MockSingleNode.generateHash(new byte[] { 3 });
+		StreamIndex index = new StreamIndex();
+		index.setVersion(1);
+		index.setDescription(description.toSafeString());
+		index.setRecommendations(recommendations.toSafeString());
+		index.setRecords(records.toSafeString());
+		byte[] data = GlobalData.serializeIndex(index);
+		AbstractIndex middle = AbstractIndex.DESERIALIZER.apply(data);
+		byte[] data2 = middle.serializeV1();
+		Assert.assertArrayEquals(data, data2);
+		
+		Assert.assertEquals(1, middle.version);
+		Assert.assertEquals(description, middle.descriptionCid);
+		Assert.assertEquals(recommendations, middle.recommendationsCid);
+		Assert.assertEquals(records, middle.recordsCid);
 	}
 }

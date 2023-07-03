@@ -6,7 +6,7 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
@@ -265,7 +265,7 @@ public class ExplicitCacheLogic
 	{
 		// First, read all of the data to make sure that it is valid.
 		ForeignChannelReader reader = new ForeignChannelReader(transaction, root, false);
-		StreamIndex index = reader.loadIndex();
+		AbstractIndex index = reader.loadIndex();
 		AbstractDescription description = reader.loadDescription();
 		// (recommendations is something we don't use but will pin later so we want to know it is valid)
 		reader.loadRecommendations();
@@ -278,8 +278,8 @@ public class ExplicitCacheLogic
 		}
 		// Now, pin everything and update the cache.
 		FuturePin pinIndex = transaction.pin(root);
-		FuturePin pinRecommendations = transaction.pin(IpfsFile.fromIpfsCid(index.getRecommendations()));
-		FuturePin pinDescription = transaction.pin(IpfsFile.fromIpfsCid(index.getDescription()));
+		FuturePin pinRecommendations = transaction.pin(index.recommendationsCid);
+		FuturePin pinDescription = transaction.pin(index.descriptionCid);
 		FuturePin pinUserPic = transaction.pin(userPicCid);
 		pinIndex.get();
 		pinRecommendations.get();
