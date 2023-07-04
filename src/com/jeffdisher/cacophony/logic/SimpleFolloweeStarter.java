@@ -43,7 +43,7 @@ public class SimpleFolloweeStarter
 	 * @throws ProtocolDataException The target user's data was malformed or broke protocol.
 	 * @throws KeyException The user couldn't be found.
 	 */
-	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey) throws IpfsConnectionException, ProtocolDataException, KeyException
+	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, boolean enableVersion2Data, LocalUserInfoCache userInfoCache, IpfsKey followeeKey) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
 		StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
 		
@@ -54,7 +54,7 @@ public class SimpleFolloweeStarter
 			IpfsFile actualRoot = access.resolvePublicKey(followeeKey).get();
 			// Throws KeyException on failure.
 			Assert.assertTrue(null != actualRoot);
-			hackedRoot = FolloweeRefreshLogic.startFollowing(support, actualRoot);
+			hackedRoot = FolloweeRefreshLogic.startFollowing(support, enableVersion2Data, actualRoot);
 			// This should only fail with an exception.
 			Assert.assertTrue(null != hackedRoot);
 		}

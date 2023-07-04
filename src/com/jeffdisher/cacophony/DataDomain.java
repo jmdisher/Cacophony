@@ -133,6 +133,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
+				, false
 				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
@@ -158,6 +159,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
+				, false
 				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(ourContext);

@@ -81,6 +81,7 @@ public class MockUserNode
 				, recordCache
 				, userInfoCache
 				, entryRegistry
+				, false
 				, null
 		);
 	}
@@ -125,6 +126,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
+					, false
 					, publicKey
 			);
 		}
@@ -282,6 +284,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
+					, false
 					, null
 			);
 		}

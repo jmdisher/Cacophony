@@ -120,6 +120,7 @@ public class FolloweeRefreshLogic
 	 * @throws FailedDeserializationException Meta-data was considered invalid and couldn't be parsed (means an abort).
 	 */
 	public static IpfsFile startFollowing(IStartSupport support
+			, boolean enableVersion2Data
 			, IpfsFile newIndexElement
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
@@ -153,12 +154,18 @@ public class FolloweeRefreshLogic
 		
 		// (we ignore the records element and create a fake one - this allows the expensive part of the refresh to be decoupled from the initial follow).
 		AbstractRecords fakeRecords = AbstractRecords.createNew();
-		IpfsFile fakeRecordsCid = support.uploadNewData(fakeRecords.serializeV1());
+		IpfsFile fakeRecordsCid = support.uploadNewData(enableVersion2Data
+				? fakeRecords.serializeV2()
+				: fakeRecords.serializeV1()
+		);
 		AbstractIndex fakeIndex = AbstractIndex.createNew();
 		fakeIndex.descriptionCid = newDescriptionElement;
 		fakeIndex.recommendationsCid = newRecommendationsElement;
 		fakeIndex.recordsCid = fakeRecordsCid;
-		IpfsFile fakeIndexCid = support.uploadNewData(fakeIndex.serializeV1());
+		IpfsFile fakeIndexCid = support.uploadNewData(enableVersion2Data
+				? fakeIndex.serializeV2()
+				: fakeIndex.serializeV1()
+		);
 		
 		return fakeIndexCid;
 	}

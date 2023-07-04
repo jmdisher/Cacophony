@@ -137,6 +137,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
+				, false
 				, selectedKey
 		);
 	}

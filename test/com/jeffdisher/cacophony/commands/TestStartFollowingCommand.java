@@ -84,6 +84,7 @@ public class TestStartFollowingCommand
 				, null
 				, null
 				, null
+				, false
 				, null
 		);
 		command.runInContext(context);
@@ -142,6 +143,7 @@ public class TestStartFollowingCommand
 					, null
 					, null
 					, null
+					, false
 					, null
 			));
 		}

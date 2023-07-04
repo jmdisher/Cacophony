@@ -39,7 +39,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
-			result = _run(access, _postToEdit, _name, _description, _discussionUrl);
+			result = _run(access, context.enableVersion2Data, _postToEdit, _name, _description, _discussionUrl);
 			if (null == result)
 			{
 				throw new UsageException("Entry is not in our stream: " + _postToEdit);
@@ -62,14 +62,14 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 	 * @return The new local root element and StreamRecord or null, if the entry wasn't found.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static Result _run(IWritingAccess access, IpfsFile postToEdit, String name, String description, String discussionUrl) throws IpfsConnectionException
+	private static Result _run(IWritingAccess access, boolean enableVersion2Data, IpfsFile postToEdit, String name, String description, String discussionUrl) throws IpfsConnectionException
 	{
 		// The edit only changes the StreamRecord element, itself.  We first want to make sure that we see this
 		// element in the stream list and that it has our key as the publisher (this just avoids doing confusing
 		// things like editing someone else's content - nothing prevents this, but the standard UI shouldn't
 		// make such a mistake easy).
 		// Then, we will create a replacement StreamRecord element and replace the old one, in-place.
-		HomeChannelModifier modifier = new HomeChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access, enableVersion2Data);
 		AbstractRecords records = modifier.loadRecords();
 		IpfsFile newRoot = null;
 		IpfsFile newEltCid = null;
@@ -114,7 +114,10 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			}
 			try
 			{
-				byte[] data = record.serializeV1();
+				byte[] data = enableVersion2Data
+						? record.serializeV2()
+						: record.serializeV1()
+				;
 				newEltCid = access.uploadAndPin(new ByteArrayInputStream(data));
 			}
 			catch (SizeConstraintException e)

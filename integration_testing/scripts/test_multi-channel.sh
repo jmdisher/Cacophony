@@ -97,7 +97,7 @@ requireSubstring "$LIST_SIZE" "8"
 echo "Verify that we aren't allowed to start following a home user..."
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --getPublicKey)
 PUBLIC_KEY1=$(echo $RESULT_STRING | cut -d " " -f 14)
-RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC_KEY1")
+RESULT_STRING=$(CACOPHONY_TEST_NEW_DATA="" CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC_KEY1")
 # We expect a usage error.
 if [ $? -ne 1 ]; then
 	exit 1
@@ -106,7 +106,7 @@ RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m
 PUBLIC_KEY2=$(echo $RESULT_STRING | cut -d " " -f 14)
 
 echo "Before deleting the channels, make sure that the interactive server works..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
+CACOPHONY_TEST_NEW_DATA="" CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
 waitForCacophonyStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie

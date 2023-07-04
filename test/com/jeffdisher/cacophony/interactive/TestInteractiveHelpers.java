@@ -234,6 +234,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
+				, false
 				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);
@@ -385,6 +386,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
+				, false
 				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);

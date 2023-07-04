@@ -72,7 +72,7 @@ public class StandardAccess implements IWritingAccess
 		
 		IpfsKey selectedKey = context.getSelectedKey();
 		String keyName = _findKeyName(reading, selectedKey);
-		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, reading, null, keyName, selectedKey);
+		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, reading, null, keyName, selectedKey, context.enableVersion2Data);
 	}
 
 	/**
@@ -90,7 +90,7 @@ public class StandardAccess implements IWritingAccess
 		
 		IpfsKey selectedKey = context.getSelectedKey();
 		String keyName = _findKeyName(writing, selectedKey);
-		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey, context.enableVersion2Data);
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class StandardAccess implements IWritingAccess
 		LocalDataModel dataModel = context.sharedDataModel;
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey, context.enableVersion2Data);
 	}
 
 	private static String _findKeyName(IReadOnlyLocalData data, IpfsKey publicKey)
@@ -137,6 +137,7 @@ public class StandardAccess implements IWritingAccess
 	private final INetworkScheduler _scheduler;
 	private final IReadOnlyLocalData _readOnly;
 	private final IReadWriteLocalData _readWrite;
+	private final boolean _enableVersion2Data;
 	
 	private final PinCacheData _pinCache;
 	private final FolloweeData _followeeData;
@@ -148,7 +149,7 @@ public class StandardAccess implements IWritingAccess
 	private final ExplicitCacheData _explicitCache;
 	private boolean _didAccessExplicitCache;
 
-	private StandardAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey)
+	private StandardAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, IReadOnlyLocalData readOnly, IReadWriteLocalData readWrite, String keyName, IpfsKey publicKey, boolean enableVersion2Data)
 	{
 		PinCacheData pinCache = readOnly.readGlobalPinCache();
 		Assert.assertTrue(null != pinCache);
@@ -174,6 +175,7 @@ public class StandardAccess implements IWritingAccess
 		_scheduler = scheduler;
 		_readOnly = readOnly;
 		_readWrite = readWrite;
+		_enableVersion2Data = enableVersion2Data;
 		
 		_pinCache = pinCache;
 		_followeeData = followeeData;
@@ -303,7 +305,10 @@ public class StandardAccess implements IWritingAccess
 		byte[] serializedIndex;
 		try
 		{
-			serializedIndex = streamIndex.serializeV1();
+			serializedIndex = _enableVersion2Data
+					? streamIndex.serializeV2()
+					: streamIndex.serializeV1()
+			;
 		}
 		catch (SizeConstraintException e)
 		{

@@ -54,7 +54,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 			}
 			// Create the empty description, recommendations, record stream, and index.
 			description = _defaultDescription(access);
-			newRoot = _runCore(access, description);
+			newRoot = _runCore(access, context.enableVersion2Data, description);
 		}
 		
 		// If the cache exists, populate it.
@@ -85,7 +85,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		return description;
 	}
 
-	private IpfsFile _runCore(IWritingAccess access, AbstractDescription description) throws IpfsConnectionException
+	private IpfsFile _runCore(IWritingAccess access, boolean enableVersion2Data, AbstractDescription description) throws IpfsConnectionException
 	{
 		AbstractRecommendations recommendations = AbstractRecommendations.createNew();
 		
@@ -95,7 +95,10 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		byte[] rawDescription;
 		try
 		{
-			rawDescription = description.serializeV1();
+			rawDescription = enableVersion2Data
+					? description.serializeV2()
+					: description.serializeV1()
+			;
 		}
 		catch (SizeConstraintException e)
 		{
@@ -106,7 +109,10 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		byte[] rawRecommendations;
 		try
 		{
-			rawRecommendations = recommendations.serializeV1();
+			rawRecommendations = enableVersion2Data
+					? recommendations.serializeV2()
+					: recommendations.serializeV1()
+			;
 		}
 		catch (SizeConstraintException e)
 		{
@@ -117,7 +123,10 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		byte[] rawRecords;
 		try
 		{
-			rawRecords = records.serializeV1();
+			rawRecords = enableVersion2Data
+					? records.serializeV2()
+					: records.serializeV1()
+			;
 		}
 		catch (SizeConstraintException e)
 		{

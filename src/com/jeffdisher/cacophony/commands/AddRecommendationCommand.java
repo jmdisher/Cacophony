@@ -32,7 +32,7 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Adding recommendation " + _channelPublicKey + "...");
-			newRoot = _run(access, _channelPublicKey);
+			newRoot = _run(access, context.enableVersion2Data, _channelPublicKey);
 			if (null == newRoot)
 			{
 				throw new UsageException("User was ALREADY recommended");
@@ -50,9 +50,9 @@ public record AddRecommendationCommand(IpfsKey _channelPublicKey) implements ICo
 	 * @return The new local root element or null, if the user was already recommended.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static IpfsFile _run(IWritingAccess access, IpfsKey userToAdd) throws IpfsConnectionException
+	private static IpfsFile _run(IWritingAccess access, boolean enableVersion2Data, IpfsKey userToAdd) throws IpfsConnectionException
 	{
-		HomeChannelModifier modifier = new HomeChannelModifier(access);
+		HomeChannelModifier modifier = new HomeChannelModifier(access, enableVersion2Data);
 		
 		// Read the existing recommendations list.
 		AbstractRecommendations recommendations = modifier.loadRecommendations();

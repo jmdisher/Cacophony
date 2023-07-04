@@ -42,7 +42,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
-			HomeChannelModifier modifier = new HomeChannelModifier(access);
+			HomeChannelModifier modifier = new HomeChannelModifier(access, context.enableVersion2Data);
 			
 			// First, load our existing stream to make sure that this isn't a duplicate.
 			AbstractRecords records = modifier.loadRecords();
