@@ -8,10 +8,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -56,20 +55,20 @@ public class TestRebroadcastCommand
 		user.runCommand(null, new RefreshNextFolloweeCommand());
 		
 		// Verify that our record list is empty.
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
-		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(0, records.getRecord().size());
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(0, records.getRecordList().size());
 		
 		// Now, rebroadcast this and verify that the new element is in our list.
-		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K2)));
-		records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
+		index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K2)));
+		records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		IpfsFile recordToRebroadcast = records.getRecordList().get(0);
 		user.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
 		
 		// Verify that our record list now contains this.
-		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
-		records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(recordToRebroadcast.toSafeString(), records.getRecord().get(0));
+		index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
+		records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(recordToRebroadcast, records.getRecordList().get(0));
 		
 		user2.shutdown();
 		user.shutdown();
@@ -98,20 +97,20 @@ public class TestRebroadcastCommand
 		}));
 		
 		// Verify that our record list is empty.
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
-		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(0, records.getRecord().size());
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(0, records.getRecordList().size());
 		
 		// Now, rebroadcast this and verify that the new element is in our list.
-		index = GlobalData.deserializeIndex(user2.loadDataFromNode(user2.resolveKeyOnNode(MockKeys.K2)));
-		records = GlobalData.deserializeRecords(user2.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
+		index = AbstractIndex.DESERIALIZER.apply(user2.loadDataFromNode(user2.resolveKeyOnNode(MockKeys.K2)));
+		records = AbstractRecords.DESERIALIZER.apply(user2.loadDataFromNode(index.recordsCid));
+		IpfsFile recordToRebroadcast = records.getRecordList().get(0);
 		user.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
 		
 		// Verify that our record list now contains this.
-		index = GlobalData.deserializeIndex(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
-		records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(recordToRebroadcast.toSafeString(), records.getRecord().get(0));
+		index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(user.resolveKeyOnNode(MockKeys.K1)));
+		records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(recordToRebroadcast, records.getRecordList().get(0));
 		
 		user2.shutdown();
 		user.shutdown();
@@ -136,10 +135,10 @@ public class TestRebroadcastCommand
 		
 		// Now, rebroadcast this and verify it is a failure.
 		IpfsFile initialRoot = user.resolveKeyOnNode(MockKeys.K1);
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(initialRoot));
-		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(1, records.getRecord().size());
-		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(initialRoot));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(1, records.getRecordList().size());
+		IpfsFile recordToRebroadcast = records.getRecordList().get(0);
 		boolean didFail = false;
 		try
 		{
@@ -181,16 +180,17 @@ public class TestRebroadcastCommand
 		
 		// Verify that our record list is empty.
 		IpfsFile initialRoot = user.resolveKeyOnNode(MockKeys.K1);
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(initialRoot));
-		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(0, records.getRecord().size());
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(initialRoot));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(0, records.getRecordList().size());
 		
 		// Now, rebroadcast this and verify that the new element is in our list.
-		index = GlobalData.deserializeIndex(user2.loadDataFromNode(user2.resolveKeyOnNode(MockKeys.K2)));
-		records = GlobalData.deserializeRecords(user2.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		IpfsFile recordToRebroadcast = IpfsFile.fromIpfsCid(records.getRecord().get(0));
-		StreamRecord recordToExamine = GlobalData.deserializeRecord(user2.loadDataFromNode(recordToRebroadcast));
-		IpfsFile elementToDelete = IpfsFile.fromIpfsCid(recordToExamine.getElements().getElement().get(0).getCid());
+		index = AbstractIndex.DESERIALIZER.apply(user2.loadDataFromNode(user2.resolveKeyOnNode(MockKeys.K2)));
+		records = AbstractRecords.DESERIALIZER.apply(user2.loadDataFromNode(index.recordsCid));
+		IpfsFile recordToRebroadcast = records.getRecordList().get(0);
+		AbstractRecord recordToExamine = AbstractRecord.DESERIALIZER.apply(user2.loadDataFromNode(recordToRebroadcast));
+		Assert.assertEquals(1, recordToExamine.getVideoExtension().size());
+		IpfsFile elementToDelete = recordToExamine.getVideoExtension().get(0).cid();
 		user2.deleteFile(elementToDelete);
 		
 		// We should see an IPFS connection exception since we will timeout looking for an element.
@@ -208,7 +208,7 @@ public class TestRebroadcastCommand
 		// Verify that we didn't change anything, as the rebroadcast would fail.
 		Assert.assertEquals(initialRoot, user.resolveKeyOnNode(MockKeys.K1));
 		Assert.assertNull(user.loadDataFromNode(recordToRebroadcast));
-		Assert.assertNull(user.loadDataFromNode(IpfsFile.fromIpfsCid(recordToExamine.getElements().getElement().get(1).getCid())));
+		Assert.assertNull(user.loadDataFromNode(recordToExamine.getThumbnailCid()));
 		
 		user2.shutdown();
 		user.shutdown();

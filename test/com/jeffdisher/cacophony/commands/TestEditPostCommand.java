@@ -9,11 +9,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord.Leaf;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -127,20 +126,19 @@ public class TestEditPostCommand
 
 	private IpfsFile _verifyIntegrity(MockUserNode user, String name, String discussionUrl, String mime, String fileContents, IpfsFile root) throws FailedDeserializationException, IpfsConnectionException
 	{
-		StreamIndex index = GlobalData.deserializeIndex(user.loadDataFromNode(root));
-		Assert.assertEquals(1, index.getVersion());
-		StreamRecords records = GlobalData.deserializeRecords(user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		List<String> recordCidList = records.getRecord();
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user.loadDataFromNode(root));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user.loadDataFromNode(index.recordsCid));
+		List<IpfsFile> recordCidList = records.getRecordList();
 		Assert.assertEquals(1, recordCidList.size());
-		IpfsFile recordCid = IpfsFile.fromIpfsCid(recordCidList.get(0));
-		StreamRecord record = GlobalData.deserializeRecord(user.loadDataFromNode(recordCid));
+		IpfsFile recordCid = recordCidList.get(0);
+		AbstractRecord record = AbstractRecord.DESERIALIZER.apply(user.loadDataFromNode(recordCid));
 		Assert.assertEquals(name, record.getName());
-		Assert.assertEquals(discussionUrl, record.getDiscussion());
-		List<DataElement> dataElements = record.getElements().getElement();
+		Assert.assertEquals(discussionUrl, record.getDiscussionUrl());
+		List<Leaf> dataElements = record.getVideoExtension();
 		Assert.assertEquals(1, dataElements.size());
-		DataElement elt = dataElements.get(0);
-		Assert.assertEquals(mime, elt.getMime());
-		Assert.assertEquals(fileContents, new String(user.loadDataFromNode(IpfsFile.fromIpfsCid(elt.getCid()))));
+		Leaf elt = dataElements.get(0);
+		Assert.assertEquals(mime, elt.mime());
+		Assert.assertEquals(fileContents, new String(user.loadDataFromNode(elt.cid())));
 		return recordCid;
 	}
 }

@@ -23,8 +23,7 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.local.v1.Draft;
 import com.jeffdisher.cacophony.data.local.v1.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
@@ -254,13 +253,13 @@ public class TestInteractiveHelpers
 		}
 		
 		// Verify the data is on the node.
-		StreamRecord record = null;
+		AbstractRecord record = null;
 		IpfsFile firstRecord = null;
 		for (IpfsFile file : connection.getStoredFileSet())
 		{
 			try
 			{
-				record = GlobalData.deserializeRecord(connection.loadData(file));
+				record = AbstractRecord.DESERIALIZER.apply(connection.loadData(file));
 				Assert.assertNull(firstRecord);
 				firstRecord = file;
 			}
@@ -270,7 +269,7 @@ public class TestInteractiveHelpers
 			}
 		}
 		Assert.assertEquals("title", record.getName());
-		Assert.assertEquals(0, record.getElements().getElement().size());
+		Assert.assertNull(record.getVideoExtension());
 		
 		// Now, post a second entry with a video and make sure we see the attachment.
 		id = 2;
@@ -306,7 +305,7 @@ public class TestInteractiveHelpers
 			{
 				try
 				{
-					record = GlobalData.deserializeRecord(connection.loadData(file));
+					record = AbstractRecord.DESERIALIZER.apply(connection.loadData(file));
 					Assert.assertNull(secondRecord);
 					secondRecord = file;
 				}
@@ -318,7 +317,7 @@ public class TestInteractiveHelpers
 		}
 		Assert.assertTrue(didSeeFirst);
 		Assert.assertEquals("title2", record.getName());
-		Assert.assertEquals(1, record.getElements().getElement().size());
+		Assert.assertEquals(1, record.getVideoExtension().size());
 		
 		// Now, publish another entry but explicitly forbid attaching the video.
 		id = 3;
@@ -350,7 +349,7 @@ public class TestInteractiveHelpers
 			{
 				try
 				{
-					record = GlobalData.deserializeRecord(connection.loadData(file));
+					record = AbstractRecord.DESERIALIZER.apply(connection.loadData(file));
 				}
 				catch (FailedDeserializationException e)
 				{
@@ -359,7 +358,7 @@ public class TestInteractiveHelpers
 			}
 		}
 		Assert.assertEquals("title3", record.getName());
-		Assert.assertEquals(0, record.getElements().getElement().size());
+		Assert.assertNull(record.getVideoExtension());
 		scheduler.shutdown();
 	}
 
@@ -412,13 +411,13 @@ public class TestInteractiveHelpers
 		}
 		
 		// Verify the data is on the node.
-		StreamRecord record = null;
+		AbstractRecord record = null;
 		IpfsFile firstRecord = null;
 		for (IpfsFile file : connection.getStoredFileSet())
 		{
 			try
 			{
-				record = GlobalData.deserializeRecord(connection.loadData(file));
+				record = AbstractRecord.DESERIALIZER.apply(connection.loadData(file));
 				Assert.assertNull(firstRecord);
 				firstRecord = file;
 			}
@@ -428,8 +427,8 @@ public class TestInteractiveHelpers
 			}
 		}
 		Assert.assertEquals("title", record.getName());
-		Assert.assertEquals(1, record.getElements().getElement().size());
-		Assert.assertEquals("audio/ogg", record.getElements().getElement().get(0).getMime());
+		Assert.assertEquals(1, record.getVideoExtension().size());
+		Assert.assertEquals("audio/ogg", record.getVideoExtension().get(0).mime());
 		scheduler.shutdown();
 	}
 

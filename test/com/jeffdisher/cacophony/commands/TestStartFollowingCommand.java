@@ -14,11 +14,10 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
@@ -51,7 +50,7 @@ public class TestStartFollowingCommand
 				, new String[] { REMOTE_KEY_NAME, KEY_NAME}
 				, new IpfsKey[] { MockKeys.K2, MockKeys.K1}
 		);
-		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecords(new StreamRecords())));
+		IpfsFile originalRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(AbstractRecords.createNew().serializeV1()));
 		
 		StartFollowingCommand command = new StartFollowingCommand(MockKeys.K2);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
@@ -59,21 +58,20 @@ public class TestStartFollowingCommand
 		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
 		SilentLogger logger = new SilentLogger();
 		
-		StreamDescription originalDescriptionData = new StreamDescription();
+		AbstractDescription originalDescriptionData = AbstractDescription.createNew();
 		originalDescriptionData.setName("name");
 		IpfsFile originalPicture = remoteConnection.storeData(new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 }));
 		originalDescriptionData.setDescription("Description");
-		originalDescriptionData.setPicture(originalPicture.toSafeString());
-		IpfsFile originalDescription = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeDescription(originalDescriptionData)));
+		originalDescriptionData.setUserPic("image/jpeg", originalPicture);
+		IpfsFile originalDescription = remoteConnection.storeData(new ByteArrayInputStream(originalDescriptionData.serializeV1()));
 		
-		StreamRecommendations recommendations = new StreamRecommendations();
-		IpfsFile originalRecommendations = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeRecommendations(recommendations)));
-		StreamIndex originalRootData = new StreamIndex();
-		originalRootData.setVersion(1);
-		originalRootData.setDescription(originalDescription.toSafeString());
-		originalRootData.setRecommendations(originalRecommendations.toSafeString());
-		originalRootData.setRecords(originalRecordsCid.toSafeString());
-		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(GlobalData.serializeIndex(originalRootData)));
+		AbstractRecommendations recommendations = AbstractRecommendations.createNew();
+		IpfsFile originalRecommendations = remoteConnection.storeData(new ByteArrayInputStream(recommendations.serializeV1()));
+		AbstractIndex originalRootData = AbstractIndex.createNew();
+		originalRootData.descriptionCid = originalDescription;
+		originalRootData.recommendationsCid = originalRecommendations;
+		originalRootData.recordsCid = originalRecordsCid;
+		IpfsFile originalRoot = remoteConnection.storeData(new ByteArrayInputStream(originalRootData.serializeV1()));
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, MockKeys.K2, originalRoot);
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
@@ -94,6 +92,7 @@ public class TestStartFollowingCommand
 		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
 		Assert.assertTrue(sharedConnection.isPinned(originalDescription));
 		Assert.assertTrue(sharedConnection.isPinned(originalRecommendations));
+		// Note that the records CID will match, even though it isn't the same instance since the "start" creates a synthetic records and root.
 		Assert.assertTrue(sharedConnection.isPinned(originalRecordsCid));
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		

@@ -5,11 +5,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -34,22 +33,21 @@ public class TestCreateChannelCommand
 		// Verify the states that should have changed.
 		IpfsFile root = user1.resolveKeyOnNode(MockKeys.K1);
 		Assert.assertTrue(user1.isInPinCache(root));
-		StreamIndex index = GlobalData.deserializeIndex(user1.loadDataFromNode(root));
-		Assert.assertEquals(1, index.getVersion());
-		IpfsFile descriptionCid = IpfsFile.fromIpfsCid(index.getDescription());
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user1.loadDataFromNode(root));
+		IpfsFile descriptionCid = index.descriptionCid;
 		Assert.assertTrue(user1.isInPinCache(descriptionCid));
-		StreamDescription description = GlobalData.deserializeDescription(user1.loadDataFromNode(descriptionCid));
+		AbstractDescription description = AbstractDescription.DESERIALIZER.apply(user1.loadDataFromNode(descriptionCid));
 		Assert.assertEquals("Unnamed", description.getName());
 		Assert.assertEquals("Description forthcoming", description.getDescription());
-		Assert.assertTrue(user1.isInPinCache(IpfsFile.fromIpfsCid(description.getPicture())));
-		IpfsFile recommendationsCid = IpfsFile.fromIpfsCid(index.getRecommendations());
+		Assert.assertTrue(user1.isInPinCache(description.getPicCid()));
+		IpfsFile recommendationsCid = index.recommendationsCid;
 		Assert.assertTrue(user1.isInPinCache(recommendationsCid));
-		StreamRecommendations recommendations = GlobalData.deserializeRecommendations(user1.loadDataFromNode(recommendationsCid));
-		Assert.assertEquals(0, recommendations.getUser().size());
-		IpfsFile recordsCid = IpfsFile.fromIpfsCid(index.getRecords());
+		AbstractRecommendations recommendations = AbstractRecommendations.DESERIALIZER.apply(user1.loadDataFromNode(recommendationsCid));
+		Assert.assertEquals(0, recommendations.getUserList().size());
+		IpfsFile recordsCid = index.recordsCid;
 		Assert.assertTrue(user1.isInPinCache(recordsCid));
-		StreamRecords records = GlobalData.deserializeRecords(user1.loadDataFromNode(recordsCid));
-		Assert.assertEquals(0, records.getRecord().size());
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user1.loadDataFromNode(recordsCid));
+		Assert.assertEquals(0, records.getRecordList().size());
 		
 		Assert.assertTrue(user1.isPinnedLocally(root));
 		Assert.assertTrue(user1.isPinnedLocally(descriptionCid));

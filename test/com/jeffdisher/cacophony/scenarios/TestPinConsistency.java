@@ -19,11 +19,9 @@ import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -449,10 +447,10 @@ public class TestPinConsistency
 
 	private byte[] _readAndBreakElement(MockUserNode userNode, IpfsKey publicKey) throws FailedDeserializationException, IpfsConnectionException
 	{
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(userNode.resolveKeyOnNode(publicKey)));
-		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(1, records.getRecord().size());
-		IpfsFile elt = IpfsFile.fromIpfsCid(records.getRecord().get(0));
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(userNode.loadDataFromNode(userNode.resolveKeyOnNode(publicKey)));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(userNode.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(1, records.getRecordList().size());
+		IpfsFile elt = records.getRecordList().get(0);
 		byte[] data = userNode.loadDataFromNode(elt);
 		userNode.deleteFile(elt);
 		return data;
@@ -461,57 +459,51 @@ public class TestPinConsistency
 	private void _uploadAsRecord(MockUserNode userNode, IpfsKey publicKey, byte[] data) throws FailedDeserializationException, IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile originalRootCid = userNode.resolveKeyOnNode(publicKey);
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(originalRootCid));
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(userNode.loadDataFromNode(originalRootCid));
 		userNode.deleteFile(originalRootCid);
-		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		userNode.deleteFile(IpfsFile.fromIpfsCid(index.getRecords()));
-		Assert.assertEquals(0, records.getRecord().size());
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(userNode.loadDataFromNode(index.recordsCid));
+		userNode.deleteFile(index.recordsCid);
+		Assert.assertEquals(0, records.getRecordList().size());
 		IpfsFile elt = userNode.storeDataToNode(data);
-		records.getRecord().add(elt.toSafeString());
-		IpfsFile newRecords = userNode.storeDataToNode(GlobalData.serializeRecords(records));
-		index.setRecords(newRecords.toSafeString());
-		IpfsFile newIndex = userNode.storeDataToNode(GlobalData.serializeIndex(index));
+		records.addRecord(elt);
+		IpfsFile newRecords = userNode.storeDataToNode(records.serializeV1());
+		index.recordsCid = newRecords;
+		IpfsFile newIndex = userNode.storeDataToNode(index.serializeV1());
 		userNode.manualPublishLocal(newIndex);
 	}
 
 	private void _removeAllRecords(MockUserNode userNode, IpfsKey publicKey) throws FailedDeserializationException, IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile originalRootCid = userNode.resolveKeyOnNode(publicKey);
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(originalRootCid));
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(userNode.loadDataFromNode(originalRootCid));
 		userNode.deleteFile(originalRootCid);
-		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		userNode.deleteFile(IpfsFile.fromIpfsCid(index.getRecords()));
-		Assert.assertEquals(1, records.getRecord().size());
-		userNode.deleteFile(IpfsFile.fromIpfsCid(records.getRecord().get(0)));
-		records.getRecord().remove(0);
-		IpfsFile newRecords = userNode.storeDataToNode(GlobalData.serializeRecords(records));
-		index.setRecords(newRecords.toSafeString());
-		IpfsFile newIndex = userNode.storeDataToNode(GlobalData.serializeIndex(index));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(userNode.loadDataFromNode(index.recordsCid));
+		userNode.deleteFile(index.recordsCid);
+		Assert.assertEquals(1, records.getRecordList().size());
+		userNode.deleteFile(records.getRecordList().get(0));
+		records.removeRecord(records.getRecordList().get(0));
+		IpfsFile newRecords = userNode.storeDataToNode(records.serializeV1());
+		index.recordsCid = newRecords;
+		IpfsFile newIndex = userNode.storeDataToNode(index.serializeV1());
 		userNode.manualPublishLocal(newIndex);
 	}
 
 	private IpfsFile _getMostRecendRecord(MockUserNode userNode, IpfsKey publicKey) throws FailedDeserializationException, IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile originalRootCid = userNode.resolveKeyOnNode(publicKey);
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(originalRootCid));
-		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertTrue(records.getRecord().size() > 0);
-		return IpfsFile.fromIpfsCid(records.getRecord().get(records.getRecord().size() - 1));
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(userNode.loadDataFromNode(originalRootCid));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(userNode.loadDataFromNode(index.recordsCid));
+		Assert.assertTrue(records.getRecordList().size() > 0);
+		return records.getRecordList().get(records.getRecordList().size() - 1);
 	}
 
 	private void _breakImageLeaf(MockUserNode userNode, IpfsKey publicKey) throws FailedDeserializationException, IpfsConnectionException, SizeConstraintException
 	{
 		IpfsFile originalRootCid = userNode.resolveKeyOnNode(publicKey);
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(originalRootCid));
-		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		Assert.assertEquals(1, records.getRecord().size());
-		StreamRecord record = GlobalData.deserializeRecord(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(records.getRecord().get(0))));
-		for (DataElement elt : record.getElements().getElement())
-		{
-			if (null != elt.getSpecial())
-			{
-				userNode.deleteFile(IpfsFile.fromIpfsCid(elt.getCid()));
-			}
-		}
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(userNode.loadDataFromNode(originalRootCid));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(userNode.loadDataFromNode(index.recordsCid));
+		Assert.assertEquals(1, records.getRecordList().size());
+		AbstractRecord record = AbstractRecord.DESERIALIZER.apply(userNode.loadDataFromNode(records.getRecordList().get(0)));
+		userNode.deleteFile(record.getThumbnailCid());
 	}
 }

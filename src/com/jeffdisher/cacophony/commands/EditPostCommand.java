@@ -92,7 +92,14 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			}
 			if (null != description)
 			{
-				record.setDescription(description);
+				if (description.isEmpty())
+				{
+					record.setDescription(null);
+				}
+				else
+				{
+					record.setDescription(description);
+				}
 			}
 			if (null != discussionUrl)
 			{

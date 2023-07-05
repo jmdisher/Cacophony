@@ -11,10 +11,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.testutils.MockKeys;
@@ -160,8 +159,8 @@ public class TestRefreshNextFolloweeCommand
 				new ElementSubCommand("text/plain", tempFile, 0, 0, false) ,
 		}));
 		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {}));
-		StreamIndex index = GlobalData.deserializeIndex(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
-		IpfsFile metaDataToDelete = IpfsFile.fromIpfsCid(index.getRecords());
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
+		IpfsFile metaDataToDelete = index.recordsCid;
 		user3.deleteFile(metaDataToDelete);
 		
 		// Note that we expect this to fail.  Verify we see the exception, observe the root didn't change, and the next to poll advanced.
@@ -236,9 +235,9 @@ public class TestRefreshNextFolloweeCommand
 				new ElementSubCommand("text/plain", tempFile, 0, 0, false) ,
 		}));
 		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {}));
-		StreamIndex index = GlobalData.deserializeIndex(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
-		StreamRecords records = GlobalData.deserializeRecords(user3.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		IpfsFile recordToDelete = IpfsFile.fromIpfsCid(records.getRecord().get(0));
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user3.loadDataFromNode(index.recordsCid));
+		IpfsFile recordToDelete = records.getRecordList().get(0);
 		user3.deleteFile(recordToDelete);
 		
 		// This should abort, just advancing the next to poll.
@@ -305,12 +304,14 @@ public class TestRefreshNextFolloweeCommand
 		user3.runCommand(null, new PublishCommand("entry 2", "", null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
 		}));
-		StreamIndex index = GlobalData.deserializeIndex(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
-		StreamRecords records = GlobalData.deserializeRecords(user3.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		StreamRecord firstRecord = GlobalData.deserializeRecord(user3.loadDataFromNode(IpfsFile.fromIpfsCid(records.getRecord().get(0))));
-		IpfsFile leafToDelete = IpfsFile.fromIpfsCid(firstRecord.getElements().getElement().get(0).getCid());
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user3.loadDataFromNode(index.recordsCid));
+		AbstractRecord firstRecord = AbstractRecord.DESERIALIZER.apply(user3.loadDataFromNode(records.getRecordList().get(0)));
+		Assert.assertEquals(1, firstRecord.getVideoExtension().size());
+		IpfsFile leafToDelete = firstRecord.getVideoExtension().get(0).cid();
 		user3.deleteFile(leafToDelete);
-		IpfsFile recordToKeep = IpfsFile.fromIpfsCid(records.getRecord().get(1));
+		IpfsFile recordToKeep = records.getRecordList().get(1);
+		Assert.assertNotNull(recordToKeep);
 		
 		user.runCommand(null, command);
 		nextKey = followees.getNextFolloweeToPoll();

@@ -157,8 +157,13 @@ public record PublishCommand(String _name, String _description, String _discussi
 	{
 		AbstractRecord record = AbstractRecord.createNew();
 		record.setName(_name);
-		record.setDescription(_description);
-		if (null != _discussionUrl)
+		// V2 doesn't allow empty descriptions.
+		if ((null != _description) && !_description.isEmpty())
+		{
+			record.setDescription(_description);
+		}
+		// We internally treat the discussion URL as sometimes null and sometimes empty but we don't want to add it to the post in either case.
+		if ((null != _discussionUrl) && !_discussionUrl.isEmpty())
 		{
 			record.setDiscussionUrl(_discussionUrl);
 		}

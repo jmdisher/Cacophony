@@ -17,9 +17,8 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -291,9 +290,9 @@ public class TestFollowUpdates
 
 	private static String _getFirstElementCid(MockUserNode userNode, IpfsKey publicKey) throws IpfsConnectionException, FailedDeserializationException
 	{
-		StreamIndex index = GlobalData.deserializeIndex(userNode.loadDataFromNode(userNode.resolveKeyOnNode(MockKeys.K1)));
-		StreamRecords records = GlobalData.deserializeRecords(userNode.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords())));
-		return records.getRecord().get(0);
+		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(userNode.loadDataFromNode(userNode.resolveKeyOnNode(MockKeys.K1)));
+		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(userNode.loadDataFromNode(index.recordsCid));
+		return records.getRecordList().get(0).toSafeString();
 	}
 
 	private static PublishCommand _createPublishCommand(String entryName, String imageFileString, String videoFileString) throws IOException

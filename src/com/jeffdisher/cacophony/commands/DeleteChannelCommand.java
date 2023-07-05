@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
@@ -16,6 +15,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 public record DeleteChannelCommand() implements ICommand<None>

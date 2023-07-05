@@ -1,8 +1,8 @@
 package com.jeffdisher.cacophony.scheduler;
 
-import com.jeffdisher.breakwater.utilities.Assert;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**

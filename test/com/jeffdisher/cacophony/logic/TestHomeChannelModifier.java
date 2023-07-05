@@ -9,10 +9,6 @@ import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -155,16 +151,16 @@ public class TestHomeChannelModifier
 
 	private static void _populateWithEmpty(MockWritingAccess access) throws Throwable
 	{
-		StreamDescription desc = new StreamDescription();
+		AbstractDescription desc = AbstractDescription.createNew();
 		desc.setName("name");
 		desc.setDescription("description");
-		desc.setPicture(MockSingleNode.generateHash("fake picture cid source".getBytes()).toSafeString());
-		StreamRecords records = new StreamRecords();
-		StreamRecommendations recom = new StreamRecommendations();
+		desc.setUserPic("image/jpeg", MockSingleNode.generateHash("fake picture cid source".getBytes()));
+		AbstractRecords records = AbstractRecords.createNew();
+		AbstractRecommendations recom = AbstractRecommendations.createNew();
 		AbstractIndex index = AbstractIndex.createNew();
-		index.descriptionCid = _store(access, GlobalData.serializeDescription(desc));
-		index.recordsCid = _store(access, GlobalData.serializeRecords(records));
-		index.recommendationsCid = _store(access, GlobalData.serializeRecommendations(recom));
+		index.descriptionCid = _store(access, desc.serializeV1());
+		index.recordsCid = _store(access, records.serializeV1());
+		index.recommendationsCid = _store(access, recom.serializeV1());
 		access.uploadIndexAndUpdateTracking(index);
 	}
 

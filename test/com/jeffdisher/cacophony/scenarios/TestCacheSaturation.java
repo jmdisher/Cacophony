@@ -14,8 +14,8 @@ import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
-import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -195,8 +195,8 @@ public class TestCacheSaturation
 		
 		public List<String> loadStreamForFollowee(User followee) throws Throwable
 		{
-			StreamIndex index = GlobalData.deserializeIndex(_user.loadDataFromNode(_user.resolveKeyOnNode(followee._publicKey)));
-			return GlobalData.deserializeRecords(_user.loadDataFromNode(IpfsFile.fromIpfsCid(index.getRecords()))).getRecord();
+			AbstractIndex index = AbstractIndex.DESERIALIZER.apply(_user.loadDataFromNode(_user.resolveKeyOnNode(followee._publicKey)));
+			return AbstractRecords.DESERIALIZER.apply(_user.loadDataFromNode(index.recordsCid)).getRecordList().stream().map((IpfsFile cid) -> cid.toSafeString()).toList();
 		}
 		
 		public boolean isDataPresent(byte[] data) throws Throwable

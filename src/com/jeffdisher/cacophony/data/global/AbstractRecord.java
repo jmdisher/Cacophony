@@ -394,8 +394,17 @@ public class AbstractRecord
 		StreamRecord record = new StreamRecord();
 		Assert.assertTrue(_name.length() > 0);
 		record.setName(_name);
-		Assert.assertTrue(null != _description);
-		record.setDescription(_description);
+		// We will allow the description to be null, since that makes more sense for V2, but will then set it to be empty for V1 (since it requires description).
+		if (null == _description)
+		{
+			record.setDescription("");
+		}
+		else
+		{
+			record.setDescription(_description);
+		}
+		// We would rather publish no discussion than an empty one.
+		Assert.assertTrue((null == _discussionUrl) || !_discussionUrl.isEmpty());
 		record.setDiscussion(_discussionUrl);
 		Assert.assertTrue(_publishedSecondsUtc > 0L);
 		record.setPublishedSecondsUtc(_publishedSecondsUtc);
