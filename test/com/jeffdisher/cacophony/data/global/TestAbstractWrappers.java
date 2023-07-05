@@ -371,7 +371,6 @@ public class TestAbstractWrappers
 		byte[] data2 = middle.serializeV1();
 		Assert.assertArrayEquals(data, data2);
 		
-		Assert.assertEquals(1, middle.version);
 		Assert.assertEquals(description, middle.descriptionCid);
 		Assert.assertEquals(recommendations, middle.recommendationsCid);
 		Assert.assertEquals(records, middle.recordsCid);
@@ -402,7 +401,6 @@ public class TestAbstractWrappers
 		byte[] data2 = middle.serializeV2();
 		Assert.assertArrayEquals(data, data2);
 		
-		Assert.assertEquals(2, middle.version);
 		Assert.assertEquals(description, middle.descriptionCid);
 		Assert.assertEquals(recommendations, middle.recommendationsCid);
 		Assert.assertEquals(records, middle.recordsCid);

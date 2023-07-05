@@ -155,7 +155,6 @@ public class FolloweeRefreshLogic
 		AbstractRecords fakeRecords = AbstractRecords.createNew();
 		IpfsFile fakeRecordsCid = support.uploadNewData(fakeRecords.serializeV1());
 		AbstractIndex fakeIndex = AbstractIndex.createNew();
-		fakeIndex.version = 1;
 		fakeIndex.descriptionCid = newDescriptionElement;
 		fakeIndex.recommendationsCid = newRecommendationsElement;
 		fakeIndex.recordsCid = fakeRecordsCid;

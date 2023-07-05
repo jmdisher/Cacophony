@@ -195,7 +195,6 @@ public class TestJsonGenerationHelpers
 		index.descriptionCid = descriptionFile;
 		index.recommendationsCid = recommendationsFile;
 		index.recordsCid = recordsFile;
-		index.version = 1;
 		
 		IpfsFile indexHash = null;
 		// Note that we only want to store this _as_ the index if this is the owner of the storage, since this helper is sometimes used to simulate followee refresh.

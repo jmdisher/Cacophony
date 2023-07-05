@@ -27,8 +27,7 @@ public class AbstractIndex
 	 */
 	public static AbstractIndex createNew()
 	{
-		return new AbstractIndex(1
-				, null
+		return new AbstractIndex(null
 				, null
 				, null
 		);
@@ -63,8 +62,7 @@ public class AbstractIndex
 		String descriptionCid = data.get(GlobalData2.ROOT_DATA_TYPE_DESCRIPTION);
 		String recommendationsCid = data.get(GlobalData2.ROOT_DATA_TYPE_RECOMMENDATIONS);
 		String recordsCid = data.get(GlobalData2.ROOT_DATA_TYPE_RECORDS);
-		return new AbstractIndex(root.getVersion()
-				, (null != descriptionCid) ? IpfsFile.fromIpfsCid(descriptionCid) : null
+		return new AbstractIndex((null != descriptionCid) ? IpfsFile.fromIpfsCid(descriptionCid) : null
 				, (null != recommendationsCid) ? IpfsFile.fromIpfsCid(recommendationsCid) : null
 				, (null != recordsCid) ? IpfsFile.fromIpfsCid(recordsCid) : null
 		);
@@ -72,8 +70,7 @@ public class AbstractIndex
 
 	private static AbstractIndex _convertV1(StreamIndex index) throws FailedDeserializationException
 	{
-		return new AbstractIndex(index.getVersion()
-				, IpfsFile.fromIpfsCid(index.getDescription())
+		return new AbstractIndex(IpfsFile.fromIpfsCid(index.getDescription())
 				, IpfsFile.fromIpfsCid(index.getRecommendations())
 				, IpfsFile.fromIpfsCid(index.getRecords())
 		);
@@ -81,18 +78,15 @@ public class AbstractIndex
 
 
 	// Since there is nothing special about these fields and they are all independent, we will just leave them public.
-	public int version;
 	public IpfsFile descriptionCid;
 	public IpfsFile recommendationsCid;
 	public IpfsFile recordsCid;
 
-	private AbstractIndex(int version
-			, IpfsFile descriptionCid
+	private AbstractIndex(IpfsFile descriptionCid
 			, IpfsFile recommendationsCid
 			, IpfsFile recordsCid
 	)
 	{
-		this.version = version;
 		this.descriptionCid = descriptionCid;
 		this.recommendationsCid = recommendationsCid;
 		this.recordsCid = recordsCid;
@@ -107,7 +101,7 @@ public class AbstractIndex
 	public byte[] serializeV1() throws SizeConstraintException
 	{
 		StreamIndex index = new StreamIndex();
-		index.setVersion(this.version);
+		index.setVersion(1);
 		index.setDescription(this.descriptionCid.toSafeString());
 		index.setRecommendations(this.recommendationsCid.toSafeString());
 		index.setRecords(this.recordsCid.toSafeString());
@@ -123,7 +117,7 @@ public class AbstractIndex
 	public byte[] serializeV2() throws SizeConstraintException
 	{
 		CacophonyRoot index = new CacophonyRoot();
-		index.setVersion(this.version);
+		index.setVersion(2);
 		if (null != this.descriptionCid)
 		{
 			DataReference data_description = new DataReference();

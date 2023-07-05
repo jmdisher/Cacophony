@@ -131,7 +131,6 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		
 		// Create the new local index.
 		AbstractIndex streamIndex = AbstractIndex.createNew();
-		streamIndex.version = 1;
 		streamIndex.descriptionCid = hashDescription;
 		streamIndex.recommendationsCid = hashRecommendations;
 		streamIndex.recordsCid = hashRecords;
