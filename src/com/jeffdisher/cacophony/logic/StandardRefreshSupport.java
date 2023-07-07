@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -46,7 +47,6 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		Assert.assertTrue(null != transaction);
 		Assert.assertTrue(null != followeeKey);
 		Assert.assertTrue(null != cachedEntriesForFollowee);
-		// connectorForUser can be null.
 		
 		_logger = logger;
 		_transaction = transaction;
@@ -103,18 +103,6 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		});
 	}
 	@Override
-	public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, int leafReferenceCount)
-	{
-		if (null != _entryRegistry)
-		{
-			// We want to record that we are aware of this, whether or not we are actually going to cache it.
-			_entryRegistry.addFolloweeElement(_followeeKey, elementHash);
-		}
-		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
-			cache.recordMetaDataPinned(elementHash, name, description, publishedSecondsUtc, discussionUrl, publisherKey, leafReferenceCount);
-		});
-	}
-	@Override
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
 		return _transaction.getSizeInBytes(cid);
@@ -163,12 +151,21 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		;
 	}
 	@Override
-	public void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
+	public void addElementToCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
 	{
+		if (null != _entryRegistry)
+		{
+			// We want to record that we are aware of this, whether or not we are actually going to cache it.
+			_entryRegistry.addFolloweeElement(_followeeKey, elementHash);
+		}
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
-			cache.recordThumbnailPinned(elementHash, imageHash);
+			cache.recordMetaDataPinned(elementHash, recordData.getName(), recordData.getDescription(), recordData.getPublishedSecondsUtc(), recordData.getDiscussionUrl(), recordData.getPublisherKey(), recordData.getExternalElementCount());
+			if (null != imageHash)
+			{
+				cache.recordThumbnailPinned(elementHash, imageHash);
+			}
 			if (null != audioLeaf)
 			{
 				cache.recordAudioPinned(elementHash, audioLeaf);
@@ -180,7 +177,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		});
 	}
 	@Override
-	public void removeElementFromCache(IpfsFile elementHash)
+	public void removeElementFromCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
 	{
 		_elementsToRemoveFromCache.add(elementHash);
 		if (null != _entryRegistry)
@@ -189,6 +186,18 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			_entryRegistry.removeFolloweeElement(_followeeKey, elementHash);
 		}
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
+			if (null != imageHash)
+			{
+				cache.recordThumbnailReleased(elementHash, imageHash);
+			}
+			if (null != audioHash)
+			{
+				cache.recordAudioReleased(elementHash, audioHash);
+			}
+			if (null != videoHash)
+			{
+				cache.recordVideoReleased(elementHash, videoHash, videoEdgeSize);
+			}
 			cache.recordMetaDataReleased(elementHash);
 		});
 	}

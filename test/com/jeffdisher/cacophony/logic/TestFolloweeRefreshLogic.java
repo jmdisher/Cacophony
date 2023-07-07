@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -30,7 +31,6 @@ import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 import com.jeffdisher.cacophony.utils.SizeLimits2;
@@ -337,7 +337,7 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
-		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
@@ -829,11 +829,6 @@ public class TestFolloweeRefreshLogic
 			this.lastName = name;
 		}
 		@Override
-		public void newElementPinned(IpfsFile elementHash, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, int leafReferenceCount)
-		{
-			_newElementsPinned.add(elementHash);
-		}
-		@Override
 		public FutureSize getSizeInBytes(IpfsFile cid)
 		{
 			FutureSize future = new FutureSize();
@@ -965,13 +960,25 @@ public class TestFolloweeRefreshLogic
 			;
 		}
 		@Override
-		public void addElementToCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
+		public void addElementToCache(IpfsFile elementHash
+				, AbstractRecord recordData
+				, IpfsFile imageHash
+				, IpfsFile audioLeaf
+				, IpfsFile videoLeaf
+				, int videoEdgeSize
+				, long combinedLeafSizeBytes
+		)
 		{
-			IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
-			_list.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
+			_newElementsPinned.add(elementHash);
+			// We only want to add this to the list if there are leaves to cache.
+			if (combinedLeafSizeBytes > 0L)
+			{
+				IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
+				_list.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedLeafSizeBytes));
+			}
 		}
 		@Override
-		public void removeElementFromCache(IpfsFile elementHash)
+		public void removeElementFromCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
 		{
 			int match = -1;
 			for (int i = 0; i < _list.size(); ++i)
