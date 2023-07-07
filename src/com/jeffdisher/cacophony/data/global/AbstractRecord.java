@@ -45,7 +45,8 @@ public class AbstractRecord
 	 */
 	public static AbstractRecord createNew()
 	{
-		return new AbstractRecord(null
+		return new AbstractRecord(0
+				, null
 				, null
 				, null
 				, null
@@ -84,7 +85,8 @@ public class AbstractRecord
 		IpfsFile thumbnailCid = _splitAttachments(splitArray, recordV1);
 		// We just assume that the MIME is JPEG.
 		String thumbnailMime = (null != thumbnailCid) ? "image/jpeg" : null;
-		return new AbstractRecord(recordV1.getName()
+		return new AbstractRecord(1
+				, recordV1.getName()
 				, recordV1.getDescription()
 				, recordV1.getDiscussion()
 				, IpfsKey.fromPublicKey(recordV1.getPublisherKey())
@@ -142,7 +144,8 @@ public class AbstractRecord
 			Assert.assertTrue(!videoArray.isEmpty());
 		}
 		
-		return new AbstractRecord(record.getName()
+		return new AbstractRecord(2
+				, record.getName()
 				, record.getDescription()
 				, record.getDiscussionUrl()
 				, IpfsKey.fromPublicKey(record.getPublisherKey())
@@ -180,6 +183,7 @@ public class AbstractRecord
 	}
 
 
+	private int _version;
 	private String _name;
 	private String _description;
 	private String _discussionUrl;
@@ -190,7 +194,8 @@ public class AbstractRecord
 	private IpfsFile _replyToRecord;
 	private List<Leaf> _leaves;
 
-	private AbstractRecord(String name
+	private AbstractRecord(int version
+			, String name
 			, String description
 			, String discussionUrl
 			, IpfsKey publisherKey
@@ -203,6 +208,7 @@ public class AbstractRecord
 	{
 		Assert.assertTrue((null == thumbnailMime) == (null == thumbnailCid));
 		
+		_version = version;
 		_name = name;
 		_description = description;
 		_discussionUrl = discussionUrl;
@@ -212,6 +218,14 @@ public class AbstractRecord
 		_thumbnailCid = thumbnailCid;
 		_replyToRecord = replyToRecord;
 		_leaves = leaves;
+	}
+
+	/**
+	 * @return The version number of the serialization found/used (0 if not loaded or saved, yet).
+	 */
+	public int getVersion()
+	{
+		return _version;
 	}
 
 	/**
@@ -391,6 +405,7 @@ public class AbstractRecord
 	 */
 	public byte[] serializeV1() throws SizeConstraintException
 	{
+		_version = 1;
 		StreamRecord record = new StreamRecord();
 		Assert.assertTrue(_name.length() > 0);
 		record.setName(_name);
@@ -446,6 +461,7 @@ public class AbstractRecord
 	 */
 	public byte[] serializeV2() throws SizeConstraintException
 	{
+		_version = 2;
 		CacophonyRecord record = new CacophonyRecord();
 		Assert.assertTrue(!_name.isEmpty());
 		record.setName(_name);

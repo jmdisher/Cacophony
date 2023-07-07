@@ -55,6 +55,15 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
 			AbstractRecord record = access.loadNotCached(_elementCid, "record", AbstractRecord.SIZE_LIMIT_BYTES, AbstractRecord.DESERIALIZER).get();
 			
+			if (!context.enableVersion2Data)
+			{
+				// If we are still using the V1 data model, we need to reject rebroadcasts of V2.
+				if (1 != record.getVersion())
+				{
+					throw new UsageException("Element is the wrong version (must be 1):  " + record.getVersion());
+				}
+			}
+			
 			// The record makes sense so pin it and everything it references (will throw on error).
 			_pinReachableData(context.logger, access, record);
 			

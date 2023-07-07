@@ -141,7 +141,8 @@ requireSubstring "$SHOWN" "Video: "
 requireSubstring "$SHOWN" "Publisher: $PUBLIC1"
 
 echo "Rebroadcast one of the elements from the followee and verify that we can see it in our list..."
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --rebroadcast --elementCid "$ELEMENT_TO_REBROADCAST"
+# Note that the element we are rebroadcasting is version 2 so we need to enable new data model in order for it to be accepted (since this counts as "publishing" the post).
+CACOPHONY_TEST_NEW_DATA="" CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --rebroadcast --elementCid "$ELEMENT_TO_REBROADCAST"
 checkPreviousCommand "Rebroadcast"
 LISTING=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "$ELEMENT_TO_REBROADCAST"

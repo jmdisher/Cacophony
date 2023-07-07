@@ -45,6 +45,7 @@ public class MockUserNode
 	// We lazily create the executor so that it can be shut down to drop data caches and force the scheduler reset.
 	private MultiThreadedScheduler _lazyScheduler;
 	private Context _lazyContext;
+	private boolean _enableNewDataVersion;
 
 	public MockUserNode(String keyName, IpfsKey key, MockSingleNode node, File draftsDir)
 	{
@@ -53,6 +54,11 @@ public class MockUserNode
 		_sharedConnection.addNewKey(keyName, key);
 		_fileSystem = new MemoryConfigFileSystem(draftsDir);
 		_logger = new SilentLogger();
+	}
+
+	public void setEnableNewDataVersion(boolean enableNewDataVersion)
+	{
+		_enableNewDataVersion = enableNewDataVersion;
 	}
 
 	public void setContextCaches(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry)
@@ -81,7 +87,7 @@ public class MockUserNode
 				, recordCache
 				, userInfoCache
 				, entryRegistry
-				, false
+				, _enableNewDataVersion
 				, null
 		);
 	}
@@ -126,7 +132,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
-					, false
+					, _enableNewDataVersion
 					, publicKey
 			);
 		}
@@ -284,7 +290,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
-					, false
+					, _enableNewDataVersion
 					, null
 			);
 		}
