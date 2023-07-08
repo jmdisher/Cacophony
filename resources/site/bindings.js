@@ -127,7 +127,15 @@ GLOBAL_Application.directive('cacoUserLink', ['UnknownUserLoader', function(Unkn
 				if ((undefined !== newValue) && (null !== newValue))
 				{
 					UnknownUserLoader(newValue).then((userTuple) => {
-						scope.name = userTuple["name"];
+						// If there was an error, we get a null.
+						if (null !== userTuple)
+						{
+							scope.name = userTuple["name"];
+						}
+						else
+						{
+							scope.name = "Error loading";
+						}
 						scope.$apply();
 					});
 				}
@@ -195,9 +203,9 @@ let _template_unknownUser = ''
 	+ '		<div class="col-md-8">'
 	+ '			Public Key: <strong>{{tuple.publicKey}}</strong><br />'
 	+ '			Description: <strong>{{tuple.description}}</strong><br />'
-	+ '			Email: <span ng-show="{{null == tuple.email}}">(not provided)</span><span ng-show="{{null !== tuple.email}}"><a ng-href="mailto:{{tuple.email}}">{{tuple.email}}</a></span><br />'
-	+ '			Website: <span ng-show="{{null == tuple.website}}">(not provided)</span><span ng-show="{{null !== tuple.website}}"><a ng-href="{{tuple.website}}">{{tuple.website}}</a></span><br />'
-	+ '			<button class="btn btn-small btn-success" ng-click="onSuccess()" ng-disabled="isSuccessActive">{{successName}}</button><br />'
+	+ '			Email: <span ng-show="{{null === tuple.email}}">(not provided)</span><span ng-show="{{null !== tuple.email}}"><a ng-href="mailto:{{tuple.email}}">{{tuple.email}}</a></span><br />'
+	+ '			Website: <span ng-show="{{null === tuple.website}}">(not provided)</span><span ng-show="{{null !== tuple.website}}"><a ng-href="{{tuple.website}}">{{tuple.website}}</a></span><br />'
+	+ '			<button class="btn btn-small btn-success" ng-click="onSuccess()" ng-show="isLoadComplete" ng-disabled="isSuccessActive">{{successName}}</button><br />'
 	+ '		</div>'
 	+ '	</div>'
 	+ '</div>'
@@ -216,11 +224,6 @@ GLOBAL_Application.directive('cacoUnknownUser', ['UnknownUserLoader', function(U
 		template: _template_unknownUser,
 		link: function(scope, element, attrs)
 		{
-			scope.isSuccessActive = false;
-			scope.tuple = {
-				name : "Loading...",
-			};
-			
 			scope.onSuccess = function()
 			{
 				scope.isSuccessActive = true;
@@ -231,8 +234,33 @@ GLOBAL_Application.directive('cacoUnknownUser', ['UnknownUserLoader', function(U
 			{
 				if ((undefined !== newValue) && (null !== newValue))
 				{
+					// Clear state whenever this changes.
+					scope.isSuccessActive = false;
+					scope.isLoadComplete = false;
+					scope.tuple = {
+						name: "Loading...",
+						description: "Loading...",
+						userPicUrl: null,
+						email: null,
+						website: null,
+					};
 					UnknownUserLoader(newValue).then((userTuple) => {
-						scope.tuple = userTuple;
+						// We get null on error.
+						if (null !== userTuple)
+						{
+							scope.isLoadComplete = true;
+							scope.tuple = userTuple;
+						}
+						else
+						{
+							scope.tuple = {
+								name: "Error loading",
+								description: "Error loading: " + scope.publicKey,
+								userPicUrl: null,
+								email: null,
+								website: null,
+							};
+						}
 						scope.$apply();
 					});
 				}
