@@ -13,6 +13,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
+import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -148,6 +149,24 @@ public class TestCacheSaturation
 			_keyName = keyName;
 			_publicKey = publicKey;
 			_user = new MockUserNode(keyName, publicKey, new MockSingleNode(swarm), FOLDER.newFolder());
+			// We want these User objects to have a smaller followee cache for more convenient testing.
+			try
+			{
+				_user.runCommand(null, new SetGlobalPrefsCommand(0
+						, 100L
+						, 0L
+						, 0L
+						, 0L
+						, 0L
+						, 0L
+						, 0L
+				));
+			}
+			catch (Throwable e)
+			{
+				// Not expected.
+				throw new AssertionError(e);
+			}
 		}
 		
 		public void createChannel(int userNumber) throws Throwable

@@ -27,18 +27,18 @@ public class PrefsData
 	public static final int DEFAULT_VIDEO_EDGE = 1280;
 	// We will start with a follower cache default target size of 10 GB (probably too small but not ultra-tiny).
 	// (this is mutable since we override it in some tests).
-	public static long DEFAULT_FOLLOW_CACHE_BYTES = 10_000_000_000L;
+	public static final long DEFAULT_FOLLOW_CACHE_BYTES = 10_000_000_000L;
 	// The public key publications seem to be valid for about 24 hours, by default, so we will use 12.
 	public static final long DEFAULT_REPUBLISH_INTERVAL_MILLIS = 12L * 60L * 60L * 1000L;
 	// We will default to refreshing each followeee once per hour.
 	public static final long DEFAULT_FOLLOWEE_REFRESH_MILLIS = 60L * 60L * 1000L;
 	// We will use 1 GB as the size of the explicit cache, since we usually satisfy requests from the local user or
 	// followee cache so this is typically just used for one-offs.
-	public static long DEFAULT_EXPLICIT_CACHE_BYTES = 1_000_000_000L;
+	public static final long DEFAULT_EXPLICIT_CACHE_BYTES = 1_000_000_000L;
 	// The default sizes for followee element cache limits aren't based on hard science, just upper bounds over what seems reasonable, based on other defaults.
-	public static long DEFAULT_FOLLOWEE_THUMBNAIL_BYTES = 10_000_000L;
-	public static long DEFAULT_FOLLOWEE_AUDIO_BYTES = 200_000_000L;
-	public static long DEFAULT_FOLLOWEE_VIDEO_BYTES = 2_000_000_000L;
+	public static final long DEFAULT_FOLLOWEE_THUMBNAIL_BYTES = 10_000_000L;
+	public static final long DEFAULT_FOLLOWEE_AUDIO_BYTES = 200_000_000L;
+	public static final long DEFAULT_FOLLOWEE_VIDEO_BYTES = 2_000_000_000L;
 
 
 	public static PrefsData defaultPrefs()
