@@ -335,6 +335,16 @@ function onProcessingSocketClose(scope, processed_review, event, ignoreError)
 	}
 }
 
+// onLoaded(file, mime, tag_with_meta_data)
+function loadMetaData(type, file, mime, onLoaded)
+{
+	const elt = document.createElement(type);
+	elt.addEventListener('loadedmetadata', event => {
+		onLoaded(file, mime, elt);
+	})
+	elt.src = URL.createObjectURL(file);
+}
+
 
 // GLOBAL_Application is defined in bindings.js.
 GLOBAL_Application.controller('AppController', function($scope)
@@ -369,9 +379,9 @@ GLOBAL_Application.controller('AppController', function($scope)
 	
 	// Data we use to with the manual file uploads.
 	$scope.selectedFiles = {
-		video: null,
-		thumbnail: null,
-		audio: null,
+		uploadingVideo: false,
+		uploadingAudio: false,
+		uploadingThumbnail: false,
 	};
 	
 	$scope.selectDraft = function(draft)
@@ -621,26 +631,42 @@ GLOBAL_Application.controller('AppController', function($scope)
 		{
 			// Drag and drop can bypass the "accept", it seems.
 			event.srcElement.value = null;
-			$scope.selectedFiles.video = null;
 			$scope.$apply();
 		}
 		else
 		{
 			// We need to find the meta-data.
-			const video = document.createElement('video');
-			video.addEventListener('loadedmetadata', event => {
-				console.log("Got video: " + video.videoWidth + " by " + video.videoHeight);
-				$scope.selectedFiles.video = {
-					file: file,
-					name: file.name,
-					byteSize: file.size,
-					mime: file.type,
-					videoWidth: video.videoWidth,
-					videoHeight: video.videoHeight,
-				};
-				$scope.$apply();
-			})
-			video.src = URL.createObjectURL(file);
+			loadMetaData('video', file, file.type, function(file, mime, video_tag) {
+				console.log("Got video: " + video_tag.videoWidth + " by " + video_tag.videoHeight);
+				
+				// We want to immediately upload.
+				$scope.selectedFiles.uploadingVideo = true;
+				uploadVideoData($scope.selectedDraft.id
+					, video_tag.videoHeight
+					, video_tag.videoWidth
+					, mime.substring(6)
+					, file
+					, function(uploadedBytes, totalBytes)
+					{
+						let percentage = Math.round(100 * uploadedBytes / totalBytes);
+						console.log("Uploading " + percentage + "%");
+						video_upload_progress_bar.ariaValueNow = percentage;
+						video_upload_progress_bar["style"] = "width: " + percentage + "%;";
+						video_upload_progress_bar.textContent = percentage + "%";
+					}
+					, function(finalByteSize)
+					{
+						$scope.selectedDraft.originalVideo = {
+							height: video_tag.videoHeight,
+							width: video_tag.videoWidth,
+							byteSize: finalByteSize,
+						};
+						document.getElementById("video_upload_selector").value = null;
+						$scope.selectedFiles.uploadingVideo = false;
+						$scope.$apply();
+						original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+					});
+			});
 		}
 	});
 	document.getElementById("audio_upload_selector").addEventListener("change", function(event)
@@ -656,26 +682,40 @@ GLOBAL_Application.controller('AppController', function($scope)
 		{
 			// Drag and drop can bypass the "accept", it seems.
 			event.srcElement.value = null;
-			$scope.selectedFiles.audio = null;
 			$scope.$apply();
 		}
 		else
 		{
 			// We need to find the meta-data.
-			const audio = document.createElement('audio');
-			audio.addEventListener('loadedmetadata', event => {
+			loadMetaData('audio', file, mime, function(file, mime, audio_tag) {
 				console.log("Got audio");
-				$scope.selectedFiles.audio = {
-					file: file,
-					name: file.name,
-					byteSize: file.size,
-					mime: mime,
-					videoWidth: 0,
-					videoHeight: 0,
-				};
-				$scope.$apply();
-			})
-			audio.src = URL.createObjectURL(file);
+				
+				// We want to immediately upload.
+				$scope.selectedFiles.uploadingAudio = true;
+				uploadAudioData($scope.selectedDraft.id
+					, mime.substring(6)
+					, file
+					, function(uploadedBytes, totalBytes)
+					{
+						let percentage = Math.round(100 * uploadedBytes / totalBytes);
+						console.log("Uploading " + percentage + "%");
+						audio_upload_progress_bar.ariaValueNow = percentage;
+						audio_upload_progress_bar["style"] = "width: " + percentage + "%;";
+						audio_upload_progress_bar.textContent = percentage + "%";
+					}
+					, function(finalByteSize)
+					{
+						$scope.selectedDraft.audio = {
+							height: 0,
+							width: 0,
+							byteSize: finalByteSize,
+						};
+						document.getElementById("audio_upload_selector").value = null;
+						$scope.selectedFiles.uploadingAudio = false;
+						$scope.$apply();
+						audio_review.src = "http://127.0.0.1:8000/draft/audio/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
+					});
+			});
 		}
 	});
 	document.getElementById("thumbnail_upload_selector").addEventListener("change", function(event)
@@ -685,7 +725,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 		{
 			// Drag and drop can bypass the "accept", it seems.
 			event.srcElement.value = null;
-			$scope.selectedFiles.thumbnail = null;
 			$scope.$apply();
 		}
 		else
@@ -695,96 +734,29 @@ GLOBAL_Application.controller('AppController', function($scope)
 			img.onload = function(event)
 			{
 				console.log("Got thumbnail: " + img.width + " by " + img.height);
-				$scope.selectedFiles.thumbnail = {
-					file: file,
-					name: file.name,
-					byteSize: file.size,
-					mime: file.type,
-					imageWidth: img.width,
-					imageHeight: img.height,
-				};
+				
+				// Do the immediate upload.
+				$scope.selectedFiles.uploadingThumbnail = true;
+				let imageType = file.type.substring(6);
+				REST.POST_withBinary("/draft/thumb/" + $scope.selectedDraft.id + "/" + img.height + "/" + img.width + "/" + imageType, file)
+					.then((response) => {
+						$scope.selectedDraft.thumbnail = {
+							height: img.height,
+							width: img.width,
+							byteSize: file.size,
+						};
+						document.getElementById("thumbnail_upload_selector").value = null;
+						$scope.selectedFiles.uploadingThumbnail = false;
+						$scope.selectedDraft.thumbnail.width = img.width;
+						$scope.selectedDraft.thumbnail.height = img.height;
+						setThumbnail(canvas, $scope.selectedDraft);
+						$scope.$apply();
+					});
 				$scope.$apply();
 			};
 			img.src = URL.createObjectURL(file);
 		}
 	});
-	$scope.uploadSelectedVideo = function()
-	{
-		$scope.selectedFiles.video.uploading = true;
-		uploadVideoData($scope.selectedDraft.id
-			, $scope.selectedFiles.video.videoHeight
-			, $scope.selectedFiles.video.videoWidth
-			, $scope.selectedFiles.video.mime.substring(6)
-			, $scope.selectedFiles.video.file
-			, function(uploadedBytes, totalBytes)
-			{
-				let percentage = Math.round(100 * uploadedBytes / totalBytes);
-				console.log("Uploading " + percentage + "%");
-				video_upload_progress_bar.ariaValueNow = percentage;
-				video_upload_progress_bar["style"] = "width: " + percentage + "%;";
-				video_upload_progress_bar.textContent = percentage + "%";
-			}
-			, function(finalByteSize)
-			{
-				$scope.selectedDraft.originalVideo = {
-					height: $scope.selectedFiles.video.videoHeight,
-					width: $scope.selectedFiles.video.videoWidth,
-					byteSize: finalByteSize,
-				};
-				document.getElementById("video_upload_selector").value = null;
-				$scope.selectedFiles.video = null;
-				$scope.$apply();
-				original_review.src = "http://127.0.0.1:8000/draft/originalVideo/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
-			});
-	}
-	$scope.uploadSelectedAudio = function()
-	{
-		$scope.selectedFiles.audio.uploading = true;
-		uploadAudioData($scope.selectedDraft.id
-			, $scope.selectedFiles.audio.mime.substring(6)
-			, $scope.selectedFiles.audio.file
-			, function(uploadedBytes, totalBytes)
-			{
-				let percentage = Math.round(100 * uploadedBytes / totalBytes);
-				console.log("Uploading " + percentage + "%");
-				audio_upload_progress_bar.ariaValueNow = percentage;
-				audio_upload_progress_bar["style"] = "width: " + percentage + "%;";
-				audio_upload_progress_bar.textContent = percentage + "%";
-			}
-			, function(finalByteSize)
-			{
-				$scope.selectedDraft.audio = {
-					height: 0,
-					width: 0,
-					byteSize: finalByteSize,
-				};
-				document.getElementById("audio_upload_selector").value = null;
-				$scope.selectedFiles.audio = null;
-				$scope.$apply();
-				audio_review.src = "http://127.0.0.1:8000/draft/audio/" + $scope.selectedDraft.id + "?uniq=" + (new Date()).getTime();
-			});
-	}
-	$scope.uploadSelectedThumbnail = function()
-	{
-		$scope.selectedFiles.thumbnail.uploading = true;
-		let height = $scope.selectedFiles.thumbnail.imageHeight;
-		let width = $scope.selectedFiles.thumbnail.imageWidth;
-		let imageType = $scope.selectedFiles.thumbnail.mime.substring(6);
-		REST.POST_withBinary("/draft/thumb/" + $scope.selectedDraft.id + "/" + height + "/" + width + "/" + imageType, $scope.selectedFiles.thumbnail.file)
-			.then((response) => {
-				$scope.selectedDraft.thumbnail = {
-					height: height,
-					width: width,
-					byteSize: $scope.selectedFiles.thumbnail.byteSize,
-				};
-				document.getElementById("thumbnail_upload_selector").value = null;
-				$scope.selectedFiles.thumbnail = null;
-				$scope.selectedDraft.thumbnail.width = width;
-				$scope.selectedDraft.thumbnail.height = height;
-				setThumbnail(canvas, $scope.selectedDraft);
-				$scope.$apply();
-			});
-	}
 	$scope.setDraftType = function(type)
 	{
 		$scope.selectedDraft.type = type;
@@ -933,8 +905,7 @@ function xsrfLoaded($scope)
 				</div>
 				<div class="card card-body" ng-show="'VIDEO' === selectedDraft.type">
 					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload video from filesystem: <input type="file" accept="video/*" id="video_upload_selector" />
-					<button type="button" class="btn btn-primary" ng-click="uploadSelectedVideo()" ng-show="null !== selectedFiles.video" ng-disabled="selectedFiles.video.uploading">Upload {{selectedFiles.video.name}} ({{selectedFiles.video.byteSize}} bytes)</button><br />
+					<br />Upload video from filesystem: <input type="file" accept="video/*" id="video_upload_selector" ng-disabled="selectedFiles.video.uploading" />
 					<div class="progress" ng-show="selectedFiles.video.uploading">
 						<div class="progress-bar" id="video_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
 							0%
@@ -943,8 +914,7 @@ function xsrfLoaded($scope)
 				</div>
 				<div class="card card-body" ng-show="'AUDIO' === selectedDraft.type">
 					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload audio from filesystem: <input type="file" accept="audio/*" id="audio_upload_selector" />
-					<button type="button" class="btn btn-primary" ng-click="uploadSelectedAudio()" ng-show="null !== selectedFiles.audio" ng-disabled="selectedFiles.audio.uploading">Upload {{selectedFiles.audio.name}} ({{selectedFiles.audio.byteSize}} bytes)</button><br />
+					<br />Upload audio from filesystem: <input type="file" accept="audio/*" id="audio_upload_selector" ng-disabled="selectedFiles.audio.uploading" />
 					<div class="progress" ng-show="selectedFiles.audio.uploading">
 						<div class="progress-bar" id="audio_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
 							0%
@@ -1003,8 +973,7 @@ function xsrfLoaded($scope)
 					</div>
 					
 					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload thumbnail from filesystem: <input type="file" accept="image/*" id="thumbnail_upload_selector" />
-					<button type="button" class="btn btn-primary" ng-click="uploadSelectedThumbnail()" ng-show="null !== selectedFiles.thumbnail" ng-disabled="selectedFiles.thumbnail.uploading">Upload {{selectedFiles.thumbnail.name}} ({{selectedFiles.thumbnail.byteSize}} bytes)</button><br />
+					<br />Upload thumbnail from filesystem: <input type="file" accept="image/*" id="thumbnail_upload_selector" ng-disabled="selectedFiles.thumbnail.uploading" />
 				</div>
 				<div class="card card-body">
 					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
