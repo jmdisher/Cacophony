@@ -54,7 +54,7 @@ public class BackgroundOperations
 				FuturePublish publish = null;
 				if (null != operation.publishTarget)
 				{
-					publishLog = logger.logStart("Background start publish: " + operation.publishTarget);
+					publishLog = logger.logStart("Start background publish for \"" + operation.publisherKeyName + "\" (" + operation.publisherKey + "): " + operation.publishTarget);
 					publish = operations.startPublish(operation.publisherKeyName, operation.publisherKey, operation.publishTarget);
 					Assert.assertTrue(null != publish);
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
@@ -73,7 +73,14 @@ public class BackgroundOperations
 				{
 					IpfsConnectionException error = publish.get();
 					_connector.destroy(operation.publishNumber);
-					publishLog.logFinish("Background end publish: " + operation.publishTarget + ((null == error) ? " SUCCESS" : (" FAILED with " + error)));
+					if (null == error)
+					{
+						publishLog.logFinish("SUCCESS of background publish for \"" + operation.publisherKeyName + "\" (" + operation.publisherKey + "): " + operation.publishTarget);
+					}
+					else
+					{
+						publishLog.logFinish("FAILURE of background publish for \"" + operation.publisherKeyName + "\" (" + operation.publisherKey + "): " + error.getLocalizedMessage());
+					}
 				}
 				operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong());
 			}
