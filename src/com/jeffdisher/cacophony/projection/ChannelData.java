@@ -1,13 +1,10 @@
 package com.jeffdisher.cacophony.projection;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.data.local.v2.Opcode_CreateChannel;
-import com.jeffdisher.cacophony.data.local.v2.Opcode_SetLastPublishedIndex;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_DefineChannel;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -29,19 +26,6 @@ public class ChannelData
 	private ChannelData()
 	{
 		_homeChannelsByKeyName = new HashMap<>();
-	}
-
-	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
-	{
-		// V2 data model only works with a single channel.
-		Assert.assertTrue(1 == _homeChannelsByKeyName.size());
-		String keyName = _homeChannelsByKeyName.keySet().iterator().next();
-		IpfsFile lastPublishedIndex = _homeChannelsByKeyName.get(keyName).second();
-		stream.writeObject(new Opcode_CreateChannel("ipfs", keyName));
-		if (null != lastPublishedIndex)
-		{
-			stream.writeObject(new Opcode_SetLastPublishedIndex(lastPublishedIndex));
-		}
 	}
 
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException

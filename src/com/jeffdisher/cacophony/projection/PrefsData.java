@@ -1,9 +1,7 @@
 package com.jeffdisher.cacophony.projection;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 
-import com.jeffdisher.cacophony.data.local.v2.Opcode_SetPrefsKey;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_SetPrefsInt;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_SetPrefsLong;
@@ -69,15 +67,6 @@ public class PrefsData
 	// We keep this private just so the factory is used to explicitly create the defaults.
 	private PrefsData()
 	{
-	}
-
-	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
-	{
-		stream.writeObject(new Opcode_SetPrefsKey(INT_VIDEO_EDGE, Integer.valueOf(this.videoEdgePixelMax)));
-		stream.writeObject(new Opcode_SetPrefsKey(LONG_FOLLOW_CACHE_BYTES, Long.valueOf(this.followCacheTargetBytes)));
-		stream.writeObject(new Opcode_SetPrefsKey(LONG_REPUBLISH_INTERVAL_MILLIS, Long.valueOf(this.republishIntervalMillis)));
-		stream.writeObject(new Opcode_SetPrefsKey(LONG_FOLLOWEE_REFRESH_MILLIS, Long.valueOf(this.followeeRefreshMillis)));
-		// We don't write the new elements to the V2 storage.
 	}
 
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException

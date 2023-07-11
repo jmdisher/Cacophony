@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.data;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -10,7 +9,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
-import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
@@ -19,7 +17,6 @@ import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
-import com.jeffdisher.cacophony.projection.ProjectionBuilder;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -38,8 +35,6 @@ public class LocalDataModel
 	private static final String VERSION_FILE = "version";
 	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 3;
 
-	private static final byte V2 = 2;
-	private static final String V2_FINAL_LOG = "opcodes_0.final.gzlog";
 	private static final String V3_LOG = "opcodes.v3.gzlog";
 
 	/**
@@ -90,11 +85,6 @@ public class LocalDataModel
 			if (LOCAL_CONFIG_VERSION_NUMBER == version)
 			{
 				// Current version, do nothing special.
-			}
-			else if (V2 == version)
-			{
-				// The V2_FINAL_LOG version - migrate the data.
-				_migrateData(fileSystem, scheduler);
 			}
 			else
 			{
@@ -164,52 +154,6 @@ public class LocalDataModel
 		builder.addFavourites(favouritesCache);
 		builder.addExplicitCache(explicitCache);
 		return builder.finish();
-	}
-
-	private static void _migrateData(IConfigFileSystem fileSystem, INetworkScheduler scheduler)
-	{
-		try (InputStream opcodeLog = fileSystem.readAtomicFile(V2_FINAL_LOG))
-		{
-			// We are only here for the version upgrade so the data must be here.
-			Assert.assertTrue(null != opcodeLog);
-			
-			ProjectionBuilder.Projections projections = ProjectionBuilder.buildProjectionsFromOpcodeStream(scheduler, opcodeLog);
-			ChannelData channelData = projections.channel();
-			FolloweeData followees = projections.followee();
-			
-			Set<String> channelKeyNames = channelData.getKeyNames();
-			// We expect precisely one channel when migrating data from version 2.
-			Assert.assertTrue(1 == channelKeyNames.size());
-			String keyName = channelKeyNames.iterator().next();
-			Assert.assertTrue(keyName.length() > 0);
-			IpfsFile lastIndex = channelData.getLastPublishedIndex(keyName);
-			Assert.assertTrue(null != lastIndex);
-			
-			// We build the pin cache as a projection of our other data about the home user and followee data.
-			IpfsFile[] homeRoots = (null != lastIndex)
-					? new IpfsFile[] { lastIndex }
-					: new IpfsFile[0]
-			;
-			FavouritesCacheData emptyFavourites = new FavouritesCacheData();
-			ExplicitCacheData emptyExplicitCache = new ExplicitCacheData();
-			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, emptyFavourites, emptyExplicitCache);
-			PinCacheData diskPinCache = projections.pinCache();
-			List<IpfsFile> incorrectlyPinned = diskPinCache.verifyMatch(pinCache);
-			// The verification will return null if they are a perfect match.
-			Assert.assertTrue(null == incorrectlyPinned);
-			
-			// Also update the drafts, since they no longer use Java serialization in V3.
-			DraftManager manager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
-			manager.migrateDrafts();
-			
-			// Now, write-back the data.
-			_writeToDisk(fileSystem, channelData, projections.prefs(), followees, emptyFavourites, emptyExplicitCache);
-		}
-		catch (IOException e)
-		{
-			// We have no way to handle this failure.
-			throw Assert.unexpected(e);
-		}
 	}
 
 

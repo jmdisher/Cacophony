@@ -1,14 +1,11 @@
 package com.jeffdisher.cacophony.projection;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.data.local.v2.Opcode_SetPinnedCount;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -26,14 +23,6 @@ public class PinCacheData
 	private PinCacheData(Map<IpfsFile, Integer> map)
 	{
 		_map = map;
-	}
-
-	public void serializeToOpcodeStream(ObjectOutputStream stream) throws IOException
-	{
-		for (Map.Entry<IpfsFile, Integer> elt : _map.entrySet())
-		{
-			stream.writeObject(new Opcode_SetPinnedCount(elt.getKey(), elt.getValue()));
-		}
 	}
 
 	public boolean isPinned(IpfsFile file)
