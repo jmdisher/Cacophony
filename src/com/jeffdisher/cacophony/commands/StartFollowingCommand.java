@@ -48,7 +48,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 			
 			// First, start the follow.
 			// Note that this will throw exceptions on failure and never return null.
-			IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> log.logOperation(message), access, context.enableVersion2Data, context.userInfoCache, _publicKey);
+			IpfsFile hackedRoot = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> log.logOperation(message), access, context.userInfoCache, _publicKey);
 			
 			Assert.assertTrue(null != hackedRoot);
 			// If this worked, we will store this temporary root value.  We will do the initial data element refresh only when requested.

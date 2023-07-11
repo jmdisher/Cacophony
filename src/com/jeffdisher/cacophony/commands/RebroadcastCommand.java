@@ -42,7 +42,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
-			HomeChannelModifier modifier = new HomeChannelModifier(access, context.enableVersion2Data);
+			HomeChannelModifier modifier = new HomeChannelModifier(access);
 			
 			// First, load our existing stream to make sure that this isn't a duplicate.
 			AbstractRecords records = modifier.loadRecords();
@@ -54,15 +54,6 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 			
 			// Next, make sure that this actually _is_ a StreamRecord we can read.
 			AbstractRecord record = access.loadNotCached(_elementCid, "record", AbstractRecord.SIZE_LIMIT_BYTES, AbstractRecord.DESERIALIZER).get();
-			
-			if (!context.enableVersion2Data)
-			{
-				// If we are still using the V1 data model, we need to reject rebroadcasts of V2.
-				if (1 != record.getVersion())
-				{
-					throw new UsageException("Element is the wrong version (must be 1):  " + record.getVersion());
-				}
-			}
 			
 			// The record makes sense so pin it and everything it references (will throw on error).
 			_pinReachableData(context.logger, access, record);

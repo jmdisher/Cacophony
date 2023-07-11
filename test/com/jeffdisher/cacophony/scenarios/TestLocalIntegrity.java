@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
+import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
@@ -88,7 +89,7 @@ public class TestLocalIntegrity
 		PublishCommand publish = new PublishCommand("name", "description", null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
 		});
-		publish.runInContext(_createSingleNode(model, node, scheduler, MockKeys.K1));
+		OnePost result = publish.runInContext(_createSingleNode(model, node, scheduler, MockKeys.K1));
 		// We expect 7 keys in the storage:
 		// -index
 		// -recommendations
@@ -104,13 +105,15 @@ public class TestLocalIntegrity
 		IpfsFile entry = null;
 		for (IpfsFile file : afterPublishFiles)
 		{
-			if (new String(node.loadData(file)).contains("<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/global/record.xsd\">"))
+			if (new String(node.loadData(file)).contains("<record xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/record2.xsd\">"))
 			{
 				Assert.assertNull(entry);
 				entry = file;
 			}
 		}
 		Assert.assertNotNull(entry);
+		// This should be the returned CID.
+		Assert.assertEquals(result.recordCid, entry);
 		
 		// Now, remove this entry.
 		RemoveEntryFromThisChannelCommand remove = new RemoveEntryFromThisChannelCommand(entry);
@@ -137,7 +140,6 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
-				, false
 				, selectedKey
 		);
 	}

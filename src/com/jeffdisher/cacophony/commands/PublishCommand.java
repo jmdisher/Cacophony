@@ -65,14 +65,11 @@ public record PublishCommand(String _name, String _description, String _discussi
 			
 			// Assemble and upload the new StreamRecord.
 			AbstractRecord record = _createRecord(thumbnail, array, publicKey);
-			byte[] data = context.enableVersion2Data
-					? record.serializeV2()
-					: record.serializeV1()
-			;
+			byte[] data = record.serializeV2();
 			IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(data));
 			
 			// Now, update the channel data structure.
-			newRoot = _modifyUserStream(access, context.enableVersion2Data, recordHash);
+			newRoot = _modifyUserStream(access, recordHash);
 			
 			log.logVerbose("Saving and publishing new index");
 			newElement = recordHash;
@@ -184,9 +181,9 @@ public record PublishCommand(String _name, String _description, String _discussi
 		return record;
 	}
 
-	private IpfsFile _modifyUserStream(IWritingAccess access, boolean enableVersion2Data, IpfsFile recordHash) throws IpfsConnectionException
+	private IpfsFile _modifyUserStream(IWritingAccess access, IpfsFile recordHash) throws IpfsConnectionException
 	{
-		HomeChannelModifier modifier = new HomeChannelModifier(access, enableVersion2Data);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecords records = modifier.loadRecords();
 		List<IpfsFile> recordCids = records.getRecordList();
 		// This assertion is just to avoid some corner-cases which can happen in testing but have no obvious meaning in real usage.

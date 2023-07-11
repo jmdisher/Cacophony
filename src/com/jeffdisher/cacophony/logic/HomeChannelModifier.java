@@ -30,16 +30,14 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class HomeChannelModifier
 {
 	private final IWritingAccess _access;
-	private final boolean _enableVersion2Data;
 	private Tuple<AbstractIndex> _index;
 	private Tuple<AbstractRecommendations> _recommendations;
 	private Tuple<AbstractRecords> _records;
 	private Tuple<AbstractDescription> _description;
 
-	public HomeChannelModifier(IWritingAccess access, boolean enableVersion2Data)
+	public HomeChannelModifier(IWritingAccess access)
 	{
 		_access = access;
-		_enableVersion2Data = enableVersion2Data;
 	}
 
 	public AbstractRecommendations loadRecommendations() throws IpfsConnectionException
@@ -196,10 +194,7 @@ public class HomeChannelModifier
 		IpfsFile cid = null;
 		if ((null != _recommendations) && _recommendations.needsUpdate)
 		{
-			byte[] data = _enableVersion2Data
-					? _recommendations.element.serializeV2()
-					: _recommendations.element.serializeV1()
-			;
+			byte[] data = _recommendations.element.serializeV2();
 			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_recommendations.originalCid);
 			_recommendations = null;
@@ -212,10 +207,7 @@ public class HomeChannelModifier
 		IpfsFile cid = null;
 		if ((null != _records) && _records.needsUpdate)
 		{
-			byte[] data = _enableVersion2Data
-					? _records.element.serializeV2()
-					: _records.element.serializeV1()
-			;
+			byte[] data = _records.element.serializeV2();
 			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_records.originalCid);
 			_records = null;
@@ -228,10 +220,7 @@ public class HomeChannelModifier
 		IpfsFile cid = null;
 		if ((null != _description) && _description.needsUpdate)
 		{
-			byte[] data = _enableVersion2Data
-					? _description.element.serializeV2()
-					: _description.element.serializeV1()
-			;
+			byte[] data = _description.element.serializeV2();
 			cid = _access.uploadAndPin(new ByteArrayInputStream(data));
 			toUnpin.add(_description.originalCid);
 			_description = null;

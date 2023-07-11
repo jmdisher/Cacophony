@@ -154,7 +154,6 @@ public class TestCommandRunner
 				, null
 				, null
 				, null
-				, false
 				, MockKeys.K1
 		);
 		CommandRunner runner = new CommandRunner(context, 1);
@@ -181,7 +180,6 @@ public class TestCommandRunner
 				, null
 				, null
 				, null
-				, false
 				, MockKeys.K1
 		);
 	}

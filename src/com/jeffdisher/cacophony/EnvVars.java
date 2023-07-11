@@ -35,9 +35,4 @@ public class EnvVars
 	 * Enables verbose console logging.  If not set, verbose logs will not be written to the console.
 	 */
 	public static final String ENV_VAR_CACOPHONY_VERBOSE = "CACOPHONY_VERBOSE";
-
-	/**
-	 * Temporary testing option:  Changes on-IPFS serialization to use version 2.
-	 */
-	public static final String ENV_VAR_CACOPHONY_TEST_NEW_DATA = "CACOPHONY_TEST_NEW_DATA";
 }

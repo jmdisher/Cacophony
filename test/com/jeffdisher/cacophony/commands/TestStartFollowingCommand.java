@@ -84,17 +84,23 @@ public class TestStartFollowingCommand
 				, null
 				, null
 				, null
-				, false
 				, null
 		);
 		command.runInContext(context);
 		
+		// Note that we wrote the data as V1 but the start following creates synthetic records and root elements, meaning they will be re-written as V2, so test that they are what we expect.
+		IpfsFile syntheticRecordsCid = remoteConnection.storeData(new ByteArrayInputStream(AbstractRecords.createNew().serializeV2()));
+		AbstractIndex syntheticRootData = AbstractIndex.createNew();
+		syntheticRootData.descriptionCid = originalDescription;
+		syntheticRootData.recommendationsCid = originalRecommendations;
+		syntheticRootData.recordsCid = syntheticRecordsCid;
+		IpfsFile syntheticRoot = remoteConnection.storeData(new ByteArrayInputStream(syntheticRootData.serializeV2()));
+		
 		// Verify the states that should have changed.
-		Assert.assertTrue(sharedConnection.isPinned(originalRoot));
+		Assert.assertTrue(sharedConnection.isPinned(syntheticRoot));
 		Assert.assertTrue(sharedConnection.isPinned(originalDescription));
 		Assert.assertTrue(sharedConnection.isPinned(originalRecommendations));
-		// Note that the records CID will match, even though it isn't the same instance since the "start" creates a synthetic records and root.
-		Assert.assertTrue(sharedConnection.isPinned(originalRecordsCid));
+		Assert.assertTrue(sharedConnection.isPinned(syntheticRecordsCid));
 		Assert.assertTrue(sharedConnection.isPinned(originalPicture));
 		
 		// Make sure that the local index is correct.
@@ -143,7 +149,6 @@ public class TestStartFollowingCommand
 					, null
 					, null
 					, null
-					, false
 					, null
 			));
 		}

@@ -38,7 +38,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing entry " + _elementCid + " from channel...");
-			newRoot = _run(access, context.enableVersion2Data, context.recordCache, _elementCid);
+			newRoot = _run(access, context.recordCache, _elementCid);
 			if (null == newRoot)
 			{
 				throw new UsageException("Unknown post");
@@ -63,9 +63,9 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	 * @return The new local root element or null, if the entry wasn't found.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static IpfsFile _run(IWritingAccess access, boolean enableVersion2Data, LocalRecordCache recordCache, IpfsFile postToRemove) throws IpfsConnectionException
+	private static IpfsFile _run(IWritingAccess access, LocalRecordCache recordCache, IpfsFile postToRemove) throws IpfsConnectionException
 	{
-		HomeChannelModifier modifier = new HomeChannelModifier(access, enableVersion2Data);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecords records = modifier.loadRecords();
 		
 		boolean didRemove = records.removeRecord(postToRemove);

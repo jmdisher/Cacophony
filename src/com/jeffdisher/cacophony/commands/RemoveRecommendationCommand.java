@@ -32,7 +32,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing recommendation " + _channelPublicKey + "...");
-			newRoot = _run(access, context.enableVersion2Data, _channelPublicKey);
+			newRoot = _run(access, _channelPublicKey);
 			if (null == newRoot)
 			{
 				throw new UsageException("User was NOT recommended");
@@ -50,9 +50,9 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 	 * @return The new local root element or null, if the user wasn't in the recommended list.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static IpfsFile _run(IWritingAccess access, boolean enableVersion2Data, IpfsKey userToRemove) throws IpfsConnectionException
+	private static IpfsFile _run(IWritingAccess access, IpfsKey userToRemove) throws IpfsConnectionException
 	{
-		HomeChannelModifier modifier = new HomeChannelModifier(access, enableVersion2Data);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing recommendations list.
 		AbstractRecommendations recommendations = modifier.loadRecommendations();

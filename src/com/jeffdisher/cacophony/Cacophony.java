@@ -215,7 +215,6 @@ public class Cacophony {
 			selectedHomeKey = channels.getPublicKey(keyName);
 		}
 		
-		boolean enableVersion2Data = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_TEST_NEW_DATA));
 		Context context = new Context(draftManager
 				, localDataModel
 				, connection
@@ -226,7 +225,6 @@ public class Cacophony {
 				, null
 				, null
 				, null
-				, enableVersion2Data
 				, selectedHomeKey
 		);
 		return context;

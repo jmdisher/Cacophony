@@ -32,7 +32,7 @@ public class TestHomeChannelModifier
 		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		HomeChannelModifier modifier = new HomeChannelModifier(access, false);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractDescription desc = modifier.loadDescription();
 		AbstractRecords records = modifier.loadRecords();
 		AbstractRecommendations recom = modifier.loadRecommendations();
@@ -54,13 +54,13 @@ public class TestHomeChannelModifier
 		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		HomeChannelModifier modifier = new HomeChannelModifier(access, false);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractDescription desc = modifier.loadDescription();
 		desc.setName("updated name");
 		modifier.storeDescription(desc);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
-		modifier = new HomeChannelModifier(access, false);
+		modifier = new HomeChannelModifier(access);
 		desc = modifier.loadDescription();
 		Assert.assertEquals("updated name", desc.getName());
 		Assert.assertEquals(4, access.data.size());
@@ -74,13 +74,13 @@ public class TestHomeChannelModifier
 		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		HomeChannelModifier modifier = new HomeChannelModifier(access, false);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecords records = modifier.loadRecords();
 		records.addRecord(MockSingleNode.generateHash("fake post".getBytes()));
 		modifier.storeRecords(records);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
-		modifier = new HomeChannelModifier(access, false);
+		modifier = new HomeChannelModifier(access);
 		records = modifier.loadRecords();
 		Assert.assertEquals(1, records.getRecordList().size());
 		Assert.assertEquals(4, access.data.size());
@@ -94,13 +94,13 @@ public class TestHomeChannelModifier
 		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		HomeChannelModifier modifier = new HomeChannelModifier(access, false);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecommendations recom = modifier.loadRecommendations();
 		recom.addUser(IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F"));
 		modifier.storeRecommendations(recom);
 		IpfsFile root = modifier.commitNewRoot();
 		Assert.assertEquals(access.root, root);
-		modifier = new HomeChannelModifier(access, false);
+		modifier = new HomeChannelModifier(access);
 		recom = modifier.loadRecommendations();
 		Assert.assertEquals(1, recom.getUserList().size());
 		Assert.assertEquals(4, access.data.size());
@@ -114,7 +114,7 @@ public class TestHomeChannelModifier
 		MockWritingAccess access = new MockWritingAccess();
 		_populateWithEmpty(access);
 		access.writes = 0;
-		HomeChannelModifier modifier = new HomeChannelModifier(access, false);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		// We define it as invalid to commit if nothing has been read so check for the assertion error.
 		boolean didFail = false;
 		try
@@ -133,19 +133,34 @@ public class TestHomeChannelModifier
 	public void testVacuousUpdate() throws Throwable
 	{
 		MockWritingAccess access = new MockWritingAccess();
+		
+		// Write the empty data as V1.
 		_populateWithEmpty(access);
-		access.writes = 0;
-		HomeChannelModifier modifier = new HomeChannelModifier(access, false);
-		modifier.storeDescription(modifier.loadDescription());
-		modifier.storeRecords(modifier.loadRecords());
-		modifier.storeRecommendations(modifier.loadRecommendations());
-		IpfsFile initialRoot = access.root;
-		IpfsFile updated = modifier.commitNewRoot();
-		Assert.assertEquals(initialRoot, updated);
-		Assert.assertEquals(initialRoot, access.root);
 		Assert.assertEquals(4, access.data.size());
 		Assert.assertEquals(4, _countPins(access));
 		Assert.assertEquals(4, access.writes);
+		access.writes = 0;
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
+		modifier.storeDescription(modifier.loadDescription());
+		modifier.storeRecords(modifier.loadRecords());
+		modifier.storeRecommendations(modifier.loadRecommendations());
+		
+		// The HomeChannelModifier will save as V2 so read the new elements and make sure that they serialize to V1 with matching hashes.
+		IpfsFile initialRootCid = access.root;
+		AbstractIndex initialRootElement = access.loadCached(initialRootCid, AbstractIndex.DESERIALIZER).get();
+		
+		IpfsFile updated = modifier.commitNewRoot();
+		Assert.assertEquals(4, access.data.size());
+		Assert.assertEquals(4, _countPins(access));
+		Assert.assertEquals(4, access.writes);
+		
+		AbstractIndex updatedRootElement = access.loadCached(updated, AbstractIndex.DESERIALIZER).get();
+		AbstractDescription updatedDescription = access.loadCached(updatedRootElement.descriptionCid, AbstractDescription.DESERIALIZER).get();
+		AbstractRecords updatedRecords = access.loadCached(updatedRootElement.recordsCid, AbstractRecords.DESERIALIZER).get();
+		AbstractRecommendations updatedRecommendations = access.loadCached(updatedRootElement.recommendationsCid, AbstractRecommendations.DESERIALIZER).get();
+		Assert.assertEquals(initialRootElement.descriptionCid, MockSingleNode.generateHash(updatedDescription.serializeV1()));
+		Assert.assertEquals(initialRootElement.recordsCid, MockSingleNode.generateHash(updatedRecords.serializeV1()));
+		Assert.assertEquals(initialRootElement.recommendationsCid, MockSingleNode.generateHash(updatedRecommendations.serializeV1()));
 	}
 
 

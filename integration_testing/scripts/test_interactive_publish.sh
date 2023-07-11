@@ -408,7 +408,7 @@ FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progr
 requireSubstring "$FAVOURITES_LIST" "[\"$POST_ID\"]"
 # Check that we see this in the cache sizing data.
 STATS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/caches")
-requireSubstring "$STATS" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":642}"
+requireSubstring "$STATS" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":810}"
 # We also want to verify that the delete works.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XDELETE "http://127.0.0.1:8000/favourites/remove/$POST_ID"
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")

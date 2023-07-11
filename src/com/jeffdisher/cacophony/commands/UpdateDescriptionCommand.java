@@ -52,7 +52,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Updating channel description...");
-			result = _run(access, context.enableVersion2Data, _name, _description, _pictureStream, _email, _website);
+			result = _run(access, _name, _description, _pictureStream, _email, _website);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
 			IpfsFile pictureCid = result.updatedStreamDescription().getPicCid();
 			Assert.assertTrue(access.isInPinCached(pictureCid));
@@ -100,7 +100,6 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	 * @throws UsageException The picture stream provided was too large.
 	 */
 	private static Result _run(IWritingAccess access
-			, boolean enableVersion2Data
 			, String name
 			, String description
 			, InputStream picture
@@ -108,7 +107,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			, String website
 	) throws IpfsConnectionException, UsageException
 	{
-		HomeChannelModifier modifier = new HomeChannelModifier(access, enableVersion2Data);
+		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		
 		// Read the existing description since we might be only partially updating it.
 		AbstractDescription descriptionObject = modifier.loadDescription();

@@ -8,7 +8,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -229,44 +228,5 @@ public class TestRebroadcastCommand
 		{
 			// Expected.
 		}
-	}
-
-	@Test
-	public void rebroadcastDifferentVersion() throws Throwable
-	{
-		MockSwarm swarm = new MockSwarm();
-		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
-		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
-		
-		user2.setEnableNewDataVersion(true);
-		
-		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
-		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
-		
-		// Publish something we can copy.
-		File fakeVideo = FOLDER.newFile();
-		Files.write(fakeVideo.toPath(), "video".getBytes());
-		File fakeImage = FOLDER.newFile();
-		Files.write(fakeImage.toPath(), "image".getBytes());
-		OnePost post = user2.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
-				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
-				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
-		}));
-		
-		// Verify that this fails due to the version mismatch.
-		IpfsFile recordToRebroadcast = post.recordCid;
-		boolean didFail = false;
-		try
-		{
-			user1.runCommand(null, new RebroadcastCommand(recordToRebroadcast));
-		}
-		catch (UsageException e)
-		{
-			didFail = true;
-		}
-		
-		user1.shutdown();
-		user2.shutdown();
-		Assert.assertTrue(didFail);
 	}
 }

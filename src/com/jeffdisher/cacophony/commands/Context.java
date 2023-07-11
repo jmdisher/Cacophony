@@ -31,7 +31,6 @@ public class Context
 	public final LocalRecordCache recordCache;
 	public final LocalUserInfoCache userInfoCache;
 	public final EntryCacheRegistry entryRegistry;
-	public final boolean enableVersion2Data;
 	private IpfsKey _selectedKey;
 
 	public Context(DraftManager sharedDraftManager
@@ -44,7 +43,6 @@ public class Context
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, EntryCacheRegistry entryRegistry
-			, boolean enableVersion2Data
 			, IpfsKey selectedKey
 	)
 	{
@@ -58,7 +56,6 @@ public class Context
 		this.recordCache = recordCache;
 		this.userInfoCache = userInfoCache;
 		this.entryRegistry = entryRegistry;
-		this.enableVersion2Data = enableVersion2Data;
 		_selectedKey = selectedKey;
 	}
 
@@ -86,7 +83,6 @@ public class Context
 				, this.recordCache
 				, this.userInfoCache
 				, this.entryRegistry
-				, this.enableVersion2Data
 				, selectedKey
 		);
 	}
@@ -104,7 +100,6 @@ public class Context
 				, localRecordCache
 				, userInfoCache
 				, entryRegistry
-				, this.enableVersion2Data
 				, _selectedKey
 		);
 	}

@@ -19,7 +19,8 @@ public class TestSimpleFolloweeStarter
 {
 	// These values were determined experimentally to fit with the data in this test, not just random values.
 	private static final IpfsFile EXPECTED_ROOT = IpfsFile.fromIpfsCid("QmaAXpSHKmT9HeLSMF2anZy1XgcEPPBTQfJ3R9pkds1mJP");
-	private static final IpfsFile EXPECTED_FAKE = IpfsFile.fromIpfsCid("QmR7Yp8rMWxBmVFidiV6CB4vRixxRfjiZcULtaCYnKAvtP");
+	// Note that the fake will be a re-written root with V2 serialization and a synthesized empty "records" element.
+	private static final IpfsFile EXPECTED_FAKE = IpfsFile.fromIpfsCid("QmVio8oyaxQVWP4GC5DVn8CfSoTuX6bsUrQe2fkm2LvxCo");
 
 	@Test
 	public void testInitialSetup() throws Throwable
@@ -42,7 +43,7 @@ public class TestSimpleFolloweeStarter
 		
 		access.oneKey = MockKeys.K1;
 		access.oneRoot = root;
-		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, false, null, MockKeys.K1);
+		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, MockKeys.K1);
 		Assert.assertEquals(EXPECTED_FAKE, file);
 		// We expect that an extra 2 elements were uploaded (the fake StreamRecords and the fake StreamIndex).
 		Assert.assertEquals(8, access.data.size());
@@ -55,7 +56,7 @@ public class TestSimpleFolloweeStarter
 	{
 		MockWritingAccess access = new MockWritingAccess();
 		access.oneKey = MockKeys.K1;
-		SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, false, null, MockKeys.K1);
+		SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, MockKeys.K1);
 		Assert.fail();
 	}
 
