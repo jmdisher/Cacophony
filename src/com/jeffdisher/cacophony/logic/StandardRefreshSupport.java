@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;

@@ -14,7 +14,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;

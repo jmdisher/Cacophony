@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.projection;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 

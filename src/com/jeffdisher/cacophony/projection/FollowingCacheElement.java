@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v1;
+package com.jeffdisher.cacophony.projection;
 
 import com.jeffdisher.cacophony.types.IpfsFile;
 

@@ -7,11 +7,11 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;

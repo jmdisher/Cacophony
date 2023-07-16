@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.data.local.v3;
 
 import java.util.function.Function;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 

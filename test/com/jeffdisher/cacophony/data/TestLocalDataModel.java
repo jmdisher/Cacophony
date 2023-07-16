@@ -14,13 +14,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;

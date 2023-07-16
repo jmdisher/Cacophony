@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
 import com.jeffdisher.cacophony.logic.HandoffConnector;

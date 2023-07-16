@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.data.local.v1.FollowingCacheElement;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
