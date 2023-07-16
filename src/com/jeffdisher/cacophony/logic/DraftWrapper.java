@@ -6,8 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +14,7 @@ import java.util.function.Function;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -30,8 +28,6 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class DraftWrapper implements IDraftWrapper
 {
-	// The deprecated serialized Draft object.
-	private static final String OLD_DRAFT_NAME = "draft.dat";
 	// The JSON serialized Draft object.
 	private static final String JSON_DRAFT_NAME = "draft.json";
 	// The "original" video (we are currently just assuming webm but the name doesn't matter).
@@ -193,57 +189,6 @@ public class DraftWrapper implements IDraftWrapper
 	public synchronized boolean deleteAudio()
 	{
 		return _deleteCase(_audioTracking);
-	}
-
-	public void saveV2(Draft draft)
-	{
-		// This can be used for both new files and over-writing files.
-		try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(new File(_directory, OLD_DRAFT_NAME))))
-		{
-			stream.writeObject(draft);
-		}
-		catch (IOException e)
-		{
-			// We have no reasonable way to handle this.
-			throw Assert.unexpected(e);
-		}
-	}
-
-	/**
-	 * This helper is only in place temporarily, to facilitate the data migration from V2 to V3.
-	 * This means converting the Draft objects from Java serialization to JSON serialization.
-	 */
-	public synchronized void migrateDraft()
-	{
-		File oldFile = new File(_directory, OLD_DRAFT_NAME);
-		// We will delete the old draft when migrating so just check if it exists.
-		if (oldFile.exists())
-		{
-			// Load the old draft.
-			Draft object;
-			try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(oldFile)))
-			{
-				object = (Draft) stream.readObject();
-			}
-			catch (IOException e)
-			{
-				// We have no reasonable way to handle this.
-				throw Assert.unexpected(e);
-			}
-			catch (ClassNotFoundException e)
-			{
-				// This would be corrupt data or a broken installation.
-				throw Assert.unexpected(e);
-			}
-			Assert.assertTrue(null != object);
-			
-			// Save the new copy.
-			_saveDraft(object);
-			
-			// Delete the old one.
-			boolean didDelete = oldFile.delete();
-			Assert.assertTrue(didDelete);
-		}
 	}
 
 	public synchronized File existingThumbnailFile()

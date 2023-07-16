@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 
 import jakarta.servlet.http.HttpServletRequest;

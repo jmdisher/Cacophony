@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
-import com.jeffdisher.cacophony.data.local.v1.Draft;
-import com.jeffdisher.cacophony.data.local.v1.SizedElement;
+import com.jeffdisher.cacophony.data.local.v3.Draft;
+import com.jeffdisher.cacophony.data.local.v3.SizedElement;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -108,18 +108,6 @@ public class DraftManager
 	public synchronized List<Draft> listAllDrafts()
 	{
 		return _sharedWrappers.values().stream().map((DraftWrapper wrapper) -> wrapper.loadDraft()).collect(Collectors.toList());
-	}
-
-	/**
-	 * This helper is only in place temporarily, to facilitate the data migration from V2 to V3, as this includes
-	 * changing the Drafts, as well.
-	 */
-	public synchronized void migrateDrafts()
-	{
-		for (DraftWrapper wrapper : _sharedWrappers.values())
-		{
-			wrapper.migrateDraft();
-		}
 	}
 
 	/**

@@ -6,8 +6,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Consumer;
 
-import com.jeffdisher.cacophony.data.local.v1.Draft;
-import com.jeffdisher.cacophony.data.local.v1.SizedElement;
+import com.jeffdisher.cacophony.data.local.v3.Draft;
+import com.jeffdisher.cacophony.data.local.v3.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.ExternalStreamProcessor;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;

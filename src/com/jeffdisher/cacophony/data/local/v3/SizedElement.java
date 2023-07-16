@@ -1,6 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v1;
-
-import java.io.Serializable;
+package com.jeffdisher.cacophony.data.local.v3;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -16,7 +14,7 @@ public record SizedElement(String mime
 		, int height
 		, int width
 		, long byteSize
-) implements Serializable
+)
 {
 	public static SizedElement fromJson(JsonObject json)
 	{

@@ -1,6 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v1;
-
-import java.io.Serializable;
+package com.jeffdisher.cacophony.data.local.v3;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
@@ -23,7 +21,7 @@ public record Draft(int id
 		, SizedElement originalVideo
 		, SizedElement processedVideo
 		, SizedElement audio
-) implements Serializable
+)
 {
 	/**
 	 * This is currently only used in testing but may be used in place of Java Serialization, at some point.

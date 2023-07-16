@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.data.local.v1.Draft;
+import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 
 import jakarta.servlet.http.HttpServletRequest;
