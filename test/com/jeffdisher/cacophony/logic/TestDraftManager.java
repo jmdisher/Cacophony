@@ -73,7 +73,17 @@ public class TestDraftManager
 		IDraftWrapper wrapper = manager.createNewDraft(1);
 		SizedElement audio = new SizedElement("audio/ogg", 0, 0, 5L);
 		wrapper.updateDraftUnderLock((Draft oldDraft) ->
-			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), audio)
+			new Draft(oldDraft.id()
+					, oldDraft.publishedSecondsUtc()
+					, oldDraft.title()
+					, oldDraft.description()
+					, oldDraft.discussionUrl()
+					, oldDraft.thumbnail()
+					, oldDraft.originalVideo()
+					, oldDraft.processedVideo()
+					, audio
+					, oldDraft.replyTo()
+			)
 		);
 		JsonObject out = wrapper.loadDraft().toJson();
 		String raw = out.toString();

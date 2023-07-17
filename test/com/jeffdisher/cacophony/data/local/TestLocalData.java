@@ -42,7 +42,7 @@ public class TestLocalData {
 		String title = "title";
 		String description = "description";
 		String discussionUrl = "URL";
-		Draft initial = new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, null, null, null);
+		Draft initial = new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, null, null, null, null);
 		String json = initial.toJson().toString();
 		Draft result = Draft.fromJson((JsonObject) Json.parse(json));
 		Assert.assertEquals(id, result.id());
@@ -53,5 +53,25 @@ public class TestLocalData {
 		Assert.assertEquals(thumbnail, result.thumbnail());
 		Assert.assertEquals(null, result.originalVideo());
 		Assert.assertEquals(null, result.processedVideo());
+	}
+
+	@Test
+	public void missingReplyTo() throws Throwable
+	{
+		String raw = "{\"id\":1,\"publishedSecondsUtc\":50,\"title\":\"title\",\"description\":\"description\",\"thumbnail\":null,\"discussionUrl\":\"\",\"originalVideo\":null,\"processedVideo\":null,\"audio\":null}\n";
+		Draft result = Draft.fromJson((JsonObject) Json.parse(raw));
+		Assert.assertEquals(1, result.id());
+		Assert.assertEquals("title", result.title());
+		Assert.assertNull(result.replyTo());
+	}
+
+	@Test
+	public void nullReplyTo() throws Throwable
+	{
+		String raw = "{\"id\":1,\"publishedSecondsUtc\":50,\"title\":\"title\",\"description\":\"description\",\"thumbnail\":null,\"discussionUrl\":\"\",\"originalVideo\":null,\"processedVideo\":null,\"audio\":null,\"replyTo\":null}\n";
+		Draft result = Draft.fromJson((JsonObject) Json.parse(raw));
+		Assert.assertEquals(1, result.id());
+		Assert.assertEquals("title", result.title());
+		Assert.assertNull(result.replyTo());
 	}
 }

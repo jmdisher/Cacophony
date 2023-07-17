@@ -131,7 +131,17 @@ public class TestVideoProcessor
 		}
 		SizedElement originalVideo = new SizedElement("video/webm", 720, 1280, bytes.length);
 		Draft originalDraft = wrapper.loadDraft();
-		wrapper.saveDraft(new Draft(originalDraft.id(), originalDraft.publishedSecondsUtc(), originalDraft.title(), originalDraft.description(), originalDraft.discussionUrl(), originalDraft.thumbnail(), originalVideo, originalDraft.processedVideo(), originalDraft.audio()));
+		wrapper.saveDraft(new Draft(originalDraft.id()
+				, originalDraft.publishedSecondsUtc()
+				, originalDraft.title()
+				, originalDraft.description()
+				, originalDraft.discussionUrl()
+				, originalDraft.thumbnail()
+				, originalVideo
+				, originalDraft.processedVideo()
+				, originalDraft.audio()
+				, originalDraft.replyTo()
+		));
 		return bytes;
 	}
 }

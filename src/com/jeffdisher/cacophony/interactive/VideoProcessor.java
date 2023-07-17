@@ -59,7 +59,17 @@ public class VideoProcessor
 				_wrapper.updateDraftUnderLock((Draft oldDraft) -> {
 					SizedElement original = oldDraft.originalVideo();
 					SizedElement processed = new SizedElement(original.mime(), original.height(), original.width(), outputSizeBytes);
-					return new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), processed, oldDraft.audio());
+					return new Draft(oldDraft.id()
+							, oldDraft.publishedSecondsUtc()
+							, oldDraft.title()
+							, oldDraft.description()
+							, oldDraft.discussionUrl()
+							, oldDraft.thumbnail()
+							, oldDraft.originalVideo()
+							, processed
+							, oldDraft.audio()
+							, oldDraft.replyTo()
+					);
 				});
 			}
 			

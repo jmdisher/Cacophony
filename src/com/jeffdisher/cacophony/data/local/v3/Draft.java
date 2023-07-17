@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.data.local.v3;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -21,6 +22,7 @@ public record Draft(int id
 		, SizedElement originalVideo
 		, SizedElement processedVideo
 		, SizedElement audio
+		, IpfsFile replyTo
 )
 {
 	/**
@@ -46,7 +48,13 @@ public record Draft(int id
 		SizedElement originalVideo = _getElementOrNull(json, "originalVideo");
 		SizedElement processedVideo = _getElementOrNull(json, "processedVideo");
 		SizedElement audio = _getElementOrNull(json, "audio");
-		return new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, originalVideo, processedVideo, audio);
+		JsonValue rawReplyTo = json.get("replyTo");
+		// Older versions may be missing the replyTo and we will store this as a null, either way, if not set.
+		IpfsFile replyTo = ((null == rawReplyTo) || rawReplyTo.isNull())
+				? null
+				: IpfsFile.fromIpfsCid(rawReplyTo.asString())
+		;
+		return new Draft(id, publishedSecondsUtc, title, description, discussionUrl, thumbnail, originalVideo, processedVideo, audio, replyTo);
 	}
 
 	private static SizedElement _getElementOrNull(JsonObject json, String key)
@@ -73,6 +81,7 @@ public record Draft(int id
 			.add("originalVideo", (null != originalVideo) ? originalVideo.toJson() : Json.NULL)
 			.add("processedVideo", (null != processedVideo) ? processedVideo.toJson() : Json.NULL)
 			.add("audio", (null != audio) ? audio.toJson() : Json.NULL)
+			.add("replyTo", (null != replyTo) ? Json.value(replyTo.toSafeString()) : Json.NULL)
 		;
 	}
 }

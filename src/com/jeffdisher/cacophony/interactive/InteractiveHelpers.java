@@ -46,14 +46,34 @@ public class InteractiveHelpers
 	{
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
 		openDraft.updateDraftUnderLock((Draft oldDraft) ->
-			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), originalVideo, oldDraft.processedVideo(), oldDraft.audio())
+			new Draft(oldDraft.id()
+					, oldDraft.publishedSecondsUtc()
+					, oldDraft.title()
+					, oldDraft.description()
+					, oldDraft.discussionUrl()
+					, oldDraft.thumbnail()
+					, originalVideo
+					, oldDraft.processedVideo()
+					, oldDraft.audio()
+					, oldDraft.replyTo()
+			)
 		);
 	}
 	public static void updateAudio(IDraftWrapper openDraft, String mime, long savedFileSizeBytes)
 	{
 		SizedElement audio = new SizedElement(mime, 0, 0, savedFileSizeBytes);
 		openDraft.updateDraftUnderLock((Draft oldDraft) ->
-			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), audio)
+			new Draft(oldDraft.id()
+					, oldDraft.publishedSecondsUtc()
+					, oldDraft.title()
+					, oldDraft.description()
+					, oldDraft.discussionUrl()
+					, oldDraft.thumbnail()
+					, oldDraft.originalVideo()
+					, oldDraft.processedVideo()
+					, audio
+					, oldDraft.replyTo()
+			)
 		);
 	}
 
@@ -117,7 +137,17 @@ public class InteractiveHelpers
 						? (discussionUrl.isEmpty() ? null : discussionUrl)
 						: oldDraft.discussionUrl()
 				;
-				return new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), newTitle, newDescription, newDiscussionUrl, oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio());
+				return new Draft(oldDraft.id()
+						, oldDraft.publishedSecondsUtc()
+						, newTitle
+						, newDescription
+						, newDiscussionUrl
+						, oldDraft.thumbnail()
+						, oldDraft.originalVideo()
+						, oldDraft.processedVideo()
+						, oldDraft.audio()
+						, oldDraft.replyTo()
+				);
 			});
 		}
 		return finalDraft;
@@ -160,7 +190,17 @@ public class InteractiveHelpers
 		Assert.assertTrue(bytesCopied > 0L);
 		SizedElement thumbnail = new SizedElement(mime, height, width, bytesCopied);
 		wrapper.updateDraftUnderLock((Draft oldDraft) ->
-			new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), thumbnail, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio())
+			new Draft(oldDraft.id()
+					, oldDraft.publishedSecondsUtc()
+					, oldDraft.title()
+					, oldDraft.description()
+					, oldDraft.discussionUrl()
+					, thumbnail
+					, oldDraft.originalVideo()
+					, oldDraft.processedVideo()
+					, oldDraft.audio()
+					, oldDraft.replyTo()
+			)
 		);
 	}
 
@@ -182,7 +222,17 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
-				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), null, oldDraft.processedVideo(), oldDraft.audio())
+				new Draft(oldDraft.id()
+						, oldDraft.publishedSecondsUtc()
+						, oldDraft.title()
+						, oldDraft.description()
+						, oldDraft.discussionUrl()
+						, oldDraft.thumbnail()
+						, null
+						, oldDraft.processedVideo()
+						, oldDraft.audio()
+						, oldDraft.replyTo()
+				)
 			);
 		}
 		return didDelete;
@@ -205,7 +255,17 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
-				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), null, oldDraft.audio())
+				new Draft(oldDraft.id()
+						, oldDraft.publishedSecondsUtc()
+						, oldDraft.title()
+						, oldDraft.description()
+						, oldDraft.discussionUrl()
+						, oldDraft.thumbnail()
+						, oldDraft.originalVideo()
+						, null
+						, oldDraft.audio()
+						, oldDraft.replyTo()
+				)
 			);
 		}
 		return didDelete;
@@ -228,7 +288,17 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
-				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), oldDraft.thumbnail(), oldDraft.originalVideo(), oldDraft.processedVideo(), null)
+				new Draft(oldDraft.id()
+						, oldDraft.publishedSecondsUtc()
+						, oldDraft.title()
+						, oldDraft.description()
+						, oldDraft.discussionUrl()
+						, oldDraft.thumbnail()
+						, oldDraft.originalVideo()
+						, oldDraft.processedVideo()
+						, null
+						, oldDraft.replyTo()
+				)
 			);
 		}
 		return didDelete;
@@ -251,7 +321,17 @@ public class InteractiveHelpers
 		if (didDelete)
 		{
 			wrapper.updateDraftUnderLock((Draft oldDraft) -> 
-				new Draft(oldDraft.id(), oldDraft.publishedSecondsUtc(), oldDraft.title(), oldDraft.description(), oldDraft.discussionUrl(), null, oldDraft.originalVideo(), oldDraft.processedVideo(), oldDraft.audio())
+				new Draft(oldDraft.id()
+						, oldDraft.publishedSecondsUtc()
+						, oldDraft.title()
+						, oldDraft.description()
+						, oldDraft.discussionUrl()
+						, null
+						, oldDraft.originalVideo()
+						, oldDraft.processedVideo()
+						, oldDraft.audio()
+						, oldDraft.replyTo()
+				)
 			);
 		}
 		return didDelete;
