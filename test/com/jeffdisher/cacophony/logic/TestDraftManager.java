@@ -13,6 +13,8 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.data.local.v3.SizedElement;
+import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 public class TestDraftManager
@@ -26,7 +28,7 @@ public class TestDraftManager
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
 		Assert.assertEquals(0, manager.listAllDrafts().size());
-		IDraftWrapper wrapper = manager.createNewDraft(1);
+		IDraftWrapper wrapper = manager.createNewDraft(1, null);
 		Assert.assertEquals(1, wrapper.loadDraft().id());
 		List<Draft> drafts = manager.listAllDrafts();
 		Assert.assertEquals(1, drafts.size());
@@ -39,9 +41,9 @@ public class TestDraftManager
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
 		Assert.assertEquals(0, manager.listAllDrafts().size());
-		IDraftWrapper wrapper1 = manager.createNewDraft(1);
+		IDraftWrapper wrapper1 = manager.createNewDraft(1, null);
 		Assert.assertEquals(1, wrapper1.loadDraft().id());
-		IDraftWrapper wrapper2 = manager.createNewDraft(2);
+		IDraftWrapper wrapper2 = manager.createNewDraft(2, null);
 		Assert.assertEquals(2, wrapper2.loadDraft().id());
 		List<Draft> drafts = manager.listAllDrafts();
 		Assert.assertEquals(2, drafts.size());
@@ -55,7 +57,7 @@ public class TestDraftManager
 	{
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
-		IDraftWrapper wrapper1 = manager.createNewDraft(1);
+		IDraftWrapper wrapper1 = manager.createNewDraft(1, null);
 		
 		try (OutputStream output = wrapper1.writeOriginalVideo())
 		{
@@ -70,7 +72,7 @@ public class TestDraftManager
 	{
 		File directory = FOLDER.newFolder();
 		DraftManager manager = new DraftManager(directory);
-		IDraftWrapper wrapper = manager.createNewDraft(1);
+		IDraftWrapper wrapper = manager.createNewDraft(1, null);
 		SizedElement audio = new SizedElement("audio/ogg", 0, 0, 5L);
 		wrapper.updateDraftUnderLock((Draft oldDraft) ->
 			new Draft(oldDraft.id()
@@ -92,5 +94,19 @@ public class TestDraftManager
 		Assert.assertEquals(1, read.id());
 		Assert.assertNull(read.originalVideo());
 		Assert.assertEquals(0, read.audio().height());
+	}
+
+	@Test
+	public void replyTo() throws Throwable
+	{
+		File directory = FOLDER.newFolder();
+		DraftManager manager = new DraftManager(directory);
+		IpfsFile replyTo = MockSingleNode.generateHash(new byte[] { 1 });
+		IDraftWrapper wrapper = manager.createNewDraft(1, replyTo);
+		JsonObject out = wrapper.loadDraft().toJson();
+		JsonObject in = Json.parse(out.toString()).asObject();
+		Draft read = Draft.fromJson(in);
+		Assert.assertEquals(1, read.id());
+		Assert.assertEquals(replyTo, read.replyTo());
 	}
 }

@@ -120,7 +120,7 @@ public class TestVideoProcessor
 
 	private byte[] _createOriginalDraft(DraftManager draftManager, int draftId) throws IOException, FileNotFoundException
 	{
-		draftManager.createNewDraft(draftId);
+		draftManager.createNewDraft(draftId, null);
 		
 		// Populate the input data in the draft (and make sure that the meta-data is updated).
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);

@@ -57,9 +57,10 @@ public class DraftManager
 	 * Fails with an assertion if the draft already exists.
 	 * 
 	 * @param id The draft ID.
+	 * @param replyTo Null, or the CID of a stream to which we are replying.
 	 * @return The shared DraftWrapper instance for the given id..
 	 */
-	public synchronized IDraftWrapper createNewDraft(int id)
+	public synchronized IDraftWrapper createNewDraft(int id, IpfsFile replyTo)
 	{
 		Assert.assertTrue(id > 0);
 		String directoryName = DIRECTORY_PREFIX + id;
@@ -68,7 +69,7 @@ public class DraftManager
 		Assert.assertTrue(!subDir.exists());
 		// Make sure that the creation is a success.
 		Assert.assertTrue(subDir.mkdir());
-		Draft draft = new Draft(id, 0L, "New Draft - " + id, "No description", "", null, null, null, null, null);
+		Draft draft = new Draft(id, 0L, "New Draft - " + id, "No description", "", null, null, null, null, replyTo);
 		DraftWrapper wrapper = new DraftWrapper(subDir);
 		wrapper.saveDraft(draft);
 		_sharedWrappers.put(id, wrapper);

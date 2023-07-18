@@ -32,7 +32,7 @@ public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 		
 		// Generate an ID - should be random so just get some bits from the time.
 		int id = Math.abs((int)(_context.currentTimeMillisGenerator.getAsLong() >> 8L));
-		Draft draft = InteractiveHelpers.createNewDraft(_draftManager, id);
+		Draft draft = InteractiveHelpers.createNewDraft(_draftManager, id, null);
 		response.getWriter().print(draft.toJson().toString());
 	}
 }

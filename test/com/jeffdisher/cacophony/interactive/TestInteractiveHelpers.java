@@ -61,8 +61,8 @@ public class TestInteractiveHelpers
 	{
 		IConfigFileSystem files = _getTestingDraftFiles();
 		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
-		InteractiveHelpers.createNewDraft(draftManager, 1);
-		InteractiveHelpers.createNewDraft(draftManager, 2);
+		InteractiveHelpers.createNewDraft(draftManager, 1, null);
+		InteractiveHelpers.createNewDraft(draftManager, 2, null);
 		List<Draft> drafts = InteractiveHelpers.listDrafts(draftManager);
 		Assert.assertEquals(2, drafts.size());
 	}
@@ -75,7 +75,7 @@ public class TestInteractiveHelpers
 		int id = 1;
 		String title = "new title";
 		String description = "long description";
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		InteractiveHelpers.updateDraftText(draftManager, id, title, description, null);
 		List<Draft> drafts = InteractiveHelpers.listDrafts(draftManager);
 		Assert.assertEquals(1, drafts.size());
@@ -91,7 +91,7 @@ public class TestInteractiveHelpers
 		IConfigFileSystem files = _getTestingDraftFiles();
 		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
 		int id = 1;
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		Draft draft = InteractiveHelpers.readExistingDraft(draftManager, id);
 		Assert.assertEquals(id, draft.id());
 		Assert.assertEquals(0L, draft.publishedSecondsUtc());
@@ -116,7 +116,7 @@ public class TestInteractiveHelpers
 		int width = 1280;
 		String mimeArg = "namelessMime";
 		String string = "test data";
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		ByteArrayInputStream input = new ByteArrayInputStream(string.getBytes());
 		InteractiveHelpers.saveThumbnailFromStream(draftManager, id, height, width, mimeArg, input);
 		
@@ -149,7 +149,7 @@ public class TestInteractiveHelpers
 		IConfigFileSystem files = _getTestingDraftFiles();
 		DraftManager draftManager = new DraftManager(files.getDraftsTopLevelDirectory());
 		int id = 1;
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		
 		// Save the video content.
 		byte[] data = "Testing video".getBytes();
@@ -241,7 +241,7 @@ public class TestInteractiveHelpers
 		// Now, create a basic draft.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
 		int id = 1;
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
 		
 		// Publish the draft.
@@ -273,7 +273,7 @@ public class TestInteractiveHelpers
 		
 		// Now, post a second entry with a video and make sure we see the attachment.
 		id = 2;
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title2", "description", null);
 		byte[] data = "Testing video".getBytes();
 		IDraftWrapper openDraft = draftManager.openExistingDraft(id);
@@ -321,7 +321,7 @@ public class TestInteractiveHelpers
 		
 		// Now, publish another entry but explicitly forbid attaching the video.
 		id = 3;
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title3", "description", null);
 		openDraft = draftManager.openExistingDraft(id);
 		try (OutputStream out = openDraft.writeOriginalVideo())
@@ -392,7 +392,7 @@ public class TestInteractiveHelpers
 		// Now, create a draft and attach audio.
 		DraftManager draftManager = new DraftManager(fileSystem.getDraftsTopLevelDirectory());
 		int id = 1;
-		InteractiveHelpers.createNewDraft(draftManager, id);
+		InteractiveHelpers.createNewDraft(draftManager, id, null);
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
 		IDraftWrapper openDraft = draftManager.openExistingDraft(id);
 		byte[] data = "Testing audio".getBytes();

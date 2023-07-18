@@ -19,6 +19,7 @@ import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.scheduler.FutureCommand;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
@@ -92,9 +93,9 @@ public class InteractiveHelpers
 	{
 		return draftManager.listAllDrafts();
 	}
-	public static Draft createNewDraft(DraftManager draftManager, int draftId) throws IOException
+	public static Draft createNewDraft(DraftManager draftManager, int draftId, IpfsFile replyTo) throws IOException
 	{
-		return draftManager.createNewDraft(draftId).loadDraft();
+		return draftManager.createNewDraft(draftId, replyTo).loadDraft();
 	}
 	public static Draft readExistingDraft(DraftManager draftManager, int draftId)
 	{
