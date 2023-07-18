@@ -77,6 +77,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 					, element.publishedSecondsUtc()
 					, element.discussionUrl()
 					, element.publisherKey()
+					, element.replyToCid()
 					, element.thumbnailCid()
 					, element.videoCid()
 					, element.audioCid()
@@ -136,6 +137,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 				, record.getPublishedSecondsUtc()
 				, record.getDiscussionUrl()
 				, record.getPublisherKey()
+				, record.getReplyTo()
 				, info.thumbnailCid()
 				, info.videoCid()
 				, info.audioCid()
@@ -150,6 +152,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			, long publishedSecondsUtc
 			, String discussionUrl
 			, IpfsKey publisherKey
+			, IpfsFile replyToCid
 			, IpfsFile thumbnailCid
 			, IpfsFile videoCid
 			, IpfsFile audioCid
@@ -174,6 +177,10 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 				output.println("\tDiscussion URL: " + this.discussionUrl);
 			}
 			output.println("\tPublisher: " + this.publisherKey.toPublicKey());
+			if (null != this.replyToCid)
+			{
+				output.println("\tReply to: " + this.replyToCid);
+			}
 			if (null != this.thumbnailCid)
 			{
 				output.println("\tThumbnail: " + this.thumbnailCid);

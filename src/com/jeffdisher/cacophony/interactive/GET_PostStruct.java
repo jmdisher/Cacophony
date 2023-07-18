@@ -18,12 +18,13 @@ import jakarta.servlet.http.HttpServletResponse;
  * [1] - cacheOption (String - "FORCE" or "OPTIONAL")
  * 
  * Returns a single post as a JSON struct:
- * -cached (boolean)
  * -name (string)
  * -description (string)
  * -publishedSecondsUtc (long)
  * -discussionUrl (string)
  * -publisherKey (string)
+ * -replyTo (string) - usually null
+ * -cached (boolean)
  * -thumbnailUrl (string) - can be null (null if not cached)
  * -videoUrl (string) - can be null (null if not cached)
  * -audioUrl (string) - can be null (null if not cached)
@@ -78,6 +79,11 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 			postStruct.set("publishedSecondsUtc", result.publishedSecondsUtc());
 			postStruct.set("discussionUrl", result.discussionUrl());
 			postStruct.set("publisherKey", result.publisherKey().toPublicKey());
+			String replyToString = (null != result.replyToCid())
+					? result.replyToCid().toSafeString()
+					: null
+			;
+			postStruct.set("replyTo", replyToString);
 			postStruct.set("cached", result.isKnownToBeCached());
 			postStruct.set("thumbnailUrl", _urlOrNull(context.baseUrl, result.thumbnailCid()));
 			postStruct.set("videoUrl", _urlOrNull(context.baseUrl, result.videoCid()));

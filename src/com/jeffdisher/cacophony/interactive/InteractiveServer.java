@@ -237,7 +237,7 @@ public class InteractiveServer
 		
 		// Draft operations.
 		validated.addGetHandler("/allDrafts/all", 0, new GET_Drafts(manager));
-		validated.addPostRawHandler("/allDrafts/new", 0, new POST_Raw_CreateDraft(serverContext, manager));
+		validated.addPostRawHandler("/allDrafts/new", 1, new POST_Raw_CreateDraft(serverContext, manager));
 		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));

@@ -35,7 +35,7 @@ function makeTextPost()
 	PUBLIC_KEY="$1"
 	TITLE="$2"
 	
-	CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/allDrafts/new)
+	CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/allDrafts/new/NONE)
 	# We need to parse out the ID (look for '{"id":2107961294,')
 	ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 	ID=$(echo $ID_PARSE)

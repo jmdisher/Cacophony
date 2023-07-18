@@ -116,7 +116,7 @@ ENTRIES_PID=$!
 cat "$WS_ENTRIES.out" > /dev/null
 
 echo "Create a new draft..."
-CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new)
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 ID=$(echo $ID_PARSE)
@@ -294,7 +294,7 @@ if [ ! -z "$DRAFT" ]; then
 fi
 
 echo "Create a new draft and publish it..."
-CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new)
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
@@ -347,7 +347,7 @@ requireSubstring "$RECOMMENDED_KEYS" "[]"
 echo "Read the new post through the REST interface"
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 2)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
-requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
 
 echo "Edit the post and make sure that we see the updates in both sockets and the post list..."
 OLD_POST_ID="$POST_ID"
@@ -369,26 +369,52 @@ STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
 
+echo "Publish a new entry which is a response to $POST_ID and verify that we see the correct struct field..."
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/$POST_ID)
+# We need to parse out the ID (look for '{"id":2107961294,')
+ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
+PUBLISH_ID=$(echo $ID_PARSE)
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY
+# Find the hash of the new post.
+POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
+REPLY_HASH=$(echo "$POST_LIST" | cut -d \" -f 4)
+requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
+# Wait for it to publish.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/waitPublish
+
+# Check for this in the WebSockets.
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$REPLY_HASH\",\"value\":null,\"isNewest\":true}"
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$WS_STATUS1.out")
+echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
+POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$REPLY_HASH/OPTIONAL")
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":\"$POST_ID\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
+
 echo "Create an audio post, publish it, and make sure we can see it..."
-CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new)
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
 echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/audio/upload/$PUBLISH_ID/ogg" audio
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/AUDIO
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-# We want to look for the second post so get field 4:  1 "2" 3 "4" 5
-POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 4)
+# We want to look for the third post so get field 6:  1 "2" 3 "4" 5 "6" 7
+POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 6)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
-requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 
 # Check that we see this in the output events.
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 
 echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$WS_ENTRIES.out")
@@ -444,16 +470,17 @@ echo "Test that we can request another republish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/home/republish/$PUBLIC_KEY"
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 
 echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-# Extract fields 2 and 4:  1 "2" 3 "4" 5
+# Extract fields 2, 4, and 6:  1 "2" 3 "4" 5 "6" 7
 POST_TO_DELETE=$(echo "$POST_LIST" | cut -d "\"" -f 2)
-POST_TO_KEEP=$(echo "$POST_LIST" | cut -d "\"" -f 4)
+POST_TO_KEEP1=$(echo "$POST_LIST" | cut -d "\"" -f 4)
+POST_TO_KEEP2=$(echo "$POST_LIST" | cut -d "\"" -f 6)
 # Before deleting the post, we should see that it is known to be cached.
 TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE/OPTIONAL")
 requireSubstring "$TARGET_STRUCT" "\"cached\":true"
@@ -465,14 +492,14 @@ if [ $? != 22 ]; then
 	exit 1
 fi
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP\"]"
+requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP1\",\"$POST_TO_KEEP2\"]"
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":7,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
 echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP/OPTIONAL" >& /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":7,\"value\":null"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP2/OPTIONAL" >& /dev/null
 checkPreviousCommand "read post"
 
 # We want to verify that something reasonable happens when we fetch the now-deleted element if it has been removed from the network.  This requires a GC of the IPFS nodes to wipe it.
@@ -512,6 +539,8 @@ requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":3,\"value\":\"Pu
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
 requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":4,\"value\":null"
+requireSubstring "$STATUS_DATA2" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
+requireSubstring "$STATUS_DATA2" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 
 echo "Verify that we can see the published post in out list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)

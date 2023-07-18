@@ -409,7 +409,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.createNewDraft = function()
 	{
-		REST.POST("/allDrafts/new")
+		// We use "NONE" as the "replyTo" when creating a draft this way.
+		REST.POST("/allDrafts/new/NONE")
 			.then(data => data.json())
 			.then(draftObject => {
 				populateSyntheticType(draftObject);
