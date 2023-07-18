@@ -161,7 +161,15 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
-			cache.recordMetaDataPinned(elementHash, recordData.getName(), recordData.getDescription(), recordData.getPublishedSecondsUtc(), recordData.getDiscussionUrl(), recordData.getPublisherKey(), recordData.getExternalElementCount());
+			cache.recordMetaDataPinned(elementHash
+					, recordData.getName()
+					, recordData.getDescription()
+					, recordData.getPublishedSecondsUtc()
+					, recordData.getDiscussionUrl()
+					, recordData.getPublisherKey()
+					, recordData.getReplyTo()
+					, recordData.getExternalElementCount()
+			);
 			if (null != imageHash)
 			{
 				cache.recordThumbnailPinned(elementHash, imageHash);

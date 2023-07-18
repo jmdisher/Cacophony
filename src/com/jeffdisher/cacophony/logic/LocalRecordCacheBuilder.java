@@ -247,7 +247,15 @@ public class LocalRecordCacheBuilder
 
 	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, IpfsFile cid, AbstractRecord record) throws IpfsConnectionException
 	{
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussionUrl(), record.getPublisherKey(), record.getExternalElementCount());
+		recordCache.recordMetaDataPinned(cid
+				, record.getName()
+				, record.getDescription()
+				, record.getPublishedSecondsUtc()
+				, record.getDiscussionUrl()
+				, record.getPublisherKey()
+				, record.getReplyTo()
+				, record.getExternalElementCount()
+		);
 		
 		// If this is a local user, state that all the files are cached.
 		LeafFinder leaves = LeafFinder.parseRecord(record);
@@ -270,7 +278,15 @@ public class LocalRecordCacheBuilder
 		AbstractRecord record = future.get();
 		List<AbstractRecord.Leaf> elements = record.getVideoExtension();
 		
-		recordCache.recordMetaDataPinned(cid, record.getName(), record.getDescription(), record.getPublishedSecondsUtc(), record.getDiscussionUrl(), record.getPublisherKey(), record.getExternalElementCount());
+		recordCache.recordMetaDataPinned(cid
+				, record.getName()
+				, record.getDescription()
+				, record.getPublishedSecondsUtc()
+				, record.getDiscussionUrl()
+				, record.getPublisherKey()
+				, record.getReplyTo()
+				, record.getExternalElementCount()
+		);
 		
 		// If this is a followee, then check for the appropriate leaves.
 		// (note that we want to double-count with local user, if both - since the pin cache will do that).

@@ -165,7 +165,15 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			}
 			recordCache.recordMetaDataReleased(oldCid);
 			
-			recordCache.recordMetaDataPinned(newCid, newStreamRecord.getName(), newStreamRecord.getDescription(), newStreamRecord.getPublishedSecondsUtc(), newStreamRecord.getDiscussionUrl(), newStreamRecord.getPublisherKey(), newStreamRecord.getExternalElementCount());
+			recordCache.recordMetaDataPinned(newCid
+					, newStreamRecord.getName()
+					, newStreamRecord.getDescription()
+					, newStreamRecord.getPublishedSecondsUtc()
+					, newStreamRecord.getDiscussionUrl()
+					, newStreamRecord.getPublisherKey()
+					, newStreamRecord.getReplyTo()
+					, newStreamRecord.getExternalElementCount()
+			);
 			if (null != leaves.thumbnail)
 			{
 				recordCache.recordThumbnailPinned(newCid, leaves.thumbnail);
