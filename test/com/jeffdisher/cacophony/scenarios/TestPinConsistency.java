@@ -430,7 +430,7 @@ public class TestPinConsistency
 				new ElementSubCommand("video/mp4", dataFile, 720, 1280, false),
 				new ElementSubCommand("image/jpeg", imageFile, 0, 0, true),
 		};
-		return new PublishCommand(entryName, "description", null, elements);
+		return new PublishCommand(entryName, "description", null, null, elements);
 	}
 
 	private void _commonSetup(MockUserNode user1, MockUserNode user2) throws Throwable

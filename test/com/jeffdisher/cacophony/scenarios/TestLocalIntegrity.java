@@ -86,7 +86,7 @@ public class TestLocalIntegrity
 		{
 			stream.write(imageFile);
 		}
-		PublishCommand publish = new PublishCommand("name", "description", null, new ElementSubCommand[] {
+		PublishCommand publish = new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
 		});
 		OnePost result = publish.runInContext(_createSingleNode(model, node, scheduler, MockKeys.K1));

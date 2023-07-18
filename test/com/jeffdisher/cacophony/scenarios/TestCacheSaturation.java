@@ -202,7 +202,7 @@ public class TestCacheSaturation
 					new ElementSubCommand("video/mp4", videoFile, 720, 1280, false),
 					new ElementSubCommand("image/jpeg", thumbnailFile, 0, 0, true),
 			};
-			PublishCommand publishCommand = new PublishCommand(name, "description", null, elements);
+			PublishCommand publishCommand = new PublishCommand(name, "description", null, null, elements);
 			_user.runCommand(null, publishCommand);
 		}
 		

@@ -356,7 +356,6 @@ public class AbstractRecord
 	 */
 	public void setReplyTo(IpfsFile recordCid)
 	{
-		Assert.assertTrue(null != recordCid);
 		_replyToRecord = recordCid;
 	}
 

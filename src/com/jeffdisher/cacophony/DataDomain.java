@@ -137,7 +137,7 @@ public class DataDomain implements Closeable
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
-		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, new ElementSubCommand[0]).runInContext(theirContext);
+		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, null, new ElementSubCommand[0]).runInContext(theirContext);
 		IpfsFile newRoot = result.getIndexToPublish();
 		them.publish(keyName, theirKey, newRoot);
 		theirScheduler.shutdown();

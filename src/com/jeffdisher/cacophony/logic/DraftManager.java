@@ -11,6 +11,7 @@ import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.data.local.v3.SizedElement;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -195,7 +196,8 @@ public class DraftManager
 		String name = draft.title();
 		String description = draft.description();
 		String discussionUrl = draft.discussionUrl();
-		return new PublishCommand(name, description, discussionUrl, subElements);
+		IpfsFile replyTo = draft.replyTo();
+		return new PublishCommand(name, description, discussionUrl, replyTo, subElements);
 	}
 
 

@@ -48,7 +48,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
 				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
 		}));
@@ -91,7 +91,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
 				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
 		}));
@@ -128,7 +128,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
+		user.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
 				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
 		}));
@@ -173,7 +173,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
 				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
 		}));

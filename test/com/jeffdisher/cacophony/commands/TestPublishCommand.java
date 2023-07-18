@@ -51,7 +51,7 @@ public class TestPublishCommand
 	public void testMissingChannel() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
-		PublishCommand command = new PublishCommand("name", "description", null, new ElementSubCommand[0]);
+		PublishCommand command = new PublishCommand("name", "description", null, null, new ElementSubCommand[0]);
 		try
 		{
 			user1.runCommand(null, command);
@@ -72,7 +72,7 @@ public class TestPublishCommand
 		stream.close();
 		
 		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
-		PublishCommand command = new PublishCommand(name, "description", discussionUrl, elements);
+		PublishCommand command = new PublishCommand(name, "description", discussionUrl, null, elements);
 		
 		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
 		

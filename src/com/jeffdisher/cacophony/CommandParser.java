@@ -195,9 +195,11 @@ public class CommandParser
 			String name = required[0].parse(String.class);
 			String description = required[1].parse(String.class);
 			String discussionUrl = _optionalString(optional[0]);
+			// TODO:  Add the replyTo option to this command.
+			IpfsFile replyTo = null;
 			ElementSubCommand elements[] = new ElementSubCommand[subElements.size()];
 			elements = subElements.toArray(elements);
-			return new PublishCommand(name, description, discussionUrl, elements);
+			return new PublishCommand(name, description, discussionUrl, replyTo, elements);
 		}),
 		LIST_THIS_CHANNEL(true, "--listChannel"
 				, new ArgParameter[0]
@@ -557,11 +559,13 @@ public class CommandParser
 			int videoHeight = _optionalInt(required[5], -1);
 			int videoWidth = _optionalInt(required[6], -1);
 			String discussionUrl = _optionalString(optional[0]);
+			// TODO:  Add the replyTo option to this command.
+			IpfsFile replyTo = null;
 			ElementSubCommand elements[] = new ElementSubCommand[] {
 					new ElementSubCommand("image/jpeg", thumbnailJpeg, 0, 0, true),
 					new ElementSubCommand(videoMime, videoFile, videoHeight, videoWidth, false),
 			};
-			return new PublishCommand(name, description, discussionUrl, elements);
+			return new PublishCommand(name, description, discussionUrl, replyTo, elements);
 		}),
 		QUICKSTART(true, "--quickstart"
 				, new ArgParameter[0]

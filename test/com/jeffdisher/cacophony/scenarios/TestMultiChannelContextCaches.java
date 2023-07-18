@@ -88,7 +88,7 @@ public class TestMultiChannelContextCaches
 		// Make a basic publish.
 		File thumbnail = FOLDER.newFile();
 		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
-		home.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[] {
+		home.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
 		}));
 		
@@ -128,7 +128,7 @@ public class TestMultiChannelContextCaches
 		// Make a basic publish.
 		File thumbnail = FOLDER.newFile();
 		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
-		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[] {
+		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
 		}));
 		
@@ -177,7 +177,7 @@ public class TestMultiChannelContextCaches
 		// Make a basic publish.
 		File thumbnail = FOLDER.newFile();
 		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
-		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, new ElementSubCommand[] {
+		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
 				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
 		}));
 		

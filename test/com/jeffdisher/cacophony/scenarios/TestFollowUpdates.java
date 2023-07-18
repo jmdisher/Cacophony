@@ -309,7 +309,7 @@ public class TestFollowUpdates
 				new ElementSubCommand("video/mp4", dataFile, 720, 1280, false),
 				new ElementSubCommand("image/jpeg", imageFile, 0, 0, true),
 		};
-		return new PublishCommand(entryName, "description", null, elements);
+		return new PublishCommand(entryName, "description", null, null, elements);
 	}
 
 	private static PublishCommand _createMultiPublishCommand(String entryName, String imageFileString, String[] videoFileStrings, int heights[]) throws IOException
@@ -336,6 +336,6 @@ public class TestFollowUpdates
 			int width = heights[i] / 2;
 			elements[i + 1] = new ElementSubCommand("video/mp4", dataFiles[i], heights[i], width, false);
 		};
-		return new PublishCommand(entryName, "description", null, elements);
+		return new PublishCommand(entryName, "description", null, null, elements);
 	}
 }

@@ -123,7 +123,7 @@ public class TestAddFavouriteCommand
 		CreateChannelCommand create = new CreateChannelCommand(KEY_NAME);
 		ChangedRoot root = remoteUser.runCommand(null, create);
 		Assert.assertNotNull(root);
-		PublishCommand publish = new PublishCommand("post", "description", null, new ElementSubCommand[0]);
+		PublishCommand publish = new PublishCommand("post", "description", null, null, new ElementSubCommand[0]);
 		OnePost post = remoteUser.runCommand(null, publish);
 		return post.recordCid;
 	}

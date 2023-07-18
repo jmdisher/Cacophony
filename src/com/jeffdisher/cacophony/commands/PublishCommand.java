@@ -27,7 +27,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record PublishCommand(String _name, String _description, String _discussionUrl, ElementSubCommand[] _elements) implements ICommand<OnePost>
+public record PublishCommand(String _name, String _description, String _discussionUrl, IpfsFile _replyTo, ElementSubCommand[] _elements) implements ICommand<OnePost>
 {
 	@Override
 	public OnePost runInContext(Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
@@ -167,6 +167,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		{
 			record.setDiscussionUrl(_discussionUrl);
 		}
+		record.setReplyTo(_replyTo);
 		if (null != thumbnail)
 		{
 			record.setThumbnail(thumbnail.mime, thumbnail.cid);

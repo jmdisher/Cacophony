@@ -6,11 +6,13 @@ import java.util.Map;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -78,7 +80,23 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 				{
 					suffix = "(not cached)";
 				}
-				log.logOperation("Element CID: " + elementCid.toSafeString() + " " + suffix);
+				// We want to mention that this is a reply, if it is one (this since we only list people we are
+				// following, this should be quick since we always fetch the meta-data, even for "non-cached" cases).
+				String replyPart = "";
+				try
+				{
+					AbstractRecord record = access.loadCached(elementCid, AbstractRecord.DESERIALIZER).get();
+					if (null != record.getReplyTo())
+					{
+						replyPart = " is a reply to: " + record.getReplyTo().toSafeString();
+					}
+				}
+				catch (FailedDeserializationException e)
+				{
+					// This can't happen since we already decided to fetch this, before.
+					throw Assert.unexpected(e);
+				}
+				log.logOperation("Element CID: " + elementCid.toSafeString() + " " + suffix + replyPart);
 			}
 			log.logFinish("");
 		}
