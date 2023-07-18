@@ -111,8 +111,9 @@ var GLOBAL_PostLoader = {
 };
 
 // Define the factory methods for dependency injection.
-// For UnknownUserLoader, we want to return a helper pointing to the shared instance since it has a cache.
+// Generally, we want to return a helper pointing to the shared instances since they typically have caches.
 GLOBAL_Application.factory('UnknownUserLoader', [function() { return function(publicKey) {return GLOBAL_UnknownUserLoader.loadTuple(publicKey); } ; }]);
+GLOBAL_Application.factory('PostLoader', [function() { return function(postHash) {return GLOBAL_PostLoader.loadTuple(postHash); } ; }]);
 
 let _template_channelSelector = ''
 	+ '<div class="row btn-group">'
@@ -322,6 +323,47 @@ GLOBAL_Application.directive('cacoUnknownUser', ['UnknownUserLoader', function(U
 								email: null,
 								website: null,
 							};
+						}
+						scope.$apply();
+					});
+				}
+			});
+		}
+	}
+}]);
+
+let _template_postSmall = ''
+	+ '<span><a ng-href="play.html?elt={{cid}}">{{name}}</a> (Posted by <caco-user-link public-key="publisherKey"></caco-user-link>)</span>'
+;
+GLOBAL_Application.directive('cacoPostSmall', ['PostLoader', function(PostLoader)
+{
+	// NOTES:
+	return {
+		restrict: 'E',
+		scope: {
+			cid: '=cid',
+		},
+		replace: true,
+		template: _template_postSmall,
+		link: function(scope, element, attrs)
+		{
+			scope.name = "Loading...";
+			scope.publisherKey = null;
+			
+			scope.$watch('cid', function(newValue, oldValue)
+			{
+				if ((undefined !== newValue) && (null !== newValue))
+				{
+					PostLoader(newValue).then((postTuple) => {
+						// We get null on error.
+						if (null !== postTuple)
+						{
+							scope.name = postTuple["name"];
+							scope.publisherKey = postTuple["publisherKey"];
+						}
+						else
+						{
+							scope.name = "Unknown (error)";
 						}
 						scope.$apply();
 					});

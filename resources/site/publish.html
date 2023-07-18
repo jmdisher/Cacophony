@@ -345,6 +345,18 @@ function loadMetaData(type, file, mime, onLoaded)
 	elt.src = URL.createObjectURL(file);
 }
 
+function createAndSelectNewDraft($scope, replyToCid)
+{
+	REST.POST("/allDrafts/new/" + replyToCid)
+		.then(data => data.json())
+		.then(draftObject => {
+			populateSyntheticType(draftObject);
+			$scope.drafts.push(draftObject);
+			$scope.selectedDraft = draftObject;
+			$scope.$apply();
+		});
+}
+
 
 // GLOBAL_Application is defined in bindings.js.
 GLOBAL_Application.controller('AppController', function($scope)
@@ -410,14 +422,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.createNewDraft = function()
 	{
 		// We use "NONE" as the "replyTo" when creating a draft this way.
-		REST.POST("/allDrafts/new/NONE")
-			.then(data => data.json())
-			.then(draftObject => {
-				populateSyntheticType(draftObject);
-				$scope.drafts.push(draftObject);
-				$scope.selectedDraft = draftObject;
-				$scope.$apply();
-			});
+		createAndSelectNewDraft($scope, "NONE");
 	}
 	$scope.deleteDraft = function(draft)
 	{
@@ -806,6 +811,14 @@ function xsrfLoaded($scope)
 		.then(data => data.json())
 		.then(json => {
 			$scope.drafts = json;
+			// See if there is a replyTo parameter, since we will need to create/select a draft for that.
+			let replyTo = readGetVar("replyTo");
+			if (undefined !== replyTo)
+			{
+				createAndSelectNewDraft($scope, replyTo);
+				// Protect us from repeating this on page refresh.
+				window.history.replaceState(null, "", "/publish.html");
+			}
 			$scope.$apply();
 		});
 	REST.GET("/server/videoConfig")
@@ -877,6 +890,7 @@ function xsrfLoaded($scope)
 			</div>
 			<div class="card card-body" ng-show="null != selectedDraft">
 				Draft:  <strong>{{selectedDraft.title}}</strong><br />
+				<span ng-show="null !== selectedDraft.replyTo">Reply to: <caco-post-small cid="selectedDraft.replyTo"></caco-post-small></span><br />
 				Post type:
 				<div class="btn-group" role="group">
 					<button type="button" class="btn btn-primary" ng-click="setDraftType('TEXT_ONLY')" ng-disabled="'TEXT_ONLY' === selectedDraft.type">Text only</button>

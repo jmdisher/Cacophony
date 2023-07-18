@@ -36,6 +36,7 @@ function postWasLoaded($scope, elt)
 	$scope.publisherKey = elt["publisherKey"];
 	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
 	$scope.discussionUrl = elt["discussionUrl"];
+	$scope.replyTo = elt["replyTo"];
 	$scope.discussionHost = null;
 	if (null !== $scope.discussionUrl)
 	{
@@ -120,6 +121,11 @@ function setupEnvironment($scope)
 			postWasLoaded($scope, elt);
 		});
 	}
+	$scope.postReply = function()
+	{
+		// We want to send them over to the publish page with a URL parameter to create a new draft.
+		window.location.href = "publish.html?replyTo=" + $scope.elementHash;
+	}
 	
 	$scope.$apply();
 }
@@ -161,6 +167,7 @@ function setupEnvironment($scope)
 		<div class="row card card-body">
 			<strong>{{name}}</strong><br />
 			<span>Posted by <caco-user-link public-key="publisherKey"></caco-user-link> <em>({{readableDate}})</em></span><br />
+			<span ng-show="null !== replyTo">Reply to:  <caco-post-small cid="replyTo"></caco-post-small></span><br />
 		</div>
 	</div>
 	<div class="row justify-content-md-center">
@@ -178,6 +185,7 @@ function setupEnvironment($scope)
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Add to favourites</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="addFavourite()">Confirm</a></li></ul>
 			</div>
+			<button type="button" class="btn btn-sm btn-success" ng-click="postReply()">Post a Reply</button>
 		</div>
 	</div>
 </div>
