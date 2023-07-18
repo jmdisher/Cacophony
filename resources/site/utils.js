@@ -48,7 +48,7 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 	{
 		array.push(placeholder);
 	}
-	API_getPost(hash, false).then(elt => {
+	GLOBAL_PostLoader.loadTuple(hash).then(elt => {
 		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
 		let description = elt["description"];
 		if (description.length > 135)
@@ -59,16 +59,13 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 		// We can't update the placeholder since the $apply() won't see nested updates so replace this.
 		let object = {
 			"cached": elt["cached"],
-			"elementHash": hash,
-			"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
+			"elementHash": elt["elementHash"],
+			"readableDate": elt["readableDate"],
 			"name": elt["name"],
 			"description": description,
 			"publisherKey": elt["publisherKey"],
 			"isDeleting": false,
-		}
-		if (elt["cached"])
-		{
-			object["thumbnailUrl"] = elt["thumbnailUrl"];
+			"thumbnailUrl": elt["thumbnailUrl"],
 		}
 		// We need to replace the index due to the earlier mention of $apply.
 		// (we will use indexOf() since this is an exact instance match)
@@ -86,22 +83,25 @@ function renderLongTextIntoElement(element, longText)
 	element.innerHTML = element.innerHTML.replace(/\/n/g, "<br />");
 }
 
-// Returns an object describing the post with the given hash, via a promise.  Implementation of this is in GET_PostStruct.java and defines these keys:
-// -cached (boolean)
+// Returns an object describing the post with the given hash, via a promise (null on error).  Implementation of this is in GET_PostStruct.java and defines these keys:
 // -name (string)
 // -description (string)
 // -publishedSecondsUtc (long)
 // -discussionUrl (string)
 // -publisherKey (string)
-// -thumbnailUrl (string)
-// -videoUrl (string)
-// -audioUrl (string)
+// -replyTo (string) - usually null
+// -cached (boolean)
+// -thumbnailUrl (string) - can be null (null if not cached)
+// -videoUrl (string) - can be null (null if not cached)
+// -audioUrl (string) - can be null (null if not cached)
 function API_getPost(hash, forceCache)
 {
 	return new Promise(resolve => {
 		REST.GET("/server/postStruct/" + hash + "/" + (forceCache ? "FORCE" : "OPTIONAL"))
 			.then(result => result.json())
-			.then(json => resolve(json));
+			.then(json => resolve(json))
+			.catch((errorCode) => resolve(null))
+		;
 	});
 }
 

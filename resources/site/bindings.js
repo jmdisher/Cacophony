@@ -48,6 +48,68 @@ var GLOBAL_UnknownUserLoader = {
 	},
 };
 
+// We put this post loader helper here since is an injected dependency to some directives.
+// Note that this loader will NOT force cache of the element leaves.
+var GLOBAL_PostLoader = {
+	map: {},
+	// Returns a promise which resolves the tuple for the post (null if not found).  The tuple elements are documented in GET_PostStruct.java (except for elementHash and readableDate which are injected here).
+	// -name (string)
+	// -description (string)
+	// -publishedSecondsUtc (long)
+	// -discussionUrl (string)
+	// -publisherKey (string)
+	// -replyTo (string) - usually null
+	// -cached (boolean)
+	// -thumbnailUrl (string) - can be null (null if not cached)
+	// -videoUrl (string) - can be null (null if not cached)
+	// -audioUrl (string) - can be null (null if not cached)
+	// -elementHash (string) - injected here
+	// -readableDate (string) - injected here
+	loadTuple: function(postHash)
+	{
+		return new Promise(resolve => {
+			let tuple = this.map[postHash];
+			if (undefined === tuple)
+			{
+				// Load this from server.
+				API_getPost(postHash, false).then(elt => {
+					if (null !== elt)
+					{
+						let object = {
+							// Direct data from server.
+							"name": elt["name"],
+							"description": elt["description"],
+							"publishedSecondsUtc": elt["publishedSecondsUtc"],
+							"discussionUrl": elt["discussionUrl"],
+							"publisherKey": elt["publisherKey"],
+							"replyTo": elt["replyTo"],
+							"cached": elt["cached"],
+							"thumbnailUrl": elt["thumbnailUrl"],
+							"videoUrl": elt["videoUrl"],
+							"audioUrl": elt["audioUrl"],
+							// Injected elements.
+							"elementHash": postHash,
+							"readableDate": new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString(),
+						}
+						// Store this in the shared map.
+						this.map[postHash] = object;
+						resolve(object);
+					}
+					else
+					{
+						resolve(null);
+					}
+				});
+			}
+			else
+			{
+				// Call in the next event loop iteration.
+				window.setTimeout(function() { resolve(tuple); });
+			}
+		});
+	},
+};
+
 // Define the factory methods for dependency injection.
 // For UnknownUserLoader, we want to return a helper pointing to the shared instance since it has a cache.
 GLOBAL_Application.factory('UnknownUserLoader', [function() { return function(publicKey) {return GLOBAL_UnknownUserLoader.loadTuple(publicKey); } ; }]);
