@@ -86,9 +86,7 @@ public class TestLocalIntegrity
 		{
 			stream.write(imageFile);
 		}
-		PublishCommand publish = new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("image/jpeg", tempFile, 100, 100, true),
-		});
+		PublishCommand publish = new PublishCommand("name", "description", null, null, "image/jpeg", tempFile, new ElementSubCommand[0]);
 		OnePost result = publish.runInContext(_createSingleNode(model, node, scheduler, MockKeys.K1));
 		// We expect 7 keys in the storage:
 		// -index

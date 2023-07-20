@@ -47,7 +47,8 @@ public class TestCommandParser
 	{
 		File tempFile = FOLDER.newFile();
 		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--discussionUrl", "http://www.example.com"
-				, "--element", "--mime", "image/jpeg", "--file", tempFile.getAbsolutePath(), "--special", "image"
+				, "--thumbnailMime", "image/jpeg"
+				, "--thumbnailFile", tempFile.getAbsolutePath()
 				, "--element", "--mime", "video/webm", "--file", tempFile.getAbsolutePath(), "--width", "640", "--height", "480"
 		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -57,8 +58,9 @@ public class TestCommandParser
 		Assert.assertEquals(0, outStream.size());
 		Assert.assertTrue(command instanceof PublishCommand);
 		PublishCommand publishCommand = (PublishCommand) command;
-		ElementSubCommand thumbnailCommand = publishCommand._elements()[0];
-		Assert.assertTrue(thumbnailCommand.isSpecialImage());
+		Assert.assertEquals("image/jpeg", publishCommand._thumbnailMime());
+		ElementSubCommand videoCommand = publishCommand._elements()[0];
+		Assert.assertEquals("video/webm", videoCommand.mime());
 	}
 
 	@Test
@@ -313,10 +315,9 @@ public class TestCommandParser
 		Assert.assertEquals(0, outStream.size());
 		Assert.assertTrue(command instanceof PublishCommand);
 		PublishCommand publishCommand = (PublishCommand) command;
-		Assert.assertEquals(2, publishCommand._elements().length);
-		ElementSubCommand thumbnailCommand = publishCommand._elements()[0];
-		Assert.assertTrue(thumbnailCommand.isSpecialImage());
-		ElementSubCommand videoCommand = publishCommand._elements()[1];
+		Assert.assertEquals(1, publishCommand._elements().length);
+		Assert.assertEquals("image/jpeg", publishCommand._thumbnailMime());
+		ElementSubCommand videoCommand = publishCommand._elements()[0];
 		Assert.assertEquals("video/webm", videoCommand.mime());
 	}
 

@@ -48,9 +48,8 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
-				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
+		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		user.runCommand(null, new RefreshNextFolloweeCommand());
 		
@@ -91,9 +90,8 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
-				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
+		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		
 		// Verify that our record list is empty.
@@ -128,9 +126,8 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
-				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
+		user.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		
 		// Now, rebroadcast this and verify it is a failure.
@@ -173,9 +170,8 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("video/webm", fakeVideo, 720, 1280, false) ,
-				new ElementSubCommand("image/jpeg", fakeImage, 720, 1280, true) ,
+		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		
 		// Verify that our record list is empty.

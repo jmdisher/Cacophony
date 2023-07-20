@@ -73,9 +73,6 @@ public class CommandParser
 						, "The height, pixels (for videos only)"
 					)
 					, new ArgParameter("--width", ParameterType.INT, "The width, pixels (for videos only)")
-					, new ArgParameter("--special", ParameterType.SPECIAL
-						, "Set to \"image\" if this should be the thumbnail attachment"
-					)
 				}
 				, "Attaches a file to the new post being made."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -88,12 +85,7 @@ public class CommandParser
 			}
 			int height = _optionalInt(optional[0], 0);
 			int width = _optionalInt(optional[1], 0);
-			boolean isSpecialImage = false;
-			if (null != optional[2])
-			{
-				isSpecialImage = optional[2].parse(Boolean.class);
-			}
-			return new ElementSubCommand(mime, filePath, height, width, isSpecialImage);
+			return new ElementSubCommand(mime, filePath, height, width);
 		}),
 		
 		// Methods to manage this channel.
@@ -188,7 +180,10 @@ public class CommandParser
 				}
 				, new ArgParameter[] { new ArgParameter("--discussionUrl", ParameterType.URL
 					, "A URL to a discussion or context, if there is one"
-				) }
+				)
+					, new ArgParameter("--thumbnailMime", ParameterType.MIME, "The MIME type of the thumbnail")
+					, new ArgParameter("--thumbnailFile", ParameterType.FILE, "The file path to the thumbnail")
+				}
 				, "Makes a new post to the home user's channel."
 				, ELEMENT, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
@@ -197,9 +192,16 @@ public class CommandParser
 			String discussionUrl = _optionalString(optional[0]);
 			// TODO:  Add the replyTo option to this command.
 			IpfsFile replyTo = null;
+			String thumbnailMime = _optionalString(optional[1]);
+			File thumbnailFile = _optionalFile(optional[2]);
+			// We need both or neither of the thumbnail params.
+			if ((null == thumbnailMime) != (null == thumbnailFile))
+			{
+				throw new UsageException("Both or neither of the thumbnail file and MIME must be specified");
+			}
 			ElementSubCommand elements[] = new ElementSubCommand[subElements.size()];
 			elements = subElements.toArray(elements);
-			return new PublishCommand(name, description, discussionUrl, replyTo, elements);
+			return new PublishCommand(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailFile, elements);
 		}),
 		LIST_THIS_CHANNEL(true, "--listChannel"
 				, new ArgParameter[0]
@@ -562,10 +564,9 @@ public class CommandParser
 			// TODO:  Add the replyTo option to this command.
 			IpfsFile replyTo = null;
 			ElementSubCommand elements[] = new ElementSubCommand[] {
-					new ElementSubCommand("image/jpeg", thumbnailJpeg, 0, 0, true),
-					new ElementSubCommand(videoMime, videoFile, videoHeight, videoWidth, false),
+					new ElementSubCommand(videoMime, videoFile, videoHeight, videoWidth),
 			};
-			return new PublishCommand(name, description, discussionUrl, replyTo, elements);
+			return new PublishCommand(name, description, discussionUrl, replyTo, "image/jpeg", thumbnailJpeg, elements);
 		}),
 		QUICKSTART(true, "--quickstart"
 				, new ArgParameter[0]

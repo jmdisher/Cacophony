@@ -4,7 +4,6 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -103,15 +102,6 @@ public enum ParameterType
 	),
 	STRING("string"
 			, (String arg) -> arg
-	),
-	SPECIAL("\"image\""
-			, (String arg) -> {
-				if (!ElementSpecialType.IMAGE.value().equals(arg))
-				{
-					throw new UsageException("Unknown special file type: \"" + arg + "\"");
-				}
-				return true;
-			}
 	),
 	FILE("file_path"
 			, (String arg) -> {

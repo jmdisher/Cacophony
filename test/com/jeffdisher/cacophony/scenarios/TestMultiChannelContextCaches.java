@@ -88,9 +88,7 @@ public class TestMultiChannelContextCaches
 		// Make a basic publish.
 		File thumbnail = FOLDER.newFile();
 		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
-		home.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
-		}));
+		home.runCommand(null, new PublishCommand("name", "description", null, null, "image/jpeg", thumbnail, new ElementSubCommand[0]));
 		
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();
@@ -128,9 +126,7 @@ public class TestMultiChannelContextCaches
 		// Make a basic publish.
 		File thumbnail = FOLDER.newFile();
 		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
-		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
-		}));
+		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, null, "image/jpeg", thumbnail, new ElementSubCommand[0]));
 		
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();
@@ -177,9 +173,7 @@ public class TestMultiChannelContextCaches
 		// Make a basic publish.
 		File thumbnail = FOLDER.newFile();
 		Files.write(thumbnail.toPath(), new byte[] { 1, 2, 3});
-		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("image/jpeg", thumbnail, 0, 0, true)
-		}));
+		OnePost newPost = home.runCommand(null, new PublishCommand("name", "description", null, null, "image/jpeg", thumbnail, new ElementSubCommand[0]));
 		
 		// Check the status of the caches.
 		CombinedListener combined = new CombinedListener();

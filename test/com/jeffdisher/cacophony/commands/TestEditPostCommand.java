@@ -112,8 +112,8 @@ public class TestEditPostCommand
 		stream.write(fileContents.getBytes());
 		stream.close();
 		
-		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0, false) };
-		PublishCommand command = new PublishCommand(name, "description", discussionUrl, null, elements);
+		ElementSubCommand[] elements = { new ElementSubCommand(mime, tempFile, 0, 0) };
+		PublishCommand command = new PublishCommand(name, "description", discussionUrl, null, null, null, elements);
 		
 		// We need to create the channel first so we will just use the command to do that.
 		boolean didPass = (null != user.runCommand(null, new CreateChannelCommand(KEY_NAME)));

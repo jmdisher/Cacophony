@@ -157,12 +157,7 @@ public class DraftManager
 			audio = draft.audio();
 			audioFile = wrapper.existingAudioFile();
 		}
-		SizedElement thumbnail = draft.thumbnail();
 		int elementCount = 0;
-		if (null != thumbnail)
-		{
-			elementCount += 1;
-		}
 		if (null != video)
 		{
 			elementCount += 1;
@@ -173,24 +168,16 @@ public class DraftManager
 		}
 		ElementSubCommand[] subElements = new ElementSubCommand[elementCount];
 		int index = 0;
-		if (null != thumbnail)
-		{
-			File thumbnailFile = wrapper.existingThumbnailFile();
-			Assert.assertTrue(null != thumbnailFile);
-			// Note that the dimensions are technically only used by the video but we will attach them here, anyway.
-			subElements[index] = new ElementSubCommand(thumbnail.mime(), thumbnailFile, thumbnail.height(), thumbnail.width(), true);
-			index += 1;
-		}
 		if (null != video)
 		{
 			Assert.assertTrue(null != videoFile);
-			subElements[index] = new ElementSubCommand(video.mime(), videoFile, video.height(), video.width(), false);
+			subElements[index] = new ElementSubCommand(video.mime(), videoFile, video.height(), video.width());
 			index += 1;
 		}
 		if (null != audio)
 		{
 			Assert.assertTrue(null != audioFile);
-			subElements[index] = new ElementSubCommand(audio.mime(), audioFile, audio.height(), audio.width(), false);
+			subElements[index] = new ElementSubCommand(audio.mime(), audioFile, audio.height(), audio.width());
 			index += 1;
 		}
 		
@@ -198,7 +185,16 @@ public class DraftManager
 		String description = draft.description();
 		String discussionUrl = draft.discussionUrl();
 		IpfsFile replyTo = draft.replyTo();
-		return new PublishCommand(name, description, discussionUrl, replyTo, subElements);
+		SizedElement thumbnail = draft.thumbnail();
+		String thumbnailMime = (null != thumbnail)
+				? thumbnail.mime()
+				: null
+		;
+		File thumbnailFile = (null != thumbnail)
+				? wrapper.existingThumbnailFile()
+				: null
+		;
+		return new PublishCommand(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailFile, subElements);
 	}
 
 

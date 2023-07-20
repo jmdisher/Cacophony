@@ -77,10 +77,10 @@ public class TestListChannelEntriesCommand
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Make an entry with no leaves and one with a big leaf.
-		user1.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[0]));
+		user1.runCommand(null, new PublishCommand("name", "description", null, null, null, null, new ElementSubCommand[0]));
 		File video = FOLDER.newFile();
 		Files.write(video.toPath(), new byte[] { 1,2,3,4,5 });
-		user1.runCommand(null, new PublishCommand("big name", "leaf description", null, null, new ElementSubCommand[] { new ElementSubCommand("video/webm", video, 720, 1280, false) } ));
+		user1.runCommand(null, new PublishCommand("big name", "leaf description", null, null, null, null, new ElementSubCommand[] { new ElementSubCommand("video/webm", video, 720, 1280) } ));
 		
 		// Reduce the cache size and start following the user.
 		user2.runCommand(null, new SetGlobalPrefsCommand(1280, 2L, 0L, 0L, 0L, 0L, 0L, 0L));
@@ -104,12 +104,12 @@ public class TestListChannelEntriesCommand
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		
 		// Make a basic entry.
-		OnePost post = user1.runCommand(null, new PublishCommand("name", "description", null, null, new ElementSubCommand[0]));
+		OnePost post = user1.runCommand(null, new PublishCommand("name", "description", null, null, null, null, new ElementSubCommand[0]));
 		
 		// Make a reply to that entry.
 		IpfsFile replyTo = post.recordCid;
 		Assert.assertNotNull(replyTo);
-		OnePost theReply = user1.runCommand(null, new PublishCommand("follow-up name", "follow-up description", null, replyTo, new ElementSubCommand[0]));
+		OnePost theReply = user1.runCommand(null, new PublishCommand("follow-up name", "follow-up description", null, replyTo, null, null, new ElementSubCommand[0]));
 		Assert.assertEquals(replyTo, theReply.streamRecord.getReplyTo());
 		
 		// Start following them and list the entries.

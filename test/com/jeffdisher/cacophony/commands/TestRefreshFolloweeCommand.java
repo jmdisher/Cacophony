@@ -44,9 +44,8 @@ public class TestRefreshFolloweeCommand
 		File tempVideo = FOLDER.newFile();
 		Files.write(tempImage.toPath(), "image".getBytes());
 		Files.write(tempVideo.toPath(), "video".getBytes());
-		OnePost post = user2.runCommand(null, new PublishCommand("Post", "", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("image/jpeg", tempImage, 480, 640, true) ,
-				new ElementSubCommand("video/webm", tempVideo, 480, 640, false) ,
+		OnePost post = user2.runCommand(null, new PublishCommand("Post", "", null, null, "image/jpeg", tempImage, new ElementSubCommand[] {
+				new ElementSubCommand("video/webm", tempVideo, 480, 640) ,
 		}));
 		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		
@@ -80,9 +79,8 @@ public class TestRefreshFolloweeCommand
 		File tempAudio = FOLDER.newFile();
 		Files.write(tempImage.toPath(), "image".getBytes());
 		Files.write(tempAudio.toPath(), "audio".getBytes());
-		OnePost post = user2.runCommand(null, new PublishCommand("Post", "", null, null, new ElementSubCommand[] {
-				new ElementSubCommand("image/jpeg", tempImage, 480, 640, true) ,
-				new ElementSubCommand("audio/ogg", tempAudio, 0, 0, false) ,
+		OnePost post = user2.runCommand(null, new PublishCommand("Post", "", null, null, "image/jpeg", tempImage, new ElementSubCommand[] {
+				new ElementSubCommand("audio/ogg", tempAudio, 0, 0) ,
 		}));
 		user1.runCommand(null, new RefreshFolloweeCommand(MockKeys.K2));
 		

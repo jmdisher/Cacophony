@@ -27,7 +27,7 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record PublishCommand(String _name, String _description, String _discussionUrl, IpfsFile _replyTo, ElementSubCommand[] _elements) implements ICommand<OnePost>
+public record PublishCommand(String _name, String _description, String _discussionUrl, IpfsFile _replyTo, String _thumbnailMime, File _thumbnailPath, ElementSubCommand[] _elements) implements ICommand<OnePost>
 {
 	@Override
 	public OnePost runInContext(Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
@@ -60,11 +60,27 @@ public record PublishCommand(String _name, String _description, String _discussi
 			Assert.assertTrue(null != access.getLastRootElement());
 			
 			// Upload the elements - we will just do this one at a time, for simplicity (and since we are talking to a local node).
-			List<AbstractRecord.Leaf> array = new ArrayList<>();
-			Thumbnail thumbnail = _uploadAttachments(array, access, log, openElements);
+			List<AbstractRecord.Leaf> array = _uploadAttachments(access, log, openElements);
+			
+			// Upload the thumbnail.
+			IpfsFile thumbnailUpload = null;
+			if (null != _thumbnailPath)
+			{
+				Assert.assertTrue(null != _thumbnailMime);
+				FileInputStream stream = _openFile(_thumbnailPath);
+				if (null != stream)
+				{
+					thumbnailUpload = access.uploadAndPin(stream);
+					_closeFile(stream);
+				}
+				else
+				{
+					throw new UsageException("Failed to open thumbnail file");
+				}
+			}
 			
 			// Assemble and upload the new StreamRecord.
-			AbstractRecord record = _createRecord(thumbnail, array, publicKey);
+			AbstractRecord record = _createRecord(thumbnailUpload, array, publicKey);
 			byte[] data = record.serializeV2();
 			IpfsFile recordHash = access.uploadAndPin(new ByteArrayInputStream(data));
 			
@@ -105,12 +121,12 @@ public record PublishCommand(String _name, String _description, String _discussi
 		{
 			ElementSubCommand command = commands[i];
 			File file = command.filePath();
-			try
+			FileInputStream stream = _openFile(file);
+			if (null != stream)
 			{
-				FileInputStream stream = new FileInputStream(file);
-				elements[i] = new PublishElement(command.mime(), stream, command.height(), command.width(), command.isSpecialImage());
+				elements[i] = new PublishElement(command.mime(), stream, command.height(), command.width());
 			}
-			catch (FileNotFoundException e)
+			else
 			{
 				logger.logError("File not found:  " + file.getAbsolutePath());
 				error = true;
@@ -124,9 +140,9 @@ public record PublishCommand(String _name, String _description, String _discussi
 		return elements;
 	}
 
-	private Thumbnail _uploadAttachments(List<AbstractRecord.Leaf> out_array, IWritingAccess access, ILogger log, PublishElement[] openElements) throws IpfsConnectionException
+	private List<AbstractRecord.Leaf> _uploadAttachments(IWritingAccess access, ILogger log, PublishElement[] openElements) throws IpfsConnectionException
 	{
-		Thumbnail thumbnail = null;
+		List<AbstractRecord.Leaf> array = new ArrayList<>();
 		for (PublishElement elt : openElements)
 		{
 			ILogger eltLog = log.logStart("-Element: " + elt);
@@ -134,27 +150,22 @@ public record PublishCommand(String _name, String _description, String _discussi
 			// the caller, just to cover error cases before getting this far.
 			IpfsFile uploaded = access.uploadAndPin(elt.fileData);
 			
-			if (elt.isSpecialImage())
-			{
-				Assert.assertTrue(null == thumbnail);
-				thumbnail = new Thumbnail(elt.mime, uploaded);
-			}
-			else
-			{
-				AbstractRecord.Leaf oneLeaf = new AbstractRecord.Leaf(uploaded
-						, elt.mime()
-						, elt.height()
-						, elt.width()
-				);
-				out_array.add(oneLeaf);
-			}
+			AbstractRecord.Leaf oneLeaf = new AbstractRecord.Leaf(uploaded
+					, elt.mime()
+					, elt.height()
+					, elt.width()
+			);
+			array.add(oneLeaf);
 			eltLog.logFinish("-Done!");
 		}
-		return thumbnail;
+		return array;
 	}
 
-	private AbstractRecord _createRecord(Thumbnail thumbnail, List<AbstractRecord.Leaf> attachmentArray, IpfsKey publicKey)
+	private AbstractRecord _createRecord(IpfsFile thumbnailUpload, List<AbstractRecord.Leaf> attachmentArray, IpfsKey publicKey)
 	{
+		// If we have a thumbnail, we must also have a MIME.
+		Assert.assertTrue((null == thumbnailUpload) == (null == _thumbnailMime));
+		
 		AbstractRecord record = AbstractRecord.createNew();
 		record.setName(_name);
 		// V2 doesn't allow empty descriptions.
@@ -168,9 +179,9 @@ public record PublishCommand(String _name, String _description, String _discussi
 			record.setDiscussionUrl(_discussionUrl);
 		}
 		record.setReplyTo(_replyTo);
-		if (null != thumbnail)
+		if (null != thumbnailUpload)
 		{
-			record.setThumbnail(thumbnail.mime, thumbnail.cid);
+			record.setThumbnail(_thumbnailMime, thumbnailUpload);
 		}
 		if (!attachmentArray.isEmpty())
 		{
@@ -206,15 +217,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			if (null != element)
 			{
 				InputStream file = element.fileData();
-				try
-				{
-					file.close();
-				}
-				catch (IOException e)
-				{
-					// We don't know how this fails on close.
-					throw Assert.unexpected(e);
-				}
+				_closeFile(file);
 			}
 		}
 	}
@@ -225,7 +228,33 @@ public record PublishCommand(String _name, String _description, String _discussi
 		return now.toEpochSecond();
 	}
 
+	private static FileInputStream _openFile(File file)
+	{
+		FileInputStream stream;
+		try
+		{
+			stream = new FileInputStream(file);
+		}
+		catch (FileNotFoundException e)
+		{
+			stream = null;
+		}
+		return stream;
+	}
 
-	private static record PublishElement(String mime, InputStream fileData, int height, int width, boolean isSpecialImage) {}
-	private static record Thumbnail(String mime, IpfsFile cid) {}
+	private static void _closeFile(InputStream file)
+	{
+		try
+		{
+			file.close();
+		}
+		catch (IOException e)
+		{
+			// We don't know how this fails on close.
+			throw Assert.unexpected(e);
+		}
+	}
+
+
+	private static record PublishElement(String mime, InputStream fileData, int height, int width) {}
 }

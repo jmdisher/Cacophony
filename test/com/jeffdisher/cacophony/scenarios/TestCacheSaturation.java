@@ -199,10 +199,9 @@ public class TestCacheSaturation
 			dataStream.close();
 			
 			ElementSubCommand[] elements = new ElementSubCommand[] {
-					new ElementSubCommand("video/mp4", videoFile, 720, 1280, false),
-					new ElementSubCommand("image/jpeg", thumbnailFile, 0, 0, true),
+					new ElementSubCommand("video/mp4", videoFile, 720, 1280),
 			};
-			PublishCommand publishCommand = new PublishCommand(name, "description", null, null, elements);
+			PublishCommand publishCommand = new PublishCommand(name, "description", null, null, "image/jpeg", thumbnailFile, elements);
 			_user.runCommand(null, publishCommand);
 		}
 		

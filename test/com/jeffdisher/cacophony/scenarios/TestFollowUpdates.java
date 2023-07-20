@@ -306,10 +306,9 @@ public class TestFollowUpdates
 		imageStream.write(imageFileString.getBytes());
 		imageStream.close();
 		ElementSubCommand[] elements = new ElementSubCommand[] {
-				new ElementSubCommand("video/mp4", dataFile, 720, 1280, false),
-				new ElementSubCommand("image/jpeg", imageFile, 0, 0, true),
+				new ElementSubCommand("video/mp4", dataFile, 720, 1280),
 		};
-		return new PublishCommand(entryName, "description", null, null, elements);
+		return new PublishCommand(entryName, "description", null, null, "image/jpeg", imageFile, elements);
 	}
 
 	private static PublishCommand _createMultiPublishCommand(String entryName, String imageFileString, String[] videoFileStrings, int heights[]) throws IOException
@@ -329,13 +328,12 @@ public class TestFollowUpdates
 			dataStream.close();
 		}
 		
-		ElementSubCommand[] elements = new ElementSubCommand[videoFileStrings.length + 1];
-		elements[0] = new ElementSubCommand("image/jpeg", imageFile, 0, 0, true);
+		ElementSubCommand[] elements = new ElementSubCommand[videoFileStrings.length];
 		for (int i = 0; i < dataFiles.length; ++i)
 		{
 			int width = heights[i] / 2;
-			elements[i + 1] = new ElementSubCommand("video/mp4", dataFiles[i], heights[i], width, false);
+			elements[i] = new ElementSubCommand("video/mp4", dataFiles[i], heights[i], width);
 		};
-		return new PublishCommand(entryName, "description", null, null, elements);
+		return new PublishCommand(entryName, "description", null, null, "image/jpeg", imageFile, elements);
 	}
 }

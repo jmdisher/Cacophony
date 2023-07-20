@@ -427,10 +427,9 @@ public class TestPinConsistency
 		imageStream.write(imageFileString.getBytes());
 		imageStream.close();
 		ElementSubCommand[] elements = new ElementSubCommand[] {
-				new ElementSubCommand("video/mp4", dataFile, 720, 1280, false),
-				new ElementSubCommand("image/jpeg", imageFile, 0, 0, true),
+				new ElementSubCommand("video/mp4", dataFile, 720, 1280),
 		};
-		return new PublishCommand(entryName, "description", null, null, elements);
+		return new PublishCommand(entryName, "description", null, null, "image/jpeg", imageFile, elements);
 	}
 
 	private void _commonSetup(MockUserNode user1, MockUserNode user2) throws Throwable

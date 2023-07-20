@@ -125,6 +125,23 @@ checkPreviousCommand "Remove favourite"
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listFavourites)
 requireSubstring "$LISTING" "Found 0 favourites:"
 
+echo "Make a new post using the options for a typical video post with thumbnail and make sure that we can see its information..."
+IMAGE_FILE="/tmp/image_file"
+createBinaryFile "$IMAGE_FILE" 512
+VIDEO_FILE="/tmp/video_file"
+createBinaryFile "$VIDEO_FILE" 4096
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "post with image" --description "includes a thumbnail and video" --thumbnailMime "image/jpeg" --thumbnailFile "$IMAGE_FILE" --element --mime "video/webm" --file "$VIDEO_FILE" --height 480 --width 640
+checkPreviousCommand "publishToThisChannel"
+LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
+# We should see the basics of this post in the listing.
+requireSubstring "$LISTING" "post with image"
+requireSubstring "$LISTING" "Thumbnail: QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW"
+requireSubstring "$LISTING" "QmWxHCZ2Xr2SQkSQn5ZFUVtvoF7tHt8Z3eJe4MFpEHFZt5 - video/webm"
+NEW_CID=$(echo "$LISTING" | grep "post with image" | cut -d ":" -f 1 | cut -d " " -f 3)
+POST_DETAILS=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --showPost --elementCid "$NEW_CID")
+requireSubstring "$POST_DETAILS" "Thumbnail: IpfsFile(QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW)"
+requireSubstring "$POST_DETAILS" "Video: IpfsFile(QmWxHCZ2Xr2SQkSQn5ZFUVtvoF7tHt8Z3eJe4MFpEHFZt5)"
+
 
 kill $PID1
 kill $PID2
