@@ -130,7 +130,7 @@ IMAGE_FILE="/tmp/image_file"
 createBinaryFile "$IMAGE_FILE" 512
 VIDEO_FILE="/tmp/video_file"
 createBinaryFile "$VIDEO_FILE" 4096
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "post with image" --description "includes a thumbnail and video" --thumbnailMime "image/jpeg" --thumbnailFile "$IMAGE_FILE" --element --mime "video/webm" --file "$VIDEO_FILE" --height 480 --width 640
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "post with image" --description "includes a thumbnail and video" --thumbnailMime "image/jpeg" --thumbnailFile "$IMAGE_FILE" --element --mime "video/webm" --file "$VIDEO_FILE" --height 480 --width 640 --replyTo "$FAVOURITE"
 checkPreviousCommand "publishToThisChannel"
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 # We should see the basics of this post in the listing.
@@ -139,6 +139,7 @@ requireSubstring "$LISTING" "Thumbnail: QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEK
 requireSubstring "$LISTING" "QmWxHCZ2Xr2SQkSQn5ZFUVtvoF7tHt8Z3eJe4MFpEHFZt5 - video/webm"
 NEW_CID=$(echo "$LISTING" | grep "post with image" | cut -d ":" -f 1 | cut -d " " -f 3)
 POST_DETAILS=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --showPost --elementCid "$NEW_CID")
+requireSubstring "$POST_DETAILS" "Reply to: IpfsFile($FAVOURITE)"
 requireSubstring "$POST_DETAILS" "Thumbnail: IpfsFile(QmeBAFpC3fbNhVMsExM8uS23gKmiaPQJbNu5rFEKDGdhcW)"
 requireSubstring "$POST_DETAILS" "Video: IpfsFile(QmWxHCZ2Xr2SQkSQn5ZFUVtvoF7tHt8Z3eJe4MFpEHFZt5)"
 

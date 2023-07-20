@@ -464,4 +464,14 @@ public class TestCommandParser
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 	}
+
+	@Test(expected = UsageException.class)
+	public void failReplyToParse() throws Throwable
+	{
+		String[] foo = {"--publishToThisChannel", "--name", "entry name", "--description", "entry description", "--replyTo", "NOT_A_CID"};
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		PrintStream capture = new PrintStream(outStream);
+		// We expect this to throw.
+		CommandParser.parseArgs(foo, capture);
+	}
 }

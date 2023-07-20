@@ -183,6 +183,7 @@ public class CommandParser
 				)
 					, new ArgParameter("--thumbnailMime", ParameterType.MIME, "The MIME type of the thumbnail")
 					, new ArgParameter("--thumbnailFile", ParameterType.FILE, "The file path to the thumbnail")
+					, new ArgParameter("--replyTo", ParameterType.CID, "The stream record to which this is a reply")
 				}
 				, "Makes a new post to the home user's channel."
 				, ELEMENT, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -190,8 +191,6 @@ public class CommandParser
 			String name = required[0].parse(String.class);
 			String description = required[1].parse(String.class);
 			String discussionUrl = _optionalString(optional[0]);
-			// TODO:  Add the replyTo option to this command.
-			IpfsFile replyTo = null;
 			String thumbnailMime = _optionalString(optional[1]);
 			File thumbnailFile = _optionalFile(optional[2]);
 			// We need both or neither of the thumbnail params.
@@ -199,6 +198,7 @@ public class CommandParser
 			{
 				throw new UsageException("Both or neither of the thumbnail file and MIME must be specified");
 			}
+			IpfsFile replyTo = _optionalCid(optional[3]);
 			ElementSubCommand elements[] = new ElementSubCommand[subElements.size()];
 			elements = subElements.toArray(elements);
 			return new PublishCommand(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailFile, elements);
@@ -561,7 +561,7 @@ public class CommandParser
 			int videoHeight = _optionalInt(required[5], -1);
 			int videoWidth = _optionalInt(required[6], -1);
 			String discussionUrl = _optionalString(optional[0]);
-			// TODO:  Add the replyTo option to this command.
+			// We will just use the null replyTo since this idiom is not meant to be this flexible/complicated.
 			IpfsFile replyTo = null;
 			ElementSubCommand elements[] = new ElementSubCommand[] {
 					new ElementSubCommand(videoMime, videoFile, videoHeight, videoWidth),
@@ -620,6 +620,14 @@ public class CommandParser
 		{
 			return (null != num)
 					? num.parse(IpfsKey.class)
+					: null
+			;
+		}
+		
+		private static IpfsFile _optionalCid(PreParse num) throws UsageException
+		{
+			return (null != num)
+					? num.parse(IpfsFile.class)
 					: null
 			;
 		}
