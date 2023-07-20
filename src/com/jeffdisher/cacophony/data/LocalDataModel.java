@@ -86,6 +86,16 @@ public class LocalDataModel
 			{
 				// Current version, do nothing special.
 			}
+			else if (1 == version)
+			{
+				// We don't support version 1 so throw an exception describing how to update.
+				throw new UsageException("Local storage version 1 cannot be migrated by this version.  Either delete the ~/.cacophony directory or try running with version 2.1.1, first.");
+			}
+			else if (2 == version)
+			{
+				// We don't support version 2 so throw an exception describing how to update.
+				throw new UsageException("Local storage version 2 cannot be migrated by this version.  Either delete the ~/.cacophony directory or try running with version 3.1, first.");
+			}
 			else
 			{
 				// Unknown.
