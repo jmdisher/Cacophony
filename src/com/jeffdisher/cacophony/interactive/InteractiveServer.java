@@ -55,7 +55,8 @@ public class InteractiveServer
 
 	public static void runServerUntilStop(Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{
-		startingContext.logger.logVerbose("Setting up initial state before starting server...");
+		ILogger startupLogger = startingContext.logger.logStart("Setting up initial state before starting server...");
+		long startMillis = startingContext.currentTimeMillisGenerator.getAsLong();
 		
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
@@ -185,6 +186,8 @@ public class InteractiveServer
 		}
 		background.startProcess();
 		runner.startThreads();
+		long endMillis = startingContext.currentTimeMillisGenerator.getAsLong();
+		startupLogger.logFinish("Startup completed:  " + (endMillis - startMillis) + " ms");
 		
 		DraftManager manager = serverContext.sharedDraftManager;
 		HandoffConnector<String, Long> videoProcessingConnector = new HandoffConnector<>(dispatcher);
