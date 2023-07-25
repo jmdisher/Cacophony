@@ -18,6 +18,7 @@ import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
+import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
@@ -115,9 +116,40 @@ public class DataDomain implements Closeable
 		// We will just make a basic system with 2 users.  This might expand in the future.
 		MockSwarm swarm = new MockSwarm();
 		String keyName = "Cacophony";
+		
+		// Create the "us" user - this is the fake "home" user.
+		MockSingleNode us = new MockSingleNode(swarm);
+		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
+		us.addNewKey(keyName, ourKey);
+		MultiThreadedScheduler ourScheduler = new MultiThreadedScheduler(us, 2);
+		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ourScheduler);
+		ILogger ourLogger = new SilentLogger();
+		Context ourContext = new Context(new DraftManager(ourFileSystem.getDraftsTopLevelDirectory())
+				, ourDataModel
+				, us
+				, ourScheduler
+				, () -> System.currentTimeMillis()
+				, ourLogger
+				, FAKE_BASE_URL
+				, null
+				, null
+				, null
+				, null
+		);
+		
+		// Create the "them" user - this is the fake "remote" user
 		MockSingleNode them = new MockSingleNode(swarm);
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey(keyName, theirKey);
+		new CreateChannelCommand(keyName).runInContext(ourContext);
+		ICommand.Result result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
+		us.publish(keyName, ourKey, result.getIndexToPublish());
+		
+		// We will post something as "us" that the "they" can reply to.
+		OnePost publishResult = new PublishCommand("Base post", "The base post made by \"us\".", null, null, null, null, new ElementSubCommand[0]).runInContext(ourContext);
+		us.publish(keyName, ourKey, publishResult.getIndexToPublish());
+		IpfsFile basePostCid = publishResult.recordCid;
+		
 		// "They" never save drafts so we will just use the same one as "our", just to pass the sanity checks.
 		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(ourFileSystem.getDraftsTopLevelDirectory());
 		MultiThreadedScheduler theirScheduler = new MultiThreadedScheduler(them, 2);
@@ -137,32 +169,10 @@ public class DataDomain implements Closeable
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
 		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site").runInContext(theirContext);
-		ICommand.Result result = new PublishCommand("post1", "some description of the post", null, null, null, null, new ElementSubCommand[0]).runInContext(theirContext);
-		IpfsFile newRoot = result.getIndexToPublish();
-		them.publish(keyName, theirKey, newRoot);
+		result = new PublishCommand("post1", "some description of the post", null, basePostCid, null, null, new ElementSubCommand[0]).runInContext(theirContext);
+		them.publish(keyName, theirKey, result.getIndexToPublish());
 		theirScheduler.shutdown();
 		
-		MockSingleNode us = new MockSingleNode(swarm);
-		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
-		us.addNewKey(keyName, ourKey);
-		MultiThreadedScheduler ourScheduler = new MultiThreadedScheduler(us, 2);
-		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ourScheduler);
-		ILogger ourLogger = new SilentLogger();
-		Context ourContext = new Context(new DraftManager(ourFileSystem.getDraftsTopLevelDirectory())
-				, ourDataModel
-				, us
-				, ourScheduler
-				, () -> System.currentTimeMillis()
-				, ourLogger
-				, FAKE_BASE_URL
-				, null
-				, null
-				, null
-				, null
-		);
-		new CreateChannelCommand(keyName).runInContext(ourContext);
-		result = new UpdateDescriptionCommand("us", "the main user", null, "email", null).runInContext(ourContext);
-		us.publish(keyName, ourKey, newRoot);
 		new StartFollowingCommand(theirKey).runInContext(ourContext);
 		// (for version 2.1, start follow doesn't fetch the data)
 		new RefreshFolloweeCommand(theirKey).runInContext(ourContext);

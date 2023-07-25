@@ -76,6 +76,11 @@ do
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
+# Note that this will also see the fake entry for the "home user" so read that, too.
+SAMPLE=$(cat "$WS_ENTRIES.out")
+echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
+requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
 echo "Connect the combined socket and do a similar verification..."
 mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear"
@@ -101,6 +106,11 @@ do
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 done
+# Note that this will also see the fake entry for the "home user" so read that, too.
+SAMPLE=$(cat "$WS_COMBINED.out")
+echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
+requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 # Note that this will also see the fake entry for the "other user" so read that, too.
 SAMPLE=$(cat "$WS_COMBINED.out")
 echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
