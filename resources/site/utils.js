@@ -38,6 +38,7 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 		"isDeleting": false,
 		"thumbnailUrl": null,
 		"publisherKey": null,
+		"replyTo": null,
 	};
 	// We want to build this backward so that the most recent additions are at the top of the screen.
 	if (isNewest)
@@ -66,6 +67,7 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 			"publisherKey": elt["publisherKey"],
 			"isDeleting": false,
 			"thumbnailUrl": elt["thumbnailUrl"],
+			"replyTo": elt["replyTo"],
 		}
 		// We need to replace the index due to the earlier mention of $apply.
 		// (we will use indexOf() since this is an exact instance match)
