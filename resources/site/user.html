@@ -402,10 +402,10 @@ function updateDescriptionText(descriptionText)
 			</div>
 			<h3 ng-show="null !== specialString">{{specialString}}</h3>
 			<div ng-show="isHomeUser">
-				<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isHomeUser" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post-mutable>
+				<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isHomeUser" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 			</div>
 			<div ng-hide="isHomeUser">
-				<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isHomeUser"></caco-post-mutable>
+				<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isHomeUser"></caco-post>
 			</div>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>

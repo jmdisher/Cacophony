@@ -112,7 +112,7 @@ function oldHashRemoved($scope, key)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
-			<caco-post ng-repeat="post in posts" post-tuple="post"></caco-post-mutable>
+			<caco-post ng-repeat="post in posts" post-tuple="post"></caco-post>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 	</div>
