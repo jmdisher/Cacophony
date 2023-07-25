@@ -221,6 +221,7 @@ public class InteractiveServer
 		validated.addWebSocketFactory("/server/events/status", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
 		validated.addWebSocketFactory("/server/events/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
 		validated.addWebSocketFactory("/server/events/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
+		validated.addWebSocketFactory("/server/events/replies", 0, EVENT_API_PROTOCOL, new WS_Replies(replyCacheConnector));
 		validated.addGetHandler("/server/postHashes", 1, new GET_PostHashes(serverContext));
 		validated.addGetHandler("/server/recommendedKeys", 1, new GET_RecommendedKeys(runner));
 		validated.addGetHandler("/server/postStruct", 2, new GET_PostStruct(runner));
