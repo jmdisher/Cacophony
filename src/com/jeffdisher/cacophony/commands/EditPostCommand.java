@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -45,7 +46,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 				throw new UsageException("Entry is not in our stream: " + _postToEdit);
 			}
 		}
-		_handleCacheUpdates(context.entryRegistry, context.recordCache, publicKey, _postToEdit, result.newRecordCid(), result.newRecord());
+		_handleCacheUpdates(context.entryRegistry, context.recordCache, context.replyCache, publicKey, _postToEdit, result.newRecordCid(), result.newRecord());
 		return new OnePost(result.newRoot(), result.newRecordCid(), result.newRecord());
 	}
 
@@ -135,7 +136,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		;
 	}
 
-	private static void _handleCacheUpdates(EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, IpfsKey publicKey, IpfsFile oldCid, IpfsFile newCid, AbstractRecord newStreamRecord)
+	private static void _handleCacheUpdates(EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsKey publicKey, IpfsFile oldCid, IpfsFile newCid, AbstractRecord newStreamRecord)
 	{
 		// NOTE:  This assumes that the leaves are the same between the old/new records.
 		
@@ -186,6 +187,13 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 			{
 				recordCache.recordVideoPinned(newCid, leaf.cid(), leaf.edgeSize());
 			}
+		}
+		
+		// Update the reply cache.
+		if (null != replyCache)
+		{
+			replyCache.removeHomePost(oldCid);
+			replyCache.addHomePost(newCid);
 		}
 	}
 

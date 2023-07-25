@@ -98,8 +98,8 @@ public class TestJsonGenerationHelpers
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.getSelectedKey(), indexFile);
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, null, context.getSelectedKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, null, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -153,13 +153,14 @@ public class TestJsonGenerationHelpers
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
+		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable run) -> run.run()));
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, context.getSelectedKey(), indexFile);
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, replyCache, context.getSelectedKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, replyCache, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).

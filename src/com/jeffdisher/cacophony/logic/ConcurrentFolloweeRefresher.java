@@ -219,6 +219,7 @@ public class ConcurrentFolloweeRefresher
 	 * @param access System write access.
 	 * @param recordCache The local cache which should be updated in response to finishing this refresh (can be null).
 	 * @param userInfoCache The user info cache which should be updated in response to finishing this refresh (can be null).
+	 * @param replyCache The cache of the replyTo relationships to update when adding/removing followee posts with replies.
 	 * @param followees The followees structure to update.
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
 	 * @throws IpfsConnectionException There was a problem accessing data from the network.
@@ -228,6 +229,7 @@ public class ConcurrentFolloweeRefresher
 	public void finishRefresh(IWritingAccess access
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
+			, HomeUserReplyCache replyCache
 			, IFolloweeWriting followees
 			, long currentTimeMillis
 	) throws IpfsConnectionException, ProtocolDataException, KeyException
@@ -253,7 +255,7 @@ public class ConcurrentFolloweeRefresher
 			// The record cache is null in cases where this is a one-off operation and there is no cache.
 			if (null != recordCache)
 			{
-				_refreshSupport.commitLocalCacheUpdates(recordCache, userInfoCache);
+				_refreshSupport.commitLocalCacheUpdates(recordCache, userInfoCache, replyCache);
 			}
 			_transaction.commit(resolver);
 		}

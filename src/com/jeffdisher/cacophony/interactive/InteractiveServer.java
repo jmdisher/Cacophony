@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -62,10 +63,12 @@ public class InteractiveServer
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
 		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
+		HandoffConnector<IpfsFile, IpfsFile> replyCacheConnector = new HandoffConnector<>(dispatcher);
 		
 		PrefsData prefs = null;
 		LocalRecordCache localRecordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
+		HomeUserReplyCache replyCache = new HomeUserReplyCache(replyCacheConnector);
 		EntryCacheRegistry entryRegistry;
 		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
@@ -94,18 +97,19 @@ public class InteractiveServer
 				// This is a start-up failure.
 				throw e;
 			}
+			// Note that we need to populate the record cache builder with home users before followees to make sure we can discover the replyTo relationships.
 			for (IReadingAccess.HomeUserTuple tuple : homeTuples)
 			{
-				LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, tuple.publicKey(), tuple.lastRoot());
+				LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, replyCache, tuple.publicKey(), tuple.lastRoot());
 			}
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, followees);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, replyCache, followees);
 			entryRegistry = entryRegistryBuilder.buildRegistry(
 					(IpfsFile elementHash) -> access.loadCached(elementHash, AbstractRecord.DESERIALIZER)
 			);
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, null);
+		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, replyCache);
 		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
 		// We will create a handoff connector for the status operations from the background operations.

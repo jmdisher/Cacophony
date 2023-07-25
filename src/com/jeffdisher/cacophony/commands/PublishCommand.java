@@ -104,7 +104,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 		}
 		if (null != context.recordCache)
 		{
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(context.recordCache, newElement, newRecord);
+			Assert.assertTrue(null != context.replyCache);
+			LocalRecordCacheBuilder.updateCacheWithNewUserPost(context.recordCache, context.replyCache, newElement, newRecord);
 		}
 		
 		log.logOperation("New element: " + newElement);

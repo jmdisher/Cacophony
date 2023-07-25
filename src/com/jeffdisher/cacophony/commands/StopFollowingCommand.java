@@ -80,7 +80,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
 		try
 		{
-			refresher.finishRefresh(access, context.recordCache, context.userInfoCache, followees, lastPollMillis);
+			refresher.finishRefresh(access, context.recordCache, context.userInfoCache, context.replyCache, followees, lastPollMillis);
 		}
 		catch (KeyException e)
 		{

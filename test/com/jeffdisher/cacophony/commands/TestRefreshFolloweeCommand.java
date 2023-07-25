@@ -8,11 +8,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.commands.results.OnePost;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.testutils.MockUserNode;
+import com.jeffdisher.cacophony.types.IpfsFile;
 
 
 public class TestRefreshFolloweeCommand
@@ -30,7 +33,8 @@ public class TestRefreshFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
-		user1.setContextCaches(recordCache, null, null, null);
+		HomeUserReplyCache replyToCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable run) -> run.run()));
+		user1.setContextCaches(recordCache, null, null, replyToCache);
 		// Create the users.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -65,7 +69,8 @@ public class TestRefreshFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
-		user1.setContextCaches(recordCache, null, null, null);
+		HomeUserReplyCache replyToCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable run) -> run.run()));
+		user1.setContextCaches(recordCache, null, null, replyToCache);
 		// Create the users.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));

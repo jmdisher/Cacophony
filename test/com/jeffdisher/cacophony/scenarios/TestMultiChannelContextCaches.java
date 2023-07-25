@@ -18,7 +18,9 @@ import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.testutils.MockKeys;
@@ -47,7 +49,8 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
+		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run()));
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, replyCache);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
@@ -80,7 +83,8 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
+		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run()));
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, replyCache);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
@@ -118,7 +122,8 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
+		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run()));
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, replyCache);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
@@ -165,7 +170,8 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
+		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run()));
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, replyCache);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));

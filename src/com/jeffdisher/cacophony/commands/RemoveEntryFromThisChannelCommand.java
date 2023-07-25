@@ -6,6 +6,7 @@ import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -38,7 +39,7 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing entry " + _elementCid + " from channel...");
-			newRoot = _run(access, context.recordCache, _elementCid);
+			newRoot = _run(access, context.recordCache, context.replyCache, _elementCid);
 			if (null == newRoot)
 			{
 				throw new UsageException("Unknown post");
@@ -59,11 +60,12 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	 * 
 	 * @param access Write access.
 	 * @param recordCache The record cache to update when removing (can be null).
+	 * @param replyCache The reply cache to update when removing (can be null).
 	 * @param postToRemove The CID of the record to remove.
 	 * @return The new local root element or null, if the entry wasn't found.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static IpfsFile _run(IWritingAccess access, LocalRecordCache recordCache, IpfsFile postToRemove) throws IpfsConnectionException
+	private static IpfsFile _run(IWritingAccess access, LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsFile postToRemove) throws IpfsConnectionException
 	{
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecords records = modifier.loadRecords();
@@ -129,6 +131,12 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 				recordCache.recordMetaDataReleased(postToRemove);
 			}
 			access.unpin(postToRemove);
+			
+			// Update the reply cache.
+			if (null != replyCache)
+			{
+				replyCache.removeHomePost(postToRemove);
+			}
 		}
 		return newRoot;
 	}

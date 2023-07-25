@@ -35,6 +35,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 	private final List<Consumer<LocalRecordCache>> _localRecordCacheUpdates;
 	private final List<Consumer<LocalUserInfoCache>> _userInfoCacheUpdates;
+	private final List<Consumer<HomeUserReplyCache>> _replyCacheUpdates;
 
 	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
@@ -58,6 +59,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_elementsToAddToCache = new ArrayList<>();
 		_localRecordCacheUpdates = new ArrayList<>();
 		_userInfoCacheUpdates = new ArrayList<>();
+		_replyCacheUpdates = new ArrayList<>();
 	}
 
 	public void commitFolloweeChanges(IFolloweeWriting followees)
@@ -77,8 +79,9 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	 * 
 	 * @param recordCache The cache to update.
 	 * @param userInfoCache The user info cache to update.
+	 * @param replyCache The replyTo cache to update.
 	 */
-	public void commitLocalCacheUpdates(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache)
+	public void commitLocalCacheUpdates(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, HomeUserReplyCache replyCache)
 	{
 		for (Consumer<LocalRecordCache> consumer : _localRecordCacheUpdates)
 		{
@@ -87,6 +90,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		for (Consumer<LocalUserInfoCache> consumer : _userInfoCacheUpdates)
 		{
 			consumer.accept(userInfoCache);
+		}
+		for (Consumer<HomeUserReplyCache> consumer : _replyCacheUpdates)
+		{
+			consumer.accept(replyCache);
 		}
 	}
 
@@ -160,6 +167,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		}
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
+		IpfsFile replyTo = recordData.getReplyTo();
 		_localRecordCacheUpdates.add((LocalRecordCache cache) -> {
 			cache.recordMetaDataPinned(elementHash
 					, recordData.getName()
@@ -167,7 +175,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 					, recordData.getPublishedSecondsUtc()
 					, recordData.getDiscussionUrl()
 					, recordData.getPublisherKey()
-					, recordData.getReplyTo()
+					, replyTo
 					, recordData.getExternalElementCount()
 			);
 			if (null != imageHash)
@@ -183,6 +191,12 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 				cache.recordVideoPinned(elementHash, videoLeaf, videoEdgeSize);
 			}
 		});
+		if (null != replyTo)
+		{
+			_replyCacheUpdates.add((HomeUserReplyCache replyCache) -> {
+				replyCache.addFolloweePost(elementHash, replyTo);
+			});
+		}
 	}
 	@Override
 	public void removeElementFromCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
@@ -208,5 +222,11 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			}
 			cache.recordMetaDataReleased(elementHash);
 		});
+		if (null != recordData.getReplyTo())
+		{
+			_replyCacheUpdates.add((HomeUserReplyCache replyCache) -> {
+				replyCache.removeFolloweePost(elementHash);
+			});
+		}
 	}
 }
