@@ -85,6 +85,7 @@ public class TestJsonGenerationHelpers
 				, null
 				, null
 				, null
+				, null
 				, MockKeys.K1
 		);
 		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, MockKeys.K1))
@@ -129,6 +130,7 @@ public class TestJsonGenerationHelpers
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
+				, null
 				, null
 				, null
 				, null

@@ -235,6 +235,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
+				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);
 		
@@ -382,6 +383,7 @@ public class TestInteractiveHelpers
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
+				, null
 				, null
 				, null
 				, null

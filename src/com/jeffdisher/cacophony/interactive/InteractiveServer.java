@@ -105,7 +105,7 @@ public class InteractiveServer
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry);
+		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, null);
 		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
 		// We will create a handoff connector for the status operations from the background operations.

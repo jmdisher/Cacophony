@@ -47,7 +47,7 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry);
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
@@ -80,7 +80,7 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry);
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
@@ -118,7 +118,7 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry);
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));
@@ -165,7 +165,7 @@ public class TestMultiChannelContextCaches
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry.Builder((Runnable r) -> r.run(), 0).buildRegistry(null);
-		home.setContextCaches(recordCache, userInfoCache, entryRegistry);
+		home.setContextCaches(recordCache, userInfoCache, entryRegistry, null);
 		
 		// Create the channel.
 		home.runCommand(null, new CreateChannelCommand(KEY_NAME1));

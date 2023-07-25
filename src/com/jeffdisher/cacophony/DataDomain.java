@@ -135,6 +135,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
+				, null
 		);
 		
 		// Create the "them" user - this is the fake "remote" user
@@ -162,6 +163,7 @@ public class DataDomain implements Closeable
 				, () -> System.currentTimeMillis()
 				, theirLogger
 				, FAKE_BASE_URL
+				, null
 				, null
 				, null
 				, null

@@ -6,6 +6,7 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -31,6 +32,7 @@ public class Context
 	public final LocalRecordCache recordCache;
 	public final LocalUserInfoCache userInfoCache;
 	public final EntryCacheRegistry entryRegistry;
+	public final HomeUserReplyCache replyCache;
 	private IpfsKey _selectedKey;
 
 	public Context(DraftManager sharedDraftManager
@@ -43,6 +45,7 @@ public class Context
 			, LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, EntryCacheRegistry entryRegistry
+			, HomeUserReplyCache replyCache
 			, IpfsKey selectedKey
 	)
 	{
@@ -56,6 +59,7 @@ public class Context
 		this.recordCache = recordCache;
 		this.userInfoCache = userInfoCache;
 		this.entryRegistry = entryRegistry;
+		this.replyCache = replyCache;
 		_selectedKey = selectedKey;
 	}
 
@@ -83,11 +87,16 @@ public class Context
 				, this.recordCache
 				, this.userInfoCache
 				, this.entryRegistry
+				, this.replyCache
 				, selectedKey
 		);
 	}
 
-	public synchronized Context cloneWithExtras(LocalRecordCache localRecordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry)
+	public synchronized Context cloneWithExtras(LocalRecordCache localRecordCache
+			, LocalUserInfoCache userInfoCache
+			, EntryCacheRegistry entryRegistry
+			, HomeUserReplyCache replyCache
+	)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
 		return new Context(this.sharedDraftManager
@@ -100,6 +109,7 @@ public class Context
 				, localRecordCache
 				, userInfoCache
 				, entryRegistry
+				, replyCache
 				, _selectedKey
 		);
 	}

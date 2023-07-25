@@ -30,7 +30,7 @@ public class TestRefreshFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
-		user1.setContextCaches(recordCache, null, null);
+		user1.setContextCaches(recordCache, null, null, null);
 		// Create the users.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));
@@ -65,7 +65,7 @@ public class TestRefreshFolloweeCommand
 		MockUserNode user2 = new MockUserNode(KEY_NAME, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
-		user1.setContextCaches(recordCache, null, null);
+		user1.setContextCaches(recordCache, null, null, null);
 		// Create the users.
 		user1.runCommand(null, new CreateChannelCommand(KEY_NAME));
 		user2.runCommand(null, new CreateChannelCommand(KEY_NAME));

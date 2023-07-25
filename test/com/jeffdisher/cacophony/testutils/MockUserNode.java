@@ -16,6 +16,7 @@ import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
+import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCache;
@@ -55,7 +56,7 @@ public class MockUserNode
 		_logger = new SilentLogger();
 	}
 
-	public void setContextCaches(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry)
+	public void setContextCaches(LocalRecordCache recordCache, LocalUserInfoCache userInfoCache, EntryCacheRegistry entryRegistry, HomeUserReplyCache replyCache)
 	{
 		// This will force the context to be created.
 		Assert.assertTrue(null == _lazyContext);
@@ -81,6 +82,7 @@ public class MockUserNode
 				, recordCache
 				, userInfoCache
 				, entryRegistry
+				, replyCache
 				, null
 		);
 	}
@@ -122,6 +124,7 @@ public class MockUserNode
 					, defaultContext.currentTimeMillisGenerator
 					, logger
 					, defaultContext.baseUrl
+					, null
 					, null
 					, null
 					, null
@@ -279,6 +282,7 @@ public class MockUserNode
 					, () -> System.currentTimeMillis()
 					, _logger
 					, DataDomain.FAKE_BASE_URL
+					, null
 					, null
 					, null
 					, null
