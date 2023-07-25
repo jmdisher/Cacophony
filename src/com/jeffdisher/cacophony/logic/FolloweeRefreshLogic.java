@@ -264,6 +264,7 @@ public class FolloweeRefreshLogic
 			// Process the removed set, adding them to the meta-data to unpin collection and adding any cached leaves to the files to unpin collection.
 			for (IpfsFile removedRecord : removedRecords)
 			{
+				AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
 				IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
 				IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
 				IpfsFile audioHash = null;
@@ -272,7 +273,6 @@ public class FolloweeRefreshLogic
 				if (null != leafHash)
 				{
 					// We need to find out if the leaf is audio or video, so we can correctly report it.
-					AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
 					for (Leaf leaf : record.getVideoExtension())
 					{
 						if (leafHash.equals(leaf.cid()))
@@ -302,7 +302,7 @@ public class FolloweeRefreshLogic
 				{
 					support.deferredRemoveFileFromFollowCache(leafHash);
 				}
-				support.removeElementFromCache(removedRecord, imageHash, audioHash, videoHash, videoEdgeSize);
+				support.removeElementFromCache(removedRecord, record, imageHash, audioHash, videoHash, videoEdgeSize);
 			}
 			
 			// Walk the new record list to create our final FollowingCacheElement list:
@@ -727,12 +727,14 @@ public class FolloweeRefreshLogic
 		 * Note that this is called after any associated leaves have also been enqueued for unpin.
 		 * 
 		 * @param elementHash The now-unpinned CID of the meta-data XML.
+		 * @param recordData The high-level record data.
 		 * @param imageHash The now-unpinned image data (or null).
 		 * @param audioHash The now-unpinned audio data (or null).
 		 * @param videoHash The now-unpinned video data (or null).
 		 * @param videoEdgeSize The edge size of the video (0 if video null).
 		 */
 		void removeElementFromCache(IpfsFile elementHash
+				, AbstractRecord recordData
 				, IpfsFile imageHash
 				, IpfsFile audioHash
 				, IpfsFile videoHash

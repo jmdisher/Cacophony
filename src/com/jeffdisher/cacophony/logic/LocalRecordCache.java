@@ -62,7 +62,8 @@ public class LocalRecordCache
 	}
 
 	/**
-	 * Records that the meta-data element for this StreamRecord has been pinned locally.
+	 * Records that the meta-data element for this StreamRecord has been pinned locally.  This is called for both
+	 * followee records and home channel records.
 	 * Note that this expects to be called multiple times when referenced multiple times.
 	 * 
 	 * @param cid The CID of the meta-data.

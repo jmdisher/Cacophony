@@ -978,7 +978,7 @@ public class TestFolloweeRefreshLogic
 			}
 		}
 		@Override
-		public void removeElementFromCache(IpfsFile elementHash, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
+		public void removeElementFromCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
 		{
 			int match = -1;
 			for (int i = 0; i < _list.size(); ++i)
