@@ -250,7 +250,6 @@ public class InteractiveServer
 		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
 		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
 		validated.addPostRawHandler("/draft/publish", 3, new POST_Raw_DraftPublish(runner, background, manager));
-		validated.addPostRawHandler("/draft/waitPublish", 0, new POST_Raw_WaitPublish(serverContext, background));
 		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
 		validated.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(manager));
 		validated.addDeleteHandler("/draft/thumb", 1, new DELETE_DraftThumb(manager));

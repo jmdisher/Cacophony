@@ -186,31 +186,6 @@ public class BackgroundOperations
 		}
 	}
 
-	/**
-	 * Blocks until any enqueued publish operations are complete.
-	 */
-	public synchronized void waitForPendingPublish(IpfsKey publicKey)
-	{
-		// We just want to make sure that the time of publish is non-zero (meaning it was picked up since we last
-		// requested it) and that this key isn't currently republishing (since that means it hasn't completed yet).
-		// (we need to wait for the publish to finish since the publish time is set when it STARTS, not finishes)
-		ScheduleableRepublish ready = _handoff_localChannelsByKey.get(publicKey);
-		Assert.assertTrue(null != ready);
-		while (_handoff_keepRunning && (0L == ready.lastPublishMillis) && !publicKey.equals(_handoff_currentlyPublishing))
-		{
-			try
-			{
-				// Just wait.
-				this.wait();
-			}
-			catch (InterruptedException e)
-			{
-				// We don't use interruption on the top-level threads.
-				throw Assert.unexpected(e);
-			}
-		}
-	}
-
 	public synchronized void intervalsWereUpdated(long republishIntervalMillis, long followeeRefreshMillis)
 	{
 		// Note that we just update the instance variables but won't reschedule anything already in our system.

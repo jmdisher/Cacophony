@@ -305,9 +305,6 @@ requireSubstring "$ERROR" "Invalid draft type: \"BOGUS\""
 # Now, do it correctly.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/VIDEO
 
-echo "Waiting for draft publish..."
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/waitPublish
-
 echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$WS_ENTRIES.out")
 echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
@@ -379,8 +376,6 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 REPLY_HASH=$(echo "$POST_LIST" | cut -d \" -f 4)
 requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
-# Wait for it to publish.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/waitPublish
 
 # Check for this in the WebSockets.
 SAMPLE=$(cat "$WS_ENTRIES.out")
