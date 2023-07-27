@@ -342,6 +342,7 @@ public class TestAbstractWrappers
 		pictureRef.setMime("image/jpeg");
 		pictureRef.setValue(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
 		description.setPicture(pictureRef);
+		description.setFeature(MockSingleNode.generateHash(new byte[] {2}).toSafeString());
 		byte[] data = GlobalData2.serializeDescription(description);
 		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV2();
@@ -353,6 +354,7 @@ public class TestAbstractWrappers
 		Assert.assertEquals("image/jpeg", middle.getPicMime());
 		Assert.assertEquals("test@example.com", middle.getEmail());
 		Assert.assertEquals("http://example.com", middle.getWebsite());
+		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 2 }), middle.getFeature());
 	}
 
 	@Test

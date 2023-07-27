@@ -36,6 +36,7 @@ public class AbstractDescription
 				, null
 				, null
 				, null
+				, null
 		);
 	}
 
@@ -66,12 +67,14 @@ public class AbstractDescription
 		Map<String, String> misc = descriptionV2.getMisc().stream().collect(Collectors.toMap(
 				MiscData::getType, MiscData::getValue
 		));
+		String rawFeature = descriptionV2.getFeature();
 		return new AbstractDescription(descriptionV2.getName()
 				, descriptionV2.getDescription()
 				, (null != ref) ? ref.getMime() : null
 				, (null != ref) ? IpfsFile.fromIpfsCid(ref.getValue()) : null
 				, misc.get(GlobalData2.DESCRIPTION_MISC_TYPE_EMAIL)
 				, misc.get(GlobalData2.DESCRIPTION_MISC_TYPE_WEBSITE)
+				, (null != rawFeature) ? IpfsFile.fromIpfsCid(rawFeature) : null
 		);
 	}
 
@@ -84,6 +87,7 @@ public class AbstractDescription
 				, IpfsFile.fromIpfsCid(recordV1.getPicture())
 				, recordV1.getEmail()
 				, recordV1.getWebsite()
+				, null
 		);
 	}
 
@@ -94,6 +98,7 @@ public class AbstractDescription
 	private IpfsFile _picCid;
 	private String _email;
 	private String _website;
+	private IpfsFile _feature;
 
 	private AbstractDescription(String name
 			, String description
@@ -101,6 +106,7 @@ public class AbstractDescription
 			, IpfsFile picCid
 			, String email
 			, String website
+			, IpfsFile feature
 	)
 	{
 		_name = name;
@@ -109,6 +115,7 @@ public class AbstractDescription
 		_picCid = picCid;
 		_email = email;
 		_website = website;
+		_feature = feature;
 	}
 
 	/**
@@ -214,6 +221,24 @@ public class AbstractDescription
 	}
 
 	/**
+	 * @return The user's feature post CID (could be null).
+	 */
+	public IpfsFile getFeature()
+	{
+		return _feature;
+	}
+
+	/**
+	 * Sets the user's feature post CID.
+	 * 
+	 * @param feature The new feature post CID for the user (can be null to clear it).
+	 */
+	public void setFeature(IpfsFile feature)
+	{
+		_feature = feature;
+	}
+
+	/**
 	 * Serializes the instance as a V1 StreamDescription, returning the resulting byte array.
 	 * 
 	 * @return The byte array of the serialized instance
@@ -239,6 +264,8 @@ public class AbstractDescription
 			Assert.assertTrue(_website.length() > 0);
 			description.setWebsite(_website);
 		}
+		// We can't be using a feature if serializing V1.
+		Assert.assertTrue(null == _feature);
 		return GlobalData.serializeDescription(description);
 	}
 
@@ -279,6 +306,10 @@ public class AbstractDescription
 			data.setType(GlobalData2.DESCRIPTION_MISC_TYPE_WEBSITE);
 			data.setValue(_website);
 			misc.add(data);
+		}
+		if (null != _feature)
+		{
+			description.setFeature(_feature.toSafeString());
 		}
 		return GlobalData2.serializeDescription(description);
 	}
