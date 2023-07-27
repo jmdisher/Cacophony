@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * -userPicUrl
  * -email
  * -website
+ * -feature
  */
 public class GET_UserInfo implements ValidatedEntryPoints.GET
 {
@@ -45,6 +46,7 @@ public class GET_UserInfo implements ValidatedEntryPoints.GET
 					, _context.baseUrl + cached.userPicCid().toSafeString()
 					, cached.emailOrNull()
 					, cached.websiteOrNull()
+					, cached.featureOrNull()
 			);
 			response.setContentType("application/json");
 			response.setStatus(HttpServletResponse.SC_OK);

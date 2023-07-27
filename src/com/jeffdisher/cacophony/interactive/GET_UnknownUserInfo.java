@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * -userPicUrl
  * -email
  * -website
+ * -feature
  */
 public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 {
@@ -53,6 +54,7 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 						, result.userPicUrl
 						, result.email
 						, result.website
+						, result.feature
 				);
 				response.setContentType("application/json");
 				response.getWriter().print(userInfo.toString());

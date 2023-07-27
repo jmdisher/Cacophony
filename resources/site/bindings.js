@@ -12,6 +12,7 @@ var GLOBAL_UnknownUserLoader = {
 	// -userPicUrl
 	// -email
 	// -website
+	// -feature
 	// -publicKey
 	loadTuple: function(publicKey)
 	{

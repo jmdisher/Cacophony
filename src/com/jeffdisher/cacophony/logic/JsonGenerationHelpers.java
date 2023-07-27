@@ -65,7 +65,7 @@ public class JsonGenerationHelpers
 		return dataPrefs;
 	}
 
-	public static JsonObject userDescription(String name, String description, String userPicUrl, String emailOrNull, String websiteOrNull)
+	public static JsonObject userDescription(String name, String description, String userPicUrl, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
 	{
 		JsonObject thisUser = new JsonObject();
 		thisUser.set("name", name);
@@ -73,6 +73,7 @@ public class JsonGenerationHelpers
 		thisUser.set("userPicUrl", userPicUrl);
 		thisUser.set("email", emailOrNull);
 		thisUser.set("website", websiteOrNull);
+		thisUser.set("feature", (null != featureOrNull) ? featureOrNull.toSafeString() : null);
 		return thisUser;
 	}
 
