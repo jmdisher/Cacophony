@@ -824,7 +824,7 @@ public class TestFolloweeRefreshLogic
 			// No logging in tests.
 		}
 		@Override
-		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
+		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
 		{
 			this.lastName = name;
 		}

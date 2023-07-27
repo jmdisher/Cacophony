@@ -47,6 +47,7 @@ public class LocalUserInfoCache
 	 * @param userPicCid The user's picture CID.
 	 * @param emailOrNull The user's E-Mail address (could be null).
 	 * @param websiteOrNull The user's website (could be null).
+	 * @param featureOrNull The user's feature post (could be null if not changing).
 	 */
 	public synchronized void setUserInfo(IpfsKey userKey
 			, String name
@@ -54,6 +55,7 @@ public class LocalUserInfoCache
 			, IpfsFile userPicCid
 			, String emailOrNull
 			, String websiteOrNull
+			, IpfsFile featureOrNull
 	)
 	{
 		Assert.assertTrue(null != userKey);
@@ -66,6 +68,7 @@ public class LocalUserInfoCache
 				, userPicCid
 				, emailOrNull
 				, websiteOrNull
+				, featureOrNull
 		));
 	}
 
@@ -88,6 +91,7 @@ public class LocalUserInfoCache
 			, IpfsFile userPicCid
 			, String emailOrNull
 			, String websiteOrNull
+			, IpfsFile featureOrNull
 	)
 	{
 	}

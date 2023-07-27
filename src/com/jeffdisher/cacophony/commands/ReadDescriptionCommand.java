@@ -64,6 +64,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 					, cached.emailOrNull()
 					, cached.websiteOrNull()
 					, userPicUrl
+					, cached.featureOrNull()
 			);
 		}
 		return result;
@@ -100,6 +101,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 						, description.getEmail()
 						, description.getWebsite()
 						, userPicUrl
+						, description.getFeature()
 				);
 			}
 		}
@@ -124,6 +126,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 					, description.getEmail()
 					, description.getWebsite()
 					, userPicUrl
+					, description.getFeature()
 			);
 		}
 		return result;

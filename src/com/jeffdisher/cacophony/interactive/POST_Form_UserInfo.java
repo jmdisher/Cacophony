@@ -68,6 +68,7 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 					, result.userPicCid
 					, result.email
 					, result.website
+					, result.feature
 			);
 		}
 	}

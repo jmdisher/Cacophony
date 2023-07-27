@@ -363,6 +363,7 @@ public class LocalRecordCacheBuilder
 				, description.getPicCid()
 				, description.getEmail()
 				, description.getWebsite()
+				, description.getFeature()
 		);
 	}
 

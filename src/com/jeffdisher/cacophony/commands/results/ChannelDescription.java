@@ -20,6 +20,7 @@ public class ChannelDescription implements ICommand.Result
 	public final String email;
 	public final String website;
 	public final String userPicUrl;
+	public final IpfsFile feature;
 
 	public ChannelDescription(IpfsFile newRoot
 			, String name
@@ -28,6 +29,7 @@ public class ChannelDescription implements ICommand.Result
 			, String email
 			, String website
 			, String userPicUrl
+			, IpfsFile feature
 	)
 	{
 		// newRoot is null when this result isn't changing anything.
@@ -43,6 +45,7 @@ public class ChannelDescription implements ICommand.Result
 		this.email = email;
 		this.website = website;
 		this.userPicUrl = userPicUrl;
+		this.feature = feature;
 	}
 
 	@Override
@@ -60,5 +63,6 @@ public class ChannelDescription implements ICommand.Result
 		output.println("\tUser pic: " + this.userPicUrl);
 		output.println("\tE-Mail: " + this.email);
 		output.println("\tWebsite: " + this.website);
+		output.println("\tFeature: " + this.feature);
 	}
 }

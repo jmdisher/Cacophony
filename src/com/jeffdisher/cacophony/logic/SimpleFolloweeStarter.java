@@ -108,12 +108,12 @@ public class SimpleFolloweeStarter
 			return _access.getSizeInBytes(cid);
 		}
 		@Override
-		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
+		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
 		{
 			// Note that the info cache is only used in interactive mode, so it might be null.
 			if (null != _userInfoCache)
 			{
-				_userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull);
+				_userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
 			}
 		}
 		@Override

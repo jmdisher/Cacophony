@@ -25,7 +25,7 @@ public class TestLocalUserInfoCache
 	public void testBasicRead() throws Throwable
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
-		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null);
+		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null, null);
 		LocalUserInfoCache.Element elt = cache.getUserInfo(MockKeys.K1);
 		Assert.assertEquals("name", elt.name());
 		Assert.assertEquals("description", elt.description());
@@ -38,9 +38,9 @@ public class TestLocalUserInfoCache
 	public void testReadAfterUpdate() throws Throwable
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
-		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null);
+		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null, null);
 		LocalUserInfoCache.Element elt1 = cache.getUserInfo(MockKeys.K1);
-		cache.setUserInfo(MockKeys.K1, "name2", "description2", F2, "email", "site");
+		cache.setUserInfo(MockKeys.K1, "name2", "description2", F2, "email", "site", null);
 		LocalUserInfoCache.Element elt2 = cache.getUserInfo(MockKeys.K1);
 		
 		Assert.assertEquals("name", elt1.name());

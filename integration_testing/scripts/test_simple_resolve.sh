@@ -99,8 +99,10 @@ CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACO
 checkPreviousCommand "updateDescription2"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "Name: NAME2"
+requireSubstring "$DESCRIPTION" "Feature: null"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC1)
 requireSubstring "$DESCRIPTION" "Name: NAME1"
+requireSubstring "$DESCRIPTION" "Feature: null"
 
 echo "Verify that the answer for something which should not exist makes sense..."
 # Redirect error since it logs the exception.

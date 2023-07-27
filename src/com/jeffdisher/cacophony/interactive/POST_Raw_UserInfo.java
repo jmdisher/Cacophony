@@ -58,6 +58,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 					, result.userPicCid
 					, result.email
 					, result.website
+					, result.feature
 			);
 			
 			// Write out the uploaded file's URL.

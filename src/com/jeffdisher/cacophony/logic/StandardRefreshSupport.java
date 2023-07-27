@@ -103,10 +103,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_logger.logVerbose(message);
 	}
 	@Override
-	public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull)
+	public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
 	{
 		_userInfoCacheUpdates.add((LocalUserInfoCache userInfoCache) -> {
-			userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull);
+			userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
 		});
 	}
 	@Override

@@ -83,6 +83,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				, updated.getEmail()
 				, updated.getWebsite()
 				, pictureUrl
+				, updated.getFeature()
 		);
 	}
 
