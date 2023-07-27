@@ -80,6 +80,33 @@ function postWasLoaded($scope, elt)
 		}
 	}
 	
+	// We need to get the public key to see if we made this post.
+	// Then, we need to check that user's info to see if this is the feature.
+	$scope.isOurPost = false;
+	$scope.isFeature = false;
+	REST.GET("/home/publicKey")
+		.then(response => response.text())
+		.then((publicKey) => {
+			$scope.isOurPost = ($scope.publisherKey == publicKey);
+			if ($scope.isOurPost)
+			{
+				GLOBAL_UnknownUserLoader.loadTuple(publicKey).then(userInfo => {
+					$scope.isFeature = (userInfo.feature === $scope.elementHash);
+					$scope.$apply();
+				});
+			}
+			$scope.$apply();
+		});
+	$scope.setAsFeature = function()
+	{
+		REST.POST("/home/userInfo/feature/" + $scope.publisherKey + "/" + $scope.elementHash)
+			.then(function() {
+				$scope.isFeature = true;
+				$scope.$apply();
+			})
+		;
+	}
+	
 	$scope.$apply();
 }
 
@@ -187,6 +214,13 @@ function setupEnvironment($scope)
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="addFavourite()">Confirm</a></li></ul>
 			</div>
 			<button type="button" class="btn btn-sm btn-success" ng-click="postReply()">Post a Reply</button>
+			<div class="btn-group" ng-show="isOurPost && !isFeature">
+				<button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Set as feature post</button>
+				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="setAsFeature()">Confirm</a></li></ul>
+			</div>
+			<div ng-show="isOurPost && isFeature">
+				Note that this is the feature post on your profile.
+			</div>
 		</div>
 	</div>
 </div>

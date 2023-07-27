@@ -256,6 +256,15 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		{
 		}
 	);
+	$scope.clearFeature = function()
+	{
+		REST.POST("/home/userInfo/feature/" + $scope.publicKey + "/NONE")
+			.then(result => {
+				$scope.description.feature = null;
+				$scope.$apply();
+			})
+		;
+	}
 }
 function userInfoForUserLoaded($scope, userInfo)
 {
@@ -361,6 +370,13 @@ function updateDescriptionText(descriptionText)
 						</div>
 						<button class="btn btn-primary" ng-click="enterEditMode()" ng-show="isHomeUser">Edit Info</button><br />
 						<a ng-href="recommending.html?publicKey={{publicKey}}">Recommended Users</a><br />
+						<span ng-show="null != description.feature">
+							Channel feature post:  <caco-post-small cid="description.feature"></caco-post-small>
+							<div class="btn-group" ng-show="isHomeUser">
+								<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Clear Feature</button>
+								<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="clearFeature()">Confirm</a></li></ul>
+							</div>
+						</span><br />
 					</div>
 				</div>
 			</div>
