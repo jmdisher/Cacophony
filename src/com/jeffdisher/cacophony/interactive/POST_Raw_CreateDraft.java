@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.types.CidOrNone;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +19,6 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 {
-	public static final String NONE_PARAMETER = "NONE";
 	private final Context _context;
 	private final DraftManager _draftManager;
 	
@@ -31,27 +31,10 @@ public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
 	{
-		// Check the replyTo (could be empty string or CID).
-		String rawReplyTo = pathVariables[0];
-		IpfsFile replyTo = null;
-		boolean isGood = true;
-		if (!NONE_PARAMETER.equals(rawReplyTo))
-		{
-			replyTo = IpfsFile.fromIpfsCid(rawReplyTo);
-			if (null == replyTo)
-			{
-				isGood = false;
-			}
-		}
-		
-		if (isGood)
-		{
-			_proceed(response, replyTo);
-		}
-		else
-		{
-			response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
-		}
+		// Check the replyTo (could be "NONE" string or CID).
+		CidOrNone replyTo = CidOrNone.parse(pathVariables[0]);
+		// We just use the CidOrNone since it has the correct helper parser.
+		_proceed(response, replyTo.cid);
 	}
 
 

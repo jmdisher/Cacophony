@@ -96,4 +96,28 @@ public class TestTypes
 	{
 		Assert.assertNull(IpfsKey.fromPublicKey("hhhh"));
 	}
+
+	@Test
+	public void realCid()
+	{
+		String input = "QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG";
+		IpfsFile file = IpfsFile.fromIpfsCid(input);
+		CidOrNone cidOrNone = CidOrNone.parse(input);
+		Assert.assertEquals(file, cidOrNone.cid);
+	}
+
+	@Test
+	public void noneCid()
+	{
+		CidOrNone cidOrNone = CidOrNone.parse("NONE");
+		Assert.assertEquals(CidOrNone.NONE, cidOrNone);
+		Assert.assertNull(cidOrNone.cid);
+	}
+
+	@Test
+	public void errorCid()
+	{
+		CidOrNone cidOrNone = CidOrNone.parse("BOGUS");
+		Assert.assertNull(cidOrNone);
+	}
 }
