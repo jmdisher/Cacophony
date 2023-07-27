@@ -619,12 +619,21 @@ GLOBAL_Application.controller('AppController', function($scope)
 		saveDraft($scope.selectedDraft).then(function(data) {
 			// Now, begin the publish.
 			REST.POST("/draft/publish/" + $scope.homePublicKey + "/" + $scope.selectedDraft.id + "/" + $scope.selectedDraft.type)
-				.then(function(data) {
-					$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
-					$scope.selectedDraft = null;
-					$scope.inProgress = false;
-					// NOTE:  The publish operation is still continuing, but in the background (can be seen on the status page).
-					$scope.$apply();
+				.then(function(result) {
+					if (result.ok)
+					{
+						$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
+						$scope.selectedDraft = null;
+						$scope.inProgress = false;
+						// NOTE:  The publish operation is still continuing, but in the background (can be seen on the status page).
+						$scope.$apply();
+					}
+					else
+					{
+						alert("Error in publish (usually means invalid field such as a missing title)");
+						$scope.inProgress = false;
+						$scope.$apply();
+					}
 				});
 		});
 	}
@@ -873,7 +882,8 @@ function xsrfLoaded($scope)
 							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Delete</button>
 							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteDraft(draft)">Confirm</a></li></ul>
 						</div>
-						<a ng-click="selectDraft(draft)">{{draft.title}}</a>
+						<a ng-click="selectDraft(draft)" ng-show="draft.title.length > 0">{{draft.title}}</a>
+						<a ng-click="selectDraft(draft)" ng-show="draft.title.length === 0">(unnamed draft {{draft.id}})</a>
 					</li>
 				</ul>
 			</div>
