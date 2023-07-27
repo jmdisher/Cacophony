@@ -1,10 +1,5 @@
 package com.jeffdisher.cacophony.types;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.multihash.Multihash;
@@ -13,10 +8,8 @@ import io.ipfs.multihash.Multihash;
 /**
  * Since the Multihash object is used both for CID references and for public keys, this is a wrapper specifically for CIDs.
  */
-public class IpfsFile implements Serializable
+public class IpfsFile
 {
-	private static final long serialVersionUID = 1L;
-
 	/**
 	 * @param base58Cid The base-58 encoding of the IPFS hash.
 	 * @return The IpfsFile or null if the encoding was invalid.
@@ -77,13 +70,5 @@ public class IpfsFile implements Serializable
 	public String toString()
 	{
 		return "IpfsFile(" + _cid.toString() + ")";
-	}
-
-	private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
-		_cid = Multihash.fromBase58(inputStream.readUTF());
-	}
-
-	private void writeObject(ObjectOutputStream outputStream) throws IOException {
-		outputStream.writeUTF(_cid.toBase58());
 	}
 }

@@ -1,10 +1,5 @@
 package com.jeffdisher.cacophony.types;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import com.jeffdisher.cacophony.utils.Assert;
 
 import io.ipfs.cid.Cid;
@@ -23,10 +18,8 @@ import io.ipfs.multihash.Multihash;
  * 
  * While we canonically use base58 representations, this helper can read any of these.
  */
-public class IpfsKey implements Serializable
+public class IpfsKey
 {
-	private static final long serialVersionUID = 1L;
-
 	/**
 	 * @param keyAsString The base-36 or base-58 encoding of a public key.
 	 * @return The IpfsKey or null if the encoding was invalid.
@@ -92,13 +85,5 @@ public class IpfsKey implements Serializable
 	public String toString()
 	{
 		return "IpfsKey(" + _key.toString() + ")";
-	}
-
-	private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
-		_key = Cid.decode(inputStream.readUTF());
-	}
-
-	private void writeObject(ObjectOutputStream outputStream) throws IOException {
-		outputStream.writeUTF(_key.toString());
 	}
 }

@@ -1,11 +1,5 @@
 package com.jeffdisher.cacophony.types;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,38 +41,6 @@ public class TestTypes
 		String base36 = "k51qzi5uqu5diuxe7gg1wgrla4c5l1bbg4mw2f574t71wpx1dkkk6eo54pi3ke";
 		IpfsKey key = IpfsKey.fromPublicKey(base36);
 		Assert.assertEquals("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV", key.toPublicKey());
-	}
-
-	@Test
-	public void testIpfsFileSerialization() throws IOException, ClassNotFoundException
-	{
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		ObjectOutputStream objectOutputStream = new ObjectOutputStream(outStream);
-		String input = "QmTaodmZ3CBozbB9ikaQNQFGhxp9YWze8Q8N8XnryCCeKG";
-		IpfsFile file = IpfsFile.fromIpfsCid(input);
-		objectOutputStream.writeObject(file);
-		objectOutputStream.close();
-		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		ObjectInputStream objectInputStream = new ObjectInputStream(inStream);
-		IpfsFile newFile = (IpfsFile) objectInputStream.readObject();
-		objectInputStream.close();
-		Assert.assertEquals(file, newFile);
-	}
-
-	@Test
-	public void testIpfsKeySerialization() throws IOException, ClassNotFoundException
-	{
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		ObjectOutputStream objectOutputStream = new ObjectOutputStream(outStream);
-		String input = "z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F";
-		IpfsKey key = IpfsKey.fromPublicKey(input);
-		objectOutputStream.writeObject(key);
-		objectOutputStream.close();
-		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
-		ObjectInputStream objectInputStream = new ObjectInputStream(inStream);
-		IpfsKey newKey = (IpfsKey) objectInputStream.readObject();
-		objectInputStream.close();
-		Assert.assertEquals(key, newKey);
 	}
 
 	@Test
