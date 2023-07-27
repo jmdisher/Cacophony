@@ -27,11 +27,13 @@ public class PinCacheData
 
 	public boolean isPinned(IpfsFile file)
 	{
+		Assert.assertTrue(null != file);
 		return _map.containsKey(file);
 	}
 
 	public void addRef(IpfsFile file)
 	{
+		Assert.assertTrue(null != file);
 		Integer value = _map.get(file);
 		int newValue = (null != value)
 				? value + 1
@@ -42,6 +44,7 @@ public class PinCacheData
 
 	public void delRef(IpfsFile file)
 	{
+		Assert.assertTrue(null != file);
 		Integer value = _map.get(file);
 		int newValue = value - 1;
 		Assert.assertTrue(newValue >= 0);

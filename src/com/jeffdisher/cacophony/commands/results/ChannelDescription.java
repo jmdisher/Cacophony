@@ -36,7 +36,7 @@ public class ChannelDescription implements ICommand.Result
 		Assert.assertTrue(null != name);
 		Assert.assertTrue(null != description);
 		// email and website can be null.
-		Assert.assertTrue(null != userPicUrl);
+		// userPicUrl can be null in V2.
 		
 		_newRoot = newRoot;
 		this.name = name;

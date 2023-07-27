@@ -77,7 +77,11 @@ public record DeleteChannelCommand() implements ICommand<None>
 	{
 		// We just need the user pic.
 		IpfsFile pic = description.getPicCid();
-		access.unpin(pic);
+		// In V2, this can be missing.
+		if (null != pic)
+		{
+			access.unpin(pic);
+		}
 	}
 
 	private void _handleRecords(IWritingAccess access, IpfsKey publicKey, EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, AbstractRecords records) throws FailedDeserializationException, IpfsConnectionException

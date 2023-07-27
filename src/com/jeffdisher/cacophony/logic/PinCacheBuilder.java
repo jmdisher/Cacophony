@@ -165,7 +165,10 @@ public class PinCacheBuilder
 		_pin(recordsFile);
 		
 		AbstractDescription description = _scheduler.readData(descriptionFile, AbstractDescription.DESERIALIZER).get();
-		_pin(description.getPicCid());
+		if (null != description.getPicCid())
+		{
+			_pin(description.getPicCid());
+		}
 		AbstractRecords records = _scheduler.readData(recordsFile, AbstractRecords.DESERIALIZER).get();
 		
 		List<FutureRead<AbstractRecord>> futures = fetchRecords ? new ArrayList<>() : null;
@@ -182,6 +185,7 @@ public class PinCacheBuilder
 
 	private void _pin(IpfsFile cid)
 	{
+		Assert.assertTrue(null != cid);
 		_cache.addRef(cid);
 	}
 }

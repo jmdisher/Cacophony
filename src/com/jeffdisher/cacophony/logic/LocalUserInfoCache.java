@@ -44,7 +44,7 @@ public class LocalUserInfoCache
 	 * @param userKey The user to update/add.
 	 * @param name The user's name.
 	 * @param description The user's description.
-	 * @param userPicCid The user's picture CID.
+	 * @param userPicCid The user's picture CID (could be null).
 	 * @param emailOrNull The user's E-Mail address (could be null).
 	 * @param websiteOrNull The user's website (could be null).
 	 * @param featureOrNull The user's feature post (could be null if not changing).
@@ -61,7 +61,6 @@ public class LocalUserInfoCache
 		Assert.assertTrue(null != userKey);
 		Assert.assertTrue(null != name);
 		Assert.assertTrue(null != description);
-		Assert.assertTrue(null != userPicCid);
 		
 		_cache.put(userKey, new Element(name
 				, description

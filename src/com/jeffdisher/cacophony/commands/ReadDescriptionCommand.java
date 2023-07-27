@@ -56,7 +56,10 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		if (null != cached)
 		{
 			IpfsFile userPicCid = cached.userPicCid();
-			String userPicUrl = context.baseUrl + userPicCid.toSafeString();
+			String userPicUrl = (null != userPicCid)
+					? (context.baseUrl + userPicCid.toSafeString())
+					: null
+			;
 			result = new ChannelDescription(null
 					, cached.name()
 					, cached.description()
@@ -93,7 +96,10 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 				// We know that this user is cached.
 				ForeignChannelReader reader = new ForeignChannelReader(access, rootToLoad, true);
 				AbstractDescription description = reader.loadDescription();
-				String userPicUrl = context.baseUrl + description.getPicCid().toSafeString();
+				String userPicUrl = (null != description.getPicCid())
+						? (context.baseUrl + description.getPicCid().toSafeString())
+						: null
+				;
 				result = new ChannelDescription(null
 						, description.getName()
 						, description.getDescription()
@@ -118,7 +124,10 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		{
 			// Everything in the explicit cache is cached.
 			AbstractDescription description = access.loadCached(userInfo.descriptionCid(), AbstractDescription.DESERIALIZER).get();
-			String userPicUrl = context.baseUrl + userInfo.userPicCid().toSafeString();
+			String userPicUrl = (null != userInfo.userPicCid())
+					? (context.baseUrl + userInfo.userPicCid().toSafeString())
+					: null
+			;
 			result = new ChannelDescription(null
 					, description.getName()
 					, description.getDescription()

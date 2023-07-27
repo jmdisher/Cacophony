@@ -271,7 +271,11 @@ public class ExplicitCacheLogic
 		reader.loadRecommendations();
 		// We need to check the user pic, explicitly.
 		IpfsFile userPicCid = description.getPicCid();
-		long picSize = transaction.getSizeInBytes(userPicCid).get();
+		// In V2, the user pic is optional.
+		long picSize = (null != userPicCid)
+				? transaction.getSizeInBytes(userPicCid).get()
+				: 0L
+		;
 		if (picSize > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
 		{
 			throw new SizeConstraintException("explicit user pic", picSize, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
@@ -280,11 +284,13 @@ public class ExplicitCacheLogic
 		FuturePin pinIndex = transaction.pin(root);
 		FuturePin pinRecommendations = transaction.pin(index.recommendationsCid);
 		FuturePin pinDescription = transaction.pin(index.descriptionCid);
-		FuturePin pinUserPic = transaction.pin(userPicCid);
+		if (null != userPicCid)
+		{
+			transaction.pin(userPicCid).get();
+		}
 		pinIndex.get();
 		pinRecommendations.get();
 		pinDescription.get();
-		pinUserPic.get();
 		long combinedSizeBytes = transaction.getSizeInBytes(pinIndex.cid).get()
 				+ transaction.getSizeInBytes(pinRecommendations.cid).get()
 				+ transaction.getSizeInBytes(pinDescription.cid).get()

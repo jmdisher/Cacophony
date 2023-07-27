@@ -41,7 +41,10 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 							// don't but we at least want to observe that case, if it happens.
 							Assert.assertTrue(null != cached);
 							name = cached.name();
-							userPicUrl = context.baseUrl + cached.userPicCid().toSafeString();
+							if (null != cached.userPicCid())
+							{
+								userPicUrl = context.baseUrl + cached.userPicCid().toSafeString();
+							}
 						}
 						return new OneChannel(keyName, publicKey, lastRoot, isSelected, name, userPicUrl);
 					})

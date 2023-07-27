@@ -138,8 +138,12 @@ public class FolloweeRefreshLogic
 		support.addMetaDataToFollowCache(newDescriptionElement).get();
 		AbstractDescription newDescription = support.loadCached(newDescriptionElement, AbstractDescription.DESERIALIZER).get();
 		IpfsFile userPicCid = newDescription.getPicCid();
-		_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
-		support.addMetaDataToFollowCache(userPicCid).get();
+		// The user pic is optional in V2.
+		if (null != userPicCid)
+		{
+			_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
+			support.addMetaDataToFollowCache(userPicCid).get();
+		}
 		
 		// Load the recommendations.
 		IpfsFile newRecommendationsElement = newIndex.recommendationsCid;
@@ -182,8 +186,12 @@ public class FolloweeRefreshLogic
 			{
 				support.deferredRemoveMetaDataFromFollowCache(oldDescriptionElement);
 				AbstractDescription oldDescription = support.loadCached(oldDescriptionElement, AbstractDescription.DESERIALIZER).get();
-				// The descriptions always contain a picture reference (often the default but never nothing) which we cache as meta-data.
-				support.deferredRemoveMetaDataFromFollowCache(oldDescription.getPicCid());
+				// If the user pic exists (optional in V2), then handle that as meta-data.
+				IpfsFile userPicCid = oldDescription.getPicCid();
+				if (null != userPicCid)
+				{
+					support.deferredRemoveMetaDataFromFollowCache(userPicCid);
+				}
 			}
 			if (null != newDescriptionElement)
 			{
@@ -196,8 +204,11 @@ public class FolloweeRefreshLogic
 				// The descriptions always contain a picture reference (often the default but never nothing) which we cache as meta-data.
 				// Make sure that this isn't too big.
 				IpfsFile userPicCid = newDescription.getPicCid();
-				_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
-				support.addMetaDataToFollowCache(userPicCid).get();
+				if (null != userPicCid)
+				{
+					_checkSizeInline(support, "userpic", userPicCid, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
+					support.addMetaDataToFollowCache(userPicCid).get();
+				}
 				
 				// Notify the support that this user is either new or has changed its description.
 				support.followeeDescriptionNewOrUpdated(newDescription.getName()

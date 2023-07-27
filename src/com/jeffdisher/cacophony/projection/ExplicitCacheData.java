@@ -77,7 +77,10 @@ public class ExplicitCacheData implements IExplicitCacheReading
 			pin.accept(info.indexCid);
 			pin.accept(info.recommendationsCid);
 			pin.accept(info.descriptionCid);
-			pin.accept(info.userPicCid);
+			if (null != info.userPicCid)
+			{
+				pin.accept(info.userPicCid);
+			}
 		}
 		for(CachedRecordInfo info : _recordInfo.values())
 		{
@@ -177,7 +180,10 @@ public class ExplicitCacheData implements IExplicitCacheReading
 				unpin.accept(info.indexCid);
 				unpin.accept(info.recommendationsCid);
 				unpin.accept(info.descriptionCid);
-				unpin.accept(info.userPicCid);
+				if (null != info.userPicCid)
+				{
+					unpin.accept(info.userPicCid);
+				}
 				_totalCacheInBytes -= info.combinedSizeBytes;
 			}
 			else

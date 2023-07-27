@@ -78,8 +78,15 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			result = _run(access, _name, _description, _pictureStream, _email, _website, _featurePost);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
 			IpfsFile pictureCid = result.updatedStreamDescription().getPicCid();
-			Assert.assertTrue(access.isInPinCached(pictureCid));
-			pictureUrl = context.baseUrl + pictureCid.toSafeString();
+			if (null != pictureCid)
+			{
+				Assert.assertTrue(access.isInPinCached(pictureCid));
+				pictureUrl = context.baseUrl + pictureCid.toSafeString();
+			}
+			else
+			{
+				pictureUrl = null;
+			}
 			log.logFinish("Update completed!");
 		}
 		finally
