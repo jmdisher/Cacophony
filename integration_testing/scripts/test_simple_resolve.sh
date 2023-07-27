@@ -109,6 +109,23 @@ echo "Verify that the answer for something which should not exist makes sense...
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_VERBOSE="" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV 2> /dev/null)
 requireSubstring "$DESCRIPTION" "Check explicit cache: IpfsKey(z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV)"
 
+echo "Publish a post and use that as our feature, then clear it..."
+PUBLISH_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "feature post" --description "no description")
+FEATURE_CID=$(echo -n "$PUBLISH_OUTPUT" | grep IpfsFile | grep feature | cut -d "(" -f 2 | cut -d ")" -f 1)
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --updateDescription --feature "$FEATURE_CID")
+requireSubstring "$DESCRIPTION" "Feature: IpfsFile($FEATURE_CID)"
+# Verify that this fails with a valid CID which is NOT in our list.
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --updateDescription --feature "QmeFfbNEHKDx4c2xhVrajoqE1U5i4GaF5cYuKLSr9cF6nX" 2>&1)
+if [[ "$?" != 1 ]]; then
+	echo "Failure not seen"
+	exit 1
+fi
+requireSubstring "$DESCRIPTION" "Usage error in running command: Feature post should be a record in your stream."
+# Verify that clearing the setting also works.
+DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --updateDescription --feature "NONE")
+requireSubstring "$DESCRIPTION" "Feature: null"
+
+
 kill $PID1
 kill $PID2
 

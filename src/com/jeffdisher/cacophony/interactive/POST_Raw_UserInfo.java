@@ -36,7 +36,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
 		InputStream input = request.getInputStream();
 		
-		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, null, null);
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, null, null, null);
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, homePublicKey

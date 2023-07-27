@@ -94,7 +94,7 @@ public class MockUserNode
 		CreateChannelCommand createChannel = new CreateChannelCommand(keyName);
 		ICommand.Result result = createChannel.runInContext(_lazyContext());
 		_handleResult(result);
-		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null);
+		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null, null);
 		result = updateDescription.runInContext(_lazyContext());
 		_handleResult(result);
 	}

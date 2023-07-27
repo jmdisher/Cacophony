@@ -7,8 +7,12 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.types.CidOrNone;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -22,7 +26,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  * NOTE:  The _pictureStream, if not null, will be closed by this command, during runInEnvironment, so the caller can
  * relinguish ownership of it.
  */
-public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website) implements ICommand<ChannelDescription>
+public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website, CidOrNone _featurePost) implements ICommand<ChannelDescription>
 {
 	@Override
 	public ChannelDescription runInContext(Context context) throws IpfsConnectionException, UsageException
@@ -32,7 +36,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
 		// All of the parameters are optional but at least one of them must be provided (null means "unchanged field").
-		if ((null == _name) && (null == _description) && (null == _pictureStream) && (null == _email) && (null == _website))
+		if ((null == _name) && (null == _description) && (null == _pictureStream) && (null == _email) && (null == _website) && (null == _featurePost))
 		{
 			throw new UsageException("At least one field must be being changed");
 		}
@@ -51,8 +55,27 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
+			// Verify that this feature post is part of this user's stream.
+			if ((null != _featurePost) && (null != _featurePost.cid))
+			{
+				try
+				{
+					AbstractIndex index = access.loadCached(access.getLastRootElement(), AbstractIndex.DESERIALIZER).get();
+					AbstractRecords records = access.loadCached(index.recordsCid, AbstractRecords.DESERIALIZER).get();
+					if (!records.getRecordList().contains(_featurePost.cid))
+					{
+						throw new UsageException("Feature post should be a record in your stream.");
+					}
+				}
+				catch (FailedDeserializationException e)
+				{
+					// We can't fail to deserialize our own root.
+					throw Assert.unexpected(e);
+				}
+				
+			}
 			ILogger log = context.logger.logStart("Updating channel description...");
-			result = _run(access, _name, _description, _pictureStream, _email, _website);
+			result = _run(access, _name, _description, _pictureStream, _email, _website, _featurePost);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
 			IpfsFile pictureCid = result.updatedStreamDescription().getPicCid();
 			Assert.assertTrue(access.isInPinCached(pictureCid));
@@ -96,6 +119,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	 * @param picture The stream containing the new picture (or null, if not changed).
 	 * @param email The E-Mail address (or null, if not changed).
 	 * @param website The web site (or null, if not changed).
+	 * @param featurePost The feature post CID (null, if not changed, resolving null if clearing).
 	 * @return The results of the operation (not null).
 	 * @throws IpfsConnectionException There was a network error.
 	 * @throws UsageException The picture stream provided was too large.
@@ -106,6 +130,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			, InputStream picture
 			, String email
 			, String website
+			, CidOrNone featurePost
 	) throws IpfsConnectionException, UsageException
 	{
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
@@ -160,6 +185,10 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			{
 				descriptionObject.setWebsite(website);
 			}
+		}
+		if (null != featurePost)
+		{
+			descriptionObject.setFeature(featurePost.cid);
 		}
 		
 		// Update and commit the structure.

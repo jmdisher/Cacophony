@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import com.jeffdisher.cacophony.types.CidOrNone;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -133,6 +134,16 @@ public enum ParameterType
 				if (null == cid)
 				{
 					throw new UsageException("Not a valid IPFS CID: \"" + arg + "\"");
+				}
+				return cid;
+			}
+	),
+	CID_OR_NONE("cid_or_none"
+			, (String arg) -> {
+				CidOrNone cid = CidOrNone.parse(arg);
+				if (null == cid)
+				{
+					throw new UsageException("Not a valid IPFS CID or \"NONE\": \"" + arg + "\"");
 				}
 				return cid;
 			}

@@ -41,6 +41,7 @@ import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.types.CidOrNone;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -107,6 +108,7 @@ public class CommandParser
 					)
 					, new ArgParameter("--email", ParameterType.STRING, "Email address, if you want to share that")
 					, new ArgParameter("--website", ParameterType.URL, "Website, if you have one you want to share")
+					, new ArgParameter("--feature", ParameterType.CID_OR_NONE, "The CID of a stream from your channel to set as the feature post, or \"NONE\"")
 				}
 				, "Updates the user description of the home user."
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
@@ -116,6 +118,7 @@ public class CommandParser
 			File picturePath = _optionalFile(optional[2]);
 			String email = _optionalString(optional[3]);
 			String website = _optionalString(optional[4]);
+			CidOrNone feature = _optionalCidOrNone(optional[5]);
 			FileInputStream pictureStream = null;
 			if (null != picturePath)
 			{
@@ -128,7 +131,7 @@ public class CommandParser
 					throw new UsageException("File not found: " + picturePath);
 				}
 			}
-			return new UpdateDescriptionCommand(name, description, pictureStream, email, website);
+			return new UpdateDescriptionCommand(name, description, pictureStream, email, website, feature);
 		}),
 		READ_DESCRIPTION(true, "--readDescription"
 				, new ArgParameter[0]
@@ -628,6 +631,14 @@ public class CommandParser
 		{
 			return (null != num)
 					? num.parse(IpfsFile.class)
+					: null
+			;
+		}
+		
+		private static CidOrNone _optionalCidOrNone(PreParse num) throws UsageException
+		{
+			return (null != num)
+					? num.parse(CidOrNone.class)
 					: null
 			;
 		}
