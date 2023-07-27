@@ -48,7 +48,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("entry 1", null, null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		user.runCommand(null, new RefreshNextFolloweeCommand());
@@ -90,7 +90,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("entry 1", null, null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		
@@ -126,7 +126,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+		user.runCommand(null, new PublishCommand("entry 1", null, null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		
@@ -170,7 +170,7 @@ public class TestRebroadcastCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user2.runCommand(null, new PublishCommand("entry 1", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("entry 1", null, null, null, "image/jpeg", fakeImage, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
 		

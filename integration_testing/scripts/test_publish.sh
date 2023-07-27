@@ -87,11 +87,28 @@ CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java
 checkPreviousCommand "publishToThisChannel"
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "test post 3"
+# Make sure that we also fail if the description is empty (it should be omitted, in that case), or the name is.
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "" --description "non-post"
+if [[ "$?" != 1 ]]; then
+	echo -e "\033[31;40mEmpty name in publish should have failed\033[00m"
+	exit 1
+fi
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --publishToThisChannel --name "error post" --description ""
+if [[ "$?" != 1 ]]; then
+	echo -e "\033[31;40mEmpty description in publish should have failed\033[00m"
+	exit 1
+fi
 
 echo "Edit the second post to make sure it is replaced, inline..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --editPost --elementCid "$SECOND_CID" --name "updated post 2"
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "updated post 2"
+# Verify that we fail if the name is empty.
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --editPost --elementCid "$SECOND_CID" --name ""
+if [[ "$?" != 1 ]]; then
+	echo -e "\033[31;40mEmpty name in edit should have failed\033[00m"
+	exit 1
+fi
 SECOND_CID=$(echo "$LISTING" | grep "updated post 2" | cut -d ":" -f 1 | cut -d " " -f 3)
 
 echo "Make sure that we can remove the second entry from the stream..."

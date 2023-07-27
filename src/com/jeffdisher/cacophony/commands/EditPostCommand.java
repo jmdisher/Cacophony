@@ -30,6 +30,16 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		{
 			throw new UsageException("At least one field must be being changed");
 		}
+		// Check the parameters, if provided.
+		if ((null != _name) && !AbstractRecord.validateName(_name))
+		{
+			throw new UsageException("Name must have a length must be between [1, 255]");
+		}
+		if ((null != _description) && (_description.length() > 32768))
+		{
+			// We allow the empty string to mean "remove".
+			throw new UsageException("Description length cannot be more than 32768");
+		}
 		IpfsKey publicKey = context.getSelectedKey();
 		if (null == publicKey)
 		{

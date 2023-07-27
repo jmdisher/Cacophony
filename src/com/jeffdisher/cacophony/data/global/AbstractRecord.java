@@ -58,6 +58,18 @@ public class AbstractRecord
 		);
 	}
 
+	public static boolean validateName(String name)
+	{
+		// Check the bounds as described in record2.xsd.
+		return ((null != name) && (name.length() >= 1) && (name.length() <= 255));
+	}
+
+	public static boolean validateDescription(String description)
+	{
+		// Check the bounds as described in record2.xsd.
+		return ((null == description) || ((description.length() >= 1) && (description.length() <= 32768)));
+	}
+
 
 	private static AbstractRecord _commonMultiVersionLoad(byte[] data) throws FailedDeserializationException
 	{
@@ -241,7 +253,7 @@ public class AbstractRecord
 	 */
 	public void setName(String name)
 	{
-		Assert.assertTrue(!name.isEmpty());
+		Assert.assertTrue(validateName(name));
 		_name = name;
 	}
 
@@ -254,11 +266,11 @@ public class AbstractRecord
 	}
 
 	/**
-	 * @param description The new description (cannot be null).
+	 * @param description The new description (can be null but not empty).
 	 */
 	public void setDescription(String description)
 	{
-		Assert.assertTrue(null != description);
+		Assert.assertTrue(validateDescription(description));
 		_description = description;
 	}
 

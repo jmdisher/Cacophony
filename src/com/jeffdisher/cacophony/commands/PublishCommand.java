@@ -32,13 +32,13 @@ public record PublishCommand(String _name, String _description, String _discussi
 	@Override
 	public OnePost runInContext(Context context) throws IpfsConnectionException, UsageException, SizeConstraintException
 	{
-		if (null == _name)
+		if (!AbstractRecord.validateName(_name))
 		{
-			throw new UsageException("Name must be provided");
+			throw new UsageException("Name must be provided with a length must be between [1, 255]");
 		}
-		if (null == _description)
+		if (!AbstractRecord.validateDescription(_description))
 		{
-			throw new UsageException("Description must be provided");
+			throw new UsageException("Description, if provided, must have a length must be between [1, 32768]");
 		}
 		IpfsKey publicKey = context.getSelectedKey();
 		if (null == publicKey)
@@ -169,11 +169,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		
 		AbstractRecord record = AbstractRecord.createNew();
 		record.setName(_name);
-		// V2 doesn't allow empty descriptions.
-		if ((null != _description) && !_description.isEmpty())
-		{
-			record.setDescription(_description);
-		}
+		record.setDescription(_description);
 		// We internally treat the discussion URL as sometimes null and sometimes empty but we don't want to add it to the post in either case.
 		if ((null != _discussionUrl) && !_discussionUrl.isEmpty())
 		{

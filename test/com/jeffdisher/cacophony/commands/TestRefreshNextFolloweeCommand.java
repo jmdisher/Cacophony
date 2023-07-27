@@ -155,10 +155,10 @@ public class TestRefreshNextFolloweeCommand
 		FileOutputStream stream = new FileOutputStream(tempFile);
 		stream.write("file".getBytes());
 		stream.close();
-		user3.runCommand(null, new PublishCommand("entry 1", "", null, null, null, null, new ElementSubCommand[] {
+		user3.runCommand(null, new PublishCommand("entry 1", null, null, null, null, null, new ElementSubCommand[] {
 				new ElementSubCommand("text/plain", tempFile, 0, 0) ,
 		}));
-		user3.runCommand(null, new PublishCommand("entry 2", "", null, null, null, null, new ElementSubCommand[] {}));
+		user3.runCommand(null, new PublishCommand("entry 2", null, null, null, null, null, new ElementSubCommand[] {}));
 		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
 		IpfsFile metaDataToDelete = index.recordsCid;
 		user3.deleteFile(metaDataToDelete);
@@ -231,10 +231,10 @@ public class TestRefreshNextFolloweeCommand
 		FileOutputStream stream = new FileOutputStream(tempFile);
 		stream.write("file".getBytes());
 		stream.close();
-		user3.runCommand(null, new PublishCommand("entry 1", "", null, null, null, null, new ElementSubCommand[] {
+		user3.runCommand(null, new PublishCommand("entry 1", null, null, null, null, null, new ElementSubCommand[] {
 				new ElementSubCommand("text/plain", tempFile, 0, 0) ,
 		}));
-		user3.runCommand(null, new PublishCommand("entry 2", "", null, null, null, null, new ElementSubCommand[] {}));
+		user3.runCommand(null, new PublishCommand("entry 2", null, null, null, null, null, new ElementSubCommand[] {}));
 		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
 		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user3.loadDataFromNode(index.recordsCid));
 		IpfsFile recordToDelete = records.getRecordList().get(0);
@@ -298,10 +298,10 @@ public class TestRefreshNextFolloweeCommand
 		Files.write(fakeVideo.toPath(), "video".getBytes());
 		File fakeImage = FOLDER.newFile();
 		Files.write(fakeImage.toPath(), "image".getBytes());
-		user3.runCommand(null, new PublishCommand("entry 1", "", null, null, null, null, new ElementSubCommand[] {
+		user3.runCommand(null, new PublishCommand("entry 1", null, null, null, null, null, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", fakeVideo, 720, 1280) ,
 		}));
-		user3.runCommand(null, new PublishCommand("entry 2", "", null, null, "image/jpeg", fakeImage, new ElementSubCommand[0]));
+		user3.runCommand(null, new PublishCommand("entry 2", null, null, null, "image/jpeg", fakeImage, new ElementSubCommand[0]));
 		AbstractIndex index = AbstractIndex.DESERIALIZER.apply(user3.loadDataFromNode(user3.resolveKeyOnNode(MockKeys.K3)));
 		AbstractRecords records = AbstractRecords.DESERIALIZER.apply(user3.loadDataFromNode(index.recordsCid));
 		AbstractRecord firstRecord = AbstractRecord.DESERIALIZER.apply(user3.loadDataFromNode(records.getRecordList().get(0)));
@@ -406,13 +406,13 @@ public class TestRefreshNextFolloweeCommand
 		Files.write(tempImage.toPath(), "image".getBytes());
 		Files.write(tempVideo.toPath(), "video".getBytes());
 		Files.write(tempAudio.toPath(), "audio".getBytes());
-		user2.runCommand(null, new PublishCommand("video", "", null, null, "image/jpeg", tempImage, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("video", null, null, null, "image/jpeg", tempImage, new ElementSubCommand[] {
 				new ElementSubCommand("video/webm", tempVideo, 480, 640) ,
 		}));
-		user2.runCommand(null, new PublishCommand("audio", "", null, null, "image/jpeg", tempImage, new ElementSubCommand[] {
+		user2.runCommand(null, new PublishCommand("audio", null, null, null, "image/jpeg", tempImage, new ElementSubCommand[] {
 				new ElementSubCommand("audio/ogg", tempAudio, 0, 0) ,
 		}));
-		user2.runCommand(null, new PublishCommand("text only", "", null, null, "image/jpeg", tempImage, new ElementSubCommand[0]));
+		user2.runCommand(null, new PublishCommand("text only", null, null, null, "image/jpeg", tempImage, new ElementSubCommand[0]));
 		
 		// Run the refresh command.
 		user.runCommand(null, command);
