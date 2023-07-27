@@ -237,6 +237,7 @@ public class InteractiveServer
 		validated.addDeleteHandler("/home/recommend/remove", 2, new DELETE_RemoveRecommendation(runner, background));
 		validated.addPostFormHandler("/home/userInfo/info", 1, new POST_Form_UserInfo(runner, background));
 		validated.addPostRawHandler("/home/userInfo/image", 1, new POST_Raw_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/userInfo/feature", 2, new POST_Raw_Feature(runner, background));
 		validated.addGetHandler("/home/publicKey", 0, new GET_PublicKey(serverContext));
 		validated.addGetHandler("/home/channels", 0, new GET_HomeChannels(runner));
 		validated.addPostRawHandler("/home/channel/set", 1, new POST_Raw_SetChannel(serverContext));

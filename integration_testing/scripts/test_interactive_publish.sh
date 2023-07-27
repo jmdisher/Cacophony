@@ -497,6 +497,24 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":7,\"value\":null
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP2/OPTIONAL" >& /dev/null
 checkPreviousCommand "read post"
 
+echo "Set one of these posts as our feature, then clear it..."
+DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/home/userInfo/feature/$PUBLIC_KEY/$POST_TO_KEEP1")
+requireSubstring "$DESCRIPTION" ",\"feature\":\"$POST_TO_KEEP1\"}"
+DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
+requireSubstring "$DESCRIPTION" ",\"feature\":\"$POST_TO_KEEP1\"}"
+STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":8,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":8,\"value\":null"
+DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/home/userInfo/feature/$PUBLIC_KEY/NONE")
+requireSubstring "$DESCRIPTION" ",\"feature\":null}"
+DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
+requireSubstring "$DESCRIPTION" ",\"feature\":null}"
+STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":9,\"value\":\"Publish IpfsFile("
+STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":9,\"value\":null"
+
 # We want to verify that something reasonable happens when we fetch the now-deleted element if it has been removed from the network.  This requires a GC of the IPFS nodes to wipe it.
 requestIpfsGc "$PATH_TO_IPFS" 1
 requestIpfsGc "$PATH_TO_IPFS" 2
