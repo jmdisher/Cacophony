@@ -37,29 +37,29 @@ public class ValidatedEntryPoints
 		_xsrf = xsrf;
 	}
 
-	public void addGetHandler(String pathPrefix, int variableCount, GET handler)
+	public void addGetHandler(String path, GET handler)
 	{
-		_server.addGetHandler(pathPrefix, variableCount, new VerifiedGet(handler));
+		_server.addGetHandler(path, new VerifiedGet(handler));
 	}
 
-	public void addPostRawHandler(String pathPrefix, int variableCount, POST_Raw handler)
+	public void addPostRawHandler(String path, POST_Raw handler)
 	{
-		_server.addPostRawHandler(pathPrefix, variableCount, new VerifiedPostRaw(handler));
+		_server.addPostRawHandler(path, new VerifiedPostRaw(handler));
 	}
 
-	public void addPostFormHandler(String pathPrefix, int variableCount, POST_Form handler)
+	public void addPostFormHandler(String path, POST_Form handler)
 	{
-		_server.addPostFormHandler(pathPrefix, variableCount, new VerifiedPostForm(handler));
+		_server.addPostFormHandler(path, new VerifiedPostForm(handler));
 	}
 
-	public void addDeleteHandler(String pathPrefix, int variableCount, DELETE handler)
+	public void addDeleteHandler(String path, DELETE handler)
 	{
-		_server.addDeleteHandler(pathPrefix, variableCount, new VerifiedDelete(handler));
+		_server.addDeleteHandler(path, new VerifiedDelete(handler));
 	}
 
-	public void addWebSocketFactory(String pathPrefix, int variableCount, String protocolName, WEB_SOCKET_FACTORY factory)
+	public void addWebSocketFactory(String path, String protocolName, WEB_SOCKET_FACTORY factory)
 	{
-		_server.addWebSocketFactory(pathPrefix, variableCount, protocolName, new VerifiedSocketFactory(factory));
+		_server.addWebSocketFactory(path, protocolName, new VerifiedSocketFactory(factory));
 	}
 
 
@@ -71,10 +71,10 @@ public class ValidatedEntryPoints
 			_handler = handler;
 		}
 		@Override
-		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 		{
 			_commonChecks(_xsrf, request, response, () -> {
-				_handler.handle(request, response, variables);
+				_handler.handle(request, response, path);
 			});
 		}
 	}
@@ -87,10 +87,10 @@ public class ValidatedEntryPoints
 			_handler = handler;
 		}
 		@Override
-		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 		{
 			_commonChecks(_xsrf, request, response, () -> {
-				_handler.handle(request, response, variables);
+				_handler.handle(request, response, path);
 			});
 		}
 	}
@@ -103,10 +103,10 @@ public class ValidatedEntryPoints
 			_handler = handler;
 		}
 		@Override
-		public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
+		public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws IOException
 		{
 			_commonChecks(_xsrf, request, response, () -> {
-				_handler.handle(request, response, pathVariables, formVariables);
+				_handler.handle(request, response, path, formVariables);
 			});
 		}
 	}
@@ -119,10 +119,10 @@ public class ValidatedEntryPoints
 			_handler = handler;
 		}
 		@Override
-		public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+		public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 		{
 			_commonChecks(_xsrf, request, response, () -> {
-				_handler.handle(request, response, variables);
+				_handler.handle(request, response, path);
 			});
 		}
 	}
@@ -135,10 +135,10 @@ public class ValidatedEntryPoints
 			_handler = handler;
 		}
 		@Override
-		public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, String[] variables)
+		public WebSocketListener create(JettyServerUpgradeRequest upgradeRequest, Object[] path)
 		{
 			return InteractiveHelpers.verifySafeWebSocket(_xsrf, upgradeRequest)
-					? _handler.build(variables)
+					? _handler.build(path)
 					: null
 			;
 		}
@@ -184,27 +184,27 @@ public class ValidatedEntryPoints
 
 	public interface GET
 	{
-		void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable;
+		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable;
 	}
 
 	public interface POST_Raw
 	{
-		void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable;
+		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable;
 	}
 
 	public interface POST_Form
 	{
-		void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable;
+		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws Throwable;
 	}
 
 	public interface DELETE
 	{
-		void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable;
+		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable;
 	}
 
 	public interface WEB_SOCKET_FACTORY
 	{
-		WebSocketListener build(String[] pathVariables);
+		WebSocketListener build(Object[] path);
 	}
 
 	private interface ThrowingRunnable

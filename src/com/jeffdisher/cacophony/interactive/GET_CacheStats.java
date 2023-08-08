@@ -28,7 +28,7 @@ public class GET_CacheStats implements ValidatedEntryPoints.GET
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
 		long explicitCacheBytes = ExplicitCacheLogic.getExplicitCacheSize(_context);
 		try (IReadingAccess access = StandardAccess.readAccess(_context))

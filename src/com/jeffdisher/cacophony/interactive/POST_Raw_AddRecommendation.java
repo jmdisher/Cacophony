@@ -29,10 +29,10 @@ public class POST_Raw_AddRecommendation implements ValidatedEntryPoints.POST_Raw
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
-		IpfsKey userToAdd = IpfsKey.fromPublicKey(pathVariables[1]);
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[3]);
+		IpfsKey userToAdd = IpfsKey.fromPublicKey((String)path[4]);
 		
 		AddRecommendationCommand command = new AddRecommendationCommand(userToAdd);
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response

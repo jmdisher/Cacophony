@@ -30,7 +30,7 @@ public class WS_FolloweeRefreshTimes implements ValidatedEntryPoints.WEB_SOCKET_
 	}
 	
 	@Override
-	public WebSocketListener build(String[] pathVariables)
+	public WebSocketListener build(Object[] path)
 	{
 		return new Listener();
 	}

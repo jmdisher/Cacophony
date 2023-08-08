@@ -23,9 +23,9 @@ public class DELETE_RemoveFavourite implements ValidatedEntryPoints.DELETE
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsFile postToRemove = IpfsFile.fromIpfsCid(pathVariables[0]);
+		IpfsFile postToRemove = IpfsFile.fromIpfsCid((String)path[2]);
 		
 		RemoveFavouriteCommand command = new RemoveFavouriteCommand(postToRemove);
 		InteractiveHelpers.runCommandAndHandleErrors(response

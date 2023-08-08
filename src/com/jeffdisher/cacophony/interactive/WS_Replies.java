@@ -34,7 +34,7 @@ public class WS_Replies implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 	}
 	
 	@Override
-	public WebSocketListener build(String[] pathVariables)
+	public WebSocketListener build(Object[] path)
 	{
 		return new Listener();
 	}

@@ -38,10 +38,10 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 	}
 	
 	@Override
-	public WebSocketListener build(String[] pathVariables)
+	public WebSocketListener build(Object[] path)
 	{
-		int draftId = Integer.parseInt(pathVariables[0]);
-		String processCommand = pathVariables[1];
+		int draftId = Integer.parseInt((String)path[3]);
+		String processCommand = (String)path[4];
 		// See if we are supposed to override this connection.
 		if (null != _forcedCommand)
 		{

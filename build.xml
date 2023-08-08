@@ -73,7 +73,7 @@
 			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
-				<attribute name="Class-Path" value="lib/cid.jar lib/ipfs.jar lib/istack-commons-runtime.jar lib/javax.activation-api.jar lib/jaxb-api.jar lib/jaxb-runtime.jar lib/multihash.jar lib/multiaddr.jar lib/multibase.jar lib/minimal-json-0.9.5.jar lib/rest-server-0.2-jar-with-dependencies.jar lib/slf4j-nop-2.0.6.jar"/>
+				<attribute name="Class-Path" value="lib/cid.jar lib/ipfs.jar lib/istack-commons-runtime.jar lib/javax.activation-api.jar lib/jaxb-api.jar lib/jaxb-runtime.jar lib/multihash.jar lib/multiaddr.jar lib/multibase.jar lib/minimal-json-0.9.5.jar lib/rest-server-0.3-jar-with-dependencies.jar lib/slf4j-nop-2.0.6.jar"/>
 			</manifest>
 		</jar>
 	</target>
@@ -139,7 +139,7 @@
 				<include name="minimal-json-0.9.5.jar" />
 				<include name="multiaddr.jar" />
 				<include name="multibase.jar" />
-				<include name="rest-server-0.2-jar-with-dependencies.jar" />
+				<include name="rest-server-0.3-jar-with-dependencies.jar" />
 				<include name="multihash.jar" />
 				<include name="slf4j-nop-2.0.6.jar" />
 			</fileset>

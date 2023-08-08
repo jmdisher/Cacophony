@@ -19,9 +19,9 @@ public class DELETE_DraftAudio implements ValidatedEntryPoints.DELETE
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		int draftId = Integer.parseInt(variables[0]);
+		int draftId = Integer.parseInt((String)path[2]);
 		try
 		{
 			boolean didDelete = InteractiveHelpers.deleteAudio(_draftManager, draftId);

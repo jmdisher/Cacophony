@@ -20,13 +20,13 @@ public class POST_Raw_DraftThumb implements ValidatedEntryPoints.POST_Raw
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		int draftId = Integer.parseInt(pathVariables[0]);
-		int height = Integer.parseInt(pathVariables[1]);
-		int width = Integer.parseInt(pathVariables[2]);
+		int draftId = Integer.parseInt((String)path[2]);
+		int height = Integer.parseInt((String)path[3]);
+		int width = Integer.parseInt((String)path[4]);
 		// Since we know everything coming through this path is an "image/" mime type, we just pass the second part in the path to avoid having to reencode it.
-		String codec = pathVariables[3];
+		String codec = (String)path[5];
 		String mime = "image/" + codec;
 		
 		try

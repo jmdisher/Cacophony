@@ -24,7 +24,7 @@ public class GET_Drafts implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
 		response.setContentType("application/json");
 		response.setStatus(HttpServletResponse.SC_OK);

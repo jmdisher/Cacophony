@@ -21,7 +21,7 @@ public class GET_Version implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
 		JsonObject dataVersion = JsonGenerationHelpers.dataVersion();
 		response.setContentType("application/json");

@@ -22,9 +22,9 @@ public class GET_Draft implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		int draftId = Integer.parseInt(variables[0]);
+		int draftId = Integer.parseInt((String)path[1]);
 		Draft draft = InteractiveHelpers.readExistingDraft(_draftManager, draftId);
 		if (null != draft)
 		{

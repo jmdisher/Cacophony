@@ -37,10 +37,10 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws Throwable
 	{
 		// Make sure that we have all the fields we want - we will assume that we need all the fields, just to keep things simple.
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[3]);
 		String name = formVariables.getIfSingle(VAR_NAME);
 		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
 		String email = formVariables.getIfSingle(VAR_EMAIL);

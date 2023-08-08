@@ -24,7 +24,7 @@ public class GET_FolloweeKeys implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
 		ListFolloweesCommand command = new ListFolloweesCommand();
 		InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response

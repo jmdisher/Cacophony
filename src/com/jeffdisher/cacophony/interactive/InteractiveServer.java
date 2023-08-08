@@ -208,86 +208,87 @@ public class InteractiveServer
 		CountDownLatch stopLatch = new CountDownLatch(1);
 		// Note that we specifically want the 127.0.0.1 interface since this should only be used locally and this IP is a special-case for browser permissions.
 		InetSocketAddress interfaceToBind = new InetSocketAddress("127.0.0.1", port);
-		RestServer server = new RestServer(interfaceToBind, staticResource);
+		// We want to disable static resource caching.
+		RestServer server = new RestServer(interfaceToBind, staticResource, "no-store,no-cache,must-revalidate");
 		ValidatedEntryPoints validated = new ValidatedEntryPoints(server, xsrf);
 		
 		// Entry-points for server-global.
-		server.addPostRawHandler("/server/cookie", 0, new POST_Raw_Cookie(xsrf));
-		validated.addGetHandler("/server/version", 0, new GET_Version());
-		validated.addPostRawHandler("/server/stop", 0, new POST_Raw_Stop(stopLatch));
-		validated.addGetHandler("/server/videoConfig", 0, new GET_VideoConfig(processingCommand, canChangeCommand));
-		validated.addGetHandler("/server/prefs", 0, new GET_Prefs(serverContext));
-		validated.addPostFormHandler("/server/prefs", 0, new POST_Prefs(serverContext, background));
-		validated.addWebSocketFactory("/server/events/status", 0, EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
-		validated.addWebSocketFactory("/server/events/combined/entries", 0, EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
-		validated.addWebSocketFactory("/server/events/entries", 1, EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
-		validated.addWebSocketFactory("/server/events/replies", 0, EVENT_API_PROTOCOL, new WS_Replies(replyCacheConnector));
-		validated.addGetHandler("/server/postHashes", 1, new GET_PostHashes(serverContext));
-		validated.addGetHandler("/server/recommendedKeys", 1, new GET_RecommendedKeys(runner));
-		validated.addGetHandler("/server/postStruct", 2, new GET_PostStruct(runner));
-		validated.addGetHandler("/server/unknownUser", 1, new GET_UnknownUserInfo(runner));
-		validated.addGetHandler("/server/userInfo", 1, new GET_UserInfo(serverContext));
-		validated.addGetHandler("/server/caches", 0, new GET_CacheStats(serverContext));
+		server.addPostRawHandler("/server/cookie", new POST_Raw_Cookie(xsrf));
+		validated.addGetHandler("/server/version", new GET_Version());
+		validated.addPostRawHandler("/server/stop", new POST_Raw_Stop(stopLatch));
+		validated.addGetHandler("/server/videoConfig", new GET_VideoConfig(processingCommand, canChangeCommand));
+		validated.addGetHandler("/server/prefs", new GET_Prefs(serverContext));
+		validated.addPostFormHandler("/server/prefs", new POST_Prefs(serverContext, background));
+		validated.addWebSocketFactory("/server/events/status", EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
+		validated.addWebSocketFactory("/server/events/combined/entries", EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
+		validated.addWebSocketFactory("/server/events/entries/{string}", EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
+		validated.addWebSocketFactory("/server/events/replies", EVENT_API_PROTOCOL, new WS_Replies(replyCacheConnector));
+		validated.addGetHandler("/server/postHashes/{string}", new GET_PostHashes(serverContext));
+		validated.addGetHandler("/server/recommendedKeys/{string}", new GET_RecommendedKeys(runner));
+		validated.addGetHandler("/server/postStruct/{string}/{string}", new GET_PostStruct(runner));
+		validated.addGetHandler("/server/unknownUser/{string}", new GET_UnknownUserInfo(runner));
+		validated.addGetHandler("/server/userInfo/{string}", new GET_UserInfo(serverContext));
+		validated.addGetHandler("/server/caches", new GET_CacheStats(serverContext));
 		
 		// Home user operations.
-		validated.addPostRawHandler("/home/republish", 1, new POST_Raw_Republish(runner, background));
-		validated.addPostFormHandler("/home/post/edit", 2, new POST_Form_EditPost(runner, background));
-		validated.addDeleteHandler("/home/post/delete", 2, new DELETE_Post(runner, background));
-		validated.addPostRawHandler("/home/recommend/add", 2, new POST_Raw_AddRecommendation(runner, background));
-		validated.addDeleteHandler("/home/recommend/remove", 2, new DELETE_RemoveRecommendation(runner, background));
-		validated.addPostFormHandler("/home/userInfo/info", 1, new POST_Form_UserInfo(runner, background));
-		validated.addPostRawHandler("/home/userInfo/image", 1, new POST_Raw_UserInfo(runner, background));
-		validated.addPostRawHandler("/home/userInfo/feature", 2, new POST_Raw_Feature(runner, background));
-		validated.addGetHandler("/home/publicKey", 0, new GET_PublicKey(serverContext));
-		validated.addGetHandler("/home/channels", 0, new GET_HomeChannels(runner));
-		validated.addPostRawHandler("/home/channel/set", 1, new POST_Raw_SetChannel(serverContext));
-		validated.addPostRawHandler("/home/channel/new", 1, new POST_Raw_NewChannel(serverContext, runner, background));
-		validated.addDeleteHandler("/home/channel/delete", 1, new DELETE_Channel(serverContext, runner, background));
+		validated.addPostRawHandler("/home/republish/{string}", new POST_Raw_Republish(runner, background));
+		validated.addPostFormHandler("/home/post/edit/{string}/{string}", new POST_Form_EditPost(runner, background));
+		validated.addDeleteHandler("/home/post/delete/{string}/{string}", new DELETE_Post(runner, background));
+		validated.addPostRawHandler("/home/recommend/add/{string}/{string}", new POST_Raw_AddRecommendation(runner, background));
+		validated.addDeleteHandler("/home/recommend/remove/{string}/{string}", new DELETE_RemoveRecommendation(runner, background));
+		validated.addPostFormHandler("/home/userInfo/info/{string}", new POST_Form_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/userInfo/image/{string}", new POST_Raw_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/userInfo/feature/{string}/{string}", new POST_Raw_Feature(runner, background));
+		validated.addGetHandler("/home/publicKey", new GET_PublicKey(serverContext));
+		validated.addGetHandler("/home/channels", new GET_HomeChannels(runner));
+		validated.addPostRawHandler("/home/channel/set/{string}", new POST_Raw_SetChannel(serverContext));
+		validated.addPostRawHandler("/home/channel/new/{string}", new POST_Raw_NewChannel(serverContext, runner, background));
+		validated.addDeleteHandler("/home/channel/delete/{string}", new DELETE_Channel(serverContext, runner, background));
 		
 		// Draft operations.
-		validated.addGetHandler("/allDrafts/all", 0, new GET_Drafts(manager));
-		validated.addPostRawHandler("/allDrafts/new", 1, new POST_Raw_CreateDraft(serverContext, manager));
-		validated.addGetHandler("/draft", 1, new GET_Draft(manager));
-		validated.addPostFormHandler("/draft", 1, new POST_Form_Draft(manager));
-		validated.addDeleteHandler("/draft", 1, new DELETE_Draft(manager));
-		validated.addPostRawHandler("/draft/publish", 3, new POST_Raw_DraftPublish(runner, background, manager));
-		validated.addGetHandler("/draft/thumb", 1, new GET_DraftThumbnail(manager));
-		validated.addPostRawHandler("/draft/thumb", 4, new POST_Raw_DraftThumb(manager));
-		validated.addDeleteHandler("/draft/thumb", 1, new DELETE_DraftThumb(manager));
-		validated.addGetHandler("/draft/originalVideo", 1, new GET_DraftLargeStream(manager
+		validated.addGetHandler("/allDrafts/all", new GET_Drafts(manager));
+		validated.addPostRawHandler("/allDrafts/new/{string}", new POST_Raw_CreateDraft(serverContext, manager));
+		validated.addGetHandler("/draft/{string}", new GET_Draft(manager));
+		validated.addPostFormHandler("/draft/{string}", new POST_Form_Draft(manager));
+		validated.addDeleteHandler("/draft/{string}", new DELETE_Draft(manager));
+		validated.addPostRawHandler("/draft/publish/{string}/{string}/{string}", new POST_Raw_DraftPublish(runner, background, manager));
+		validated.addGetHandler("/draft/thumb/{string}", new GET_DraftThumbnail(manager));
+		validated.addPostRawHandler("/draft/thumb/{string}/{string}/{string}/{string}", new POST_Raw_DraftThumb(manager));
+		validated.addDeleteHandler("/draft/thumb/{string}", new DELETE_DraftThumb(manager));
+		validated.addGetHandler("/draft/originalVideo/{string}", new GET_DraftLargeStream(manager
 				, (IDraftWrapper wrapper) -> wrapper.readOriginalVideo()
 				, (Draft draft) -> draft.originalVideo().mime()
 				, (Draft draft) -> draft.originalVideo().byteSize()
 		));
-		validated.addWebSocketFactory("/draft/originalVideo/upload", 4, "video", new WS_DraftSaveVideo(manager));
-		validated.addDeleteHandler("/draft/originalVideo", 1, new DELETE_DraftOriginalVideo(manager));
-		validated.addGetHandler("/draft/processedVideo", 1, new GET_DraftLargeStream(manager
+		validated.addWebSocketFactory("/draft/originalVideo/upload/{string}/{string}/{string}/{string}", "video", new WS_DraftSaveVideo(manager));
+		validated.addDeleteHandler("/draft/originalVideo/{string}", new DELETE_DraftOriginalVideo(manager));
+		validated.addGetHandler("/draft/processedVideo/{string}", new GET_DraftLargeStream(manager
 				, (IDraftWrapper wrapper) -> wrapper.readProcessedVideo()
 				, (Draft draft) -> draft.processedVideo().mime()
 				, (Draft draft) -> draft.processedVideo().byteSize()
 		));
-		validated.addWebSocketFactory("/draft/processedVideo/process", 2, EVENT_API_PROTOCOL, new WS_DraftProcessVideo(serverContext, videoProcessContainer, forcedCommand));
-		validated.addWebSocketFactory("/draft/processedVideo/reconnect", 1, EVENT_API_PROTOCOL, new WS_DraftExistingVideo(videoProcessContainer));
-		validated.addDeleteHandler("/draft/processedVideo", 1, new DELETE_DraftProcessedVideo(manager));
-		validated.addGetHandler("/draft/audio", 1, new GET_DraftLargeStream(manager
+		validated.addWebSocketFactory("/draft/processedVideo/process/{string}/{string}", EVENT_API_PROTOCOL, new WS_DraftProcessVideo(serverContext, videoProcessContainer, forcedCommand));
+		validated.addWebSocketFactory("/draft/processedVideo/reconnect/{string}", EVENT_API_PROTOCOL, new WS_DraftExistingVideo(videoProcessContainer));
+		validated.addDeleteHandler("/draft/processedVideo/{string}", new DELETE_DraftProcessedVideo(manager));
+		validated.addGetHandler("/draft/audio/{string}", new GET_DraftLargeStream(manager
 				, (IDraftWrapper wrapper) -> wrapper.readAudio()
 				, (Draft draft) -> draft.audio().mime()
 				, (Draft draft) -> draft.audio().byteSize()
 		));
-		validated.addWebSocketFactory("/draft/audio/upload", 2, "audio", new WS_DraftSaveAudio(manager));
-		validated.addDeleteHandler("/draft/audio", 1, new DELETE_DraftAudio(manager));
+		validated.addWebSocketFactory("/draft/audio/upload/{string}/{string}", "audio", new WS_DraftSaveAudio(manager));
+		validated.addDeleteHandler("/draft/audio/{string}", new DELETE_DraftAudio(manager));
 		
 		// Followee operations.
-		validated.addGetHandler("/followees/keys", 0, new GET_FolloweeKeys(runner));
-		validated.addPostRawHandler("/followees/add", 1, new POST_Raw_AddFollowee(runner, background));
-		validated.addDeleteHandler("/followees/remove", 1, new DELETE_RemoveFollowee(runner, background));
-		validated.addPostRawHandler("/followee/refresh", 1, new POST_Raw_FolloweeRefresh(background));
-		validated.addWebSocketFactory("/followee/events/refreshTime", 0, EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
+		validated.addGetHandler("/followees/keys", new GET_FolloweeKeys(runner));
+		validated.addPostRawHandler("/followees/add/{string}", new POST_Raw_AddFollowee(runner, background));
+		validated.addDeleteHandler("/followees/remove/{string}", new DELETE_RemoveFollowee(runner, background));
+		validated.addPostRawHandler("/followee/refresh/{string}", new POST_Raw_FolloweeRefresh(background));
+		validated.addWebSocketFactory("/followee/events/refreshTime", EVENT_API_PROTOCOL, new WS_FolloweeRefreshTimes(followeeRefreshConnector));
 		
 		// Favourites operations.
-		validated.addGetHandler("/favourites/list", 0, new GET_FavouritesHashes(serverContext));
-		validated.addPostRawHandler("/favourites/add", 1, new POST_Raw_AddFavourite(runner));
-		validated.addDeleteHandler("/favourites/remove", 1, new DELETE_RemoveFavourite(runner));
+		validated.addGetHandler("/favourites/list", new GET_FavouritesHashes(serverContext));
+		validated.addPostRawHandler("/favourites/add/{string}", new POST_Raw_AddFavourite(runner));
+		validated.addDeleteHandler("/favourites/remove/{string}", new DELETE_RemoveFavourite(runner));
 		
 		// Start the server.
 		ILogger serverLog = serverContext.logger.logStart("Starting server...");

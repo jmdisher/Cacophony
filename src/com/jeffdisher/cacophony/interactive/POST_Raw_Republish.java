@@ -28,9 +28,9 @@ public class POST_Raw_Republish implements ValidatedEntryPoints.POST_Raw
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[2]);
 		// Note that we don't republish with the blocking key since it is designed to not interact with on-IPFS user state.
 		RepublishCommand command = new RepublishCommand();
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response

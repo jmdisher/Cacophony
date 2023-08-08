@@ -31,9 +31,9 @@ public class POST_Form_Draft implements ValidatedEntryPoints.POST_Form
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws IOException
 	{
-		int draftId = Integer.parseInt(pathVariables[0]);
+		int draftId = Integer.parseInt((String)path[1]);
 		String title = formVariables.getIfSingle(VAR_NAME);
 		String description = formVariables.getIfSingle(VAR_DESCRIPTION);
 		String discussionUrl = formVariables.getIfSingle(VAR_DISCUSSION_URL);

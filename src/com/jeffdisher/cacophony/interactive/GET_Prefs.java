@@ -34,7 +34,7 @@ public class GET_Prefs implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
 		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{

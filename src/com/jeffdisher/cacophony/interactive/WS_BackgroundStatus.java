@@ -33,7 +33,7 @@ public class WS_BackgroundStatus implements ValidatedEntryPoints.WEB_SOCKET_FACT
 	}
 	
 	@Override
-	public WebSocketListener build(String[] pathVariables)
+	public WebSocketListener build(Object[] path)
 	{
 		return new StatusListener();
 	}

@@ -32,7 +32,7 @@ public class GET_HomeChannels implements ValidatedEntryPoints.GET
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
 		ListChannelsCommand command = new ListChannelsCommand();
 		SuccessfulCommand<ChannelList> result = InteractiveHelpers.runCommandAndHandleErrors(response

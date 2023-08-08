@@ -24,9 +24,9 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		String rawKey = variables[0];
+		String rawKey = (String)path[2];
 		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
 		if (null != userToResolve)
 		{

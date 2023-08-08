@@ -43,10 +43,10 @@ public class GET_PostStruct implements ValidatedEntryPoints.GET
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsFile postToResolve = IpfsFile.fromIpfsCid(variables[0]);
-		String cacheOption = variables[1];
+		IpfsFile postToResolve = IpfsFile.fromIpfsCid((String)path[2]);
+		String cacheOption = (String)path[3];
 		boolean forceCache = cacheOption.equals(CACHE_FORCE);
 		if (forceCache || cacheOption.equals(CACHE_OPTIONAL))
 		{

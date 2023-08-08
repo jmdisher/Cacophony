@@ -31,7 +31,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables, StringMultiMap<String> formVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws Throwable
 	{
 		int videoEdgePixelMax = _parseInt(formVariables, "videoEdgePixelMax");
 		long followCacheTargetBytes = _parseLong(formVariables, "followCacheTargetBytes");

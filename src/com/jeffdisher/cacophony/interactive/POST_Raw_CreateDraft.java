@@ -29,10 +29,10 @@ public class POST_Raw_CreateDraft implements ValidatedEntryPoints.POST_Raw
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
 		// Check the replyTo (could be "NONE" string or CID).
-		CidOrNone replyTo = CidOrNone.parse(pathVariables[0]);
+		CidOrNone replyTo = CidOrNone.parse((String)path[2]);
 		// We just use the CidOrNone since it has the correct helper parser.
 		_proceed(response, replyTo.cid);
 	}

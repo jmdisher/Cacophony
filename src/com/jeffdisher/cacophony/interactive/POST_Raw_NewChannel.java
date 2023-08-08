@@ -31,9 +31,9 @@ public class POST_Raw_NewChannel implements ValidatedEntryPoints.POST_Raw
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		String keyName = pathVariables[0];
+		String keyName = (String)path[3];
 		
 		// We can't use the runner for this case since the key doesn't exist and it requires that so we invoke, directly.
 		CreateChannelCommand command = new CreateChannelCommand(keyName);

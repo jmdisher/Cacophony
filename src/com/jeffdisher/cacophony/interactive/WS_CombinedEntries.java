@@ -38,7 +38,7 @@ public class WS_CombinedEntries implements ValidatedEntryPoints.WEB_SOCKET_FACTO
 	}
 
 	@Override
-	public WebSocketListener build(String[] pathVariables)
+	public WebSocketListener build(Object[] path)
 	{
 		return new Listener();
 	}

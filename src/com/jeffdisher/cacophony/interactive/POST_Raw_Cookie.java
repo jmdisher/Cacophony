@@ -21,7 +21,7 @@ public class POST_Raw_Cookie implements IPostRawHandler
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] variables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
 		if ("127.0.0.1".equals(request.getRemoteAddr()))
 		{

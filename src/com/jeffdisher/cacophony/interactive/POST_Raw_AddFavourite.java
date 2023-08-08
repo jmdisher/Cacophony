@@ -23,9 +23,9 @@ public class POST_Raw_AddFavourite implements ValidatedEntryPoints.POST_Raw
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsFile postToAdd = IpfsFile.fromIpfsCid(pathVariables[0]);
+		IpfsFile postToAdd = IpfsFile.fromIpfsCid((String)path[2]);
 		
 		AddFavouriteCommand command = new AddFavouriteCommand(postToAdd);
 		InteractiveHelpers.runCommandAndHandleErrors(response

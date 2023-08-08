@@ -19,9 +19,9 @@ public class DELETE_DraftThumb implements ValidatedEntryPoints.DELETE
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		int draftId = Integer.parseInt(pathVariables[0]);
+		int draftId = Integer.parseInt((String)path[2]);
 		try
 		{
 			boolean didDelete = InteractiveHelpers.deleteThumbnail(_draftManager, draftId);

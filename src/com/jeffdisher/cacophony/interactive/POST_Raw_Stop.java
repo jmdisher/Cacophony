@@ -20,7 +20,7 @@ public class POST_Raw_Stop implements ValidatedEntryPoints.POST_Raw
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws IOException
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.setContentType("text/plain;charset=utf-8");

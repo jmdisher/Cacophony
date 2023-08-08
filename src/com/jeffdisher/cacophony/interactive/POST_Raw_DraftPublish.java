@@ -36,17 +36,17 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	}
 	
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, String[] pathVariables) throws Throwable
+	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey(pathVariables[0]);
+		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[2]);
 		
 		int draftId = 0;
 		PublishCommand command = null;
 		try
 		{
 			// First, we will use the draft manager to construct the publish command.
-			draftId = Integer.parseInt(pathVariables[1]);
-			PublishType type = PublishType.valueOf(pathVariables[2]);
+			draftId = Integer.parseInt((String)path[3]);
+			PublishType type = PublishType.valueOf((String)path[4]);
 			command = _draftManager.prepareToPublishDraft(draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
@@ -56,13 +56,13 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 		catch (NumberFormatException e)
 		{
 			// Draft ID invalid.
-			response.getWriter().println("Invalid draft ID: \"" + pathVariables[1] + "\"");
+			response.getWriter().println("Invalid draft ID: \"" + (String)path[3] + "\"");
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 		catch (IllegalArgumentException e)
 		{
 			// Typically thrown by PublishType.valueOf.
-			response.getWriter().println("Invalid draft type: \"" + pathVariables[2] + "\"");
+			response.getWriter().println("Invalid draft type: \"" + (String)path[4] + "\"");
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 		catch (FileNotFoundException e)
