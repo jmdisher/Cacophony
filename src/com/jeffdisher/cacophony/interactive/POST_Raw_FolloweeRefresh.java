@@ -22,7 +22,7 @@ public class POST_Raw_FolloweeRefresh implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey userToRefresh = IpfsKey.fromPublicKey((String)path[2]);
+		IpfsKey userToRefresh = (IpfsKey)path[2];
 		
 		// The scheduler knows if this is a valid followee so it will tell us whether it will do anything.
 		boolean didRequest = _background.refreshFollowee(userToRefresh);

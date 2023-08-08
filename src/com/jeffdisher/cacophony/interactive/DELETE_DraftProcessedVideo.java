@@ -21,7 +21,7 @@ public class DELETE_DraftProcessedVideo implements ValidatedEntryPoints.DELETE
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		int draftId = Integer.parseInt((String)path[2]);
+		int draftId = (Integer)path[2];
 		try
 		{
 			boolean didDelete = InteractiveHelpers.deleteProcessedVideo(_draftManager, draftId);

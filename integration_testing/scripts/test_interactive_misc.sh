@@ -223,7 +223,8 @@ requireSubstring "$POST_LIST" "[\""
 
 echo "Check asking for information about users, including invalid keys..."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/BOGUS")
-requireSubstring "$USER_INFO" "Invalid key: BOGUS"
+# Note that we validate this type to check if it is a match so look for 404.
+requireSubstring "$USER_INFO" "Error 404 Not Found"
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC2")
 requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null,\"feature\":null}"
 

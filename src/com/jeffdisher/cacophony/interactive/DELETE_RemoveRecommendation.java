@@ -31,8 +31,8 @@ public class DELETE_RemoveRecommendation implements ValidatedEntryPoints.DELETE
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[3]);
-		IpfsKey userToRemove = IpfsKey.fromPublicKey((String)path[4]);
+		IpfsKey homePublicKey = (IpfsKey)path[3];
+		IpfsKey userToRemove = (IpfsKey)path[4];
 		
 		RemoveRecommendationCommand command = new RemoveRecommendationCommand(userToRemove);
 		InteractiveHelpers.SuccessfulCommand<ChangedRoot> result = InteractiveHelpers.runCommandAndHandleErrors(response

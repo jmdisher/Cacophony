@@ -26,34 +26,24 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		String rawKey = (String)path[2];
-		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
-		if (null != userToResolve)
+		IpfsKey userToResolve = (IpfsKey)path[2];
+		// While this could be a home user, we don't bother specializing that case, here.
+		ListRecommendationsCommand command = new ListRecommendationsCommand(userToResolve);
+		InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
+				, userToResolve
+				, command
+				, null
+		);
+		if (null != result)
 		{
-			// While this could be a home user, we don't bother specializing that case, here.
-			ListRecommendationsCommand command = new ListRecommendationsCommand(userToResolve);
-			InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response
-					, _runner
-					, userToResolve
-					, command
-					, null
-			);
-			if (null != result)
+			JsonArray array = new JsonArray();
+			for (IpfsKey key : result.result().keys)
 			{
-				JsonArray array = new JsonArray();
-				for (IpfsKey key : result.result().keys)
-				{
-					array.add(key.toPublicKey());
-				}
-				response.setContentType("application/json");
-				response.getWriter().print(array.toString());
+				array.add(key.toPublicKey());
 			}
-		}
-		else
-		{
-			// This happens if the key is invalid.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			response.getWriter().print("Invalid key: " + rawKey);
+			response.setContentType("application/json");
+			response.getWriter().print(array.toString());
 		}
 	}
 }

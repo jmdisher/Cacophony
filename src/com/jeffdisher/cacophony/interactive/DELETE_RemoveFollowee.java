@@ -31,7 +31,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey userToRemove = IpfsKey.fromPublicKey((String)path[2]);
+		IpfsKey userToRemove = (IpfsKey)path[2];
 		if (null != userToRemove)
 		{
 			// First thing, we want to just remove this from background operations.

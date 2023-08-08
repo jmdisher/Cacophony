@@ -41,7 +41,7 @@ public class WS_UserEntries implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 	@Override
 	public WebSocketListener build(Object[] path)
 	{
-		IpfsKey key = IpfsKey.fromPublicKey((String) path[3]);
+		IpfsKey key = (IpfsKey) path[3];
 		return new Listener(key);
 	}
 

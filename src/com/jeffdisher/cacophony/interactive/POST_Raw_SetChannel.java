@@ -29,7 +29,7 @@ public class POST_Raw_SetChannel implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[3]);
+		IpfsKey homePublicKey = (IpfsKey)path[3];
 		
 		// Check that this key exists (we need to use a low-level accessor since we might not currently have something selected).
 		boolean didFind = false;

@@ -25,7 +25,7 @@ public class GET_DraftThumbnail implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws IOException
 	{
-		int draftId = Integer.parseInt((String)path[2]);
+		int draftId = (Integer)path[2];
 		try
 		{
 			ServletOutputStream output = response.getOutputStream();

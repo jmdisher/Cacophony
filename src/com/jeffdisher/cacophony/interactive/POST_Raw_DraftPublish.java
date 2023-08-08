@@ -38,14 +38,14 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey homePublicKey = IpfsKey.fromPublicKey((String)path[2]);
+		IpfsKey homePublicKey = (IpfsKey)path[2];
 		
 		int draftId = 0;
 		PublishCommand command = null;
 		try
 		{
 			// First, we will use the draft manager to construct the publish command.
-			draftId = Integer.parseInt((String)path[3]);
+			draftId = (Integer)path[3];
 			PublishType type = PublishType.valueOf((String)path[4]);
 			command = _draftManager.prepareToPublishDraft(draftId
 					, (PublishType.VIDEO == type)

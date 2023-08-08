@@ -22,7 +22,7 @@ public class WS_DraftExistingVideo implements ValidatedEntryPoints.WEB_SOCKET_FA
 	@Override
 	public WebSocketListener build(Object[] path)
 	{
-		int draftId = Integer.parseInt((String)path[3]);
+		int draftId = (Integer)path[3];
 		return new ProcessVideoWebSocketListener(draftId);
 	}
 

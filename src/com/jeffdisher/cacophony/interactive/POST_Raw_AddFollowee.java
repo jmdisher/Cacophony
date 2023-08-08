@@ -30,7 +30,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey userToAdd = IpfsKey.fromPublicKey((String)path[2]);
+		IpfsKey userToAdd = (IpfsKey)path[2];
 		
 		StartFollowingCommand command = new StartFollowingCommand(userToAdd);
 		InteractiveHelpers.SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response

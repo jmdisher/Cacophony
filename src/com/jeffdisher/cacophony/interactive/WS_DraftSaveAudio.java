@@ -28,7 +28,7 @@ public class WS_DraftSaveAudio implements ValidatedEntryPoints.WEB_SOCKET_FACTOR
 	@Override
 	public WebSocketListener build(Object[] path)
 	{
-		int draftId = Integer.parseInt((String)path[3]);
+		int draftId = (Integer)path[3];
 		// Since we know everything coming through this path is an "audio/" mime type, we just pass the second part in the path to avoid having to reencode it.
 		String codec = (String)path[4];
 		String mime = "audio/" + codec;

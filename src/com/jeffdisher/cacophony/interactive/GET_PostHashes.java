@@ -33,7 +33,7 @@ public class GET_PostHashes implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey userToResolve = IpfsKey.fromPublicKey((String)path[2]);
+		IpfsKey userToResolve = (IpfsKey)path[2];
 		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			IpfsKey publicKey = _context.getSelectedKey();

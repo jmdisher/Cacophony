@@ -34,37 +34,27 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		String rawKey = (String)path[2];
-		IpfsKey userToResolve = IpfsKey.fromPublicKey(rawKey);
-		if (null != userToResolve)
+		IpfsKey userToResolve = (IpfsKey)path[2];
+		// While this could be a home user, we don't bother specializing that case, here.
+		ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
+		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
+				, _runner
+				, userToResolve
+				, command
+				, null
+		);
+		if (null != success)
 		{
-			// While this could be a home user, we don't bother specializing that case, here.
-			ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
-			InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
-					, _runner
-					, userToResolve
-					, command
-					, null
+			ChannelDescription result = success.result();
+			JsonObject userInfo = JsonGenerationHelpers.userDescription(result.name
+					, result.description
+					, result.userPicUrl
+					, result.email
+					, result.website
+					, result.feature
 			);
-			if (null != success)
-			{
-				ChannelDescription result = success.result();
-				JsonObject userInfo = JsonGenerationHelpers.userDescription(result.name
-						, result.description
-						, result.userPicUrl
-						, result.email
-						, result.website
-						, result.feature
-				);
-				response.setContentType("application/json");
-				response.getWriter().print(userInfo.toString());
-			}
-		}
-		else
-		{
-			// This happens if the key is invalid.
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			response.getWriter().print("Invalid key: " + rawKey);
+			response.setContentType("application/json");
+			response.getWriter().print(userInfo.toString());
 		}
 	}
 }

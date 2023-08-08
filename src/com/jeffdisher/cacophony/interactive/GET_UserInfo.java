@@ -32,7 +32,7 @@ public class GET_UserInfo implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		IpfsKey userToResolve = IpfsKey.fromPublicKey((String)path[2]);
+		IpfsKey userToResolve = (IpfsKey)path[2];
 		
 		// This entry-point (as compared to GET_UnknownUserInfo) is intended for use with already-known users so we will
 		// only consult the cache.

@@ -28,9 +28,9 @@ public class WS_DraftSaveVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTOR
 	@Override
 	public WebSocketListener build(Object[] path)
 	{
-		int draftId = Integer.parseInt((String)path[3]);
-		int height = Integer.parseInt((String)path[4]);
-		int width = Integer.parseInt((String)path[5]);
+		int draftId = (Integer)path[3];
+		int height = (Integer)path[4];
+		int width = (Integer)path[5];
 		// Since we know everything coming through this path is an "video/" mime type, we just pass the second part in the path to avoid having to reencode it.
 		String codec = (String)path[6];
 		String mime = "video/" + codec;
