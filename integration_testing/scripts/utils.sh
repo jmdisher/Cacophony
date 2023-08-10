@@ -182,9 +182,9 @@ function verifySwarmWorks()
 	RET="$P_PID1"
 }
 
-# Waits for the interactive Cacophony server on the given port to start.  Args:
+# Waits for the HTTP server on the given port to start.  Args:
 # 1) port
-function waitForCacophonyStart()
+function waitForHttpStart()
 {
 	if [ $# -ne 1 ]; then
 		echo "Missing arguments: port"

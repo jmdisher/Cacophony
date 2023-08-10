@@ -33,7 +33,7 @@ mkdir "$DRAFTS_DIR"
 echo "Start the interactive server..."
 CACOPHONY_ENABLE_FAKE_SYSTEM="$DRAFTS_DIR" java -Xmx1g -jar "Cacophony.jar" --run &
 SERVER_PID=$!
-sleep 5
+waitForHttpStart 8000
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/server/cookie"
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/home/publicKey")

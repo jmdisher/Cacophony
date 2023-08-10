@@ -66,7 +66,7 @@ PUBLIC2=$(echo $RESULT_STRING | cut -d " " -f 14)
 echo "Start the interactive server, verify we can load a page, and initialize the cookies and XSRF token..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
-waitForCacophonyStart 8001
+waitForHttpStart 8001
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8001/")
 requireSubstring "$INDEX" "Cacophony - Static Index"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
@@ -304,7 +304,7 @@ wait $ENTRIES_PID
 echo "Start the server again to verify that the on-disk data is correct"
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
-waitForCacophonyStart 8001
+waitForHttpStart 8001
 
 # Make sure that our cookies are set.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie

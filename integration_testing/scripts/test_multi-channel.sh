@@ -67,7 +67,7 @@ requireSubstring "$CHANNEL_LIST" "Found 0 channels:"
 echo "Before creating any channels, make sure that the interactive server can be started and stopped..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
-waitForCacophonyStart 8001
+waitForHttpStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
 wait $SERVER_PID
@@ -108,7 +108,7 @@ PUBLIC_KEY2=$(echo $RESULT_STRING | cut -d " " -f 14)
 echo "Before deleting the channels, make sure that the interactive server works..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
 SERVER_PID=$!
-waitForCacophonyStart 8001
+waitForHttpStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
