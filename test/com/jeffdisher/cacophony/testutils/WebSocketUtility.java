@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -56,6 +58,7 @@ public class WebSocketUtility implements WebSocketListener
 	public static final String COMMAND_ACK = "-ACK";
 	public static final String CLEAR = "CLEAR";
 
+	private final Lock _outLock;
 	private final File _outputPipe;
 	private final WebSocketClient _client;
 	private Session _connectedSession;
@@ -69,6 +72,7 @@ public class WebSocketUtility implements WebSocketListener
 
 	public WebSocketUtility(File outputPipe, File inputPipe, File clearPipe)
 	{
+		_outLock = new ReentrantLock();
 		_outputPipe = outputPipe;
 		_client = new WebSocketClient();
 		
@@ -209,11 +213,16 @@ public class WebSocketUtility implements WebSocketListener
 				{
 					try
 					{
+						_outLock.lock();
 						Files.write(_outputPipe.toPath(), message.getBytes(), StandardOpenOption.APPEND);
 					}
 					catch (IOException e)
 					{
 						throw Assert.unexpected(e);
+					}
+					finally
+					{
+						_outLock.unlock();
 					}
 				}
 				// If we have an input reader, we will wait for ack.
@@ -270,6 +279,19 @@ public class WebSocketUtility implements WebSocketListener
 		}
 	}
 
+	/**
+	 * This is a hack to allow the start-up output synchronization to acquire the lock before any messages could be
+	 * received.  This kind of hack is an example of the problem with using these pipes as the complexity of the state
+	 * machine around them has grown.
+	 * Ideally, we would move away from this utility.
+	 * 
+	 * @return The lock for writing to the output pipe.
+	 */
+	public  Lock borrowOutputLock()
+	{
+		return _outLock;
+	}
+
 
 	public static void main(String[] args) throws Exception
 	{
@@ -312,6 +334,11 @@ public class WebSocketUtility implements WebSocketListener
 			
 			WebSocketUtility utility = new WebSocketUtility(outputPipe, inputPipe, clearPipe);
 			utility.connect(uri, xsrf, protocol);
+			// Hack:  We borrow the lock for accessing the output pipe so that we can lock it before any messages could
+			// theoretically arrive.  This means that we can't cause a race where both this start-up synchronization
+			// write and a data write both end up being read by the same read call in the test script.
+			Lock borrowed = utility.borrowOutputLock();
+			borrowed.lock();
 			utility.waitForConnection();
 			
 			// If we have an output pipe, we want to just open and close it so that scripts wanting to use this
@@ -327,6 +354,7 @@ public class WebSocketUtility implements WebSocketListener
 					throw Assert.unexpected(e);
 				}
 			}
+			borrowed.unlock();
 			
 			// We can now run the actual operation.
 			if (sendMode)
