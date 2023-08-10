@@ -40,7 +40,8 @@ function makeTextPost()
 	ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 	ID=$(echo $ID_PARSE)
 	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=$TITLE&DESCRIPTION=empty" "http://127.0.0.1:8001/draft/$ID"
-	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/draft/publish/$PUBLIC_KEY/$ID/TEXT_ONLY"
+	CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/draft/publish/$PUBLIC_KEY/$ID/TEXT_ONLY")
+	requireSubstring "$CID" "Qm"
 }
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.

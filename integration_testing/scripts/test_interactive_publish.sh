@@ -303,12 +303,13 @@ echo "...working with draft $PUBLISH_ID"
 ERROR=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/BOGUS)
 requireSubstring "$ERROR" "Invalid draft type: \"BOGUS\""
 # Now, do it correctly.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/VIDEO
+CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/VIDEO)
+requireSubstring "$CID" "Qm"
 
 echo "Verify that we see the new entry in the entry socket..."
 SAMPLE=$(cat "$WS_ENTRIES.out")
 echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$CID\",\"value\":null,\"isNewest\":true}"
 
 # We will verify that this is in the pipe we are reading from the WebSocket (note that we may sometimes see event "1" from the start-up publish, so just skip that one in this case).
 STATUS_EVENT=$(cat "$WS_STATUS1.out")
@@ -371,10 +372,12 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY
+CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY)
+requireSubstring "$CID" "Qm"
 # Find the hash of the new post.
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 REPLY_HASH=$(echo "$POST_LIST" | cut -d \" -f 4)
+requireSubstring "$REPLY_HASH" "$CID"
 requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
 
 # Check for this in the WebSockets.
@@ -396,10 +399,12 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
 echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/audio/upload/$PUBLISH_ID/ogg" audio
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/AUDIO
+CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/AUDIO)
+requireSubstring "$CID" "Qm"
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 # We want to look for the third post so get field 6:  1 "2" 3 "4" 5 "6" 7
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 6)
+requireSubstring "$POST_ID" "$CID"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 

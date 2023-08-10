@@ -49,7 +49,7 @@ do
 	PUBLISH_ID=$(echo $ID_PARSE)
 	# The draft initial contents are currently being initialized from the time so make sure we change it.
 	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Post%20$N" http://127.0.0.1:8000/draft/$PUBLISH_ID
-	curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY
+	POST_CIDS[$N]=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY)
 done
 
 echo "Connect the entries socket..."
@@ -63,8 +63,7 @@ for N in {12..3};
 do
 	SAMPLE=$(cat "$WS_ENTRIES.out")
 	echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
-	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
-	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"${POST_CIDS[$N]}\",\"value\":null,\"isNewest\":false}"
 done
 
 echo "Request more and verify we see the other 2."
@@ -73,8 +72,7 @@ for N in {2..1};
 do
 	SAMPLE=$(cat "$WS_ENTRIES.out")
 	echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
-	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
-	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"${POST_CIDS[$N]}\",\"value\":null,\"isNewest\":false}"
 done
 # Note that this will also see the fake entry for the "home user" so read that, too.
 SAMPLE=$(cat "$WS_ENTRIES.out")

@@ -87,6 +87,9 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 				
 				// The publish is something we can wait on, asynchronously, in a different call.
 				_backgroundOperations.requestPublish(success.context().getSelectedKey(), success.result().getIndexToPublish());
+				
+				// Return the CID of the new post (for testing).
+				response.getWriter().write(success.result().recordCid.toSafeString());
 			}
 		}
 	}

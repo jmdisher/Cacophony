@@ -134,7 +134,8 @@ ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 ORIGINAL_ID=$(echo $ID_PARSE)
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Root%20Entry&DESCRIPTION=Nothing" http://127.0.0.1:8001/draft/$ORIGINAL_ID
 # Publish and wait for completion.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/draft/publish/$KEY1/$ORIGINAL_ID/TEXT_ONLY
+CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/draft/publish/$KEY1/$ORIGINAL_ID/TEXT_ONLY)
+requireSubstring "$CID" "Qm"
 STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
@@ -162,7 +163,8 @@ ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 ORIGINAL_ID=$(echo $ID_PARSE)
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Reply%20Entry&DESCRIPTION=Reply" http://127.0.0.1:8002/draft/$ORIGINAL_ID
 # Publish and wait for completion.
-curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/draft/publish/$KEY2/$ORIGINAL_ID/TEXT_ONLY
+CID=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/draft/publish/$KEY2/$ORIGINAL_ID/TEXT_ONLY)
+requireSubstring "$CID" "Qm"
 STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
 STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
