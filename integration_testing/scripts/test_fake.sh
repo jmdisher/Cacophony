@@ -18,16 +18,10 @@ USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
 DRAFTS_DIR=/tmp/drafts
 
-WS_STATUS=/tmp/status
-WS_ENTRIES=/tmp/entries
-
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 rm -rf "$DRAFTS_DIR"
-
-rm -f "$WS_STATUS".*
-rm -f "$WS_ENTRIES".*
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -56,11 +50,9 @@ PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-m
 # We know the hard-coded key in this mode.
 requireSubstring "$PUBLIC_KEY" "z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1"
 
-mkfifo "$WS_STATUS.out" "$WS_STATUS.in" "$WS_STATUS.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/status" "event_api" "$WS_STATUS.out" "$WS_STATUS.in" "$WS_STATUS.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/status" event_api 9000 &
 STATUS_PID=$!
-# Wait for connect.
-cat "$WS_STATUS.out" > /dev/null
+waitForHttpStart 9000
 
 echo "Create and publish a draft..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
@@ -71,21 +63,18 @@ CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XP
 requireSubstring "$CID" "Qm"
 
 # Observe the republish.
-SAMPLE=$(cat "$WS_STATUS.out")
-echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/0 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile(Qm"
-SAMPLE=$(cat "$WS_STATUS.out")
-echo -n "-ACK" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null,\"isNewest\":false}"
 
-mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" event_api 9001 &
 ENTRIES_PID=$!
-cat "$WS_ENTRIES.out" > /dev/null
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+waitForHttpStart 9001
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/0 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/1 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
 
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 # This list will have 2 entries:  The fake one and the one we just created, so skip to the second (field 4).
@@ -96,9 +85,7 @@ requireSubstring "$POST_STRUCT" "{\"name\":\"New Draft - "
 # Shutdown.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/server/stop"
 wait $SERVER_PID
-echo -n "-WAIT" > "$WS_STATUS.in" && cat "$WS_STATUS.clear" > /dev/null
 wait $STATUS_PID
-echo -n "-WAIT" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 wait $ENTRIES_PID
 
 

@@ -18,22 +18,10 @@ USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
 COOKIES2=/tmp/cookies2
 
-WS_STATUS1=/tmp/status1
-WS_STATUS2=/tmp/status2
-WS_REFRESH1=/tmp/refresh1
-WS_REFRESH2=/tmp/refresh2
-WS_REPLIES1=/tmp/replies1
-
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 rm -f "$COOKIES2"
-
-rm -f "$WS_STATUS1".*
-rm -f "$WS_STATUS2".*
-rm -f "$WS_REFRESH1".*
-rm -f "$WS_REFRESH2".*
-rm -f "$WS_REPLIES1".*
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -71,24 +59,20 @@ curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST ht
 XSRF_TOKEN2=$(grep XSRF "$COOKIES2" | cut -f 7)
 
 echo "Connect the status WebSockets (since waiting on publish updates is the only way to properly synchronize)..."
-mkfifo "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN1" JSON_IO "ws://127.0.0.1:8001/server/events/status" "event_api" "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/status" event_api 9000 &
 STATUS_PID1=$!
-cat "$WS_STATUS1.out" > /dev/null
-mkfifo "$WS_STATUS2.out" "$WS_STATUS2.in" "$WS_STATUS2.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN2" JSON_IO "ws://127.0.0.1:8002/server/events/status" "event_api" "$WS_STATUS2.out" "$WS_STATUS2.in" "$WS_STATUS2.clear" &
+waitForHttpStart 9000
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/server/events/status" event_api 9001 &
 STATUS_PID2=$!
-cat "$WS_STATUS2.out" > /dev/null
+waitForHttpStart 9001
 
 echo "Connect the refresh WebSockets (since we will need to wait on followee refresh)..."
-mkfifo "$WS_REFRESH1.out" "$WS_REFRESH1.in" "$WS_REFRESH1.clear"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN1" JSON_IO "ws://127.0.0.1:8001/followee/events/refreshTime" "event_api" "$WS_REFRESH1.out" "$WS_REFRESH1.in" "$WS_REFRESH1.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/followee/events/refreshTime" event_api 9002 &
 FOLLOWEE_REFRESH1_PID=$!
-cat "$WS_REFRESH1.out" > /dev/null
-mkfifo "$WS_REFRESH2.out" "$WS_REFRESH2.in" "$WS_REFRESH2.clear"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN2" JSON_IO "ws://127.0.0.1:8002/followee/events/refreshTime" "event_api" "$WS_REFRESH2.out" "$WS_REFRESH2.in" "$WS_REFRESH2.clear" &
+waitForHttpStart 9002
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/followee/events/refreshTime" event_api 9003 &
 FOLLOWEE_REFRESH2_PID=$!
-cat "$WS_REFRESH2.out" > /dev/null
+waitForHttpStart 9003
 
 echo "Creating Cacophony channels (1 on each node)..."
 KEY1=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/home/channel/new/CACO1)
@@ -100,31 +84,43 @@ echo "Make them follow each other..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/followees/add/$KEY2
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/followees/add/$KEY1
 # This also requires waiting for us to see the initial follow attempts happen.
-SAMPLE=$(cat "$WS_REFRESH1.out") && echo -n "-ACK" > "$WS_REFRESH1.in" && cat "$WS_REFRESH1.clear" > /dev/null
+INDEX_REFRESH1=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$KEY2\",\"value\":0,\"isNewest\":true}"
-SAMPLE=$(cat "$WS_REFRESH1.out") && echo -n "-ACK" > "$WS_REFRESH1.in" && cat "$WS_REFRESH1.clear" > /dev/null
+INDEX_REFRESH1=$((INDEX_REFRESH1 + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\""
-SAMPLE=$(cat "$WS_REFRESH2.out") && echo -n "-ACK" > "$WS_REFRESH2.in" && cat "$WS_REFRESH2.clear" > /dev/null
+INDEX_REFRESH2=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9003/waitAndGet/$INDEX_REFRESH2 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$KEY1\",\"value\":0,\"isNewest\":true}"
-SAMPLE=$(cat "$WS_REFRESH2.out") && echo -n "-ACK" > "$WS_REFRESH2.in" && cat "$WS_REFRESH2.clear" > /dev/null
+INDEX_REFRESH2=$((INDEX_REFRESH2 + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9003/waitAndGet/$INDEX_REFRESH2 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY1\",\"value\""
 # Make sure that we drain the initial refresh from the status socket.
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=0
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 if [[ "$STATUS_EVENT" =~ "\"event\":\"create\",\"key\":1," ]]; then
-	STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-	STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+	INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+	STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
+	INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+	STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 fi
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey("
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 # ...and the second server.
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=0
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 if [[ "$STATUS_EVENT" =~ "\"event\":\"create\",\"key\":1," ]]; then
-	STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
-	STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+	INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+	STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
+	INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+	STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 fi
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":2,\"value\":\"Refresh IpfsKey("
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 
 echo "Make a basic post on server 1, refresh server 2 to see it, and have them post a response from server 2..."
@@ -136,19 +132,24 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H
 # Publish and wait for completion.
 CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/draft/publish/$KEY1/$ORIGINAL_ID/TEXT_ONLY)
 requireSubstring "$CID" "Qm"
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
 # Refresh from the other user.
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/followee/refresh/$KEY1
-SAMPLE=$(cat "$WS_REFRESH2.out") && echo -n "-ACK" > "$WS_REFRESH2.in" && cat "$WS_REFRESH2.clear" > /dev/null
+INDEX_REFRESH2=$((INDEX_REFRESH2 + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9003/waitAndGet/$INDEX_REFRESH2 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY1\",\"value\""
 # ...and the status socket.
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh IpfsKey("
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
 # Get the list of posts and verify we see it.
@@ -165,19 +166,24 @@ curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST -H
 # Publish and wait for completion.
 CID=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/draft/publish/$KEY2/$ORIGINAL_ID/TEXT_ONLY)
 requireSubstring "$CID" "Qm"
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 echo "Refresh server 1, verify that we see the response, and then verify that it is in the WebSocket..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/followee/refresh/$KEY2
-SAMPLE=$(cat "$WS_REFRESH1.out") && echo -n "-ACK" > "$WS_REFRESH1.in" && cat "$WS_REFRESH1.clear" > /dev/null
+INDEX_REFRESH1=$((INDEX_REFRESH1 + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\""
 # ...and the status socket.
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Refresh IpfsKey("
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
 # We can verify that we see it in the post list.
@@ -186,35 +192,42 @@ requireSubstring "$LIST" "[\"Qm"
 NEW_POST=$(echo "$LIST" | cut -d \" -f 2)
 
 # Open the WebSocket for the replies and verify that we see this entry.
-mkfifo "$WS_REPLIES1.out" "$WS_REPLIES1.in" "$WS_REPLIES1.clear"
-java -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN1" JSON_IO "ws://127.0.0.1:8001/server/events/replies" "event_api" "$WS_REPLIES1.out" "$WS_REPLIES1.in" "$WS_REPLIES1.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/replies" event_api 9004 &
 REPLIES1_PID=$!
-cat "$WS_REPLIES1.out" > /dev/null
-SAMPLE=$(cat "$WS_REPLIES1.out") && echo -n "-ACK" > "$WS_REPLIES1.in" && cat "$WS_REPLIES1.clear" > /dev/null
+waitForHttpStart 9004
+
+INDEX_REPLIES1=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9004/waitAndGet/$INDEX_REPLIES1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\":\"$REPLY_TO\",\"isNewest\":false}"
 
 echo "Delete this entry, refresh the followee, and then observe that the replyTo disappears from the WebSocket..."
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XDELETE "http://127.0.0.1:8002/home/post/delete/$KEY2/$NEW_POST"
 checkPreviousCommand "DELETE post"
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS2.out") && echo -n "-ACK" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
+INDEX_STATUS2=$((INDEX_STATUS2 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/followee/refresh/$KEY2
-SAMPLE=$(cat "$WS_REFRESH1.out") && echo -n "-ACK" > "$WS_REFRESH1.in" && cat "$WS_REFRESH1.clear" > /dev/null
+INDEX_REFRESH1=$((INDEX_REFRESH1 + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\""
 # ...and the status socket.
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Refresh IpfsKey("
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8001/server/postHashes/$KEY2)
 requireSubstring "$LIST" "[]"
-SAMPLE=$(cat "$WS_REPLIES1.out") && echo -n "-ACK" > "$WS_REPLIES1.in" && cat "$WS_REPLIES1.clear" > /dev/null
+INDEX_REPLIES1=$((INDEX_REPLIES1 + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9004/waitAndGet/$INDEX_REPLIES1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
 
 # We can also now bring down the WebSocket.
-echo -n "-CLOSE" > "$WS_REPLIES1.in" && cat "$WS_REPLIES1.clear" > /dev/null
+curl -XPOST http://127.0.0.1:9004/close 2> /dev/null
 wait $REPLIES1_PID
 
 
@@ -225,10 +238,6 @@ wait $SERVER1_PID
 wait $SERVER2_PID
 
 # Allow the sockets to close.
-echo -n "-WAIT" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-echo -n "-WAIT" > "$WS_STATUS2.in" && cat "$WS_STATUS2.clear" > /dev/null
-echo -n "-WAIT" > "$WS_REFRESH1.in" && cat "$WS_REFRESH1.clear" > /dev/null
-echo -n "-WAIT" > "$WS_REFRESH2.in" && cat "$WS_REFRESH2.clear" > /dev/null
 wait $STATUS_PID1
 wait $STATUS_PID2
 wait $FOLLOWEE_REFRESH1_PID

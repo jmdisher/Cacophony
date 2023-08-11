@@ -16,11 +16,7 @@ PATH_TO_JAR="$3"
 USER1=/tmp/user1
 COOKIES1=/tmp/cookies1
 
-WS_COMBINED=/tmp/combined
-
 rm -rf "$USER1"
-
-rm -f "$WS_COMBINED".*
 
 
 # Makes a text post as the given user.
@@ -137,10 +133,9 @@ CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-m
 requireSubstring "$CHECKED_KEY" "$PUBLIC_KEY2"
 
 echo "Listen to the combined view while we make changes to the user list..."
-mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8001/server/events/combined/entries" "event_api" "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/combined/entries" event_api 9000 &
 COMBINED_PID=$!
-cat "$WS_COMBINED.out" > /dev/null
+waitForHttpStart 9000
 
 echo "Create the new channel and do some basic interactions to verify it works..."
 NEW_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/new/LATE_KEY")
@@ -154,15 +149,15 @@ echo "Add a post by each user and verify that we see them all in the combined so
 makeTextPost "$PUBLIC_KEY1" "post1"
 makeTextPost "$PUBLIC_KEY2" "post2"
 makeTextPost "$CHECKED_KEY" "post3"
-SAMPLE=$(cat "$WS_COMBINED.out")
+INDEX_COMBINED=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
-SAMPLE=$(cat "$WS_COMBINED.out")
+INDEX_COMBINED=$((INDEX_COMBINED + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
-SAMPLE=$(cat "$WS_COMBINED.out")
+INDEX_COMBINED=$((INDEX_COMBINED + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 
 echo "Request a republish of the added channel and test1 and immediately delete them..."
 # This should mean that the delete is likely happening while the refresh is still waiting to complete, so it should demonstrate that this case is handled.
@@ -183,17 +178,16 @@ if [ $? != 22 ]; then
 fi
 
 # We expect to see a delete for each of these users since their posts should disappear.
-SAMPLE=$(cat "$WS_COMBINED.out")
+INDEX_COMBINED=$((INDEX_COMBINED + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
-SAMPLE=$(cat "$WS_COMBINED.out")
+INDEX_COMBINED=$((INDEX_COMBINED + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 
 echo "We can now stop the server..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
 wait $SERVER_PID
-echo -n "-WAIT" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 wait $COMBINED_PID
 
 echo "Make sure we see only one channel..."

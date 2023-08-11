@@ -16,14 +16,8 @@ PATH_TO_JAR="$3"
 COOKIES1=/tmp/cookies1
 DRAFTS_DIR=/tmp/drafts
 
-WS_ENTRIES=/tmp/entries
-WS_COMBINED=/tmp/combined
-
 rm -f "$COOKIES1"
 rm -rf "$DRAFTS_DIR"
-
-rm -f "$WS_ENTRIES".*
-rm -f "$WS_COMBINED".*
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -53,65 +47,63 @@ do
 done
 
 echo "Connect the entries socket..."
-mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" event_api 9000 &
 ENTRIES_PID=$!
-cat "$WS_ENTRIES.out" > /dev/null
+waitForHttpStart 9000
 
 echo "We expect to see the last 10 (but we can't verify the others _don't_ appear - although the WS util will hang on disconnect if there are unread messages)."
+INDEX=0
 for N in {12..3}; 
 do
-	SAMPLE=$(cat "$WS_ENTRIES.out")
-	echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+	SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
+	INDEX=$((INDEX + 1))
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"${POST_CIDS[$N]}\",\"value\":null,\"isNewest\":false}"
 done
 
 echo "Request more and verify we see the other 2."
-echo -n "COMMAND_SCROLL_BACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+curl -XPOST -H  "Content-Type: text/plain" --data "COMMAND_SCROLL_BACK" http://127.0.0.1:9000/send 2> /dev/null
 for N in {2..1}; 
 do
-	SAMPLE=$(cat "$WS_ENTRIES.out")
-	echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+	SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
+	INDEX=$((INDEX + 1))
 	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"${POST_CIDS[$N]}\",\"value\":null,\"isNewest\":false}"
 done
 # Note that this will also see the fake entry for the "home user" so read that, too.
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
+INDEX=$((INDEX + 1))
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
 echo "Connect the combined socket and do a similar verification..."
-mkfifo "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/combined/entries" "event_api" "$WS_COMBINED.out" "$WS_COMBINED.in" "$WS_COMBINED.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/combined/entries" event_api 9001 &
 COMBINED_PID=$!
-cat "$WS_COMBINED.out" > /dev/null
+waitForHttpStart 9001
 
 # Similarly, we should see the last 10.
+INDEX=0
 for N in {12..3}; 
 do
-	SAMPLE=$(cat "$WS_COMBINED.out")
-	echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
-	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
-	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+	SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX 2> /dev/null)
+	INDEX=$((INDEX + 1))
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"${POST_CIDS[$N]}\",\"value\":null,\"isNewest\":false}"
 done
 
 # Scroll back and see the others (they will all be present since we haven't restarted - the combined per-user limit only applies to start-up).
-echo -n "COMMAND_SCROLL_BACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+curl -XPOST -H  "Content-Type: text/plain" --data "COMMAND_SCROLL_BACK" http://127.0.0.1:9001/send 2> /dev/null
 for N in {2..1}; 
 do
-	SAMPLE=$(cat "$WS_COMBINED.out")
-	echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
-	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
-	requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+	SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX 2> /dev/null)
+	INDEX=$((INDEX + 1))
+	requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"${POST_CIDS[$N]}\",\"value\":null,\"isNewest\":false}"
 done
 # Note that this will also see the fake entry for the "home user" so read that, too.
-SAMPLE=$(cat "$WS_COMBINED.out")
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX 2> /dev/null)
+INDEX=$((INDEX + 1))
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 # Note that this will also see the fake entry for the "other user" so read that, too.
-SAMPLE=$(cat "$WS_COMBINED.out")
-echo -n "-ACK" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX 2> /dev/null)
+INDEX=$((INDEX + 1))
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
@@ -119,9 +111,7 @@ requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 echo "Shut-down and wait for sockets to close..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/server/stop"
 wait $SERVER_PID
-echo -n "-WAIT" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 wait $ENTRIES_PID
-echo -n "-WAIT" > "$WS_COMBINED.in" && cat "$WS_COMBINED.clear" > /dev/null
 wait $COMBINED_PID
 
 

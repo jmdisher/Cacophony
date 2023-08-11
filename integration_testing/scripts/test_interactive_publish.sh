@@ -18,9 +18,7 @@ USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
 FAIL_PROCESS_FIFO=/tmp/fail_fifo
 
-WS_STATUS1=/tmp/status1
 WS_STATUS2=/tmp/status2
-WS_ENTRIES=/tmp/entries
 WS_PROCESSING1=/tmp/processing1
 WS_PROCESSING2=/tmp/processing2
 WS_PROCESSING3=/tmp/processing3
@@ -30,9 +28,7 @@ rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
 
-rm -f "$WS_STATUS1".*
 rm -f "$WS_STATUS2".*
-rm -f "$WS_ENTRIES".*
 rm -f "$WS_PROCESSING1".*
 rm -f "$WS_PROCESSING2".*
 rm -f "$WS_PROCESSING3".*
@@ -78,14 +74,13 @@ XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
-mkfifo "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/status" "event_api" "$WS_STATUS1.out" "$WS_STATUS1.in" "$WS_STATUS1.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/status" event_api 9000 &
 STATUS_PID1=$!
+waitForHttpStart 9000
+# This second connection will use WebSocketUtility since it is just writing to an output file to test concurrent connections.
 touch "$WS_STATUS2.out"
 java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/server/events/status" "event_api" "$WS_STATUS2.out" &
 STATUS_PID2=$!
-# Wait for connect.
-cat "$WS_STATUS1.out" > /dev/null
 
 echo "Get the default video config..."
 VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/server/videoConfig)
@@ -110,10 +105,9 @@ PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-m
 requireSubstring "$PUBLIC_KEY" "z"
 
 echo "Attach the followee post listener..."
-mkfifo "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear"
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" JSON_IO "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" "event_api" "$WS_ENTRIES.out" "$WS_ENTRIES.in" "$WS_ENTRIES.clear" &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" event_api 9001 &
 ENTRIES_PID=$!
-cat "$WS_ENTRIES.out" > /dev/null
+waitForHttpStart 9001
 
 echo "Create a new draft..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
@@ -307,22 +301,22 @@ CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XP
 requireSubstring "$CID" "Qm"
 
 echo "Verify that we see the new entry in the entry socket..."
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+ENTRIES_INDEX=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$CID\",\"value\":null,\"isNewest\":true}"
 
 # We will verify that this is in the pipe we are reading from the WebSocket (note that we may sometimes see event "1" from the start-up publish, so just skip that one in this case).
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=0
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 if [[ "$STATUS_EVENT" =~ "\"event\":\"create\",\"key\":1," ]]; then
-	STATUS_EVENT=$(cat "$WS_STATUS1.out")
-	echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-	STATUS_EVENT=$(cat "$WS_STATUS1.out")
-	echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+	STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+	STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
+	STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+	STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 fi
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":2,\"value\":null"
 
 echo "Verify that it is not in the list..."
@@ -354,17 +348,17 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
 requireSubstring "$POST_STRUCT" "{\"name\":\"Edit Title\",\"description\":\"Has Changed\",\"publishedSecondsUtc\":"
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$OLD_POST_ID\",\"value\":null,\"isNewest\":false}"
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$POST_ID\",\"value\":null,\"isNewest\":true}"
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
 
 echo "Publish a new entry which is a response to $POST_ID and verify that we see the correct struct field..."
@@ -381,14 +375,14 @@ requireSubstring "$REPLY_HASH" "$CID"
 requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
 
 # Check for this in the WebSockets.
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$REPLY_HASH\",\"value\":null,\"isNewest\":true}"
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$REPLY_HASH/OPTIONAL")
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":\"$POST_ID\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
@@ -409,16 +403,16 @@ POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 
 # Check that we see this in the output events.
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
 
 echo "Verify that we see the new entry in the entry socket..."
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
 # Capture the record CID to verify it against the POST_ID from earlier:  1 "2-event" 3 "4-create" 5 "6-key" 7 "8-CID"
 EVENT_POST_ID=$(echo "$SAMPLE" | cut -d "\"" -f 8)
@@ -468,11 +462,11 @@ requireSubstring "$STATUS_PAGE" "Cacophony - Server Status"
 
 echo "Test that we can request another republish..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/home/republish/$PUBLIC_KEY"
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 
 echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
@@ -493,11 +487,11 @@ if [ $? != 22 ]; then
 fi
 POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
 requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP1\",\"$POST_TO_KEEP2\"]"
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":7,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out")
-echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":7,\"value\":null"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_KEEP2/OPTIONAL" >& /dev/null
 checkPreviousCommand "read post"
@@ -507,17 +501,21 @@ DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-
 requireSubstring "$DESCRIPTION" ",\"feature\":\"$POST_TO_KEEP1\"}"
 DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
 requireSubstring "$DESCRIPTION" ",\"feature\":\"$POST_TO_KEEP1\"}"
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":8,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":8,\"value\":null"
 DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/home/userInfo/feature/$PUBLIC_KEY/NONE")
 requireSubstring "$DESCRIPTION" ",\"feature\":null}"
 DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
 requireSubstring "$DESCRIPTION" ",\"feature\":null}"
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":9,\"value\":\"Publish IpfsFile("
-STATUS_EVENT=$(cat "$WS_STATUS1.out") && echo -n "-ACK" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
+STATUS_INDEX1=$((STATUS_INDEX1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":9,\"value\":null"
 
 # We want to verify that something reasonable happens when we fetch the now-deleted element if it has been removed from the network.  This requires a GC of the IPFS nodes to wipe it.
@@ -530,8 +528,8 @@ if [ $? != 22 ]; then
 	exit 1
 fi
 
-SAMPLE=$(cat "$WS_ENTRIES.out")
-echo -n "-ACK" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
+ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
+SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null,\"isNewest\":false}"
 
 echo "Make sure that the core threads are still running..."
@@ -544,8 +542,6 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000
 wait $SERVER_PID
 
 echo "Now that the server stopped, the status should be done"
-echo -n "-WAIT" > "$WS_STATUS1.in" && cat "$WS_STATUS1.clear" > /dev/null
-echo -n "-WAIT" > "$WS_ENTRIES.in" && cat "$WS_ENTRIES.clear" > /dev/null
 wait $STATUS_PID1
 wait $STATUS_PID2
 wait $ENTRIES_PID
