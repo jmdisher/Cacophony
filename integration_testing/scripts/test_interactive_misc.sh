@@ -65,12 +65,12 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST ht
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Attach the status listener..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/status" event_api 9000 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/status" 9000 &
 STATUS_PID=$!
 waitForHttpStart 9000
 
 echo "Attach the followee refresh WebSocket..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/followee/events/refreshTime" event_api 9001 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/followee/events/refreshTime" 9001 &
 FOLLOWEE_REFRESH_PID=$!
 waitForHttpStart 9001
 
@@ -111,7 +111,7 @@ USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$USER_INFO" "{\"name\":\"Unnamed\",\"description\":\"Description forthcoming\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\",\"email\":null,\"website\":null,\"feature\":null}"
 
 echo "Attach the followee post listener..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/entries/$PUBLIC2" event_api 9002 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/entries/$PUBLIC2" 9002 &
 ENTRIES_PID=$!
 waitForHttpStart 9002
 
@@ -277,6 +277,10 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":9,\"value\""
 INDEX=$((INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":9,\"value\""
+
+# Check that the keys captured by the WebSocket utility are expected.
+KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
+requireSubstring "$KEY_ARRAY" "[]"
 
 
 echo "Stop the server and wait for it to exit..."

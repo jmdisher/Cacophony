@@ -50,7 +50,7 @@ PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-m
 # We know the hard-coded key in this mode.
 requireSubstring "$PUBLIC_KEY" "z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1"
 
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/status" event_api 9000 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/status" 9000 &
 STATUS_PID=$!
 waitForHttpStart 9000
 
@@ -68,7 +68,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":2,\"value\":\"Publish 
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null,\"isNewest\":false}"
 
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" event_api 9001 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" 9001 &
 ENTRIES_PID=$!
 waitForHttpStart 9001
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/0 2> /dev/null)
@@ -81,6 +81,11 @@ POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 4)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
 requireSubstring "$POST_STRUCT" "{\"name\":\"New Draft - "
+
+# Check that the keys captured by the WebSocket utility are expected.
+KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
+requireSubstring "$KEY_ARRAY" "[]"
+
 
 # Shutdown.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/server/stop"

@@ -74,7 +74,7 @@ XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
 echo "Now that we have verified that the server is up, start listening to status events..."
 # We will open 2 connections to verify that concurrent connections are ok but we will also use one as a pipe, allowing us to precisely observe events, and the other one just as a file, so we can verify it ends up with the same events, at the end.  In theory, these could mismatch but that will probably never be observed due to the relative cost of a refresh versus sending a WebSocket message.
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/status" event_api 9000 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/status" 9000 &
 STATUS_PID1=$!
 waitForHttpStart 9000
 # This second connection will use WebSocketUtility since it is just writing to an output file to test concurrent connections.
@@ -105,7 +105,7 @@ PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-m
 requireSubstring "$PUBLIC_KEY" "z"
 
 echo "Attach the followee post listener..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" event_api 9001 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" 9001 &
 ENTRIES_PID=$!
 waitForHttpStart 9001
 
@@ -536,6 +536,11 @@ echo "Make sure that the core threads are still running..."
 JSTACK=$(jstack "$SERVER_PID")
 requireSubstring "$JSTACK" "Background Operations"
 requireSubstring "$JSTACK" "Scheduler thread"
+
+# Check that the keys captured by the WebSocket utility are expected.
+KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
+requireSubstring "$KEY_ARRAY" "[]"
+
 
 echo "Stop the server and wait for it to exit..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/server/stop"

@@ -59,18 +59,18 @@ curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST ht
 XSRF_TOKEN2=$(grep XSRF "$COOKIES2" | cut -f 7)
 
 echo "Connect the status WebSockets (since waiting on publish updates is the only way to properly synchronize)..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/status" event_api 9000 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/status" 9000 &
 STATUS_PID1=$!
 waitForHttpStart 9000
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/server/events/status" event_api 9001 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/server/events/status" 9001 &
 STATUS_PID2=$!
 waitForHttpStart 9001
 
 echo "Connect the refresh WebSockets (since we will need to wait on followee refresh)..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/followee/events/refreshTime" event_api 9002 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/followee/events/refreshTime" 9002 &
 FOLLOWEE_REFRESH1_PID=$!
 waitForHttpStart 9002
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/followee/events/refreshTime" event_api 9003 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/followee/events/refreshTime" 9003 &
 FOLLOWEE_REFRESH2_PID=$!
 waitForHttpStart 9003
 
@@ -192,7 +192,7 @@ requireSubstring "$LIST" "[\"Qm"
 NEW_POST=$(echo "$LIST" | cut -d \" -f 2)
 
 # Open the WebSocket for the replies and verify that we see this entry.
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/replies" event_api 9004 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/replies" 9004 &
 REPLIES1_PID=$!
 waitForHttpStart 9004
 
@@ -229,6 +229,10 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\
 # We can also now bring down the WebSocket.
 curl -XPOST http://127.0.0.1:9004/close 2> /dev/null
 wait $REPLIES1_PID
+
+# Check that the keys captured by the WebSocket utility are expected.
+KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
+requireSubstring "$KEY_ARRAY" "[]"
 
 
 echo "Stop the servers and wait for exit..."

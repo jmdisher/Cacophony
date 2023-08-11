@@ -133,7 +133,7 @@ CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-m
 requireSubstring "$CHECKED_KEY" "$PUBLIC_KEY2"
 
 echo "Listen to the combined view while we make changes to the user list..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/combined/entries" event_api 9000 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/combined/entries" 9000 &
 COMBINED_PID=$!
 waitForHttpStart 9000
 
@@ -147,17 +147,20 @@ requireSubstring "$NEW_KEY" "$CHECKED_KEY"
 
 echo "Add a post by each user and verify that we see them all in the combined socket..."
 makeTextPost "$PUBLIC_KEY1" "post1"
+CID1="$CID"
 makeTextPost "$PUBLIC_KEY2" "post2"
+CID2="$CID"
 makeTextPost "$CHECKED_KEY" "post3"
+CID3="$CID"
 INDEX_COMBINED=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$CID1\",\"value\":null,\"isNewest\":true}"
 INDEX_COMBINED=$((INDEX_COMBINED + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$CID2\",\"value\":null,\"isNewest\":true}"
 INDEX_COMBINED=$((INDEX_COMBINED + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$CID3\",\"value\":null,\"isNewest\":true}"
 
 echo "Request a republish of the added channel and test1 and immediately delete them..."
 # This should mean that the delete is likely happening while the refresh is still waiting to complete, so it should demonstrate that this case is handled.
@@ -180,10 +183,15 @@ fi
 # We expect to see a delete for each of these users since their posts should disappear.
 INDEX_COMBINED=$((INDEX_COMBINED + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$CID3\",\"value\":null,\"isNewest\":false}"
 INDEX_COMBINED=$((INDEX_COMBINED + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_COMBINED 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$CID1\",\"value\":null,\"isNewest\":false}"
+
+# Check that the keys captured by the WebSocket utility are expected.
+KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
+requireSubstring "$KEY_ARRAY" "[\"$CID2\"]"
+
 
 echo "We can now stop the server..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"

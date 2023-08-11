@@ -47,7 +47,7 @@ do
 done
 
 echo "Connect the entries socket..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" event_api 9000 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/entries/$PUBLIC_KEY" 9000 &
 ENTRIES_PID=$!
 waitForHttpStart 9000
 
@@ -75,7 +75,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
 echo "Connect the combined socket and do a similar verification..."
-java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/combined/entries" event_api 9001 &
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8000/server/events/combined/entries" 9001 &
 COMBINED_PID=$!
 waitForHttpStart 9001
 
@@ -106,6 +106,11 @@ SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX 2> /dev/null)
 INDEX=$((INDEX + 1))
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\""
 requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
+
+# Check that the keys captured by the WebSocket utility are expected.
+KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
+COUNT=$(echo $KEY_ARRAY | grep -o Qm | wc -l)
+requireSubstring "$COUNT" "13"
 
 
 echo "Shut-down and wait for sockets to close..."
