@@ -219,7 +219,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, MockKeys.K1);
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		SilentLogger logger = new SilentLogger();
 		
@@ -371,7 +371,7 @@ public class TestInteractiveHelpers
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode connection = new MockSingleNode(swarm);
 		connection.addNewKey(KEY_NAME, MockKeys.K1);
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(connection, 1);
 		SilentLogger logger = new SilentLogger();
 		

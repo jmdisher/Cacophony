@@ -505,7 +505,7 @@ public class TestExplicitCacheLogic
 
 	private static Context _createContext(IConnection connection, INetworkScheduler network) throws UsageException
 	{
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(new MemoryConfigFileSystem(null), network);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, new MemoryConfigFileSystem(null), network);
 		Context context = new Context(null
 				, model
 				, connection

@@ -41,10 +41,11 @@ public class LocalDataModel
 	 * Verifies the on-disk data model, creating it if it isn't already present.
 	 * Loads the on-disk model into memory, returning this representation.
 	 * 
+	 * @param stats The locking stats object which will be notified about lock acquisition times.
 	 * @param fileSystem The file system where the data lives.
 	 * @param scheduler The scheduler for fetching network resources.
 	 */
-	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler) throws UsageException
+	public static LocalDataModel verifiedAndLoadedModel(ILockingStats stats, IConfigFileSystem fileSystem, INetworkScheduler scheduler) throws UsageException
 	{
 		// If the config doesn't exist, create it with default values.
 		if (!fileSystem.doesConfigDirectoryExist())
@@ -134,7 +135,8 @@ public class LocalDataModel
 					.toArray((int size) -> new IpfsFile[size])
 			;
 			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
-			return new LocalDataModel(fileSystem
+			return new LocalDataModel(stats
+					, fileSystem
 					, channels
 					, prefs
 					, pinCache
@@ -167,6 +169,7 @@ public class LocalDataModel
 	}
 
 
+	private final ILockingStats _stats;
 	private final IConfigFileSystem _fileSystem;
 	private final ChannelData _localIndex;
 	private final PrefsData _globalPrefs;
@@ -176,7 +179,8 @@ public class LocalDataModel
 	private final ExplicitCacheData _explicitCache;
 	private final ReadWriteLock _readWriteLock;
 
-	private LocalDataModel(IConfigFileSystem fileSystem
+	private LocalDataModel(ILockingStats stats
+			, IConfigFileSystem fileSystem
 			, ChannelData localIndex
 			, PrefsData globalPrefs
 			, PinCacheData globalPinCache
@@ -185,6 +189,7 @@ public class LocalDataModel
 			, ExplicitCacheData explicitCache
 	)
 	{
+		_stats = stats;
 		_fileSystem = fileSystem;
 		_localIndex = localIndex;
 		_globalPrefs = globalPrefs;
@@ -204,7 +209,11 @@ public class LocalDataModel
 	public IReadOnlyLocalData openForRead()
 	{
 		Lock lock = _readWriteLock.readLock();
+		long startMillis = _stats.currentTimeMillis();
 		lock.lock();
+		long endMillis = _stats.currentTimeMillis();
+		long deltaMillis = endMillis - startMillis;
+		_stats.acquiredReadLock(deltaMillis);
 		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
@@ -234,7 +243,11 @@ public class LocalDataModel
 	private IReadWriteLocalData _openForWrite()
 	{
 		Lock lock = _readWriteLock.writeLock();
+		long startMillis = _stats.currentTimeMillis();
 		lock.lock();
+		long endMillis = _stats.currentTimeMillis();
+		long deltaMillis = endMillis - startMillis;
+		_stats.acquiredWriteLock(deltaMillis);
 		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
@@ -335,8 +348,51 @@ public class LocalDataModel
 					throw Assert.unexpected(e);
 				}
 			}
-			
 			_lock.unlock();
 		}
 	}
+
+
+	/**
+	 * A simple mechanism for collecting stats around lock acquisition times within the LocalDataModel.
+	 * This is intended to provide insights into unusually long lock times for later investigation.
+	 */
+	public static interface ILockingStats
+	{
+		/**
+		 * @return The current time, in milliseconds.
+		 */
+		long currentTimeMillis();
+		/**
+		 * Called after acquiring the read lock.
+		 * @param waitMillis The number of milliseconds the thread waited to acquire the lock.
+		 */
+		void acquiredReadLock(long waitMillis);
+		/**
+		 * Called after acquiring the write lock.
+		 * @param waitMillis The number of milliseconds the thread waited to acquire the lock.
+		 */
+		void acquiredWriteLock(long waitMillis);
+	}
+
+
+	/**
+	 * An empty implementation of LocalDataModel.ILockingStats which does nothing.  This is intended for use in tests
+	 * and other environments where this information isn't meaningful.
+	 */
+	public static final LocalDataModel.ILockingStats NONE = new LocalDataModel.ILockingStats() {
+		@Override
+		public long currentTimeMillis()
+		{
+			return 0L;
+		}
+		@Override
+		public void acquiredWriteLock(long waitMillis)
+		{
+		}
+		@Override
+		public void acquiredReadLock(long waitMillis)
+		{
+		}
+	};
 }

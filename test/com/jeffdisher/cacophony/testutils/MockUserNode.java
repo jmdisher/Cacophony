@@ -65,7 +65,7 @@ public class MockUserNode
 		LocalDataModel model;
 		try
 		{
-			model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler);
+			model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, _fileSystem, _lazyScheduler);
 		}
 		catch (UsageException e)
 		{
@@ -226,7 +226,7 @@ public class MockUserNode
 
 	public void assertConsistentPinCache() throws UsageException
 	{
-		LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler);
+		LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, _fileSystem, _lazyScheduler);
 	}
 
 	public void manualPublishLocal(IpfsFile manualRoot) throws IpfsConnectionException
@@ -268,7 +268,7 @@ public class MockUserNode
 			LocalDataModel model;
 			try
 			{
-				model = LocalDataModel.verifiedAndLoadedModel(_fileSystem, _lazyScheduler);
+				model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, _fileSystem, _lazyScheduler);
 			}
 			catch (UsageException e)
 			{
