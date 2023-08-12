@@ -114,7 +114,18 @@ public class WebSocketToRestUtility implements WebSocketListener
 		if (event.equals(SocketEventHelpers.EVENT_CREATE))
 		{
 			JsonValue key = payload.get(SocketEventHelpers.KEY);
-			_keys.add(key);
+			// Determine if this should be added to the beginning or end.
+			boolean isNewest = payload.get(SocketEventHelpers.IS_NEWEST).asBoolean();
+			if (isNewest)
+			{
+				// Add to the end since we want the newest to be at the end.
+				_keys.add(key);
+			}
+			else
+			{
+				// Add to the beginning since we are going backward.
+				_keys.add(0, key);
+			}
 		}
 		else if (event.equals(SocketEventHelpers.EVENT_DELETE))
 		{

@@ -76,7 +76,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
 
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
 # This list will have 2 entries:  The fake one and the one we just created, so skip to the second (field 4).
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 4)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
