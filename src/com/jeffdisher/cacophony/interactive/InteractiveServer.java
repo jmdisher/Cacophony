@@ -229,7 +229,6 @@ public class InteractiveServer
 		validated.addGetHandler("/server/recommendedKeys/{KEY}", new GET_RecommendedKeys(runner));
 		validated.addGetHandler("/server/postStruct/{CID}/{string}", new GET_PostStruct(runner));
 		validated.addGetHandler("/server/unknownUser/{KEY}", new GET_UnknownUserInfo(runner));
-		validated.addGetHandler("/server/userInfo/{KEY}", new GET_UserInfo(serverContext));
 		validated.addGetHandler("/server/caches", new GET_CacheStats(serverContext));
 		
 		// Home user operations.

@@ -114,9 +114,9 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H
 checkPreviousCommand "update description info: test1"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "DESCRIPTION=The%20quick%20user" "http://127.0.0.1:8001/home/userInfo/info/$PUBLIC_KEY2"
 checkPreviousCommand "update description info: quick"
-USER_INFO1=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC_KEY1")
+USER_INFO1=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY1")
 requireSubstring "$USER_INFO1" "{\"name\":\"Test1 User\",\"description\":\"The test user\","
-USER_INFO2=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC_KEY2")
+USER_INFO2=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
 requireSubstring "$USER_INFO2" "{\"name\":\"Quick user\",\"description\":\"The quick user\","
 
 echo "Check the list of home channels..."

@@ -324,7 +324,7 @@ DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter 
 requireSubstring "$DRAFTS" "[]"
 
 echo "Check the user data for this user"
-USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/unknownUser/$PUBLIC_KEY")
 requireSubstring "$USER_INFO" "\"description\":\"Description forthcoming\""
 
 echo "Check the list of posts for this user"
@@ -487,7 +487,7 @@ checkPreviousCommand "read post"
 echo "Set one of these posts as our feature, then clear it..."
 DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/home/userInfo/feature/$PUBLIC_KEY/$POST_TO_KEEP1")
 requireSubstring "$DESCRIPTION" ",\"feature\":\"$POST_TO_KEEP1\"}"
-DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
+DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/unknownUser/$PUBLIC_KEY")
 requireSubstring "$DESCRIPTION" ",\"feature\":\"$POST_TO_KEEP1\"}"
 STATUS_INDEX1=$((STATUS_INDEX1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
@@ -497,7 +497,7 @@ STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /de
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":8,\"value\":null"
 DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/home/userInfo/feature/$PUBLIC_KEY/NONE")
 requireSubstring "$DESCRIPTION" ",\"feature\":null}"
-DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/userInfo/$PUBLIC_KEY")
+DESCRIPTION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/unknownUser/$PUBLIC_KEY")
 requireSubstring "$DESCRIPTION" ",\"feature\":null}"
 STATUS_INDEX1=$((STATUS_INDEX1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
