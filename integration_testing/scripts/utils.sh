@@ -245,3 +245,19 @@ function requestIpfsGc()
 	IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" repo gc >& /dev/null
 }
 
+# Looks up the current public key in the given server and returns it via echo, empty is none selected.  Args:
+# 1) Cookies file path
+# 2) Base URL of server
+function getPublicKey()
+{
+	if [ $# -ne 2 ]; then
+		echo "Missing arguments: cookies_path server_base_url"
+		exit 1
+	fi
+	COOKIES="$1"
+	SERVER_BASE="$2"
+	
+	# Split the JSON by the { and look for the selected user, returning the key segment if found (otherwise returns nothing).
+	CHANNEL_LIST=$(curl --cookie "$COOKIES" --cookie-jar "$COOKIES"  --no-progress-meter -XGET "$SERVER_BASE/home/channels")
+	echo "$CHANNEL_LIST" | sed 's/{/\n/g' | grep "\"isSelected\":true" | cut -d \" -f 8
+}

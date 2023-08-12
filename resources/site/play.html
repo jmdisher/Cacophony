@@ -84,10 +84,19 @@ function postWasLoaded($scope, elt)
 	// Then, we need to check that user's info to see if this is the feature.
 	$scope.isOurPost = false;
 	$scope.isFeature = false;
-	REST.GET("/home/publicKey")
-		.then(response => response.text())
-		.then((publicKey) => {
-			$scope.isOurPost = ($scope.publisherKey == publicKey);
+	REST.GET("/home/channels")
+		.then((response) => response.json())
+		.then((data) => {
+			// See which user is selected (could be none of them).
+			let publicKey = null;
+			for (let user of data)
+			{
+				if (user["isSelected"])
+				{
+					publicKey = user["publicKey"];
+				}
+			}
+			$scope.isOurPost = ($scope.publisherKey === publicKey);
 			if ($scope.isOurPost)
 			{
 				GLOBAL_UnknownUserLoader.loadTuple(publicKey).then(userInfo => {

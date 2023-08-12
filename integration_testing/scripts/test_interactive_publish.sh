@@ -100,7 +100,7 @@ then
 fi
 
 echo "Check that we can read our public key"
-PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/home/publicKey")
+PUBLIC_KEY=$(getPublicKey "$COOKIES1" "http://127.0.0.1:8000")
 # (we only know that the key starts with "z".
 requireSubstring "$PUBLIC_KEY" "z"
 

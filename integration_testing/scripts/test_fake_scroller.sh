@@ -30,7 +30,7 @@ SERVER_PID=$!
 waitForHttpStart 8000
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8000/server/cookie"
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
-PUBLIC_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/home/publicKey")
+PUBLIC_KEY=$(getPublicKey "$COOKIES1" "http://127.0.0.1:8000")
 # We know the hard-coded key in this mode.
 requireSubstring "$PUBLIC_KEY" "z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1"
 

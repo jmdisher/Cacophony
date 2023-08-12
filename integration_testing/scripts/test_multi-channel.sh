@@ -129,7 +129,7 @@ requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Test1 User\",
 echo "Make sure that we can set the quick user as selected..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/set/$PUBLIC_KEY2"
 checkPreviousCommand "select quick"
-CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/home/publicKey")
+CHECKED_KEY=$(getPublicKey "$COOKIES1" "http://127.0.0.1:8001")
 requireSubstring "$CHECKED_KEY" "$PUBLIC_KEY2"
 
 echo "Listen to the combined view while we make changes to the user list..."
@@ -141,7 +141,7 @@ echo "Create the new channel and do some basic interactions to verify it works..
 NEW_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/new/LATE_KEY")
 checkPreviousCommand "create new"
 CHANNEL_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/home/channels")
-CHECKED_KEY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/home/publicKey")
+CHECKED_KEY=$(getPublicKey "$COOKIES1" "http://127.0.0.1:8001")
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"LATE_KEY\",\"publicKey\":\"$CHECKED_KEY\","
 requireSubstring "$NEW_KEY" "$CHECKED_KEY"
 
@@ -175,8 +175,8 @@ checkPreviousCommand "select PUBLIC_KEY1"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8001/home/channel/delete/$PUBLIC_KEY1"
 checkPreviousCommand "delete test1 channel"
 # Deleting these should unselect everything so this should be a 404.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XGET "http://127.0.0.1:8001/home/publicKey" >& /dev/null
-if [ $? != 22 ]; then
+PUBLIC_KEY=$(getPublicKey "$COOKIES1" "http://127.0.0.1:8001")
+if [ "$PUBLIC_KEY" != "" ]; then
 	exit 1
 fi
 

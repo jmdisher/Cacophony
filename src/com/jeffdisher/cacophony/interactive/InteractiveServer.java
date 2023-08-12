@@ -240,7 +240,6 @@ public class InteractiveServer
 		validated.addPostFormHandler("/home/userInfo/info/{KEY}", new POST_Form_UserInfo(runner, background));
 		validated.addPostRawHandler("/home/userInfo/image/{KEY}", new POST_Raw_UserInfo(runner, background));
 		validated.addPostRawHandler("/home/userInfo/feature/{KEY}/{string}", new POST_Raw_Feature(runner, background));
-		validated.addGetHandler("/home/publicKey", new GET_PublicKey(serverContext));
 		validated.addGetHandler("/home/channels", new GET_HomeChannels(runner));
 		validated.addPostRawHandler("/home/channel/set/{KEY}", new POST_Raw_SetChannel(serverContext));
 		validated.addPostRawHandler("/home/channel/new/{string}", new POST_Raw_NewChannel(serverContext, runner, background));
