@@ -328,9 +328,8 @@ USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-me
 requireSubstring "$USER_INFO" "\"description\":\"Description forthcoming\""
 
 echo "Check the list of posts for this user"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-# (make sure we at least see an entry in the list - we just don't know what it will be)
-requireSubstring "$POST_LIST" "[\"Qm"
+POST_LIST=$(curl -XGET http://127.0.0.1:9001/keys 2> /dev/null)
+requireSubstring "$POST_LIST" "[\"$CID\"]"
 
 echo "Check the list of recommended keys for this user"
 RECOMMENDED_KEYS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/recommendedKeys/$PUBLIC_KEY")
@@ -344,8 +343,6 @@ requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":n
 echo "Edit the post and make sure that we see the updates in both sockets and the post list..."
 OLD_POST_ID="$POST_ID"
 POST_ID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Edit%20Title&DESCRIPTION=Has%20Changed" http://127.0.0.1:8000/home/post/edit/$PUBLIC_KEY/$POST_ID)
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
 requireSubstring "$POST_STRUCT" "{\"name\":\"Edit Title\",\"description\":\"Has Changed\",\"publishedSecondsUtc\":"
 ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
@@ -354,6 +351,8 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$OLD_POST_ID\",\"val
 ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$POST_ID\",\"value\":null,\"isNewest\":true}"
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
+requireSubstring "$POST_LIST" "[\"$POST_ID\"]"
 STATUS_INDEX1=$((STATUS_INDEX1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":3,\"value\":\"Publish IpfsFile("
@@ -366,13 +365,8 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 # We need to parse out the ID (look for '{"id":2107961294,')
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
-CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY)
-requireSubstring "$CID" "Qm"
-# Find the hash of the new post.
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-REPLY_HASH=$(echo "$POST_LIST" | cut -d \" -f 4)
-requireSubstring "$REPLY_HASH" "$CID"
-requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
+REPLY_HASH=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY)
+requireSubstring "$REPLY_HASH" "Qm"
 
 # Check for this in the WebSockets.
 ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
@@ -386,6 +380,9 @@ STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /de
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$REPLY_HASH/OPTIONAL")
 requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":\"$POST_ID\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
+# Find the hash of the new post.
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
+requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
 
 echo "Create an audio post, publish it, and make sure we can see it..."
 CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
@@ -393,14 +390,8 @@ CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter
 ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 PUBLISH_ID=$(echo $ID_PARSE)
 echo "AUDIO_DATA" | java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" SEND "ws://127.0.0.1:8000/draft/audio/upload/$PUBLISH_ID/ogg" audio
-CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/AUDIO)
-requireSubstring "$CID" "Qm"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-# We want to look for the third post so get field 6:  1 "2" 3 "4" 5 "6" 7
-POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 6)
-requireSubstring "$POST_ID" "$CID"
-POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
-requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
+AUDIO_CID=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/AUDIO)
+requireSubstring "$AUDIO_CID" "Qm"
 
 # Check that we see this in the output events.
 STATUS_INDEX1=$((STATUS_INDEX1 + 1))
@@ -413,24 +404,23 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null
 echo "Verify that we see the new entry in the entry socket..."
 ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":"
-# Capture the record CID to verify it against the POST_ID from earlier:  1 "2-event" 3 "4-create" 5 "6-key" 7 "8-CID"
-EVENT_POST_ID=$(echo "$SAMPLE" | cut -d "\"" -f 8)
-if [ "$EVENT_POST_ID" != "$POST_ID" ]; then
-	exit 1
-fi
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$AUDIO_CID\",\"value\":null,\"isNewest\":true}"
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
+requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\",\"$AUDIO_CID\"]"
+POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$AUDIO_CID/OPTIONAL")
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 
 echo "See what happens if we add this post to our favourites..."
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
 requireSubstring "$FAVOURITES_LIST" "[]"
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/favourites/add/$POST_ID"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "http://127.0.0.1:8000/favourites/add/$AUDIO_CID"
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
-requireSubstring "$FAVOURITES_LIST" "[\"$POST_ID\"]"
+requireSubstring "$FAVOURITES_LIST" "[\"$AUDIO_CID\"]"
 # Check that we see this in the cache sizing data.
 STATS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/caches")
 requireSubstring "$STATS" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":810}"
 # We also want to verify that the delete works.
-curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XDELETE "http://127.0.0.1:8000/favourites/remove/$POST_ID"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XDELETE "http://127.0.0.1:8000/favourites/remove/$AUDIO_CID"
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
 requireSubstring "$FAVOURITES_LIST" "[]"
 
@@ -470,11 +460,11 @@ STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /de
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 
 echo "Delete one of the posts from earlier and make sure that the other is still in the list..."
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-# Extract fields 2, 4, and 6:  1 "2" 3 "4" 5 "6" 7
-POST_TO_DELETE=$(echo "$POST_LIST" | cut -d "\"" -f 2)
-POST_TO_KEEP1=$(echo "$POST_LIST" | cut -d "\"" -f 4)
-POST_TO_KEEP2=$(echo "$POST_LIST" | cut -d "\"" -f 6)
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
+requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\",\"$AUDIO_CID\"]"
+POST_TO_DELETE="$POST_ID"
+POST_TO_KEEP1="$REPLY_HASH"
+POST_TO_KEEP2="$AUDIO_CID"
 # Before deleting the post, we should see that it is known to be cached.
 TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE/OPTIONAL")
 requireSubstring "$TARGET_STRUCT" "\"cached\":true"
@@ -485,8 +475,6 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -X
 if [ $? != 22 ]; then
 	exit 1
 fi
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postHashes/$PUBLIC_KEY")
-requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP1\",\"$POST_TO_KEEP2\"]"
 STATUS_INDEX1=$((STATUS_INDEX1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":7,\"value\":\"Publish IpfsFile("
@@ -531,6 +519,8 @@ fi
 ENTRIES_INDEX=$((ENTRIES_INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$ENTRIES_INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$POST_TO_DELETE\",\"value\":null,\"isNewest\":false}"
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
+requireSubstring "$POST_LIST" "[\"$POST_TO_KEEP1\",\"$POST_TO_KEEP2\"]"
 
 echo "Make sure that the core threads are still running..."
 JSTACK=$(jstack "$SERVER_PID")

@@ -101,9 +101,6 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null,\"isN
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
-# Verify that the post list is empty.
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
-requireSubstring "$POST_LIST" "[]"
 
 echo "Verify that we can read the followee data from the cache..."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/userInfo/$PUBLIC2")
@@ -123,7 +120,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":3,\"value\":\"Refresh 
 INDEX=$((INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":3,\"value\":null,\"isNewest\":false}"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9002/keys")
 requireSubstring "$POST_LIST" "[]"
 # We should also see this update the refresh time.
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
@@ -142,7 +139,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":4,\"value\":\"Refresh 
 INDEX=$((INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9002/keys")
 requireSubstring "$POST_LIST" "[\"Qm"
 
 echo "Verify that we see the refresh in the followee socket..."
@@ -166,14 +163,12 @@ SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_ENTRIES 2> /dev/null
 requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null,\"isNewest\":false}"
 
 echo "Test the add/remove of the followee..."
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9002/keys")
+COUNT=$(echo "$POST_LIST" | grep -o Qm | wc -l)
 requireSubstring "$POST_LIST" "[\""
+requireSubstring "$COUNT" "1"
+ONLY_CID=$(echo "$POST_LIST" | cut -d \" -f 2)
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8001/followees/remove/$PUBLIC2"
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
-if [ "" != "$POST_LIST" ];
-then
-	exit 1
-fi
 # We should observe the delete of this record since we stopped following.
 INDEX_ENTRIES=$((INDEX_ENTRIES + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_ENTRIES 2> /dev/null)
@@ -184,6 +179,9 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"Qm"
 INDEX_ENTRIES=$((INDEX_ENTRIES + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_ENTRIES 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null,\"isNewest\":false}"
+# The projection of keys will correspondingly be empty.
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9002/keys")
+requireSubstring "$POST_LIST" "[]"
 # We should also see the followee deleted from the refresh output.
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
@@ -206,8 +204,19 @@ INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
 
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
-requireSubstring "$POST_LIST" "[\""
+# Note that the socket will be disconnected from updates once the user is unfollowed so we need to reconnect now that the user is re-added.
+curl --no-progress-meter -XPOST "http://127.0.0.1:9002/close"
+wait $ENTRIES_PID
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/entries/$PUBLIC2" 9002 &
+ENTRIES_PID=$!
+waitForHttpStart 9002
+
+# Wait for that first event of the new entry.
+INDEX_ENTRIES=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_ENTRIES 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$ONLY_CID\",\"value\":null,\"isNewest\":false}"
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9002/keys")
+requireSubstring "$POST_LIST" "[\"$ONLY_CID\"]"
 
 echo "Check asking for information about users, including invalid keys..."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/BOGUS")
@@ -299,8 +308,15 @@ waitForHttpStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
 
 # We will verify that the followed user's post can be seen.
-POST_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/postHashes/$PUBLIC2")
-requireSubstring "$POST_LIST" "[\""
+XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN" "ws://127.0.0.1:8001/server/events/entries/$PUBLIC2" 9002 &
+ENTRIES_PID=$!
+waitForHttpStart 9002
+INDEX_ENTRIES=0
+SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_ENTRIES 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$ONLY_CID\",\"value\":null,\"isNewest\":false}"
+POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9002/keys")
+requireSubstring "$POST_LIST" "[\"$ONLY_CID\"]"
 
 echo "Stop the server and wait for it to exit..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
@@ -317,5 +333,6 @@ kill $PID2
 
 wait $PID1
 wait $PID2
+wait $ENTRIES_PID
 
 echo -e "\033[32;40mSUCCESS!\033[0m"

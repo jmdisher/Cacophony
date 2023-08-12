@@ -153,9 +153,16 @@ STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /de
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null"
 
 # Get the list of posts and verify we see it.
-LIST=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XGET http://127.0.0.1:8002/server/postHashes/$KEY1)
-requireSubstring "$LIST" "[\"Qm"
-REPLY_TO=$(echo "$LIST" | cut -d \" -f 2)
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/server/events/entries/$KEY1" 9005 &
+ENTRIES_PID=$!
+waitForHttpStart 9005
+SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/0 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$CID\",\"value\":null,\"isNewest\":false}"
+LIST=$(curl --no-progress-meter -XGET http://127.0.0.1:9005/keys 2> /dev/null)
+requireSubstring "$LIST" "[\"$CID\"]"
+REPLY_TO="$CID"
+curl -XPOST http://127.0.0.1:9005/close 2> /dev/null
+wait $ENTRIES_PID
 
 # Post the response.
 CREATED=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/allDrafts/new/$REPLY_TO)
@@ -164,8 +171,8 @@ ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
 ORIGINAL_ID=$(echo $ID_PARSE)
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST -H  "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=Reply%20Entry&DESCRIPTION=Reply" http://127.0.0.1:8002/draft/$ORIGINAL_ID
 # Publish and wait for completion.
-CID=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/draft/publish/$KEY2/$ORIGINAL_ID/TEXT_ONLY)
-requireSubstring "$CID" "Qm"
+NEW_POST=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/draft/publish/$KEY2/$ORIGINAL_ID/TEXT_ONLY)
+requireSubstring "$NEW_POST" "Qm"
 INDEX_STATUS2=$((INDEX_STATUS2 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":4,\"value\":\"Publish IpfsFile("
@@ -186,10 +193,15 @@ INDEX_STATUS1=$((INDEX_STATUS1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null"
 
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/entries/$KEY2" 9005 &
+ENTRIES_PID=$!
+waitForHttpStart 9005
+
 # We can verify that we see it in the post list.
-LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8001/server/postHashes/$KEY2)
-requireSubstring "$LIST" "[\"Qm"
-NEW_POST=$(echo "$LIST" | cut -d \" -f 2)
+SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/0 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
+LIST=$(curl --no-progress-meter -XGET http://127.0.0.1:9005/keys 2> /dev/null)
+requireSubstring "$LIST" "[\"$NEW_POST\"]"
 
 # Open the WebSocket for the replies and verify that we see this entry.
 java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/replies" 9004 &
@@ -220,7 +232,13 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Re
 INDEX_STATUS1=$((INDEX_STATUS1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
-LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8001/server/postHashes/$KEY2)
+SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/1 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null,\"isNewest\":false}"
+SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/2 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
+SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/3 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":null,\"value\":null,\"isNewest\":false}"
+LIST=$(curl --no-progress-meter -XGET http://127.0.0.1:9005/keys 2> /dev/null)
 requireSubstring "$LIST" "[]"
 INDEX_REPLIES1=$((INDEX_REPLIES1 + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9004/waitAndGet/$INDEX_REPLIES1 2> /dev/null)
@@ -246,7 +264,7 @@ wait $STATUS_PID1
 wait $STATUS_PID2
 wait $FOLLOWEE_REFRESH1_PID
 wait $FOLLOWEE_REFRESH2_PID
-
+wait $ENTRIES_PID
 
 kill $PID1
 kill $PID2
