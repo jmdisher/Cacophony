@@ -10,6 +10,7 @@ import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
@@ -134,7 +135,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
-				, null
+				, new CacheUpdater(null, null, null, null)
 				, null
 		);
 		
@@ -166,7 +167,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
-				, null
+				, new CacheUpdater(null, null, null, null)
 				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);

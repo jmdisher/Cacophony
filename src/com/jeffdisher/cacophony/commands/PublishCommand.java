@@ -18,7 +18,6 @@ import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -97,16 +96,8 @@ public record PublishCommand(String _name, String _description, String _discussi
 			closeElementFiles(openElements);
 		}
 		
-		// Update the caches, if they exist.
-		if (null != context.entryRegistry)
-		{
-			context.entryRegistry.addLocalElement(publicKey, newElement);
-		}
-		if (null != context.recordCache)
-		{
-			Assert.assertTrue(null != context.replyCache);
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(context.recordCache, context.replyCache, newElement, newRecord);
-		}
+		context.cacheUpdater.entryRegistry_addLocalElement(publicKey, newElement);
+		context.cacheUpdater.userInfoCache_updateWithNewUserPost(newElement, newRecord);
 		
 		log.logOperation("New element: " + newElement);
 		log.logFinish("Publish completed!");

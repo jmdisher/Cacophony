@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.logic;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
@@ -43,7 +44,7 @@ public class TestSimpleFolloweeStarter
 		
 		access.oneKey = MockKeys.K1;
 		access.oneRoot = root;
-		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, null, MockKeys.K1);
+		IpfsFile file = SimpleFolloweeStarter.startFollowingWithEmptyRecords((String message) -> {}, access, new CacheUpdater(null, null, null, null), MockKeys.K1);
 		Assert.assertEquals(EXPECTED_FAKE, file);
 		// We expect that an extra 2 elements were uploaded (the fake StreamRecords and the fake StreamIndex).
 		Assert.assertEquals(8, access.data.size());

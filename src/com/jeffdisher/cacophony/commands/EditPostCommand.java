@@ -4,9 +4,7 @@ import java.io.ByteArrayInputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
-import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
-import com.jeffdisher.cacophony.caches.LocalRecordCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -56,7 +54,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 				throw new UsageException("Entry is not in our stream: " + _postToEdit);
 			}
 		}
-		_handleCacheUpdates(context.entryRegistry, context.recordCache, context.replyCache, publicKey, _postToEdit, result.newRecordCid(), result.newRecord());
+		_handleCacheUpdates(context.cacheUpdater, publicKey, _postToEdit, result.newRecordCid(), result.newRecord());
 		return new OnePost(result.newRoot(), result.newRecordCid(), result.newRecord());
 	}
 
@@ -146,65 +144,54 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		;
 	}
 
-	private static void _handleCacheUpdates(EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsKey publicKey, IpfsFile oldCid, IpfsFile newCid, AbstractRecord newStreamRecord)
+	private static void _handleCacheUpdates(CacheUpdater cacheUpdater, IpfsKey publicKey, IpfsFile oldCid, IpfsFile newCid, AbstractRecord newStreamRecord)
 	{
 		// NOTE:  This assumes that the leaves are the same between the old/new records.
 		
 		// Delete the old entry and add the new one.
-		if (null != entryRegistry)
-		{
-			entryRegistry.removeLocalElement(publicKey, oldCid);
-			entryRegistry.addLocalElement(publicKey, newCid);
-		}
+		cacheUpdater.entryRegistry_removeLocalElement(publicKey, oldCid);
+		cacheUpdater.entryRegistry_addLocalElement(publicKey, newCid);
 		
-		// Account for the change of the CID in the record cache.  Even though we don't change the leaf
-		// data, we still need to technically "move" them to the new record CID.
-		if (null != recordCache)
+		LeafFinder leaves = LeafFinder.parseRecord(newStreamRecord);
+		if (null != leaves.thumbnail)
 		{
-			LeafFinder leaves = LeafFinder.parseRecord(newStreamRecord);
-			if (null != leaves.thumbnail)
-			{
-				recordCache.recordThumbnailReleased(oldCid, leaves.thumbnail);
-			}
-			if (null != leaves.audio)
-			{
-				recordCache.recordAudioReleased(oldCid, leaves.audio);
-			}
-			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-			{
-				recordCache.recordVideoReleased(oldCid, leaf.cid(), leaf.edgeSize());
-			}
-			recordCache.recordMetaDataReleased(oldCid);
-			
-			recordCache.recordMetaDataPinned(newCid
-					, newStreamRecord.getName()
-					, newStreamRecord.getDescription()
-					, newStreamRecord.getPublishedSecondsUtc()
-					, newStreamRecord.getDiscussionUrl()
-					, newStreamRecord.getPublisherKey()
-					, newStreamRecord.getReplyTo()
-					, newStreamRecord.getExternalElementCount()
-			);
-			if (null != leaves.thumbnail)
-			{
-				recordCache.recordThumbnailPinned(newCid, leaves.thumbnail);
-			}
-			if (null != leaves.audio)
-			{
-				recordCache.recordAudioPinned(newCid, leaves.audio);
-			}
-			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-			{
-				recordCache.recordVideoPinned(newCid, leaf.cid(), leaf.edgeSize());
-			}
+			cacheUpdater.recordCache_recordThumbnailReleased(oldCid, leaves.thumbnail);
+		}
+		if (null != leaves.audio)
+		{
+			cacheUpdater.recordCache_recordAudioReleased(oldCid, leaves.audio);
+		}
+		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+		{
+			cacheUpdater.recordCache_recordVideoReleased(oldCid, leaf.cid(), leaf.edgeSize());
+		}
+		cacheUpdater.recordCache_recordMetaDataReleased(oldCid);
+		
+		cacheUpdater.recordCache_recordMetaDataPinned(newCid
+				, newStreamRecord.getName()
+				, newStreamRecord.getDescription()
+				, newStreamRecord.getPublishedSecondsUtc()
+				, newStreamRecord.getDiscussionUrl()
+				, newStreamRecord.getPublisherKey()
+				, newStreamRecord.getReplyTo()
+				, newStreamRecord.getExternalElementCount()
+		);
+		if (null != leaves.thumbnail)
+		{
+			cacheUpdater.recordCache_recordThumbnailPinned(newCid, leaves.thumbnail);
+		}
+		if (null != leaves.audio)
+		{
+			cacheUpdater.recordCache_recordAudioPinned(newCid, leaves.audio);
+		}
+		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+		{
+			cacheUpdater.recordCache_recordVideoPinned(newCid, leaf.cid(), leaf.edgeSize());
 		}
 		
 		// Update the reply cache.
-		if (null != replyCache)
-		{
-			replyCache.removeHomePost(oldCid);
-			replyCache.addHomePost(newCid);
-		}
+		cacheUpdater.replyCache_removeHomePost(oldCid);
+		cacheUpdater.replyCache_addHomePost(newCid);
 	}
 
 

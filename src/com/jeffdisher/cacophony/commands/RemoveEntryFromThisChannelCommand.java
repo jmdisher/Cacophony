@@ -2,8 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
-import com.jeffdisher.cacophony.caches.LocalRecordCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -39,16 +38,13 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing entry " + _elementCid + " from channel...");
-			newRoot = _run(access, context.recordCache, context.replyCache, _elementCid);
+			newRoot = _run(access, context.cacheUpdater, _elementCid);
 			if (null == newRoot)
 			{
 				throw new UsageException("Unknown post");
 			}
 			// We want to remove this from anyone listening, if their is a listener registered.
-			if (null != context.entryRegistry)
-			{
-				context.entryRegistry.removeLocalElement(userToEdit, _elementCid);
-			}
+			context.cacheUpdater.entryRegistry_removeLocalElement(userToEdit, _elementCid);
 			
 			log.logFinish("Entry removed: " + _elementCid);
 		}
@@ -59,13 +55,12 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	 * Removes the entry CID from the local user's stream.
 	 * 
 	 * @param access Write access.
-	 * @param recordCache The record cache to update when removing (can be null).
-	 * @param replyCache The reply cache to update when removing (can be null).
+	 * @param cacheUpdater For notifying caches of changes
 	 * @param postToRemove The CID of the record to remove.
 	 * @return The new local root element or null, if the entry wasn't found.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static IpfsFile _run(IWritingAccess access, LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsFile postToRemove) throws IpfsConnectionException
+	private static IpfsFile _run(IWritingAccess access, CacheUpdater cacheUpdater, IpfsFile postToRemove) throws IpfsConnectionException
 	{
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecords records = modifier.loadRecords();
@@ -97,21 +92,18 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 			}
 			
 			// Interpret the leaves.
-			if (null != recordCache)
+			LeafFinder leaves = LeafFinder.parseRecord(deadRecord);
+			if (null != leaves.thumbnail)
 			{
-				LeafFinder leaves = LeafFinder.parseRecord(deadRecord);
-				if (null != leaves.thumbnail)
-				{
-					recordCache.recordThumbnailReleased(postToRemove, leaves.thumbnail);
-				}
-				if (null != leaves.audio)
-				{
-					recordCache.recordAudioReleased(postToRemove, leaves.audio);
-				}
-				for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-				{
-					recordCache.recordVideoReleased(postToRemove, leaf.cid(), leaf.edgeSize());
-				}
+				cacheUpdater.recordCache_recordThumbnailReleased(postToRemove, leaves.thumbnail);
+			}
+			if (null != leaves.audio)
+			{
+				cacheUpdater.recordCache_recordAudioReleased(postToRemove, leaves.audio);
+			}
+			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+			{
+				cacheUpdater.recordCache_recordVideoReleased(postToRemove, leaf.cid(), leaf.edgeSize());
 			}
 			// Unpin everything, no matter what it means.
 			if (null != deadRecord.getThumbnailCid())
@@ -126,17 +118,11 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 					access.unpin(leafCid);
 				}
 			}
-			if (null != recordCache)
-			{
-				recordCache.recordMetaDataReleased(postToRemove);
-			}
+			cacheUpdater.recordCache_recordMetaDataReleased(postToRemove);
 			access.unpin(postToRemove);
 			
 			// Update the reply cache.
-			if (null != replyCache)
-			{
-				replyCache.removeHomePost(postToRemove);
-			}
+			cacheUpdater.replyCache_removeHomePost(postToRemove);
 		}
 		return newRoot;
 	}

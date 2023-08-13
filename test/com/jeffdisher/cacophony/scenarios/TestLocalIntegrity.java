@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.DataDomain;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
@@ -138,7 +139,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
-				, null
+				, new CacheUpdater(null, null, null, null)
 				, selectedKey
 		);
 	}

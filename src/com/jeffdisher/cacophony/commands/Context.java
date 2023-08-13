@@ -3,10 +3,10 @@ package com.jeffdisher.cacophony.commands;
 import java.net.URL;
 import java.util.function.LongSupplier;
 
-import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
-import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
-import com.jeffdisher.cacophony.caches.LocalRecordCache;
-import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
+import com.jeffdisher.cacophony.caches.IEntryCacheRegistry;
+import com.jeffdisher.cacophony.caches.ILocalRecordCache;
+import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IConnection;
@@ -29,10 +29,10 @@ public class Context
 	public final LongSupplier currentTimeMillisGenerator;
 	public final ILogger logger;
 	public final URL baseUrl;
-	public final LocalRecordCache recordCache;
-	public final LocalUserInfoCache userInfoCache;
-	public final EntryCacheRegistry entryRegistry;
-	public final HomeUserReplyCache replyCache;
+	public final ILocalRecordCache recordCache;
+	public final ILocalUserInfoCache userInfoCache;
+	public final IEntryCacheRegistry entryRegistry;
+	public final CacheUpdater cacheUpdater;
 	private IpfsKey _selectedKey;
 
 	public Context(DraftManager sharedDraftManager
@@ -42,10 +42,10 @@ public class Context
 			, LongSupplier currentTimeMillisGenerator
 			, ILogger logger
 			, URL baseUrl
-			, LocalRecordCache recordCache
-			, LocalUserInfoCache userInfoCache
-			, EntryCacheRegistry entryRegistry
-			, HomeUserReplyCache replyCache
+			, ILocalRecordCache recordCache
+			, ILocalUserInfoCache userInfoCache
+			, IEntryCacheRegistry entryRegistry
+			, CacheUpdater cacheUpdater
 			, IpfsKey selectedKey
 	)
 	{
@@ -59,7 +59,7 @@ public class Context
 		this.recordCache = recordCache;
 		this.userInfoCache = userInfoCache;
 		this.entryRegistry = entryRegistry;
-		this.replyCache = replyCache;
+		this.cacheUpdater = cacheUpdater;
 		_selectedKey = selectedKey;
 	}
 
@@ -87,15 +87,15 @@ public class Context
 				, this.recordCache
 				, this.userInfoCache
 				, this.entryRegistry
-				, this.replyCache
+				, this.cacheUpdater
 				, selectedKey
 		);
 	}
 
-	public synchronized Context cloneWithExtras(LocalRecordCache localRecordCache
-			, LocalUserInfoCache userInfoCache
-			, EntryCacheRegistry entryRegistry
-			, HomeUserReplyCache replyCache
+	public synchronized Context cloneWithExtras(ILocalRecordCache localRecordCache
+			, ILocalUserInfoCache userInfoCache
+			, IEntryCacheRegistry entryRegistry
+			, CacheUpdater cacheUpdater
 	)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
@@ -109,7 +109,7 @@ public class Context
 				, localRecordCache
 				, userInfoCache
 				, entryRegistry
-				, replyCache
+				, cacheUpdater
 				, _selectedKey
 		);
 	}

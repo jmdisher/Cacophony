@@ -4,10 +4,7 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
-import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
-import com.jeffdisher.cacophony.caches.LocalRecordCache;
-import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -125,24 +122,21 @@ public class ConcurrentFolloweeRefresher
 	 * Step 2:  Run the actual refresh of the followee.  Note that this happens without holding the access token, as it
 	 * runs on its internal state snapshot from the setup and using a concurrent transaction created at that time.
 	 * 
-	 * @param entryRegistry The registry of connectors for communicating records reachable from a followee's key.
+	 * @param cacheUpdater Used for updating internal caches.
 	 * @return True if the refresh was a success, false if an error prevented it from completing (finishRefresh must be
 	 * called no matter the return value).
 	 */
-	public boolean runRefresh(EntryCacheRegistry entryRegistry)
+	public boolean runRefresh(CacheUpdater cacheUpdater)
 	{
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
 		
-		if (null != entryRegistry)
-		{
-			entryRegistry.setSpecial(_followeeKey, "Refreshing");
-		}
+		cacheUpdater.entryRegistry_setSpecial(_followeeKey, "Refreshing");
 		_refreshSupport = new StandardRefreshSupport(_logger
 				, _transaction
 				, _followeeKey
 				, _cachedEntriesForFollowee
-				, entryRegistry
+				, cacheUpdater
 		);
 		boolean refreshWasSuccess = false;
 		ILogger log = _logger.logStart("Starting concurrent refresh: " + _followeeKey);
@@ -207,10 +201,7 @@ public class ConcurrentFolloweeRefresher
 				log.logFinish("Refresh aborted and will be retried in the future");
 			}
 		}
-		if (null != entryRegistry)
-		{
-			entryRegistry.setSpecial(_followeeKey, null);
-		}
+		cacheUpdater.entryRegistry_setSpecial(_followeeKey, null);
 		_didRun = true;
 		_isSuccess = refreshWasSuccess;
 		return refreshWasSuccess;
@@ -221,9 +212,7 @@ public class ConcurrentFolloweeRefresher
 	 * rationalizing, any cached state against the authoritative access object.
 	 * 
 	 * @param access System write access.
-	 * @param recordCache The local cache which should be updated in response to finishing this refresh (can be null).
-	 * @param userInfoCache The user info cache which should be updated in response to finishing this refresh (can be null).
-	 * @param replyCache The cache of the replyTo relationships to update when adding/removing followee posts with replies.
+	 * @param cacheUpdater Used for updating internal caches.
 	 * @param followees The followees structure to update.
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
 	 * @throws IpfsConnectionException There was a problem accessing data from the network.
@@ -231,9 +220,7 @@ public class ConcurrentFolloweeRefresher
 	 * @throws KeyException There was an error resolving the followee key (probably expired from IPNS).
 	 */
 	public void finishRefresh(IWritingAccess access
-			, LocalRecordCache recordCache
-			, LocalUserInfoCache userInfoCache
-			, HomeUserReplyCache replyCache
+			, CacheUpdater cacheUpdater
 			, IFolloweeWriting followees
 			, long currentTimeMillis
 	) throws IpfsConnectionException, ProtocolDataException, KeyException
@@ -257,10 +244,7 @@ public class ConcurrentFolloweeRefresher
 				followees.updateExistingFollowee(_followeeKey, _newRoot, currentTimeMillis);
 			}
 			// The record cache is null in cases where this is a one-off operation and there is no cache.
-			if (null != recordCache)
-			{
-				_refreshSupport.commitLocalCacheUpdates(recordCache, userInfoCache, replyCache);
-			}
+			_refreshSupport.commitLocalCacheUpdates(cacheUpdater);
 			_transaction.commit(resolver);
 		}
 		else

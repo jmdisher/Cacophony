@@ -10,6 +10,7 @@ import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
 import com.jeffdisher.cacophony.caches.LocalRecordCache;
@@ -109,7 +110,8 @@ public class InteractiveServer
 		}
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, replyCache);
+		CacheUpdater cacheUpdater = new CacheUpdater(localRecordCache, userInfoCache, entryRegistry, replyCache);
+		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, cacheUpdater);
 		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
 		// We will create a handoff connector for the status operations from the background operations.

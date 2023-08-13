@@ -6,6 +6,7 @@ import java.net.URL;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
@@ -215,6 +216,7 @@ public class Cacophony {
 			selectedHomeKey = channels.getPublicKey(keyName);
 		}
 		
+		CacheUpdater cacheUpdater = new CacheUpdater(null, null, null, null);
 		Context context = new Context(draftManager
 				, localDataModel
 				, connection
@@ -225,7 +227,7 @@ public class Cacophony {
 				, null
 				, null
 				, null
-				, null
+				, cacheUpdater
 				, selectedHomeKey
 		);
 		return context;

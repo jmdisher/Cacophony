@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -37,16 +37,16 @@ public class SimpleFolloweeStarter
 	 * 
 	 * @param logger A consumer which logs the messages it is given.
 	 * @param access The writing access to the network.
-	 * @param userInfoCache The cache which will be updated with the initial user description (can be null).
+	 * @param cacheUpdater For updating caches.
 	 * @param followeeKey The public key of the followee to look up.
 	 * @return The root of the new "fake" meta-data tree for this user (never null).
 	 * @throws IpfsConnectionException There was a network error when reading/writing the data.
 	 * @throws ProtocolDataException The target user's data was malformed or broke protocol.
 	 * @throws KeyException The user couldn't be found.
 	 */
-	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey) throws IpfsConnectionException, ProtocolDataException, KeyException
+	public static IpfsFile startFollowingWithEmptyRecords(Consumer<String> logger, IWritingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
-		StartSupport support = new StartSupport(logger, access, userInfoCache, followeeKey);
+		StartSupport support = new StartSupport(logger, access, cacheUpdater, followeeKey);
 		
 		// Run the operation, bearing in mind that we need to handle errors, internally.
 		IpfsFile hackedRoot;
@@ -87,14 +87,14 @@ public class SimpleFolloweeStarter
 	{
 		private final Consumer<String> _logger;
 		private final IWritingAccess _access;
-		private final LocalUserInfoCache _userInfoCache;
+		private final CacheUpdater _cacheUpdater;
 		private final IpfsKey _followeeKey;
 		
-		public StartSupport(Consumer<String> logger, IWritingAccess access, LocalUserInfoCache userInfoCache, IpfsKey followeeKey)
+		public StartSupport(Consumer<String> logger, IWritingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey)
 		{
 			_logger = logger;
 			_access = access;
-			_userInfoCache = userInfoCache;
+			_cacheUpdater = cacheUpdater;
 			_followeeKey = followeeKey;
 		}
 		
@@ -111,11 +111,7 @@ public class SimpleFolloweeStarter
 		@Override
 		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
 		{
-			// Note that the info cache is only used in interactive mode, so it might be null.
-			if (null != _userInfoCache)
-			{
-				_userInfoCache.setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
-			}
+			_cacheUpdater.userInfoCache_setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
 		}
 		@Override
 		public FuturePin addMetaDataToFollowCache(IpfsFile cid)

@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
@@ -84,7 +85,7 @@ public class TestStartFollowingCommand
 				, null
 				, null
 				, null
-				, null
+				, new CacheUpdater(null, null, null, null)
 				, null
 		);
 		command.runInContext(context);

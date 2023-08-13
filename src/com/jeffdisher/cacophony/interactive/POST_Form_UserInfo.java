@@ -62,7 +62,7 @@ public class POST_Form_UserInfo implements ValidatedEntryPoints.POST_Form
 			_background.requestPublish(selectedKey, result.getIndexToPublish());
 			
 			// We also want to write this back to the user info cache.
-			context.userInfoCache.setUserInfo(selectedKey
+			context.cacheUpdater.userInfoCache_setUserInfo(selectedKey
 					, result.name
 					, result.description
 					, result.userPicCid

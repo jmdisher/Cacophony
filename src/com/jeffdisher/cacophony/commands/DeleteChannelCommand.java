@@ -2,8 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
-import com.jeffdisher.cacophony.caches.LocalRecordCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
@@ -45,7 +44,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			
 			IpfsFile recordsCid = index.recordsCid;
 			AbstractRecords records = access.loadCached(recordsCid, AbstractRecords.DESERIALIZER).get();
-			_handleRecords(access, userToDelete, context.entryRegistry, context.recordCache, records);
+			_handleRecords(access, userToDelete, context.cacheUpdater, records);
 			access.unpin(recordsCid);
 			
 			access.unpin(indexCid);
@@ -58,14 +57,8 @@ public record DeleteChannelCommand() implements ICommand<None>
 		}
 		
 		// If the cache exists, populate it.
-		if (null != context.userInfoCache)
-		{
-			context.userInfoCache.removeUser(userToDelete);
-		}
-		if (null != context.entryRegistry)
-		{
-			context.entryRegistry.removeHomeUser(userToDelete);
-		}
+		context.cacheUpdater.userInfoCache_removeUser(userToDelete);
+		context.cacheUpdater.entryRegistry_removeHomeUser(userToDelete);
 		
 		// We also want to clean up the context.
 		context.setSelectedKey(null);
@@ -84,45 +77,35 @@ public record DeleteChannelCommand() implements ICommand<None>
 		}
 	}
 
-	private void _handleRecords(IWritingAccess access, IpfsKey publicKey, EntryCacheRegistry entryRegistry, LocalRecordCache recordCache, AbstractRecords records) throws FailedDeserializationException, IpfsConnectionException
+	private void _handleRecords(IWritingAccess access, IpfsKey publicKey, CacheUpdater cacheUpdater, AbstractRecords records) throws FailedDeserializationException, IpfsConnectionException
 	{
 		// We need to walk all the records and then walk every leaf in each one.
 		for (IpfsFile recordCid : records.getRecordList())
 		{
-			_handleRecord(access, recordCache, recordCid);
-			if (null != entryRegistry)
-			{
-				entryRegistry.removeLocalElement(publicKey, recordCid);
-			}
-			if (null != recordCache)
-			{
-				recordCache.recordMetaDataReleased(recordCid);
-			}
+			_handleRecord(access, cacheUpdater, recordCid);
+			cacheUpdater.entryRegistry_removeLocalElement(publicKey, recordCid);
+			cacheUpdater.recordCache_recordMetaDataReleased(recordCid);
 			access.unpin(recordCid);
 		}
 	}
 
 
-	private void _handleRecord(IWritingAccess access, LocalRecordCache recordCache, IpfsFile recordCid) throws IpfsConnectionException, FailedDeserializationException
+	private void _handleRecord(IWritingAccess access, CacheUpdater cacheUpdater, IpfsFile recordCid) throws IpfsConnectionException, FailedDeserializationException
 	{
 		AbstractRecord record = access.loadCached(recordCid, AbstractRecord.DESERIALIZER).get();
 		
-		// If there is a cache, account for what is being removed.
-		if (null != recordCache)
+		LeafFinder leaves = LeafFinder.parseRecord(record);
+		if (null != leaves.thumbnail)
 		{
-			LeafFinder leaves = LeafFinder.parseRecord(record);
-			if (null != leaves.thumbnail)
-			{
-				recordCache.recordThumbnailReleased(recordCid, leaves.thumbnail);
-			}
-			if (null != leaves.audio)
-			{
-				recordCache.recordAudioReleased(recordCid, leaves.audio);
-			}
-			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-			{
-				recordCache.recordVideoReleased(recordCid, leaf.cid(), leaf.edgeSize());
-			}
+			cacheUpdater.recordCache_recordThumbnailReleased(recordCid, leaves.thumbnail);
+		}
+		if (null != leaves.audio)
+		{
+			cacheUpdater.recordCache_recordAudioReleased(recordCid, leaves.audio);
+		}
+		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+		{
+			cacheUpdater.recordCache_recordVideoReleased(recordCid, leaf.cid(), leaf.edgeSize());
 		}
 		
 		if (null != record.getThumbnailCid())

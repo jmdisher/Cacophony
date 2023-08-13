@@ -34,7 +34,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		
 		// Run the actual refresh.
 		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh(context.entryRegistry)
+				? refresher.runRefresh(context.cacheUpdater)
 				: false
 		;
 		
@@ -80,7 +80,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
 		try
 		{
-			refresher.finishRefresh(access, context.recordCache, context.userInfoCache, context.replyCache, followees, lastPollMillis);
+			refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
 		}
 		catch (KeyException e)
 		{

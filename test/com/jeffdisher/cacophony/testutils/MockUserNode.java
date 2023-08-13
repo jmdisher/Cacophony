@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
 import com.jeffdisher.cacophony.caches.LocalRecordCache;
@@ -82,7 +83,7 @@ public class MockUserNode
 				, recordCache
 				, userInfoCache
 				, entryRegistry
-				, replyCache
+				, new CacheUpdater(recordCache, userInfoCache, entryRegistry, replyCache)
 				, null
 		);
 	}
@@ -127,7 +128,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
-					, null
+					, new CacheUpdater(null, null, null, null)
 					, publicKey
 			);
 		}
@@ -285,7 +286,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
-					, null
+					, new CacheUpdater(null, null, null, null)
 					, null
 			);
 		}

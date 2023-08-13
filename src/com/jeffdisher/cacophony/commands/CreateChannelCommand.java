@@ -13,7 +13,6 @@ import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -58,14 +57,8 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		}
 		
 		// If the cache exists, populate it.
-		if (null != context.userInfoCache)
-		{
-			LocalRecordCacheBuilder.populateUserInfoFromDescription(context.userInfoCache, publicKey, description);
-		}
-		if (null != context.entryRegistry)
-		{
-			context.entryRegistry.createHomeUser(publicKey);
-		}
+		context.cacheUpdater.userInfoCache_populateUserInfo(publicKey, description);
+		context.cacheUpdater.entryRegistry_createHomeUser(publicKey);
 		
 		context.setSelectedKey(publicKey);
 		log.logFinish("Initial state published to Cacophony!");

@@ -18,6 +18,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
@@ -234,7 +235,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
-				, null
+				, new CacheUpdater(null, null, null, null)
 				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);
@@ -386,7 +387,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
-				, null
+				, new CacheUpdater(null, null, null, null)
 				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);

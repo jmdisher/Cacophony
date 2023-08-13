@@ -48,8 +48,8 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 				if (null != result)
 				{
 					Context context = result.context();
-					context.entryRegistry.removeFollowee(userToRemove);
-					context.userInfoCache.removeUser(userToRemove);
+					context.cacheUpdater.entryRegistry_removeFollowee(userToRemove);
+					context.cacheUpdater.userInfoCache_removeUser(userToRemove);
 				}
 			}
 			else

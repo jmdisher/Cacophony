@@ -52,7 +52,7 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			
 			// We also want to write this back to the user info cache.
 			IpfsKey key = context.getSelectedKey();
-			context.userInfoCache.setUserInfo(key
+			context.cacheUpdater.userInfoCache_setUserInfo(key
 					, result.name
 					, result.description
 					, result.userPicCid

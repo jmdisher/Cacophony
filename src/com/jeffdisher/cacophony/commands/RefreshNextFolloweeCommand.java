@@ -37,7 +37,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 		
 		// Run the actual refresh.
 		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh(null)
+				? refresher.runRefresh(context.cacheUpdater)
 				: false
 		;
 		
@@ -82,6 +82,6 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 		IFolloweeWriting followees = access.writableFolloweeData();
 		
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
-		refresher.finishRefresh(access, context.recordCache, context.userInfoCache, context.replyCache, followees, lastPollMillis);
+		refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
 	}
 }
