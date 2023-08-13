@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,7 +19,7 @@ public class TestLocalRecordCache
 	{
 		LocalRecordCache cache = new LocalRecordCache();
 		Assert.assertEquals(0, cache.getKeys().size());
-		LocalRecordCache.Element elt = cache.get(F1);
+		ILocalRecordCache.Element elt = cache.get(F1);
 		Assert.assertNull(elt);
 	}
 
@@ -30,7 +30,7 @@ public class TestLocalRecordCache
 		cache.recordMetaDataPinned(F1, "name", "description", 1L, null, MockKeys.K1, null, 0);
 		cache.recordMetaDataPinned(F1, "name", "description", 1L, null, MockKeys.K1, null, 0);
 		Assert.assertEquals(1, cache.getKeys().size());
-		LocalRecordCache.Element elt = cache.get(F1);
+		ILocalRecordCache.Element elt = cache.get(F1);
 		Assert.assertEquals("name", elt.name());
 		Assert.assertTrue(elt.isCached());
 		Assert.assertNull(elt.videoCid());
@@ -49,7 +49,7 @@ public class TestLocalRecordCache
 		cache.recordMetaDataPinned(F1, "name", "description", 1L, null, MockKeys.K1, null, 1);
 		cache.recordAudioPinned(F1, F2);
 		Assert.assertEquals(1, cache.getKeys().size());
-		LocalRecordCache.Element elt = cache.get(F1);
+		ILocalRecordCache.Element elt = cache.get(F1);
 		Assert.assertEquals("name", elt.name());
 		Assert.assertTrue(elt.isCached());
 		Assert.assertNull(elt.videoCid());
@@ -72,7 +72,7 @@ public class TestLocalRecordCache
 		cache.recordVideoPinned(F1, F2, 100);
 		cache.recordVideoPinned(F1, F3, 200);
 		Assert.assertEquals(1, cache.getKeys().size());
-		LocalRecordCache.Element elt = cache.get(F1);
+		ILocalRecordCache.Element elt = cache.get(F1);
 		Assert.assertEquals("name", elt.name());
 		Assert.assertTrue(elt.isCached());
 		Assert.assertEquals(F3, elt.videoCid());
@@ -97,7 +97,7 @@ public class TestLocalRecordCache
 		LocalRecordCache cache = new LocalRecordCache();
 		cache.recordMetaDataPinned(F2, "name", "description", 1L, null, MockKeys.K1, F1, 0);
 		Assert.assertEquals(1, cache.getKeys().size());
-		LocalRecordCache.Element elt = cache.get(F2);
+		ILocalRecordCache.Element elt = cache.get(F2);
 		Assert.assertEquals(F1, elt.replyToCid());
 		cache.recordMetaDataReleased(F2);
 		elt = cache.get(F2);

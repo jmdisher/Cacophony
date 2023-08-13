@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * The cache is incrementally updated as the system runs and all access is synchronized, since reads and writes can come
  * from different threads in the system, at any time.
  */
-public class LocalUserInfoCache
+public class LocalUserInfoCache implements ILocalUserInfoCache
 {
 	private final Map<IpfsKey, Element> _cache;
 
@@ -27,12 +27,7 @@ public class LocalUserInfoCache
 		_cache = new HashMap<>();
 	}
 
-	/**
-	 * Looks up the user info for the given user key, returning null if not found.
-	 * 
-	 * @param userKey The key to look up.
-	 * @return The most recently written cache element or null, if not found.
-	 */
+	@Override
 	public synchronized Element getUserInfo(IpfsKey userKey)
 	{
 		return _cache.get(userKey);
@@ -79,19 +74,5 @@ public class LocalUserInfoCache
 	public synchronized void removeUser(IpfsKey userKey)
 	{
 		_cache.remove(userKey);
-	}
-
-
-	/**
-	 * The cache element.
-	 */
-	public static record Element(String name
-			, String description
-			, IpfsFile userPicCid
-			, String emailOrNull
-			, String websiteOrNull
-			, IpfsFile featureOrNull
-	)
-	{
 	}
 }

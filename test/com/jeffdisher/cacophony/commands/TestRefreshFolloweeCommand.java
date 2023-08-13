@@ -7,10 +7,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
+import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
-import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;

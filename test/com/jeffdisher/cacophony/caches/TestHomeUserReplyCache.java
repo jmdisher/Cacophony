@@ -1,10 +1,11 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 

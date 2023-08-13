@@ -4,14 +4,14 @@ import java.io.ByteArrayInputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
+import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
+import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
-import com.jeffdisher.cacophony.logic.HomeUserReplyCache;
 import com.jeffdisher.cacophony.logic.LeafFinder;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;

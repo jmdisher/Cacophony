@@ -5,9 +5,9 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.ILocalRecordCache;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -67,7 +67,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 	private PostDetails _checkKnownCache(Context context)
 	{
 		PostDetails post = null;
-		LocalRecordCache.Element element = context.recordCache.get(_elementCid);
+		ILocalRecordCache.Element element = context.recordCache.get(_elementCid);
 		if (null != element)
 		{
 			post = new PostDetails(_elementCid

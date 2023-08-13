@@ -8,6 +8,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
+import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
+import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
+import com.jeffdisher.cacophony.caches.LocalRecordCache;
+import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;

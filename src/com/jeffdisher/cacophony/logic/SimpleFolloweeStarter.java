@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;

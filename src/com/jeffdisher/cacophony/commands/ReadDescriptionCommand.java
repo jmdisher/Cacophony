@@ -3,11 +3,11 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
-import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -52,7 +52,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		// We have a cache when running in interactive mode.
 		context.logger.logVerbose("Check known user cache: " + keyToCheck);
 		ChannelDescription result = null;
-		LocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(keyToCheck);
+		ILocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(keyToCheck);
 		if (null != cached)
 		{
 			IpfsFile userPicCid = cached.userPicCid();

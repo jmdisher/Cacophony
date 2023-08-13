@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * stored for each pinned copy, along with its edge size.  When an element is requested, it is returned with the largest
  * of these representations.
  */
-public class LocalRecordCache
+public class LocalRecordCache implements ILocalRecordCache
 {
 	private final Map<IpfsFile, InternalElement> _cache;
 
@@ -36,10 +36,7 @@ public class LocalRecordCache
 		return Collections.unmodifiableSet(_cache.keySet());
 	}
 
-	/**
-	 * @param cid The CID of the StreamRecord to look up.
-	 * @return The cached data for this StreamRecord or null if it isn't in the cache.
-	 */
+	@Override
 	public synchronized Element get(IpfsFile cid)
 	{
 		InternalElement internal = _cache.get(cid);
@@ -388,25 +385,6 @@ public class LocalRecordCache
 				, previous.audioRef
 				, videos
 		));
-	}
-
-
-	/**
-	 * A description of the data we have cached for a given StreamRecord.
-	 * This is the version of the data which is considered valid for external consumption as it avoids internal details.
-	 */
-	public static record Element(boolean isCached
-			, String name
-			, String description
-			, long publishedSecondsUtc
-			, String discussionUrl
-			, IpfsKey publisherKey
-			, IpfsFile replyToCid
-			, IpfsFile thumbnailCid
-			, IpfsFile videoCid
-			, IpfsFile audioCid
-	)
-	{
 	}
 
 	/**

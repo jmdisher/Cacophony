@@ -2,14 +2,14 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
+import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.logic.EntryCacheRegistry;
 import com.jeffdisher.cacophony.logic.LeafFinder;
-import com.jeffdisher.cacophony.logic.LocalRecordCache;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;

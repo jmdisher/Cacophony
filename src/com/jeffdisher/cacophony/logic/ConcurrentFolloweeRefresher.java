@@ -4,6 +4,10 @@ import java.util.Map;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
+import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
+import com.jeffdisher.cacophony.caches.LocalRecordCache;
+import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;

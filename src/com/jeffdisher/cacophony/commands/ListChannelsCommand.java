@@ -4,9 +4,9 @@ import java.io.PrintStream;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.logic.LocalUserInfoCache;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -36,7 +36,7 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 						String userPicUrl = null;
 						if (null != context.userInfoCache)
 						{
-							LocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(publicKey);
+							ILocalUserInfoCache.Element cached = context.userInfoCache.getUserInfo(publicKey);
 							// While we _should_ always see this in the cache, if present, race conditions might mean we
 							// don't but we at least want to observe that case, if it happens.
 							Assert.assertTrue(null != cached);

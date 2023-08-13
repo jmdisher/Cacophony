@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -27,7 +28,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * Internally, each call is synchronized (and the connectors all use a common dispatcher), so this can be accessed
  * across the system, concurrently.
  */
-public class EntryCacheRegistry
+public class EntryCacheRegistry implements IEntryCacheRegistry
 {
 	private final Consumer<Runnable> _dispatcher;
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
@@ -151,22 +152,13 @@ public class EntryCacheRegistry
 		_perUserConnectors.remove(userToRemove);
 	}
 
-	/**
-	 * Requests the reference to the connector for the given user key (followee or local).
-	 * 
-	 * @param key The user's key.
-	 * @return The connector for this user.
-	 */
+	@Override
 	public synchronized HandoffConnector<IpfsFile, Void> getReadOnlyConnector(IpfsKey key)
 	{
 		return _perUserConnectors.get(key);
 	}
 
-	/**
-	 * Requests the reference to the combined connector for all registered users.
-	 * 
-	 * @return The combined connector instance.
-	 */
+	@Override
 	public synchronized HandoffConnector<IpfsFile, Void> getCombinedConnector()
 	{
 		return _combinedConnector;

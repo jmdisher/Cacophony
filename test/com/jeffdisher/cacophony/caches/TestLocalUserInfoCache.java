@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.caches;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class TestLocalUserInfoCache
 	public void testEmpty() throws Throwable
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
-		LocalUserInfoCache.Element elt = cache.getUserInfo(MockKeys.K1);
+		ILocalUserInfoCache.Element elt = cache.getUserInfo(MockKeys.K1);
 		Assert.assertNull(elt);
 	}
 
@@ -26,7 +26,7 @@ public class TestLocalUserInfoCache
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
 		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null, null);
-		LocalUserInfoCache.Element elt = cache.getUserInfo(MockKeys.K1);
+		ILocalUserInfoCache.Element elt = cache.getUserInfo(MockKeys.K1);
 		Assert.assertEquals("name", elt.name());
 		Assert.assertEquals("description", elt.description());
 		Assert.assertEquals(F1, elt.userPicCid());
@@ -39,9 +39,9 @@ public class TestLocalUserInfoCache
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
 		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null, null);
-		LocalUserInfoCache.Element elt1 = cache.getUserInfo(MockKeys.K1);
+		ILocalUserInfoCache.Element elt1 = cache.getUserInfo(MockKeys.K1);
 		cache.setUserInfo(MockKeys.K1, "name2", "description2", F2, "email", "site", null);
-		LocalUserInfoCache.Element elt2 = cache.getUserInfo(MockKeys.K1);
+		ILocalUserInfoCache.Element elt2 = cache.getUserInfo(MockKeys.K1);
 		
 		Assert.assertEquals("name", elt1.name());
 		Assert.assertEquals("description", elt1.description());
