@@ -175,11 +175,11 @@ public class CacheUpdater
 		}
 	}
 
-	public void userInfoCache_setUserInfo(IpfsKey followeeKey, String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
+	public void userInfoCache_setUserInfo(IpfsKey followeeKey, AbstractDescription description)
 	{
 		if (null != _userInfoCache)
 		{
-			_userInfoCache.setUserInfo(followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
+			_userInfoCache.setUserInfo(followeeKey, description);
 		}
 	}
 

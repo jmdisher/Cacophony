@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -109,9 +110,9 @@ public class SimpleFolloweeStarter
 			return _access.getSizeInBytes(cid);
 		}
 		@Override
-		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
+		public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 		{
-			_cacheUpdater.userInfoCache_setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
+			_cacheUpdater.userInfoCache_setUserInfo(_followeeKey, description);
 		}
 		@Override
 		public FuturePin addMetaDataToFollowCache(IpfsFile cid)

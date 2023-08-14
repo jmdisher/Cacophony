@@ -153,13 +153,7 @@ public class FolloweeRefreshLogic
 		Assert.assertTrue(null != newRecommendations);
 		
 		// Notify the support that this user is either new or has changed its description.
-		support.followeeDescriptionNewOrUpdated(newDescription.getName()
-				, newDescription.getDescription()
-				, userPicCid
-				, newDescription.getEmail()
-				, newDescription.getWebsite()
-				, newDescription.getFeature()
-		);
+		support.followeeDescriptionNewOrUpdated(newDescription);
 		
 		// (we ignore the records element and create a fake one - this allows the expensive part of the refresh to be decoupled from the initial follow).
 		AbstractRecords fakeRecords = AbstractRecords.createNew();
@@ -211,13 +205,7 @@ public class FolloweeRefreshLogic
 				}
 				
 				// Notify the support that this user is either new or has changed its description.
-				support.followeeDescriptionNewOrUpdated(newDescription.getName()
-						, newDescription.getDescription()
-						, userPicCid
-						, newDescription.getEmail()
-						, newDescription.getWebsite()
-						, newDescription.getFeature()
-				);
+				support.followeeDescriptionNewOrUpdated(newDescription);
 			}
 		}
 	}
@@ -650,20 +638,9 @@ public class FolloweeRefreshLogic
 		 * Called when a new followee is being added or an existing followee's user description is updated, so we can
 		 * populate any caches.
 		 * 
-		 * @param name The name.
-		 * @param description The description.
-		 * @param userPicCid The CID of their user picture.
-		 * @param emailOrNull Their E-Mail address (can be null).
-		 * @param websiteOrNull Their website (can be null).
-		 * @param featureOrNull Their feature CID (can be null).
+		 * @param description The new description.
 		 */
-		void followeeDescriptionNewOrUpdated(String name
-				, String description
-				, IpfsFile userPicCid
-				, String emailOrNull
-				, String websiteOrNull
-				, IpfsFile featureOrNull
-		);
+		void followeeDescriptionNewOrUpdated(AbstractDescription description);
 	}
 
 	/**

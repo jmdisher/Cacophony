@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.description.StreamDescription;
@@ -824,9 +825,9 @@ public class TestFolloweeRefreshLogic
 			// No logging in tests.
 		}
 		@Override
-		public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
+		public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 		{
-			this.lastName = name;
+			this.lastName = description.getName();
 		}
 		@Override
 		public FutureSize getSizeInBytes(IpfsFile cid)

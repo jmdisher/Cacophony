@@ -78,7 +78,7 @@ public class LocalRecordCacheBuilder
 			throw Assert.unexpected(e);
 		}
 		_populateElementMapFromLocalUserRoot(access, recordCache, replyCache, localStreamRecords);
-		_populateUserInfoFromDescription(userInfoCache, ourPublicKey, localStreamDescription);
+		userInfoCache.setUserInfo(ourPublicKey, localStreamDescription);
 	}
 
 	/**
@@ -166,7 +166,7 @@ public class LocalRecordCacheBuilder
 			}
 			if (null != description)
 			{
-				_populateUserInfoFromDescription(userInfoCache, future.publicKey, description);
+				userInfoCache.setUserInfo(future.publicKey, description);
 			}
 		}
 	}
@@ -187,7 +187,7 @@ public class LocalRecordCacheBuilder
 
 	public static void populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, AbstractDescription description)
 	{
-		_populateUserInfoFromDescription(cache, key, description);
+		cache.setUserInfo(key, description);
 	}
 
 
@@ -356,18 +356,6 @@ public class LocalRecordCacheBuilder
 		}
 		Assert.assertTrue(null != mime);
 		return mime;
-	}
-
-	private static void _populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, AbstractDescription description)
-	{
-		cache.setUserInfo(key
-				, description.getName()
-				, description.getDescription()
-				, description.getPicCid()
-				, description.getEmail()
-				, description.getWebsite()
-				, description.getFeature()
-		);
 	}
 
 

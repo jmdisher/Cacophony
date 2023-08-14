@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeWriting;
@@ -102,10 +103,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_logger.logVerbose(message);
 	}
 	@Override
-	public void followeeDescriptionNewOrUpdated(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
+	public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 	{
 		_userInfoCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			cacheUpdater.userInfoCache_setUserInfo(_followeeKey, name, description, userPicCid, emailOrNull, websiteOrNull, featureOrNull);
+			cacheUpdater.userInfoCache_setUserInfo(_followeeKey, description);
 		});
 	}
 	@Override

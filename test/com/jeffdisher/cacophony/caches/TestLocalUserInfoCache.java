@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony.caches;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -25,7 +26,7 @@ public class TestLocalUserInfoCache
 	public void testBasicRead() throws Throwable
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
-		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null, null);
+		cache.setUserInfo(MockKeys.K1, _createDescription("name", "description", F1, null, null, null));
 		ILocalUserInfoCache.Element elt = cache.getUserInfo(MockKeys.K1);
 		Assert.assertEquals("name", elt.name());
 		Assert.assertEquals("description", elt.description());
@@ -38,9 +39,9 @@ public class TestLocalUserInfoCache
 	public void testReadAfterUpdate() throws Throwable
 	{
 		LocalUserInfoCache cache = new LocalUserInfoCache();
-		cache.setUserInfo(MockKeys.K1, "name", "description", F1, null, null, null);
+		cache.setUserInfo(MockKeys.K1, _createDescription("name", "description", F1, null, null, null));
 		ILocalUserInfoCache.Element elt1 = cache.getUserInfo(MockKeys.K1);
-		cache.setUserInfo(MockKeys.K1, "name2", "description2", F2, "email", "site", null);
+		cache.setUserInfo(MockKeys.K1, _createDescription("name2", "description2", F2, "email", "site", null));
 		ILocalUserInfoCache.Element elt2 = cache.getUserInfo(MockKeys.K1);
 		
 		Assert.assertEquals("name", elt1.name());
@@ -54,5 +55,18 @@ public class TestLocalUserInfoCache
 		Assert.assertEquals(F2, elt2.userPicCid());
 		Assert.assertEquals("email", elt2.emailOrNull());
 		Assert.assertEquals("site", elt2.websiteOrNull());
+	}
+
+
+	private static AbstractDescription _createDescription(String name, String description, IpfsFile userPicCid, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
+	{
+		AbstractDescription instance = AbstractDescription.createNew();
+		instance.setName(name);
+		instance.setDescription(description);
+		instance.setUserPic("image/jpeg", userPicCid);
+		instance.setEmail(emailOrNull);
+		instance.setWebsite(websiteOrNull);
+		instance.setFeature(featureOrNull);
+		return instance;
 	}
 }
