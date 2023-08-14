@@ -106,6 +106,14 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			}
 		}
 		AbstractDescription updated = result.updatedStreamDescription();
+		context.cacheUpdater.userInfoCache_setUserInfo(context.getSelectedKey()
+				, updated.getName()
+				, updated.getDescription()
+				, updated.getPicCid()
+				, updated.getEmail()
+				, updated.getWebsite()
+				, updated.getFeature()
+		);
 		return new ChannelDescription(result.newRoot()
 				, updated.getName()
 				, updated.getDescription()

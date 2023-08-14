@@ -50,17 +50,6 @@ public class POST_Raw_Feature implements ValidatedEntryPoints.POST_Raw
 			// Request the publication.
 			_background.requestPublish(context.getSelectedKey(), result.getIndexToPublish());
 			
-			// We also want to write this back to the user info cache.
-			IpfsKey key = context.getSelectedKey();
-			context.cacheUpdater.userInfoCache_setUserInfo(key
-					, result.name
-					, result.description
-					, result.userPicCid
-					, result.email
-					, result.website
-					, result.feature
-			);
-			
 			JsonObject userInfo = JsonGenerationHelpers.userDescription(result.name
 					, result.description
 					, result.userPicUrl

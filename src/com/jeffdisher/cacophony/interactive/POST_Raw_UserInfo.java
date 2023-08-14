@@ -50,17 +50,6 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 			// Request the publication.
 			_background.requestPublish(context.getSelectedKey(), result.getIndexToPublish());
 			
-			// We also want to write this back to the user info cache.
-			IpfsKey key = context.getSelectedKey();
-			context.cacheUpdater.userInfoCache_setUserInfo(key
-					, result.name
-					, result.description
-					, result.userPicCid
-					, result.email
-					, result.website
-					, result.feature
-			);
-			
 			// Write out the uploaded file's URL.
 			response.getWriter().print(result.userPicUrl);
 		}

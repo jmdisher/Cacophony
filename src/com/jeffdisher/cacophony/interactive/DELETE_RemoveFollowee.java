@@ -1,8 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
-import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -39,18 +37,12 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 			if (didRemove)
 			{
 				StopFollowingCommand command = new StopFollowingCommand(userToRemove);
-				InteractiveHelpers.SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response
+				InteractiveHelpers.runCommandAndHandleErrors(response
 						, _runner
 						, null
 						, command
 						, null
 				);
-				if (null != result)
-				{
-					Context context = result.context();
-					context.cacheUpdater.entryRegistry_removeFollowee(userToRemove);
-					context.cacheUpdater.userInfoCache_removeUser(userToRemove);
-				}
 			}
 			else
 			{

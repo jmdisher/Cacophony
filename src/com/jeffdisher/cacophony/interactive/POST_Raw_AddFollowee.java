@@ -41,7 +41,6 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		);
 		if (null != result)
 		{
-			result.context().cacheUpdater.entryRegistry_createNewFollowee(userToAdd);
 			_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
 		}
 	}

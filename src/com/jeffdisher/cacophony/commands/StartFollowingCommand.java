@@ -54,6 +54,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 			// If this worked, we will store this temporary root value.  We will do the initial data element refresh only when requested.
 			// Save this initial followee state.
 			followees.createNewFollowee(_publicKey, hackedRoot, 0L);
+			context.cacheUpdater.entryRegistry_createNewFollowee(_publicKey);
 			didRefresh = true;
 		}
 		
