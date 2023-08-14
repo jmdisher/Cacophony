@@ -56,9 +56,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			throw Assert.unexpected(e);
 		}
 		
-		// If the cache exists, populate it.
-		context.cacheUpdater.userInfoCache_removeUser(userToDelete);
-		context.cacheUpdater.entryRegistry_removeHomeUser(userToDelete);
+		context.cacheUpdater.removedHomeUser(userToDelete);
 		
 		// We also want to clean up the context.
 		context.setSelectedKey(null);

@@ -7,6 +7,7 @@ import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
+
 /**
  * This is temporarily just a container but will later become an actual abstraction.
  * In this first step, it just hides the mutative calls into the caches, since the context only exposes them as
@@ -31,11 +32,52 @@ public class CacheUpdater
 		_replyCache = replyCache;
 	}
 
-	public void userInfoCache_populateUserInfo(IpfsKey publicKey, AbstractDescription description)
+	/**
+	 * Called when a new home user has been added.
+	 * 
+	 * @param publicKey The public key of the user.
+	 * @param description The description of the user.
+	 */
+	public void addedHomeUser(IpfsKey publicKey, AbstractDescription description)
 	{
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.createHomeUser(publicKey);
+		}
 		if (null != _userInfoCache)
 		{
 			LocalRecordCacheBuilder.populateUserInfoFromDescription(_userInfoCache, publicKey, description);
+		}
+	}
+
+	/**
+	 * Called when an existing home user has been removed.
+	 * 
+	 * @param publicKey The public key of the user.
+	 */
+	public void removedHomeUser(IpfsKey publicKey)
+	{
+		if (null != _userInfoCache)
+		{
+			_userInfoCache.removeUser(publicKey);
+		}
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.removeHomeUser(publicKey);
+		}
+	}
+
+	/**
+	 * Called when an existing home user updates their description.
+	 * 
+	 * @param publicKey The public key of the user.
+	 * @param description The new description of the user.
+	 */
+	public void updatedHomeUserInfo(IpfsKey publicKey, AbstractDescription description)
+	{
+		if (null != _userInfoCache)
+		{
+			_userInfoCache.setUserInfo(publicKey, description);
 		}
 	}
 
@@ -44,14 +86,6 @@ public class CacheUpdater
 		if (null != _userInfoCache)
 		{
 			LocalRecordCacheBuilder.updateCacheWithNewUserPost(_recordCache, _replyCache, newElement, newRecord);
-		}
-	}
-
-	public void entryRegistry_createHomeUser(IpfsKey publicKey)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.createHomeUser(publicKey);
 		}
 	}
 
@@ -95,19 +129,11 @@ public class CacheUpdater
 		}
 	}
 
-	public void userInfoCache_removeUser(IpfsKey userToDelete)
+	public void userInfoCache_removeFollowee(IpfsKey userToDelete)
 	{
 		if (null != _userInfoCache)
 		{
 			_userInfoCache.removeUser(userToDelete);
-		}
-	}
-
-	public void entryRegistry_removeHomeUser(IpfsKey userToDelete)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.removeHomeUser(userToDelete);
 		}
 	}
 
@@ -175,7 +201,7 @@ public class CacheUpdater
 		}
 	}
 
-	public void userInfoCache_setUserInfo(IpfsKey followeeKey, AbstractDescription description)
+	public void userInfoCache_setFolloweeUserInfo(IpfsKey followeeKey, AbstractDescription description)
 	{
 		if (null != _userInfoCache)
 		{

@@ -56,9 +56,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 			newRoot = _runCore(access, description);
 		}
 		
-		// If the cache exists, populate it.
-		context.cacheUpdater.userInfoCache_populateUserInfo(publicKey, description);
-		context.cacheUpdater.entryRegistry_createHomeUser(publicKey);
+		context.cacheUpdater.addedHomeUser(publicKey, description);
 		
 		context.setSelectedKey(publicKey);
 		log.logFinish("Initial state published to Cacophony!");

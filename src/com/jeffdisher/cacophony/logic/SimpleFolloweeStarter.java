@@ -112,7 +112,7 @@ public class SimpleFolloweeStarter
 		@Override
 		public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 		{
-			_cacheUpdater.userInfoCache_setUserInfo(_followeeKey, description);
+			_cacheUpdater.userInfoCache_setFolloweeUserInfo(_followeeKey, description);
 		}
 		@Override
 		public FuturePin addMetaDataToFollowCache(IpfsFile cid)
