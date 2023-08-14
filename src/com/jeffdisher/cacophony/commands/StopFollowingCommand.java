@@ -49,8 +49,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 			// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 			log.logFinish("Cleanup complete.  No longer following " + _publicKey);
 		}
-		context.cacheUpdater.entryRegistry_removeFollowee(_publicKey);
-		context.cacheUpdater.userInfoCache_removeFollowee(_publicKey);
+		context.cacheUpdater.removedFollowee(_publicKey);
 		return None.NONE;
 	}
 

@@ -106,7 +106,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 	{
 		_userInfoCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			cacheUpdater.userInfoCache_setFolloweeUserInfo(_followeeKey, description);
+			cacheUpdater.updatedFolloweeInfo(_followeeKey, description);
 		});
 	}
 	@Override

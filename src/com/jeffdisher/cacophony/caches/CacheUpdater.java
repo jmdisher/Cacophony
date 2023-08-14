@@ -81,6 +81,55 @@ public class CacheUpdater
 		}
 	}
 
+	/**
+	 * Called when a new followee has been added.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param description The description of the followee.
+	 */
+	public void addedFollowee(IpfsKey publicKey, AbstractDescription description)
+	{
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.createNewFollowee(publicKey);
+		}
+		if (null != _userInfoCache)
+		{
+			_userInfoCache.setUserInfo(publicKey, description);
+		}
+	}
+
+	/**
+	 * Called when an existing followee has been removed.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 */
+	public void removedFollowee(IpfsKey publicKey)
+	{
+		if (null != _userInfoCache)
+		{
+			_userInfoCache.removeUser(publicKey);
+		}
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.removeFollowee(publicKey);
+		}
+	}
+
+	/**
+	 * Called when an existing followee updates their description.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param description The new description of the followee.
+	 */
+	public void updatedFolloweeInfo(IpfsKey publicKey, AbstractDescription description)
+	{
+		if (null != _userInfoCache)
+		{
+			_userInfoCache.setUserInfo(publicKey, description);
+		}
+	}
+
 	public void userInfoCache_updateWithNewUserPost(IpfsFile newElement, AbstractRecord newRecord) throws IpfsConnectionException
 	{
 		if (null != _userInfoCache)
@@ -126,14 +175,6 @@ public class CacheUpdater
 		if (null != _recordCache)
 		{
 			_recordCache.recordVideoReleased(recordCid, cid, edgeSize);
-		}
-	}
-
-	public void userInfoCache_removeFollowee(IpfsKey userToDelete)
-	{
-		if (null != _userInfoCache)
-		{
-			_userInfoCache.removeUser(userToDelete);
 		}
 	}
 
@@ -201,14 +242,6 @@ public class CacheUpdater
 		}
 	}
 
-	public void userInfoCache_setFolloweeUserInfo(IpfsKey followeeKey, AbstractDescription description)
-	{
-		if (null != _userInfoCache)
-		{
-			_userInfoCache.setUserInfo(followeeKey, description);
-		}
-	}
-
 	public void entryRegistry_addFolloweeElement(IpfsKey followeeKey, IpfsFile elementHash)
 	{
 		if (null != _entryRegistry)
@@ -238,22 +271,6 @@ public class CacheUpdater
 		if (null != _replyCache)
 		{
 			_replyCache.removeFolloweePost(elementHash);
-		}
-	}
-
-	public void entryRegistry_removeFollowee(IpfsKey userToRemove)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.removeFollowee(userToRemove);
-		}
-	}
-
-	public void entryRegistry_createNewFollowee(IpfsKey userToAdd)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.createNewFollowee(userToAdd);
 		}
 	}
 }
