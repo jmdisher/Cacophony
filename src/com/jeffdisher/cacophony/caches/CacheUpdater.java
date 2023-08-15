@@ -9,9 +9,12 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
- * This is temporarily just a container but will later become an actual abstraction.
- * In this first step, it just hides the mutative calls into the caches, since the context only exposes them as
- * read-only.
+ * A container of the mutative aspects of the various read-only data projection caches.
+ * This class presents a high-level API to manage after-the-fact updates to the states of our various caches.
+ * This may eventually transition into a generalized notification system, potentially running in its own thread to
+ * shield the caches from racy updates.  For now, at least, that would be over-design so this more specific container is
+ * used.
+ * NOTE:  This system CANNOT be used for any purpose other than updating these view projections.
  */
 public class CacheUpdater
 {
@@ -211,107 +214,110 @@ public class CacheUpdater
 		}
 	}
 
-	public void recordCache_recordMetaDataReleased(IpfsFile recordCid)
+	/**
+	 * Called when a followee adds a new post to their stream.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param cid The CID of the post added.
+	 * @param record The record which was added at CID.
+	 */
+	public void addedFolloweePost(IpfsKey publicKey
+			, IpfsFile cid
+			, AbstractRecord record
+			, IpfsFile cachedImageOrNull
+			, IpfsFile cachedAudioOrNull
+			, IpfsFile cachedVideoOrNull
+			, int videoEdgeSize
+	)
 	{
+		IpfsFile replyTo = record.getReplyTo();
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.addFolloweeElement(publicKey, cid);
+		}
 		if (null != _recordCache)
 		{
-			_recordCache.recordMetaDataReleased(recordCid);
+			_recordCache.recordMetaDataPinned(cid
+					, record.getName()
+					, record.getDescription()
+					, record.getPublishedSecondsUtc()
+					, record.getDiscussionUrl()
+					, record.getPublisherKey()
+					, replyTo
+					, record.getExternalElementCount()
+			);
+			if (null != cachedImageOrNull)
+			{
+				_recordCache.recordThumbnailPinned(cid, cachedImageOrNull);
+			}
+			if (null != cachedAudioOrNull)
+			{
+				_recordCache.recordAudioPinned(cid, cachedAudioOrNull);
+			}
+			if (null != cachedVideoOrNull)
+			{
+				_recordCache.recordVideoPinned(cid, cachedVideoOrNull, videoEdgeSize);
+			}
+		}
+		if ((null != _replyCache) && (null != replyTo))
+		{
+			_replyCache.addFolloweePost(cid, replyTo);
 		}
 	}
 
-	public void recordCache_recordThumbnailReleased(IpfsFile recordCid, IpfsFile thumbnail)
+	/**
+	 * Called when a followee removes a post from their stream.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param cid The CID of the post removed.
+	 * @param record The record at CID which is now removed.
+	 */
+	public void removedFolloweePost(IpfsKey publicKey
+			, IpfsFile cid
+			, AbstractRecord record
+			, IpfsFile cachedImageOrNull
+			, IpfsFile cachedAudioOrNull
+			, IpfsFile cachedVideoOrNull
+			, int videoEdgeSize
+	)
 	{
+		if ((null != _replyCache) && (null != record.getReplyTo()))
+		{
+			_replyCache.removeFolloweePost(cid);
+		}
 		if (null != _recordCache)
 		{
-			_recordCache.recordThumbnailReleased(recordCid, thumbnail);
+			if (null != cachedImageOrNull)
+			{
+				_recordCache.recordThumbnailReleased(cid, cachedImageOrNull);
+			}
+			if (null != cachedAudioOrNull)
+			{
+				_recordCache.recordAudioReleased(cid, cachedAudioOrNull);
+			}
+			if (null != cachedVideoOrNull)
+			{
+				_recordCache.recordVideoReleased(cid, cachedVideoOrNull, videoEdgeSize);
+			}
+			_recordCache.recordMetaDataReleased(cid);
+		}
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.removeFolloweeElement(publicKey, cid);
 		}
 	}
 
-	public void recordCache_recordAudioReleased(IpfsFile recordCid, IpfsFile audio)
-	{
-		if (null != _recordCache)
-		{
-			_recordCache.recordAudioReleased(recordCid, audio);
-		}
-	}
-
-	public void recordCache_recordVideoReleased(IpfsFile recordCid, IpfsFile cid, int edgeSize)
-	{
-		if (null != _recordCache)
-		{
-			_recordCache.recordVideoReleased(recordCid, cid, edgeSize);
-		}
-	}
-
-	public void recordCache_recordMetaDataPinned(IpfsFile newCid, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, IpfsFile replyTo, int externalElementCount)
-	{
-		if (null != _recordCache)
-		{
-			_recordCache.recordMetaDataPinned(newCid, name, description, publishedSecondsUtc, discussionUrl, publisherKey, replyTo, externalElementCount);
-		}
-	}
-
-	public void recordCache_recordThumbnailPinned(IpfsFile newCid, IpfsFile thumbnail)
-	{
-		if (null != _recordCache)
-		{
-			_recordCache.recordThumbnailPinned(newCid, thumbnail);
-		}
-	}
-
-	public void recordCache_recordAudioPinned(IpfsFile newCid, IpfsFile audio)
-	{
-		if (null != _recordCache)
-		{
-			_recordCache.recordAudioPinned(newCid, audio);
-		}
-	}
-
-	public void recordCache_recordVideoPinned(IpfsFile newCid, IpfsFile cid, int edgeSize)
-	{
-		if (null != _recordCache)
-		{
-			_recordCache.recordVideoPinned(newCid, cid, edgeSize);
-		}
-	}
-
-	public void entryRegistry_setSpecial(IpfsKey followeeKey, String special)
+	/**
+	 * Called when a followee starts or stops being refreshed.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param isRefreshing True if the refresh has started, false if it has finished.
+	 */
+	public void followeeRefreshInProgress(IpfsKey publicKey, boolean isRefreshing)
 	{
 		if (null != _entryRegistry)
 		{
-			_entryRegistry.setSpecial(followeeKey, special);
-		}
-	}
-
-	public void entryRegistry_addFolloweeElement(IpfsKey followeeKey, IpfsFile elementHash)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.addFolloweeElement(followeeKey, elementHash);
-		}
-	}
-
-	public void replyCache_addFolloweePost(IpfsFile elementHash, IpfsFile replyTo)
-	{
-		if (null != _replyCache)
-		{
-			_replyCache.addFolloweePost(elementHash, replyTo);
-		}
-	}
-
-	public void entryRegistry_removeFolloweeElement(IpfsKey followeeKey, IpfsFile elementHash)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.removeFolloweeElement(followeeKey, elementHash);
-		}
-	}
-
-	public void replyCache_removeFolloweePost(IpfsFile elementHash)
-	{
-		if (null != _replyCache)
-		{
-			_replyCache.removeFolloweePost(elementHash);
+			_entryRegistry.setSpecial(publicKey, isRefreshing ? "Refreshing" : null);
 		}
 	}
 }

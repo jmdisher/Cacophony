@@ -131,12 +131,11 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
 		
-		cacheUpdater.entryRegistry_setSpecial(_followeeKey, "Refreshing");
+		cacheUpdater.followeeRefreshInProgress(_followeeKey, true);
 		_refreshSupport = new StandardRefreshSupport(_logger
 				, _transaction
 				, _followeeKey
 				, _cachedEntriesForFollowee
-				, cacheUpdater
 		);
 		boolean refreshWasSuccess = false;
 		ILogger log = _logger.logStart("Starting concurrent refresh: " + _followeeKey);
@@ -201,7 +200,6 @@ public class ConcurrentFolloweeRefresher
 				log.logFinish("Refresh aborted and will be retried in the future");
 			}
 		}
-		cacheUpdater.entryRegistry_setSpecial(_followeeKey, null);
 		_didRun = true;
 		_isSuccess = refreshWasSuccess;
 		return refreshWasSuccess;
@@ -254,6 +252,7 @@ public class ConcurrentFolloweeRefresher
 			_transaction.rollback(resolver);
 		}
 		_didFinish = true;
+		cacheUpdater.followeeRefreshInProgress(_followeeKey, false);
 		// At this point, we want to throw any exceptions we caught in the main operation.
 		if (null != _connectionException)
 		{

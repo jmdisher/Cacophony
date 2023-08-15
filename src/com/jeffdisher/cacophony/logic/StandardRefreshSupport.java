@@ -31,19 +31,15 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
-	private final CacheUpdater _cacheUpdater;
 	
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
-	private final List<Consumer<CacheUpdater>> _localRecordCacheUpdates;
-	private final List<Consumer<CacheUpdater>> _userInfoCacheUpdates;
-	private final List<Consumer<CacheUpdater>> _replyCacheUpdates;
+	private final List<Consumer<CacheUpdater>> _pendingCacheUpdates;
 
 	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
-			, CacheUpdater cacheUpdater
 	)
 	{
 		Assert.assertTrue(null != logger);
@@ -55,13 +51,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_transaction = transaction;
 		_followeeKey = followeeKey;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
-		_cacheUpdater = cacheUpdater;
 		
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
-		_localRecordCacheUpdates = new ArrayList<>();
-		_userInfoCacheUpdates = new ArrayList<>();
-		_replyCacheUpdates = new ArrayList<>();
+		_pendingCacheUpdates = new ArrayList<>();
 	}
 
 	public void commitFolloweeChanges(IFolloweeWriting followees)
@@ -83,15 +76,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	 */
 	public void commitLocalCacheUpdates(CacheUpdater cacheUpdater)
 	{
-		for (Consumer<CacheUpdater> consumer : _localRecordCacheUpdates)
-		{
-			consumer.accept(cacheUpdater);
-		}
-		for (Consumer<CacheUpdater> consumer : _userInfoCacheUpdates)
-		{
-			consumer.accept(cacheUpdater);
-		}
-		for (Consumer<CacheUpdater> consumer : _replyCacheUpdates)
+		for (Consumer<CacheUpdater> consumer : _pendingCacheUpdates)
 		{
 			consumer.accept(cacheUpdater);
 		}
@@ -105,7 +90,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 	{
-		_userInfoCacheUpdates.add((CacheUpdater cacheUpdater) -> {
+		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
 			cacheUpdater.updatedFolloweeInfo(_followeeKey, description);
 		});
 	}
@@ -160,65 +145,18 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void addElementToCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
 	{
-		_cacheUpdater.entryRegistry_addFolloweeElement(_followeeKey, elementHash);
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
-		IpfsFile replyTo = recordData.getReplyTo();
-		_localRecordCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			cacheUpdater.recordCache_recordMetaDataPinned(elementHash
-					, recordData.getName()
-					, recordData.getDescription()
-					, recordData.getPublishedSecondsUtc()
-					, recordData.getDiscussionUrl()
-					, recordData.getPublisherKey()
-					, replyTo
-					, recordData.getExternalElementCount()
-			);
-			if (null != imageHash)
-			{
-				cacheUpdater.recordCache_recordThumbnailPinned(elementHash, imageHash);
-			}
-			if (null != audioLeaf)
-			{
-				cacheUpdater.recordCache_recordAudioPinned(elementHash, audioLeaf);
-			}
-			if (null != videoLeaf)
-			{
-				cacheUpdater.recordCache_recordVideoPinned(elementHash, videoLeaf, videoEdgeSize);
-			}
+		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
+			cacheUpdater.addedFolloweePost(_followeeKey, elementHash, recordData, imageHash, audioLeaf, videoLeaf, videoEdgeSize);
 		});
-		if (null != replyTo)
-		{
-			_replyCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-				cacheUpdater.replyCache_addFolloweePost(elementHash, replyTo);
-			});
-		}
 	}
 	@Override
 	public void removeElementFromCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
 	{
 		_elementsToRemoveFromCache.add(elementHash);
-		_cacheUpdater.entryRegistry_removeFolloweeElement(_followeeKey, elementHash);
-		_localRecordCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			if (null != imageHash)
-			{
-				cacheUpdater.recordCache_recordThumbnailReleased(elementHash, imageHash);
-			}
-			if (null != audioHash)
-			{
-				cacheUpdater.recordCache_recordAudioReleased(elementHash, audioHash);
-			}
-			if (null != videoHash)
-			{
-				cacheUpdater.recordCache_recordVideoReleased(elementHash, videoHash, videoEdgeSize);
-			}
-			cacheUpdater.recordCache_recordMetaDataReleased(elementHash);
+		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
+			cacheUpdater.removedFolloweePost(_followeeKey, elementHash, recordData, imageHash, audioHash, videoHash, videoEdgeSize);
 		});
-		if (null != recordData.getReplyTo())
-		{
-			_replyCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-				cacheUpdater.replyCache_removeFolloweePost(elementHash);
-			});
-		}
 	}
 }
