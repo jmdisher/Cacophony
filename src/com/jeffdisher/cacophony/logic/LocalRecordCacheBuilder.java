@@ -171,20 +171,6 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	/**
-	 * Updates an existing cache with information related to a new post made by the local user.
-	 * 
-	 * @param recordCache The cache to modify.
-	 * @param replyCache The replyTo cache to modify.
-	 * @param cid The CID of the new StreamRecord.
-	 * @param record The new record.
-	 * @throws IpfsConnectionException
-	 */
-	public static void updateCacheWithNewUserPost(LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsFile cid, AbstractRecord record) throws IpfsConnectionException
-	{
-		_fetchDataForLocalUserElement(recordCache, replyCache, cid, record);
-	}
-
 	public static void populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, AbstractDescription description)
 	{
 		cache.setUserInfo(key, description);
@@ -253,7 +239,7 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsFile cid, AbstractRecord record) throws IpfsConnectionException
+	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsFile cid, AbstractRecord record)
 	{
 		recordCache.recordMetaDataPinned(cid
 				, record.getName()

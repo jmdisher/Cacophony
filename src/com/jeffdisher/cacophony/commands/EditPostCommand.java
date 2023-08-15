@@ -9,7 +9,6 @@ import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
-import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -148,50 +147,12 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 	{
 		// NOTE:  This assumes that the leaves are the same between the old/new records.
 		
-		// Delete the old entry and add the new one.
-		cacheUpdater.entryRegistry_removeLocalElement(publicKey, oldCid);
-		cacheUpdater.entryRegistry_addLocalElement(publicKey, newCid);
+		// Notify the cache that we removed the old entry.
+		// NOTE:  We pass in newStreamRecord since it has all the same out-of-line data, due to the above assumption.
+		cacheUpdater.removedHomeUserPost(publicKey, oldCid, newStreamRecord);
 		
-		LeafFinder leaves = LeafFinder.parseRecord(newStreamRecord);
-		if (null != leaves.thumbnail)
-		{
-			cacheUpdater.recordCache_recordThumbnailReleased(oldCid, leaves.thumbnail);
-		}
-		if (null != leaves.audio)
-		{
-			cacheUpdater.recordCache_recordAudioReleased(oldCid, leaves.audio);
-		}
-		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-		{
-			cacheUpdater.recordCache_recordVideoReleased(oldCid, leaf.cid(), leaf.edgeSize());
-		}
-		cacheUpdater.recordCache_recordMetaDataReleased(oldCid);
-		
-		cacheUpdater.recordCache_recordMetaDataPinned(newCid
-				, newStreamRecord.getName()
-				, newStreamRecord.getDescription()
-				, newStreamRecord.getPublishedSecondsUtc()
-				, newStreamRecord.getDiscussionUrl()
-				, newStreamRecord.getPublisherKey()
-				, newStreamRecord.getReplyTo()
-				, newStreamRecord.getExternalElementCount()
-		);
-		if (null != leaves.thumbnail)
-		{
-			cacheUpdater.recordCache_recordThumbnailPinned(newCid, leaves.thumbnail);
-		}
-		if (null != leaves.audio)
-		{
-			cacheUpdater.recordCache_recordAudioPinned(newCid, leaves.audio);
-		}
-		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-		{
-			cacheUpdater.recordCache_recordVideoPinned(newCid, leaf.cid(), leaf.edgeSize());
-		}
-		
-		// Update the reply cache.
-		cacheUpdater.replyCache_removeHomePost(oldCid);
-		cacheUpdater.replyCache_addHomePost(newCid);
+		// Notify the cache that we added the new entry.
+		cacheUpdater.addedHomeUserPost(publicKey, newCid, newStreamRecord);
 	}
 
 

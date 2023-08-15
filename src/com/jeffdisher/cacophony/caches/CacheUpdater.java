@@ -2,8 +2,8 @@ package com.jeffdisher.cacophony.caches;
 
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -130,19 +130,84 @@ public class CacheUpdater
 		}
 	}
 
-	public void userInfoCache_updateWithNewUserPost(IpfsFile newElement, AbstractRecord newRecord) throws IpfsConnectionException
-	{
-		if (null != _userInfoCache)
-		{
-			LocalRecordCacheBuilder.updateCacheWithNewUserPost(_recordCache, _replyCache, newElement, newRecord);
-		}
-	}
-
-	public void entryRegistry_removeLocalElement(IpfsKey publicKey, IpfsFile recordCid)
+	/**
+	 * Called when a home user adds a new post to their stream.
+	 * 
+	 * @param publicKey The public key of the user.
+	 * @param cid The CID of the post added.
+	 * @param record The record which was added at CID.
+	 */
+	public void addedHomeUserPost(IpfsKey publicKey, IpfsFile cid, AbstractRecord record)
 	{
 		if (null != _entryRegistry)
 		{
-			_entryRegistry.removeLocalElement(publicKey, recordCid);
+			_entryRegistry.addLocalElement(publicKey, cid);
+		}
+		if (null != _recordCache)
+		{
+			_recordCache.recordMetaDataPinned(cid
+					, record.getName()
+					, record.getDescription()
+					, record.getPublishedSecondsUtc()
+					, record.getDiscussionUrl()
+					, record.getPublisherKey()
+					, record.getReplyTo()
+					, record.getExternalElementCount()
+			);
+			
+			LeafFinder leaves = LeafFinder.parseRecord(record);
+			if (null != leaves.thumbnail)
+			{
+				_recordCache.recordThumbnailPinned(cid, leaves.thumbnail);
+			}
+			if (null != leaves.audio)
+			{
+				_recordCache.recordAudioPinned(cid, leaves.audio);
+			}
+			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+			{
+				_recordCache.recordVideoPinned(cid, leaf.cid(), leaf.edgeSize());
+			}
+		}
+		if (null != _replyCache)
+		{
+			_replyCache.addHomePost(cid);
+		}
+	}
+
+	/**
+	 * Called when a home user removes a post from their stream.
+	 * 
+	 * @param publicKey The public key of the user.
+	 * @param cid The CID of the post removed.
+	 * @param record The record at CID which is now removed.
+	 */
+	public void removedHomeUserPost(IpfsKey publicKey, IpfsFile cid, AbstractRecord record)
+	{
+		if (null != _replyCache)
+		{
+			_replyCache.removeHomePost(cid);
+		}
+		if (null != _recordCache)
+		{
+			LeafFinder leaves = LeafFinder.parseRecord(record);
+			if (null != leaves.thumbnail)
+			{
+				_recordCache.recordThumbnailReleased(cid, leaves.thumbnail);
+			}
+			if (null != leaves.audio)
+			{
+				_recordCache.recordAudioReleased(cid, leaves.audio);
+			}
+			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
+			{
+				_recordCache.recordVideoReleased(cid, leaf.cid(), leaf.edgeSize());
+			}
+			_recordCache.recordMetaDataReleased(cid);
+		}
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.removeLocalElement(publicKey, cid);
 		}
 	}
 
@@ -178,14 +243,6 @@ public class CacheUpdater
 		}
 	}
 
-	public void entryRegistry_addLocalElement(IpfsKey publicKey, IpfsFile newCid)
-	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.addLocalElement(publicKey, newCid);
-		}
-	}
-
 	public void recordCache_recordMetaDataPinned(IpfsFile newCid, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, IpfsFile replyTo, int externalElementCount)
 	{
 		if (null != _recordCache)
@@ -215,22 +272,6 @@ public class CacheUpdater
 		if (null != _recordCache)
 		{
 			_recordCache.recordVideoPinned(newCid, cid, edgeSize);
-		}
-	}
-
-	public void replyCache_removeHomePost(IpfsFile oldCid)
-	{
-		if (null != _replyCache)
-		{
-			_replyCache.removeHomePost(oldCid);
-		}
-	}
-
-	public void replyCache_addHomePost(IpfsFile newCid)
-	{
-		if (null != _replyCache)
-		{
-			_replyCache.addHomePost(newCid);
 		}
 	}
 

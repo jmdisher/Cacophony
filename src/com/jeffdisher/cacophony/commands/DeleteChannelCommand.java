@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
-import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -80,43 +79,26 @@ public record DeleteChannelCommand() implements ICommand<None>
 		// We need to walk all the records and then walk every leaf in each one.
 		for (IpfsFile recordCid : records.getRecordList())
 		{
-			_handleRecord(access, cacheUpdater, recordCid);
-			cacheUpdater.entryRegistry_removeLocalElement(publicKey, recordCid);
-			cacheUpdater.recordCache_recordMetaDataReleased(recordCid);
-			access.unpin(recordCid);
-		}
-	}
-
-
-	private void _handleRecord(IWritingAccess access, CacheUpdater cacheUpdater, IpfsFile recordCid) throws IpfsConnectionException, FailedDeserializationException
-	{
-		AbstractRecord record = access.loadCached(recordCid, AbstractRecord.DESERIALIZER).get();
-		
-		LeafFinder leaves = LeafFinder.parseRecord(record);
-		if (null != leaves.thumbnail)
-		{
-			cacheUpdater.recordCache_recordThumbnailReleased(recordCid, leaves.thumbnail);
-		}
-		if (null != leaves.audio)
-		{
-			cacheUpdater.recordCache_recordAudioReleased(recordCid, leaves.audio);
-		}
-		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-		{
-			cacheUpdater.recordCache_recordVideoReleased(recordCid, leaf.cid(), leaf.edgeSize());
-		}
-		
-		if (null != record.getThumbnailCid())
-		{
-			access.unpin(record.getThumbnailCid());
-		}
-		if (null != record.getVideoExtension())
-		{
-			for (AbstractRecord.Leaf leaf : record.getVideoExtension())
+			// Read the record.
+			AbstractRecord record = access.loadCached(recordCid, AbstractRecord.DESERIALIZER).get();
+			// Unpin all the leaves in the record.
+			if (null != record.getThumbnailCid())
 			{
-				IpfsFile leafCid = leaf.cid();
-				access.unpin(leafCid);
+				access.unpin(record.getThumbnailCid());
 			}
+			if (null != record.getVideoExtension())
+			{
+				for (AbstractRecord.Leaf leaf : record.getVideoExtension())
+				{
+					IpfsFile leafCid = leaf.cid();
+					access.unpin(leafCid);
+				}
+			}
+			// Unpin the record.
+			access.unpin(recordCid);
+			
+			// Now that this has been removed, notify the cache.
+			cacheUpdater.removedHomeUserPost(publicKey, recordCid, record);
 		}
 	}
 }

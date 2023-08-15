@@ -96,8 +96,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 			closeElementFiles(openElements);
 		}
 		
-		context.cacheUpdater.entryRegistry_addLocalElement(publicKey, newElement);
-		context.cacheUpdater.userInfoCache_updateWithNewUserPost(newElement, newRecord);
+		context.cacheUpdater.addedHomeUserPost(publicKey, newElement, newRecord);
 		
 		log.logOperation("New element: " + newElement);
 		log.logFinish("Publish completed!");

@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
 import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -38,14 +37,11 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing entry " + _elementCid + " from channel...");
-			newRoot = _run(access, context.cacheUpdater, _elementCid);
+			newRoot = _run(access, context.cacheUpdater, userToEdit, _elementCid);
 			if (null == newRoot)
 			{
 				throw new UsageException("Unknown post");
 			}
-			// We want to remove this from anyone listening, if their is a listener registered.
-			context.cacheUpdater.entryRegistry_removeLocalElement(userToEdit, _elementCid);
-			
 			log.logFinish("Entry removed: " + _elementCid);
 		}
 		return new ChangedRoot(newRoot);
@@ -56,11 +52,12 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 	 * 
 	 * @param access Write access.
 	 * @param cacheUpdater For notifying caches of changes
+	 * @param userToEdit The local user to modify (if this is their post).
 	 * @param postToRemove The CID of the record to remove.
 	 * @return The new local root element or null, if the entry wasn't found.
 	 * @throws IpfsConnectionException There was a network error.
 	 */
-	private static IpfsFile _run(IWritingAccess access, CacheUpdater cacheUpdater, IpfsFile postToRemove) throws IpfsConnectionException
+	private static IpfsFile _run(IWritingAccess access, CacheUpdater cacheUpdater, IpfsKey userToEdit, IpfsFile postToRemove) throws IpfsConnectionException
 	{
 		HomeChannelModifier modifier = new HomeChannelModifier(access);
 		AbstractRecords records = modifier.loadRecords();
@@ -91,20 +88,6 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 				throw Assert.unexpected(e);
 			}
 			
-			// Interpret the leaves.
-			LeafFinder leaves = LeafFinder.parseRecord(deadRecord);
-			if (null != leaves.thumbnail)
-			{
-				cacheUpdater.recordCache_recordThumbnailReleased(postToRemove, leaves.thumbnail);
-			}
-			if (null != leaves.audio)
-			{
-				cacheUpdater.recordCache_recordAudioReleased(postToRemove, leaves.audio);
-			}
-			for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-			{
-				cacheUpdater.recordCache_recordVideoReleased(postToRemove, leaf.cid(), leaf.edgeSize());
-			}
 			// Unpin everything, no matter what it means.
 			if (null != deadRecord.getThumbnailCid())
 			{
@@ -118,11 +101,10 @@ public record RemoveEntryFromThisChannelCommand(IpfsFile _elementCid) implements
 					access.unpin(leafCid);
 				}
 			}
-			cacheUpdater.recordCache_recordMetaDataReleased(postToRemove);
 			access.unpin(postToRemove);
 			
-			// Update the reply cache.
-			cacheUpdater.replyCache_removeHomePost(postToRemove);
+			// Now that this has been removed, remove it from the cache.
+			cacheUpdater.removedHomeUserPost(userToEdit, postToRemove, deadRecord);
 		}
 		return newRoot;
 	}
