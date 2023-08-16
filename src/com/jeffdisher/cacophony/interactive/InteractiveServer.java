@@ -50,8 +50,6 @@ public class InteractiveServer
 {
 	// The common WebSocket protocol name for all front-end pages which use event_api.js.
 	public  static final String EVENT_API_PROTOCOL = "event_api";
-	// The number of most recent entries, for each user, which will be added to the combined list.
-	public static final int PER_USER_COMBINED_START_SIZE = 10;
 	// The number of threads to use in the CommandRunner.
 	public static final int COMMAND_RUNNER_THREAD_COUNT = 4;
 
@@ -76,7 +74,7 @@ public class InteractiveServer
 			prefs = access.readPrefs();
 			IFolloweeWriting followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
-			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher, PER_USER_COMBINED_START_SIZE);
+			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher);
 			
 			List<IReadingAccess.HomeUserTuple> homeTuples = access.readHomeUserData();
 			try

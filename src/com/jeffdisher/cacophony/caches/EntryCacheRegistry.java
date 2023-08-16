@@ -22,9 +22,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * A container of all HandoffConnector instances for entries for the local user and all followees.
- * Also exposes a "combined" connector which contains a union of this information (although it is a union with limited
- * history - limits the cost of start-up performance since the combined connector needs to read the elements to find
- * their publication time for sorting).
+ * Also exposes a "combined" connector which contains a union of this information.
  * Internally, each call is synchronized (and the connectors all use a common dispatcher), so this can be accessed
  * across the system, concurrently.
  */
@@ -34,21 +32,18 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
 	private final HandoffConnector<IpfsFile, Void> _combinedConnector;
 	private final Map<IpfsFile, Integer> _combinedRefCounts;
-	private final Map<IpfsFile, Integer> _spilledRefCounts;
 
 	private EntryCacheRegistry(Consumer<Runnable> dispatcher
 			, Map<IpfsKey
 			, HandoffConnector<IpfsFile, Void>> perUserConnectors
 			, HandoffConnector<IpfsFile, Void> combinedConnector
 			, Map<IpfsFile, Integer> combinedRefCounts
-			, Map<IpfsFile, Integer> spilledRefCounts
 	)
 	{
 		_dispatcher = dispatcher;
 		_perUserConnectors = perUserConnectors;
 		_combinedConnector = combinedConnector;
 		_combinedRefCounts = combinedRefCounts;
-		_spilledRefCounts = spilledRefCounts;
 	}
 
 	/**
@@ -167,16 +162,10 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 
 	private void _addCombined(IpfsFile elt)
 	{
-		// This may be (1) something we previously spilled, (2) something we already have referenced, or (3) something new.
+		// This may be (1) something we already have referenced or (3) something new.
 		int refCount = 0;
 		boolean shouldCreate = false;
-		if (_spilledRefCounts.containsKey(elt))
-		{
-			// Move this into the combined count and add 1.
-			refCount = _spilledRefCounts.remove(elt);
-			shouldCreate = true;
-		}
-		else if (_combinedRefCounts.containsKey(elt))
+		if (_combinedRefCounts.containsKey(elt))
 		{
 			// We don't need to create anything, just increment the count.
 			refCount = _combinedRefCounts.get(elt);
@@ -195,31 +184,17 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 
 	private void _removeCombined(IpfsFile elt)
 	{
-		// This may be (1) something we previously spilled or (2) something we already have referenced.
-		if (_spilledRefCounts.containsKey(elt))
+		Assert.assertTrue(_combinedRefCounts.containsKey(elt));
+		// Decrement the count and notify if 0.
+		int refCount = _combinedRefCounts.remove(elt);
+		refCount -= 1;
+		if (refCount > 0)
 		{
-			// Just update the count but don't notify.
-			int refCount = _spilledRefCounts.remove(elt);
-			refCount -= 1;
-			if (refCount > 0)
-			{
-				_spilledRefCounts.put(elt, refCount);
-			}
+			_combinedRefCounts.put(elt, refCount);
 		}
 		else
 		{
-			Assert.assertTrue(_combinedRefCounts.containsKey(elt));
-			// Decrement the count and notify if 0.
-			int refCount = _combinedRefCounts.remove(elt);
-			refCount -= 1;
-			if (refCount > 0)
-			{
-				_combinedRefCounts.put(elt, refCount);
-			}
-			else
-			{
-				_combinedConnector.destroy(elt);
-			}
+			_combinedConnector.destroy(elt);
 		}
 	}
 
@@ -233,24 +208,18 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 		private final Consumer<Runnable> _dispatcher;
 		private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
 		private final Map<IpfsKey, List<IpfsFile>> _entriesToCombinePerUser;
-		private final Map<IpfsFile, Integer> _spilledRefCount;
-		private final int _toCachePerUser;
 		private boolean _done;
 		
 		/**
 		 * Creates the new builder.
 		 * 
 		 * @param dispatcher The dispatcher to use for any created HandoffConnectors.
-		 * @param toCachePerUser The limit of most recent entries posted by a user to be considered for the combined
-		 * connector.
 		 */
-		public Builder(Consumer<Runnable> dispatcher, int toCachePerUser)
+		public Builder(Consumer<Runnable> dispatcher)
 		{
 			_dispatcher = dispatcher;
 			_perUserConnectors = new HashMap<>();
 			_entriesToCombinePerUser = new HashMap<>();
-			_spilledRefCount = new HashMap<>();
-			_toCachePerUser = toCachePerUser;
 		}
 		
 		/**
@@ -279,13 +248,6 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 			_perUserConnectors.get(user).create(elementCid, null);
 			List<IpfsFile> combine = _entriesToCombinePerUser.get(user);
 			combine.add(elementCid);
-			if (combine.size() > _toCachePerUser)
-			{
-				// We will remove this from the list we want to check in the network, but we still need to make sure we properly refcount it for the combined list, in case it is deleted.
-				IpfsFile spilled = combine.remove(0);
-				int refCount = _spilledRefCount.getOrDefault(spilled, 0);
-				_spilledRefCount.put(spilled, refCount + 1);
-			}
 		}
 		
 		/**
@@ -348,7 +310,7 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 			// We set the _done flag just to avoid errors of the builder still being in use.
 			// While it could be used to produce multiple registries, we don't use it that way so any further use is an error we want to catch.
 			_done = true;
-			return new EntryCacheRegistry(_dispatcher, _perUserConnectors, combinedConnector, combinedRefCounts, _spilledRefCount);
+			return new EntryCacheRegistry(_dispatcher, _perUserConnectors, combinedConnector, combinedRefCounts);
 		}
 	}
 

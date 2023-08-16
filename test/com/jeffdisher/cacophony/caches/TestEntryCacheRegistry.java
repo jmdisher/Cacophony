@@ -28,7 +28,7 @@ public class TestEntryCacheRegistry
 	{
 		// Set everything up but add nothing.
 		FakeAccess access = new FakeAccess();
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
@@ -48,7 +48,7 @@ public class TestEntryCacheRegistry
 		access.storeRecord(F1, 1L);
 		access.storeRecord(F2, 2L);
 		access.storeRecord(F3, 3L);
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		builder.createConnector(MockKeys.K2);
 		builder.addToUser(MockKeys.K1, F1);
@@ -74,16 +74,15 @@ public class TestEntryCacheRegistry
 	public void fullPreload() throws Throwable
 	{
 		// Preload the data with an overflow of elements to make sure we only see the expected limit in combined.
-		int combinedPreload = 2;
 		IpfsFile[] list = new IpfsFile[20];
 		FakeAccess access = new FakeAccess();
 		for (int i = 0; i < list.length; ++i)
 		{
 			list[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(list[i], i);
+			access.storeRecord(list[i], i + 1);
 		}
 		
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), combinedPreload);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		for (int i = 0; i < list.length; ++i)
 		{
@@ -96,26 +95,24 @@ public class TestEntryCacheRegistry
 		registry.getReadOnlyConnector(MockKeys.K1).registerListener(listener, 0);
 		registry.getCombinedConnector().registerListener(combined, 0);
 		Assert.assertEquals(20, listener.keysInOrder.size());
-		Assert.assertEquals(combinedPreload, combined.keysInOrder.size());
-		// Verify that these are the most recent.
-		Assert.assertEquals(list[18], combined.keysInOrder.get(0));
-		Assert.assertEquals(list[19], combined.keysInOrder.get(1));
+		Assert.assertEquals(20, combined.keysInOrder.size());
+		// Verify the first and last in the list.
+		Assert.assertEquals(list[0], combined.keysInOrder.get(0));
+		Assert.assertEquals(list[19], combined.keysInOrder.get(19));
 	}
 
 	@Test
 	public void incrementalFunction() throws Throwable
 	{
-		// Show how the combination of multiple users works when built up incrementally.
-		int combinedPreload = 2;
 		IpfsFile[] start = new IpfsFile[5];
 		FakeAccess access = new FakeAccess();
 		for (int i = 0; i < start.length; ++i)
 		{
 			start[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(start[i], i);
+			access.storeRecord(start[i], i + 1);
 		}
 		
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), combinedPreload);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		// Add some initial data to the local user.
 		for (int i = 0; i < start.length; ++i)
@@ -155,17 +152,17 @@ public class TestEntryCacheRegistry
 		
 		Assert.assertEquals(10, listener1.keysInOrder.size());
 		Assert.assertEquals(5, listener2.keysInOrder.size());
-		Assert.assertEquals(9, combined.keysInOrder.size());
-		// This should only be missing element start[1] since it is old and followee didn't add it, but the order is not obvious.
-		Assert.assertEquals(start[3], combined.keysInOrder.get(0));
-		Assert.assertEquals(start[4], combined.keysInOrder.get(1));
-		Assert.assertEquals(start[0], combined.keysInOrder.get(2));
-		Assert.assertEquals(start[2], combined.keysInOrder.get(3));
-		Assert.assertEquals(localAdded[1], combined.keysInOrder.get(4));
-		Assert.assertEquals(localAdded[3], combined.keysInOrder.get(5));
-		Assert.assertEquals(localAdded[0], combined.keysInOrder.get(6));
-		Assert.assertEquals(localAdded[2], combined.keysInOrder.get(7));
-		Assert.assertEquals(localAdded[4], combined.keysInOrder.get(8));
+		Assert.assertEquals(10, combined.keysInOrder.size());
+		Assert.assertEquals(start[0], combined.keysInOrder.get(0));
+		Assert.assertEquals(start[1], combined.keysInOrder.get(1));
+		Assert.assertEquals(start[2], combined.keysInOrder.get(2));
+		Assert.assertEquals(start[3], combined.keysInOrder.get(3));
+		Assert.assertEquals(start[4], combined.keysInOrder.get(4));
+		Assert.assertEquals(followeeAdded[3], combined.keysInOrder.get(5));
+		Assert.assertEquals(followeeAdded[4], combined.keysInOrder.get(6));
+		Assert.assertEquals(localAdded[0], combined.keysInOrder.get(7));
+		Assert.assertEquals(localAdded[2], combined.keysInOrder.get(8));
+		Assert.assertEquals(localAdded[4], combined.keysInOrder.get(9));
 	}
 
 	@Test
@@ -173,7 +170,7 @@ public class TestEntryCacheRegistry
 	{
 		// Populate a bunch of entries from 2 users and delete them all before attaching to verify that nothing appears.
 		FakeAccess access = new FakeAccess();
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
@@ -219,7 +216,7 @@ public class TestEntryCacheRegistry
 	{
 		// Populate a bunch of entries from 2 users, attach the listeners, then delete them all and verify that the list is now empty.
 		FakeAccess access = new FakeAccess();
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), 2);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		EntryCacheRegistry registry = builder.buildRegistry(access);
 		
@@ -266,17 +263,15 @@ public class TestEntryCacheRegistry
 	@Test
 	public void fullRefcountDelete() throws Throwable
 	{
-		// Preload the data with an overflow of elements and make sure that removing the spilled elements, later, doesn't break the refcount processing for the combined list.
-		int combinedPreload = 2;
 		IpfsFile[] list = new IpfsFile[20];
 		FakeAccess access = new FakeAccess();
 		for (int i = 0; i < list.length; ++i)
 		{
 			list[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(list[i], i);
+			access.storeRecord(list[i], i + 1);
 		}
 		
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run(), combinedPreload);
+		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
 		builder.createConnector(MockKeys.K1);
 		for (int i = 0; i < list.length; ++i)
 		{
@@ -298,13 +293,7 @@ public class TestEntryCacheRegistry
 		registry.getCombinedConnector().registerListener(combined1, 0);
 		Assert.assertEquals(6, followee1.keysInOrder.size());
 		Assert.assertEquals(20, local1.keysInOrder.size());
-		Assert.assertEquals((2 * combinedPreload) + 1, combined1.keysInOrder.size());
-		// Verify that these are the most recent.
-		Assert.assertEquals(list[3], combined1.keysInOrder.get(0));
-		Assert.assertEquals(list[4], combined1.keysInOrder.get(1));
-		Assert.assertEquals(list[18], combined1.keysInOrder.get(2));
-		Assert.assertEquals(list[19], combined1.keysInOrder.get(3));
-		Assert.assertEquals(list[5], combined1.keysInOrder.get(4));
+		Assert.assertEquals(20, combined1.keysInOrder.size());
 		registry.getReadOnlyConnector(MockKeys.K1).unregisterListener(local1);
 		registry.getReadOnlyConnector(MockKeys.K2).unregisterListener(followee1);
 		registry.getCombinedConnector().unregisterListener(combined1);
