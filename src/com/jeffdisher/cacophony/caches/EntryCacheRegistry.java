@@ -3,18 +3,11 @@ package com.jeffdisher.cacophony.caches;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -28,22 +21,25 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class EntryCacheRegistry implements IEntryCacheRegistry
 {
+	// The dispatcher passed in to the HandoffConnector instances.
 	private final Consumer<Runnable> _dispatcher;
+	// The connectors for entries associated with each user (home and followee), individually.
 	private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
-	private final HandoffConnector<IpfsFile, Void> _combinedConnector;
-	private final Map<IpfsFile, Integer> _combinedRefCounts;
+	// The combined connector for the union of all known posts.
+	// Note that this doesn't exist until initializeCombinedView() is called (_bootstrapElements populated before then).
+	private HandoffConnector<IpfsFile, Void> _combinedConnector;
+	// The list of elements added during startup, before initializeCombinedView() is called.  This is so they can be
+	// sorted correctly as the elements are not added to the combined connector in the order they were created or first
+	// seen during start-up.
+	private List<BootstrapTuple> _bootstrapElements;
+	// The refcounts of all of the elements in _combinedConnector (not populated until initializeCombinedView()).
+	private Map<IpfsFile, Integer> _combinedRefCounts;
 
-	private EntryCacheRegistry(Consumer<Runnable> dispatcher
-			, Map<IpfsKey
-			, HandoffConnector<IpfsFile, Void>> perUserConnectors
-			, HandoffConnector<IpfsFile, Void> combinedConnector
-			, Map<IpfsFile, Integer> combinedRefCounts
-	)
+	public EntryCacheRegistry(Consumer<Runnable> dispatcher)
 	{
 		_dispatcher = dispatcher;
-		_perUserConnectors = perUserConnectors;
-		_combinedConnector = combinedConnector;
-		_combinedRefCounts = combinedRefCounts;
+		_perUserConnectors = new HashMap<>();
+		_bootstrapElements = new ArrayList<>();
 	}
 
 	/**
@@ -62,11 +58,12 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 	 * 
 	 * @param user The followee.
 	 * @param elementHash The new element's hash.
+	 * @param publishedSecondsUtc The publication time of the element.
 	 */
-	public synchronized void addFolloweeElement(IpfsKey user, IpfsFile elementHash)
+	public synchronized void addFolloweeElement(IpfsKey user, IpfsFile elementHash, long publishedSecondsUtc)
 	{
 		_perUserConnectors.get(user).create(elementHash, null);
-		_addCombined(elementHash);
+		_addCombinedOrBuffer(elementHash, publishedSecondsUtc);
 	}
 
 	/**
@@ -86,11 +83,12 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 	 * 
 	 * @param homeUserPublicKey The public key of the home user.
 	 * @param elementHash The new element's hash.
+	 * @param publishedSecondsUtc The publication time of the element.
 	 */
-	public synchronized void addLocalElement(IpfsKey homeUserPublicKey, IpfsFile elementHash)
+	public synchronized void addLocalElement(IpfsKey homeUserPublicKey, IpfsFile elementHash, long publishedSecondsUtc)
 	{
 		_perUserConnectors.get(homeUserPublicKey).create(elementHash, null);
-		_addCombined(elementHash);
+		_addCombinedOrBuffer(elementHash, publishedSecondsUtc);
 	}
 
 	/**
@@ -147,6 +145,27 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 		_perUserConnectors.remove(userToRemove);
 	}
 
+	/**
+	 * Ends the bootstrapping phase of the receiver by creating the combined connector, with the time-sorted entries
+	 * from the data fed in during the bootstrap phase.
+	 * This MUST be called before getCombinedConnector().
+	 */
+	public synchronized void initializeCombinedView()
+	{
+		Assert.assertTrue(null != _bootstrapElements);
+		_combinedConnector = new HandoffConnector<IpfsFile, Void>(_dispatcher);
+		_combinedRefCounts = new HashMap<>();
+		
+		// Sort the list in publication order, then walk it to build the connector and combined refcounts.
+		_bootstrapElements.sort(Comparator.comparingLong((BootstrapTuple tuple) -> tuple.publishedSecondsUtc));
+		for (BootstrapTuple tuple : _bootstrapElements)
+		{
+			_addCombined(tuple.elt);
+		}
+		// Now, complete the bootstrap mode.
+		_bootstrapElements = null;
+	}
+
 	@Override
 	public synchronized HandoffConnector<IpfsFile, Void> getReadOnlyConnector(IpfsKey key)
 	{
@@ -154,11 +173,24 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 	}
 
 	@Override
-	public synchronized HandoffConnector<IpfsFile, Void> getCombinedConnector()
+	public HandoffConnector<IpfsFile, Void> getCombinedConnector()
 	{
+		Assert.assertTrue(null != _combinedConnector);
 		return _combinedConnector;
 	}
 
+
+	private void _addCombinedOrBuffer(IpfsFile elt, long publishedSecondsUtc)
+	{
+		if (null != _bootstrapElements)
+		{
+			_bootstrapElements.add(new BootstrapTuple(elt, publishedSecondsUtc));
+		}
+		else
+		{
+			_addCombined(elt);
+		}
+	}
 
 	private void _addCombined(IpfsFile elt)
 	{
@@ -199,122 +231,5 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 	}
 
 
-	/**
-	 * A factory used during initial start-up to pre-seed the data since start-up has a very different pattern from
-	 * steady-state.
-	 */
-	public static class Builder
-	{
-		private final Consumer<Runnable> _dispatcher;
-		private final Map<IpfsKey, HandoffConnector<IpfsFile, Void>> _perUserConnectors;
-		private final Map<IpfsKey, List<IpfsFile>> _entriesToCombinePerUser;
-		private boolean _done;
-		
-		/**
-		 * Creates the new builder.
-		 * 
-		 * @param dispatcher The dispatcher to use for any created HandoffConnectors.
-		 */
-		public Builder(Consumer<Runnable> dispatcher)
-		{
-			_dispatcher = dispatcher;
-			_perUserConnectors = new HashMap<>();
-			_entriesToCombinePerUser = new HashMap<>();
-		}
-		
-		/**
-		 * Registers a user (local user or existing followee).
-		 * 
-		 * @param user The user's key.
-		 */
-		public void createConnector(IpfsKey user)
-		{
-			Assert.assertTrue(!_done);
-			Assert.assertTrue(!_perUserConnectors.containsKey(user));
-			_perUserConnectors.put(user, new HandoffConnector<IpfsFile, Void>(_dispatcher));
-			Assert.assertTrue(!_entriesToCombinePerUser.containsKey(user));
-			_entriesToCombinePerUser.put(user, new ArrayList<>());
-		}
-		
-		/**
-		 * Adds an element for a registered user (local or followee).
-		 * 
-		 * @param user The user's key.
-		 * @param elementCid The element CID.
-		 */
-		public void addToUser(IpfsKey user, IpfsFile elementCid)
-		{
-			Assert.assertTrue(!_done);
-			_perUserConnectors.get(user).create(elementCid, null);
-			List<IpfsFile> combine = _entriesToCombinePerUser.get(user);
-			combine.add(elementCid);
-		}
-		
-		/**
-		 * Called once start-up has completed to finish the creation of the registry.  This operation is quite expensive
-		 * as it will consult the network in order to find the publication time of the most recent entries from each
-		 * user so that it can determine how to sort them.
-		 * Note that this renders the receiver unusable (as a way to catch bugs).
-		 * 
-		 * @param recordLoader A function for loading requested elements from the network.
-		 * @return The new registry.
-		 * @throws IpfsConnectionException There was a problem contacting the network.
-		 */
-		public EntryCacheRegistry buildRegistry(Function<IpfsFile, FutureRead<AbstractRecord>> recordLoader) throws IpfsConnectionException
-		{
-			Assert.assertTrue(!_done);
-			// Walk the lists for user, combine them in one map with reference count (since there could be duplicates).
-			Set<IpfsFile> elementsToCombine = new HashSet<>();
-			Map<IpfsFile, Integer> combinedRefCounts = new HashMap<>();
-			for (List<IpfsFile> combine : _entriesToCombinePerUser.values())
-			{
-				for (IpfsFile elt : combine)
-				{
-					elementsToCombine.add(elt);
-					int count = combinedRefCounts.getOrDefault(elt, 0);
-					combinedRefCounts.put(elt, count + 1);
-				}
-			}
-			// Now, look these up and sort them by published time.
-			List<Partial1> partials1 = new ArrayList<>();
-			for (IpfsFile elt : elementsToCombine)
-			{
-				FutureRead<AbstractRecord> future = recordLoader.apply(elt);
-				partials1.add(new Partial1(elt, future));
-			}
-			List<Partial2> partials2 = new ArrayList<>();
-			for (Partial1 part1 : partials1)
-			{
-				AbstractRecord record;
-				try
-				{
-					record = part1.future.get();
-				}
-				catch (IpfsConnectionException e)
-				{
-					throw e;
-				}
-				catch (FailedDeserializationException e)
-				{
-					// This is already cached.
-					throw Assert.unexpected(e);
-				}
-				partials2.add(new Partial2(part1.elt, record.getPublishedSecondsUtc()));
-			}
-			partials2.sort(Comparator.comparingLong((Partial2 part2) -> part2.publishedSecondsUtc));
-			HandoffConnector<IpfsFile, Void> combinedConnector = new HandoffConnector<IpfsFile, Void>(_dispatcher);
-			for (Partial2 part2 : partials2)
-			{
-				combinedConnector.create(part2.elt, null);
-			}
-			// We set the _done flag just to avoid errors of the builder still being in use.
-			// While it could be used to produce multiple registries, we don't use it that way so any further use is an error we want to catch.
-			_done = true;
-			return new EntryCacheRegistry(_dispatcher, _perUserConnectors, combinedConnector, combinedRefCounts);
-		}
-	}
-
-
-	private static record Partial1(IpfsFile elt, FutureRead<AbstractRecord> future) {}
-	private static record Partial2(IpfsFile elt, long publishedSecondsUtc) {}
+	private static record BootstrapTuple(IpfsFile elt, long publishedSecondsUtc) {}
 }

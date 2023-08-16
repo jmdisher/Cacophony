@@ -1,17 +1,12 @@
 package com.jeffdisher.cacophony.caches;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
-import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -27,10 +22,9 @@ public class TestEntryCacheRegistry
 	public void empty() throws Throwable
 	{
 		// Set everything up but add nothing.
-		FakeAccess access = new FakeAccess();
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
-		EntryCacheRegistry registry = builder.buildRegistry(access);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
+		registry.initializeCombinedView();
 		
 		FakeListener listener = new FakeListener();
 		FakeListener combined = new FakeListener();
@@ -44,16 +38,12 @@ public class TestEntryCacheRegistry
 	public void basic() throws Throwable
 	{
 		// Just cover some basic cases and make sure the output makes sense.
-		FakeAccess access = new FakeAccess();
-		access.storeRecord(F1, 1L);
-		access.storeRecord(F2, 2L);
-		access.storeRecord(F3, 3L);
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
-		builder.createConnector(MockKeys.K2);
-		builder.addToUser(MockKeys.K1, F1);
-		builder.addToUser(MockKeys.K2, F1);
-		EntryCacheRegistry registry = builder.buildRegistry(access);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
+		registry.createHomeUser(MockKeys.K2);
+		registry.addLocalElement(MockKeys.K1, F1, 1L);
+		registry.addLocalElement(MockKeys.K2, F1, 1L);
+		registry.initializeCombinedView();
 		
 		FakeListener listener1 = new FakeListener();
 		FakeListener listener2 = new FakeListener();
@@ -64,7 +54,7 @@ public class TestEntryCacheRegistry
 		Assert.assertEquals(1, listener1.keysInOrder.size());
 		Assert.assertEquals(1, listener2.keysInOrder.size());
 		Assert.assertEquals(1, combined.keysInOrder.size());
-		registry.addFolloweeElement(MockKeys.K2, F2);
+		registry.addFolloweeElement(MockKeys.K2, F2, 3L);
 		Assert.assertEquals(1, listener1.keysInOrder.size());
 		Assert.assertEquals(2, listener2.keysInOrder.size());
 		Assert.assertEquals(2, combined.keysInOrder.size());
@@ -73,22 +63,19 @@ public class TestEntryCacheRegistry
 	@Test
 	public void fullPreload() throws Throwable
 	{
-		// Preload the data with an overflow of elements to make sure we only see the expected limit in combined.
 		IpfsFile[] list = new IpfsFile[20];
-		FakeAccess access = new FakeAccess();
 		for (int i = 0; i < list.length; ++i)
 		{
 			list[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(list[i], i + 1);
 		}
 		
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
 		for (int i = 0; i < list.length; ++i)
 		{
-			builder.addToUser(MockKeys.K1, list[i]);
+			registry.addLocalElement(MockKeys.K1, list[i], i);
 		}
-		EntryCacheRegistry registry = builder.buildRegistry(access);
+		registry.initializeCombinedView();
 		
 		FakeListener listener = new FakeListener();
 		FakeListener combined = new FakeListener();
@@ -104,22 +91,21 @@ public class TestEntryCacheRegistry
 	@Test
 	public void incrementalFunction() throws Throwable
 	{
+		// Show how the combination of multiple users works when built up incrementally.
 		IpfsFile[] start = new IpfsFile[5];
-		FakeAccess access = new FakeAccess();
 		for (int i = 0; i < start.length; ++i)
 		{
 			start[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(start[i], i + 1);
 		}
 		
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
 		// Add some initial data to the local user.
 		for (int i = 0; i < start.length; ++i)
 		{
-			builder.addToUser(MockKeys.K1, start[i]);
+			registry.addLocalElement(MockKeys.K1, start[i], i);
 		}
-		EntryCacheRegistry registry = builder.buildRegistry(access);
+		registry.initializeCombinedView();
 		
 		// Now, synthesize a new followee.
 		registry.createNewFollowee(MockKeys.K2);
@@ -134,20 +120,18 @@ public class TestEntryCacheRegistry
 		
 		// Add a bunch of data for the new followee (partial overlap with local).
 		IpfsFile[] followeeAdded = new IpfsFile[5];
-		for (int i = 0; i < start.length; i ++)
+		for (int i = 0; i < followeeAdded.length; i ++)
 		{
 			followeeAdded[i] = MockSingleNode.generateHash(new byte[] { (byte)(i * 2) });
-			access.storeRecord(followeeAdded[i], i);
-			registry.addFolloweeElement(MockKeys.K2, followeeAdded[i]);
+			registry.addFolloweeElement(MockKeys.K2, followeeAdded[i], i);
 		}
 		
 		// Add some more data to the local user (partial overlap with followee).
 		IpfsFile[] localAdded = new IpfsFile[5];
-		for (int i = 0; i < start.length; i ++)
+		for (int i = 0; i < localAdded.length; i ++)
 		{
 			localAdded[i] = MockSingleNode.generateHash(new byte[] { (byte)(i + start.length) });
-			access.storeRecord(localAdded[i], i);
-			registry.addLocalElement(MockKeys.K1, localAdded[i]);
+			registry.addLocalElement(MockKeys.K1, localAdded[i], i);
 		}
 		
 		Assert.assertEquals(10, listener1.keysInOrder.size());
@@ -169,10 +153,9 @@ public class TestEntryCacheRegistry
 	public void preDelete() throws Throwable
 	{
 		// Populate a bunch of entries from 2 users and delete them all before attaching to verify that nothing appears.
-		FakeAccess access = new FakeAccess();
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
-		EntryCacheRegistry registry = builder.buildRegistry(access);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
+		registry.initializeCombinedView();
 		
 		// Now, synthesize a new followee.
 		registry.createNewFollowee(MockKeys.K2);
@@ -183,11 +166,9 @@ public class TestEntryCacheRegistry
 		for (int i = 0; i < local.length; ++i)
 		{
 			local[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(local[i], i);
-			registry.addLocalElement(MockKeys.K1, local[i]);
+			registry.addLocalElement(MockKeys.K1, local[i], 2 * i);
 			followee[i] = MockSingleNode.generateHash(new byte[] { (byte)(i * 2) });
-			access.storeRecord(followee[i], i);
-			registry.addFolloweeElement(MockKeys.K2, followee[i]);
+			registry.addFolloweeElement(MockKeys.K2, followee[i], 2 * i + 1);
 		}
 		
 		// Now, delete everything.
@@ -215,10 +196,9 @@ public class TestEntryCacheRegistry
 	public void postDelete() throws Throwable
 	{
 		// Populate a bunch of entries from 2 users, attach the listeners, then delete them all and verify that the list is now empty.
-		FakeAccess access = new FakeAccess();
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
-		EntryCacheRegistry registry = builder.buildRegistry(access);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
+		registry.initializeCombinedView();
 		
 		// Now, synthesize a new followee.
 		registry.createNewFollowee(MockKeys.K2);
@@ -229,11 +209,9 @@ public class TestEntryCacheRegistry
 		for (int i = 0; i < local.length; ++i)
 		{
 			local[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(local[i], i);
-			registry.addLocalElement(MockKeys.K1, local[i]);
+			registry.addLocalElement(MockKeys.K1, local[i], 2 * i);
 			followee[i] = MockSingleNode.generateHash(new byte[] { (byte)(i * 2) });
-			access.storeRecord(followee[i], i);
-			registry.addFolloweeElement(MockKeys.K2, followee[i]);
+			registry.addFolloweeElement(MockKeys.K2, followee[i], 2 * i + 1);
 		}
 		
 		// Register all the listeners.
@@ -264,26 +242,24 @@ public class TestEntryCacheRegistry
 	public void fullRefcountDelete() throws Throwable
 	{
 		IpfsFile[] list = new IpfsFile[20];
-		FakeAccess access = new FakeAccess();
 		for (int i = 0; i < list.length; ++i)
 		{
 			list[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
-			access.storeRecord(list[i], i + 1);
 		}
 		
-		EntryCacheRegistry.Builder builder = new EntryCacheRegistry.Builder((Runnable run) -> run.run());
-		builder.createConnector(MockKeys.K1);
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
 		for (int i = 0; i < list.length; ++i)
 		{
-			builder.addToUser(MockKeys.K1, list[i]);
+			registry.addLocalElement(MockKeys.K1, list[i], i);
 		}
-		builder.createConnector(MockKeys.K2);
+		registry.createHomeUser(MockKeys.K2);
 		for (int i = 0; i < 5; ++i)
 		{
-			builder.addToUser(MockKeys.K2, list[i]);
+			registry.addFolloweeElement(MockKeys.K2, list[i], list.length + i);
 		}
-		EntryCacheRegistry registry = builder.buildRegistry(access);
-		registry.addFolloweeElement(MockKeys.K2, list[5]);
+		registry.initializeCombinedView();
+		registry.addFolloweeElement(MockKeys.K2, list[5], list.length + 5);
 		
 		FakeListener local1 = new FakeListener();
 		FakeListener followee1 = new FakeListener();
@@ -315,6 +291,57 @@ public class TestEntryCacheRegistry
 		registry.getCombinedConnector().registerListener(combined2, 0);
 		Assert.assertEquals(0, local2.keysInOrder.size());
 		Assert.assertEquals(0, combined2.keysInOrder.size());
+	}
+
+	@Test
+	public void interleavedBeforeAfterBootstrap() throws Throwable
+	{
+		// Shows that interleaved timestamps are put in order, before bootstrap, but we only use call order, after.
+		// Show how the combination of multiple users works when built up incrementally.
+		EntryCacheRegistry registry = new EntryCacheRegistry((Runnable run) -> run.run());
+		registry.createHomeUser(MockKeys.K1);
+		registry.createNewFollowee(MockKeys.K2);
+		
+		IpfsFile[] startHome = new IpfsFile[2];
+		for (int i = 0; i < startHome.length; ++i)
+		{
+			startHome[i] = MockSingleNode.generateHash(new byte[] { (byte)i });
+			registry.addLocalElement(MockKeys.K1, startHome[i], 2 * i);
+		}
+		IpfsFile[] startFollowee = new IpfsFile[2];
+		for (int i = 0; i < startFollowee.length; ++i)
+		{
+			startFollowee[i] = MockSingleNode.generateHash(new byte[] { (byte)(i + 2) });
+			registry.addFolloweeElement(MockKeys.K2, startFollowee[i], 2 * i + 1);
+		}
+		registry.initializeCombinedView();
+		
+		IpfsFile[] afterHome = new IpfsFile[2];
+		for (int i = 0; i < afterHome.length; ++i)
+		{
+			afterHome[i] = MockSingleNode.generateHash(new byte[] { (byte)(i + 4) });
+			registry.addLocalElement(MockKeys.K1, afterHome[i], 2 * i + 4);
+		}
+		IpfsFile[] afterFollowee = new IpfsFile[2];
+		for (int i = 0; i < afterFollowee.length; ++i)
+		{
+			afterFollowee[i] = MockSingleNode.generateHash(new byte[] { (byte)(i + 6) });
+			registry.addFolloweeElement(MockKeys.K2, afterFollowee[i], 2 * i + 5);
+		}
+		
+		// Verify the order in the combined view.
+		FakeListener combined = new FakeListener();
+		registry.getCombinedConnector().registerListener(combined, 0);
+		
+		Assert.assertEquals(8, combined.keysInOrder.size());
+		Assert.assertEquals(startHome[0], combined.keysInOrder.get(0));
+		Assert.assertEquals(startFollowee[0], combined.keysInOrder.get(1));
+		Assert.assertEquals(startHome[1], combined.keysInOrder.get(2));
+		Assert.assertEquals(startFollowee[1], combined.keysInOrder.get(3));
+		Assert.assertEquals(afterHome[0], combined.keysInOrder.get(4));
+		Assert.assertEquals(afterHome[1], combined.keysInOrder.get(5));
+		Assert.assertEquals(afterFollowee[0], combined.keysInOrder.get(6));
+		Assert.assertEquals(afterFollowee[1], combined.keysInOrder.get(7));
 	}
 
 
@@ -353,29 +380,6 @@ public class TestEntryCacheRegistry
 		public boolean specialChanged(String special)
 		{
 			throw new AssertionError("Not Called");
-		}
-	}
-
-	private static class FakeAccess implements Function<IpfsFile, FutureRead<AbstractRecord>>
-	{
-		private final Map<IpfsFile, Long> _publishTimesForRecords = new HashMap<>();
-		public void storeRecord(IpfsFile cid, long time)
-		{
-			_publishTimesForRecords.put(cid, time);
-		}
-		@Override
-		public FutureRead<AbstractRecord> apply(IpfsFile file)
-		{
-			Assert.assertTrue(_publishTimesForRecords.containsKey(file));
-			FutureRead<AbstractRecord> read = new FutureRead<>();
-			AbstractRecord newRecord = AbstractRecord.createNew();
-			newRecord.setName("name");
-			newRecord.setDescription("description");
-			// We ignore the key so just use anything.
-			newRecord.setPublisherKey(MockKeys.K1);
-			newRecord.setPublishedSecondsUtc(_publishTimesForRecords.get(file));
-			read.success(newRecord);
-			return read;
 		}
 	}
 }

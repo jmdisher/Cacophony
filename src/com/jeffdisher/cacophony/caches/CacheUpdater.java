@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.caches;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.LeafFinder;
-import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -49,7 +48,7 @@ public class CacheUpdater
 		}
 		if (null != _userInfoCache)
 		{
-			LocalRecordCacheBuilder.populateUserInfoFromDescription(_userInfoCache, publicKey, description);
+			_userInfoCache.setUserInfo(publicKey, description);
 		}
 	}
 
@@ -144,7 +143,7 @@ public class CacheUpdater
 	{
 		if (null != _entryRegistry)
 		{
-			_entryRegistry.addLocalElement(publicKey, cid);
+			_entryRegistry.addLocalElement(publicKey, cid, record.getPublishedSecondsUtc());
 		}
 		if (null != _recordCache)
 		{
@@ -233,7 +232,7 @@ public class CacheUpdater
 		IpfsFile replyTo = record.getReplyTo();
 		if (null != _entryRegistry)
 		{
-			_entryRegistry.addFolloweeElement(publicKey, cid);
+			_entryRegistry.addFolloweeElement(publicKey, cid, record.getPublishedSecondsUtc());
 		}
 		if (null != _recordCache)
 		{

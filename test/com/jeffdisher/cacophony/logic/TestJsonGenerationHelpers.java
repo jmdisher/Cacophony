@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
 import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
@@ -98,11 +99,12 @@ public class TestJsonGenerationHelpers
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
+		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, null);
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, null, context.getSelectedKey(), indexFile);
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, null, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, cacheUpdater, context.getSelectedKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, cacheUpdater, followIndex);
 		}
 		
 		// This should have zero entries.
@@ -157,13 +159,14 @@ public class TestJsonGenerationHelpers
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable run) -> run.run()));
+		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, replyCache);
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);
 			IFolloweeReading followIndex = access.readableFolloweeData();
-			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, recordCache, userInfoCache, replyCache, context.getSelectedKey(), indexFile);
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, recordCache, userInfoCache, replyCache, followIndex);
+			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, cacheUpdater, context.getSelectedKey(), indexFile);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, cacheUpdater, followIndex);
 		}
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).

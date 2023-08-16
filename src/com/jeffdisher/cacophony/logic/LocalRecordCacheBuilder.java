@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
-import com.jeffdisher.cacophony.caches.LocalRecordCache;
-import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
+import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
@@ -40,9 +38,7 @@ public class LocalRecordCacheBuilder
 	 * @throws IpfsConnectionException There was a problem accessing the local node.
 	 */
 	public static void populateInitialCacheForLocalUser(IReadingAccess access
-			, LocalRecordCache recordCache
-			, LocalUserInfoCache userInfoCache
-			, HomeUserReplyCache replyCache
+			, CacheUpdater cacheUpdater
 			, IpfsKey ourPublicKey
 			, IpfsFile lastPublishedIndex
 	) throws IpfsConnectionException
@@ -77,8 +73,8 @@ public class LocalRecordCacheBuilder
 			// We can't see this for data we posted.
 			throw Assert.unexpected(e);
 		}
-		_populateElementMapFromLocalUserRoot(access, recordCache, replyCache, localStreamRecords);
-		userInfoCache.setUserInfo(ourPublicKey, localStreamDescription);
+		cacheUpdater.addedHomeUser(ourPublicKey, localStreamDescription);
+		_populateElementMapFromLocalUserRoot(access, cacheUpdater, ourPublicKey, localStreamRecords);
 	}
 
 	/**
@@ -87,16 +83,12 @@ public class LocalRecordCacheBuilder
 	 * partial data, even if some of that couldn't be interpreted.
 	 * 
 	 * @param access Read-access to the network and data structures.
-	 * @param recordCache The record cache to populate with the reachable records.
-	 * @param userInfoCache The user info cache to populate from the followees and this user.
-	 * @param replyCache The replyTo cache to populate with any followee replies.
+	 * @param cacheUpdater The cache updater.
 	 * @param followees The information cached about the followees.
 	 * @throws IpfsConnectionException There was a problem accessing the local node.
 	 */
 	public static void populateInitialCacheForFollowees(IReadingAccess access
-			, LocalRecordCache recordCache
-			, LocalUserInfoCache userInfoCache
-			, HomeUserReplyCache replyCache
+			, CacheUpdater cacheUpdater
 			, IFolloweeReading followees
 	) throws IpfsConnectionException
 	{
@@ -132,6 +124,24 @@ public class LocalRecordCacheBuilder
 		}
 		
 		// Now that the data is accessible, populate the cache.
+		for (FutureKey<AbstractDescription> future : followeeDescriptions)
+		{
+			AbstractDescription description;
+			try
+			{
+				description = future.future.get();
+			}
+			catch (FailedDeserializationException e)
+			{
+				// We will just skip this user.
+				System.err.println("WARNING:  Deserialization error building cache for followee: " + future.publicKey);
+				description = null;
+			}
+			if (null != description)
+			{
+				cacheUpdater.addedFollowee(future.publicKey, description);
+			}
+		}
 		for (FutureKey<AbstractRecords> future : followeeRecords)
 		{
 			Map<IpfsFile, FollowingCacheElement> elementsCachedForUser = followees.snapshotAllElementsForFollowee(future.publicKey);
@@ -148,36 +158,13 @@ public class LocalRecordCacheBuilder
 			}
 			if (null != followeeRecordsElt)
 			{
-				_populateElementMapFromFolloweeUserRoot(access, recordCache, replyCache, elementsCachedForUser, followeeRecordsElt);
-			}
-		}
-		for (FutureKey<AbstractDescription> future : followeeDescriptions)
-		{
-			AbstractDescription description;
-			try
-			{
-				description = future.future.get();
-			}
-			catch (FailedDeserializationException e)
-			{
-				// We will just skip this user.
-				System.err.println("WARNING:  Deserialization error building cache for followee: " + future.publicKey);
-				description = null;
-			}
-			if (null != description)
-			{
-				userInfoCache.setUserInfo(future.publicKey, description);
+				_populateElementMapFromFolloweeUserRoot(access, cacheUpdater, future.publicKey, elementsCachedForUser, followeeRecordsElt);
 			}
 		}
 	}
 
-	public static void populateUserInfoFromDescription(LocalUserInfoCache cache, IpfsKey key, AbstractDescription description)
-	{
-		cache.setUserInfo(key, description);
-	}
 
-
-	private static void _populateElementMapFromLocalUserRoot(IReadingAccess access, LocalRecordCache recordCache, HomeUserReplyCache replyCache, AbstractRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromLocalUserRoot(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey ourPublicKey, AbstractRecords records) throws IpfsConnectionException
 	{
 		// Everything is always cached for the local user.
 		List<IpfsFile> cids = records.getRecordList();
@@ -203,11 +190,11 @@ public class LocalRecordCacheBuilder
 				// We can't see this for data we posted.
 				throw Assert.unexpected(e);
 			}
-			_fetchDataForLocalUserElement(recordCache, replyCache, cid, record);
+			cacheUpdater.addedHomeUserPost(ourPublicKey, cid, record);
 		}
 	}
 
-	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, LocalRecordCache recordCache, HomeUserReplyCache replyCache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, AbstractRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, AbstractRecords records) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
@@ -229,7 +216,7 @@ public class LocalRecordCacheBuilder
 			IpfsFile cid = cidIterator.next();
 			try
 			{
-				_fetchDataForFolloweeElement(access, recordCache, replyCache, elementsCachedForUser, future, cid);
+				_fetchDataForFolloweeElement(access, cacheUpdater, followeeKey, elementsCachedForUser, future, cid);
 			}
 			catch (FailedDeserializationException e)
 			{
@@ -239,68 +226,22 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _fetchDataForLocalUserElement(LocalRecordCache recordCache, HomeUserReplyCache replyCache, IpfsFile cid, AbstractRecord record)
-	{
-		recordCache.recordMetaDataPinned(cid
-				, record.getName()
-				, record.getDescription()
-				, record.getPublishedSecondsUtc()
-				, record.getDiscussionUrl()
-				, record.getPublisherKey()
-				, record.getReplyTo()
-				, record.getExternalElementCount()
-		);
-		replyCache.addHomePost(cid);
-		
-		// If this is a local user, state that all the files are cached.
-		LeafFinder leaves = LeafFinder.parseRecord(record);
-		if (null != leaves.thumbnail)
-		{
-			recordCache.recordThumbnailPinned(cid, leaves.thumbnail);
-		}
-		if (null != leaves.audio)
-		{
-			recordCache.recordAudioPinned(cid, leaves.audio);
-		}
-		for (LeafFinder.VideoLeaf leaf : leaves.sortedVideos)
-		{
-			recordCache.recordVideoPinned(cid, leaf.cid(), leaf.edgeSize());
-		}
-	}
-
-	private static void _fetchDataForFolloweeElement(IReadingAccess access, LocalRecordCache recordCache, HomeUserReplyCache replyCache, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<AbstractRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
+	private static void _fetchDataForFolloweeElement(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<AbstractRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
 	{
 		AbstractRecord record = future.get();
-		List<AbstractRecord.Leaf> elements = record.getVideoExtension();
 		
-		IpfsFile replyTo = record.getReplyTo();
-		recordCache.recordMetaDataPinned(cid
-				, record.getName()
-				, record.getDescription()
-				, record.getPublishedSecondsUtc()
-				, record.getDiscussionUrl()
-				, record.getPublisherKey()
-				, replyTo
-				, record.getExternalElementCount()
-		);
-		if (null != replyTo)
-		{
-			replyCache.addFolloweePost(cid, replyTo);
-		}
-		
-		// If this is a followee, then check for the appropriate leaves.
-		// (note that we want to double-count with local user, if both - since the pin cache will do that).
+		IpfsFile cachedImageOrNull = null;
+		IpfsFile cachedAudioOrNull = null;
+		IpfsFile cachedVideoOrNull = null;
+		int videoEdgeSize = 0;
 		FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
 		if (null != cachedElement)
 		{
-			IpfsFile thumbnailCid = cachedElement.imageHash();
-			if (null != thumbnailCid)
-			{
-				recordCache.recordThumbnailPinned(cid, thumbnailCid);
-			}
+			cachedImageOrNull = cachedElement.imageHash();
 			IpfsFile leafCid = cachedElement.leafHash();
 			if (null != leafCid)
 			{
+				List<AbstractRecord.Leaf> elements = record.getVideoExtension();
 				String leafMime = _findMimeForLeaf(elements, leafCid);
 				if (leafMime.startsWith("video/"))
 				{
@@ -314,11 +255,12 @@ public class LocalRecordCacheBuilder
 						}
 					}
 					Assert.assertTrue(maxEdge > 0);
-					recordCache.recordVideoPinned(cid, leafCid, maxEdge);
+					cachedVideoOrNull = leafCid;
+					videoEdgeSize = maxEdge;
 				}
 				else if (leafMime.startsWith("audio/"))
 				{
-					recordCache.recordAudioPinned(cid, leafCid);
+					cachedAudioOrNull = leafCid;
 				}
 				else
 				{
@@ -327,6 +269,14 @@ public class LocalRecordCacheBuilder
 				}
 			}
 		}
+		cacheUpdater.addedFolloweePost(followeeKey
+				, cid
+				, record
+				, cachedImageOrNull
+				, cachedAudioOrNull
+				, cachedVideoOrNull
+				, videoEdgeSize
+		);
 	}
 
 	private static String _findMimeForLeaf(List<AbstractRecord.Leaf> elements, IpfsFile target)

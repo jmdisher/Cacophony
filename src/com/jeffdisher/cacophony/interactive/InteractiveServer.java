@@ -18,11 +18,8 @@ import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.local.v3.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -68,47 +65,28 @@ public class InteractiveServer
 		LocalRecordCache localRecordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		HomeUserReplyCache replyCache = new HomeUserReplyCache(replyCacheConnector);
-		EntryCacheRegistry entryRegistry;
+		EntryCacheRegistry entryRegistry = new EntryCacheRegistry(dispatcher);
+		CacheUpdater cacheUpdater = new CacheUpdater(localRecordCache, userInfoCache, entryRegistry, replyCache);
 		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();
 			IFolloweeWriting followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
-			EntryCacheRegistry.Builder entryRegistryBuilder = new EntryCacheRegistry.Builder(dispatcher);
 			
 			List<IReadingAccess.HomeUserTuple> homeTuples = access.readHomeUserData();
-			try
-			{
-				for (IReadingAccess.HomeUserTuple tuple : homeTuples)
-				{
-					IpfsKey homeUserKey = tuple.publicKey();
-					IpfsFile homeUserRoot = tuple.lastRoot();
-					_createAndPopulateConnector(access, entryRegistryBuilder, homeUserKey, homeUserRoot);
-				}
-				for (IpfsKey followeeKey : followees.getAllKnownFollowees())
-				{
-					IpfsFile oneRoot = followees.getLastFetchedRootForFollowee(followeeKey);
-					_createAndPopulateConnector(access, entryRegistryBuilder, followeeKey, oneRoot);
-				}
-			}
-			catch (IpfsConnectionException e)
-			{
-				// This is a start-up failure.
-				throw e;
-			}
+			
 			// Note that we need to populate the record cache builder with home users before followees to make sure we can discover the replyTo relationships.
 			for (IReadingAccess.HomeUserTuple tuple : homeTuples)
 			{
-				LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, localRecordCache, userInfoCache, replyCache, tuple.publicKey(), tuple.lastRoot());
+				LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, cacheUpdater, tuple.publicKey(), tuple.lastRoot());
 			}
-			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, localRecordCache, userInfoCache, replyCache, followees);
-			entryRegistry = entryRegistryBuilder.buildRegistry(
-					(IpfsFile elementHash) -> access.loadCached(elementHash, AbstractRecord.DESERIALIZER)
-			);
+			LocalRecordCacheBuilder.populateInitialCacheForFollowees(access, cacheUpdater, followees);
 		}
 		
+		// Switch the entryRegistry into its normal "running" mode, now that bootstrap is completed.
+		entryRegistry.initializeCombinedView();
+		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		CacheUpdater cacheUpdater = new CacheUpdater(localRecordCache, userInfoCache, entryRegistry, replyCache);
 		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, cacheUpdater);
 		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
@@ -320,26 +298,5 @@ public class InteractiveServer
 		runner.shutdownThreads();
 		background.shutdownProcess();
 		serverLog.logFinish("Background process shut down.");
-	}
-
-
-	private static void _createAndPopulateConnector(IReadingAccess access, EntryCacheRegistry.Builder entryRegistryBuilder, IpfsKey key, IpfsFile root) throws IpfsConnectionException
-	{
-		entryRegistryBuilder.createConnector(key);
-		ForeignChannelReader reader = new ForeignChannelReader(access, root, true);
-		AbstractRecords records;
-		try
-		{
-			records = reader.loadRecords();
-		}
-		catch (ProtocolDataException e)
-		{
-			// We should not have already cached this if it was corrupt.
-			throw Assert.unexpected(e);
-		}
-		for (IpfsFile cid : records.getRecordList())
-		{
-			entryRegistryBuilder.addToUser(key, cid);
-		}
 	}
 }
