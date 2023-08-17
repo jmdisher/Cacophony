@@ -83,7 +83,7 @@ public class MockUserNode
 				, recordCache
 				, userInfoCache
 				, entryRegistry
-				, new CacheUpdater(recordCache, userInfoCache, entryRegistry, replyCache)
+				, new CacheUpdater(recordCache, userInfoCache, entryRegistry, replyCache, null)
 				, null
 		);
 	}
@@ -128,7 +128,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
-					, new CacheUpdater(null, null, null, null)
+					, new CacheUpdater(null, null, null, null, null)
 					, publicKey
 			);
 		}
@@ -286,7 +286,7 @@ public class MockUserNode
 					, null
 					, null
 					, null
-					, new CacheUpdater(null, null, null, null)
+					, new CacheUpdater(null, null, null, null, null)
 					, null
 			);
 		}

@@ -15,6 +15,7 @@ import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
 import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
+import com.jeffdisher.cacophony.caches.ReplyForest;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.results.None;
@@ -66,7 +67,8 @@ public class InteractiveServer
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		HomeUserReplyCache replyCache = new HomeUserReplyCache(replyCacheConnector);
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry(dispatcher);
-		CacheUpdater cacheUpdater = new CacheUpdater(localRecordCache, userInfoCache, entryRegistry, replyCache);
+		ReplyForest replyForest = new ReplyForest();
+		CacheUpdater cacheUpdater = new CacheUpdater(localRecordCache, userInfoCache, entryRegistry, replyCache, replyForest);
 		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();

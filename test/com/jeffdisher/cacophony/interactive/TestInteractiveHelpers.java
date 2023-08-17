@@ -235,7 +235,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
-				, new CacheUpdater(null, null, null, null)
+				, new CacheUpdater(null, null, null, null, null)
 				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);
@@ -387,7 +387,7 @@ public class TestInteractiveHelpers
 				, null
 				, null
 				, null
-				, new CacheUpdater(null, null, null, null)
+				, new CacheUpdater(null, null, null, null, null)
 				, null
 		);
 		new CreateChannelCommand(KEY_NAME).runInContext(context);

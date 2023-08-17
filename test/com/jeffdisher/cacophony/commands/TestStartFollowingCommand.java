@@ -85,7 +85,7 @@ public class TestStartFollowingCommand
 				, null
 				, null
 				, null
-				, new CacheUpdater(null, null, null, null)
+				, new CacheUpdater(null, null, null, null, null)
 				, null
 		);
 		command.runInContext(context);

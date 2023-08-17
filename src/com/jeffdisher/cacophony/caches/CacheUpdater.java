@@ -21,17 +21,20 @@ public class CacheUpdater
 	private final LocalUserInfoCache _userInfoCache;
 	private final EntryCacheRegistry _entryRegistry;
 	private final HomeUserReplyCache _replyCache;
+	private final ReplyForest _replyForest;
 
 	public CacheUpdater(LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, EntryCacheRegistry entryRegistry
 			, HomeUserReplyCache replyCache
+			, ReplyForest replyForest
 	)
 	{
 		_recordCache = recordCache;
 		_userInfoCache = userInfoCache;
 		_entryRegistry = entryRegistry;
 		_replyCache = replyCache;
+		_replyForest = replyForest;
 	}
 
 	/**
@@ -145,6 +148,7 @@ public class CacheUpdater
 		{
 			_entryRegistry.addLocalElement(publicKey, cid, record.getPublishedSecondsUtc());
 		}
+		IpfsFile replyTo = record.getReplyTo();
 		if (null != _recordCache)
 		{
 			_recordCache.recordMetaDataPinned(cid
@@ -153,7 +157,7 @@ public class CacheUpdater
 					, record.getPublishedSecondsUtc()
 					, record.getDiscussionUrl()
 					, record.getPublisherKey()
-					, record.getReplyTo()
+					, replyTo
 					, record.getExternalElementCount()
 			);
 			
@@ -174,6 +178,10 @@ public class CacheUpdater
 		if (null != _replyCache)
 		{
 			_replyCache.addHomePost(cid);
+		}
+		if ((null != _replyForest) && (null != replyTo))
+		{
+			_replyForest.addPost(cid, replyTo);
 		}
 	}
 
@@ -210,6 +218,11 @@ public class CacheUpdater
 		if (null != _entryRegistry)
 		{
 			_entryRegistry.removeLocalElement(publicKey, cid);
+		}
+		IpfsFile replyTo = record.getReplyTo();
+		if ((null != _replyForest) && (null != replyTo))
+		{
+			_replyForest.removePost(cid, replyTo);
 		}
 	}
 
@@ -262,6 +275,10 @@ public class CacheUpdater
 		{
 			_replyCache.addFolloweePost(cid, replyTo);
 		}
+		if ((null != _replyForest) && (null != replyTo))
+		{
+			_replyForest.addPost(cid, replyTo);
+		}
 	}
 
 	/**
@@ -303,6 +320,11 @@ public class CacheUpdater
 		if (null != _entryRegistry)
 		{
 			_entryRegistry.removeFolloweeElement(publicKey, cid);
+		}
+		IpfsFile replyTo = record.getReplyTo();
+		if ((null != _replyForest) && (null != replyTo))
+		{
+			_replyForest.removePost(cid, replyTo);
 		}
 	}
 

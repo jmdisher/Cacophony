@@ -135,7 +135,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
-				, new CacheUpdater(null, null, null, null)
+				, new CacheUpdater(null, null, null, null, null)
 				, null
 		);
 		
@@ -167,7 +167,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, null
-				, new CacheUpdater(null, null, null, null)
+				, new CacheUpdater(null, null, null, null, null)
 				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);

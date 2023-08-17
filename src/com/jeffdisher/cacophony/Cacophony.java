@@ -216,7 +216,7 @@ public class Cacophony {
 			selectedHomeKey = channels.getPublicKey(keyName);
 		}
 		
-		CacheUpdater cacheUpdater = new CacheUpdater(null, null, null, null);
+		CacheUpdater cacheUpdater = new CacheUpdater(null, null, null, null, null);
 		Context context = new Context(draftManager
 				, localDataModel
 				, connection

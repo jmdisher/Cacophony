@@ -139,7 +139,7 @@ public class TestLocalIntegrity
 				, null
 				, null
 				, null
-				, new CacheUpdater(null, null, null, null)
+				, new CacheUpdater(null, null, null, null, null)
 				, selectedKey
 		);
 	}

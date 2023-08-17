@@ -99,7 +99,7 @@ public class TestJsonGenerationHelpers
 		
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
-		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, null);
+		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, null, null);
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
@@ -159,7 +159,7 @@ public class TestJsonGenerationHelpers
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable run) -> run.run()));
-		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, replyCache);
+		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, replyCache, null);
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
