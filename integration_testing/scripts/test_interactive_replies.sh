@@ -212,6 +212,19 @@ INDEX_REPLIES1=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9004/waitAndGet/$INDEX_REPLIES1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\":\"$REPLY_TO\",\"isNewest\":false}"
 
+echo "Check that we can see the reply tree in the WebSocket..."
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN1" "ws://127.0.0.1:8001/server/events/replyTree/$REPLY_TO" 9006 &
+REPLYTREE1_PID=$!
+waitForHttpStart 9006
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF_TOKEN2" "ws://127.0.0.1:8002/server/events/replyTree/$REPLY_TO" 9007 &
+REPLYTREE2_PID=$!
+waitForHttpStart 9007
+
+SAMPLE=$(curl -XGET http://127.0.0.1:9006/waitAndGet/0 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\":\"$REPLY_TO\",\"isNewest\":true}"
+SAMPLE=$(curl -XGET http://127.0.0.1:9007/waitAndGet/0 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\":\"$REPLY_TO\",\"isNewest\":true}"
+
 echo "Delete this entry, refresh the followee, and then observe that the replyTo disappears from the WebSocket..."
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XDELETE "http://127.0.0.1:8002/home/post/delete/$KEY2/$NEW_POST"
 checkPreviousCommand "DELETE post"
@@ -243,10 +256,19 @@ requireSubstring "$LIST" "[]"
 INDEX_REPLIES1=$((INDEX_REPLIES1 + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9004/waitAndGet/$INDEX_REPLIES1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
+SAMPLE=$(curl -XGET http://127.0.0.1:9006/waitAndGet/1 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
+SAMPLE=$(curl -XGET http://127.0.0.1:9007/waitAndGet/1 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
 
 # We can also now bring down the WebSocket.
 curl -XPOST http://127.0.0.1:9004/close 2> /dev/null
 wait $REPLIES1_PID
+# And the tree socket.
+curl -XPOST http://127.0.0.1:9006/close 2> /dev/null
+wait $REPLYTREE1_PID
+curl -XPOST http://127.0.0.1:9007/close 2> /dev/null
+wait $REPLYTREE2_PID
 
 # Check that the keys captured by the WebSocket utility are expected.
 KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)

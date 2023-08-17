@@ -206,6 +206,7 @@ public class InteractiveServer
 		validated.addWebSocketFactory("/server/events/combined/entries", EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
 		validated.addWebSocketFactory("/server/events/entries/{KEY}", EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
 		validated.addWebSocketFactory("/server/events/replies", EVENT_API_PROTOCOL, new WS_Replies(replyCacheConnector));
+		validated.addWebSocketFactory("/server/events/replyTree/{CID}", EVENT_API_PROTOCOL, new WS_ReplyTree(dispatcher, replyForest));
 		validated.addGetHandler("/server/recommendedKeys/{KEY}", new GET_RecommendedKeys(runner));
 		validated.addGetHandler("/server/postStruct/{CID}/{string}", new GET_PostStruct(runner));
 		validated.addGetHandler("/server/unknownUser/{KEY}", new GET_UnknownUserInfo(runner));
