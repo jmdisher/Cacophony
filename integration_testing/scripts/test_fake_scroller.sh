@@ -109,7 +109,7 @@ requireSubstring "$SAMPLE" "\",\"value\":null,\"isNewest\":false}"
 
 # Check that the keys captured by the WebSocket utility are expected.
 KEY_ARRAY=$(curl -XGET http://127.0.0.1:9000/keys 2> /dev/null)
-COUNT=$(echo $KEY_ARRAY | grep -o Qm | wc -l)
+COUNT=$(echo $KEY_ARRAY | grep -o "\"Qm" | wc -l)
 requireSubstring "$COUNT" "13"
 
 
