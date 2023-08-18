@@ -821,7 +821,7 @@ function xsrfLoaded($scope)
 		.then(json => {
 			$scope.drafts = json;
 			// See if there is a replyTo parameter, since we will need to create/select a draft for that.
-			let replyTo = readGetVar("replyTo");
+			let replyTo = UTILS_readGetVar("replyTo");
 			if (undefined !== replyTo)
 			{
 				createAndSelectNewDraft($scope, replyTo);

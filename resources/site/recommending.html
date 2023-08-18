@@ -53,7 +53,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	let keyArg = readGetVar("publicKey");
+	let keyArg = UTILS_readGetVar("publicKey");
 	
 	// Start with no selection.
 	$scope.homeUserDescriptions = [];

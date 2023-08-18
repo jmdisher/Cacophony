@@ -39,7 +39,7 @@ function xsrfLoaded($scope)
 		, function(hash, value, isNewest)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
-			addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
+			UTILS_addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
 			if (!isNewest)
 			{
 				// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).

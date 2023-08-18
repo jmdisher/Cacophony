@@ -29,7 +29,7 @@ function xsrfLoaded($scope)
 		.then(hashArray => {
 			for (let hash of hashArray)
 			{
-				addElementHashToArray($scope.posts, hash, true, function() {$scope.$apply()});
+				UTILS_addElementHashToArray($scope.posts, hash, true, function() {$scope.$apply()});
 			}
 			$scope.$apply();
 		});

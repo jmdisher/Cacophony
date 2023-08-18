@@ -1,6 +1,6 @@
 // General helpers.
 
-function readGetVar(name)
+function UTILS_readGetVar(name)
 {
 	var vars = {};
 	// We use a regular expression to get the GET args as an associative array.
@@ -26,7 +26,7 @@ function readGetVar(name)
 // "isDeleting"
 // "thumbnailUrl"
 // "publisherKey"
-function addElementHashToArray(array, hash, isNewest, updateCallback)
+function UTILS_addElementHashToArray(array, hash, isNewest, updateCallback)
 {
 	// Add empty objects to the array since we will replace them asynchronously.
 	let placeholder = {
@@ -77,7 +77,7 @@ function addElementHashToArray(array, hash, isNewest, updateCallback)
 	});
 }
 
-function renderLongTextIntoElement(element, longText)
+function UTILS_renderLongTextIntoElement(element, longText)
 {
 	// We write the data in as text (meaning it won't change the meaning of the DOM), then we replace the new lines with explicit break tags in the HTML.
 	// We do it in this order for security reasons:  Any other tags in the text will be rendered as text instead of modifying the DOM, so only the <br /> we add will modify it.

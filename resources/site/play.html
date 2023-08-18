@@ -22,7 +22,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 });
 function xsrfLoaded($scope)
 {
-	let hashArg = readGetVar("elt");
+	let hashArg = UTILS_readGetVar("elt");
 	$scope.elementHash = hashArg;
 	// We start by loading it without caching and merely present the option in the case where it isn't cached.
 	API_getPost($scope.elementHash, false).then(elt => {
@@ -55,7 +55,7 @@ function postWasLoaded($scope, elt)
 	
 	// We don't use Angular for the description since we may need to process it.
 	let descriptionElement = document.getElementById("description");
-	renderLongTextIntoElement(descriptionElement, elt["description"]);
+	UTILS_renderLongTextIntoElement(descriptionElement, elt["description"]);
 	
 	if ($scope.cached)
 	{

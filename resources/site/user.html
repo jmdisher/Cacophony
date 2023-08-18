@@ -25,7 +25,7 @@ function xsrfLoaded($scope)
 {
 	// We need to see if there is a "publicKey" argument and compare it to our public key to see if this is the local user (or just user our public key if the arg isn't there).
 	$scope.isHomeUser = false;
-	let keyArg = readGetVar("publicKey");
+	let keyArg = UTILS_readGetVar("publicKey");
 	
 	
 	// Start with no selection.
@@ -228,7 +228,7 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 		, function(hash, value, isNewest)
 		{
 			// We will add placeholder objects to the display, request that they be populated, and also build a structure to look up the objects by key.
-			addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
+			UTILS_addElementHashToArray($scope.posts, hash, isNewest, function() {$scope.$apply()});
 			if (!isNewest)
 			{
 				// We want to say that any old entry added means that we should enable the scroll back button (this will usually be redundant).
@@ -305,7 +305,7 @@ function updateDescriptionText(descriptionText)
 {
 	// We don't use Angular for the description since we may need to process it.
 	let descriptionElement = document.getElementById("description");
-	renderLongTextIntoElement(descriptionElement, descriptionText);
+	UTILS_renderLongTextIntoElement(descriptionElement, descriptionText);
 }
 </script>
 

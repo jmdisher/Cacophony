@@ -19,7 +19,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 {
 	// Note that part of our defined interface is that someone can pre-populate the unknownUserKey field in the "queryKey" GET var.
 	// We don't want to pre-request this, as that could be used to waste the server's time without user interaction, so we just pre-fill the field.
-	let arg_queryKey = readGetVar("queryKey");
+	let arg_queryKey = UTILS_readGetVar("queryKey");
 	$scope.unknownUserKey = (undefined !== arg_queryKey)
 		? arg_queryKey
 		: ""
