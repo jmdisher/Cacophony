@@ -84,5 +84,8 @@ var EVENTS_API = {
 	replies: function(onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/server/events/replies", "event_api"
 		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
 	); },
+	replyTree: function(rootCid, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose) { return createWebSocketStateEventListener("ws://127.0.0.1:8000/server/events/replyTree/" + rootCid, "event_api"
+		, onSocketOpen, onCreate, onUpdate, onDelete, onSpecial, onSocketClose
+	); },
 };
 

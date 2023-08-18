@@ -11,6 +11,7 @@
 
 <script src="./utils.js" type="text/javascript"></script>
 <script src="./rest.js" type="text/javascript"></script>
+<script src="./event_api.js" type="text/javascript"></script>
 <script src="./bindings.js" type="text/javascript"></script>
 <script type="text/javascript">
 // GLOBAL_Application is defined in bindings.js.
@@ -106,15 +107,9 @@ function postWasLoaded($scope, elt)
 			}
 			$scope.$apply();
 		});
-	$scope.setAsFeature = function()
-	{
-		REST.POST("/home/userInfo/feature/" + $scope.publisherKey + "/" + $scope.elementHash)
-			.then(function() {
-				$scope.isFeature = true;
-				$scope.$apply();
-			})
-		;
-	}
+	
+	// Start listening for the replies.
+	setupReplyTree($scope);
 	
 	$scope.$apply();
 }
@@ -162,8 +157,120 @@ function setupEnvironment($scope)
 		// We want to send them over to the publish page with a URL parameter to create a new draft.
 		window.location.href = "publish.html?replyTo=" + $scope.elementHash;
 	}
+	$scope.setAsFeature = function()
+	{
+		REST.POST("/home/userInfo/feature/" + $scope.publisherKey + "/" + $scope.elementHash)
+			.then(function() {
+				$scope.isFeature = true;
+				$scope.$apply();
+			})
+		;
+	}
 	
 	$scope.$apply();
+}
+
+function setupReplyTree($scope)
+{
+	$scope.replies = [];
+	let hashToElementMap = {};
+	hashToElementMap[$scope.elementHash] = $scope;
+	let parentToChildArrayMap = {};
+	parentToChildArrayMap[$scope.elementHash] = $scope.replies;
+	let childToSiblingsMap = {};
+	EVENTS_API.replyTree($scope.elementHash
+		// Socket open.
+		, function(socket)
+		{
+			// No action.
+		}
+		// Create.
+		, function(child, parent, ignored)
+		{
+			// Note that these always arrive in-order so we can just add these, directly.
+			// Find the root array where this should be placed.
+			let siblings = parentToChildArrayMap[parent];
+			let children = [];
+			parentToChildArrayMap[child] = children;
+			childToSiblingsMap[child] = siblings;
+			
+			// Create a placeholder - we still use the shape of UTILS_addElementHashToArray so we can use the same directives.
+			let placeholder = {
+				"isTombstone": false,
+				"cached": false,
+				"elementHash": child,
+				"name": "Loading...",
+				"description": "Loading...",
+				"readableDate": "Loading...",
+				"isDeleting": false,
+				"thumbnailUrl": null,
+				"publisherKey": null,
+				"replyTo": parent,
+				"replies": children,
+			};
+			hashToElementMap[child] = placeholder;
+			
+			// We will still keep the "most recent" (as we discovered) near the top.
+			siblings.unshift(placeholder);
+			GLOBAL_PostLoader.loadTuple(child).then(elt => {
+				// For this page, we will leave the full description inline.
+				// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+				let object = {
+					"isTombstone": false,
+					"cached": elt["cached"],
+					"elementHash": elt["elementHash"],
+					"readableDate": elt["readableDate"],
+					"name": elt["name"],
+					"description": elt["description"],
+					"publisherKey": elt["publisherKey"],
+					"isDeleting": false,
+					"thumbnailUrl": elt["thumbnailUrl"],
+					"replyTo": elt["replyTo"],
+					"replies": placeholder.replies,
+				}
+				hashToElementMap[child] = object;
+				// We need to replace the index due to the earlier mention of $apply.
+				// (we will use indexOf() since this is an exact instance match)
+				let index = siblings.indexOf(placeholder);
+				siblings[index] = object;
+				$scope.$apply();
+			});
+		}
+		// No Update.
+		, null
+		// Delete.
+		, function(child)
+		{
+			// Find the sibling array for this child.
+			let siblings = childToSiblingsMap[child];
+			
+			// Find it and replace the element with a "deleted" entry (since this still has meaning in the list).
+			let original = hashToElementMap[child];
+			let tombstone = {
+				"isTombstone": true,
+				"elementHash": child,
+				"name": "Deleted",
+				"description": "This post has been deleted/edited.",
+				"readableDate": "(unknown)",
+				"isDeleting": false,
+				"thumbnailUrl": null,
+				"publisherKey": null,
+				"replyTo": null,
+				"replies": original.replies,
+			};
+			let index = siblings.indexOf(original);			
+			siblings[index] = tombstone;
+			hashToElementMap[child] = tombstone;
+			$scope.$apply();
+		}
+		// No Special.
+		, null
+		// Close.
+		, function(event)
+		{
+			// No action.
+		}
+	);
 }
 </script>
 
@@ -214,6 +321,35 @@ function setupEnvironment($scope)
 			<div class="row card card-body" ng-show="discussionUrl">
 				<a ng-href="{{discussionUrl}}">View discussion on {{discussionHost}}</a>
 			</div>
+		</div>
+	</div>
+	<hr />
+	<div class="row justify-content-md-center">
+		<div class="col-md-10">
+		Replies:
+			<!-- We will use a fixed-4 depth and link out to anything beyond that, just to keep the shape of the page sane. -->
+			<div class="row card card-body" ng-repeat="reply in replies">
+				<caco-post ng-hide="reply.isTombstone" post-tuple="reply"></caco-post>
+				<div ng-show="reply.isTombstone">(post deleted/edited)</div>
+				<div class="row card card-body" ng-repeat="reply1 in reply.replies">
+					<caco-post ng-hide="reply1.isTombstone" post-tuple="reply1"></caco-post>
+					<div ng-show="reply1.isTombstone">(post deleted/edited)</div>
+					<div class="row card card-body" ng-repeat="reply2 in reply1.replies">
+						<caco-post ng-hide="reply2.isTombstone" post-tuple="reply2"></caco-post>
+						<div ng-show="reply2.isTombstone">(post deleted/edited)</div>
+						<div class="row card card-body" ng-repeat="reply3 in reply2.replies">
+							<caco-post ng-hide="reply3.isTombstone" post-tuple="reply3"></caco-post>
+							<div ng-show="reply3.isTombstone">(post deleted/edited)</div>
+							<a ng-show="reply3.replies.length > 0" href="play.html?elt={{reply3.elementHash}}">See more of this thread</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<hr />
+	<div class="row justify-content-md-center">
+		<div class="col-md-6">
 			<div class="btn-group" ng-show="true === isFavourite">
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Remove from favourites</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteFavourite()">Confirm</a></li></ul>
