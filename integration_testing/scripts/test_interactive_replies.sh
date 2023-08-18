@@ -225,6 +225,19 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\
 SAMPLE=$(curl -XGET http://127.0.0.1:9007/waitAndGet/0 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$NEW_POST\",\"value\":\"$REPLY_TO\",\"isNewest\":true}"
 
+echo "Make another reply in the same tree using the quick mechanism and observe it in the WebSockets..."
+QUICK_REPLY=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST -H "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" --data "NAME=quick&DESCRIPTION=The%20quick%20reply" http://127.0.0.1:8001/quickReply/$KEY1/$NEW_POST)
+requireSubstring "$QUICK_REPLY" "Qm"
+SAMPLE=$(curl -XGET http://127.0.0.1:9006/waitAndGet/1 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$QUICK_REPLY\",\"value\":\"$NEW_POST\",\"isNewest\":true}"
+# Also, wait for the publish to complete.
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Publish IpfsFile("
+INDEX_STATUS1=$((INDEX_STATUS1 + 1))
+STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
+
 echo "Delete this entry, refresh the followee, and then observe that the replyTo disappears from the WebSocket..."
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XDELETE "http://127.0.0.1:8002/home/post/delete/$KEY2/$NEW_POST"
 checkPreviousCommand "DELETE post"
@@ -241,10 +254,10 @@ requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\""
 # ...and the status socket.
 INDEX_STATUS1=$((INDEX_STATUS1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
-requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":5,\"value\":\"Refresh IpfsKey("
+requireSubstring "$STATUS_EVENT" "{\"event\":\"create\",\"key\":6,\"value\":\"Refresh IpfsKey("
 INDEX_STATUS1=$((INDEX_STATUS1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
-requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null"
+requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":6,\"value\":null"
 SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"special\",\"key\":\"Refreshing\",\"value\":null,\"isNewest\":false}"
 SAMPLE=$(curl -XGET http://127.0.0.1:9005/waitAndGet/2 2> /dev/null)
@@ -256,7 +269,7 @@ requireSubstring "$LIST" "[]"
 INDEX_REPLIES1=$((INDEX_REPLIES1 + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9004/waitAndGet/$INDEX_REPLIES1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
-SAMPLE=$(curl -XGET http://127.0.0.1:9006/waitAndGet/1 2> /dev/null)
+SAMPLE=$(curl -XGET http://127.0.0.1:9006/waitAndGet/2 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"
 SAMPLE=$(curl -XGET http://127.0.0.1:9007/waitAndGet/1 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":\"$NEW_POST\",\"value\":null,\"isNewest\":false}"

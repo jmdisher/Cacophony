@@ -258,6 +258,7 @@ public class InteractiveServer
 		));
 		validated.addWebSocketFactory("/draft/audio/upload/{int}/{string}", "audio", new WS_DraftSaveAudio(manager));
 		validated.addDeleteHandler("/draft/audio/{int}", new DELETE_DraftAudio(manager));
+		validated.addPostFormHandler("/quickReply/{KEY}/{CID}", new POST_Form_QuickReply(runner, background));
 		
 		// Followee operations.
 		validated.addGetHandler("/followees/keys", new GET_FolloweeKeys(runner));
