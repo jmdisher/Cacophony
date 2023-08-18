@@ -245,7 +245,7 @@ function addKeyToList(list, key, onPopulate)
 					<div class="col-md-8" ng-show="{{user.known}}">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<button class="btn btn-small btn-danger" ng-click="stopRecommending(user)" ng-show="canChangeRecommendations" ng-disabled="user.isDeleting">Stop Recommending User</button><br />
+						<button class="btn btn-sm btn-danger" ng-click="stopRecommending(user)" ng-show="canChangeRecommendations" ng-disabled="user.isDeleting">Stop Recommending User</button><br />
 					</div>
 					<div class="col-md-12" ng-hide="{{user.known}}">
 						Public key of unknown user: {{user.publicKey}}

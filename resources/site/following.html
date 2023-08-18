@@ -194,7 +194,7 @@ function beginPopulating($scope)
 					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<button class="btn btn-small btn-success" ng-click="requestRefresh(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Refresh</button>Updated: {{user.readableRefreshTime}}<br />
+						<button class="btn btn-sm btn-success" ng-click="requestRefresh(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Refresh</button>Updated: {{user.readableRefreshTime}}<br />
 						<div class="btn-group">
 							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-show="isConnected" ng-disabled="user.isRefreshing">Stop Following User</button>
 							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="stopFollowing(user)">Confirm</a></li></ul>
