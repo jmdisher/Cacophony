@@ -220,8 +220,8 @@ let _template_postMutable = ''
 	+ '	</div>'
 	+ '	<div class="col-md-9">'
 	+ '		{{postTuple.description}}<br />'
-	+ '		<div class="btn-group" role="group" ng-show="(undefined !== dangerName) || enableEdit">'
-	+ '			<div class="btn-group" ng-show="undefined !== dangerName">'
+	+ '		<div class="btn-group" role="group" ng-show="enableDanger || enableEdit">'
+	+ '			<div class="btn-group" ng-show="enableDanger">'
 	+ '				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="isDangerActive">{{dangerName}}</button>'
 	+ '				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="onDanger()">Confirm</a></li></ul>'
 	+ '			</div>'
@@ -239,6 +239,7 @@ GLOBAL_Application.directive('cacoPost', [function()
 		scope: {
 			postTuple: '=postTuple',
 			enableEdit: '=enableEdit',
+			enableDanger: '=enableDanger',
 			dangerName: '@dangerName',
 			onDangerKey: '&onDangerKey',
 		},
