@@ -83,24 +83,23 @@ function postWasLoaded($scope, elt)
 	
 	// We need to get the public key to see if we made this post.
 	// Then, we need to check that user's info to see if this is the feature.
-	$scope.isOurPost = false;
+	$scope.homePublicKey = null;
 	$scope.isFeature = false;
 	REST.GET("/home/channels")
 		.then((response) => response.json())
 		.then((data) => {
 			// See which user is selected (could be none of them).
-			let publicKey = null;
 			for (let user of data)
 			{
 				if (user["isSelected"])
 				{
-					publicKey = user["publicKey"];
+					$scope.homePublicKey = user["publicKey"];
 				}
 			}
-			$scope.isOurPost = ($scope.publisherKey === publicKey);
-			if ($scope.isOurPost)
+			let isOurPost = ($scope.publisherKey === $scope.homePublicKey);
+			if (isOurPost)
 			{
-				GLOBAL_UnknownUserLoader.loadTuple(publicKey).then(userInfo => {
+				GLOBAL_UnknownUserLoader.loadTuple($scope.homePublicKey).then(userInfo => {
 					$scope.isFeature = (userInfo.feature === $scope.elementHash);
 					$scope.$apply();
 				});
@@ -151,6 +150,20 @@ function setupEnvironment($scope)
 		API_getPost($scope.elementHash, true).then(elt => {
 			postWasLoaded($scope, elt);
 		});
+	}
+	$scope.deletePostKey = function(elementHash)
+	{
+		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
+		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + elementHash);
+	}
+	$scope.deleteRoot = function()
+	{
+		// We will send this off and then just redirect to the root page, on response.
+		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + $scope.elementHash)
+			.then(ignored => {
+				window.location.href = "/";
+			})
+		;
 	}
 	$scope.postReply = function()
 	{
@@ -329,16 +342,16 @@ function setupReplyTree($scope)
 		Replies:
 			<!-- We will use a fixed-4 depth and link out to anything beyond that, just to keep the shape of the page sane. -->
 			<div class="row card card-body" ng-repeat="reply in replies">
-				<caco-post ng-hide="reply.isTombstone" post-tuple="reply"></caco-post>
+				<caco-post ng-show="!reply.isTombstone" post-tuple="reply" enable-edit="reply.publisherKey === homePublicKey" enable-danger="reply.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 				<div ng-show="reply.isTombstone">(post deleted/edited)</div>
 				<div class="row card card-body" ng-repeat="reply1 in reply.replies">
-					<caco-post ng-hide="reply1.isTombstone" post-tuple="reply1"></caco-post>
+					<caco-post ng-show="!reply1.isTombstone" post-tuple="reply1" enable-edit="reply1.publisherKey === homePublicKey" enable-danger="reply1.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 					<div ng-show="reply1.isTombstone">(post deleted/edited)</div>
 					<div class="row card card-body" ng-repeat="reply2 in reply1.replies">
-						<caco-post ng-hide="reply2.isTombstone" post-tuple="reply2"></caco-post>
+						<caco-post ng-show="!reply2.isTombstone" post-tuple="reply2" enable-edit="reply2.publisherKey === homePublicKey" enable-danger="reply2.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 						<div ng-show="reply2.isTombstone">(post deleted/edited)</div>
 						<div class="row card card-body" ng-repeat="reply3 in reply2.replies">
-							<caco-post ng-hide="reply3.isTombstone" post-tuple="reply3"></caco-post>
+							<caco-post ng-show="!reply3.isTombstone" post-tuple="reply3" enable-edit="reply3.publisherKey === homePublicKey" enable-danger="reply3.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 							<div ng-show="reply3.isTombstone">(post deleted/edited)</div>
 							<a ng-show="reply3.replies.length > 0" href="play.html?elt={{reply3.elementHash}}">See more of this thread</a>
 						</div>
@@ -359,11 +372,16 @@ function setupReplyTree($scope)
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="addFavourite()">Confirm</a></li></ul>
 			</div>
 			<button type="button" class="btn btn-sm btn-success" ng-click="postReply()">Post a Reply</button>
-			<div class="btn-group" ng-show="isOurPost && !isFeature">
+			<a class="btn btn-sm btn-warning" ng-show="publisherKey === homePublicKey" ng-href="/basic_edit.html?elt={{elementHash}}">Edit Post</a>
+			<div class="btn-group" ng-show="publisherKey === homePublicKey">
+				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Delete post</button>
+				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteRoot()">Confirm</a></li></ul>
+			</div>
+			<div class="btn-group" ng-show="(publisherKey === publicKey) && !isFeature">
 				<button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Set as feature post</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="setAsFeature()">Confirm</a></li></ul>
 			</div>
-			<div ng-show="isOurPost && isFeature">
+			<div ng-show="(publisherKey === publicKey) && isFeature">
 				Note that this is the feature post on your profile.
 			</div>
 		</div>
