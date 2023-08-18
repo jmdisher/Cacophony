@@ -619,21 +619,26 @@ GLOBAL_Application.controller('AppController', function($scope)
 		saveDraft($scope.selectedDraft).then(function(data) {
 			// Now, begin the publish.
 			REST.POST("/draft/publish/" + $scope.homePublicKey + "/" + $scope.selectedDraft.id + "/" + $scope.selectedDraft.type)
-				.then(function(result) {
-					if (result.ok)
+				.then(response => {
+					if (response.ok)
 					{
-						$scope.drafts = $scope.drafts.filter(elt => elt !== $scope.selectedDraft);
-						$scope.selectedDraft = null;
-						$scope.inProgress = false;
-						// NOTE:  The publish operation is still continuing, but in the background (can be seen on the status page).
-						$scope.$apply();
+						return response.text();
 					}
 					else
 					{
-						alert("Error in publish (usually means invalid field such as a missing title)");
-						$scope.inProgress = false;
-						$scope.$apply();
+						throw new Error(response.statusText);
 					}
+				})
+				.then(function(elementHash) {
+					// Just refresh the page to point at this element.
+					$scope.inProgress = false;
+					$scope.$apply();
+					window.location.href = "/play.html?elt=" + elementHash;
+				})
+				.catch(error => {
+					alert("Error in publish (usually means invalid field such as a missing title): " + error.message);
+					$scope.inProgress = false;
+					$scope.$apply();
 				});
 		});
 	}
