@@ -14,6 +14,74 @@
 <script src="./event_api.js" type="text/javascript"></script>
 <script src="./bindings.js" type="text/javascript"></script>
 <script type="text/javascript">
+// We define a directive for the quick replies.
+let _template_quickReply = ''
+	+ '<div>'
+	+ '<a class="btn btn-sm btn-success col-md-3" ng-show="!postTuple.isTombstone && !postTuple.quick.isReplyOpen" ng-click="openReply(postTuple)">Quick Reply</a>'
+	+ '<div ng-show="postTuple.quick.isReplyOpen">'
+	+ '	Replying as <a ng-href="user.html?publicKey={{publicKey}}">{{userName}}</a>:'
+	+ '	<input type="text" class="col-md-3" ng-model="postTuple.quick.title" ng-disabled="postTuple.quick.isPosting" placeholder="Title"></input><br />'
+	+ '	<textarea rows="4" class="col-md-8" ng-model="postTuple.quick.description" ng-disabled="postTuple.quick.isPosting" placeholder="Description"></textarea><br />'
+	+ '	<a class="btn btn-sm btn-success" ng-disabled="postTuple.quick.isPosting" ng-click="setupPost(postTuple)">Post</a>'
+	+ '	<a class="btn btn-sm btn-warning" ng-disabled="postTuple.quick.isPosting" href="publish.html?replyTo={{postTuple.elementHash}}">Open as Full Draft</a>'
+	+ '	<a class="btn btn-sm btn-primary" ng-disabled="postTuple.quick.isPosting" ng-click="cancelReply(postTuple)">Cancel</a>'
+	+ '</div>'
+	+ '</div>'
+;
+GLOBAL_Application.directive('quickReply', [function()
+{
+	// NOTES:
+	return {
+		restrict: 'E',
+		scope: {
+			postTuple: '=postTuple',
+			publicKey: '=publicKey',
+			userName: '=userName',
+			onPost: '&onPost',
+		},
+		replace: true,
+		template: _template_quickReply,
+		link: function(scope, element, attrs)
+		{
+			// Reply UI management.
+			scope.openReply = function(reply)
+			{
+				reply.quick.isReplyOpen = true;
+				// We will set a default title here since we probably have the post loaded, by this point, and we won't when we first see the relationship.
+				let title = reply.name;
+				if (!title.startsWith("Re: "))
+				{
+					title = "Re: " + title;
+				}
+				reply.quick.title = title;
+			}
+			scope.setupPost = function(reply)
+			{
+				reply.quick.isPosting = true;
+				scope.onPost()(scope.publicKey, reply.elementHash, reply.quick.title, reply.quick.description)
+					.then(response => {
+						// We don't care about the content of the response (the new CID), just whether or not it was ok
+						if (response.ok)
+						{
+							reply.quick.isPosting = false;
+							reply.quick.isReplyOpen = false;
+						}
+						else
+						{
+							alert("Error in publish (usually means invalid field such as a missing title)");
+							reply.quick.isPosting = false;
+						}
+						scope.$apply();
+					});
+			}
+			scope.cancelReply = function(reply)
+			{
+				reply.quick.isReplyOpen = false;
+			}
+		}
+	}
+}]);
+
 // GLOBAL_Application is defined in bindings.js.
 GLOBAL_Application.controller('AppController', function($scope)
 {
@@ -24,27 +92,48 @@ GLOBAL_Application.controller('AppController', function($scope)
 function xsrfLoaded($scope)
 {
 	let hashArg = UTILS_readGetVar("elt");
-	$scope.elementHash = hashArg;
+	// Create the root element, much like the replies, so they can be used in the same helpers.
+	$scope.rootElement = {
+		"isTombstone": false,
+		"cached": false,
+		"elementHash": hashArg,
+		"name": "Loading...",
+		"description": "Loading...",
+		"readableDate": "Loading...",
+		"isDeleting": false,
+		"thumbnailUrl": null,
+		"publisherKey": null,
+		"replyTo": null,
+		"replies": [],
+		"quick": {
+			"isReplyOpen": false,
+			"title": "",
+			"description": "",
+			"isPosting": false,
+		},
+	};
+	
 	// We start by loading it without caching and merely present the option in the case where it isn't cached.
-	API_getPost($scope.elementHash, false).then(elt => {
+	API_getPost($scope.rootElement.elementHash, false).then(elt => {
 		postWasLoaded($scope, elt);
 	});
 	setupEnvironment($scope);
 }
 function postWasLoaded($scope, elt)
 {
-	$scope.name = elt["name"];
-	$scope.publisherKey = elt["publisherKey"];
-	$scope.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
-	$scope.discussionUrl = elt["discussionUrl"];
-	$scope.replyTo = elt["replyTo"];
+	$scope.rootElement.name = elt["name"];
+	$scope.rootElement.publisherKey = elt["publisherKey"];
+	$scope.rootElement.readableDate = new Date(elt["publishedSecondsUtc"] * 1000).toLocaleString();
+	$scope.rootElement.discussionUrl = elt["discussionUrl"];
+	$scope.rootElement.replyTo = elt["replyTo"];
+	
 	$scope.discussionHost = null;
-	if (null !== $scope.discussionUrl)
+	if (null !== $scope.rootElement.discussionUrl)
 	{
 		// If this is an invalid URL, we don't want to break the page.
 		try
 		{
-			$scope.discussionHost = new URL($scope.discussionUrl).hostname;
+			$scope.discussionHost = new URL($scope.rootElement.discussionUrl).hostname;
 		}
 		catch (e)
 		{
@@ -84,6 +173,7 @@ function postWasLoaded($scope, elt)
 	// We need to get the public key to see if we made this post.
 	// Then, we need to check that user's info to see if this is the feature.
 	$scope.homePublicKey = null;
+	$scope.homeUserName = null;
 	$scope.isFeature = false;
 	REST.GET("/home/channels")
 		.then((response) => response.json())
@@ -94,13 +184,14 @@ function postWasLoaded($scope, elt)
 				if (user["isSelected"])
 				{
 					$scope.homePublicKey = user["publicKey"];
+					$scope.homeUserName = user["name"];
 				}
 			}
-			let isOurPost = ($scope.publisherKey === $scope.homePublicKey);
+			let isOurPost = ($scope.rootElement.publisherKey === $scope.homePublicKey);
 			if (isOurPost)
 			{
 				GLOBAL_UnknownUserLoader.loadTuple($scope.homePublicKey).then(userInfo => {
-					$scope.isFeature = (userInfo.feature === $scope.elementHash);
+					$scope.isFeature = (userInfo.feature === $scope.rootElement.elementHash);
 					$scope.$apply();
 				});
 			}
@@ -123,7 +214,7 @@ function setupEnvironment($scope)
 			$scope.isFavourite = false;
 			for (let hash of hashArray)
 			{
-				if ($scope.elementHash === hash)
+				if ($scope.rootElement.elementHash === hash)
 				{
 					$scope.isFavourite = true;
 					break;
@@ -135,19 +226,19 @@ function setupEnvironment($scope)
 	{
 		// We will just act like this immediately completed.
 		$scope.isFavourite = true;
-		REST.POST("/favourites/add/" + $scope.elementHash);
+		REST.POST("/favourites/add/" + $scope.rootElement.elementHash);
 	}
 	$scope.deleteFavourite = function(post)
 	{
 		// We will just act like this immediately completed.
 		$scope.isFavourite = false;
-		REST.DELETE("/favourites/remove/" + $scope.elementHash);
+		REST.DELETE("/favourites/remove/" + $scope.rootElement.elementHash);
 	}
 	$scope.populateCache = function()
 	{
 		$scope.isForcingCache = true;
 		// Force cache, this time.
-		API_getPost($scope.elementHash, true).then(elt => {
+		API_getPost($scope.rootElement.elementHash, true).then(elt => {
 			postWasLoaded($scope, elt);
 		});
 	}
@@ -159,20 +250,23 @@ function setupEnvironment($scope)
 	$scope.deleteRoot = function()
 	{
 		// We will send this off and then just redirect to the root page, on response.
-		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + $scope.elementHash)
+		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + $scope.rootElement.elementHash)
 			.then(ignored => {
 				window.location.href = "/";
 			})
 		;
 	}
-	$scope.postReply = function()
+	$scope.postQuickReply = function(publicKey, replyTo, title, description)
 	{
-		// We want to send them over to the publish page with a URL parameter to create a new draft.
-		window.location.href = "publish.html?replyTo=" + $scope.elementHash;
+		let variables = {
+			"NAME": title,
+			"DESCRIPTION": description,
+		};
+		return REST.POST_asForm("/quickReply/" + publicKey + "/" + replyTo, variables);
 	}
 	$scope.setAsFeature = function()
 	{
-		REST.POST("/home/userInfo/feature/" + $scope.publisherKey + "/" + $scope.elementHash)
+		REST.POST("/home/userInfo/feature/" + $scope.rootElement.publisherKey + "/" + $scope.rootElement.elementHash)
 			.then(function() {
 				$scope.isFeature = true;
 				$scope.$apply();
@@ -185,13 +279,12 @@ function setupEnvironment($scope)
 
 function setupReplyTree($scope)
 {
-	$scope.replies = [];
 	let hashToElementMap = {};
-	hashToElementMap[$scope.elementHash] = $scope;
+	hashToElementMap[$scope.rootElement.elementHash] = $scope;
 	let parentToChildArrayMap = {};
-	parentToChildArrayMap[$scope.elementHash] = $scope.replies;
+	parentToChildArrayMap[$scope.rootElement.elementHash] = $scope.rootElement.replies;
 	let childToSiblingsMap = {};
-	EVENTS_API.replyTree($scope.elementHash
+	EVENTS_API.replyTree($scope.rootElement.elementHash
 		// Socket open.
 		, function(socket)
 		{
@@ -220,6 +313,12 @@ function setupReplyTree($scope)
 				"publisherKey": null,
 				"replyTo": parent,
 				"replies": children,
+				"quick": {
+					"isReplyOpen": false,
+					"title": "",
+					"description": "",
+					"isPosting": false,
+				},
 			};
 			hashToElementMap[child] = placeholder;
 			
@@ -240,6 +339,7 @@ function setupReplyTree($scope)
 					"thumbnailUrl": elt["thumbnailUrl"],
 					"replyTo": elt["replyTo"],
 					"replies": placeholder.replies,
+					"quick": placeholder.quick,
 				}
 				hashToElementMap[child] = object;
 				// We need to replace the index due to the earlier mention of $apply.
@@ -270,6 +370,7 @@ function setupReplyTree($scope)
 				"publisherKey": null,
 				"replyTo": null,
 				"replies": original.replies,
+				"quick": original.quick,
 			};
 			let index = siblings.indexOf(original);			
 			siblings[index] = tombstone;
@@ -315,24 +416,24 @@ function setupReplyTree($scope)
 			<center><audio id="audio" controls /></center>
 		</div>
 		<div class="row card card-body" ng-show="cached && (null !== thumbnailUrl) && (null === videoUrl)">
-			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{name}}"/>
+			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{rootElement.name}}"/>
 		</div>
 		<div class="row card card-body" ng-hide="cached">
 			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong><br />
 			<button class="btn btn-success" ng-disabled="isForcingCache" ng-click="populateCache()">Populate Cache</button><br />
 		</div>
 		<div class="row card card-body">
-			<strong>{{name}}</strong><br />
-			<span>Posted by <caco-user-link public-key="publisherKey"></caco-user-link> <em>({{readableDate}})</em></span><br />
-			<span ng-show="null !== replyTo">Reply to:  <caco-post-small cid="replyTo"></caco-post-small></span><br />
+			<strong>{{rootElement.name}}</strong><br />
+			<span>Posted by <caco-user-link public-key="rootElement.publisherKey"></caco-user-link> <em>({{rootElement.readableDate}})</em></span><br />
+			<span ng-show="null !== rootElement.replyTo">Reply to:  <caco-post-small cid="rootElement.replyTo"></caco-post-small></span><br />
 		</div>
 	</div>
 	<div class="row justify-content-md-center">
 		<div class="col-md-6">
 			<div class="row card card-body" id="description">
 			</div>
-			<div class="row card card-body" ng-show="discussionUrl">
-				<a ng-href="{{discussionUrl}}">View discussion on {{discussionHost}}</a>
+			<div class="row card card-body" ng-show="rootElement.discussionUrl">
+				<a ng-href="{{rootElement.discussionUrl}}">View discussion on {{discussionHost}}</a>
 			</div>
 		</div>
 	</div>
@@ -341,19 +442,22 @@ function setupReplyTree($scope)
 		<div class="col-md-10">
 		Replies:
 			<!-- We will use a fixed-4 depth and link out to anything beyond that, just to keep the shape of the page sane. -->
-			<div class="row card card-body" ng-repeat="reply in replies">
+			<div class="row card card-body" ng-repeat="reply in rootElement.replies">
 				<caco-post ng-show="!reply.isTombstone" post-tuple="reply" enable-edit="reply.publisherKey === homePublicKey" enable-danger="reply.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+				<quick-reply post-tuple="reply" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 				<div ng-show="reply.isTombstone">(post deleted/edited)</div>
 				<div class="row card card-body" ng-repeat="reply1 in reply.replies">
 					<caco-post ng-show="!reply1.isTombstone" post-tuple="reply1" enable-edit="reply1.publisherKey === homePublicKey" enable-danger="reply1.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+					<quick-reply post-tuple="reply1" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 					<div ng-show="reply1.isTombstone">(post deleted/edited)</div>
 					<div class="row card card-body" ng-repeat="reply2 in reply1.replies">
 						<caco-post ng-show="!reply2.isTombstone" post-tuple="reply2" enable-edit="reply2.publisherKey === homePublicKey" enable-danger="reply2.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+						<quick-reply post-tuple="reply2" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 						<div ng-show="reply2.isTombstone">(post deleted/edited)</div>
 						<div class="row card card-body" ng-repeat="reply3 in reply2.replies">
 							<caco-post ng-show="!reply3.isTombstone" post-tuple="reply3" enable-edit="reply3.publisherKey === homePublicKey" enable-danger="reply3.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 							<div ng-show="reply3.isTombstone">(post deleted/edited)</div>
-							<a ng-show="reply3.replies.length > 0" href="play.html?elt={{reply3.elementHash}}">See more of this thread</a>
+							<a href="play.html?elt={{reply3.elementHash}}">See more of this thread or reply</a>
 						</div>
 					</div>
 				</div>
@@ -363,6 +467,7 @@ function setupReplyTree($scope)
 	<hr />
 	<div class="row justify-content-md-center">
 		<div class="col-md-6">
+			<quick-reply post-tuple="rootElement" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 			<div class="btn-group" ng-show="true === isFavourite">
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Remove from favourites</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteFavourite()">Confirm</a></li></ul>
@@ -371,17 +476,16 @@ function setupReplyTree($scope)
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Add to favourites</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="addFavourite()">Confirm</a></li></ul>
 			</div>
-			<button type="button" class="btn btn-sm btn-success" ng-click="postReply()">Post a Reply</button>
-			<a class="btn btn-sm btn-warning" ng-show="publisherKey === homePublicKey" ng-href="/basic_edit.html?elt={{elementHash}}">Edit Post</a>
-			<div class="btn-group" ng-show="publisherKey === homePublicKey">
+			<a class="btn btn-sm btn-warning" ng-show="rootElement.publisherKey === homePublicKey" ng-href="/basic_edit.html?elt={{rootElement.elementHash}}">Edit Post</a>
+			<div class="btn-group" ng-show="rootElement.publisherKey === homePublicKey">
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Delete post</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteRoot()">Confirm</a></li></ul>
 			</div>
-			<div class="btn-group" ng-show="(publisherKey === publicKey) && !isFeature">
+			<div class="btn-group" ng-show="(rootElement.publisherKey === publicKey) && !isFeature">
 				<button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Set as feature post</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="setAsFeature()">Confirm</a></li></ul>
 			</div>
-			<div ng-show="(publisherKey === publicKey) && isFeature">
+			<div ng-show="(rootElement.publisherKey === publicKey) && isFeature">
 				Note that this is the feature post on your profile.
 			</div>
 		</div>
