@@ -168,6 +168,9 @@ function verifySwarmWorks()
 			exit 1
 		fi
 	fi
+	# Unpin this from both systems.
+	IPFS_PATH="$P_REPO1" "$P_PATH_TO_IPFS" pin rm "$HASH_DATE" >& /dev/null
+	IPFS_PATH="$P_REPO2" "$P_PATH_TO_IPFS" pin rm "$HASH_DATE" >& /dev/null
 	
 	# Now we verify that we can go from 2 to 1 (we give this one a longer timeout since this is expected to pass).
 	echo "Constant" > /tmp/const_test
@@ -179,6 +182,9 @@ function verifySwarmWorks()
 		echo "Reverse swarm stability failed!"
 		exit 1
 	fi
+	# Unpin this from both systems.
+	IPFS_PATH="$P_REPO1" "$P_PATH_TO_IPFS" pin rm "$HASH_CONST" >& /dev/null
+	IPFS_PATH="$P_REPO2" "$P_PATH_TO_IPFS" pin rm "$HASH_CONST" >& /dev/null
 	RET="$P_PID1"
 }
 

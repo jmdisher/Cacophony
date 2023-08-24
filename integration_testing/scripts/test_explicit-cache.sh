@@ -24,7 +24,6 @@ rm -rf "$USER2"
 cp "$PATH_TO_JAR" Cacophony.jar
 
 REPO1=$(getIpfsRepoPath 1)
-R2PO1=$(getIpfsRepoPath 2)
 
 setupIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 1
 setupIpfsInstance "$PATH_TO_IPFS" "$RESOURCES" 2
@@ -39,14 +38,18 @@ echo "Pausing for startup..."
 waitForIpfsStart "$PATH_TO_IPFS" 1
 waitForIpfsStart "$PATH_TO_IPFS" 2
 
+# Verify that the swarm is stable.
+verifySwarmWorks "$PATH_TO_IPFS" "$PID1"
+PID1="$RET"
+
 echo "Count the number of pins (by default, the system seems to start with 1, as of 0.20.0)..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "1"
 
 echo "Create a channel on each node..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --createNewChannel
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --createNewChannel >& /dev/null
 checkPreviousCommand "createNewChannel1"
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --createNewChannel
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --createNewChannel >& /dev/null
 checkPreviousCommand "createNewChannel2"
 
 # Also, get the public keys.
@@ -56,9 +59,9 @@ echo "User1: $PUBLIC_KEY1"
 echo "User2: $PUBLIC_KEY2"
 
 echo "Set the names for each channel so we can tell them apart..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --updateDescription --name "user 1"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --updateDescription --name "user 1" >& /dev/null
 checkPreviousCommand "update 1"
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --updateDescription --name "user 2"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --updateDescription --name "user 2" >& /dev/null
 checkPreviousCommand "update 2"
 
 echo "Count the pins after the creation (6 = 1 + 5 (index, recommendations, records, description, pic))..."
@@ -66,19 +69,25 @@ LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "6"
 
 echo "Fetch information about the other user and observe the pins created (8 = 6 + 2 (other description, other index))..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2" >& /dev/null
 checkPreviousCommand "update 1"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "8"
 
-echo "Do something mundane to prove that the user data has been purged on the next start-up and then try to refetch..."
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey >& /dev/null
+echo "Make a post and fetch that so we can see it isn't impacted by other explicit cache behaviour..."
+POST_CID=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "post" --description "nothing interesting" | grep "New element" | cut -d "(" -f 2 | cut -d ")" -f 1)
+
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --showPost --elementCid "$POST_CID" >& /dev/null
+checkPreviousCommand "show post"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "6"
-CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2"
+# Note that this will give us 7 because it will implicitly purge the user entry: 8 - 2 (description and index) + 1 (post).
+requireSubstring "$LIST_SIZE" "7"
+
+echo "Now, refetch the purged user entry..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2" >& /dev/null
 checkPreviousCommand "update 1"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "8"
+requireSubstring "$LIST_SIZE" "9"
 
 
 kill $PID1
