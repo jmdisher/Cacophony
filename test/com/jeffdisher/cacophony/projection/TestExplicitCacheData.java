@@ -156,6 +156,33 @@ public class TestExplicitCacheData
 		Assert.assertEquals(6, unpinCount[0]);
 	}
 
+	@Test
+	public void userPurge() throws Throwable
+	{
+		// In this test, we want to make sure that the user info purge works as expected.
+		ExplicitCacheData start = new ExplicitCacheData();
+		_addStreamRecord(start, F2, F2, null, null, 5L);
+		start.addUserInfo(F5, F2, F3, F4, 10L);
+		start.addUserInfo(F1, F2, F3, null, 10L);
+		ExplicitCacheData explicitCache = _codec(start);
+		Assert.assertNotNull(explicitCache.getUserInfo(F5));
+		Assert.assertNotNull(explicitCache.getUserInfo(F1));
+		Assert.assertNotNull(explicitCache.getRecordInfo(F2));
+		
+		// Verify that purging the users gives us the correct CIDs and leaves the cache usable.
+		int[] unpins = new int[1];
+		explicitCache.purgeAllUserInfo((IpfsFile unpin) -> unpins[0] += 1);
+		Assert.assertEquals(7, unpins[0]);
+		Assert.assertNull(explicitCache.getUserInfo(F5));
+		Assert.assertNull(explicitCache.getUserInfo(F1));
+		Assert.assertNotNull(explicitCache.getRecordInfo(F2));
+		
+		ExplicitCacheData later = _codec(explicitCache);
+		Assert.assertNull(later.getUserInfo(F5));
+		Assert.assertNull(later.getUserInfo(F1));
+		Assert.assertNotNull(later.getRecordInfo(F2));
+	}
+
 
 	private static byte[] _serialize(ExplicitCacheData start) throws IOException
 	{

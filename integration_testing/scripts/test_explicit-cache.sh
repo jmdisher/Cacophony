@@ -71,6 +71,15 @@ checkPreviousCommand "update 1"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "8"
 
+echo "Do something mundane to prove that the user data has been purged on the next start-up and then try to refetch..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --getPublicKey >& /dev/null
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "6"
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2"
+checkPreviousCommand "update 1"
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "8"
+
 
 kill $PID1
 kill $PID2

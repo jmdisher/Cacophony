@@ -2,6 +2,8 @@ package com.jeffdisher.cacophony.data;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -17,7 +19,9 @@ import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -135,6 +139,31 @@ public class LocalDataModel
 					.toArray((int size) -> new IpfsFile[size])
 			;
 			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
+			
+			// In preparation for the change to the explicit cache user info shape, purge all of the user info.
+			List<FutureVoid> unpinFutures = new ArrayList<>();
+			explicitCache.purgeAllUserInfo((IpfsFile cid) -> {
+				Assert.assertTrue(pinCache.isPinned(cid));
+				pinCache.delRef(cid);
+				if (!pinCache.isPinned(cid))
+				{
+					// We need to delete this on the node.
+					unpinFutures.add(scheduler.unpin(cid));
+				}
+			});
+			for (FutureVoid future : unpinFutures)
+			{
+				try
+				{
+					future.get();
+				}
+				catch (IpfsConnectionException e)
+				{
+					// For some reason (at least in 0.20.0), this seems to give us HTTP 500 but does actually correctly perform the unpin.
+				}
+				
+			}
+			
 			return new LocalDataModel(stats
 					, fileSystem
 					, channels
