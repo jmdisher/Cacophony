@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
-import com.jeffdisher.cacophony.data.local.v3.Draft;
-import com.jeffdisher.cacophony.data.local.v3.SizedElement;
+import com.jeffdisher.cacophony.data.local.v4.Draft;
+import com.jeffdisher.cacophony.data.local.v4.SizedElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 

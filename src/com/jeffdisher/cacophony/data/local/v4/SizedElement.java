@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.utils.Assert;

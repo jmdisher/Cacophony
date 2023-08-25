@@ -1,8 +1,10 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
+import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -43,10 +45,15 @@ public record Opcode_FavouriteStreamRecord(IpfsFile streamCid, IpfsFile thumbnai
 	}
 
 	@Override
+	public void applyV3(OpcodeContextV3 context)
+	{
+		commonApply(context.favouritesCache());
+	}
+
+	@Override
 	public void apply(OpcodeContext context)
 	{
-		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
-		context.favouritesCache().addStreamRecord(this.streamCid, info);
+		commonApply(context.favouritesCache());
 	}
 
 	@Override
@@ -57,5 +64,12 @@ public record Opcode_FavouriteStreamRecord(IpfsFile streamCid, IpfsFile thumbnai
 		serializer.writeCid(this.videoCid);
 		serializer.writeCid(this.audioCid);
 		serializer.writeLong(this.combinedSizeBytes);
+	}
+
+
+	private void commonApply(FavouritesCacheData favouritesCache)
+	{
+		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
+		favouritesCache.addStreamRecord(this.streamCid, info);
 	}
 }

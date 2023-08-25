@@ -2,9 +2,9 @@ package com.jeffdisher.cacophony.projection;
 
 import java.io.IOException;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
-import com.jeffdisher.cacophony.data.local.v3.Opcode_SetPrefsInt;
-import com.jeffdisher.cacophony.data.local.v3.Opcode_SetPrefsLong;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsInt;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsLong;
 
 
 /**

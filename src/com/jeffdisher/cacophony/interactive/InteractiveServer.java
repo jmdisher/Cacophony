@@ -19,7 +19,7 @@ import com.jeffdisher.cacophony.caches.ReplyForest;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.data.local.v3.Draft;
+import com.jeffdisher.cacophony.data.local.v4.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;

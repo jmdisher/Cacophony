@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

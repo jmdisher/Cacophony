@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
-import com.jeffdisher.cacophony.data.local.v3.Opcode_DefineChannel;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_DefineChannel;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;

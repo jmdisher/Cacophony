@@ -1,7 +1,9 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -36,11 +38,15 @@ public record Opcode_AddFolloweeElement(IpfsKey followeeKey, IpfsFile elementHas
 	}
 
 	@Override
+	public void applyV3(OpcodeContextV3 context)
+	{
+		commonApply(context.followees());
+	}
+
+	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.followees().addElement(this.followeeKey
-				, new FollowingCacheElement(this.elementHash, this.imageHash, this.leafHash, this.combinedSizeBytes)
-		);
+		commonApply(context.followees());
 	}
 
 	@Override
@@ -51,5 +57,13 @@ public record Opcode_AddFolloweeElement(IpfsKey followeeKey, IpfsFile elementHas
 		serializer.writeCid(this.imageHash);
 		serializer.writeCid(this.leafHash);
 		serializer.writeLong(this.combinedSizeBytes);
+	}
+
+
+	private void commonApply(FolloweeData followees)
+	{
+		followees.addElement(this.followeeKey
+				, new FollowingCacheElement(this.elementHash, this.imageHash, this.leafHash, this.combinedSizeBytes)
+		);
 	}
 }

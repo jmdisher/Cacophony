@@ -11,8 +11,8 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
-import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
@@ -268,8 +268,8 @@ public class TestFolloweeData
 		FolloweeData followees = FolloweeData.createEmpty();
 		FavouritesCacheData favouritesCache = new FavouritesCacheData();
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, favouritesCache, explicitCache, null);
-		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(byteArray), context);
+		OpcodeContextV3 context = new OpcodeContextV3(channelData, prefs, followees, favouritesCache, explicitCache, null);
+		OpcodeCodec.decodeWholeStreamV3(new ByteArrayInputStream(byteArray), context);
 		return followees;
 	}
 }

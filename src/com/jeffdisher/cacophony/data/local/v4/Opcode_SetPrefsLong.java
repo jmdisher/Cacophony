@@ -1,7 +1,8 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -27,6 +28,45 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 	public OpcodeType type()
 	{
 		return TYPE;
+	}
+
+	@Override
+	public void applyV3(OpcodeContextV3 context)
+	{
+		PrefsData prefs = context.prefs();
+		Assert.assertTrue(null != prefs);
+		if (this.key.equals(PrefsData.LONG_FOLLOW_CACHE_BYTES))
+		{
+			prefs.followCacheTargetBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_REPUBLISH_INTERVAL_MILLIS))
+		{
+			prefs.republishIntervalMillis = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_REFRESH_MILLIS))
+		{
+			prefs.followeeRefreshMillis = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_EXPLICIT_CACHE_BYTES))
+		{
+			prefs.explicitCacheTargetBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_THUMBNAIL_BYTES))
+		{
+			prefs.followeeRecordThumbnailMaxBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_AUDIO_BYTES))
+		{
+			prefs.followeeRecordAudioMaxBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_VIDEO_BYTES))
+		{
+			prefs.followeeRecordVideoMaxBytes = this.value;
+		}
+		else
+		{
+			throw Assert.unreachable();
+		}
 	}
 
 	@Override
@@ -64,7 +104,8 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		}
 		else
 		{
-			throw Assert.unreachable();
+			// In version 4, we will allow unmatched prefs data - it will just default when the update, next.
+			System.err.println("WARNING:  Dropping unknown prefs key: " + this.key);
 		}
 	}
 

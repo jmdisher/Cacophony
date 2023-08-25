@@ -7,6 +7,12 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_AddFolloweeElement;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_DefineChannel;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_SetFolloweeState;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsInt;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsLong;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
@@ -36,10 +42,10 @@ public class TestV3Data
 		FolloweeData followees = null;
 		FavouritesCacheData favouritesCache = null;
 		ExplicitCacheData explicitCache = null;
-		OpcodeContext context = new OpcodeContext(channels, prefs, followees, favouritesCache, explicitCache, null);
+		OpcodeContextV3 context = new OpcodeContextV3(channels, prefs, followees, favouritesCache, explicitCache, null);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
-			OpcodeCodec.decodeWholeStream(input, context);
+			OpcodeCodec.decodeWholeStreamV3(input, context);
 		}
 		
 		Assert.assertEquals(1, channels.getKeyNames().size());
@@ -67,10 +73,10 @@ public class TestV3Data
 		FolloweeData followees = FolloweeData.createEmpty();
 		FavouritesCacheData favouritesCache = null;
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(channels, prefs, followees, favouritesCache, explicitCache, null);
+		OpcodeContextV3 context = new OpcodeContextV3(channels, prefs, followees, favouritesCache, explicitCache, null);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
-			OpcodeCodec.decodeWholeStream(input, context);
+			OpcodeCodec.decodeWholeStreamV3(input, context);
 		}
 		
 		Assert.assertEquals(2, followees.getAllKnownFollowees().size());

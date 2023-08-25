@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -10,6 +10,8 @@ import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfoV3;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -39,9 +41,10 @@ public class OpcodeCodec
 		Opcode_AddFolloweeElement.register(_OPCODE_TABLE);
 		Opcode_SetPrefsInt.register(_OPCODE_TABLE);
 		Opcode_SetPrefsLong.register(_OPCODE_TABLE);
-		Opcode_ExplicitUserInfo.register(_OPCODE_TABLE);
+		Opcode_ExplicitUserInfoV3.register(_OPCODE_TABLE);
 		Opcode_ExplicitStreamRecord.register(_OPCODE_TABLE);
 		Opcode_FavouriteStreamRecord.register(_OPCODE_TABLE);
+		Opcode_ExplicitUserInfo.register(_OPCODE_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _OPCODE_TABLE.length; ++i)
@@ -60,6 +63,39 @@ public class OpcodeCodec
 	public static OpcodeCodec.Writer createOutputWriter(OutputStream output) throws IOException
 	{
 		return new OpcodeCodec.Writer(new GZIPOutputStream(output));
+	}
+
+	/**
+	 * Decodes the previously-written V3 stream from input, applying the opcodes found to the given V3 context.
+	 * 
+	 * @param input The stream used for input.
+	 * @param context Where the V3 opcodes will be applied as they are read.
+	 * @throws IOException Something went wrong reading the stream.
+	 */
+	public static void decodeWholeStreamV3(InputStream input, OpcodeContextV3 context) throws IOException
+	{
+		try (GZIPInputStream stream = new GZIPInputStream(input))
+		{
+			// We loop until EOF.
+			while (true)
+			{
+				byte[] header = stream.readNBytes(HEADER_SIZE);
+				ByteBuffer wrap = ByteBuffer.wrap(header);
+				int ord = wrap.getInt();
+				int length = wrap.getInt();
+				byte[] frame = stream.readNBytes(length);
+				IDataOpcode opcode = _OPCODE_TABLE[ord].apply(new OpcodeDeserializer(ByteBuffer.wrap(frame)));
+				opcode.applyV3(context);
+			}
+		}
+		catch (BufferUnderflowException e)
+		{
+			// This is just a normal exit.
+		}
+		catch (IOException e)
+		{
+			throw e;
+		}
 	}
 
 	/**

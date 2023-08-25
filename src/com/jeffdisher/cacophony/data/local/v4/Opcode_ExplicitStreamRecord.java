@@ -1,8 +1,10 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
+import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 
@@ -43,10 +45,15 @@ public record Opcode_ExplicitStreamRecord(IpfsFile streamCid, IpfsFile thumbnail
 	}
 
 	@Override
+	public void applyV3(OpcodeContextV3 context)
+	{
+		commonApply(context.explicitCache());
+	}
+
+	@Override
 	public void apply(OpcodeContext context)
 	{
-		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
-		context.explicitCache().addStreamRecord(this.streamCid, info);
+		commonApply(context.explicitCache());
 	}
 
 	@Override
@@ -57,5 +64,12 @@ public record Opcode_ExplicitStreamRecord(IpfsFile streamCid, IpfsFile thumbnail
 		serializer.writeCid(this.videoCid);
 		serializer.writeCid(this.audioCid);
 		serializer.writeLong(this.combinedSizeBytes);
+	}
+
+
+	private void commonApply(ExplicitCacheData explicitCache)
+	{
+		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
+		explicitCache.addStreamRecord(this.streamCid, info);
 	}
 }

@@ -11,8 +11,8 @@ import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
-import com.jeffdisher.cacophony.data.local.v3.Draft;
-import com.jeffdisher.cacophony.data.local.v3.SizedElement;
+import com.jeffdisher.cacophony.data.local.v4.Draft;
+import com.jeffdisher.cacophony.data.local.v4.SizedElement;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;

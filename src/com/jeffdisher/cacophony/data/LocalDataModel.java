@@ -9,8 +9,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
-import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
@@ -121,14 +121,14 @@ public class LocalDataModel
 				throw new UsageException("Local storage opcode log file is missing");
 			}
 			
-			OpcodeContext context = new OpcodeContext(ChannelData.create()
+			OpcodeContextV3 context = new OpcodeContextV3(ChannelData.create()
 					, PrefsData.defaultPrefs()
 					, FolloweeData.createEmpty()
 					, new FavouritesCacheData()
 					, new ExplicitCacheData()
 					, new ArrayList<>()
 			);
-			OpcodeCodec.decodeWholeStream(opcodeLog, context);
+			OpcodeCodec.decodeWholeStreamV3(opcodeLog, context);
 			ChannelData channels = context.channelData();
 			PrefsData prefs = context.prefs();
 			FolloweeData followees = context.followees();
@@ -297,7 +297,7 @@ public class LocalDataModel
 				globalPrefs.serializeToOpcodeWriter(writer);
 				followIndex.serializeToOpcodeWriter(writer);
 				favouritesCache.serializeToOpcodeWriter(writer);
-				explicitCache.serializeToOpcodeWriter(writer);
+				explicitCache.serializeToOpcodeWriterV3(writer);
 			}
 			atomic.commit();
 		}

@@ -2,7 +2,13 @@ package com.jeffdisher.cacophony.data.local.v3;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v4.IDataOpcode;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeDeserializer;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeSerializer;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeType;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -17,9 +23,9 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  * NOTE:  Even though all of this data can be derived from the indexCid, the other elements are included to simplify
  * startup.
  */
-public record Opcode_ExplicitUserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) implements IDataOpcode
+public record Opcode_ExplicitUserInfoV3(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) implements IDataOpcode
 {
-	public static final OpcodeType TYPE = OpcodeType.EXPLICIT_USER_INFO;
+	public static final OpcodeType TYPE = OpcodeType.DEPRECATED_V3_EXPLICIT_USER_INFO;
 
 	public static void register(Function<OpcodeDeserializer, IDataOpcode>[] opcodeTable)
 	{
@@ -29,7 +35,7 @@ public record Opcode_ExplicitUserInfo(IpfsFile indexCid, IpfsFile recommendation
 			IpfsFile descriptionCid = deserializer.readCid();
 			IpfsFile userPicCid = deserializer.readCid();
 			long combinedSizeBytes = deserializer.readLong();
-			return new Opcode_ExplicitUserInfo(indexCid, recommendationsCid, descriptionCid, userPicCid, combinedSizeBytes);
+			return new Opcode_ExplicitUserInfoV3(indexCid, recommendationsCid, descriptionCid, userPicCid, combinedSizeBytes);
 		};
 	}
 
@@ -41,7 +47,7 @@ public record Opcode_ExplicitUserInfo(IpfsFile indexCid, IpfsFile recommendation
 	}
 
 	@Override
-	public void apply(OpcodeContext context)
+	public void applyV3(OpcodeContextV3 context)
 	{
 		// NOTE:  We want to drop these CIDs since the ExplicitCacheData now needs more information for user info.
 		context.unpinsToRationalize().add(this.indexCid);
@@ -51,6 +57,13 @@ public record Opcode_ExplicitUserInfo(IpfsFile indexCid, IpfsFile recommendation
 		{
 			context.unpinsToRationalize().add(this.userPicCid);
 		}
+	}
+
+	@Override
+	public void apply(OpcodeContext context)
+	{
+		// This opcode does NOT appear in V4 data streams.
+		throw Assert.unreachable();
 	}
 
 	@Override

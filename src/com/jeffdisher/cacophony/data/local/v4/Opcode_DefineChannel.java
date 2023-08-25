@@ -1,7 +1,9 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -37,9 +39,15 @@ public record Opcode_DefineChannel(String keyName, IpfsKey publicKey, IpfsFile l
 	}
 
 	@Override
+	public void applyV3(OpcodeContextV3 context)
+	{
+		commonApply(context.channelData());
+	}
+
+	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.channelData().initializeChannelState(this.keyName, this.publicKey, this.latestRoot);
+		commonApply(context.channelData());
 	}
 
 	@Override
@@ -53,5 +61,11 @@ public record Opcode_DefineChannel(String keyName, IpfsKey publicKey, IpfsFile l
 		serializer.writeString(this.keyName);
 		serializer.writeKey(this.publicKey);
 		serializer.writeCid(this.latestRoot);
+	}
+
+
+	private void commonApply(ChannelData channelData)
+	{
+		channelData.initializeChannelState(this.keyName, this.publicKey, this.latestRoot);
 	}
 }

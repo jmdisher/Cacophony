@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Function;
 
-import com.jeffdisher.cacophony.data.local.v3.Draft;
+import com.jeffdisher.cacophony.data.local.v4.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.utils.MiscHelpers;

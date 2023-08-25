@@ -1,7 +1,9 @@
-package com.jeffdisher.cacophony.data.local.v3;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.util.function.Function;
 
+import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -34,9 +36,15 @@ public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, l
 	}
 
 	@Override
+	public void applyV3(OpcodeContextV3 context)
+	{
+		commonApply(context.followees());
+	}
+
+	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.followees().createNewFollowee(this.followeeKey, this.indexRoot, this.lastPollMillis);
+		commonApply(context.followees());
 	}
 
 	@Override
@@ -49,5 +57,11 @@ public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, l
 		serializer.writeKey(this.followeeKey);
 		serializer.writeCid(this.indexRoot);
 		serializer.writeLong(this.lastPollMillis);
+	}
+
+
+	private void commonApply(FolloweeData followees)
+	{
+		followees.createNewFollowee(this.followeeKey, this.indexRoot, this.lastPollMillis);
 	}
 }

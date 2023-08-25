@@ -9,9 +9,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
-import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitStreamRecord;
-import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfo;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfoV3;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_ExplicitStreamRecord;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_ExplicitUserInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
@@ -41,6 +42,35 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	}
 
 	/**
+	 * Serializes the contents of the receiver into the given V3 writer.
+	 * 
+	 * @param writer The writer which will consume the V3 opcodes.
+	 * @throws IOException The writer encountered an error.
+	 */
+	public void serializeToOpcodeWriterV3(OpcodeCodec.Writer writer) throws IOException
+	{
+		// We walk the LRU in-order from least to most recently used since that is how we re-add them.
+		for (Object object : _lru)
+		{
+			// Check what this is.
+			if (object instanceof IpfsKey)
+			{
+				IpfsKey elt = (IpfsKey) object;
+				Assert.assertTrue(_userInfo.containsKey(elt));
+				UserInfo info = _userInfo.get(elt);
+				writer.writeOpcode(new Opcode_ExplicitUserInfoV3(info.indexCid, info.recommendationsCid, info.descriptionCid, info.userPicCid, info.combinedSizeBytes));
+			}
+			else
+			{
+				IpfsFile elt = (IpfsFile) object;
+				Assert.assertTrue(_recordInfo.containsKey(elt));
+				CachedRecordInfo info = _recordInfo.get(elt);
+				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
+			}
+		}
+	}
+
+	/**
 	 * Serializes the contents of the receiver into the given writer.
 	 * 
 	 * @param writer The writer which will consume the opcodes.
@@ -57,7 +87,16 @@ public class ExplicitCacheData implements IExplicitCacheReading
 				IpfsKey elt = (IpfsKey) object;
 				Assert.assertTrue(_userInfo.containsKey(elt));
 				UserInfo info = _userInfo.get(elt);
-				writer.writeOpcode(new Opcode_ExplicitUserInfo(info.indexCid, info.recommendationsCid, info.descriptionCid, info.userPicCid, info.combinedSizeBytes));
+				writer.writeOpcode(new Opcode_ExplicitUserInfo(info.publicKey
+						, info.lastFetchAttemptMillis
+						, info.lastFetchSuccessMillis
+						, info.indexCid
+						, info.recommendationsCid
+						, info.recordsCid
+						, info.descriptionCid
+						, info.userPicCid
+						, info.combinedSizeBytes
+				));
 			}
 			else
 			{

@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import java.io.IOException;
 
 import com.jeffdisher.breakwater.StringMultiMap;
-import com.jeffdisher.cacophony.data.local.v3.Draft;
+import com.jeffdisher.cacophony.data.local.v4.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 
 import jakarta.servlet.http.HttpServletRequest;

@@ -10,7 +10,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.local.v3.Draft;
+import com.jeffdisher.cacophony.data.local.v4.Draft;
 
 
 public class TestDraftWrapper
