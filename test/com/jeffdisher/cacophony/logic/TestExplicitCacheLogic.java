@@ -436,6 +436,38 @@ public class TestExplicitCacheLogic
 		scheduler.shutdown();
 	}
 
+	@Test
+	public void purge() throws Throwable
+	{
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = _createContext(node, scheduler);
+		
+		// Populate the cache.
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNotNull(record);
+		
+		// Check the size.
+		long size = ExplicitCacheLogic.getExplicitCacheSize(context);
+		Assert.assertEquals(377L, size);
+		
+		// Purge.
+		ExplicitCacheLogic.purgeCacheFullyAndGc(context);
+		
+		// Check the cache.
+		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context, cid));
+		
+		// Check the size.
+		size = ExplicitCacheLogic.getExplicitCacheSize(context);
+		Assert.assertEquals(0L, size);
+		
+		scheduler.shutdown();
+	}
+
 
 	private static void _populateWithEmpty(MockSingleNode node, IpfsKey publishKey, byte[] userPic) throws Throwable
 	{

@@ -117,7 +117,7 @@ public class ExplicitCacheLogic
 					
 					// Purge any overflow.
 					PrefsData prefs = access.readPrefs();
-					_purgeExcess(access, data, prefs);
+					_purgeExcess(access, data, prefs.explicitCacheTargetBytes);
 				}
 				else
 				{
@@ -195,7 +195,7 @@ public class ExplicitCacheLogic
 					
 					// Purge any overflow.
 					PrefsData prefs = access.readPrefs();
-					_purgeExcess(access, data, prefs);
+					_purgeExcess(access, data, prefs.explicitCacheTargetBytes);
 				}
 				else
 				{
@@ -245,8 +245,27 @@ public class ExplicitCacheLogic
 		}
 	}
 
+	/**
+	 * Purges everything from the explicit cache and requests a GC of the IPFS node.
+	 * 
+	 * @param context The context.
+	 */
+	public static void purgeCacheFullyAndGc(Context context)
+	{
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			ExplicitCacheData data = access.writableExplicitCache();
+			_purgeExcess(access, data, 0L);
+			access.requestIpfsGc();
+		}
+		catch (IpfsConnectionException e)
+		{
+			System.err.println("WARNING:  IPFS GC failed: " + e.getLocalizedMessage());
+		}
+	}
 
-	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, PrefsData prefs)
+
+	private static void _purgeExcess(IWritingAccess access, ExplicitCacheData data, long cacheLimitInBytes)
 	{
 		data.purgeCacheToSize((IpfsFile evict) -> {
 			try
@@ -258,7 +277,7 @@ public class ExplicitCacheLogic
 				// This is just a local contact problem so just log it.
 				System.err.println("WARNING:  Failure in unpin, will need to be removed manually: " + evict);
 			}
-		}, prefs.explicitCacheTargetBytes);
+		}, cacheLimitInBytes);
 	}
 
 	private static ExplicitCacheData.UserInfo _loadUserInfo(ConcurrentTransaction transaction, IpfsFile root) throws ProtocolDataException, IpfsConnectionException

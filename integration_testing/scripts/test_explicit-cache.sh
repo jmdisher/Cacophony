@@ -89,6 +89,12 @@ checkPreviousCommand "update 1"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "9"
 
+echo "Verify that purging the entire cache works..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --purgeExplicitCache >& /dev/null
+checkPreviousCommand "purgeExplicitCache"
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "6"
+
 
 kill $PID1
 kill $PID2

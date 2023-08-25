@@ -25,6 +25,7 @@ import com.jeffdisher.cacophony.commands.ListChannelsCommand;
 import com.jeffdisher.cacophony.commands.ListFavouritesCommand;
 import com.jeffdisher.cacophony.commands.ListFolloweesCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
+import com.jeffdisher.cacophony.commands.PurgeExplicitCacheCommand;
 import com.jeffdisher.cacophony.commands.QuickstartCommand;
 import com.jeffdisher.cacophony.commands.ReadDescriptionCommand;
 import com.jeffdisher.cacophony.commands.RebroadcastCommand;
@@ -517,6 +518,14 @@ public class CommandParser
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
 			return new CleanCacheCommand();
+		}),
+		PURGE_EXPLICIT_CACHE(true, "--purgeExplicitCache"
+				, new ArgParameter[0]
+				, new ArgParameter[0]
+				, "Removes all entries from the explicit cache, unpinning where required."
+				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
+		{
+			return new PurgeExplicitCacheCommand();
 		}),
 		LIST_CHANNELS(true, "--listChannels"
 				, new ArgParameter[0]
