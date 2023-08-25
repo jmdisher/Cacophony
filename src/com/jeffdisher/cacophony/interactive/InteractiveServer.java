@@ -211,6 +211,7 @@ public class InteractiveServer
 		validated.addGetHandler("/server/postStruct/{CID}/{string}", new GET_PostStruct(runner));
 		validated.addGetHandler("/server/unknownUser/{KEY}", new GET_UnknownUserInfo(runner));
 		validated.addGetHandler("/server/caches", new GET_CacheStats(serverContext));
+		validated.addPostRawHandler("/server/clearExplicitCache", new POST_Raw_ClearExplicitCache(runner));
 		
 		// Home user operations.
 		validated.addPostRawHandler("/home/republish/{KEY}", new POST_Raw_Republish(runner, background));

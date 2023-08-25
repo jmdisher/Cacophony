@@ -15,9 +15,11 @@ PATH_TO_JAR="$3"
 
 USER1=/tmp/user1
 USER2=/tmp/user2
+COOKIES1=/tmp/cookies1
 
 rm -rf "$USER1"
 rm -rf "$USER2"
+rm -f "$COOKIES1"
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -94,6 +96,29 @@ CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java
 checkPreviousCommand "purgeExplicitCache"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "6"
+
+echo "Start the interactive server so we can see how the explicit cache works when alive across calls..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
+SERVER_PID=$!
+waitForHttpStart 8001
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie >& /dev/null
+
+# Run the basic cache behaviour tests.
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
+requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "8"
+CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/caches")
+requireSubstring "$CACHES" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":4355,\"favouritesCacheBytes\":0}"
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/server/clearExplicitCache" >& /dev/null
+LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
+requireSubstring "$LIST_SIZE" "6"
+CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/caches")
+requireSubstring "$CACHES" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":0}"
+
+# Stop the server.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
+wait $SERVER_PID
 
 
 kill $PID1
