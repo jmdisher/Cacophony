@@ -36,7 +36,7 @@ public class TestV3Data
 		FolloweeData followees = null;
 		FavouritesCacheData favouritesCache = null;
 		ExplicitCacheData explicitCache = null;
-		OpcodeContext context = new OpcodeContext(channels, prefs, followees, favouritesCache, explicitCache);
+		OpcodeContext context = new OpcodeContext(channels, prefs, followees, favouritesCache, explicitCache, null);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);
@@ -67,7 +67,7 @@ public class TestV3Data
 		FolloweeData followees = FolloweeData.createEmpty();
 		FavouritesCacheData favouritesCache = null;
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(channels, prefs, followees, favouritesCache, explicitCache);
+		OpcodeContext context = new OpcodeContext(channels, prefs, followees, favouritesCache, explicitCache, null);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);

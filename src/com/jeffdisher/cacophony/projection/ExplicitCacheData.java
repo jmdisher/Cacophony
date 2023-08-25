@@ -72,16 +72,8 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	 */
 	public void walkAllPins(Consumer<IpfsFile> pin)
 	{
-		for(UserInfo info : _userInfo.values())
-		{
-			pin.accept(info.indexCid);
-			pin.accept(info.recommendationsCid);
-			pin.accept(info.descriptionCid);
-			if (null != info.userPicCid)
-			{
-				pin.accept(info.userPicCid);
-			}
-		}
+		// NOTE:  During the transition to the new data model, we know that there are no user info tuples added during start-up.
+		Assert.assertTrue(_userInfo.isEmpty());
 		for(CachedRecordInfo info : _recordInfo.values())
 		{
 			pin.accept(info.streamCid());
@@ -213,31 +205,6 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	{
 		return _totalCacheInBytes;
 	};
-
-	/**
-	 * This is a temporary mechanism used to unpin all user info data after the data is loaded, in preparation for later
-	 * changes in the on-disk data model and explicit cache design.
-	 * 
-	 * @param unpin The consumer which will update pin accounting for each removed CID.
-	 */
-	public void purgeAllUserInfo(Consumer<IpfsFile> unpin)
-	{
-		for(UserInfo info : _userInfo.values())
-		{
-			unpin.accept(info.indexCid);
-			unpin.accept(info.recommendationsCid);
-			unpin.accept(info.descriptionCid);
-			if (null != info.userPicCid)
-			{
-				unpin.accept(info.userPicCid);
-			}
-			boolean didRemove = _lru.remove(info.indexCid);
-			Assert.assertTrue(didRemove);
-			Assert.assertTrue(_totalCacheInBytes >= info.combinedSizeBytes);
-			_totalCacheInBytes -= info.combinedSizeBytes;
-		}
-		_userInfo.clear();
-	}
 
 
 	private void _updateLru(IpfsFile cid)

@@ -41,7 +41,7 @@ public class TestExplicitCacheData
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
 		start.addUserInfo(F5, F2, F3, F4, 10L);
-		ExplicitCacheData explicitCache = _codec(start);
+		ExplicitCacheData explicitCache = start;
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(F5);
 		Assert.assertEquals(F2, recordInfo.thumbnailCid());
@@ -149,11 +149,11 @@ public class TestExplicitCacheData
 		Assert.assertEquals(F2, recordInfo.thumbnailCid());
 		Assert.assertNull(recordInfo.videoCid());
 		Assert.assertNull(recordInfo.audioCid());
-		Assert.assertEquals(F4, userInfo.userPicCid());
-		Assert.assertEquals(10L, userInfo.combinedSizeBytes());
+		// NOTE:  The userInfo will be implicitly purged in the _codec call.
+		Assert.assertNull(userInfo);
 		int unpinCount[] = new int[1];
 		explicitCache.purgeCacheToSize((IpfsFile unpin) -> unpinCount[0] += 1, 4L);
-		Assert.assertEquals(6, unpinCount[0]);
+		Assert.assertEquals(2, unpinCount[0]);
 	}
 
 	@Test
@@ -165,14 +165,8 @@ public class TestExplicitCacheData
 		start.addUserInfo(F5, F2, F3, F4, 10L);
 		start.addUserInfo(F1, F2, F3, null, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
-		Assert.assertNotNull(explicitCache.getUserInfo(F5));
-		Assert.assertNotNull(explicitCache.getUserInfo(F1));
-		Assert.assertNotNull(explicitCache.getRecordInfo(F2));
 		
 		// Verify that purging the users gives us the correct CIDs and leaves the cache usable.
-		int[] unpins = new int[1];
-		explicitCache.purgeAllUserInfo((IpfsFile unpin) -> unpins[0] += 1);
-		Assert.assertEquals(7, unpins[0]);
 		Assert.assertNull(explicitCache.getUserInfo(F5));
 		Assert.assertNull(explicitCache.getUserInfo(F1));
 		Assert.assertNotNull(explicitCache.getRecordInfo(F2));
@@ -198,7 +192,7 @@ public class TestExplicitCacheData
 	{
 		byte[] bytes = _serialize(start);
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(null, null, null, null, explicitCache);
+		OpcodeContext context = new OpcodeContext(null, null, null, null, explicitCache, new ArrayList<>());
 		try (ByteArrayInputStream input = new ByteArrayInputStream(bytes))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);

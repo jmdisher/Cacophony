@@ -126,6 +126,7 @@ public class LocalDataModel
 					, FolloweeData.createEmpty()
 					, new FavouritesCacheData()
 					, new ExplicitCacheData()
+					, new ArrayList<>()
 			);
 			OpcodeCodec.decodeWholeStream(opcodeLog, context);
 			ChannelData channels = context.channelData();
@@ -140,17 +141,16 @@ public class LocalDataModel
 			;
 			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
 			
-			// In preparation for the change to the explicit cache user info shape, purge all of the user info.
+			// In preparation for the change to the explicit cache user info shape, rationalize all the user info unpins.
 			List<FutureVoid> unpinFutures = new ArrayList<>();
-			explicitCache.purgeAllUserInfo((IpfsFile cid) -> {
-				Assert.assertTrue(pinCache.isPinned(cid));
-				pinCache.delRef(cid);
+			for (IpfsFile cid : context.unpinsToRationalize())
+			{
+				// This is something we previously had pinned but now we don't want to count the reference so unpin if it was the only reference.
 				if (!pinCache.isPinned(cid))
 				{
-					// We need to delete this on the node.
 					unpinFutures.add(scheduler.unpin(cid));
 				}
-			});
+			}
 			for (FutureVoid future : unpinFutures)
 			{
 				try

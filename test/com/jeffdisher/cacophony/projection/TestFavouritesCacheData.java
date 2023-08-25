@@ -124,7 +124,7 @@ public class TestFavouritesCacheData
 		}
 		
 		FavouritesCacheData favourites = new FavouritesCacheData();
-		OpcodeContext context = new OpcodeContext(null, null, null, favourites, null);
+		OpcodeContext context = new OpcodeContext(null, null, null, favourites, null, null);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
 			OpcodeCodec.decodeWholeStream(input, context);

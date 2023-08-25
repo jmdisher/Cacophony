@@ -43,7 +43,14 @@ public record Opcode_ExplicitUserInfo(IpfsFile indexCid, IpfsFile recommendation
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.explicitCache().addUserInfo(this.indexCid, this.recommendationsCid, this.descriptionCid, this.userPicCid, this.combinedSizeBytes);
+		// NOTE:  We want to drop these CIDs since the ExplicitCacheData now needs more information for user info.
+		context.unpinsToRationalize().add(this.indexCid);
+		context.unpinsToRationalize().add(this.recommendationsCid);
+		context.unpinsToRationalize().add(this.descriptionCid);
+		if (null != this.userPicCid)
+		{
+			context.unpinsToRationalize().add(this.userPicCid);
+		}
 	}
 
 	@Override
