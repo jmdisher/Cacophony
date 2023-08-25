@@ -87,6 +87,11 @@ public class ExplicitCacheData implements IExplicitCacheReading
 				IpfsKey elt = (IpfsKey) object;
 				Assert.assertTrue(_userInfo.containsKey(elt));
 				UserInfo info = _userInfo.get(elt);
+				Assert.assertTrue(null != info.publicKey);
+				Assert.assertTrue(null != info.indexCid);
+				Assert.assertTrue(null != info.recommendationsCid);
+				Assert.assertTrue(null != info.recordsCid);
+				Assert.assertTrue(null != info.descriptionCid);
 				writer.writeOpcode(new Opcode_ExplicitUserInfo(info.publicKey
 						, info.lastFetchAttemptMillis
 						, info.lastFetchSuccessMillis
@@ -120,6 +125,7 @@ public class ExplicitCacheData implements IExplicitCacheReading
 		{
 			pin.accept(info.indexCid);
 			pin.accept(info.recommendationsCid);
+			pin.accept(info.recordsCid);
 			pin.accept(info.descriptionCid);
 			if (null != info.userPicCid)
 			{
@@ -152,20 +158,26 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @param indexCid The CID of the user's StreamIndex root element.
 	 * @param recommendationsCid The CID of the user's StreamRecommendations element.
+	 * @param recordsCid The CID of the user's StreamRecords element.
 	 * @param descriptionCid The CID of the user's StreamDescription element.
 	 * @param userPicCid The CID of the user's picture (from StreamDescription).
 	 * @param combinedSizeBytes The combined size, in bytes, of all of the above CID elements.
 	 * @return The new UserInfo element added.
 	 */
-	public UserInfo addUserInfo(IpfsKey publicKey, long currentTimeMillis, IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes)
+	public UserInfo addUserInfo(IpfsKey publicKey, long currentTimeMillis, IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile recordsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes)
 	{
 		Assert.assertTrue(!_userInfo.containsKey(publicKey));
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != indexCid);
+		Assert.assertTrue(null != recommendationsCid);
+		Assert.assertTrue(null != recordsCid);
+		Assert.assertTrue(null != descriptionCid);
 		UserInfo userInfo = new UserInfo(publicKey
 				, currentTimeMillis
 				, currentTimeMillis
 				, indexCid
 				, recommendationsCid
-				, null
+				, recordsCid
 				, descriptionCid
 				, userPicCid
 				, combinedSizeBytes

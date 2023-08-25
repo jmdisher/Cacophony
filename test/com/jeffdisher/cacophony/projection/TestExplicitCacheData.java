@@ -25,6 +25,7 @@ public class TestExplicitCacheData
 	public static final IpfsFile F3 = MockSingleNode.generateHash(new byte[] {3});
 	public static final IpfsFile F4 = MockSingleNode.generateHash(new byte[] {4});
 	public static final IpfsFile F5 = MockSingleNode.generateHash(new byte[] {5});
+	public static final IpfsFile F6 = MockSingleNode.generateHash(new byte[] {6});
 
 	@Test
 	public void empty() throws Throwable
@@ -41,7 +42,7 @@ public class TestExplicitCacheData
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
-		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F6, F3, F4, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(MockKeys.K0);
@@ -49,6 +50,7 @@ public class TestExplicitCacheData
 		Assert.assertNull(recordInfo.videoCid());
 		Assert.assertNull(recordInfo.audioCid());
 		Assert.assertEquals(F4, userInfo.userPicCid());
+		Assert.assertEquals(F6, userInfo.recordsCid());
 		Assert.assertEquals(10L, userInfo.combinedSizeBytes());
 		int unpinCount[] = new int[1];
 		explicitCache.purgeCacheToSize((IpfsFile unpin) -> unpinCount[0] += 1, 4L);
@@ -136,7 +138,7 @@ public class TestExplicitCacheData
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
-		start.addUserInfo(MockKeys.K0, 1L,F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F6, F3, F4, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(MockKeys.K0);
@@ -151,6 +153,7 @@ public class TestExplicitCacheData
 		Assert.assertNull(recordInfo.videoCid());
 		Assert.assertNull(recordInfo.audioCid());
 		Assert.assertEquals(F4, userInfo.userPicCid());
+		Assert.assertEquals(F6, userInfo.recordsCid());
 		Assert.assertEquals(10L, userInfo.combinedSizeBytes());
 		int unpinCount[] = new int[1];
 		explicitCache.purgeCacheToSize((IpfsFile unpin) -> unpinCount[0] += 1, 4L);

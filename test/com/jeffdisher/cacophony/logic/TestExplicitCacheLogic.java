@@ -83,8 +83,8 @@ public class TestExplicitCacheLogic
 		Assert.assertEquals(3, node.loadCalls);
 		// We see size checks come from 2 different locations:
 		// ForeignChannelReader: (3) index, description, recommendations
-		// ExplicitCacheLogic: (4) userpic, index, recommendations, description
-		Assert.assertEquals(7, node.sizeCalls);
+		// ExplicitCacheLogic: (5) userpic, index, recommendations, records, description
+		Assert.assertEquals(8, node.sizeCalls);
 		scheduler.shutdown();
 	}
 
@@ -362,19 +362,19 @@ public class TestExplicitCacheLogic
 		{
 			threads[i].join();
 		}
-		// While we pin all 4 elements (index, recommendations, description, picture), we don't actually load the picture.
-		Assert.assertEquals(4, node.getStoredFileSet().size());
+		// While we pin all 5 elements (index, recommendations, records, description, picture), we don't actually load the picture.
+		Assert.assertEquals(5, node.getStoredFileSet().size());
 		
 		// This test is somewhat racy so we know that we will see between 1 and 10 load attempts (usually 10), but we expect each attempt to have a consistent multiple.
 		Assert.assertTrue(node.loadCalls >= 3);
 		Assert.assertTrue(node.loadCalls <= (3 * threads.length));
 		// We see size checks come from 2 different locations:
 		// ForeignChannelReader: (3) index, description, recommendations
-		// ExplicitCacheLogic: (4) userpic, index, recommendations, description
-		Assert.assertTrue(node.sizeCalls >= 7);
-		Assert.assertTrue(node.sizeCalls <= (7 * threads.length));
+		// ExplicitCacheLogic: (5) userpic, index, recommendations, records, description
+		Assert.assertTrue(node.sizeCalls >= 8);
+		Assert.assertTrue(node.sizeCalls <= (8 * threads.length));
 		int multiple = node.loadCalls / 3;
-		Assert.assertEquals(7 * multiple, node.sizeCalls);
+		Assert.assertEquals(8 * multiple, node.sizeCalls);
 		scheduler.shutdown();
 	}
 

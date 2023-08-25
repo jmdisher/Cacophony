@@ -106,12 +106,12 @@ echo "Run the basic cache behaviour tests."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
 requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "8"
+requireSubstring "$LIST_SIZE" "9"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/caches")
-requireSubstring "$CACHES" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":4355,\"favouritesCacheBytes\":0}"
+requireSubstring "$CACHES" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":4585,\"favouritesCacheBytes\":0}"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/server/clearExplicitCache" >& /dev/null
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "6"
+requireSubstring "$LIST_SIZE" "7"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/caches")
 requireSubstring "$CACHES" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":0}"
 

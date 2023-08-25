@@ -32,6 +32,7 @@ public class TestV3V4
 	public static final IpfsFile F3 = MockSingleNode.generateHash(new byte[] {3});
 	public static final IpfsFile F4 = MockSingleNode.generateHash(new byte[] {4});
 	public static final IpfsFile F5 = MockSingleNode.generateHash(new byte[] {5});
+	public static final IpfsFile F6 = MockSingleNode.generateHash(new byte[] {6});
 
 	@Test
 	public void explicitRecordsMatch() throws Throwable
@@ -56,7 +57,7 @@ public class TestV3V4
 	public void explicitUsersChange() throws Throwable
 	{
 		ExplicitCacheData start = new ExplicitCacheData();
-		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F6, F3, F4, 10L);
 		
 		ExplicitCacheData v3 = _codecV3(start);
 		ExplicitCacheData.UserInfo user3 = v3.getUserInfo(MockKeys.K0);
@@ -69,7 +70,7 @@ public class TestV3V4
 		Assert.assertEquals(1L, user4.lastFetchSuccessMillis());
 		Assert.assertEquals(F5, user4.indexCid());
 		Assert.assertEquals(F2, user4.recommendationsCid());
-		Assert.assertNull(user4.recordsCid());
+		Assert.assertEquals(F6, user4.recordsCid());
 		Assert.assertEquals(F3, user4.descriptionCid());
 		Assert.assertEquals(F4, user4.userPicCid());
 		Assert.assertEquals(10L, user4.combinedSizeBytes());
@@ -130,7 +131,7 @@ public class TestV3V4
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
-		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F6, F3, F4, 10L);
 		ExplicitCacheData explicitCache = _codecV4(start);
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		Assert.assertNotNull(recordInfo);

@@ -112,7 +112,7 @@ public class ExplicitCacheLogic
 				{
 					// Add this to the structure, creating the official result.
 					long currentTimeMillis = context.currentTimeMillisGenerator.getAsLong();
-					info = data.addUserInfo(publicKey, currentTimeMillis, potential.indexCid(), potential.recommendationsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
+					info = data.addUserInfo(publicKey, currentTimeMillis, potential.indexCid(), potential.recommendationsCid(), potential.recordsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
 					
 					// Commit the transaction.
 					transaction.commit(resolver);
@@ -304,6 +304,7 @@ public class ExplicitCacheLogic
 		// Now, pin everything and update the cache.
 		FuturePin pinIndex = transaction.pin(root);
 		FuturePin pinRecommendations = transaction.pin(index.recommendationsCid);
+		FuturePin pinRecords = transaction.pin(index.recordsCid);
 		FuturePin pinDescription = transaction.pin(index.descriptionCid);
 		if (null != userPicCid)
 		{
@@ -311,9 +312,11 @@ public class ExplicitCacheLogic
 		}
 		pinIndex.get();
 		pinRecommendations.get();
+		pinRecords.get();
 		pinDescription.get();
 		long combinedSizeBytes = transaction.getSizeInBytes(pinIndex.cid).get()
 				+ transaction.getSizeInBytes(pinRecommendations.cid).get()
+				+ transaction.getSizeInBytes(pinRecords.cid).get()
 				+ transaction.getSizeInBytes(pinDescription.cid).get()
 				+ picSize
 		;
@@ -323,7 +326,7 @@ public class ExplicitCacheLogic
 				, 0L
 				, pinIndex.cid
 				, pinRecommendations.cid
-				, null
+				, pinRecords.cid
 				, pinDescription.cid
 				, userPicCid
 				, combinedSizeBytes

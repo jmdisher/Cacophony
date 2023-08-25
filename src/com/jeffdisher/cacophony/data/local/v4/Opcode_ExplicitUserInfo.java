@@ -16,8 +16,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * -StreamRecords (recordsCid)
  * -StreamDescription (descriptionCid)
  * -user pic (userPicCid)
- * Only the userPicCid can be null.  NOTE:  Until we complete the transition to V4 data model, recordsCid can also be
- * null.
+ * Only the userPicCid can be null.
  * The sizes and locations of all of these elements can be determined when the opcode is loaded by reading the local
  * node since they are known to be pinned there.
  * NOTE:  Even though all of this data can be derived from the indexCid, the other elements are included to simplify
@@ -78,15 +77,14 @@ public record Opcode_ExplicitUserInfo(IpfsKey publicKey
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		// TODO:  Make sure that this records CID is added and pinned in the last part of the format change.
-		// TODO:  Also add lastFetchSuccessMillis.
 		context.explicitCache().addUserInfo(this.publicKey
 				, this.lastFetchAttemptMillis
-				, indexCid
-				, recommendationsCid
-				, descriptionCid
-				, userPicCid
-				, combinedSizeBytes
+				, this.indexCid
+				, this.recommendationsCid
+				, this.recordsCid
+				, this.descriptionCid
+				, this.userPicCid
+				, this.combinedSizeBytes
 		);
 	}
 
