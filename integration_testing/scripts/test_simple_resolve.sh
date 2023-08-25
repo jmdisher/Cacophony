@@ -97,6 +97,11 @@ CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACO
 checkPreviousCommand "updateDescription1"
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" CACOPHONY_KEY_NAME=test2 java -Xmx32m -jar Cacophony.jar --updateDescription --name "NAME2"
 checkPreviousCommand "updateDescription2"
+# We need to purge the explicit cache in order to see the update since it isn't currently expiring data.
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --purgeExplicitCache >& /dev/null
+checkPreviousCommand "purgeExplicitCache"
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --purgeExplicitCache >& /dev/null
+checkPreviousCommand "purgeExplicitCache"
 DESCRIPTION=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey $PUBLIC2)
 requireSubstring "$DESCRIPTION" "Name: NAME2"
 requireSubstring "$DESCRIPTION" "Feature: null"

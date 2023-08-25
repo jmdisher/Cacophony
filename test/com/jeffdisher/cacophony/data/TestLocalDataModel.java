@@ -14,8 +14,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
@@ -173,8 +173,8 @@ public class TestLocalDataModel
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = null;
 		ExplicitCacheData explicitCache = null;
-		OpcodeContextV3 context = new OpcodeContextV3(channelData, prefs, followees, null, explicitCache, null);
-		OpcodeCodec.decodeWholeStreamV3(new ByteArrayInputStream(serialized), context);
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, null, explicitCache);
+		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Assert.assertEquals(PrefsData.DEFAULT_VIDEO_EDGE, prefs.videoEdgePixelMax);
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOW_CACHE_BYTES, prefs.followCacheTargetBytes);
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOWEE_REFRESH_MILLIS, prefs.followeeRefreshMillis);
@@ -209,8 +209,8 @@ public class TestLocalDataModel
 		PrefsData prefs = PrefsData.defaultPrefs();
 		FolloweeData followees = FolloweeData.createEmpty();
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContextV3 context = new OpcodeContextV3(channelData, prefs, followees, null, explicitCache, null);
-		OpcodeCodec.decodeWholeStreamV3(new ByteArrayInputStream(serialized), context);
+		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, null, explicitCache);
+		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Set<IpfsKey> knownKeys = followees.getAllKnownFollowees();
 		Assert.assertEquals(1, knownKeys.size());
 		IpfsKey followee = knownKeys.iterator().next();
@@ -276,7 +276,7 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We throw a usage error if the opcode log is missing.
-		fileSystem.writeTrivialFile("version", new byte[] {3});
+		fileSystem.writeTrivialFile("version", new byte[] {4});
 		didFail = false;
 		try
 		{
@@ -289,7 +289,7 @@ public class TestLocalDataModel
 		Assert.assertTrue(didFail);
 		
 		// We need the log to exist and contain valid data, so use the defaults we use when initializing it before running a command.
-		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile("opcodes.v3.gzlog"))
+		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile("opcodes.v4.gzlog"))
 		{
 			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(atomic.getStream()))
 			{

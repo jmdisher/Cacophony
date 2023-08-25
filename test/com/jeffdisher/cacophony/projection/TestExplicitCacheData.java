@@ -11,8 +11,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -42,7 +42,7 @@ public class TestExplicitCacheData
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
 		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
-		ExplicitCacheData explicitCache = start;
+		ExplicitCacheData explicitCache = _codec(start);
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(MockKeys.K0);
 		Assert.assertEquals(F2, recordInfo.thumbnailCid());
@@ -136,7 +136,7 @@ public class TestExplicitCacheData
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
-		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L,F5, F2, F3, F4, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
 		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(MockKeys.K0);
@@ -150,32 +150,11 @@ public class TestExplicitCacheData
 		Assert.assertEquals(F2, recordInfo.thumbnailCid());
 		Assert.assertNull(recordInfo.videoCid());
 		Assert.assertNull(recordInfo.audioCid());
-		// NOTE:  The userInfo will be implicitly purged in the _codec call.
-		Assert.assertNull(userInfo);
+		Assert.assertEquals(F4, userInfo.userPicCid());
+		Assert.assertEquals(10L, userInfo.combinedSizeBytes());
 		int unpinCount[] = new int[1];
 		explicitCache.purgeCacheToSize((IpfsFile unpin) -> unpinCount[0] += 1, 4L);
-		Assert.assertEquals(2, unpinCount[0]);
-	}
-
-	@Test
-	public void userPurge() throws Throwable
-	{
-		// In this test, we want to make sure that the user info purge works as expected.
-		ExplicitCacheData start = new ExplicitCacheData();
-		_addStreamRecord(start, F2, F2, null, null, 5L);
-		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
-		start.addUserInfo(MockKeys.K1, 1L, F1, F2, F3, null, 10L);
-		ExplicitCacheData explicitCache = _codec(start);
-		
-		// Verify that purging the users gives us the correct CIDs and leaves the cache usable.
-		Assert.assertNull(explicitCache.getUserInfo(MockKeys.K0));
-		Assert.assertNull(explicitCache.getUserInfo(MockKeys.K1));
-		Assert.assertNotNull(explicitCache.getRecordInfo(F2));
-		
-		ExplicitCacheData later = _codec(explicitCache);
-		Assert.assertNull(later.getUserInfo(MockKeys.K0));
-		Assert.assertNull(later.getUserInfo(MockKeys.K1));
-		Assert.assertNotNull(later.getRecordInfo(F2));
+		Assert.assertEquals(6, unpinCount[0]);
 	}
 
 
@@ -184,7 +163,7 @@ public class TestExplicitCacheData
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
 		{
-			start.serializeToOpcodeWriterV3(writer);
+			start.serializeToOpcodeWriter(writer);
 		}
 		return out.toByteArray();
 	}
@@ -193,10 +172,10 @@ public class TestExplicitCacheData
 	{
 		byte[] bytes = _serialize(start);
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContextV3 context = new OpcodeContextV3(null, null, null, null, explicitCache, new ArrayList<>());
+		OpcodeContext context = new OpcodeContext(null, null, null, null, explicitCache);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(bytes))
 		{
-			OpcodeCodec.decodeWholeStreamV3(input, context);
+			OpcodeCodec.decodeWholeStream(input, context);
 		}
 		return explicitCache;
 	}

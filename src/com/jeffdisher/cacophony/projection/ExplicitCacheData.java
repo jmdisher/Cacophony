@@ -116,8 +116,16 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	 */
 	public void walkAllPins(Consumer<IpfsFile> pin)
 	{
-		// NOTE:  During the transition to the new data model, we know that there are no user info tuples added during start-up.
-		Assert.assertTrue(_userInfo.isEmpty());
+		for(UserInfo info : _userInfo.values())
+		{
+			pin.accept(info.indexCid);
+			pin.accept(info.recommendationsCid);
+			pin.accept(info.descriptionCid);
+			if (null != info.userPicCid)
+			{
+				pin.accept(info.userPicCid);
+			}
+		}
 		for(CachedRecordInfo info : _recordInfo.values())
 		{
 			pin.accept(info.streamCid());

@@ -10,8 +10,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -124,10 +124,10 @@ public class TestFavouritesCacheData
 		}
 		
 		FavouritesCacheData favourites = new FavouritesCacheData();
-		OpcodeContextV3 context = new OpcodeContextV3(null, null, null, favourites, null, null);
+		OpcodeContext context = new OpcodeContext(null, null, null, favourites, null);
 		try (ByteArrayInputStream input = new ByteArrayInputStream(out.toByteArray()))
 		{
-			OpcodeCodec.decodeWholeStreamV3(input, context);
+			OpcodeCodec.decodeWholeStream(input, context);
 		}
 		return favourites;
 	}

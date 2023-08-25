@@ -82,8 +82,7 @@ POST_CID=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --showPost --elementCid "$POST_CID" >& /dev/null
 checkPreviousCommand "show post"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-# Note that this will give us 7 because it will implicitly purge the user entry: 8 - 2 (description and index) + 1 (post).
-requireSubstring "$LIST_SIZE" "7"
+requireSubstring "$LIST_SIZE" "9"
 
 echo "Now, refetch the purged user entry..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2" >& /dev/null

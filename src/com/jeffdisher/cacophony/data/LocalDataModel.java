@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
+import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.PinCacheBuilder;
 import com.jeffdisher.cacophony.projection.ChannelData;
@@ -37,8 +38,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class LocalDataModel
 {
 	private static final String VERSION_FILE = "version";
-	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 3;
+	private static final byte LOCAL_CONFIG_VERSION_NUMBER = 4;
+	private static final String V4_LOG = "opcodes.v4.gzlog";
 
+	private static final byte V3 = 3;
 	private static final String V3_LOG = "opcodes.v3.gzlog";
 
 	/**
@@ -101,6 +104,11 @@ public class LocalDataModel
 				// We don't support version 2 so throw an exception describing how to update.
 				throw new UsageException("Local storage version 2 cannot be migrated by this version.  Either delete the ~/.cacophony directory or try running with version 3.1, first.");
 			}
+			else if (V3 == version)
+			{
+				// This version can be migrated.
+				_migrateData(fileSystem, scheduler);
+			}
 			else
 			{
 				// Unknown.
@@ -114,12 +122,69 @@ public class LocalDataModel
 		}
 		
 		// Now, load all the files so we can create the initial data model.
-		try (InputStream opcodeLog = fileSystem.readAtomicFile(V3_LOG))
+		try (InputStream opcodeLog = fileSystem.readAtomicFile(V4_LOG))
 		{
 			if (null == opcodeLog)
 			{
 				throw new UsageException("Local storage opcode log file is missing");
 			}
+			
+			OpcodeContext context = new OpcodeContext(ChannelData.create()
+					, PrefsData.defaultPrefs()
+					, FolloweeData.createEmpty()
+					, new FavouritesCacheData()
+					, new ExplicitCacheData()
+			);
+			OpcodeCodec.decodeWholeStream(opcodeLog, context);
+			ChannelData channels = context.channelData();
+			PrefsData prefs = context.prefs();
+			FolloweeData followees = context.followees();
+			FavouritesCacheData favouritesCache = context.favouritesCache();
+			ExplicitCacheData explicitCache = context.explicitCache();
+			Set<String> channelKeyNames = channels.getKeyNames();
+			IpfsFile[] homeRoots = channelKeyNames.stream()
+					.map((String channelKeyName) -> channels.getLastPublishedIndex(channelKeyName))
+					.toArray((int size) -> new IpfsFile[size])
+			;
+			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
+			return new LocalDataModel(stats
+					, fileSystem
+					, channels
+					, prefs
+					, pinCache
+					, followees
+					, favouritesCache
+					, explicitCache
+			);
+		}
+		catch (IOException e)
+		{
+			// We have no way to handle this failure.
+			throw Assert.unexpected(e);
+		}
+	}
+
+	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
+	{
+		PinCacheBuilder builder = new PinCacheBuilder(scheduler);
+		for (IpfsFile homeRoot : homeRootElements)
+		{
+			builder.addHomeUser(homeRoot);
+		}
+		for (IpfsKey key : followees.getAllKnownFollowees())
+		{
+			builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
+		}
+		builder.addFavourites(favouritesCache);
+		builder.addExplicitCache(explicitCache);
+		return builder.finish();
+	}
+
+	private static void _migrateData(IConfigFileSystem fileSystem, INetworkScheduler scheduler)
+	{
+		try (InputStream opcodeLog = fileSystem.readAtomicFile(V3_LOG))
+		{
+			Assert.assertTrue(null != opcodeLog);
 			
 			OpcodeContextV3 context = new OpcodeContextV3(ChannelData.create()
 					, PrefsData.defaultPrefs()
@@ -164,37 +229,13 @@ public class LocalDataModel
 				
 			}
 			
-			return new LocalDataModel(stats
-					, fileSystem
-					, channels
-					, prefs
-					, pinCache
-					, followees
-					, favouritesCache
-					, explicitCache
-			);
+			_writeToDisk(fileSystem, channels, prefs, followees, favouritesCache, explicitCache);
 		}
 		catch (IOException e)
 		{
 			// We have no way to handle this failure.
 			throw Assert.unexpected(e);
 		}
-	}
-
-	private static PinCacheData _buildPinCache(INetworkScheduler scheduler, IpfsFile[] homeRootElements, FolloweeData followees, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
-	{
-		PinCacheBuilder builder = new PinCacheBuilder(scheduler);
-		for (IpfsFile homeRoot : homeRootElements)
-		{
-			builder.addHomeUser(homeRoot);
-		}
-		for (IpfsKey key : followees.getAllKnownFollowees())
-		{
-			builder.addFollowee(followees.getLastFetchedRootForFollowee(key), followees.snapshotAllElementsForFollowee(key));
-		}
-		builder.addFavourites(favouritesCache);
-		builder.addExplicitCache(explicitCache);
-		return builder.finish();
 	}
 
 
@@ -289,7 +330,7 @@ public class LocalDataModel
 	) throws IOException
 	{
 		// We will serialize directly to the file.  If there are any exceptions, we won't reach the commit.
-		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile(V3_LOG))
+		try (IConfigFileSystem.AtomicOutputStream atomic = fileSystem.writeAtomicFile(V4_LOG))
 		{
 			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(atomic.getStream()))
 			{
@@ -297,7 +338,7 @@ public class LocalDataModel
 				globalPrefs.serializeToOpcodeWriter(writer);
 				followIndex.serializeToOpcodeWriter(writer);
 				favouritesCache.serializeToOpcodeWriter(writer);
-				explicitCache.serializeToOpcodeWriterV3(writer);
+				explicitCache.serializeToOpcodeWriter(writer);
 			}
 			atomic.commit();
 		}
