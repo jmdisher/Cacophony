@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitStreamRecord;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -24,9 +25,10 @@ public class ExplicitCacheData implements IExplicitCacheReading
 {
 	// When something is used, it is removed from the list and re-added at the end.
 	// This means that element 0 is "least recently used".
-	private final List<IpfsFile> _lru;
+	// The same LRU will be used for both IpfsKey and IpfsFile, so a type check is required.
+	private final List<Object> _lru;
 	private final Lock _lruLock;
-	private final Map<IpfsFile, UserInfo> _userInfo;
+	private final Map<IpfsKey, UserInfo> _userInfo;
 	private final Map<IpfsFile, CachedRecordInfo> _recordInfo;
 	private long _totalCacheInBytes;
 
@@ -47,16 +49,19 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
 	{
 		// We walk the LRU in-order from least to most recently used since that is how we re-add them.
-		for (IpfsFile elt : _lru)
+		for (Object object : _lru)
 		{
 			// Check what this is.
-			if (_userInfo.containsKey(elt))
+			if (object instanceof IpfsKey)
 			{
+				IpfsKey elt = (IpfsKey) object;
+				Assert.assertTrue(_userInfo.containsKey(elt));
 				UserInfo info = _userInfo.get(elt);
 				writer.writeOpcode(new Opcode_ExplicitUserInfo(info.indexCid, info.recommendationsCid, info.descriptionCid, info.userPicCid, info.combinedSizeBytes));
 			}
 			else
 			{
+				IpfsFile elt = (IpfsFile) object;
 				Assert.assertTrue(_recordInfo.containsKey(elt));
 				CachedRecordInfo info = _recordInfo.get(elt);
 				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
@@ -96,20 +101,30 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	 * Adds a new user description to the cache and marks it as most recently used.
 	 * NOTE:  A user with the given indexCid cannot already be in the cache.
 	 * 
+	 * @param publicKey The public key of the user being added.
+	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @param indexCid The CID of the user's StreamIndex root element.
 	 * @param recommendationsCid The CID of the user's StreamRecommendations element.
 	 * @param descriptionCid The CID of the user's StreamDescription element.
 	 * @param userPicCid The CID of the user's picture (from StreamDescription).
-	 * @param combinedSizeBytes The combined size, in bytes, of all of the above elements.
+	 * @param combinedSizeBytes The combined size, in bytes, of all of the above CID elements.
 	 * @return The new UserInfo element added.
 	 */
-	public UserInfo addUserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes)
+	public UserInfo addUserInfo(IpfsKey publicKey, long currentTimeMillis, IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes)
 	{
-		Assert.assertTrue(!_userInfo.containsKey(indexCid));
-		Assert.assertTrue(!_recordInfo.containsKey(indexCid));
-		UserInfo userInfo = new UserInfo(indexCid, recommendationsCid, descriptionCid, userPicCid, combinedSizeBytes);
-		_userInfo.put(indexCid, userInfo);
-		_lru.add(indexCid);
+		Assert.assertTrue(!_userInfo.containsKey(publicKey));
+		UserInfo userInfo = new UserInfo(publicKey
+				, currentTimeMillis
+				, currentTimeMillis
+				, indexCid
+				, recommendationsCid
+				, null
+				, descriptionCid
+				, userPicCid
+				, combinedSizeBytes
+		);
+		_userInfo.put(publicKey, userInfo);
+		_lru.add(publicKey);
 		_totalCacheInBytes += combinedSizeBytes;
 		return userInfo;
 	}
@@ -124,7 +139,6 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	 */
 	public void addStreamRecord(IpfsFile streamCid, CachedRecordInfo recordInfo)
 	{
-		Assert.assertTrue(!_userInfo.containsKey(streamCid));
 		Assert.assertTrue(!_recordInfo.containsKey(streamCid));
 		_recordInfo.put(streamCid, recordInfo);
 		_lru.add(streamCid);
@@ -132,13 +146,13 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	}
 
 	@Override
-	public UserInfo getUserInfo(IpfsFile indexCid)
+	public UserInfo getUserInfo(IpfsKey publicKey)
 	{
-		UserInfo info = _userInfo.get(indexCid);
+		UserInfo info = _userInfo.get(publicKey);
 		if (null != info)
 		{
 			// Re-sort this as recently used.
-			_updateLru(indexCid);
+			_updateLru(publicKey);
 		}
 		return info;
 	}
@@ -164,10 +178,12 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	{
 		while (_totalCacheInBytes > cacheLimitInBytes)
 		{
-			IpfsFile elt = _lru.remove(0);
+			Object object = _lru.remove(0);
 			// Check what this is.
-			if (_userInfo.containsKey(elt))
+			if (object instanceof IpfsKey)
 			{
+				IpfsKey elt = (IpfsKey) object;
+				Assert.assertTrue(_userInfo.containsKey(elt));
 				UserInfo info = _userInfo.remove(elt);
 				unpin.accept(info.indexCid);
 				unpin.accept(info.recommendationsCid);
@@ -180,6 +196,7 @@ public class ExplicitCacheData implements IExplicitCacheReading
 			}
 			else
 			{
+				IpfsFile elt = (IpfsFile) object;
 				Assert.assertTrue(_recordInfo.containsKey(elt));
 				CachedRecordInfo info = _recordInfo.remove(elt);
 				unpin.accept(info.streamCid());
@@ -207,14 +224,15 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	};
 
 
-	private void _updateLru(IpfsFile cid)
+	private void _updateLru(Object object)
 	{
 		_lruLock.lock();
 		try
 		{
 			// Re-sort this as recently used.
-			_lru.remove(cid);
-			_lru.add(cid);
+			boolean didRemove = _lru.remove(object);
+			Assert.assertTrue(didRemove);
+			_lru.add(object);
 		}
 		finally
 		{
@@ -223,5 +241,14 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	}
 
 
-	public static record UserInfo(IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes) {}
+	public static record UserInfo(IpfsKey publicKey
+			, long lastFetchAttemptMillis
+			, long lastFetchSuccessMillis
+			, IpfsFile indexCid
+			, IpfsFile recommendationsCid
+			, IpfsFile recordsCid
+			, IpfsFile descriptionCid
+			, IpfsFile userPicCid
+			, long combinedSizeBytes
+	) {}
 }

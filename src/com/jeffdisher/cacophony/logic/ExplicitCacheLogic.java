@@ -53,8 +53,8 @@ public class ExplicitCacheLogic
 	 * isn't already in the cache.
 	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
 	 * recently used.
-	 * NOTE:  The user is still resolved before checking the cache to avoid cases where an old version of the user info
-	 * would never be dropped from the cache since it keeps being "found".
+	 * WARNING:  As part of a transition to the background refresh mechanism, this call will currently always report a
+	 * cache hit if it sees an entry in the cache for this key, no matter how old it is.
 	 * 
 	 * @param context The context.
 	 * @param publicKey The public key of the user.
@@ -69,18 +69,19 @@ public class ExplicitCacheLogic
 		Assert.assertTrue(null != context);
 		Assert.assertTrue(null != publicKey);
 		
-		IpfsFile root;
 		ExplicitCacheData.UserInfo info;
+		IpfsFile root = null;
 		ConcurrentTransaction transaction = null;
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			root = access.resolvePublicKey(publicKey).get();
-			// This will fail instead of returning null.
-			Assert.assertTrue(null != root);
 			IExplicitCacheReading data = access.readableExplicitCache();
-			info = data.getUserInfo(root);
+			info = data.getUserInfo(publicKey);
 			if (null == info)
 			{
+				// Check the key.
+				root = access.resolvePublicKey(publicKey).get();
+				// This will fail instead of returning null.
+				Assert.assertTrue(null != root);
 				transaction = access.openConcurrentTransaction();
 			}
 		}
@@ -106,11 +107,12 @@ public class ExplicitCacheLogic
 			{
 				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 				ExplicitCacheData data = access.writableExplicitCache();
-				info = data.getUserInfo(root);
+				info = data.getUserInfo(publicKey);
 				if (null == info)
 				{
 					// Add this to the structure, creating the official result.
-					info = data.addUserInfo(potential.indexCid(), potential.recommendationsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
+					long currentTimeMillis = context.currentTimeMillisGenerator.getAsLong();
+					info = data.addUserInfo(publicKey, currentTimeMillis, potential.indexCid(), potential.recommendationsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
 					
 					// Commit the transaction.
 					transaction.commit(resolver);
@@ -315,7 +317,17 @@ public class ExplicitCacheLogic
 				+ transaction.getSizeInBytes(pinDescription.cid).get()
 				+ picSize
 		;
-		return new ExplicitCacheData.UserInfo(pinIndex.cid, pinRecommendations.cid, pinDescription.cid, userPicCid, combinedSizeBytes);
+		// We don't bother building this fully since it is just meant to be a container of a few pieces of data, here.
+		return new ExplicitCacheData.UserInfo(null
+				, 0L
+				, 0L
+				, pinIndex.cid
+				, pinRecommendations.cid
+				, null
+				, pinDescription.cid
+				, userPicCid
+				, combinedSizeBytes
+		);
 	}
 
 	private static CachedRecordInfo _loadRecordInfo(ConcurrentTransaction transaction, int videoEdgePixelMax, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException

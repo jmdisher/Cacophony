@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContext;
+import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -40,10 +41,10 @@ public class TestExplicitCacheData
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
-		start.addUserInfo(F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
 		ExplicitCacheData explicitCache = start;
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
-		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(F5);
+		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(MockKeys.K0);
 		Assert.assertEquals(F2, recordInfo.thumbnailCid());
 		Assert.assertNull(recordInfo.videoCid());
 		Assert.assertNull(recordInfo.audioCid());
@@ -135,10 +136,10 @@ public class TestExplicitCacheData
 		// These are overlapping in ways we would never normally see but the cache doesn't care.
 		// The only CID it cares about is the first one - the location of the element it is describing.
 		_addStreamRecord(start, F1, F2, null, null, 5L);
-		start.addUserInfo(F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
 		CachedRecordInfo recordInfo = explicitCache.getRecordInfo(F1);
-		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(F5);
+		ExplicitCacheData.UserInfo userInfo = explicitCache.getUserInfo(MockKeys.K0);
 		
 		// Verify that serializing always gives the same result.
 		byte[] serial1 = _serialize(explicitCache);
@@ -162,18 +163,18 @@ public class TestExplicitCacheData
 		// In this test, we want to make sure that the user info purge works as expected.
 		ExplicitCacheData start = new ExplicitCacheData();
 		_addStreamRecord(start, F2, F2, null, null, 5L);
-		start.addUserInfo(F5, F2, F3, F4, 10L);
-		start.addUserInfo(F1, F2, F3, null, 10L);
+		start.addUserInfo(MockKeys.K0, 1L, F5, F2, F3, F4, 10L);
+		start.addUserInfo(MockKeys.K1, 1L, F1, F2, F3, null, 10L);
 		ExplicitCacheData explicitCache = _codec(start);
 		
 		// Verify that purging the users gives us the correct CIDs and leaves the cache usable.
-		Assert.assertNull(explicitCache.getUserInfo(F5));
-		Assert.assertNull(explicitCache.getUserInfo(F1));
+		Assert.assertNull(explicitCache.getUserInfo(MockKeys.K0));
+		Assert.assertNull(explicitCache.getUserInfo(MockKeys.K1));
 		Assert.assertNotNull(explicitCache.getRecordInfo(F2));
 		
 		ExplicitCacheData later = _codec(explicitCache);
-		Assert.assertNull(later.getUserInfo(F5));
-		Assert.assertNull(later.getUserInfo(F1));
+		Assert.assertNull(later.getUserInfo(MockKeys.K0));
+		Assert.assertNull(later.getUserInfo(MockKeys.K1));
 		Assert.assertNotNull(later.getRecordInfo(F2));
 	}
 

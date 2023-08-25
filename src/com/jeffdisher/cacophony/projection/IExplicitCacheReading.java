@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.projection;
 
 import com.jeffdisher.cacophony.projection.ExplicitCacheData.UserInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -12,13 +13,13 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 public interface IExplicitCacheReading
 {
 	/**
-	 * Reads the UserInfo of the given user's indexCid.  On success, marks the record as most recently used.
+	 * Reads the UserInfo of the given user's publicKey.  On success, marks the record as most recently used.
 	 * Note that this uses the _lruLock since it changes the LRU order, despite being a read-only call.
 	 * 
-	 * @param indexCid The CID of the user's StreamIndex.
+	 * @param publicKey The user's public key.
 	 * @return The UserInfo for the user (null if not found).
 	 */
-	UserInfo getUserInfo(IpfsFile indexCid);
+	UserInfo getUserInfo(IpfsKey publicKey);
 
 	/**
 	 * Reads the CachedRecordInfo of the given StreamRecord's recordCid.  On success, marks the record as most recently used.

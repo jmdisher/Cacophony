@@ -103,7 +103,7 @@ SERVER_PID=$!
 waitForHttpStart 8001
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie >& /dev/null
 
-# Run the basic cache behaviour tests.
+echo "Run the basic cache behaviour tests."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
 requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
@@ -115,6 +115,17 @@ LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "6"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/caches")
 requireSubstring "$CACHES" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":0}"
+
+echo "Observe the false cache-hit behaviour on users found in the cache."
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
+requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --updateDescription --name "Updated name" >& /dev/null
+checkPreviousCommand "late update 2"
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
+requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/server/clearExplicitCache" >& /dev/null
+USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
+requireSubstring "$USER_INFO" "{\"name\":\"Updated name\","
 
 # Stop the server.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
