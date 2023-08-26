@@ -1,37 +1,24 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.ByteArrayInputStream;
-
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.commands.Context;
-import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.record.DataArray;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
-import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
-import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockKeys;
+import com.jeffdisher.cacophony.testutils.MockNodeHelpers;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
-import com.jeffdisher.cacophony.types.UsageException;
 
 
 public class TestExplicitCacheLogic
@@ -44,7 +31,7 @@ public class TestExplicitCacheLogic
 	{
 		MockSingleNode node = new MockSingleNode(new MockSwarm());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
@@ -72,10 +59,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		_populateWithEmpty(upstream, MockKeys.K1, "userPic".getBytes());
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K1, "name", "userPic".getBytes());
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
 		Assert.assertNotNull(userInfo);
@@ -96,11 +83,11 @@ public class TestExplicitCacheLogic
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
 		byte[] userPic = "userPic".getBytes();
-		_populateWithEmpty(upstream, MockKeys.K1, userPic);
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K1, "name", userPic);
 		upstream.rm(MockSingleNode.generateHash(userPic));
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
@@ -132,11 +119,11 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		_populateWithEmpty(upstream, MockKeys.K1, "userPic".getBytes());
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K1, "name", "userPic".getBytes());
 		upstream.rm(MockSingleNode.generateHash(GlobalData.serializeRecommendations(new StreamRecommendations())));
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
@@ -165,7 +152,7 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.pinCalls;
 		boolean didFail;
@@ -193,10 +180,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
 		Assert.assertNotNull(record);
@@ -217,10 +204,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
 		Assert.assertNotNull(record);
@@ -241,10 +228,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, "audio".getBytes());
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, "audio".getBytes());
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
 		Assert.assertNotNull(record);
@@ -267,11 +254,11 @@ public class TestExplicitCacheLogic
 		MockSingleNode upstream = new MockSingleNode(swarm);
 		// Break the video leaf and make sure we fail and don't change pin counts.
 		byte[] videoData = "video".getBytes();
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), videoData, 10, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), videoData, 10, null);
 		upstream.rm(MockSingleNode.generateHash(videoData));
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.getStoredFileSet().size();
 		boolean didFail;
@@ -301,10 +288,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context, cid));
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
@@ -322,10 +309,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		_populateWithEmpty(upstream, MockKeys.K1, "userPic".getBytes());
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K1, "name", "userPic".getBytes());
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		Thread[] threads = new Thread[10];
 		for (int i = 0; i < threads.length; ++i)
@@ -387,10 +374,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		Thread[] threads = new Thread[10];
 		for (int i = 0; i < threads.length; ++i)
@@ -442,10 +429,10 @@ public class TestExplicitCacheLogic
 		MockSwarm swarm = new MockSwarm();
 		MockSingleNode node = new MockSingleNode(swarm);
 		MockSingleNode upstream = new MockSingleNode(swarm);
-		IpfsFile cid = _populateStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "name", null, null, 0, null);
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
-		Context context = _createContext(node, scheduler);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		// Populate the cache.
 		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
@@ -466,91 +453,5 @@ public class TestExplicitCacheLogic
 		Assert.assertEquals(0L, size);
 		
 		scheduler.shutdown();
-	}
-
-
-	private static void _populateWithEmpty(MockSingleNode node, IpfsKey publishKey, byte[] userPic) throws Throwable
-	{
-		StreamDescription desc = new StreamDescription();
-		desc.setName("name");
-		desc.setDescription("description");
-		desc.setPicture(_storeWithString(node, userPic));
-		StreamRecords records = new StreamRecords();
-		StreamRecommendations recom = new StreamRecommendations();
-		StreamIndex index = new StreamIndex();
-		index.setVersion(1);
-		index.setDescription(_storeWithString(node, GlobalData.serializeDescription(desc)));
-		index.setRecords(_storeWithString(node, GlobalData.serializeRecords(records)));
-		index.setRecommendations(_storeWithString(node, GlobalData.serializeRecommendations(recom)));
-		IpfsFile root = _storeData(node, GlobalData.serializeIndex(index));
-		
-		node.addNewKey("key", publishKey);
-		node.publish("key", publishKey, root);
-	}
-
-	private static IpfsFile _populateStreamRecord(MockSingleNode node, IpfsKey publisherKey, String title, byte[] thumb, byte[] video, int videoDimensions, byte[] audio) throws Throwable
-	{
-		DataArray elements = new DataArray();
-		if (null != thumb)
-		{
-			DataElement element = new DataElement();
-			element.setSpecial(ElementSpecialType.IMAGE);
-			element.setMime("image/jpeg");
-			element.setCid(_storeWithString(node, thumb));
-			elements.getElement().add(element);
-		}
-		if (null != video)
-		{
-			DataElement element = new DataElement();
-			element.setMime("video/webm");
-			element.setHeight(videoDimensions);
-			element.setWidth(videoDimensions);
-			element.setCid(_storeWithString(node, video));
-			elements.getElement().add(element);
-		}
-		if (null != audio)
-		{
-			DataElement element = new DataElement();
-			element.setMime("audio/ogg");
-			element.setCid(_storeWithString(node, audio));
-			elements.getElement().add(element);
-		}
-		
-		StreamRecord streamRecord = new StreamRecord();
-		streamRecord.setName(title);
-		streamRecord.setDescription("desc");
-		streamRecord.setPublisherKey(publisherKey.toPublicKey());
-		streamRecord.setPublishedSecondsUtc(1L);
-		streamRecord.setElements(elements);
-		return _storeData(node, GlobalData.serializeRecord(streamRecord));
-	}
-
-	private static String _storeWithString(MockSingleNode node, byte[] data) throws Throwable
-	{
-		return _storeData(node, data).toSafeString();
-	}
-
-	private static IpfsFile _storeData(MockSingleNode node, byte[] data) throws Throwable
-	{
-		return node.storeData(new ByteArrayInputStream(data));
-	}
-
-	private static Context _createContext(IConnection connection, INetworkScheduler network) throws UsageException
-	{
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, new MemoryConfigFileSystem(null), network);
-		Context context = new Context(null
-				, model
-				, connection
-				, network
-				, () -> System.currentTimeMillis()
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-		);
-		return context;
 	}
 }

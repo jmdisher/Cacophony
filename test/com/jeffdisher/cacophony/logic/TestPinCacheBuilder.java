@@ -1,28 +1,20 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.io.ByteArrayInputStream;
 import java.util.Collections;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.global.GlobalData;
-import com.jeffdisher.cacophony.data.global.description.StreamDescription;
-import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
-import com.jeffdisher.cacophony.data.global.record.DataArray;
-import com.jeffdisher.cacophony.data.global.record.DataElement;
-import com.jeffdisher.cacophony.data.global.record.ElementSpecialType;
-import com.jeffdisher.cacophony.data.global.record.StreamRecord;
-import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockKeys;
+import com.jeffdisher.cacophony.testutils.MockNodeHelpers;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.SizeConstraintException;
 
 
 public class TestPinCacheBuilder
@@ -48,12 +40,14 @@ public class TestPinCacheBuilder
 		MockSingleNode node = new MockSingleNode(new MockSwarm());
 		
 		// Create the home data with 1 post with one attachment.
-		IpfsFile homePost = _makePost(node, "First post!", F2);
-		IpfsFile homeRoot = _createUser(node, "Home", F1, homePost);
+		IpfsFile homeRoot = MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K1, "Home", "pic".getBytes());
+		IpfsFile homePost = MockNodeHelpers.storeStreamRecord(node, MockKeys.K1, "First post!", "thumb".getBytes(), null, 0, null);
+		homeRoot = MockNodeHelpers.attachPostToUserAndPublish(node, MockKeys.K1, homeRoot, homePost);
 		
 		// Create the followee data with 1 post with one attachment.
-		IpfsFile followeePost = _makePost(node, "followee post", F3);
-		IpfsFile followeeRoot = _createUser(node, "Followee", F1, followeePost);
+		IpfsFile followeeRoot = MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K2, "Followee", "pic".getBytes());
+		IpfsFile followeePost = MockNodeHelpers.storeStreamRecord(node, MockKeys.K2, "followee post", "next image".getBytes(), null, 0, null);
+		followeeRoot = MockNodeHelpers.attachPostToUserAndPublish(node, MockKeys.K2, followeeRoot, followeePost);
 		
 		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		PinCacheBuilder builder = new PinCacheBuilder(network);
@@ -62,10 +56,10 @@ public class TestPinCacheBuilder
 		PinCacheData data = builder.finish();
 		
 		// We expect to see the following:
-		// F1 (x2)
+		// "pic" (x2)
 		// recommendations (x2)
-		// F2
-		// F3
+		// "thumb"
+		// "next image"
 		// home post
 		// follow post
 		// home description
@@ -77,60 +71,14 @@ public class TestPinCacheBuilder
 		Assert.assertEquals(12, data.snapshotPinnedSet().size());
 		
 		// Verify the double-counts.
-		data.delRef(F1);
-		data.delRef(F1);
+		IpfsFile picCid = MockSingleNode.generateHash("pic".getBytes());
+		data.delRef(picCid);
+		data.delRef(picCid);
 		
 		IpfsFile emptyRecommendations = MockSingleNode.generateHash(GlobalData.serializeRecommendations(new StreamRecommendations()));
 		data.delRef(emptyRecommendations);
 		data.delRef(emptyRecommendations);
 		Assert.assertEquals(10, data.snapshotPinnedSet().size());
 		network.shutdown();
-	}
-
-
-	private IpfsFile _createUser(MockSingleNode node, String name, IpfsFile pic, IpfsFile post) throws SizeConstraintException
-	{
-		StreamDescription description = new StreamDescription();
-		description.setName(name);
-		description.setDescription("Description forthcoming");
-		description.setPicture(pic.toSafeString());
-		
-		StreamRecommendations recommendations = new StreamRecommendations();
-		
-		StreamRecords records = new StreamRecords();
-		records.getRecord().add(post.toSafeString());
-		
-		StreamIndex streamIndex = new StreamIndex();
-		streamIndex.setVersion(1);
-		streamIndex.setDescription(_storeData(node, GlobalData.serializeDescription(description)).toSafeString());
-		streamIndex.setRecommendations(_storeData(node, GlobalData.serializeRecommendations(recommendations)).toSafeString());
-		streamIndex.setRecords(_storeData(node, GlobalData.serializeRecords(records)).toSafeString());
-		
-		return _storeData(node, GlobalData.serializeIndex(streamIndex));
-	}
-
-	private IpfsFile _makePost(MockSingleNode node, String title, IpfsFile image) throws SizeConstraintException
-	{
-		StreamRecord record = new StreamRecord();
-		record.setName(title);
-		record.setDescription("desc");
-		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(MockKeys.K1.toPublicKey());
-		DataArray elements = new DataArray();
-		if (null != image)
-		{
-			DataElement element = new DataElement();
-			element.setCid(image.toSafeString());
-			element.setMime("image/jpeg");
-			element.setSpecial(ElementSpecialType.IMAGE);
-			elements.getElement().add(element);
-		}
-		record.setElements(elements);
-		return _storeData(node, GlobalData.serializeRecord(record));
-	}
-
-	private IpfsFile _storeData(MockSingleNode node, byte[] data)
-	{
-		return node.storeData(new ByteArrayInputStream(data));
 	}
 }
