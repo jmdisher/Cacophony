@@ -20,6 +20,7 @@ import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.StandardLogger;
@@ -131,6 +132,7 @@ public class MockUserNode
 					, new CacheUpdater(null, null, null, null, null)
 					, publicKey
 			);
+			usedContext.setExplicitCache(defaultContext.getExplicitCache());
 		}
 		T result = command.runInContext(usedContext);
 		if (usedContext != defaultContext)
@@ -289,6 +291,7 @@ public class MockUserNode
 					, new CacheUpdater(null, null, null, null, null)
 					, null
 			);
+			_lazyContext.setExplicitCache(new ExplicitCacheManager(_lazyContext));
 		}
 		return _lazyContext;
 	}

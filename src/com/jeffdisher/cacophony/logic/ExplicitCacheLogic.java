@@ -251,18 +251,15 @@ public class ExplicitCacheLogic
 	 * Purges everything from the explicit cache and requests a GC of the IPFS node.
 	 * 
 	 * @param context The context.
+	 * @throws IpfsConnectionException There was a network error in the GC request.
 	 */
-	public static void purgeCacheFullyAndGc(Context context)
+	public static void purgeCacheFullyAndGc(Context context) throws IpfsConnectionException
 	{
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
 			ExplicitCacheData data = access.writableExplicitCache();
 			_purgeExcess(access, data, 0L);
 			access.requestIpfsGc();
-		}
-		catch (IpfsConnectionException e)
-		{
-			System.err.println("WARNING:  IPFS GC failed: " + e.getLocalizedMessage());
 		}
 	}
 

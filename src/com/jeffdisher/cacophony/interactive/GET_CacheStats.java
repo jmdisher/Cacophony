@@ -5,7 +5,6 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,7 +29,7 @@ public class GET_CacheStats implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		long explicitCacheBytes = ExplicitCacheLogic.getExplicitCacheSize(_context);
+		long explicitCacheBytes = _context.getExplicitCache().getExplicitCacheSize();
 		try (IReadingAccess access = StandardAccess.readAccess(_context))
 		{
 			long followeeCacheBytes = CacheHelpers.getCurrentCacheSizeBytes(access.readableFolloweeData());

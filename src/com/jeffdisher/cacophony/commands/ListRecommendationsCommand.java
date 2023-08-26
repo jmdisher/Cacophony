@@ -8,7 +8,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
-import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -91,7 +90,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		// Consult the cache - this never returns null but will throw on error.
-		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, keyToCheck);
+		ExplicitCacheData.UserInfo userInfo = context.getExplicitCache().loadUserInfo(keyToCheck).get();
 		
 		AbstractRecommendations result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))

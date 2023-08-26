@@ -6,7 +6,6 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
-import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -118,7 +117,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		// Consult the cache - this never returns null but will throw on error.
-		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, keyToCheck);
+		ExplicitCacheData.UserInfo userInfo = context.getExplicitCache().loadUserInfo(keyToCheck).get();
 		ChannelDescription result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{

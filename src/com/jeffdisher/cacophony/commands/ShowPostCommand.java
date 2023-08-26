@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.ILocalRecordCache;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -48,7 +47,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		else if (!post.isKnownToBeCached)
 		{
 			// See if we can override this with a more concretely cached element from the explicit cache.
-			CachedRecordInfo existingInfo = ExplicitCacheLogic.getExistingRecordInfo(context, _elementCid);
+			CachedRecordInfo existingInfo = context.getExplicitCache().getExistingRecord(_elementCid);
 			// This can be null since we are just checking if it already has the info.
 			if (null != existingInfo)
 			{
@@ -119,7 +118,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 
 	private PostDetails _checkExplicitCache(Context context) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
 	{
-		CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(context, _elementCid);
+		CachedRecordInfo info = context.getExplicitCache().loadRecord(_elementCid).get();
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			// Everything in the explicit cache is cached.

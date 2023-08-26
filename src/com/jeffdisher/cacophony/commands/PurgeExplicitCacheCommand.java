@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.logic.ExplicitCacheLogic;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 
 
@@ -14,7 +13,7 @@ public record PurgeExplicitCacheCommand() implements ICommand<None>
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException
 	{
-		ExplicitCacheLogic.purgeCacheFullyAndGc(context);
+		context.getExplicitCache().purgeCacheFullyAndGc().get();
 		return None.NONE;
 	}
 }

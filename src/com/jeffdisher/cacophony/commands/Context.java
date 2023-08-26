@@ -9,10 +9,12 @@ import com.jeffdisher.cacophony.caches.ILocalRecordCache;
 import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsKey;
+import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -34,6 +36,7 @@ public class Context
 	public final IEntryCacheRegistry entryRegistry;
 	public final CacheUpdater cacheUpdater;
 	private IpfsKey _selectedKey;
+	private ExplicitCacheManager _explicitCache;
 
 	public Context(DraftManager sharedDraftManager
 			, LocalDataModel sharedDataModel
@@ -74,10 +77,22 @@ public class Context
 		_selectedKey = key;
 	}
 
-	public synchronized Context cloneWithSelectedKey(IpfsKey selectedKey)
+	public ExplicitCacheManager getExplicitCache()
+	{
+		// If we request this, it must have been configured already.
+		Assert.assertTrue(null != _explicitCache);
+		return _explicitCache;
+	}
+
+	public void setExplicitCache(ExplicitCacheManager explicitCache)
+	{
+		_explicitCache = explicitCache;
+	}
+
+	public Context cloneWithSelectedKey(IpfsKey selectedKey)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
-		return new Context(this.sharedDraftManager
+		Context context = new Context(this.sharedDraftManager
 				, this.sharedDataModel
 				, this.basicConnection
 				, this.scheduler
@@ -90,16 +105,18 @@ public class Context
 				, this.cacheUpdater
 				, selectedKey
 		);
+		context.setExplicitCache(_explicitCache);
+		return context;
 	}
 
-	public synchronized Context cloneWithExtras(ILocalRecordCache localRecordCache
+	public Context cloneWithExtras(ILocalRecordCache localRecordCache
 			, ILocalUserInfoCache userInfoCache
 			, IEntryCacheRegistry entryRegistry
 			, CacheUpdater cacheUpdater
 	)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
-		return new Context(this.sharedDraftManager
+		Context context = new Context(this.sharedDraftManager
 				, this.sharedDataModel
 				, this.basicConnection
 				, this.scheduler
@@ -112,5 +129,7 @@ public class Context
 				, cacheUpdater
 				, _selectedKey
 		);
+		context.setExplicitCache(_explicitCache);
+		return context;
 	}
 }

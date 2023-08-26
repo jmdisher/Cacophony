@@ -17,6 +17,7 @@ import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -136,6 +137,9 @@ public class Cacophony {
 							, logger
 							, baseUrl
 					);
+					
+					// Create the default explicit cache manager (could be over-ridden by the interactive server, in its Context).
+					context.setExplicitCache(new ExplicitCacheManager(context));
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);
