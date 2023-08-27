@@ -226,9 +226,7 @@ public class TestInteractiveHelpers
 		
 		// First, create a channel so the channel is set up.
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, model
-				, connection
-				, scheduler
+				, new Context.AccessTuple(model, connection, scheduler)
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -378,9 +376,7 @@ public class TestInteractiveHelpers
 		
 		// First, create a channel so the channel is set up.
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, model
-				, connection
-				, scheduler
+				, new Context.AccessTuple(model, connection, scheduler)
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL

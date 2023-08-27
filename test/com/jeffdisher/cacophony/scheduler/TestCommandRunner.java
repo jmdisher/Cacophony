@@ -153,8 +153,6 @@ public class TestCommandRunner
 				, null
 				, null
 				, null
-				, null
-				, null
 				, MockKeys.K1
 		);
 		CommandRunner runner = new CommandRunner(context, 1);
@@ -172,8 +170,6 @@ public class TestCommandRunner
 	private static Context _buildContext()
 	{
 		return new Context(null
-				, null
-				, null
 				, null
 				, null
 				, null

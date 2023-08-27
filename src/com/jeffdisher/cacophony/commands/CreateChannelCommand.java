@@ -32,7 +32,8 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		// First, we want to verify that we can contact the server and configure our publication key.
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
 		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + _keyName + "\"");
-		IConnection connection = context.basicConnection;
+		// We are performing a very low-level operation so we need to reach down into the IConnection object.
+		IConnection connection = context.accessTuple.basicConnection();
 		IpfsKey publicKey = connection.getOrCreatePublicKey(_keyName);
 		// This will fail with exception, never null.
 		Assert.assertTrue(null != publicKey);

@@ -41,9 +41,7 @@ public class MockNodeHelpers
 			throw Assert.unexpected(e);
 		}
 		Context context = new Context(null
-				, model
-				, connection
-				, network
+				, new Context.AccessTuple(model, connection, network)
 				, () -> System.currentTimeMillis()
 				, null
 				, null

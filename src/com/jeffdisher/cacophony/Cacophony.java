@@ -227,9 +227,7 @@ public class Cacophony {
 		
 		CacheUpdater cacheUpdater = new CacheUpdater(null, null, null, null, null);
 		Context context = new Context(draftManager
-				, localDataModel
-				, connection
-				, scheduler
+				, new Context.AccessTuple(localDataModel, connection, scheduler)
 				, () -> System.currentTimeMillis()
 				, logger
 				, baseUrl

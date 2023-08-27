@@ -80,9 +80,7 @@ public class TestJsonGenerationHelpers
 		
 		IpfsFile indexFile = null;
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, model
-				, remoteConnection
-				, scheduler
+				, new Context.AccessTuple(model, remoteConnection, scheduler)
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -129,9 +127,7 @@ public class TestJsonGenerationHelpers
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, model
-				, remoteConnection
-				, scheduler
+				, new Context.AccessTuple(model, remoteConnection, scheduler)
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL

@@ -75,9 +75,7 @@ public class MockUserNode
 			throw Assert.unexpected(e);
 		}
 		_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
-				, model
-				, _sharedConnection
-				, _lazyScheduler
+				, new Context.AccessTuple(model, _sharedConnection, _lazyScheduler)
 				, () -> System.currentTimeMillis()
 				, _logger
 				, DataDomain.FAKE_BASE_URL
@@ -120,9 +118,7 @@ public class MockUserNode
 			logger = StandardLogger.topLogger(new PrintStream(captureStream), false);
 			IpfsKey publicKey = defaultContext.getSelectedKey();
 			usedContext = new Context(defaultContext.sharedDraftManager
-					, defaultContext.sharedDataModel
-					, defaultContext.basicConnection
-					, defaultContext.scheduler
+					, defaultContext.accessTuple
 					, defaultContext.currentTimeMillisGenerator
 					, logger
 					, defaultContext.baseUrl
@@ -279,9 +275,7 @@ public class MockUserNode
 				throw Assert.unexpected(e);
 			}
 			_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
-					, model
-					, _sharedConnection
-					, _lazyScheduler
+					, new Context.AccessTuple(model, _sharedConnection, _lazyScheduler)
 					, () -> System.currentTimeMillis()
 					, _logger
 					, DataDomain.FAKE_BASE_URL

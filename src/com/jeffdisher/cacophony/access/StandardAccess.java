@@ -67,12 +67,12 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IReadingAccess readAccess(Context context)
 	{
-		LocalDataModel dataModel = context.sharedDataModel;
+		LocalDataModel dataModel = context.accessTuple.sharedDataModel();
 		IReadOnlyLocalData reading = dataModel.openForRead();
 		
 		IpfsKey selectedKey = context.getSelectedKey();
 		String keyName = _findKeyName(reading, selectedKey);
-		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, reading, null, keyName, selectedKey);
+		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, reading, null, keyName, selectedKey);
 	}
 
 	/**
@@ -85,12 +85,12 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess writeAccess(Context context)
 	{
-		LocalDataModel dataModel = context.sharedDataModel;
+		LocalDataModel dataModel = context.accessTuple.sharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
 		IpfsKey selectedKey = context.getSelectedKey();
 		String keyName = _findKeyName(writing, selectedKey);
-		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, writing, writing, keyName, selectedKey);
 	}
 
 	/**
@@ -102,10 +102,10 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess writeAccessWithKeyOverride(Context context, String keyName, IpfsKey selectedKey)
 	{
-		LocalDataModel dataModel = context.sharedDataModel;
+		LocalDataModel dataModel = context.accessTuple.sharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
-		return new StandardAccess(context.basicConnection, context.scheduler, context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, writing, writing, keyName, selectedKey);
 	}
 
 	private static String _findKeyName(IReadOnlyLocalData data, IpfsKey publicKey)

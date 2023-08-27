@@ -25,9 +25,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class Context
 {
 	public final DraftManager sharedDraftManager;
-	public final LocalDataModel sharedDataModel;
-	public final IConnection basicConnection;
-	public final INetworkScheduler scheduler;
+	public final AccessTuple accessTuple;
 	public final LongSupplier currentTimeMillisGenerator;
 	public final ILogger logger;
 	public final URL baseUrl;
@@ -39,9 +37,7 @@ public class Context
 	private ExplicitCacheManager _explicitCache;
 
 	public Context(DraftManager sharedDraftManager
-			, LocalDataModel sharedDataModel
-			, IConnection basicConnection
-			, INetworkScheduler scheduler
+			, AccessTuple accessTuple
 			, LongSupplier currentTimeMillisGenerator
 			, ILogger logger
 			, URL baseUrl
@@ -53,9 +49,7 @@ public class Context
 	)
 	{
 		this.sharedDraftManager = sharedDraftManager;
-		this.sharedDataModel = sharedDataModel;
-		this.basicConnection = basicConnection;
-		this.scheduler = scheduler;
+		this.accessTuple = accessTuple;
 		this.currentTimeMillisGenerator = currentTimeMillisGenerator;
 		this.logger = logger;
 		this.baseUrl = baseUrl;
@@ -93,9 +87,7 @@ public class Context
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
 		Context context = new Context(this.sharedDraftManager
-				, this.sharedDataModel
-				, this.basicConnection
-				, this.scheduler
+				, this.accessTuple
 				, this.currentTimeMillisGenerator
 				, this.logger
 				, this.baseUrl
@@ -118,9 +110,7 @@ public class Context
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
 		Context context = new Context(this.sharedDraftManager
-				, this.sharedDataModel
-				, this.basicConnection
-				, this.scheduler
+				, this.accessTuple
 				, this.currentTimeMillisGenerator
 				, this.logger
 				, this.baseUrl
@@ -133,4 +123,11 @@ public class Context
 		context.setExplicitCache(explicitCacheManager);
 		return context;
 	}
+
+
+	/**
+	 * Components required to use StandardAccess (since these are almost exclusively for those cases and never change
+	 * during a run - some other parts of the context change or are replaced in clones).
+	 */
+	public static record AccessTuple(LocalDataModel sharedDataModel, IConnection basicConnection, INetworkScheduler scheduler) {}
 }

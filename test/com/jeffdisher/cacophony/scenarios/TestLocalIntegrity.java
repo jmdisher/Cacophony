@@ -130,9 +130,7 @@ public class TestLocalIntegrity
 	{
 		SilentLogger logger = new SilentLogger();
 		return new Context(null
-				, model
-				, serverData
-				, scheduler
+				, new Context.AccessTuple(model, serverData, scheduler)
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
