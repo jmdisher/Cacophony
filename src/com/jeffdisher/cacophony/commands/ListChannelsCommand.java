@@ -1,13 +1,11 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.PrintStream;
-import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
-import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
-import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -19,17 +17,14 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 	@Override
 	public ChannelList runInContext(Context context) throws IpfsConnectionException
 	{
-		// We want a pretty low-level read which doesn't take into account the current context key so use the data model, directly.
-		LocalDataModel dataModel = context.sharedDataModel;
 		ChannelList list;
-		try (IReadOnlyLocalData reading = dataModel.openForRead())
+		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
-			ChannelData data = reading.readLocalIndex();
-			Set<String> keyNames = data.getKeyNames();
-			OneChannel[] channels = keyNames.stream()
-					.map((String keyName) -> {
-						IpfsKey publicKey = data.getPublicKey(keyName);
-						IpfsFile lastRoot = data.getLastPublishedIndex(keyName);
+			OneChannel[] channels = access.readHomeUserData().stream()
+					.map((IReadingAccess.HomeUserTuple tuple) -> {
+						String keyName = tuple.keyName();
+						IpfsKey publicKey = tuple.publicKey();
+						IpfsFile lastRoot = tuple.lastRoot();
 						boolean isSelected = publicKey.equals(context.getSelectedKey());
 						// If we have a userInfoCache, populate the additional data we would see to describe them.
 						String name = null;
