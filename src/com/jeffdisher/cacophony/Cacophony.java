@@ -139,10 +139,15 @@ public class Cacophony {
 					);
 					
 					// Create the default explicit cache manager (could be over-ridden by the interactive server, in its Context).
-					context.setExplicitCache(new ExplicitCacheManager(context));
+					// The default manager runs in synchronous mode, since that makes more sense for command-line usage.
+					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(context, false);
+					context.setExplicitCache(explicitCacheManager);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);
+					
+					// Shut down cache manager (this is a no-op, in this case).
+					explicitCacheManager.shutdown();
 					
 					// Write the output to stdout.
 					result.writeHumanReadable(System.out);

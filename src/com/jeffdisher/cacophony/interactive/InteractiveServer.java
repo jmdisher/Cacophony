@@ -21,6 +21,7 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.local.v4.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.ILogger;
@@ -88,8 +89,11 @@ public class InteractiveServer
 		// Switch the entryRegistry into its normal "running" mode, now that bootstrap is completed.
 		entryRegistry.initializeCombinedView();
 		
+		// Create the explicit cache manager in asynchronous mode.
+		ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(startingContext, true);
+		
 		// Create the context object which we will use for any command invocation from the interactive server.
-		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, cacheUpdater);
+		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, cacheUpdater, explicitCacheManager);
 		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
 		// We will create a handoff connector for the status operations from the background operations.
@@ -297,6 +301,8 @@ public class InteractiveServer
 		}
 		serverLog.logOperation("Shutting down server...");
 		server.stop();
+		serverLog.logOperation("Shutting down explicit cache manager...");
+		explicitCacheManager.shutdown();
 		serverLog.logOperation("Shutting down connector dispatcher...");
 		dispatcher.shutdown();
 		serverLog.logOperation("Shutting down background process...");

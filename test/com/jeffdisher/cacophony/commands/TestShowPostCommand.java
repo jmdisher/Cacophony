@@ -109,7 +109,7 @@ public class TestShowPostCommand
 		// We want to create a special context which allows us to slide in a LocalRecordCache.
 		LocalRecordCache specialRecordCache = new LocalRecordCache();
 		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1, null, 1);
-		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null, null);
+		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null, null, readNode.getContext().getExplicitCache());
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
 		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
@@ -154,7 +154,7 @@ public class TestShowPostCommand
 		// We want to create a special context which allows us to slide in a LocalRecordCache.
 		LocalRecordCache specialRecordCache = new LocalRecordCache();
 		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1, null, 1);
-		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null, null);
+		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null, null, readNode.getContext().getExplicitCache());
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
 		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());

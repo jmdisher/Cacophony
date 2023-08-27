@@ -29,10 +29,11 @@ public class TestExplicitCacheManager
 		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K0, "user", "pic".getBytes());
 		
 		// Test that we can read the user.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context, false);
 		ExplicitCacheData.UserInfo info = manager.loadUserInfo(MockKeys.K0).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.userPicCid());
 		
+		manager.shutdown();
 		network.shutdown();
 	}
 
@@ -44,7 +45,7 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, network);
 		
 		// Test that we fail to find the user.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context, false);
 		boolean didLoad;
 		try
 		{
@@ -57,6 +58,7 @@ public class TestExplicitCacheManager
 		}
 		Assert.assertFalse(didLoad);
 		
+		manager.shutdown();
 		network.shutdown();
 	}
 
@@ -71,7 +73,7 @@ public class TestExplicitCacheManager
 		IpfsFile cid = MockNodeHelpers.storeStreamRecord(node, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
 		
 		// Test that we can read the post.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context, false);
 		CachedRecordInfo info = manager.loadRecord(cid).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.thumbnailCid());
 		
@@ -86,7 +88,7 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, network);
 		
 		// Test that we fail to read the post.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context, false);
 		boolean didLoad;
 		try
 		{
@@ -99,6 +101,7 @@ public class TestExplicitCacheManager
 		}
 		Assert.assertFalse(didLoad);
 		
+		manager.shutdown();
 		network.shutdown();
 	}
 
@@ -108,7 +111,7 @@ public class TestExplicitCacheManager
 		MockSingleNode node = new MockSingleNode(new MockSwarm());
 		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, network);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context, false);
 		
 		// Define a post.
 		IpfsFile cid = MockNodeHelpers.storeStreamRecord(node, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
@@ -130,6 +133,31 @@ public class TestExplicitCacheManager
 		// Verify that the size has changed.
 		Assert.assertEquals(576L, manager.getExplicitCacheSize());
 		
+		manager.shutdown();
+		network.shutdown();
+	}
+
+	@Test
+	public void asyncBasics() throws Throwable
+	{
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
+		Context context = MockNodeHelpers.createWallClockContext(node, network);
+		
+		// Define a user.
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K0, "user", "pic".getBytes());
+		
+		// Define a post.
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(node, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
+		
+		// Test that we can read the user and post in an async manager.
+		ExplicitCacheManager manager = new ExplicitCacheManager(context, true);
+		ExplicitCacheData.UserInfo user = manager.loadUserInfo(MockKeys.K0).get();
+		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), user.userPicCid());
+		CachedRecordInfo post = manager.loadRecord(cid).get();
+		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), post.thumbnailCid());
+		
+		manager.shutdown();
 		network.shutdown();
 	}
 }

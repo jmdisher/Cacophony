@@ -1,5 +1,8 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
@@ -20,15 +23,66 @@ import com.jeffdisher.cacophony.utils.Assert;
 public class ExplicitCacheManager
 {
 	private final Context _context;
+	private final Thread _background;
+	// We will use a runnables directly in this list for now, but this will change later to allow better batching.
+	private final Queue<Runnable> _runnables;
+
+	private boolean _isBackgroundRunning;
 
 	/**
 	 * Creates the receiver on top of the given context, using it to access the network and explicit storage.
 	 * 
 	 * @param context The context.
+	 * @param enableAsync True if the manager should run in a truly asynchronous mode.
 	 */
-	public ExplicitCacheManager(Context context)
+	public ExplicitCacheManager(Context context, boolean enableAsync)
 	{
 		_context = context;
+		if (enableAsync)
+		{
+			_background = new Thread(() -> {
+				Runnable runner = _backgroundGetNextRunnable();
+				while (null != runner)
+				{
+					runner.run();
+					runner = _backgroundGetNextRunnable();
+				}
+			});
+			_runnables = new LinkedList<>();
+			_isBackgroundRunning = true;
+			_background.start();
+		}
+		else
+		{
+			_background = null;
+			_runnables = null;
+			_isBackgroundRunning = false;
+		}
+	}
+
+	/**
+	 * Shuts down the background processing associated with async mode.  Note that this is REQUIRED when running in
+	 * asynchronous mode but is always good practice.
+	 * For testing brevity, synchronous tests don't always call this.
+	 */
+	public void shutdown()
+	{
+		if (_isBackgroundRunning)
+		{
+			synchronized (this)
+			{
+				_isBackgroundRunning = false;
+				this.notifyAll();
+			}
+			try
+			{
+				_background.join();
+			}
+			catch (InterruptedException e)
+			{
+				throw Assert.unexpected(e);
+			}
+		}
 	}
 
 	/**
@@ -37,25 +91,17 @@ public class ExplicitCacheManager
 	 * @param publicKey The user to fetch.
 	 * @return The future containing the asynchronous result.
 	 */
-	public FutureUserInfo loadUserInfo(IpfsKey publicKey)
+	public synchronized FutureUserInfo loadUserInfo(IpfsKey publicKey)
 	{
 		FutureUserInfo future = new FutureUserInfo();
-		try
+		if (null != _runnables)
 		{
-			ExplicitCacheData.UserInfo info = ExplicitCacheLogic.loadUserInfo(_context, publicKey);
-			future.success(info);
+			_runnables.add(() -> _loadUserInfo(publicKey, future));
+			this.notifyAll();
 		}
-		catch (KeyException e)
+		else
 		{
-			future.keyException(e);
-		}
-		catch (ProtocolDataException e)
-		{
-			future.dataException(e);
-		}
-		catch (IpfsConnectionException e)
-		{
-			future.connectionException(e);
+			_loadUserInfo(publicKey, future);
 		}
 		return future;
 	}
@@ -66,21 +112,17 @@ public class ExplicitCacheManager
 	 * @param cid The record instance to load.
 	 * @return The future containing the asynchronous result.
 	 */
-	public FutureRecord loadRecord(IpfsFile cid)
+	public synchronized FutureRecord loadRecord(IpfsFile cid)
 	{
 		FutureRecord future = new FutureRecord();
-		try
+		if (null != _runnables)
 		{
-			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(_context, cid);
-			future.success(info);
+			_runnables.add(() -> _loadRecord(cid, future));
+			this.notifyAll();
 		}
-		catch (ProtocolDataException e)
+		else
 		{
-			future.dataException(e);
-		}
-		catch (IpfsConnectionException e)
-		{
-			future.connectionException(e);
+			_loadRecord(cid, future);
 		}
 		return future;
 	}
@@ -90,17 +132,18 @@ public class ExplicitCacheManager
 	 * 
 	 * @return The future containing the asynchronous completion.
 	 */
-	public FutureVoid purgeCacheFullyAndGc()
+	public synchronized FutureVoid purgeCacheFullyAndGc()
 	{
 		FutureVoid future = new FutureVoid();
-		try
+		
+		if (null != _runnables)
 		{
-			ExplicitCacheLogic.purgeCacheFullyAndGc(_context);
-			future.success();
+			_runnables.add(() -> _purgeCacheFullyAndGc(future));
+			this.notifyAll();
 		}
-		catch (IpfsConnectionException e)
+		else
 		{
-			future.failure(e);
+			_purgeCacheFullyAndGc(future);
 		}
 		return future;
 	}
@@ -122,6 +165,77 @@ public class ExplicitCacheManager
 	public long getExplicitCacheSize()
 	{
 		return ExplicitCacheLogic.getExplicitCacheSize(_context);
+	}
+
+
+	private void _loadUserInfo(IpfsKey publicKey, FutureUserInfo future)
+	{
+		try
+		{
+			ExplicitCacheData.UserInfo info = ExplicitCacheLogic.loadUserInfo(_context, publicKey);
+			future.success(info);
+		}
+		catch (KeyException e)
+		{
+			future.keyException(e);
+		}
+		catch (ProtocolDataException e)
+		{
+			future.dataException(e);
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.connectionException(e);
+		}
+	}
+
+	private void _loadRecord(IpfsFile cid, FutureRecord future)
+	{
+		try
+		{
+			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(_context, cid);
+			future.success(info);
+		}
+		catch (ProtocolDataException e)
+		{
+			future.dataException(e);
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.connectionException(e);
+		}
+	}
+
+	private void _purgeCacheFullyAndGc(FutureVoid future)
+	{
+		try
+		{
+			ExplicitCacheLogic.purgeCacheFullyAndGc(_context);
+			future.success();
+		}
+		catch (IpfsConnectionException e)
+		{
+			future.failure(e);
+		}
+	}
+
+	private synchronized Runnable _backgroundGetNextRunnable()
+	{
+		while (_isBackgroundRunning && _runnables.isEmpty())
+		{
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				throw Assert.unexpected(e);
+			}
+		}
+		return _isBackgroundRunning
+				? _runnables.remove()
+				: null
+		;
 	}
 
 

@@ -113,6 +113,7 @@ public class Context
 			, ILocalUserInfoCache userInfoCache
 			, IEntryCacheRegistry entryRegistry
 			, CacheUpdater cacheUpdater
+			, ExplicitCacheManager explicitCacheManager
 	)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
@@ -129,7 +130,7 @@ public class Context
 				, cacheUpdater
 				, _selectedKey
 		);
-		context.setExplicitCache(_explicitCache);
+		context.setExplicitCache(explicitCacheManager);
 		return context;
 	}
 }
