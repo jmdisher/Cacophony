@@ -4,22 +4,55 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.function.LongSupplier;
 
+import com.jeffdisher.cacophony.access.ConcurrentTransaction;
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
+import com.jeffdisher.cacophony.data.global.AbstractDescription;
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
+import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
+import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
 /**
- * Currently just a wrapper over the helpers in ExplicitCacheLogic but this will eventually absorb those
- * responsibilities as it transforms into a background explicit cache manager able to schedule refreshes of data and
- * fetch new data with less lock-step blocking that the current mechanisms require.
+ * The logic associated with the "explicit cache" used by the system.  "Explicit", in this case means data which needed
+ * to be cached because it was explicitly requested, not cached for reasons of availability and load balancing, like
+ * followee-related caches.
+ * It is structured as a least-recently-used read-through cache under the write lock provided by IWritingAccess.  It
+ * tracks data within the local IPFS node which was pinned due to these explicit lookups.  This means that, despite
+ * being highly versatile, it is very heavy-weight and has an on-disk representation.
+ * Relationship with PinCache:  The explicit cache is used when building the PinCache since it adds references to pinned
+ * data on the local node.
+ * Relationship with LocalRecordCache and LocalUserInfoCache:  This exists as a peer to them, in the stack.  While they
+ * represent fast-path look-ups for data known for structural reasons (home user data or followee data), this represents
+ * a slower path for actual management of data cached for other reasons.  This means that users of the cache should
+ * check those other caches first, as they are fast ephemeral projections.  Accessing this cache is potentially much
+ * slower (read-through, so it may do network access, plus a read updates the LRU state meaning it always needs to
+ * write-back to disk).
+ * Since those other ephemeral caches should be preferentially used, there will be relatively little overlap between
+ * this and those other caches.  An example where they may overlap is if this cache is used to view a post which results
+ * in a decision to follow the user, thus putting the cached entry in the followee cache.  In that case, later calls to
+ * find it will resolve it in those fast-path caches hitting before this cache is checked, allowing it to age out and be
+ * purged.
+ * Note that this implementation will internally request whatever kind of data locking access is required for what it
+ * needs to accomplish and will avoid doing heavy network operations under lock, relying on transactions for those cases
+ * where it would need to write-back storage due to changes it has made to what is pinned on the local node.
+ * Due to the need for potential background refreshes and a general interest to batch requests in fewer disk-write
+ * calls, the actual logic is run on a background thread (if created with enableAsync=true) and the results are returned
+ * via futures (where the call cannot be satisfied with a fully-synchronous local call).
  */
 public class ExplicitCacheManager
 {
@@ -91,7 +124,12 @@ public class ExplicitCacheManager
 	}
 
 	/**
-	 * Loads user info for the given public key.
+	 * Loads user info for the user with the given public key, reading through to the network to find the info if it
+	 * isn't already in the cache.
+	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
+	 * recently used.
+	 * WARNING:  As part of a transition to the background refresh mechanism, this call will currently always report a
+	 * cache hit if it sees an entry in the cache for this key, no matter how old it is.
 	 * 
 	 * @param publicKey The user to fetch.
 	 * @return The future containing the asynchronous result.
@@ -112,28 +150,30 @@ public class ExplicitCacheManager
 	}
 
 	/**
-	 * Loads the record info at the given cid.
+	 * Loads the info describing the StreamRecord with the given recordCid.
+	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
+	 * recently used.
 	 * 
-	 * @param cid The record instance to load.
+	 * @param recordCid The record instance to load.
 	 * @return The future containing the asynchronous result.
 	 */
-	public synchronized FutureRecord loadRecord(IpfsFile cid)
+	public synchronized FutureRecord loadRecord(IpfsFile recordCid)
 	{
 		FutureRecord future = new FutureRecord();
 		if (null != _runnables)
 		{
-			_runnables.add(() -> _loadRecord(cid, future));
+			_runnables.add(() -> _loadRecord(recordCid, future));
 			this.notifyAll();
 		}
 		else
 		{
-			_loadRecord(cid, future);
+			_loadRecord(recordCid, future);
 		}
 		return future;
 	}
 
 	/**
-	 * Requests to that the explicit cache be fully purged and a storage GC of the IPFS node be initiated.
+	 * Purges everything from the explicit cache and requests a GC of the IPFS node.
 	 * 
 	 * @return The future containing the asynchronous completion.
 	 */
@@ -154,30 +194,101 @@ public class ExplicitCacheManager
 	}
 
 	/**
-	 * Fetches a record directly from cache, returning immediately if found or not.
+	 * Returns the record with the given recordCid, returning null if the explicit cache doesn't have information about
+	 * it.
+	 * NOTE:  Will NOT load from the network.
 	 * 
-	 * @param cid The record instance to read.
+	 * @param recordCid The record instance to read.
 	 * @return The record, or null if not found.
 	 */
-	public CachedRecordInfo getExistingRecord(IpfsFile cid)
+	public CachedRecordInfo getExistingRecord(IpfsFile recordCid)
 	{
-		return ExplicitCacheLogic.getExistingRecordInfo(_accessTuple, _logger, cid);
+		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+		{
+			IExplicitCacheReading data = access.readableExplicitCache();
+			return data.getRecordInfo(recordCid);
+		}
 	}
 
 	/**
+	 * Just a helper to read the total size from ExplicitCacheData.
+	 * 
 	 * @return The current explicit cache size, in bytes.
 	 */
 	public long getExplicitCacheSize()
 	{
-		return ExplicitCacheLogic.getExplicitCacheSize(_accessTuple, _logger);
+		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+		{
+			IExplicitCacheReading data = access.readableExplicitCache();
+			return data.getCacheSizeBytes();
+		}
 	}
 
 
 	private void _loadUserInfo(IpfsKey publicKey, FutureUserInfo future)
 	{
+		long currentTimeMillis = _currentTimeMillisSupplier.getAsLong();
 		try
 		{
-			ExplicitCacheData.UserInfo info = ExplicitCacheLogic.loadUserInfo(_accessTuple, _logger, publicKey, _currentTimeMillisSupplier.getAsLong());
+			ExplicitCacheData.UserInfo info;
+			IpfsFile root = null;
+			ConcurrentTransaction transaction = null;
+			try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+			{
+				IExplicitCacheReading data = access.readableExplicitCache();
+				info = data.getUserInfo(publicKey);
+				if (null == info)
+				{
+					// Check the key.
+					root = access.resolvePublicKey(publicKey).get();
+					// This will fail instead of returning null.
+					Assert.assertTrue(null != root);
+					transaction = access.openConcurrentTransaction();
+				}
+			}
+			
+			if (null != transaction)
+			{
+				Assert.assertTrue(null == info);
+				ExplicitCacheData.UserInfo potential;
+				try
+				{
+					potential = _loadUserInfo(transaction, root);
+				}
+				catch (ProtocolDataException | IpfsConnectionException e)
+				{
+					try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+					{
+						ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+						transaction.rollback(resolver);
+					}
+					throw e;
+				}
+				try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+				{
+					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+					ExplicitCacheData data = access.writableExplicitCache();
+					info = data.getUserInfo(publicKey);
+					if (null == info)
+					{
+						// Add this to the structure, creating the official result.
+						info = data.addUserInfo(publicKey, currentTimeMillis, potential.indexCid(), potential.recommendationsCid(), potential.recordsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
+						
+						// Commit the transaction.
+						transaction.commit(resolver);
+						
+						// Purge any overflow.
+						PrefsData prefs = access.readPrefs();
+						_purgeExcess(access, data, prefs.explicitCacheTargetBytes);
+					}
+					else
+					{
+						// We will just use this one so rollback the transaction as its network operations will be redundant.
+						transaction.rollback(resolver);
+					}
+				}
+			}
+			Assert.assertTrue(null != info);
 			future.success(info);
 		}
 		catch (KeyException e)
@@ -194,11 +305,68 @@ public class ExplicitCacheManager
 		}
 	}
 
-	private void _loadRecord(IpfsFile cid, FutureRecord future)
+	private void _loadRecord(IpfsFile recordCid, FutureRecord future)
 	{
 		try
 		{
-			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(_accessTuple, _logger, cid);
+			CachedRecordInfo info;
+			int videoEdgePixelMax = 0;
+			ConcurrentTransaction transaction = null;
+			try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+			{
+				IExplicitCacheReading data = access.readableExplicitCache();
+				info = data.getRecordInfo(recordCid);
+				if (null == info)
+				{
+					transaction = access.openConcurrentTransaction();
+					videoEdgePixelMax = access.readPrefs().videoEdgePixelMax;
+				}
+			}
+			
+			if (null != transaction)
+			{
+				Assert.assertTrue(null == info);
+				Assert.assertTrue(videoEdgePixelMax > 0);
+				CachedRecordInfo potential;
+				try
+				{
+					potential = _loadRecordInfo(transaction, videoEdgePixelMax, recordCid);
+				}
+				catch (ProtocolDataException | IpfsConnectionException e)
+				{
+					try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+					{
+						ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+						transaction.rollback(resolver);
+					}
+					throw e;
+				}
+				try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+				{
+					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+					ExplicitCacheData data = access.writableExplicitCache();
+					info = data.getRecordInfo(recordCid);
+					if (null == info)
+					{
+						// Add this to the structure.
+						data.addStreamRecord(recordCid, potential);
+						info = potential;
+						
+						// Commit the transaction.
+						transaction.commit(resolver);
+						
+						// Purge any overflow.
+						PrefsData prefs = access.readPrefs();
+						_purgeExcess(access, data, prefs.explicitCacheTargetBytes);
+					}
+					else
+					{
+						// We will just use this one so rollback the transaction as its network operations will be redundant.
+						transaction.rollback(resolver);
+					}
+				}
+			}
+			Assert.assertTrue(null != info);
 			future.success(info);
 		}
 		catch (ProtocolDataException e)
@@ -215,13 +383,92 @@ public class ExplicitCacheManager
 	{
 		try
 		{
-			ExplicitCacheLogic.purgeCacheFullyAndGc(_accessTuple, _logger);
+			try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+			{
+				ExplicitCacheData data = access.writableExplicitCache();
+				_purgeExcess(access, data, 0L);
+				access.requestIpfsGc();
+			}
 			future.success();
 		}
 		catch (IpfsConnectionException e)
 		{
 			future.failure(e);
 		}
+	}
+
+	private void _purgeExcess(IWritingAccess access, ExplicitCacheData data, long cacheLimitInBytes)
+	{
+		data.purgeCacheToSize((IpfsFile evict) -> {
+			try
+			{
+				access.unpin(evict);
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This is just a local contact problem so just log it.
+				System.err.println("WARNING:  Failure in unpin, will need to be removed manually: " + evict);
+			}
+		}, cacheLimitInBytes);
+	}
+
+	private ExplicitCacheData.UserInfo _loadUserInfo(ConcurrentTransaction transaction, IpfsFile root) throws ProtocolDataException, IpfsConnectionException
+	{
+		// First, read all of the data to make sure that it is valid.
+		ForeignChannelReader reader = new ForeignChannelReader(transaction, root, false);
+		AbstractIndex index = reader.loadIndex();
+		AbstractDescription description = reader.loadDescription();
+		// (recommendations is something we don't use but will pin later so we want to know it is valid)
+		reader.loadRecommendations();
+		// We need to check the user pic, explicitly.
+		IpfsFile userPicCid = description.getPicCid();
+		// In V2, the user pic is optional.
+		long picSize = (null != userPicCid)
+				? transaction.getSizeInBytes(userPicCid).get()
+				: 0L
+		;
+		if (picSize > SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES)
+		{
+			throw new SizeConstraintException("explicit user pic", picSize, SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES);
+		}
+		// Now, pin everything and update the cache.
+		FuturePin pinIndex = transaction.pin(root);
+		FuturePin pinRecommendations = transaction.pin(index.recommendationsCid);
+		FuturePin pinRecords = transaction.pin(index.recordsCid);
+		FuturePin pinDescription = transaction.pin(index.descriptionCid);
+		if (null != userPicCid)
+		{
+			transaction.pin(userPicCid).get();
+		}
+		pinIndex.get();
+		pinRecommendations.get();
+		pinRecords.get();
+		pinDescription.get();
+		long combinedSizeBytes = transaction.getSizeInBytes(pinIndex.cid).get()
+				+ transaction.getSizeInBytes(pinRecommendations.cid).get()
+				+ transaction.getSizeInBytes(pinRecords.cid).get()
+				+ transaction.getSizeInBytes(pinDescription.cid).get()
+				+ picSize
+		;
+		// We don't bother building this fully since it is just meant to be a container of a few pieces of data, here.
+		return new ExplicitCacheData.UserInfo(null
+				, 0L
+				, 0L
+				, pinIndex.cid
+				, pinRecommendations.cid
+				, pinRecords.cid
+				, pinDescription.cid
+				, userPicCid
+				, combinedSizeBytes
+		);
+	}
+
+	private CachedRecordInfo _loadRecordInfo(ConcurrentTransaction transaction, int videoEdgePixelMax, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	{
+		CachedRecordInfo info = CommonRecordPinning.loadAndPinRecord(transaction, videoEdgePixelMax, recordCid);
+		// This is never null - throws on error.
+		Assert.assertTrue(null != info);
+		return info;
 	}
 
 	private synchronized Runnable _backgroundGetNextRunnable()
