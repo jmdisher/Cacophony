@@ -67,12 +67,7 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IReadingAccess readAccess(Context context)
 	{
-		LocalDataModel dataModel = context.accessTuple.sharedDataModel();
-		IReadOnlyLocalData reading = dataModel.openForRead();
-		
-		IpfsKey selectedKey = context.getSelectedKey();
-		String keyName = _findKeyName(reading, selectedKey);
-		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, reading, null, keyName, selectedKey);
+		return _readAccessBasic(context.accessTuple, context.logger, context.getSelectedKey());
 	}
 
 	/**
@@ -85,12 +80,7 @@ public class StandardAccess implements IWritingAccess
 	 */
 	public static IWritingAccess writeAccess(Context context)
 	{
-		LocalDataModel dataModel = context.accessTuple.sharedDataModel();
-		IReadWriteLocalData writing = dataModel.openForWrite();
-		
-		IpfsKey selectedKey = context.getSelectedKey();
-		String keyName = _findKeyName(writing, selectedKey);
-		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, writing, writing, keyName, selectedKey);
+		return _writeAccessBasic(context.accessTuple, context.logger, context.getSelectedKey());
 	}
 
 	/**
@@ -106,6 +96,53 @@ public class StandardAccess implements IWritingAccess
 		IReadWriteLocalData writing = dataModel.openForWrite();
 		
 		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, writing, writing, keyName, selectedKey);
+	}
+
+	/**
+	 * Requests read access.
+	 * Note that this assumes that the config directory has already been created and is valid (see
+	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
+	 * 
+	 * @param accessTuple The access information from the context.
+	 * @param logger The logger.
+	 * @return The read access interface.
+	 */
+	public static IReadingAccess readAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
+	{
+		return _readAccessBasic(accessTuple, logger, null);
+	}
+
+	/**
+	 * Requests write access.
+	 * Note that this assumes that the config directory has already been created and is valid (see
+	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
+	 * 
+	 * @param accessTuple The access information from the context.
+	 * @param logger The logger.
+	 * @return The write access interface.
+	 */
+	public static IWritingAccess writeAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
+	{
+		return _writeAccessBasic(accessTuple, logger, null);
+	}
+
+
+	private static IReadingAccess _readAccessBasic(Context.AccessTuple accessTuple, ILogger logger, IpfsKey selectedKey)
+	{
+		LocalDataModel dataModel = accessTuple.sharedDataModel();
+		IReadOnlyLocalData reading = dataModel.openForRead();
+		
+		String keyName = _findKeyName(reading, selectedKey);
+		return new StandardAccess(accessTuple.basicConnection(), accessTuple.scheduler(), logger, reading, null, keyName, selectedKey);
+	}
+
+	private static IWritingAccess _writeAccessBasic(Context.AccessTuple accessTuple, ILogger logger, IpfsKey selectedKey)
+	{
+		LocalDataModel dataModel = accessTuple.sharedDataModel();
+		IReadWriteLocalData writing = dataModel.openForWrite();
+		
+		String keyName = _findKeyName(writing, selectedKey);
+		return new StandardAccess(accessTuple.basicConnection(), accessTuple.scheduler(), logger, writing, writing, keyName, selectedKey);
 	}
 
 	private static String _findKeyName(IReadOnlyLocalData data, IpfsKey publicKey)

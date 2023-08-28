@@ -140,7 +140,7 @@ public class Cacophony {
 					
 					// Create the default explicit cache manager (could be over-ridden by the interactive server, in its Context).
 					// The default manager runs in synchronous mode, since that makes more sense for command-line usage.
-					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(context, false);
+					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 					context.setExplicitCache(explicitCacheManager);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).

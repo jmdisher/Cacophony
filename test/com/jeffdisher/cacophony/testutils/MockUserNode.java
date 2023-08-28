@@ -286,7 +286,7 @@ public class MockUserNode
 					, null
 			);
 			// WARNING:  This is not shut down so it MUST be synchronous.
-			_lazyContext.setExplicitCache(new ExplicitCacheManager(_lazyContext, false));
+			_lazyContext.setExplicitCache(new ExplicitCacheManager(_lazyContext.accessTuple, _lazyContext.logger, _lazyContext.currentTimeMillisGenerator, false));
 		}
 		return _lazyContext;
 	}

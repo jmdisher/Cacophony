@@ -90,7 +90,7 @@ public class InteractiveServer
 		entryRegistry.initializeCombinedView();
 		
 		// Create the explicit cache manager in asynchronous mode.
-		ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(startingContext, true);
+		ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(startingContext.accessTuple, startingContext.logger, startingContext.currentTimeMillisGenerator, true);
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
 		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, cacheUpdater, explicitCacheManager);

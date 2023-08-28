@@ -52,7 +52,7 @@ public class MockNodeHelpers
 				, null
 		);
 		// WARNING:  This is not shut down so it MUST be synchronous.
-		context.setExplicitCache(new ExplicitCacheManager(context, false));
+		context.setExplicitCache(new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false));
 		return context;
 	}
 

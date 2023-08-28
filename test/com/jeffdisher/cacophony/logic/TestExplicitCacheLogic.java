@@ -37,7 +37,7 @@ public class TestExplicitCacheLogic
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
+			ExplicitCacheLogic.loadUserInfo(context.accessTuple, context.logger, MockKeys.K1, context.currentTimeMillisGenerator.getAsLong());
 			didFail = false;
 		}
 		catch (KeyException e)
@@ -64,7 +64,7 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
-		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
+		ExplicitCacheData.UserInfo userInfo = ExplicitCacheLogic.loadUserInfo(context.accessTuple, context.logger, MockKeys.K1, context.currentTimeMillisGenerator.getAsLong());
 		Assert.assertNotNull(userInfo);
 		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
 		Assert.assertEquals(3, node.loadCalls);
@@ -93,7 +93,7 @@ public class TestExplicitCacheLogic
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
+			ExplicitCacheLogic.loadUserInfo(context.accessTuple, context.logger, MockKeys.K1, context.currentTimeMillisGenerator.getAsLong());
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -129,7 +129,7 @@ public class TestExplicitCacheLogic
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
+			ExplicitCacheLogic.loadUserInfo(context.accessTuple, context.logger, MockKeys.K1, context.currentTimeMillisGenerator.getAsLong());
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -158,7 +158,7 @@ public class TestExplicitCacheLogic
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadRecordInfo(context, MockSingleNode.generateHash(new byte[] {1}));
+			ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, MockSingleNode.generateHash(new byte[] {1}));
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -185,13 +185,13 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record);
 		// We check the size of the record before load and then when building total.
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(2, node.sizeCalls);
 		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(2, node.sizeCalls);
@@ -209,13 +209,13 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record);
 		// We check the record size, load it, then total record, thumbnail, and video.
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(4, node.sizeCalls);
 		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(4, node.sizeCalls);
@@ -233,13 +233,13 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record);
 		// We check the record size, load it, then total record and audio.
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(3, node.sizeCalls);
 		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record2 = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(3, node.sizeCalls);
@@ -264,7 +264,7 @@ public class TestExplicitCacheLogic
 		boolean didFail;
 		try
 		{
-			ExplicitCacheLogic.loadRecordInfo(context, cid);
+			ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -293,10 +293,10 @@ public class TestExplicitCacheLogic
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
-		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context, cid));
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context.accessTuple, context.logger, cid));
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record);
-		Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(context, cid));
+		Assert.assertTrue(record == ExplicitCacheLogic.getExistingRecordInfo(context.accessTuple, context.logger, cid));
 		scheduler.shutdown();
 	}
 
@@ -321,7 +321,7 @@ public class TestExplicitCacheLogic
 				ExplicitCacheData.UserInfo userInfo;
 				try
 				{
-					userInfo = ExplicitCacheLogic.loadUserInfo(context, MockKeys.K1);
+					userInfo = ExplicitCacheLogic.loadUserInfo(context.accessTuple, context.logger, MockKeys.K1, context.currentTimeMillisGenerator.getAsLong());
 				}
 				catch (ProtocolDataException e)
 				{
@@ -386,7 +386,7 @@ public class TestExplicitCacheLogic
 				CachedRecordInfo record;
 				try
 				{
-					record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+					record = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 				}
 				catch (ProtocolDataException e)
 				{
@@ -435,21 +435,21 @@ public class TestExplicitCacheLogic
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		// Populate the cache.
-		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context, cid);
+		CachedRecordInfo record = ExplicitCacheLogic.loadRecordInfo(context.accessTuple, context.logger, cid);
 		Assert.assertNotNull(record);
 		
 		// Check the size.
-		long size = ExplicitCacheLogic.getExplicitCacheSize(context);
+		long size = ExplicitCacheLogic.getExplicitCacheSize(context.accessTuple, context.logger);
 		Assert.assertEquals(377L, size);
 		
 		// Purge.
-		ExplicitCacheLogic.purgeCacheFullyAndGc(context);
+		ExplicitCacheLogic.purgeCacheFullyAndGc(context.accessTuple, context.logger);
 		
 		// Check the cache.
-		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context, cid));
+		Assert.assertNull(ExplicitCacheLogic.getExistingRecordInfo(context.accessTuple, context.logger, cid));
 		
 		// Check the size.
-		size = ExplicitCacheLogic.getExplicitCacheSize(context);
+		size = ExplicitCacheLogic.getExplicitCacheSize(context.accessTuple, context.logger);
 		Assert.assertEquals(0L, size);
 		
 		scheduler.shutdown();

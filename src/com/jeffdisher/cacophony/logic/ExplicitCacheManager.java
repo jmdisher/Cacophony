@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.function.LongSupplier;
 
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
@@ -22,7 +23,9 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class ExplicitCacheManager
 {
-	private final Context _context;
+	private final Context.AccessTuple _accessTuple;
+	private final ILogger _logger;
+	private final LongSupplier _currentTimeMillisSupplier;
 	private final Thread _background;
 	// We will use a runnables directly in this list for now, but this will change later to allow better batching.
 	private final Queue<Runnable> _runnables;
@@ -35,9 +38,11 @@ public class ExplicitCacheManager
 	 * @param context The context.
 	 * @param enableAsync True if the manager should run in a truly asynchronous mode.
 	 */
-	public ExplicitCacheManager(Context context, boolean enableAsync)
+	public ExplicitCacheManager(Context.AccessTuple accessTuple, ILogger logger, LongSupplier currentTimeMillisSupplier, boolean enableAsync)
 	{
-		_context = context;
+		_accessTuple = accessTuple;
+		_logger = logger;
+		_currentTimeMillisSupplier = currentTimeMillisSupplier;
 		if (enableAsync)
 		{
 			_background = new Thread(() -> {
@@ -156,7 +161,7 @@ public class ExplicitCacheManager
 	 */
 	public CachedRecordInfo getExistingRecord(IpfsFile cid)
 	{
-		return ExplicitCacheLogic.getExistingRecordInfo(_context, cid);
+		return ExplicitCacheLogic.getExistingRecordInfo(_accessTuple, _logger, cid);
 	}
 
 	/**
@@ -164,7 +169,7 @@ public class ExplicitCacheManager
 	 */
 	public long getExplicitCacheSize()
 	{
-		return ExplicitCacheLogic.getExplicitCacheSize(_context);
+		return ExplicitCacheLogic.getExplicitCacheSize(_accessTuple, _logger);
 	}
 
 
@@ -172,7 +177,7 @@ public class ExplicitCacheManager
 	{
 		try
 		{
-			ExplicitCacheData.UserInfo info = ExplicitCacheLogic.loadUserInfo(_context, publicKey);
+			ExplicitCacheData.UserInfo info = ExplicitCacheLogic.loadUserInfo(_accessTuple, _logger, publicKey, _currentTimeMillisSupplier.getAsLong());
 			future.success(info);
 		}
 		catch (KeyException e)
@@ -193,7 +198,7 @@ public class ExplicitCacheManager
 	{
 		try
 		{
-			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(_context, cid);
+			CachedRecordInfo info = ExplicitCacheLogic.loadRecordInfo(_accessTuple, _logger, cid);
 			future.success(info);
 		}
 		catch (ProtocolDataException e)
@@ -210,7 +215,7 @@ public class ExplicitCacheManager
 	{
 		try
 		{
-			ExplicitCacheLogic.purgeCacheFullyAndGc(_context);
+			ExplicitCacheLogic.purgeCacheFullyAndGc(_accessTuple, _logger);
 			future.success();
 		}
 		catch (IpfsConnectionException e)

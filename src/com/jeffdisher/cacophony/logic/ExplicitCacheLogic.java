@@ -56,23 +56,25 @@ public class ExplicitCacheLogic
 	 * WARNING:  As part of a transition to the background refresh mechanism, this call will currently always report a
 	 * cache hit if it sees an entry in the cache for this key, no matter how old it is.
 	 * 
-	 * @param context The context.
+	 * @param accessTuple Context data.
+	 * @param logger Logger.
 	 * @param publicKey The public key of the user.
+	 * @param currentTimeMillis The local system time.
 	 * @return The info for this user (never null).
 	 * @throws KeyException The key could not be resolved.
 	 * @throws ProtocolDataException The data found was corrupt.
 	 * @throws IpfsConnectionException There was a problem accessing the network (could be a timeout due to not finding
 	 * the data).
 	 */
-	public static ExplicitCacheData.UserInfo loadUserInfo(Context context, IpfsKey publicKey) throws KeyException, ProtocolDataException, IpfsConnectionException
+	public static ExplicitCacheData.UserInfo loadUserInfo(Context.AccessTuple accessTuple, ILogger logger, IpfsKey publicKey, long currentTimeMillis) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
-		Assert.assertTrue(null != context);
+		Assert.assertTrue(null != accessTuple);
 		Assert.assertTrue(null != publicKey);
 		
 		ExplicitCacheData.UserInfo info;
 		IpfsFile root = null;
 		ConcurrentTransaction transaction = null;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = StandardAccess.readAccessBasic(accessTuple, logger))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			info = data.getUserInfo(publicKey);
@@ -96,14 +98,14 @@ public class ExplicitCacheLogic
 			}
 			catch (ProtocolDataException | IpfsConnectionException e)
 			{
-				try (IWritingAccess access = StandardAccess.writeAccess(context))
+				try (IWritingAccess access = StandardAccess.writeAccessBasic(accessTuple, logger))
 				{
 					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 					transaction.rollback(resolver);
 				}
 				throw e;
 			}
-			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			try (IWritingAccess access = StandardAccess.writeAccessBasic(accessTuple, logger))
 			{
 				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 				ExplicitCacheData data = access.writableExplicitCache();
@@ -111,7 +113,6 @@ public class ExplicitCacheLogic
 				if (null == info)
 				{
 					// Add this to the structure, creating the official result.
-					long currentTimeMillis = context.currentTimeMillisGenerator.getAsLong();
 					info = data.addUserInfo(publicKey, currentTimeMillis, potential.indexCid(), potential.recommendationsCid(), potential.recordsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
 					
 					// Commit the transaction.
@@ -137,22 +138,23 @@ public class ExplicitCacheLogic
 	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
 	 * recently used.
 	 * 
-	 * @param context The context.
+	 * @param accessTuple Context data.
+	 * @param logger Logger.
 	 * @param recordCid The CID of the record.
 	 * @return The info for this StreamRecord (never null).
 	 * @throws ProtocolDataException The data found was corrupt.
 	 * @throws IpfsConnectionException There was a problem accessing the network (could be a timeout due to not finding
 	 * the data).
 	 */
-	public static CachedRecordInfo loadRecordInfo(Context context, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	public static CachedRecordInfo loadRecordInfo(Context.AccessTuple accessTuple, ILogger logger, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
 	{
-		Assert.assertTrue(null != context);
+		Assert.assertTrue(null != accessTuple);
 		Assert.assertTrue(null != recordCid);
 		
 		CachedRecordInfo info;
 		int videoEdgePixelMax = 0;
 		ConcurrentTransaction transaction = null;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = StandardAccess.readAccessBasic(accessTuple, logger))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			info = data.getRecordInfo(recordCid);
@@ -174,14 +176,14 @@ public class ExplicitCacheLogic
 			}
 			catch (ProtocolDataException | IpfsConnectionException e)
 			{
-				try (IWritingAccess access = StandardAccess.writeAccess(context))
+				try (IWritingAccess access = StandardAccess.writeAccessBasic(accessTuple, logger))
 				{
 					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 					transaction.rollback(resolver);
 				}
 				throw e;
 			}
-			try (IWritingAccess access = StandardAccess.writeAccess(context))
+			try (IWritingAccess access = StandardAccess.writeAccessBasic(accessTuple, logger))
 			{
 				ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 				ExplicitCacheData data = access.writableExplicitCache();
@@ -213,14 +215,15 @@ public class ExplicitCacheLogic
 	/**
 	 * Just a helper to read the total size from ExplicitCacheData.
 	 * 
-	 * @param context The context.
+	 * @param accessTuple Context data.
+	 * @param logger Logger.
 	 * @return The total size of the explicitly cached data, in bytes.
 	 */
-	public static long getExplicitCacheSize(Context context)
+	public static long getExplicitCacheSize(Context.AccessTuple accessTuple, ILogger logger)
 	{
-		Assert.assertTrue(null != context);
+		Assert.assertTrue(null != accessTuple);
 		
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = StandardAccess.readAccessBasic(accessTuple, logger))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getCacheSizeBytes();
@@ -232,15 +235,16 @@ public class ExplicitCacheLogic
 	 * it.
 	 * NOTE:  Will NOT load from the network.
 	 * 
-	 * @param context The context.
+	 * @param accessTuple Context data.
+	 * @param logger Logger.
 	 * @param recordCid The CID of the record.
 	 * @return The info for this StreamRecord (null if unknown).
 	 */
-	public static CachedRecordInfo getExistingRecordInfo(Context context, IpfsFile recordCid)
+	public static CachedRecordInfo getExistingRecordInfo(Context.AccessTuple accessTuple, ILogger logger, IpfsFile recordCid)
 	{
-		Assert.assertTrue(null != context);
+		Assert.assertTrue(null != accessTuple);
 		
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = StandardAccess.readAccessBasic(accessTuple, logger))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getRecordInfo(recordCid);
@@ -250,12 +254,15 @@ public class ExplicitCacheLogic
 	/**
 	 * Purges everything from the explicit cache and requests a GC of the IPFS node.
 	 * 
-	 * @param context The context.
+	 * @param accessTuple Context data.
+	 * @param logger Logger.
 	 * @throws IpfsConnectionException There was a network error in the GC request.
 	 */
-	public static void purgeCacheFullyAndGc(Context context) throws IpfsConnectionException
+	public static void purgeCacheFullyAndGc(Context.AccessTuple accessTuple, ILogger logger) throws IpfsConnectionException
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		Assert.assertTrue(null != accessTuple);
+		
+		try (IWritingAccess access = StandardAccess.writeAccessBasic(accessTuple, logger))
 		{
 			ExplicitCacheData data = access.writableExplicitCache();
 			_purgeExcess(access, data, 0L);
