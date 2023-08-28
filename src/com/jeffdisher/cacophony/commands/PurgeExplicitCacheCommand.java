@@ -13,7 +13,7 @@ public record PurgeExplicitCacheCommand() implements ICommand<None>
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException
 	{
-		context.getExplicitCache().purgeCacheFullyAndGc().get();
+		context.explicitCacheManager.purgeCacheFullyAndGc().get();
 		return None.NONE;
 	}
 }

@@ -47,7 +47,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		else if (!post.isKnownToBeCached)
 		{
 			// See if we can override this with a more concretely cached element from the explicit cache.
-			CachedRecordInfo existingInfo = context.getExplicitCache().getExistingRecord(_elementCid);
+			CachedRecordInfo existingInfo = context.explicitCacheManager.getExistingRecord(_elementCid);
 			// This can be null since we are just checking if it already has the info.
 			if (null != existingInfo)
 			{
@@ -118,7 +118,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 
 	private PostDetails _checkExplicitCache(Context context) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
 	{
-		CachedRecordInfo info = context.getExplicitCache().loadRecord(_elementCid).get();
+		CachedRecordInfo info = context.explicitCacheManager.loadRecord(_elementCid).get();
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			// Everything in the explicit cache is cached.

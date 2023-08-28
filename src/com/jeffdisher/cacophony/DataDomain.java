@@ -135,6 +135,7 @@ public class DataDomain implements Closeable
 				, null
 				, new CacheUpdater(null, null, null, null, null)
 				, null
+				, null
 		);
 		
 		// Create the "them" user - this is the fake "remote" user
@@ -164,6 +165,7 @@ public class DataDomain implements Closeable
 				, null
 				, null
 				, new CacheUpdater(null, null, null, null, null)
+				, null
 				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);

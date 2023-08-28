@@ -117,7 +117,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		// Consult the cache - this never returns null but will throw on error.
-		ExplicitCacheData.UserInfo userInfo = context.getExplicitCache().loadUserInfo(keyToCheck).get();
+		ExplicitCacheData.UserInfo userInfo = context.explicitCacheManager.loadUserInfo(keyToCheck).get();
 		ChannelDescription result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{

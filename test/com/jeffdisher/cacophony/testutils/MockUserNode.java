@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.function.LongSupplier;
 
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
@@ -84,6 +85,7 @@ public class MockUserNode
 				, entryRegistry
 				, new CacheUpdater(recordCache, userInfoCache, entryRegistry, replyCache, null)
 				, null
+				, null
 		);
 	}
 
@@ -126,9 +128,9 @@ public class MockUserNode
 					, null
 					, null
 					, new CacheUpdater(null, null, null, null, null)
+					, defaultContext.explicitCacheManager
 					, publicKey
 			);
-			usedContext.setExplicitCache(defaultContext.getExplicitCache());
 		}
 		T result = command.runInContext(usedContext);
 		if (usedContext != defaultContext)
@@ -274,19 +276,22 @@ public class MockUserNode
 				// We don't expect this in the test.
 				throw Assert.unexpected(e);
 			}
+			Context.AccessTuple accessTuple = new Context.AccessTuple(model, _sharedConnection, _lazyScheduler);
+			LongSupplier currentTimeMillisGenerator = () -> System.currentTimeMillis();
+			// WARNING:  This is not shut down so it MUST be synchronous.
+			ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(accessTuple, _logger, currentTimeMillisGenerator, false);
 			_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
-					, new Context.AccessTuple(model, _sharedConnection, _lazyScheduler)
-					, () -> System.currentTimeMillis()
+					, accessTuple
+					, currentTimeMillisGenerator
 					, _logger
 					, DataDomain.FAKE_BASE_URL
 					, null
 					, null
 					, null
 					, new CacheUpdater(null, null, null, null, null)
+					, explicitCacheManager
 					, null
 			);
-			// WARNING:  This is not shut down so it MUST be synchronous.
-			_lazyContext.setExplicitCache(new ExplicitCacheManager(_lazyContext.accessTuple, _lazyContext.logger, _lazyContext.currentTimeMillisGenerator, false));
 		}
 		return _lazyContext;
 	}

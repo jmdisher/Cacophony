@@ -85,6 +85,7 @@ public class TestStartFollowingCommand
 				, null
 				, new CacheUpdater(null, null, null, null, null)
 				, null
+				, null
 		);
 		command.runInContext(context);
 		
@@ -144,6 +145,7 @@ public class TestStartFollowingCommand
 					, () -> System.currentTimeMillis()
 					, logger
 					, DataDomain.FAKE_BASE_URL
+					, null
 					, null
 					, null
 					, null

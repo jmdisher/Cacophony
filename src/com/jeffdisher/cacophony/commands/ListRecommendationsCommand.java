@@ -90,7 +90,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 	{
 		context.logger.logVerbose("Check explicit cache: " + keyToCheck);
 		// Consult the cache - this never returns null but will throw on error.
-		ExplicitCacheData.UserInfo userInfo = context.getExplicitCache().loadUserInfo(keyToCheck).get();
+		ExplicitCacheData.UserInfo userInfo = context.explicitCacheManager.loadUserInfo(keyToCheck).get();
 		
 		AbstractRecommendations result;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))

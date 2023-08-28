@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.testutils;
 
 import java.io.ByteArrayInputStream;
+import java.util.function.LongSupplier;
 
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -40,19 +41,22 @@ public class MockNodeHelpers
 		{
 			throw Assert.unexpected(e);
 		}
+		Context.AccessTuple accessTuple = new Context.AccessTuple(model, connection, network);
+		LongSupplier currentTimeMillisGenerator = () -> System.currentTimeMillis();
+		// WARNING:  This is not shut down so it MUST be synchronous.
+		ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(accessTuple, null, currentTimeMillisGenerator, false);
 		Context context = new Context(null
-				, new Context.AccessTuple(model, connection, network)
-				, () -> System.currentTimeMillis()
+				, accessTuple
+				, currentTimeMillisGenerator
 				, null
 				, null
 				, null
 				, null
 				, null
 				, null
+				, explicitCacheManager
 				, null
 		);
-		// WARNING:  This is not shut down so it MUST be synchronous.
-		context.setExplicitCache(new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false));
 		return context;
 	}
 

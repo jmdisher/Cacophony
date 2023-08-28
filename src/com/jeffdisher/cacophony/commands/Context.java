@@ -14,7 +14,6 @@ import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -33,8 +32,8 @@ public class Context
 	public final ILocalUserInfoCache userInfoCache;
 	public final IEntryCacheRegistry entryRegistry;
 	public final CacheUpdater cacheUpdater;
+	public final ExplicitCacheManager explicitCacheManager;
 	private IpfsKey _selectedKey;
-	private ExplicitCacheManager _explicitCache;
 
 	public Context(DraftManager sharedDraftManager
 			, AccessTuple accessTuple
@@ -45,6 +44,7 @@ public class Context
 			, ILocalUserInfoCache userInfoCache
 			, IEntryCacheRegistry entryRegistry
 			, CacheUpdater cacheUpdater
+			, ExplicitCacheManager explicitCacheManager
 			, IpfsKey selectedKey
 	)
 	{
@@ -57,6 +57,7 @@ public class Context
 		this.userInfoCache = userInfoCache;
 		this.entryRegistry = entryRegistry;
 		this.cacheUpdater = cacheUpdater;
+		this.explicitCacheManager = explicitCacheManager;
 		_selectedKey = selectedKey;
 	}
 
@@ -71,18 +72,6 @@ public class Context
 		_selectedKey = key;
 	}
 
-	public ExplicitCacheManager getExplicitCache()
-	{
-		// If we request this, it must have been configured already.
-		Assert.assertTrue(null != _explicitCache);
-		return _explicitCache;
-	}
-
-	public void setExplicitCache(ExplicitCacheManager explicitCache)
-	{
-		_explicitCache = explicitCache;
-	}
-
 	public Context cloneWithSelectedKey(IpfsKey selectedKey)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
@@ -95,9 +84,9 @@ public class Context
 				, this.userInfoCache
 				, this.entryRegistry
 				, this.cacheUpdater
+				, this.explicitCacheManager
 				, selectedKey
 		);
-		context.setExplicitCache(_explicitCache);
 		return context;
 	}
 
@@ -118,9 +107,9 @@ public class Context
 				, userInfoCache
 				, entryRegistry
 				, cacheUpdater
+				, this.explicitCacheManager
 				, _selectedKey
 		);
-		context.setExplicitCache(explicitCacheManager);
 		return context;
 	}
 

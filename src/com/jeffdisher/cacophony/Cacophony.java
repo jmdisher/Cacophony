@@ -3,6 +3,7 @@ package com.jeffdisher.cacophony;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
+import java.util.function.LongSupplier;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
@@ -129,19 +130,19 @@ public class Cacophony {
 					boolean verbose = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_VERBOSE));
 					StandardLogger logger = StandardLogger.topLogger(System.out, verbose);
 					URL baseUrl = connectionData.second();
-					Context context = _createContext(keyName
-							, localDataModel
-							, draftManager
-							, connection
-							, scheduler
-							, logger
-							, baseUrl
-					);
-					
+					Context.AccessTuple accessTuple = new Context.AccessTuple(localDataModel, connection, scheduler);
+					LongSupplier currentTimeMillisGenerator = () -> System.currentTimeMillis();
 					// Create the default explicit cache manager (could be over-ridden by the interactive server, in its Context).
 					// The default manager runs in synchronous mode, since that makes more sense for command-line usage.
-					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
-					context.setExplicitCache(explicitCacheManager);
+					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(accessTuple, logger, currentTimeMillisGenerator, false);
+					Context context = _createContext(keyName
+							, draftManager
+							, accessTuple
+							, logger
+							, currentTimeMillisGenerator
+							, explicitCacheManager
+							, baseUrl
+					);
 					
 					// Now, run the actual command (this normally returns soon but commands could be very long-running).
 					ICommand.Result result = command.runInContext(context);
@@ -209,17 +210,17 @@ public class Cacophony {
 	}
 
 	private static Context _createContext(String keyName
-			, LocalDataModel localDataModel
 			, DraftManager draftManager
-			, IConnection connection
-			, MultiThreadedScheduler scheduler
+			, Context.AccessTuple accessTuple
 			, StandardLogger logger
+			, LongSupplier currentTimeMillisGenerator
+			, ExplicitCacheManager explicitCacheManager
 			, URL baseUrl
 	)
 	{
 		// We want to see if the key name we are working with is one which exists for us (could be null).
 		IpfsKey selectedHomeKey = null;
-		try (IReadOnlyLocalData reading = localDataModel.openForRead())
+		try (IReadOnlyLocalData reading = accessTuple.sharedDataModel().openForRead())
 		{
 			ChannelData channels = reading.readLocalIndex();
 			selectedHomeKey = channels.getPublicKey(keyName);
@@ -227,14 +228,15 @@ public class Cacophony {
 		
 		CacheUpdater cacheUpdater = new CacheUpdater(null, null, null, null, null);
 		Context context = new Context(draftManager
-				, new Context.AccessTuple(localDataModel, connection, scheduler)
-				, () -> System.currentTimeMillis()
+				, accessTuple
+				, currentTimeMillisGenerator
 				, logger
 				, baseUrl
 				, null
 				, null
 				, null
 				, cacheUpdater
+				, explicitCacheManager
 				, selectedHomeKey
 		);
 		return context;
