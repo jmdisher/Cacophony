@@ -166,7 +166,7 @@ public class TestV3V4
 			OpcodeCodec.decodeWholeStream(input, context);
 		}
 		Assert.assertEquals(5, prefs.videoEdgePixelMax);
-		Assert.assertEquals(8L, prefs.followCacheTargetBytes);
+		Assert.assertEquals(8L, prefs.followeeCacheTargetBytes);
 	}
 
 

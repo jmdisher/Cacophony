@@ -550,7 +550,7 @@ public class FolloweeRefreshLogic
 			effectiveCacheUsedBytes += firstElement.byteSize();
 			finalSelection.add(firstElement);
 		}
-		CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followCacheTargetBytes, effectiveCacheUsedBytes);
+		CacheAlgorithm algorithm = new CacheAlgorithm(prefs.followeeCacheTargetBytes, effectiveCacheUsedBytes);
 		List<CacheAlgorithm.Candidate<RawElementData>> newestFirstSelected = algorithm.toAddInNewAddition(newestFirstCandidates);
 		finalSelection.addAll(newestFirstSelected);
 		

@@ -52,7 +52,7 @@ public class TestLocalDataModel
 		reader.close();
 		PrefsData defaults = PrefsData.defaultPrefs();
 		Assert.assertEquals(defaults.videoEdgePixelMax, prefs.videoEdgePixelMax);
-		Assert.assertEquals(defaults.followCacheTargetBytes, prefs.followCacheTargetBytes);
+		Assert.assertEquals(defaults.followeeCacheTargetBytes, prefs.followeeCacheTargetBytes);
 	}
 
 	@Test
@@ -176,7 +176,7 @@ public class TestLocalDataModel
 		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, null, explicitCache);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(serialized), context);
 		Assert.assertEquals(PrefsData.DEFAULT_VIDEO_EDGE, prefs.videoEdgePixelMax);
-		Assert.assertEquals(PrefsData.DEFAULT_FOLLOW_CACHE_BYTES, prefs.followCacheTargetBytes);
+		Assert.assertEquals(PrefsData.DEFAULT_FOLLOWEE_CACHE_BYTES, prefs.followeeCacheTargetBytes);
 		Assert.assertEquals(PrefsData.DEFAULT_FOLLOWEE_REFRESH_MILLIS, prefs.followeeRefreshMillis);
 		Assert.assertEquals(PrefsData.DEFAULT_REPUBLISH_INTERVAL_MILLIS, prefs.republishIntervalMillis);
 		Assert.assertEquals(PrefsData.DEFAULT_EXPLICIT_CACHE_BYTES, prefs.explicitCacheTargetBytes);

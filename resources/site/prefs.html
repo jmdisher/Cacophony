@@ -27,10 +27,10 @@ function xsrfLoaded($scope)
 		.then(prefs => {
 			// We need to process some of these for UI clarity.
 			$scope.videoEdgePixelMax = prefs["videoEdgePixelMax"];
-			$scope.followCacheTargetMB = prefs["followCacheTargetBytes"] / 1000000;
 			$scope.republishIntervalMinutes = (prefs["republishIntervalMillis"] / 1000 / 60);
-			$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
 			$scope.explicitCacheTargetMB = prefs["explicitCacheTargetBytes"] / 1000000;
+			$scope.followeeCacheTargetMB = prefs["followeeCacheTargetBytes"] / 1000000;
+			$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
 			$scope.followeeRecordThumbnailMaxMB = prefs["followeeRecordThumbnailMaxBytes"] / 1000000;
 			$scope.followeeRecordAudioMaxMB = prefs["followeeRecordAudioMaxBytes"] / 1000000;
 			$scope.followeeRecordVideoMaxMB = prefs["followeeRecordVideoMaxBytes"] / 1000000;
@@ -42,10 +42,10 @@ function xsrfLoaded($scope)
 	{
 		let variables = {
 			"videoEdgePixelMax": $scope.videoEdgePixelMax,
-			"followCacheTargetBytes": ($scope.followCacheTargetMB * 1000000),
 			"republishIntervalMillis": ($scope.republishIntervalMinutes * 1000 * 60),
-			"followeeRefreshMillis": ($scope.followeeRefreshMinutes * 1000 * 60),
 			"explicitCacheTargetBytes":  ($scope.explicitCacheTargetMB * 1000000),
+			"followeeCacheTargetBytes": ($scope.followeeCacheTargetMB * 1000000),
+			"followeeRefreshMillis": ($scope.followeeRefreshMinutes * 1000 * 60),
 			"followeeRecordThumbnailMaxBytes":  ($scope.followeeRecordThumbnailMaxMB * 1000000),
 			"followeeRecordAudioMaxBytes":  ($scope.followeeRecordAudioMaxMB * 1000000),
 			"followeeRecordVideoMaxBytes":  ($scope.followeeRecordVideoMaxMB * 1000000),
@@ -94,20 +94,20 @@ function xsrfLoaded($scope)
 				<input type="text" class="form-control" ng-model="videoEdgePixelMax" ng-disabled="inProgress" aria-label="Max video size (pixels)" aria-describedby="video-size">
 			</div>
 			<div class="input-group mb-3">
-				<span class="input-group-text" id="follow-cache">Followee cache target size (MB)</span>
-				<input type="text" class="form-control" ng-model="followCacheTargetMB" ng-disabled="inProgress" aria-label="Followee cache target size (MB)" aria-describedby="follow-cache">
-			</div>
-			<div class="input-group mb-3">
 				<span class="input-group-text" id="republish-interval">Republish interval (minutes)</span>
 				<input type="text" class="form-control" ng-model="republishIntervalMinutes" ng-disabled="inProgress" aria-label="Republish interval (minutes)" aria-describedby="republish-interval">
 			</div>
 			<div class="input-group mb-3">
-				<span class="input-group-text" id="refresh-interval">Followee refresh interval (minutes)</span>
-				<input type="text" class="form-control" ng-model="followeeRefreshMinutes" ng-disabled="inProgress" aria-label="Followee refresh interval (minutes)" aria-describedby="refresh-interval">
-			</div>
-			<div class="input-group mb-3">
 				<span class="input-group-text" id="follow-cache">Explicit cache target size (MB)</span>
 				<input type="text" class="form-control" ng-model="explicitCacheTargetMB" ng-disabled="inProgress" aria-label="Explicit cache target size (MB)" aria-describedby="explicit-cache">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="follow-cache">Followee cache target size (MB)</span>
+				<input type="text" class="form-control" ng-model="followeeCacheTargetMB" ng-disabled="inProgress" aria-label="Followee cache target size (MB)" aria-describedby="follow-cache">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="refresh-interval">Followee refresh interval (minutes)</span>
+				<input type="text" class="form-control" ng-model="followeeRefreshMinutes" ng-disabled="inProgress" aria-label="Followee refresh interval (minutes)" aria-describedby="refresh-interval">
 			</div>
 			<div class="input-group mb-3">
 				<span class="input-group-text" id="follow-cache">Followee thumbnail max size (MB)</span>

@@ -11,10 +11,10 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
 
 
 public record SetGlobalPrefsCommand(int _edgeMax
-		, long _followCacheTargetBytes
 		, long _republishIntervalMillis
-		, long _followeeRefreshMillis
 		, long _explicitCacheTargetBytes
+		, long _followeeCacheTargetBytes
+		, long _followeeRefreshMillis
 		, long _followeeThumbnailMaxBytes
 		, long _followeeAudioMaxBytes
 		, long _followeeVideoMaxBytes
@@ -41,24 +41,24 @@ public record SetGlobalPrefsCommand(int _edgeMax
 			prefs.videoEdgePixelMax = _edgeMax;
 			didChange = true;
 		}
-		if (_followCacheTargetBytes > 0L)
-		{
-			prefs.followCacheTargetBytes = _followCacheTargetBytes;
-			didChange = true;
-		}
 		if (_republishIntervalMillis > 0L)
 		{
 			prefs.republishIntervalMillis = _republishIntervalMillis;
 			didChange = true;
 		}
-		if (_followeeRefreshMillis > 0L)
-		{
-			prefs.followeeRefreshMillis = _followeeRefreshMillis;
-			didChange = true;
-		}
 		if (_explicitCacheTargetBytes > 0L)
 		{
 			prefs.explicitCacheTargetBytes = _explicitCacheTargetBytes;
+			didChange = true;
+		}
+		if (_followeeCacheTargetBytes > 0L)
+		{
+			prefs.followeeCacheTargetBytes = _followeeCacheTargetBytes;
+			didChange = true;
+		}
+		if (_followeeRefreshMillis > 0L)
+		{
+			prefs.followeeRefreshMillis = _followeeRefreshMillis;
 			didChange = true;
 		}
 		if (_followeeThumbnailMaxBytes > 0L)
@@ -81,8 +81,9 @@ public record SetGlobalPrefsCommand(int _edgeMax
 			access.writePrefs(prefs);
 			ILogger log = logger.logStart("Preferences:");
 			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
-			log.logOperation("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			log.logOperation("Republish interval milliseconds: " + _republishIntervalMillis);
 			log.logOperation("Explicit cache target size: " + MiscHelpers.humanReadableBytes(prefs.explicitCacheTargetBytes));
+			log.logOperation("Followee cache target size: " + MiscHelpers.humanReadableBytes(prefs.followeeCacheTargetBytes));
 			log.logOperation("Followee record thumbnail max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
 			log.logOperation("Followee record audio max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordAudioMaxBytes));
 			log.logOperation("Followee record video max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordVideoMaxBytes));

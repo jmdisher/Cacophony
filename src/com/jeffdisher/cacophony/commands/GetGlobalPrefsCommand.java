@@ -19,7 +19,7 @@ public record GetGlobalPrefsCommand() implements ICommand<None>
 			ILogger log = context.logger.logStart("Preferences:");
 			PrefsData prefs = access.readPrefs();
 			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
-			log.logOperation("Follower cache target size: " + MiscHelpers.humanReadableBytes(prefs.followCacheTargetBytes));
+			log.logOperation("Followee cache target size: " + MiscHelpers.humanReadableBytes(prefs.followeeCacheTargetBytes));
 			log.logFinish("");
 		}
 		return None.NONE;

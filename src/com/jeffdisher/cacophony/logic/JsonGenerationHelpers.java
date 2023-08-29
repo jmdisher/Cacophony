@@ -20,10 +20,10 @@ public class JsonGenerationHelpers
 	{
 		JsonObject dataPrefs = new JsonObject();
 		dataPrefs.set("videoEdgePixelMax", prefs.videoEdgePixelMax);
-		dataPrefs.set("followCacheTargetBytes", prefs.followCacheTargetBytes);
 		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
-		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
 		dataPrefs.set("explicitCacheTargetBytes", prefs.explicitCacheTargetBytes);
+		dataPrefs.set("followeeCacheTargetBytes", prefs.followeeCacheTargetBytes);
+		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
 		dataPrefs.set("followeeRecordThumbnailMaxBytes", prefs.followeeRecordThumbnailMaxBytes);
 		dataPrefs.set("followeeRecordAudioMaxBytes", prefs.followeeRecordAudioMaxBytes);
 		dataPrefs.set("followeeRecordVideoMaxBytes", prefs.followeeRecordVideoMaxBytes);

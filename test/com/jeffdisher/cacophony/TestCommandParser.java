@@ -146,7 +146,7 @@ public class TestCommandParser
 	{
 		String[] foo = {"--setGlobalPrefs"
 				, "--edgeMaxPixels", "7"
-				, "--followCacheTargetBytes", "5G"
+				, "--followeeCacheTargetBytes", "5G"
 				, "--republishIntervalMillis", "2000"
 				, "--followeeRefreshMillis", "3000"
 		};
@@ -160,7 +160,7 @@ public class TestCommandParser
 	@Test(expected = UsageException.class)
 	public void testSetGlobalPrefsInvalid() throws Throwable
 	{
-		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5000000000h"};
+		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followeeCacheTargetBytes", "5000000000h"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		// We expect this to throw the UsageException.
@@ -180,14 +180,14 @@ public class TestCommandParser
 	@Test
 	public void testSetGlobalPrefsGigs() throws Throwable
 	{
-		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followCacheTargetBytes", "5g"};
+		String[] foo = {"--setGlobalPrefs", "--edgeMaxPixels", "7", "--followeeCacheTargetBytes", "5g"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand<?> command = CommandParser.parseArgs(foo, capture);
 		Assert.assertNotNull(command);
 		Assert.assertTrue(0 == outStream.size());
 		SetGlobalPrefsCommand safe = (SetGlobalPrefsCommand) command;
-		Assert.assertEquals(5_000_000_000L, safe._followCacheTargetBytes());
+		Assert.assertEquals(5_000_000_000L, safe._followeeCacheTargetBytes());
 	}
 
 	@Test

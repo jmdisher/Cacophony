@@ -33,10 +33,10 @@ public class TestSetGlobalPrefsCommand
 		// Shutdown the environment so that it drops all caches - otherwise, we will end up re-reading the same instance of the prefs object.
 		user.shutdown();
 		SetGlobalPrefsCommand command = new SetGlobalPrefsCommand(original.videoEdgePixelMax + 1
-				, original.followCacheTargetBytes + 1
 				, 2000L
-				, 3000L
 				, 4000L
+				, original.followeeCacheTargetBytes + 1
+				, 3000L
 				, 5000L
 				, 6000L
 				, 7000L
@@ -48,7 +48,7 @@ public class TestSetGlobalPrefsCommand
 		// Verify the update.
 		PrefsData updated = user.readPrefs();
 		Assert.assertEquals(original.videoEdgePixelMax + 1, updated.videoEdgePixelMax);
-		Assert.assertEquals(original.followCacheTargetBytes + 1, updated.followCacheTargetBytes);
+		Assert.assertEquals(original.followeeCacheTargetBytes + 1, updated.followeeCacheTargetBytes);
 		Assert.assertEquals(2000L, updated.republishIntervalMillis);
 		Assert.assertEquals(3000L, updated.followeeRefreshMillis);
 		Assert.assertEquals(4000L, updated.explicitCacheTargetBytes);

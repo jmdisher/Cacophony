@@ -37,7 +37,7 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		Assert.assertTrue(null != prefs);
 		if (this.key.equals(PrefsData.LONG_FOLLOW_CACHE_BYTES))
 		{
-			prefs.followCacheTargetBytes = this.value;
+			prefs.followeeCacheTargetBytes = this.value;
 		}
 		else if (this.key.equals(PrefsData.LONG_REPUBLISH_INTERVAL_MILLIS))
 		{
@@ -76,19 +76,21 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		Assert.assertTrue(null != prefs);
 		if (this.key.equals(PrefsData.LONG_FOLLOW_CACHE_BYTES))
 		{
-			prefs.followCacheTargetBytes = this.value;
+			prefs.followeeCacheTargetBytes = this.value;
 		}
 		else if (this.key.equals(PrefsData.LONG_REPUBLISH_INTERVAL_MILLIS))
 		{
 			prefs.republishIntervalMillis = this.value;
 		}
-		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_REFRESH_MILLIS))
-		{
-			prefs.followeeRefreshMillis = this.value;
-		}
+		
 		else if (this.key.equals(PrefsData.LONG_EXPLICIT_CACHE_BYTES))
 		{
 			prefs.explicitCacheTargetBytes = this.value;
+		}
+		
+		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_REFRESH_MILLIS))
+		{
+			prefs.followeeRefreshMillis = this.value;
 		}
 		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_THUMBNAIL_BYTES))
 		{
@@ -102,6 +104,7 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		{
 			prefs.followeeRecordVideoMaxBytes = this.value;
 		}
+		
 		else
 		{
 			// In version 4, we will allow unmatched prefs data - it will just default when the update, next.

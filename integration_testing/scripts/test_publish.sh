@@ -131,7 +131,7 @@ checkPreviousCommand "republish"
 echo "Verify that the prefs look right..."
 PREFS=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --getGlobalPrefs)
 requireSubstring "$PREFS" "Video preferred bounds: 1280 x 1280"
-requireSubstring "$PREFS" "Follower cache target size: 10.00 GB (10000000000 bytes)"
+requireSubstring "$PREFS" "Followee cache target size: 10.00 GB (10000000000 bytes)"
 
 echo "Run the GC and verify that we still see the post we added as a favourite..."
 requestIpfsGc "$PATH_TO_IPFS" 1

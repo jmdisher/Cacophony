@@ -52,7 +52,7 @@ public class CommandHelpers
 		
 		{
 			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
-			long targetSizeBytes = (long)(prefs.followCacheTargetBytes * fullnessFraction);
+			long targetSizeBytes = (long)(prefs.followeeCacheTargetBytes * fullnessFraction);
 			if (currentCacheSizeBytes > targetSizeBytes)
 			{
 				log.logOperation("Pruning cache to " + MiscHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");

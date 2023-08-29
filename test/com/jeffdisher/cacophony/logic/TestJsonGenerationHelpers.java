@@ -64,7 +64,7 @@ public class TestJsonGenerationHelpers
 	{
 		PrefsData prefs = PrefsData.defaultPrefs();
 		JsonObject data = JsonGenerationHelpers.prefs(prefs);
-		Assert.assertEquals("{\"videoEdgePixelMax\":1280,\"followCacheTargetBytes\":10000000000,\"republishIntervalMillis\":43200000,\"followeeRefreshMillis\":3600000,\"explicitCacheTargetBytes\":1000000000,\"followeeRecordThumbnailMaxBytes\":10000000,\"followeeRecordAudioMaxBytes\":200000000,\"followeeRecordVideoMaxBytes\":2000000000}", data.toString());
+		Assert.assertEquals("{\"videoEdgePixelMax\":1280,\"republishIntervalMillis\":43200000,\"explicitCacheTargetBytes\":1000000000,\"followeeCacheTargetBytes\":10000000000,\"followeeRefreshMillis\":3600000,\"followeeRecordThumbnailMaxBytes\":10000000,\"followeeRecordAudioMaxBytes\":200000000,\"followeeRecordVideoMaxBytes\":2000000000}", data.toString());
 	}
 
 	@Test

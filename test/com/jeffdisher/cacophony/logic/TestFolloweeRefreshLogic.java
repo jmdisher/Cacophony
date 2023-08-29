@@ -46,7 +46,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile index = _buildEmptyUser(data);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -67,7 +67,7 @@ public class TestFolloweeRefreshLogic
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -89,7 +89,7 @@ public class TestFolloweeRefreshLogic
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, new byte[] {1, 2}));
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -112,7 +112,7 @@ public class TestFolloweeRefreshLogic
 		index = _addElementToStream(data, index, _storeRecord(data, "Name", new byte[] {1}, null));
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -144,7 +144,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile index = _buildEmptyUser(data);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -178,7 +178,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile index = _buildEmptyUser(data);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -212,7 +212,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile index = _buildEmptyUser(data);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -252,7 +252,7 @@ public class TestFolloweeRefreshLogic
 		data.remove(IpfsFile.fromIpfsCid(indexObject.getRecommendations()));
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -285,7 +285,7 @@ public class TestFolloweeRefreshLogic
 		data.remove(records[0]);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -326,7 +326,7 @@ public class TestFolloweeRefreshLogic
 		
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -349,7 +349,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile index = _buildEmptyUser(data);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 100L;
+		prefs.followeeCacheTargetBytes = 100L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -498,7 +498,7 @@ public class TestFolloweeRefreshLogic
 		IpfsFile index = _buildEmptyUser(data);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 5L;
+		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
@@ -553,7 +553,7 @@ public class TestFolloweeRefreshLogic
 	{
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
-		prefs.followCacheTargetBytes = 100L;
+		prefs.followeeCacheTargetBytes = 100L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
 		IpfsFile newIndexElement = indexHash;
 		long currentCacheUsageInBytes = 0L;

@@ -118,7 +118,7 @@ REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/12
 requireSubstring "$REFRESH_NEXT_OUTPUT" "Usage error in running command: Not following any users"
 
 echo "Shrink the cache and force a cache cleaning to verify it doesn't break anything..."
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --followCacheTargetBytes 2000000
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --followeeCacheTargetBytes 2000000
 CLEAN_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --cleanCache)
 requireSubstring "$CLEAN_OUTPUT" "Pruning cache to 2.00 MB (2000000 bytes) from current size of 2.88 MB (2883584 bytes)"
 # The second clean attempt should change nothing but report the remaining audio entry or nothing at all (since there is randomness in the eviction - it should at least be satisfed).

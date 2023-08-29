@@ -34,19 +34,19 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws Throwable
 	{
 		int videoEdgePixelMax = _parseInt(formVariables, "videoEdgePixelMax");
-		long followCacheTargetBytes = _parseLong(formVariables, "followCacheTargetBytes");
 		long republishIntervalMillis = _parseLong(formVariables, "republishIntervalMillis");
-		long followeeRefreshMillis = _parseLong(formVariables, "followeeRefreshMillis");
 		long explicitCacheTargetBytes = _parseLong(formVariables, "explicitCacheTargetBytes");
+		long followeeCacheTargetBytes = _parseLong(formVariables, "followeeCacheTargetBytes");
+		long followeeRefreshMillis = _parseLong(formVariables, "followeeRefreshMillis");
 		long followeeRecordThumbnailMaxBytes = _parseLong(formVariables, "followeeRecordThumbnailMaxBytes");
 		long followeeRecordAudioMaxBytes = _parseLong(formVariables, "followeeRecordAudioMaxBytes");
 		long followeeRecordVideoMaxBytes = _parseLong(formVariables, "followeeRecordVideoMaxBytes");
 		// Check parameters.
 		if ((videoEdgePixelMax < 0)
-				|| (followCacheTargetBytes < 1_000_000L)
 				|| (republishIntervalMillis < 60_000L)
-				|| (followeeRefreshMillis < 60_000L)
 				|| (explicitCacheTargetBytes < 1_000_000L)
+				|| (followeeCacheTargetBytes < 1_000_000L)
+				|| (followeeRefreshMillis < 60_000L)
 				|| (followeeRecordThumbnailMaxBytes < 1_000_000L)
 				|| (followeeRecordAudioMaxBytes < 1_000_000L)
 				|| (followeeRecordVideoMaxBytes < 1_000_000L)
@@ -61,10 +61,10 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 			PrefsData prefs = access.readPrefs();
 			didChangeIntervals = ((prefs.republishIntervalMillis != republishIntervalMillis) || (prefs.followeeRefreshMillis != followeeRefreshMillis));
 			prefs.videoEdgePixelMax = videoEdgePixelMax;
-			prefs.followCacheTargetBytes = followCacheTargetBytes;
 			prefs.republishIntervalMillis = republishIntervalMillis;
-			prefs.followeeRefreshMillis = followeeRefreshMillis;
 			prefs.explicitCacheTargetBytes = explicitCacheTargetBytes;
+			prefs.followeeCacheTargetBytes = followeeCacheTargetBytes;
+			prefs.followeeRefreshMillis = followeeRefreshMillis;
 			prefs.followeeRecordThumbnailMaxBytes = followeeRecordThumbnailMaxBytes;
 			prefs.followeeRecordAudioMaxBytes = followeeRecordAudioMaxBytes;
 			prefs.followeeRecordVideoMaxBytes = followeeRecordVideoMaxBytes;

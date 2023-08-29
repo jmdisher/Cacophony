@@ -388,19 +388,19 @@ public class CommandParser
 						, "Will only fetch the largest video for each post which fits into a box with this edge"
 							+ " size, in pixels"
 					)
-					, new ArgParameter("--followCacheTargetBytes", ParameterType.LONG_BYTES
-						, "The target size of the follow cache (that is, how much space is used for caching videos"
-							+ " and images of the users you follow) in bytes (accepts k, m, g suffixes)"
-					)
-					, new ArgParameter("--republishIntervalMillis", ParameterType.LONG_MILLIS, "How often, in"
-						+ " milliseconds, to republish your channel to IPNS (should be less than 24 hours)"
-					)
-					, new ArgParameter("--followeeRefreshMillis", ParameterType.LONG_MILLIS, "How often, in"
-						+ " milliseconds, to refresh the post lists of those you follow"
+					, new ArgParameter("--republishIntervalMillis", ParameterType.LONG_MILLIS
+						, "How often, in milliseconds, to republish your channel to IPNS (should be less than 24 hours)"
 					)
 					, new ArgParameter("--explicitCacheTargetBytes", ParameterType.LONG_BYTES
 						, "The target size of the explicit cache (that is, how much space is used for caching videos"
 							+ " and images for miscellaneous look-ups) in bytes (accepts k, m, g suffixes)"
+					)
+					, new ArgParameter("--followeeCacheTargetBytes", ParameterType.LONG_BYTES
+						, "The target size of the followee cache (that is, how much space is used for caching videos"
+							+ " and images of the users you follow) in bytes (accepts k, m, g suffixes)"
+					)
+					, new ArgParameter("--followeeRefreshMillis", ParameterType.LONG_MILLIS, "How often, in"
+						+ " milliseconds, to refresh the post lists of those you follow"
 					)
 					, new ArgParameter("--followeeThumbnailMaxBytes", ParameterType.LONG_BYTES
 						, "The maximum size, in bytes, a followee record's thumbnail can be before it will be"
@@ -419,18 +419,18 @@ public class CommandParser
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
 			int edgeMaxPixels = _optionalInt(optional[0], 0);
-			long followCacheTargetBytes = _optionalLong(optional[1], 0L);
-			long republishIntervalMillis = _optionalLong(optional[2], 0L);
-			long followeeRefreshMillis = _optionalLong(optional[3], 0L);
-			long explicitCacheTargetBytes = _optionalLong(optional[4], 0L);
+			long republishIntervalMillis = _optionalLong(optional[1], 0L);
+			long explicitCacheTargetBytes = _optionalLong(optional[2], 0L);
+			long followeeCacheTargetBytes = _optionalLong(optional[3], 0L);
+			long followeeRefreshMillis = _optionalLong(optional[4], 0L);
 			long followeeThumbnailMaxBytes = _optionalLong(optional[5], 0L);
 			long followeeAudioMaxBytes = _optionalLong(optional[6], 0L);
 			long followeeVideoMaxBytes = _optionalLong(optional[7], 0L);
 			return new SetGlobalPrefsCommand(edgeMaxPixels
-					, followCacheTargetBytes
 					, republishIntervalMillis
-					, followeeRefreshMillis
 					, explicitCacheTargetBytes
+					, followeeCacheTargetBytes
+					, followeeRefreshMillis
 					, followeeThumbnailMaxBytes
 					, followeeAudioMaxBytes
 					, followeeVideoMaxBytes

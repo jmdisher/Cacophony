@@ -15,10 +15,10 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Returns the owning user's preferences as a JSON struct:
  * -videoEdgePixelMax (int)
- * -followCacheTargetBytes (long)
  * -republishIntervalMillis (long)
- * -followeeRefreshMillis (long)
  * -explicitCacheTargetBytes (long)
+ * -followeeCacheTargetBytes (long)
+ * -followeeRefreshMillis (long)
  * -followeeRecordThumbnailMaxBytes (long)
  * -followeeRecordAudioMaxBytes (long)
  * -followeeRecordVideoMaxBytes (long)
