@@ -296,6 +296,8 @@ public class ExplicitCacheManager
 		AbstractDescription description = reader.loadDescription();
 		// (recommendations is something we don't use but will pin later so we want to know it is valid)
 		reader.loadRecommendations();
+		// (same thing with records)
+		reader.loadRecords();
 		// We need to check the user pic, explicitly.
 		IpfsFile userPicCid = description.getPicCid();
 		// In V2, the user pic is optional.

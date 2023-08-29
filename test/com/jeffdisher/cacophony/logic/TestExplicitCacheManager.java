@@ -38,12 +38,12 @@ public class TestExplicitCacheManager
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 		ExplicitCacheData.UserInfo info = manager.loadUserInfo(MockKeys.K0).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.userPicCid());
-		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
-		Assert.assertEquals(3, node.loadCalls);
+		// While we pin all for elements (index, recommendations, records, description, picture), we don't actually load the picture.
+		Assert.assertEquals(4, node.loadCalls);
 		// We see size checks come from 2 different locations:
-		// ForeignChannelReader: (3) index, description, recommendations
+		// ForeignChannelReader: (4) index, description, recommendations, records
 		// ExplicitCacheLogic: (5) userpic, index, recommendations, records, description
-		Assert.assertEquals(8, node.sizeCalls);
+		Assert.assertEquals(9, node.sizeCalls);
 		
 		manager.shutdown();
 		network.shutdown();
@@ -218,12 +218,12 @@ public class TestExplicitCacheManager
 		Assert.assertFalse(didLoad);
 		int endPin = node.pinCalls;
 		Assert.assertEquals(startPin, endPin);
-		// While we pin all for elements (index, recommendations, description, picture), we don't actually load the picture.
-		Assert.assertEquals(3, node.loadCalls);
+		// While we pin all for elements (index, recommendations, records, description, picture), we don't actually load the picture.
+		Assert.assertEquals(4, node.loadCalls);
 		// We see size checks come from 2 different locations:
-		// ForeignChannelReader: (3) index, description, recommendations
+		// ForeignChannelReader: (4) index, description, recommendations, records
 		// ExplicitCacheLogic: (1) userpic (we fail before getting on to the other elements)
-		Assert.assertEquals(4, node.sizeCalls);
+		Assert.assertEquals(5, node.sizeCalls);
 		
 		manager.shutdown();
 		scheduler.shutdown();
@@ -465,12 +465,12 @@ public class TestExplicitCacheManager
 		Assert.assertTrue(node.loadCalls >= 3);
 		Assert.assertTrue(node.loadCalls <= (3 * threads.length));
 		// We see size checks come from 2 different locations:
-		// ForeignChannelReader: (3) index, description, recommendations
+		// ForeignChannelReader: (4) index, description, recommendations, records
 		// ExplicitCacheLogic: (5) userpic, index, recommendations, records, description
-		Assert.assertTrue(node.sizeCalls >= 8);
-		Assert.assertTrue(node.sizeCalls <= (8 * threads.length));
+		Assert.assertTrue(node.sizeCalls >= 9);
+		Assert.assertTrue(node.sizeCalls <= (9 * threads.length));
 		int multiple = node.loadCalls / 3;
-		Assert.assertEquals(8 * multiple, node.sizeCalls);
+		Assert.assertEquals(9 * multiple, node.sizeCalls);
 		
 		manager.shutdown();
 		scheduler.shutdown();
