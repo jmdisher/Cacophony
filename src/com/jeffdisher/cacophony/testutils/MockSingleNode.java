@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
 import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -51,6 +53,9 @@ public class MockSingleNode implements IConnection
 	public int sizeCalls;
 	public int loadCalls;
 
+	// Special fields used for synchronization with more complex tests.
+	private CyclicBarrier _readBarrier;
+
 	public MockSingleNode(MockSwarm swarm)
 	{
 		_keys = new HashMap<>();
@@ -86,6 +91,12 @@ public class MockSingleNode implements IConnection
 	public Set<IpfsFile> getStoredFileSet()
 	{
 		return Set.copyOf(_data.keySet());
+	}
+
+	public void installSingleUseBarrier(CyclicBarrier barrier)
+	{
+		Assert.assertTrue(null == _readBarrier);
+		_readBarrier = barrier;
 	}
 
 	@Override
@@ -221,11 +232,29 @@ public class MockSingleNode implements IConnection
 
 	private byte[] _singleNodeLoadData(IpfsFile file)
 	{
+		_checkBarrier();
 		return _data.get(file);
 	}
 
 	private IpfsFile _singleNodeResolve(IpfsKey key) throws IpfsConnectionException
 	{
+		_checkBarrier();
 		return _publications.get(key);
+	}
+
+	private void _checkBarrier()
+	{
+		if (null != _readBarrier)
+		{
+			try
+			{
+				_readBarrier.await();
+			}
+			catch (InterruptedException | BrokenBarrierException e)
+			{
+				throw Assert.unexpected(e);
+			}
+			_readBarrier = null;
+		}
 	}
 }

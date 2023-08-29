@@ -1,8 +1,11 @@
 package com.jeffdisher.cacophony.logic;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IReadingAccess;
@@ -16,6 +19,7 @@ import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
+import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -60,8 +64,12 @@ public class ExplicitCacheManager
 	private final ILogger _logger;
 	private final LongSupplier _currentTimeMillisSupplier;
 	private final Thread _background;
-	// We will use a runnables directly in this list for now, but this will change later to allow better batching.
-	private final Queue<Runnable> _runnables;
+	// We keep the pending requests for user data and record data in lists so that we can batch them.
+	// These are stored as maps since we don't want duplicated requests and this allows new calls to piggy-back.
+	private final Map<IpfsKey, FutureUserInfo> _userRequests;
+	private final Map<IpfsFile, FutureRecord> _recordRequests;
+	// We only keep at most a single purge request.
+	private FutureVoid _purgeRequest;
 
 	private boolean _isBackgroundRunning;
 
@@ -86,14 +94,16 @@ public class ExplicitCacheManager
 					runner = _backgroundGetNextRunnable();
 				}
 			});
-			_runnables = new LinkedList<>();
+			_userRequests = new HashMap<>();
+			_recordRequests = new HashMap<>();
 			_isBackgroundRunning = true;
 			_background.start();
 		}
 		else
 		{
 			_background = null;
-			_runnables = null;
+			_userRequests = null;
+			_recordRequests = null;
 			_isBackgroundRunning = false;
 		}
 	}
@@ -136,15 +146,23 @@ public class ExplicitCacheManager
 	 */
 	public synchronized FutureUserInfo loadUserInfo(IpfsKey publicKey)
 	{
-		FutureUserInfo future = new FutureUserInfo();
-		if (null != _runnables)
+		FutureUserInfo future;
+		if (null != _background)
 		{
-			_runnables.add(() -> _loadUserInfo(publicKey, future));
-			this.notifyAll();
+			future = _userRequests.get(publicKey);
+			if (null == future)
+			{
+				future = new FutureUserInfo(publicKey);
+				_userRequests.put(publicKey, future);
+				this.notifyAll();
+				
+			}
 		}
 		else
 		{
-			_loadUserInfo(publicKey, future);
+			future = new FutureUserInfo(publicKey);
+			FutureUserInfo[] usersToLoad = new FutureUserInfo[] { future };
+			_runFullLoad(usersToLoad, new FutureRecord[0], null);
 		}
 		return future;
 	}
@@ -159,15 +177,22 @@ public class ExplicitCacheManager
 	 */
 	public synchronized FutureRecord loadRecord(IpfsFile recordCid)
 	{
-		FutureRecord future = new FutureRecord();
-		if (null != _runnables)
+		FutureRecord future;
+		if (null != _background)
 		{
-			_runnables.add(() -> _loadRecord(recordCid, future));
-			this.notifyAll();
+			future = _recordRequests.get(recordCid);
+			if (null == future)
+			{
+				future = new FutureRecord(recordCid);
+				_recordRequests.put(recordCid, future);
+				this.notifyAll();
+			}
 		}
 		else
 		{
-			_loadRecord(recordCid, future);
+			future = new FutureRecord(recordCid);
+			FutureRecord[] recordsToLoad = new FutureRecord[] { future };
+			_runFullLoad(new FutureUserInfo[0], recordsToLoad, null);
 		}
 		return future;
 	}
@@ -179,15 +204,20 @@ public class ExplicitCacheManager
 	 */
 	public synchronized FutureVoid purgeCacheFullyAndGc()
 	{
-		FutureVoid future = new FutureVoid();
-		
-		if (null != _runnables)
+		FutureVoid future;
+		if (null != _background)
 		{
-			_runnables.add(() -> _purgeCacheFullyAndGc(future));
-			this.notifyAll();
+			future = _purgeRequest;
+			if (null == future)
+			{
+				future = new FutureVoid();
+				_purgeRequest = future;
+				this.notifyAll();
+			}
 		}
 		else
 		{
+			future = new FutureVoid();
 			_purgeCacheFullyAndGc(future);
 		}
 		return future;
@@ -224,160 +254,6 @@ public class ExplicitCacheManager
 		}
 	}
 
-
-	private void _loadUserInfo(IpfsKey publicKey, FutureUserInfo future)
-	{
-		long currentTimeMillis = _currentTimeMillisSupplier.getAsLong();
-		try
-		{
-			ExplicitCacheData.UserInfo info;
-			IpfsFile root = null;
-			ConcurrentTransaction transaction = null;
-			try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
-			{
-				IExplicitCacheReading data = access.readableExplicitCache();
-				info = data.getUserInfo(publicKey);
-				if (null == info)
-				{
-					// Check the key.
-					root = access.resolvePublicKey(publicKey).get();
-					// This will fail instead of returning null.
-					Assert.assertTrue(null != root);
-					transaction = access.openConcurrentTransaction();
-				}
-			}
-			
-			if (null != transaction)
-			{
-				Assert.assertTrue(null == info);
-				ExplicitCacheData.UserInfo potential;
-				try
-				{
-					potential = _loadUserInfo(transaction, root);
-				}
-				catch (ProtocolDataException | IpfsConnectionException e)
-				{
-					try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
-					{
-						ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-						transaction.rollback(resolver);
-					}
-					throw e;
-				}
-				try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
-				{
-					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-					ExplicitCacheData data = access.writableExplicitCache();
-					info = data.getUserInfo(publicKey);
-					if (null == info)
-					{
-						// Add this to the structure, creating the official result.
-						info = data.addUserInfo(publicKey, currentTimeMillis, potential.indexCid(), potential.recommendationsCid(), potential.recordsCid(), potential.descriptionCid(), potential.userPicCid(), potential.combinedSizeBytes());
-						
-						// Commit the transaction.
-						transaction.commit(resolver);
-						
-						// Purge any overflow.
-						PrefsData prefs = access.readPrefs();
-						_purgeExcess(access, data, prefs.explicitCacheTargetBytes);
-					}
-					else
-					{
-						// We will just use this one so rollback the transaction as its network operations will be redundant.
-						transaction.rollback(resolver);
-					}
-				}
-			}
-			Assert.assertTrue(null != info);
-			future.success(info);
-		}
-		catch (KeyException e)
-		{
-			future.keyException(e);
-		}
-		catch (ProtocolDataException e)
-		{
-			future.dataException(e);
-		}
-		catch (IpfsConnectionException e)
-		{
-			future.connectionException(e);
-		}
-	}
-
-	private void _loadRecord(IpfsFile recordCid, FutureRecord future)
-	{
-		try
-		{
-			CachedRecordInfo info;
-			int videoEdgePixelMax = 0;
-			ConcurrentTransaction transaction = null;
-			try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
-			{
-				IExplicitCacheReading data = access.readableExplicitCache();
-				info = data.getRecordInfo(recordCid);
-				if (null == info)
-				{
-					transaction = access.openConcurrentTransaction();
-					videoEdgePixelMax = access.readPrefs().videoEdgePixelMax;
-				}
-			}
-			
-			if (null != transaction)
-			{
-				Assert.assertTrue(null == info);
-				Assert.assertTrue(videoEdgePixelMax > 0);
-				CachedRecordInfo potential;
-				try
-				{
-					potential = _loadRecordInfo(transaction, videoEdgePixelMax, recordCid);
-				}
-				catch (ProtocolDataException | IpfsConnectionException e)
-				{
-					try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
-					{
-						ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-						transaction.rollback(resolver);
-					}
-					throw e;
-				}
-				try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
-				{
-					ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-					ExplicitCacheData data = access.writableExplicitCache();
-					info = data.getRecordInfo(recordCid);
-					if (null == info)
-					{
-						// Add this to the structure.
-						data.addStreamRecord(recordCid, potential);
-						info = potential;
-						
-						// Commit the transaction.
-						transaction.commit(resolver);
-						
-						// Purge any overflow.
-						PrefsData prefs = access.readPrefs();
-						_purgeExcess(access, data, prefs.explicitCacheTargetBytes);
-					}
-					else
-					{
-						// We will just use this one so rollback the transaction as its network operations will be redundant.
-						transaction.rollback(resolver);
-					}
-				}
-			}
-			Assert.assertTrue(null != info);
-			future.success(info);
-		}
-		catch (ProtocolDataException e)
-		{
-			future.dataException(e);
-		}
-		catch (IpfsConnectionException e)
-		{
-			future.connectionException(e);
-		}
-	}
 
 	private void _purgeCacheFullyAndGc(FutureVoid future)
 	{
@@ -473,7 +349,12 @@ public class ExplicitCacheManager
 
 	private synchronized Runnable _backgroundGetNextRunnable()
 	{
-		while (_isBackgroundRunning && _runnables.isEmpty())
+		// Wait for something to do.
+		while (_isBackgroundRunning
+				&& _userRequests.isEmpty()
+				&& _recordRequests.isEmpty()
+				&& (null == _purgeRequest)
+		)
 		{
 			try
 			{
@@ -484,10 +365,259 @@ public class ExplicitCacheManager
 				throw Assert.unexpected(e);
 			}
 		}
-		return _isBackgroundRunning
-				? _runnables.remove()
-				: null
-		;
+		Runnable toDo = null;
+		if (_isBackgroundRunning)
+		{
+			// Drain the pending work and pass them into a runnable to perform the next batch.
+			FutureUserInfo[] usersToLoad = _userRequests.values().stream()
+					.collect(Collectors.toList())
+					.toArray((int size) -> new FutureUserInfo[size])
+			;
+			_userRequests.clear();
+			FutureRecord[] recordsToLoad = _recordRequests.values().stream()
+					.collect(Collectors.toList())
+					.toArray((int size) -> new FutureRecord[size])
+			;
+			_recordRequests.clear();
+			FutureVoid purgeRequest = _purgeRequest;
+			_purgeRequest = null;
+			toDo = () -> {
+				_runFullLoad(usersToLoad, recordsToLoad, purgeRequest);
+			};
+		}
+		return toDo;
+	}
+
+	private void _runFullLoad(FutureUserInfo[] usersToLoad, FutureRecord[] recordsToLoad, FutureVoid purgeRequest)
+	{
+		// We will null out these parameters as we satisfy each individual request since they may be satisfied at different points.
+		
+		// Step 1:
+		// -check existing caches
+		// -read prefs info we need (since those could change between invocations)
+		// -starting the fetch of any remaining keys
+		// -open a transaction for anything else we need to do
+		int videoEdgePixelMax;
+		long explicitCacheTargetBytes;
+		ConcurrentTransaction[] userTransactions = new ConcurrentTransaction[usersToLoad.length];
+		ConcurrentTransaction[] recordTransactions = new ConcurrentTransaction[recordsToLoad.length];
+		FutureResolve[] keys = new FutureResolve[usersToLoad.length];
+		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+		{
+			IExplicitCacheReading data = access.readableExplicitCache();
+			for (int i = 0; i < usersToLoad.length; ++i)
+			{
+				FutureUserInfo user = usersToLoad[i];
+				ExplicitCacheData.UserInfo info = data.getUserInfo(user.publicKey);
+				if (null != info)
+				{
+					user.success(info);
+					usersToLoad[i] = null;
+				}
+				else
+				{
+					keys[i] = access.resolvePublicKey(user.publicKey);
+					userTransactions[i] = access.openConcurrentTransaction();
+				}
+			}
+			for (int i = 0; i < recordsToLoad.length; ++i)
+			{
+				FutureRecord record = recordsToLoad[i];
+				CachedRecordInfo info = data.getRecordInfo(record.recordCid);
+				if (null != info)
+				{
+					record.success(info);
+					recordsToLoad[i] = null;
+				}
+				else
+				{
+					recordTransactions[i] = access.openConcurrentTransaction();
+				}
+			}
+			PrefsData prefs = access.readPrefs();
+			videoEdgePixelMax = prefs.videoEdgePixelMax;
+			explicitCacheTargetBytes = prefs.explicitCacheTargetBytes;
+		}
+		
+		// Step 2:
+		// -wait for any remaining keys to be resolved
+		List<ConcurrentTransaction> transactionsToCommit = new ArrayList<>();
+		List<ConcurrentTransaction> transactionsToRollback = new ArrayList<>();
+		IpfsFile[] rootsToLoad = new IpfsFile[keys.length];
+		for (int i = 0; i < rootsToLoad.length; ++i)
+		{
+			FutureResolve key = keys[i];
+			if (null != key)
+			{
+				try
+				{
+					rootsToLoad[i] = key.get();
+				}
+				catch (KeyException e)
+				{
+					usersToLoad[i].keyException(e);
+					usersToLoad[i] = null;
+					transactionsToRollback.add(userTransactions[i]);
+					userTransactions[i] = null;
+				}
+			}
+		}
+		
+		// Step 3:
+		// -perform any other look-ups with the transaction
+		// TODO:  Change this mechanism to run all resolves concurrently instead of lock-stepping all futures.
+		ExplicitCacheData.UserInfo[] usersToWriteBack = new ExplicitCacheData.UserInfo[usersToLoad.length];
+		for (int i = 0; i < usersToLoad.length; ++i)
+		{
+			FutureUserInfo user = usersToLoad[i];
+			if (null != user)
+			{
+				try
+				{
+					ExplicitCacheData.UserInfo info = _loadUserInfo(userTransactions[i], rootsToLoad[i]);
+					// This will throw instead of failing.
+					Assert.assertTrue(null != info);
+					usersToWriteBack[i] = info;
+				}
+				catch (ProtocolDataException e)
+				{
+					user.dataException(e);
+					usersToLoad[i] = null;
+					transactionsToRollback.add(userTransactions[i]);
+					userTransactions[i] = null;
+				}
+				catch (IpfsConnectionException e)
+				{
+					user.connectionException(e);
+					usersToLoad[i] = null;
+					transactionsToRollback.add(userTransactions[i]);
+					userTransactions[i] = null;
+				}
+			}
+		}
+		CachedRecordInfo[] recordsToWriteBack = new CachedRecordInfo[recordsToLoad.length];
+		for (int i = 0; i < recordsToLoad.length; ++i)
+		{
+			FutureRecord record = recordsToLoad[i];
+			if (null != record)
+			{
+				try
+				{
+					CachedRecordInfo info = _loadRecordInfo(recordTransactions[i], videoEdgePixelMax, record.recordCid);
+					// This will throw instead of failing.
+					Assert.assertTrue(null != info);
+					recordsToWriteBack[i] = info;
+				}
+				catch (ProtocolDataException e)
+				{
+					record.dataException(e);
+					recordsToLoad[i] = null;
+					transactionsToRollback.add(recordTransactions[i]);
+					recordTransactions[i] = null;
+				}
+				catch (IpfsConnectionException e)
+				{
+					record.connectionException(e);
+					recordsToLoad[i] = null;
+					transactionsToRollback.add(recordTransactions[i]);
+					recordTransactions[i] = null;
+				}
+			}
+		}
+		
+		// Step 4:
+		// -commit the transaction
+		// -update the cache data
+		// -run any purge request
+		long currentTimeMillis = _currentTimeMillisSupplier.getAsLong();
+		try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+		{
+			ExplicitCacheData data = access.writableExplicitCache();
+			for (int i = 0; i < usersToLoad.length; ++i)
+			{
+				FutureUserInfo user = usersToLoad[i];
+				if (null != user)
+				{
+					// Verify that nothing has changed in the cache - we are the only ones changing it so this is just to prove that.
+					Assert.assertTrue(null == data.getUserInfo(user.publicKey));
+					ExplicitCacheData.UserInfo info = usersToWriteBack[i];
+					data.addUserInfo(user.publicKey
+							, currentTimeMillis
+							, info.indexCid()
+							, info.recommendationsCid()
+							, info.recordsCid()
+							, info.descriptionCid()
+							, info.userPicCid()
+							, info.combinedSizeBytes()
+					);
+					
+					user.success(info);
+					usersToLoad[i] = null;
+					transactionsToCommit.add(userTransactions[i]);
+					userTransactions[i] = null;
+				}
+			}
+			for (int i = 0; i < recordsToLoad.length; ++i)
+			{
+				FutureRecord record = recordsToLoad[i];
+				if (null != record)
+				{
+					// Verify that nothing has changed in the cache - we are the only ones changing it so this is just to prove that.
+					Assert.assertTrue(null == data.getRecordInfo(record.recordCid));
+					CachedRecordInfo info = recordsToWriteBack[i];
+					data.addStreamRecord(record.recordCid, info);
+					
+					record.success(info);
+					recordsToLoad[i] = null;
+					transactionsToCommit.add(recordTransactions[i]);
+					recordTransactions[i] = null;
+				}
+			}
+			
+			ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+			for (ConcurrentTransaction commit : transactionsToCommit)
+			{
+				commit.commit(resolver);
+			}
+			for (ConcurrentTransaction rollback : transactionsToRollback)
+			{
+				rollback.rollback(resolver);
+			}
+			
+			if (null != purgeRequest)
+			{
+				_purgeExcess(access, data, explicitCacheTargetBytes);
+				try
+				{
+					access.requestIpfsGc();
+					purgeRequest.success();
+				}
+				catch (IpfsConnectionException e)
+				{
+					purgeRequest.failure(e);
+				}
+				purgeRequest = null;
+			}
+		}
+		
+		// Verify that everything is done from the lists.
+		for (FutureUserInfo user : usersToLoad)
+		{
+			Assert.assertTrue(null == user);
+		}
+		for (FutureRecord record : recordsToLoad)
+		{
+			Assert.assertTrue(null == record);
+		}
+		for (ConcurrentTransaction transaction : userTransactions)
+		{
+			Assert.assertTrue(null == transaction);
+		}
+		for (ConcurrentTransaction transaction : recordTransactions)
+		{
+			Assert.assertTrue(null == transaction);
+		}
+		Assert.assertTrue(null == purgeRequest);
 	}
 
 
@@ -496,10 +626,16 @@ public class ExplicitCacheManager
 	 */
 	public static class FutureUserInfo
 	{
+		public final IpfsKey publicKey;
 		private ExplicitCacheData.UserInfo _info;
 		private KeyException _keyException;
 		private ProtocolDataException _protocolException;
 		private IpfsConnectionException _connectionException;
+		
+		public FutureUserInfo(IpfsKey publicKey)
+		{
+			this.publicKey = publicKey;
+		}
 		
 		public synchronized ExplicitCacheData.UserInfo get() throws KeyException, ProtocolDataException, IpfsConnectionException
 		{
@@ -582,9 +718,15 @@ public class ExplicitCacheManager
 	 */
 	public static class FutureRecord
 	{
+		public final IpfsFile recordCid;
 		private CachedRecordInfo _info;
 		private ProtocolDataException _protocolException;
 		private IpfsConnectionException _connectionException;
+		
+		public FutureRecord(IpfsFile recordCid)
+		{
+			this.recordCid = recordCid;
+		}
 		
 		public synchronized CachedRecordInfo get() throws ProtocolDataException, IpfsConnectionException
 		{
@@ -639,38 +781,6 @@ public class ExplicitCacheManager
 			Assert.assertTrue(null == _protocolException);
 			Assert.assertTrue(null == _connectionException);
 			_connectionException = e;
-			this.notifyAll();
-		}
-	}
-
-
-	public static class FutureLong
-	{
-		private boolean _done;
-		private long _result;
-		
-		public synchronized long get()
-		{
-			while (!_done)
-			{
-				try
-				{
-					this.wait();
-				}
-				catch (InterruptedException e)
-				{
-					// We don't use interruption in this system.
-					throw Assert.unexpected(e);
-				}
-			}
-			return _result;
-		}
-		
-		public synchronized void success(long result)
-		{
-			Assert.assertTrue(!_done);
-			_result = result;
-			_done = true;
 			this.notifyAll();
 		}
 	}

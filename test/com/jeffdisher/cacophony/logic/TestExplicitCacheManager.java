@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.util.concurrent.CyclicBarrier;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -8,6 +10,7 @@ import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockNodeHelpers;
@@ -162,15 +165,17 @@ public class TestExplicitCacheManager
 	@Test
 	public void asyncBasics() throws Throwable
 	{
-		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		MockSingleNode node = new MockSingleNode(swarm);
 		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, network);
 		
 		// Define a user.
-		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K0, "user", "pic".getBytes());
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K0, "user", "pic".getBytes());
 		
 		// Define a post.
-		IpfsFile cid = MockNodeHelpers.storeStreamRecord(node, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
+		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
 		
 		// Test that we can read the user and post in an async manager.
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
@@ -561,6 +566,91 @@ public class TestExplicitCacheManager
 		// Check the size.
 		size = manager.getExplicitCacheSize();
 		Assert.assertEquals(0L, size);
+		
+		manager.shutdown();
+		scheduler.shutdown();
+	}
+
+	@Test
+	public void uniqueAndBackground() throws Throwable
+	{
+		// Check what happens when we issue lots of requests to a small set of records or users, in an asynchronous manager, some which pass and some which fail.
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K0, "user0", "userPic".getBytes());
+		IpfsFile cid0 = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K0, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K1, "user1", "other user".getBytes());
+		IpfsFile cid1 = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K1, "other post", null, null, 0, null);
+		IpfsFile bogusRecord = MockSingleNode.generateHash("bogus stream reference".getBytes());
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		
+		// We want to install a barrier in the upstream node, waiting on us and the single scheduler thread, so we can queue up multiple requests and see them de-duplicate.
+		CyclicBarrier barrier = new CyclicBarrier(2);
+		upstream.installSingleUseBarrier(barrier);
+		// We will make three calls for each of the relevant data elements, we aren't sure when the background thread will pick them up but at least 0 == 1 or 1 == 2 (or both).
+		ExplicitCacheManager.FutureRecord[] records0 = new ExplicitCacheManager.FutureRecord[3];
+		ExplicitCacheManager.FutureRecord[] records1 = new ExplicitCacheManager.FutureRecord[3];
+		ExplicitCacheManager.FutureRecord[] records2 = new ExplicitCacheManager.FutureRecord[3];
+		ExplicitCacheManager.FutureUserInfo[] users0 = new ExplicitCacheManager.FutureUserInfo[3];
+		ExplicitCacheManager.FutureUserInfo[] users1 = new ExplicitCacheManager.FutureUserInfo[3];
+		ExplicitCacheManager.FutureUserInfo[] users2 = new ExplicitCacheManager.FutureUserInfo[3];
+		FutureVoid[] gcs = new FutureVoid[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			records0[i] = manager.loadRecord(cid0);
+			records1[i] = manager.loadRecord(cid1);
+			records2[i] = manager.loadRecord(bogusRecord);
+			users0[i] = manager.loadUserInfo(MockKeys.K0);
+			users1[i] = manager.loadUserInfo(MockKeys.K1);
+			users2[i] = manager.loadUserInfo(MockKeys.K2);
+			gcs[i] = manager.purgeCacheFullyAndGc();
+		}
+		// Let the execution proceed and verify that at least 
+		barrier.await();
+		Assert.assertTrue((records0[0] == records0[1]) || (records0[1] == records0[2]));
+		Assert.assertTrue((records1[0] == records1[1]) || (records1[1] == records1[2]));
+		Assert.assertTrue((records2[0] == records2[1]) || (records2[1] == records2[2]));
+		Assert.assertTrue((users0[0] == users0[1]) || (users0[1] == users0[2]));
+		Assert.assertTrue((users1[0] == users1[1]) || (users1[1] == users1[2]));
+		Assert.assertTrue((users2[0] == users2[1]) || (users2[1] == users2[2]));
+		Assert.assertTrue((gcs[0] == gcs[1]) || (gcs[1] == gcs[2]));
+		
+		// Now, wait for everything to finish and make sure we see the expected results.
+		// Check the hits.
+		for (int i = 0; i < 3; ++i)
+		{
+			records0[i].get();
+			records1[i].get();
+			users0[i].get();
+			users1[i].get();
+			gcs[i].get();
+		}
+		// Check the misses.
+		for (int i = 0; i < 3; ++i)
+		{
+			try
+			{
+				records2[i].get();
+				Assert.fail();
+			}
+			catch (IpfsConnectionException e)
+			{
+				// Expected.
+			}
+			try
+			{
+				users2[i].get();
+				Assert.fail();
+			}
+			catch (KeyException e)
+			{
+				// Expected.
+			}
+		}
 		
 		manager.shutdown();
 		scheduler.shutdown();
