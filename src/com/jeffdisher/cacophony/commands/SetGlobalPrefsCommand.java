@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.utils.MiscHelpers;
 public record SetGlobalPrefsCommand(int _edgeMax
 		, long _republishIntervalMillis
 		, long _explicitCacheTargetBytes
+		, long _explicitUserInfoRefreshMillis
 		, long _followeeCacheTargetBytes
 		, long _followeeRefreshMillis
 		, long _followeeThumbnailMaxBytes
@@ -51,6 +52,11 @@ public record SetGlobalPrefsCommand(int _edgeMax
 			prefs.explicitCacheTargetBytes = _explicitCacheTargetBytes;
 			didChange = true;
 		}
+		if (_explicitUserInfoRefreshMillis > 0L)
+		{
+			prefs.explicitUserInfoRefreshMillis = _explicitUserInfoRefreshMillis;
+			didChange = true;
+		}
 		if (_followeeCacheTargetBytes > 0L)
 		{
 			prefs.followeeCacheTargetBytes = _followeeCacheTargetBytes;
@@ -83,6 +89,7 @@ public record SetGlobalPrefsCommand(int _edgeMax
 			log.logOperation("Video preferred bounds: " + prefs.videoEdgePixelMax + " x " + prefs.videoEdgePixelMax);
 			log.logOperation("Republish interval milliseconds: " + _republishIntervalMillis);
 			log.logOperation("Explicit cache target size: " + MiscHelpers.humanReadableBytes(prefs.explicitCacheTargetBytes));
+			log.logOperation("Explicit user info refresh milliseconds: " + _explicitUserInfoRefreshMillis);
 			log.logOperation("Followee cache target size: " + MiscHelpers.humanReadableBytes(prefs.followeeCacheTargetBytes));
 			log.logOperation("Followee record thumbnail max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
 			log.logOperation("Followee record audio max bytes: " + MiscHelpers.humanReadableBytes(prefs.followeeRecordAudioMaxBytes));

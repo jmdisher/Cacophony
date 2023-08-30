@@ -155,6 +155,7 @@ public class TestCacheSaturation
 				_user.runCommand(null, new SetGlobalPrefsCommand(0
 						, 0L
 						, 0L
+						, 0L
 						, 100L
 						, 0L
 						, 0L

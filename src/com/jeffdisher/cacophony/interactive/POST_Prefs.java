@@ -36,6 +36,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 		int videoEdgePixelMax = _parseInt(formVariables, "videoEdgePixelMax");
 		long republishIntervalMillis = _parseLong(formVariables, "republishIntervalMillis");
 		long explicitCacheTargetBytes = _parseLong(formVariables, "explicitCacheTargetBytes");
+		long explicitUserInfoRefreshMillis = _parseLong(formVariables, "explicitUserInfoRefreshMillis");
 		long followeeCacheTargetBytes = _parseLong(formVariables, "followeeCacheTargetBytes");
 		long followeeRefreshMillis = _parseLong(formVariables, "followeeRefreshMillis");
 		long followeeRecordThumbnailMaxBytes = _parseLong(formVariables, "followeeRecordThumbnailMaxBytes");
@@ -45,6 +46,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 		if ((videoEdgePixelMax < 0)
 				|| (republishIntervalMillis < 60_000L)
 				|| (explicitCacheTargetBytes < 1_000_000L)
+				|| (explicitUserInfoRefreshMillis < 60_000L)
 				|| (followeeCacheTargetBytes < 1_000_000L)
 				|| (followeeRefreshMillis < 60_000L)
 				|| (followeeRecordThumbnailMaxBytes < 1_000_000L)
@@ -63,6 +65,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 			prefs.videoEdgePixelMax = videoEdgePixelMax;
 			prefs.republishIntervalMillis = republishIntervalMillis;
 			prefs.explicitCacheTargetBytes = explicitCacheTargetBytes;
+			prefs.explicitUserInfoRefreshMillis = explicitUserInfoRefreshMillis;
 			prefs.followeeCacheTargetBytes = followeeCacheTargetBytes;
 			prefs.followeeRefreshMillis = followeeRefreshMillis;
 			prefs.followeeRecordThumbnailMaxBytes = followeeRecordThumbnailMaxBytes;

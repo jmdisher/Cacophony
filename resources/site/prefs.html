@@ -29,6 +29,7 @@ function xsrfLoaded($scope)
 			$scope.videoEdgePixelMax = prefs["videoEdgePixelMax"];
 			$scope.republishIntervalMinutes = (prefs["republishIntervalMillis"] / 1000 / 60);
 			$scope.explicitCacheTargetMB = prefs["explicitCacheTargetBytes"] / 1000000;
+			$scope.explicitUserInfoRefreshMinutes = (prefs["explicitUserInfoRefreshMillis"] / 1000 / 60);
 			$scope.followeeCacheTargetMB = prefs["followeeCacheTargetBytes"] / 1000000;
 			$scope.followeeRefreshMinutes = (prefs["followeeRefreshMillis"] / 1000 / 60);
 			$scope.followeeRecordThumbnailMaxMB = prefs["followeeRecordThumbnailMaxBytes"] / 1000000;
@@ -44,6 +45,7 @@ function xsrfLoaded($scope)
 			"videoEdgePixelMax": $scope.videoEdgePixelMax,
 			"republishIntervalMillis": ($scope.republishIntervalMinutes * 1000 * 60),
 			"explicitCacheTargetBytes":  ($scope.explicitCacheTargetMB * 1000000),
+			"explicitUserInfoRefreshMillis": ($scope.explicitUserInfoRefreshMinutes * 1000 * 60),
 			"followeeCacheTargetBytes": ($scope.followeeCacheTargetMB * 1000000),
 			"followeeRefreshMillis": ($scope.followeeRefreshMinutes * 1000 * 60),
 			"followeeRecordThumbnailMaxBytes":  ($scope.followeeRecordThumbnailMaxMB * 1000000),
@@ -100,6 +102,10 @@ function xsrfLoaded($scope)
 			<div class="input-group mb-3">
 				<span class="input-group-text" id="follow-cache">Explicit cache target size (MB)</span>
 				<input type="text" class="form-control" ng-model="explicitCacheTargetMB" ng-disabled="inProgress" aria-label="Explicit cache target size (MB)" aria-describedby="explicit-cache">
+			</div>
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="refresh-interval">Explicit cache user info refresh interval (minutes)</span>
+				<input type="text" class="form-control" ng-model="explicitUserInfoRefreshMinutes" ng-disabled="inProgress" aria-label="Explicit cache user info refresh interval (minutes)" aria-describedby="explicit-userinfo-refresh-interval">
 			</div>
 			<div class="input-group mb-3">
 				<span class="input-group-text" id="follow-cache">Followee cache target size (MB)</span>

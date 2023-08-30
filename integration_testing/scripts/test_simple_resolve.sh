@@ -67,14 +67,19 @@ checkPreviousCommand "createNewChannel2"
 echo "Verify that we can set the prefs..."
 PREFS_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs \
 	--edgeMaxPixels 1280 \
+	--republishIntervalMillis 60001 \
+	--explicitCacheTargetBytes 10M \
+	--explicitUserInfoRefreshMillis 60002 \
 	--followeeCacheTargetBytes 50M \
 	--followeeThumbnailMaxBytes 123K \
 	--followeeAudioMaxBytes 2M \
 	--followeeVideoMaxBytes 3M \
 )
 requireSubstring "$PREFS_OUTPUT" "Video preferred bounds: 1280 x 1280"
+requireSubstring "$PREFS_OUTPUT" "Republish interval milliseconds: 60001"
+requireSubstring "$PREFS_OUTPUT" "Explicit cache target size: 10.00 MB (10000000 bytes)"
+requireSubstring "$PREFS_OUTPUT" "Explicit user info refresh milliseconds: 60002"
 requireSubstring "$PREFS_OUTPUT" "Followee cache target size: 50.00 MB (50000000 bytes)"
-requireSubstring "$PREFS_OUTPUT" "Explicit cache target size: 1.00 GB (1000000000 bytes)"
 requireSubstring "$PREFS_OUTPUT" "Followee record thumbnail max bytes: 123.00 kB (123000 bytes)"
 requireSubstring "$PREFS_OUTPUT" "Followee record audio max bytes: 2.00 MB (2000000 bytes)"
 requireSubstring "$PREFS_OUTPUT" "Followee record video max bytes: 3.00 MB (3000000 bytes)"

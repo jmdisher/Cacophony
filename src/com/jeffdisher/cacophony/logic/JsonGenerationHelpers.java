@@ -22,6 +22,7 @@ public class JsonGenerationHelpers
 		dataPrefs.set("videoEdgePixelMax", prefs.videoEdgePixelMax);
 		dataPrefs.set("republishIntervalMillis", prefs.republishIntervalMillis);
 		dataPrefs.set("explicitCacheTargetBytes", prefs.explicitCacheTargetBytes);
+		dataPrefs.set("explicitUserInfoRefreshMillis", prefs.explicitUserInfoRefreshMillis);
 		dataPrefs.set("followeeCacheTargetBytes", prefs.followeeCacheTargetBytes);
 		dataPrefs.set("followeeRefreshMillis", prefs.followeeRefreshMillis);
 		dataPrefs.set("followeeRecordThumbnailMaxBytes", prefs.followeeRecordThumbnailMaxBytes);

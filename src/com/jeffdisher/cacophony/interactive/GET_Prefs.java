@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * -videoEdgePixelMax (int)
  * -republishIntervalMillis (long)
  * -explicitCacheTargetBytes (long)
+ * -explicitUserInfoRefreshMillis (long)
  * -followeeCacheTargetBytes (long)
  * -followeeRefreshMillis (long)
  * -followeeRecordThumbnailMaxBytes (long)

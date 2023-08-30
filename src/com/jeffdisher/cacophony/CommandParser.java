@@ -395,6 +395,10 @@ public class CommandParser
 						, "The target size of the explicit cache (that is, how much space is used for caching videos"
 							+ " and images for miscellaneous look-ups) in bytes (accepts k, m, g suffixes)"
 					)
+					, new ArgParameter("--explicitUserInfoRefreshMillis", ParameterType.LONG_BYTES
+						, "The age of a user info entry, in the explicit cache, at which point it will be considered"
+							+ "\"stale\" and a background refresh will be attempted"
+					)
 					, new ArgParameter("--followeeCacheTargetBytes", ParameterType.LONG_BYTES
 						, "The target size of the followee cache (that is, how much space is used for caching videos"
 							+ " and images of the users you follow) in bytes (accepts k, m, g suffixes)"
@@ -421,14 +425,16 @@ public class CommandParser
 			int edgeMaxPixels = _optionalInt(optional[0], 0);
 			long republishIntervalMillis = _optionalLong(optional[1], 0L);
 			long explicitCacheTargetBytes = _optionalLong(optional[2], 0L);
-			long followeeCacheTargetBytes = _optionalLong(optional[3], 0L);
-			long followeeRefreshMillis = _optionalLong(optional[4], 0L);
-			long followeeThumbnailMaxBytes = _optionalLong(optional[5], 0L);
-			long followeeAudioMaxBytes = _optionalLong(optional[6], 0L);
-			long followeeVideoMaxBytes = _optionalLong(optional[7], 0L);
+			long explicitUserInfoRefreshMillis = _optionalLong(optional[3], 0L);
+			long followeeCacheTargetBytes = _optionalLong(optional[4], 0L);
+			long followeeRefreshMillis = _optionalLong(optional[5], 0L);
+			long followeeThumbnailMaxBytes = _optionalLong(optional[6], 0L);
+			long followeeAudioMaxBytes = _optionalLong(optional[7], 0L);
+			long followeeVideoMaxBytes = _optionalLong(optional[8], 0L);
 			return new SetGlobalPrefsCommand(edgeMaxPixels
 					, republishIntervalMillis
 					, explicitCacheTargetBytes
+					, explicitUserInfoRefreshMillis
 					, followeeCacheTargetBytes
 					, followeeRefreshMillis
 					, followeeThumbnailMaxBytes

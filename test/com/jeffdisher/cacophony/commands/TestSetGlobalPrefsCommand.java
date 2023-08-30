@@ -35,6 +35,7 @@ public class TestSetGlobalPrefsCommand
 		SetGlobalPrefsCommand command = new SetGlobalPrefsCommand(original.videoEdgePixelMax + 1
 				, 2000L
 				, 4000L
+				, 0L
 				, original.followeeCacheTargetBytes + 1
 				, 3000L
 				, 5000L
