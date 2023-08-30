@@ -51,6 +51,7 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		{
 			prefs.explicitCacheTargetBytes = this.value;
 		}
+		// NOTE:  LONG_DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS is NOT present in V3.
 		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_THUMBNAIL_BYTES))
 		{
 			prefs.followeeRecordThumbnailMaxBytes = this.value;
@@ -86,6 +87,10 @@ public record Opcode_SetPrefsLong(String key, long value) implements IDataOpcode
 		else if (this.key.equals(PrefsData.LONG_EXPLICIT_CACHE_BYTES))
 		{
 			prefs.explicitCacheTargetBytes = this.value;
+		}
+		else if (this.key.equals(PrefsData.LONG_DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS))
+		{
+			prefs.explicitUserInfoRefreshMillis = this.value;
 		}
 		
 		else if (this.key.equals(PrefsData.LONG_FOLLOWEE_REFRESH_MILLIS))

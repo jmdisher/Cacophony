@@ -5,11 +5,14 @@ import java.util.concurrent.CyclicBarrier;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
+import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MockKeys;
@@ -651,6 +654,67 @@ public class TestExplicitCacheManager
 				// Expected.
 			}
 		}
+		
+		manager.shutdown();
+		scheduler.shutdown();
+	}
+
+	@Test
+	public void userInfoRefresh() throws Throwable
+	{
+		// We want to observe the background refresh of user info in the explicit cache.
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(upstream, MockKeys.K0, "user0", "userPic".getBytes());
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		
+		// We do the initial look-up to prime the cache.
+		ExplicitCacheData.UserInfo startInfo = manager.loadUserInfo(MockKeys.K0).get();
+		IpfsFile userIndex = startInfo.indexCid();
+		// We expect 4 loads:  ForeignChannelReader will do size+load for index, records, recommendations, description.
+		// We expect 9 size checks:  ForeignChannelReader does this for meta-data, the pic, and then does the meta-data after pinning.
+		// We expect 5 pins:  All meta-data and the pic.
+		Assert.assertEquals(4, node.loadCalls);
+		Assert.assertEquals(9, node.sizeCalls);
+		Assert.assertEquals(5, node.pinCalls);
+		
+		// We now set the refresh threshold to something very low.
+		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		{
+			PrefsData prefs = access.readPrefs();
+			prefs.explicitUserInfoRefreshMillis = 1L;
+			access.writePrefs(prefs);
+		}
+		
+		// Change the user info.
+		MockNodeHelpers.updateAndPublishChannelDescription(upstream, MockKeys.K0, "updated name", "updated pic".getBytes());
+		
+		// Install a barrier on the read, so we can verify that first refresh returns immediately while the other is progressing.
+		CyclicBarrier barrier = new CyclicBarrier(2);
+		upstream.installSingleUseBarrier(barrier);
+		
+		// Do the first read, verify it is unchanged, and then access the barrier to verify we have synchronized with the refresh.
+		ExplicitCacheData.UserInfo lateInfo = manager.loadUserInfo(MockKeys.K0).get();
+		barrier.await();
+		
+		// Now, spin on the refresh until we see the change (since it is asynchronous but complete soon).
+		int count = 0;
+		while (userIndex.equals(lateInfo.indexCid()))
+		{
+			Thread.sleep(10L);
+			lateInfo = manager.loadUserInfo(MockKeys.K0).get();
+			count += 1;
+		}
+		// We should enter this at least once since the first refresh is returned while the update happens.
+		Assert.assertTrue(count > 0);
+		// We expect the call counts to be mostly doubled from the above, since the refresh is run twice.  Pins are coalesced, though, so only the 3 new elements are pinned.
+		Assert.assertEquals(8, node.loadCalls);
+		Assert.assertEquals(18, node.sizeCalls);
+		Assert.assertEquals(8, node.pinCalls);
 		
 		manager.shutdown();
 		scheduler.shutdown();

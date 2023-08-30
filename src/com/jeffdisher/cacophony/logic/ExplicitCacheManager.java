@@ -392,6 +392,9 @@ public class ExplicitCacheManager
 
 	private void _runFullLoad(FutureUserInfo[] usersToLoad, FutureRecord[] recordsToLoad, FutureVoid purgeRequest)
 	{
+		// We will just assume that the entire refresh happens at the same time.
+		long currentTimeMillis = _currentTimeMillisSupplier.getAsLong();
+		
 		// We will null out these parameters as we satisfy each individual request since they may be satisfied at different points.
 		
 		// Step 1:
@@ -404,8 +407,14 @@ public class ExplicitCacheManager
 		ConcurrentTransaction[] userTransactions = new ConcurrentTransaction[usersToLoad.length];
 		ConcurrentTransaction[] recordTransactions = new ConcurrentTransaction[recordsToLoad.length];
 		FutureResolve[] keys = new FutureResolve[usersToLoad.length];
+		List<UserRefreshTuple> userInfoRefreshes = new ArrayList<>();
 		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
 		{
+			PrefsData prefs = access.readPrefs();
+			videoEdgePixelMax = prefs.videoEdgePixelMax;
+			explicitCacheTargetBytes = prefs.explicitCacheTargetBytes;
+			long explicitUserInfoRefreshMillis = prefs.explicitUserInfoRefreshMillis;
+			
 			IExplicitCacheReading data = access.readableExplicitCache();
 			for (int i = 0; i < usersToLoad.length; ++i)
 			{
@@ -415,6 +424,19 @@ public class ExplicitCacheManager
 				{
 					user.success(info);
 					usersToLoad[i] = null;
+					// Note that we will still refresh this if the entry is stale.
+					if ((info.lastFetchAttemptMillis() + explicitUserInfoRefreshMillis) < currentTimeMillis)
+					{
+						// This is expired so add it to the refresh list, even though we already returned the "hit".
+						FutureResolve resolve = access.resolvePublicKey(user.publicKey);
+						ConcurrentTransaction refreshTransaction = access.openConcurrentTransaction();
+						UserRefreshTuple tuple = new UserRefreshTuple();
+						tuple.key = user.publicKey;
+						tuple.oldInfo = info;
+						tuple.resolve = resolve;
+						tuple.commitTransaction = refreshTransaction;
+						userInfoRefreshes.add(tuple);
+					}
 				}
 				else
 				{
@@ -436,9 +458,6 @@ public class ExplicitCacheManager
 					recordTransactions[i] = access.openConcurrentTransaction();
 				}
 			}
-			PrefsData prefs = access.readPrefs();
-			videoEdgePixelMax = prefs.videoEdgePixelMax;
-			explicitCacheTargetBytes = prefs.explicitCacheTargetBytes;
 		}
 		
 		// Step 2:
@@ -464,10 +483,22 @@ public class ExplicitCacheManager
 				}
 			}
 		}
+		// We will also start any user info refreshes here.
+		for (UserRefreshTuple tuple : userInfoRefreshes)
+		{
+			try
+			{
+				tuple.resolvedRoot = tuple.resolve.get();
+			}
+			catch (KeyException e)
+			{
+				tuple.rollbackTransaction = tuple.commitTransaction;
+				tuple.commitTransaction = null;
+			}
+		}
 		
 		// Step 3:
 		// -perform any other look-ups with the transaction
-		// TODO:  Change this mechanism to run all resolves concurrently instead of lock-stepping all futures.
 		ExplicitCacheData.UserInfo[] usersToWriteBack = new ExplicitCacheData.UserInfo[usersToLoad.length];
 		for (int i = 0; i < usersToLoad.length; ++i)
 		{
@@ -526,12 +557,38 @@ public class ExplicitCacheManager
 				}
 			}
 		}
+		for (UserRefreshTuple tuple : userInfoRefreshes)
+		{
+			if (null != tuple.commitTransaction)
+			{
+				try
+				{
+					tuple.newInfo = _loadUserInfo(tuple.commitTransaction, tuple.resolvedRoot);
+					// This will throw instead of failing.
+					Assert.assertTrue(null != tuple.newInfo);
+					// We also need to update this by removing the old info (these might overlap but the transaction should do the counting).
+					tuple.commitTransaction.unpin(tuple.oldInfo.indexCid());
+					tuple.commitTransaction.unpin(tuple.oldInfo.recommendationsCid());
+					tuple.commitTransaction.unpin(tuple.oldInfo.recordsCid());
+					tuple.commitTransaction.unpin(tuple.oldInfo.descriptionCid());
+					IpfsFile pic = tuple.oldInfo.userPicCid();
+					if (null != pic)
+					{
+						tuple.commitTransaction.unpin(pic);
+					}
+				}
+				catch (ProtocolDataException | IpfsConnectionException e)
+				{
+					tuple.rollbackTransaction = tuple.commitTransaction;
+					tuple.commitTransaction = null;
+				}
+			}
+		}
 		
 		// Step 4:
 		// -commit the transaction
 		// -update the cache data
 		// -run any purge request
-		long currentTimeMillis = _currentTimeMillisSupplier.getAsLong();
 		try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
 		{
 			ExplicitCacheData data = access.writableExplicitCache();
@@ -573,6 +630,30 @@ public class ExplicitCacheManager
 					recordsToLoad[i] = null;
 					transactionsToCommit.add(recordTransactions[i]);
 					recordTransactions[i] = null;
+				}
+			}
+			for (UserRefreshTuple tuple : userInfoRefreshes)
+			{
+				if (null != tuple.commitTransaction)
+				{
+					data.successRefreshUserInfo(tuple.key
+							, currentTimeMillis
+							, tuple.newInfo.indexCid()
+							, tuple.newInfo.recommendationsCid()
+							, tuple.newInfo.recordsCid()
+							, tuple.newInfo.descriptionCid()
+							, tuple.newInfo.userPicCid()
+							, tuple.newInfo.combinedSizeBytes()
+					);
+					transactionsToCommit.add(tuple.commitTransaction);
+					tuple.commitTransaction = null;
+				}
+				else
+				{
+					Assert.assertTrue(null != tuple.rollbackTransaction);
+					data.failedRefreshUserInfo(tuple.key, currentTimeMillis);
+					transactionsToRollback.add(tuple.rollbackTransaction);
+					tuple.rollbackTransaction = null;
 				}
 			}
 			
@@ -618,6 +699,11 @@ public class ExplicitCacheManager
 		for (ConcurrentTransaction transaction : recordTransactions)
 		{
 			Assert.assertTrue(null == transaction);
+		}
+		for (UserRefreshTuple tuple : userInfoRefreshes)
+		{
+			Assert.assertTrue(null == tuple.commitTransaction);
+			Assert.assertTrue(null == tuple.rollbackTransaction);
 		}
 		Assert.assertTrue(null == purgeRequest);
 	}
@@ -785,5 +871,17 @@ public class ExplicitCacheManager
 			_connectionException = e;
 			this.notifyAll();
 		}
+	}
+
+
+	private static class UserRefreshTuple
+	{
+		public IpfsKey key;
+		public ExplicitCacheData.UserInfo oldInfo;
+		public FutureResolve resolve;
+		public IpfsFile resolvedRoot;
+		public ExplicitCacheData.UserInfo newInfo;
+		public ConcurrentTransaction commitTransaction;
+		public ConcurrentTransaction rollbackTransaction;
 	}
 }

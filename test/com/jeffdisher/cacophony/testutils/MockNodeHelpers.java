@@ -88,6 +88,41 @@ public class MockNodeHelpers
 		return root;
 	}
 
+	public static IpfsFile updateAndPublishChannelDescription(MockSingleNode node, IpfsKey publishKey, String name, byte[] userPic) throws IpfsConnectionException
+	{
+		IpfsFile oldRoot = node.resolve(publishKey);
+		StreamIndex index;
+		StreamDescription description;
+		try
+		{
+			index = GlobalData.deserializeIndex(node.loadData(oldRoot));
+			description = GlobalData.deserializeDescription(node.loadData(IpfsFile.fromIpfsCid(index.getDescription())));
+		}
+		catch (FailedDeserializationException e1)
+		{
+			throw Assert.unexpected(e1);
+		}
+		if (null != description.getPicture())
+		{
+			node.rm(IpfsFile.fromIpfsCid(description.getPicture()));
+		}
+		description.setName(name);
+		description.setPicture(_storeWithString(node, userPic));
+		IpfsFile root;
+		try
+		{
+			index.setDescription(_storeWithString(node, GlobalData.serializeDescription(description)));
+			root = MockNodeHelpers.storeData(node, GlobalData.serializeIndex(index));
+		}
+		catch (SizeConstraintException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		
+		node.publish(publishKey.toPublicKey(), publishKey, root);
+		return root;
+	}
+
 	public static IpfsFile storeStreamRecord(MockSingleNode node, IpfsKey publisherKey, String title, byte[] thumb, byte[] video, int videoDimensions, byte[] audio)
 	{
 		DataArray elements = new DataArray();

@@ -152,7 +152,7 @@ public class ExplicitCacheData implements IExplicitCacheReading
 
 	/**
 	 * Adds a new user description to the cache and marks it as most recently used.
-	 * NOTE:  A user with the given indexCid cannot already be in the cache.
+	 * NOTE:  A user with the given publicKey cannot already be in the cache.
 	 * 
 	 * @param publicKey The public key of the user being added.
 	 * @param currentTimeMillis Current system time, in milliseconds.
@@ -186,6 +186,76 @@ public class ExplicitCacheData implements IExplicitCacheReading
 		_lru.add(publicKey);
 		_totalCacheInBytes += combinedSizeBytes;
 		return userInfo;
+	}
+
+	/**
+	 * Updates an existing user description in the cache after a successful refresh of the data.
+	 * 
+	 * @param publicKey The public key of the user being added.
+	 * @param currentTimeMillis Current system time, in milliseconds.
+	 * @param indexCid The CID of the user's StreamIndex root element.
+	 * @param recommendationsCid The CID of the user's StreamRecommendations element.
+	 * @param recordsCid The CID of the user's StreamRecords element.
+	 * @param descriptionCid The CID of the user's StreamDescription element.
+	 * @param userPicCid The CID of the user's picture (from StreamDescription).
+	 * @param combinedSizeBytes The combined size, in bytes, of all of the above CID elements.
+	 * @return The new UserInfo element added.
+	 */
+	public UserInfo successRefreshUserInfo(IpfsKey publicKey, long currentTimeMillis, IpfsFile indexCid, IpfsFile recommendationsCid, IpfsFile recordsCid, IpfsFile descriptionCid, IpfsFile userPicCid, long combinedSizeBytes)
+	{
+		Assert.assertTrue(_userInfo.containsKey(publicKey));
+		Assert.assertTrue(null != publicKey);
+		Assert.assertTrue(null != indexCid);
+		Assert.assertTrue(null != recommendationsCid);
+		Assert.assertTrue(null != recordsCid);
+		Assert.assertTrue(null != descriptionCid);
+		
+		UserInfo oldInfo = _userInfo.get(publicKey);
+		UserInfo newInfo = new UserInfo(publicKey
+				, currentTimeMillis
+				, currentTimeMillis
+				, indexCid
+				, recommendationsCid
+				, recordsCid
+				, descriptionCid
+				, userPicCid
+				, combinedSizeBytes
+		);
+		_totalCacheInBytes -= oldInfo.combinedSizeBytes;
+		_totalCacheInBytes += combinedSizeBytes;
+		
+		_userInfo.put(publicKey, newInfo);
+		_updateLru(publicKey);
+		return newInfo;
+	}
+
+	/**
+	 * Updates an existing user description in the cache after a failed refresh of the data.
+	 * 
+	 * @param publicKey The public key of the user being added.
+	 * @param currentTimeMillis Current system time, in milliseconds.
+	 * @return The new UserInfo element added.
+	 */
+	public UserInfo failedRefreshUserInfo(IpfsKey publicKey, long currentTimeMillis)
+	{
+		Assert.assertTrue(_userInfo.containsKey(publicKey));
+		Assert.assertTrue(null != publicKey);
+		
+		UserInfo oldInfo = _userInfo.get(publicKey);
+		UserInfo newInfo = new UserInfo(publicKey
+				, currentTimeMillis
+				, oldInfo.lastFetchSuccessMillis
+				, oldInfo.indexCid
+				, oldInfo.recommendationsCid
+				, oldInfo.recordsCid
+				, oldInfo.descriptionCid
+				, oldInfo.userPicCid
+				, oldInfo.combinedSizeBytes
+		);
+		
+		_userInfo.put(publicKey, newInfo);
+		_updateLru(publicKey);
+		return newInfo;
 	}
 
 	/**

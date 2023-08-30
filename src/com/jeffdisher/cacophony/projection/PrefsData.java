@@ -16,6 +16,7 @@ public class PrefsData
 	public static final String LONG_REPUBLISH_INTERVAL_MILLIS = "LONG_REPUBLISH_INTERVAL_MILLIS";
 
 	public static final String LONG_EXPLICIT_CACHE_BYTES = "LONG_EXPLICIT_CACHE_BYTES";
+	public static final String LONG_DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS = "LONG_DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS";
 
 	public static final String LONG_FOLLOW_CACHE_BYTES = "LONG_FOLLOW_CACHE_BYTES";
 	public static final String LONG_FOLLOWEE_REFRESH_MILLIS = "LONG_FOLLOWEE_REFRESH_MILLIS";
@@ -31,6 +32,8 @@ public class PrefsData
 	// We will use 1 GB as the size of the explicit cache, since we usually satisfy requests from the local user or
 	// followee cache so this is typically just used for one-offs.
 	public static final long DEFAULT_EXPLICIT_CACHE_BYTES = 1_000_000_000L;
+	// We will default to considering an explicit cache user info entry stale after 24 hours.
+	public static final long DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS = 24L * 60L * 60L * 1000L;
 
 	// We will start with a followee cache default target size of 10 GB (probably too small but not ultra-tiny).
 	// (this is mutable since we override it in some tests).
@@ -51,6 +54,7 @@ public class PrefsData
 		prefs.republishIntervalMillis = DEFAULT_REPUBLISH_INTERVAL_MILLIS;
 		
 		prefs.explicitCacheTargetBytes = DEFAULT_EXPLICIT_CACHE_BYTES;
+		prefs.explicitUserInfoRefreshMillis = DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS;
 		
 		prefs.followeeCacheTargetBytes = DEFAULT_FOLLOWEE_CACHE_BYTES;
 		prefs.followeeRefreshMillis = DEFAULT_FOLLOWEE_REFRESH_MILLIS;
@@ -80,6 +84,12 @@ public class PrefsData
 	 * will purge least recently used entries until it is under this limit.
 	 */
 	public long explicitCacheTargetBytes;
+	/**
+	 * The number of milliseconds of age where an explicit cache user info entry will be considered "stale" and needing
+	 * to be refreshed.  The stale entries are still left in the cache, and will still be returned, but if the last
+	 * refresh attempt is longer ago than this threshold, a background refresh will be scheduled.
+	 */
+	public long explicitUserInfoRefreshMillis;
 
 	/**
 	 * The number of bytes of content the followee cache will target.  Note that it can sometimes go above this value,
@@ -118,6 +128,7 @@ public class PrefsData
 		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_REPUBLISH_INTERVAL_MILLIS, Long.valueOf(this.republishIntervalMillis)));
 		
 		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_EXPLICIT_CACHE_BYTES, Long.valueOf(this.explicitCacheTargetBytes)));
+		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_DEFAULT_EXPLICIT_USER_INFO_REFRESH_MILLIS, Long.valueOf(this.explicitUserInfoRefreshMillis)));
 		
 		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_FOLLOW_CACHE_BYTES, Long.valueOf(this.followeeCacheTargetBytes)));
 		writer.writeOpcode(new Opcode_SetPrefsLong(LONG_FOLLOWEE_REFRESH_MILLIS, Long.valueOf(this.followeeRefreshMillis)));
