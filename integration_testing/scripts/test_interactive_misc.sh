@@ -334,10 +334,21 @@ requireSubstring "$INDEX" "Cacophony - Static Index"
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/server/cookie
 XSRF2=$(grep XSRF "$COOKIES2" | cut -f 7)
 
-# NOTE:  This will currently just exit with an error, since we don't support requesting post lists for non-home, non-followee users.
+echo "Make a post as user 1 so that user 2 can see it in the explicit record list..."
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "explicit" --description "post on explicit list" >& /dev/null
+checkPreviousCommand "publishToThisChannel"
+
+# Even though we aren't following this user, we should be able to see the faked-up socket showing us the data.
 java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF2" "ws://127.0.0.1:8002/server/events/entries/$PUBLIC1" 9000 &
 ENTRIES2_PID=$!
-wait $ENTRIES2_PID
+waitForHttpStart 9000
+
+# (we only expect a single post).
+SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/0 2> /dev/null)
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"Qm"
+CID=$(echo "$SAMPLE" | cut -d \" -f 8)
+STRUCT=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XGET -L "http://127.0.0.1:8002/server/postStruct/$CID/OPTIONAL")
+requireSubstring "$STRUCT" "{\"name\":\"explicit\",\"description\":\"post on explicit list\","
 
 # The explicit cache should still give us results.
 USER_INFO=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2"  --no-progress-meter -XGET "http://127.0.0.1:8002/server/unknownUser/$PUBLIC1")
@@ -346,6 +357,7 @@ requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My descripti
 echo "Stop the user 2 server."
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" -XPOST "http://127.0.0.1:8002/server/stop"
 wait $SERVER_PID
+wait $ENTRIES2_PID
 
 
 echo "Check that our upload utility can handle large uploads..."

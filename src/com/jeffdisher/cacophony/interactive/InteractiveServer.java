@@ -208,7 +208,7 @@ public class InteractiveServer
 		validated.addPostFormHandler("/server/prefs", new POST_Prefs(serverContext, background));
 		validated.addWebSocketFactory("/server/events/status", EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
 		validated.addWebSocketFactory("/server/events/combined/entries", EVENT_API_PROTOCOL, new WS_CombinedEntries(serverContext));
-		validated.addWebSocketFactory("/server/events/entries/{KEY}", EVENT_API_PROTOCOL, new WS_UserEntries(serverContext));
+		validated.addWebSocketFactory("/server/events/entries/{KEY}", EVENT_API_PROTOCOL, new WS_UserEntries(serverContext, dispatcher));
 		validated.addWebSocketFactory("/server/events/replies", EVENT_API_PROTOCOL, new WS_Replies(replyCacheConnector));
 		validated.addWebSocketFactory("/server/events/replyTree/{CID}", EVENT_API_PROTOCOL, new WS_ReplyTree(dispatcher, replyForest));
 		validated.addGetHandler("/server/recommendedKeys/{KEY}", new GET_RecommendedKeys(runner));
