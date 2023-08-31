@@ -16,10 +16,12 @@ PATH_TO_JAR="$3"
 USER1=/tmp/user1
 USER2=/tmp/user2
 COOKIES1=/tmp/cookies1
+COOKIES2=/tmp/cookies2
 
 rm -rf "$USER1"
 rm -rf "$USER2"
 rm -f "$COOKIES1"
+rm -f "$COOKIES2"
 
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
@@ -320,6 +322,30 @@ requireSubstring "$POST_LIST" "[\"$ONLY_CID\"]"
 
 echo "Stop the server and wait for it to exit..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
+wait $SERVER_PID
+wait $ENTRIES_PID
+
+echo "Start a server for user 2 so we can verify the explicit cache behaviour when fetching data from user 1..."
+CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar "Cacophony.jar" --run --port 8002 &
+SERVER2_PID=$!
+waitForHttpStart 8002
+INDEX=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XGET -L "http://127.0.0.1:8002/")
+requireSubstring "$INDEX" "Cacophony - Static Index"
+curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/server/cookie
+XSRF2=$(grep XSRF "$COOKIES2" | cut -f 7)
+
+# NOTE:  This will currently just exit with an error, since we don't support requesting post lists for non-home, non-followee users.
+java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketToRestUtility "$XSRF2" "ws://127.0.0.1:8002/server/events/entries/$PUBLIC1" 9000 &
+ENTRIES2_PID=$!
+wait $ENTRIES2_PID
+
+# The explicit cache should still give us results.
+USER_INFO=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2"  --no-progress-meter -XGET "http://127.0.0.1:8002/server/unknownUser/$PUBLIC1")
+requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My description\",\"userPicUrl\":\"http://127.0.0.1:8081/ipfs/QmQ3uiKi85stbB6owgnKbxpjbGixFJNfryc2rU7U51MqLd\",\"email\":null,\"website\":\"http://example.com\",\"feature\":null}"
+
+echo "Stop the user 2 server."
+curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" -XPOST "http://127.0.0.1:8002/server/stop"
+wait $SERVER_PID
 
 
 echo "Check that our upload utility can handle large uploads..."
@@ -333,6 +359,5 @@ kill $PID2
 
 wait $PID1
 wait $PID2
-wait $ENTRIES_PID
 
 echo -e "\033[32;40mSUCCESS!\033[0m"
