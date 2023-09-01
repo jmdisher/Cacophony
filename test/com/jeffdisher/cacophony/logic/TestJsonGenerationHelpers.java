@@ -169,8 +169,6 @@ public class TestJsonGenerationHelpers
 		
 		// Make sure that we have both entries (not the oversized one - that will be ignored since we couldn't read it).
 		Assert.assertEquals(2, recordCache.getKeys().size());
-		Assert.assertEquals("entry1", recordCache.get(recordFile).name());
-		Assert.assertEquals("entry2", recordCache.get(followeeRecordFile).name());
 		scheduler.shutdown();
 	}
 

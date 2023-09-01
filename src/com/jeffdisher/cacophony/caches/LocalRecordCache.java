@@ -5,19 +5,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
- * This is used as a container of StreamRecord instances which we know something about locally.  This includes the
- * records authored by the channel owner as well as the records authored by users they are following.
+ * This is used as a container of StreamRecord instances which we know are reachable, and at least partially cached,
+ * based on whole channels we cache locally.  Those are the home channels (since they live here) and the channels which
+ * we are actively following.  The reason for this cache is to avoid needing to search through the record lists for all
+ * of these channels in order to find out if a given record is one we know about.
  * The cache is incrementally updated as the system runs and all access is synchronized, since reads and writes can come
  * from different threads in the system, at any time.
  * Note that, since it is possible to pin the same element through multiple paths, a list of possible video CIDs is
  * stored for each pinned copy, along with its edge size.  When an element is requested, it is returned with the largest
  * of these representations.
+ * NOTE:  This cache does NOT contain any information about the records cached as favourites or via the explicit cache
+ * (although the explicit cache may overlap with this cache if we have explicitly cached leaf elements associated with a
+ * followee's post which only has meta-data in the followee cache.
  */
 public class LocalRecordCache implements ILocalRecordCache
 {
@@ -37,23 +42,15 @@ public class LocalRecordCache implements ILocalRecordCache
 	}
 
 	@Override
-	public synchronized Element get(IpfsFile cid)
+	public synchronized CachedRecordInfo get(IpfsFile cid)
 	{
 		InternalElement internal = _cache.get(cid);
-		Element elt = null;
+		CachedRecordInfo elt = null;
 		if (null != internal)
 		{
-			elt = new Element(internal.isCached()
-					, internal.name
-					, internal.description
-					, internal.publishedSecondsUtc
-					, internal.discussionUrl
-					, internal.publisherKey
-					, internal.replyToCid
-					, internal.thumbnail
-					, internal.largestVideo()
-					, internal.audio
-			);
+			// This is just a live cache so we don't care about the size.
+			long combinedSizeBytes = 0L;
+			elt = new CachedRecordInfo(cid, internal.thumbnail, internal.largestVideo(), internal.audio, combinedSizeBytes);
 		}
 		return elt;
 	}
@@ -61,18 +58,13 @@ public class LocalRecordCache implements ILocalRecordCache
 	/**
 	 * Records that the meta-data element for this StreamRecord has been pinned locally.  This is called for both
 	 * followee records and home channel records.
-	 * Note that this expects to be called multiple times when referenced multiple times.
+	 * Note that this expects to be called multiple times when referenced multiple times (since the same post can appear
+	 * in the post list for multiple users).
 	 * 
 	 * @param cid The CID of the meta-data.
-	 * @param name The name.
-	 * @param description The description.
-	 * @param publishedSecondsUtc The publish time.
-	 * @param discussionUrl The discussion URL (can be null).
-	 * @param publisherKey The key of the element publisher.
-	 * @param replyToCid The CID of the post to which this is a reply (typically null).
-	 * @param leafElementCount The number of leaf elements referenced.
+	 * @param leafElementCount The number of leaf elements referenced by this meta-data (whether or not they are pinned).
 	 */
-	public synchronized void recordMetaDataPinned(IpfsFile cid, String name, String description, long publishedSecondsUtc, String discussionUrl, IpfsKey publisherKey, IpfsFile replyToCid, int leafElementCount)
+	public synchronized void recordMetaDataPinned(IpfsFile cid, int leafElementCount)
 	{
 		int refCount = 0;
 		IpfsFile thumbnail = null;
@@ -97,12 +89,6 @@ public class LocalRecordCache implements ILocalRecordCache
 		}
 		Assert.assertTrue(!_cache.containsKey(cid));
 		_cache.put(cid, new InternalElement(refCount
-				, name
-				, description
-				, publishedSecondsUtc
-				, discussionUrl
-				, publisherKey
-				, replyToCid
 				, leafElementCount
 				, thumbnail
 				, thumbnailRef
@@ -128,12 +114,6 @@ public class LocalRecordCache implements ILocalRecordCache
 		if (newRef > 0)
 		{
 			_cache.put(cid, new InternalElement(newRef
-					, previous.name
-					, previous.description
-					, previous.publishedSecondsUtc
-					, previous.discussionUrl
-					, previous.publisherKey
-					, previous.replyToCid
 					, previous.leafElementCount
 					, previous.thumbnail
 					, previous.thumbnailRef
@@ -174,12 +154,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			thumbnailRef += 1;
 		}
 		_cache.put(cid, new InternalElement(previous.refCount
-				, previous.name
-				, previous.description
-				, previous.publishedSecondsUtc
-				, previous.discussionUrl
-				, previous.publisherKey
-				, previous.replyToCid
 				, previous.leafElementCount
 				, thumbnail
 				, thumbnailRef
@@ -212,12 +186,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			audioRef += 1;
 		}
 		_cache.put(cid, new InternalElement(previous.refCount
-				, previous.name
-				, previous.description
-				, previous.publishedSecondsUtc
-				, previous.discussionUrl
-				, previous.publisherKey
-				, previous.replyToCid
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -250,12 +218,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			videos[oldVideos.length] = new VideoReference(video, videoEdge);
 		}
 		_cache.put(cid, new InternalElement(previous.refCount
-				, previous.name
-				, previous.description
-				, previous.publishedSecondsUtc
-				, previous.discussionUrl
-				, previous.publisherKey
-				, previous.replyToCid
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -285,12 +247,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			thumbnailRef -= 1;
 		}
 		_cache.put(cid, new InternalElement(previous.refCount
-				, previous.name
-				, previous.description
-				, previous.publishedSecondsUtc
-				, previous.discussionUrl
-				, previous.publisherKey
-				, previous.replyToCid
 				, previous.leafElementCount
 				, (thumbnailRef > 0) ? previous.thumbnail : null
 				, thumbnailRef
@@ -320,12 +276,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			audioRef -= 1;
 		}
 		_cache.put(cid, new InternalElement(previous.refCount
-				, previous.name
-				, previous.description
-				, previous.publishedSecondsUtc
-				, previous.discussionUrl
-				, previous.publisherKey
-				, previous.replyToCid
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -372,12 +322,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			Assert.assertTrue(videos.length == index);
 		}
 		_cache.put(cid, new InternalElement(previous.refCount
-				, previous.name
-				, previous.description
-				, previous.publishedSecondsUtc
-				, previous.discussionUrl
-				, previous.publisherKey
-				, previous.replyToCid
 				, previous.leafElementCount
 				, previous.thumbnail
 				, previous.thumbnailRef
@@ -392,12 +336,6 @@ public class LocalRecordCache implements ILocalRecordCache
 	 * reference counts and potentially different video CIDs so that the cache can be maintained precisely.
 	 */
 	private static record InternalElement(int refCount
-			, String name
-			, String description
-			, long publishedSecondsUtc
-			, String discussionUrl
-			, IpfsKey publisherKey
-			, IpfsFile replyToCid
 			, int leafElementCount
 			, IpfsFile thumbnail
 			, int thumbnailRef
@@ -406,14 +344,6 @@ public class LocalRecordCache implements ILocalRecordCache
 			, VideoReference[] videos
 	)
 	{
-		public boolean isCached()
-		{
-			// This is cached if we have any leaf referenced cached or if there are no leaf references.
-			return (0 == leafElementCount)
-					|| (null != thumbnail)
-					|| (null != audio)
-					|| (videos.length > 0);
-		}
 		public IpfsFile largestVideo()
 		{
 			IpfsFile video = null;

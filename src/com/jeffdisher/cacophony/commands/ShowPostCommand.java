@@ -5,8 +5,8 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.caches.ILocalRecordCache;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -63,24 +63,18 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 	}
 
 
-	private PostDetails _checkKnownCache(Context context)
+	private PostDetails _checkKnownCache(Context context) throws IpfsConnectionException
 	{
 		PostDetails post = null;
-		ILocalRecordCache.Element element = context.recordCache.get(_elementCid);
-		if (null != element)
+		CachedRecordInfo info = context.recordCache.get(_elementCid);
+		if (null != info)
 		{
-			post = new PostDetails(_elementCid
-					, element.isCached()
-					, element.name()
-					, element.description()
-					, element.publishedSecondsUtc()
-					, element.discussionUrl()
-					, element.publisherKey()
-					, element.replyToCid()
-					, element.thumbnailCid()
-					, element.videoCid()
-					, element.audioCid()
-			);
+			// The cache only tracks what part of the post we have pinned so we need to now load the meta-data in order
+			// to see what leaves are available and what the meta-data actually says.
+			try (IReadingAccess access = StandardAccess.readAccess(context))
+			{
+				post = _buildDetailsWithCachedInfo(access, info);
+			}
 		}
 		return post;
 	}
@@ -116,7 +110,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		return post;
 	}
 
-	private PostDetails _checkExplicitCache(Context context) throws ProtocolDataException, IpfsConnectionException, FailedDeserializationException
+	private PostDetails _checkExplicitCache(Context context) throws ProtocolDataException, IpfsConnectionException
 	{
 		CachedRecordInfo info = context.explicitCacheManager.loadRecord(_elementCid).get();
 		try (IReadingAccess access = StandardAccess.readAccess(context))
@@ -126,11 +120,29 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		}
 	}
 
-	private PostDetails _buildDetailsWithCachedInfo(IReadingAccess access, CachedRecordInfo info) throws IpfsConnectionException, FailedDeserializationException
+	private PostDetails _buildDetailsWithCachedInfo(IReadingAccess access, CachedRecordInfo info) throws IpfsConnectionException
 	{
-		AbstractRecord record = access.loadCached(info.streamCid(), AbstractRecord.DESERIALIZER).get();
+		AbstractRecord record;
+		try
+		{
+			record = access.loadCached(info.streamCid(), AbstractRecord.DESERIALIZER).get();
+		}
+		catch (FailedDeserializationException e)
+		{
+			// If this is something in one of our caches, we already must have deserialized it in this past.
+			throw Assert.unexpected(e);
+		}
+		// We will say that this is cached if we have any thumbnail and leaf pinned.  If one isn't pinned, it isn't cached.
+		LeafFinder finder = LeafFinder.parseRecord(record);
+		boolean hasThumb = (null != finder.thumbnail);
+		boolean hasVideo = (finder.sortedVideos.length > 0);
+		boolean hasAudio = (null != finder.audio);
+		boolean isKnownToBeCached = (hasThumb == (null != info.thumbnailCid()))
+				&& (hasAudio == (null != info.audioCid()))
+				&& (hasVideo == (null != info.videoCid()))
+		;
 		return new PostDetails(_elementCid
-				, true
+				, isKnownToBeCached
 				, record.getName()
 				, record.getDescription()
 				, record.getPublishedSecondsUtc()

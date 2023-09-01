@@ -148,16 +148,9 @@ public class CacheUpdater
 		{
 			_entryRegistry.addLocalElement(publicKey, cid, record.getPublishedSecondsUtc());
 		}
-		IpfsFile replyTo = record.getReplyTo();
 		if (null != _recordCache)
 		{
 			_recordCache.recordMetaDataPinned(cid
-					, record.getName()
-					, record.getDescription()
-					, record.getPublishedSecondsUtc()
-					, record.getDiscussionUrl()
-					, record.getPublisherKey()
-					, replyTo
 					, record.getExternalElementCount()
 			);
 			
@@ -179,6 +172,7 @@ public class CacheUpdater
 		{
 			_replyCache.addHomePost(cid);
 		}
+		IpfsFile replyTo = record.getReplyTo();
 		if ((null != _replyForest) && (null != replyTo))
 		{
 			_replyForest.addPost(cid, replyTo);
@@ -242,7 +236,6 @@ public class CacheUpdater
 			, int videoEdgeSize
 	)
 	{
-		IpfsFile replyTo = record.getReplyTo();
 		if (null != _entryRegistry)
 		{
 			_entryRegistry.addFolloweeElement(publicKey, cid, record.getPublishedSecondsUtc());
@@ -250,12 +243,6 @@ public class CacheUpdater
 		if (null != _recordCache)
 		{
 			_recordCache.recordMetaDataPinned(cid
-					, record.getName()
-					, record.getDescription()
-					, record.getPublishedSecondsUtc()
-					, record.getDiscussionUrl()
-					, record.getPublisherKey()
-					, replyTo
 					, record.getExternalElementCount()
 			);
 			if (null != cachedImageOrNull)
@@ -271,6 +258,7 @@ public class CacheUpdater
 				_recordCache.recordVideoPinned(cid, cachedVideoOrNull, videoEdgeSize);
 			}
 		}
+		IpfsFile replyTo = record.getReplyTo();
 		if ((null != _replyCache) && (null != replyTo))
 		{
 			_replyCache.addFolloweePost(cid, replyTo);

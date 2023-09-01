@@ -5,6 +5,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -108,7 +110,12 @@ public class TestShowPostCommand
 		
 		// We want to create a special context which allows us to slide in a LocalRecordCache.
 		LocalRecordCache specialRecordCache = new LocalRecordCache();
-		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1, null, 1);
+		// (be sure to pin this, since we are about to say it was pinned)
+		try (IWritingAccess access = StandardAccess.writeAccess(readNode.getContext()))
+		{
+			access.pin(postCid).get();
+		}
+		specialRecordCache.recordMetaDataPinned(postCid, 1);
 		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null, null, readNode.getContext().explicitCacheManager);
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
 		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
@@ -153,7 +160,12 @@ public class TestShowPostCommand
 		
 		// We want to create a special context which allows us to slide in a LocalRecordCache.
 		LocalRecordCache specialRecordCache = new LocalRecordCache();
-		specialRecordCache.recordMetaDataPinned(postCid, title, "", 1L, null, MockKeys.K1, null, 1);
+		// (be sure to pin this, since we are about to say it was pinned)
+		try (IWritingAccess access = StandardAccess.writeAccess(readNode.getContext()))
+		{
+			access.pin(postCid).get();
+		}
+		specialRecordCache.recordMetaDataPinned(postCid, 1);
 		Context specialContext = readNode.getContext().cloneWithExtras(specialRecordCache, null, null, null, readNode.getContext().explicitCacheManager);
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
 		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
