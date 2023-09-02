@@ -216,7 +216,7 @@ public class TestV3V4
 
 	private static void _addStreamRecord(ExplicitCacheData data, IpfsFile streamCid, IpfsFile thumbnailCid, IpfsFile videoCid, IpfsFile audioCid, long combinedSizeBytes)
 	{
-		CachedRecordInfo info = new CachedRecordInfo(streamCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
+		CachedRecordInfo info = new CachedRecordInfo(streamCid, false, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
 		data.addStreamRecord(streamCid, info);
 	}
 }

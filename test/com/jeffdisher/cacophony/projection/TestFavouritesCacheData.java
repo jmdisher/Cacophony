@@ -134,7 +134,7 @@ public class TestFavouritesCacheData
 
 	private static void addStreamRecord(FavouritesCacheData data, IpfsFile streamCid, IpfsFile thumbnailCid, IpfsFile videoCid, IpfsFile audioCid, long combinedSizeBytes)
 	{
-		CachedRecordInfo info = new CachedRecordInfo(streamCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
+		CachedRecordInfo info = new CachedRecordInfo(streamCid, false, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
 		data.addStreamRecord(streamCid, info);
 	}
 }

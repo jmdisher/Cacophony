@@ -69,7 +69,9 @@ public record Opcode_FavouriteStreamRecord(IpfsFile streamCid, IpfsFile thumbnai
 
 	private void commonApply(FavouritesCacheData favouritesCache)
 	{
-		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
+		// Favourites cache elements should always be complete.
+		boolean hasDataToCache = false;
+		CachedRecordInfo info = new CachedRecordInfo(this.streamCid, hasDataToCache, this.thumbnailCid, this.videoCid, this.audioCid, this.combinedSizeBytes);
 		favouritesCache.addStreamRecord(this.streamCid, info);
 	}
 }

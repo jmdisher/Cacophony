@@ -20,6 +20,12 @@ public class OpcodeDeserializer
 		_data = data;
 	}
 
+	public boolean readBoolean()
+	{
+		// We store a boolean as a byte of either 0 or 1 (physically, 0 and non-0).
+		return (0 != _data.get());
+	}
+
 	public int readInt()
 	{
 		return _data.getInt();

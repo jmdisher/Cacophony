@@ -11,6 +11,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitStreamRecordV3;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfoV3;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -42,9 +43,10 @@ public class OpcodeCodec
 		Opcode_SetPrefsInt.register(_OPCODE_TABLE);
 		Opcode_SetPrefsLong.register(_OPCODE_TABLE);
 		Opcode_ExplicitUserInfoV3.register(_OPCODE_TABLE);
-		Opcode_ExplicitStreamRecord.register(_OPCODE_TABLE);
+		Opcode_ExplicitStreamRecordV3.register(_OPCODE_TABLE);
 		Opcode_FavouriteStreamRecord.register(_OPCODE_TABLE);
 		Opcode_ExplicitUserInfo.register(_OPCODE_TABLE);
+		Opcode_ExplicitStreamRecord.register(_OPCODE_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _OPCODE_TABLE.length; ++i)

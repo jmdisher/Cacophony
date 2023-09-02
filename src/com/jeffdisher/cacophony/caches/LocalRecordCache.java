@@ -48,9 +48,17 @@ public class LocalRecordCache implements ILocalRecordCache
 		CachedRecordInfo elt = null;
 		if (null != internal)
 		{
+			// We determine if there is other data we could cache by looking at the total number of external leaves if we haven't cached anything.
+			// Even though we might NOT CHOOSE to cache these leaves (they may just be large videos, etc), that would be dynamically decided by prefs.
+			boolean hasDataToCache = (internal.leafElementCount > 0)
+					&& (null == internal.thumbnail)
+					&& (0 == internal.videos.length)
+					&& (null == internal.audio)
+			;
+			
 			// This is just a live cache so we don't care about the size.
 			long combinedSizeBytes = 0L;
-			elt = new CachedRecordInfo(cid, internal.thumbnail, internal.largestVideo(), internal.audio, combinedSizeBytes);
+			elt = new CachedRecordInfo(cid, hasDataToCache, internal.thumbnail, internal.largestVideo(), internal.audio, combinedSizeBytes);
 		}
 		return elt;
 	}

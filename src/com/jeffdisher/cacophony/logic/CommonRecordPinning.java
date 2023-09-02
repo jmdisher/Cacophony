@@ -69,6 +69,6 @@ public class CommonRecordPinning
 			pinAudio.get();
 			combinedSizeBytes += transaction.getSizeInBytes(audioCid).get();
 		}
-		return new CachedRecordInfo(recordCid, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
+		return new CachedRecordInfo(recordCid, false, thumbnailCid, videoCid, audioCid, combinedSizeBytes);
 	}
 }

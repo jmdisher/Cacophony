@@ -19,6 +19,12 @@ public class OpcodeSerializer
 		_data = data;
 	}
 
+	public void writeBoolean(boolean value)
+	{
+		// We store a boolean as a byte of either 0 or 1 (physically, 0 and non-0).
+		_data.put(value ? (byte)1 : (byte)0);
+	}
+
 	public void writeInt(int value)
 	{
 		_data.putInt(value);

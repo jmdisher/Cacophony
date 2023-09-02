@@ -9,6 +9,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitStreamRecordV3;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_ExplicitUserInfoV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_ExplicitStreamRecord;
@@ -65,7 +66,7 @@ public class ExplicitCacheData implements IExplicitCacheReading
 				IpfsFile elt = (IpfsFile) object;
 				Assert.assertTrue(_recordInfo.containsKey(elt));
 				CachedRecordInfo info = _recordInfo.get(elt);
-				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
+				writer.writeOpcode(new Opcode_ExplicitStreamRecordV3(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
 			}
 		}
 	}
@@ -108,7 +109,7 @@ public class ExplicitCacheData implements IExplicitCacheReading
 				IpfsFile elt = (IpfsFile) object;
 				Assert.assertTrue(_recordInfo.containsKey(elt));
 				CachedRecordInfo info = _recordInfo.get(elt);
-				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
+				writer.writeOpcode(new Opcode_ExplicitStreamRecord(info.streamCid(), info.hasDataToCache(), info.thumbnailCid(), info.videoCid(), info.audioCid(), info.combinedSizeBytes()));
 			}
 		}
 	}
