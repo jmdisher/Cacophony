@@ -112,7 +112,9 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 
 	private PostDetails _checkExplicitCache(Context context) throws ProtocolDataException, IpfsConnectionException
 	{
-		CachedRecordInfo info = context.explicitCacheManager.loadRecord(_elementCid).get();
+		// We will request the leaves be added only if this was a forced load, otherwise, we will just make the cheaper meta-data request.
+		boolean shouldPinLeaves = _forceCache;
+		CachedRecordInfo info = context.explicitCacheManager.loadRecord(_elementCid, shouldPinLeaves).get();
 		try (IReadingAccess access = StandardAccess.readAccess(context))
 		{
 			// Everything in the explicit cache is cached.

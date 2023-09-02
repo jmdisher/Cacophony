@@ -95,7 +95,7 @@ public class TestExplicitCacheManager
 		
 		// Test that we can read the post.
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
-		CachedRecordInfo info = manager.loadRecord(cid).get();
+		CachedRecordInfo info = manager.loadRecord(cid, true).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.thumbnailCid());
 		
 		manager.shutdown();
@@ -115,7 +115,7 @@ public class TestExplicitCacheManager
 		boolean didLoad;
 		try
 		{
-			manager.loadRecord(MockSingleNode.generateHash("bogus".getBytes())).get();
+			manager.loadRecord(MockSingleNode.generateHash("bogus".getBytes()), true).get();
 			didLoad = true;
 		}
 		catch (IpfsConnectionException e)
@@ -151,7 +151,7 @@ public class TestExplicitCacheManager
 		Assert.assertNull(manager.getExistingRecord(cid));
 		
 		// Test that we can read the post.
-		CachedRecordInfo info = manager.loadRecord(cid).get();
+		CachedRecordInfo info = manager.loadRecord(cid, true).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.thumbnailCid());
 		
 		// Verify that we now see it in cache.
@@ -184,7 +184,7 @@ public class TestExplicitCacheManager
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
 		ExplicitCacheData.UserInfo user = manager.loadUserInfo(MockKeys.K0).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), user.userPicCid());
-		CachedRecordInfo post = manager.loadRecord(cid).get();
+		CachedRecordInfo post = manager.loadRecord(cid, true).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), post.thumbnailCid());
 		
 		manager.shutdown();
@@ -282,13 +282,13 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 		
-		CachedRecordInfo record = manager.loadRecord(cid).get();
+		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
 		// We check the size of the record before load and then when building total.
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(2, node.sizeCalls);
 		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = manager.loadRecord(cid).get();
+		CachedRecordInfo record2 = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(2, node.sizeCalls);
@@ -309,13 +309,13 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 		
-		CachedRecordInfo record = manager.loadRecord(cid).get();
+		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
 		// We check the record size, load it, then total record, thumbnail, and video.
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(4, node.sizeCalls);
 		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = manager.loadRecord(cid).get();
+		CachedRecordInfo record2 = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(4, node.sizeCalls);
@@ -336,13 +336,13 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 		
-		CachedRecordInfo record = manager.loadRecord(cid).get();
+		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
 		// We check the record size, load it, then total record and audio.
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(3, node.sizeCalls);
 		// A second attempt should be a cache hit and not touch the network.
-		CachedRecordInfo record2 = manager.loadRecord(cid).get();
+		CachedRecordInfo record2 = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record2);
 		Assert.assertEquals(1, node.loadCalls);
 		Assert.assertEquals(3, node.sizeCalls);
@@ -370,7 +370,7 @@ public class TestExplicitCacheManager
 		boolean didFail;
 		try
 		{
-			manager.loadRecord(cid).get();
+			manager.loadRecord(cid, true).get();
 			didFail = false;
 		}
 		catch (IpfsConnectionException e)
@@ -403,7 +403,7 @@ public class TestExplicitCacheManager
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 		
 		Assert.assertNull(manager.getExistingRecord(cid));
-		CachedRecordInfo record = manager.loadRecord(cid).get();
+		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
 		Assert.assertTrue(record == manager.getExistingRecord(cid));
 		
@@ -501,7 +501,7 @@ public class TestExplicitCacheManager
 				CachedRecordInfo record;
 				try
 				{
-					record = manager.loadRecord(cid).get();
+					record = manager.loadRecord(cid, true).get();
 				}
 				catch (ProtocolDataException e)
 				{
@@ -553,7 +553,7 @@ public class TestExplicitCacheManager
 		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
 		
 		// Populate the cache.
-		CachedRecordInfo record = manager.loadRecord(cid).get();
+		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
 		
 		// Check the size.
@@ -604,9 +604,9 @@ public class TestExplicitCacheManager
 		FutureVoid[] gcs = new FutureVoid[3];
 		for (int i = 0; i < 3; ++i)
 		{
-			records0[i] = manager.loadRecord(cid0);
-			records1[i] = manager.loadRecord(cid1);
-			records2[i] = manager.loadRecord(bogusRecord);
+			records0[i] = manager.loadRecord(cid0, true);
+			records1[i] = manager.loadRecord(cid1, true);
+			records2[i] = manager.loadRecord(bogusRecord, true);
 			users0[i] = manager.loadUserInfo(MockKeys.K0);
 			users1[i] = manager.loadUserInfo(MockKeys.K1);
 			users2[i] = manager.loadUserInfo(MockKeys.K2);
@@ -715,6 +715,56 @@ public class TestExplicitCacheManager
 		Assert.assertEquals(8, node.loadCalls);
 		Assert.assertEquals(18, node.sizeCalls);
 		Assert.assertEquals(8, node.pinCalls);
+		
+		manager.shutdown();
+		scheduler.shutdown();
+	}
+
+	@Test
+	public void requestUpgrade() throws Throwable
+	{
+		// We want to send in multiple record meta-data requests, block the call, then add a full request, to make sure that they are all completed.
+		MockSwarm swarm = new MockSwarm();
+		MockSingleNode node = new MockSingleNode(swarm);
+		MockSingleNode upstream = new MockSingleNode(swarm);
+		IpfsFile cid0 = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K0, "name", "thumb".getBytes(), "video".getBytes(), 10, null);
+		
+		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
+		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		
+		// Make one request to verify that it thinks there is more data.
+		CachedRecordInfo start = manager.loadRecord(cid0, false).get();
+		Assert.assertEquals(777, start.combinedSizeBytes());
+		Assert.assertTrue(start.hasDataToCache());
+		Assert.assertNull(start.thumbnailCid());
+		Assert.assertNull(start.videoCid());
+		Assert.assertNull(start.audioCid());
+		
+		// We want to install a barrier in the upstream node, waiting on us and the single scheduler thread, so we can queue up multiple requests to force the flow-through upgrade.
+		CyclicBarrier barrier = new CyclicBarrier(2);
+		upstream.installSingleUseBarrier(barrier);
+		
+		// Make multiple requests for the meta-data, so that they de-duplicate and have a chance to be picked up.
+		ExplicitCacheManager.FutureRecord r0 = manager.loadRecord(cid0, false);
+		ExplicitCacheManager.FutureRecord r1 = manager.loadRecord(cid0, false);
+		
+		// Then add a request for full data and unblock the barrier.
+		ExplicitCacheManager.FutureRecord r2 = manager.loadRecord(cid0, true);
+		barrier.await();
+		
+		// Wait on all to complete.
+		r0.get();
+		r1.get();
+		r2.get();
+		
+		// Make a final non-force request and make sure it still has all the data.
+		CachedRecordInfo end = manager.loadRecord(cid0, false).get();
+		Assert.assertEquals(787, end.combinedSizeBytes());
+		Assert.assertFalse(end.hasDataToCache());
+		Assert.assertEquals(MockSingleNode.generateHash("thumb".getBytes()), end.thumbnailCid());
+		Assert.assertEquals(MockSingleNode.generateHash("video".getBytes()), end.videoCid());
+		Assert.assertNull(start.audioCid());
 		
 		manager.shutdown();
 		scheduler.shutdown();

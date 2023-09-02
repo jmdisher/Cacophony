@@ -171,26 +171,37 @@ public class ExplicitCacheManager
 	 * Loads the info describing the StreamRecord with the given recordCid.
 	 * If the info was already in the cache, or the network read was a success, this call will mark that entry as most
 	 * recently used.
+	 * If the data is present in the cache, but requestLeaves is true and there are missing leaves, the leaves will be
+	 * fetched.
+	 * If the data is missing and requestLeaves is false, only the meta-data will be cached.
 	 * 
 	 * @param recordCid The record instance to load.
+	 * @param requestLeaves If true, will only return once the leaves are populated, as well.
 	 * @return The future containing the asynchronous result.
 	 */
-	public synchronized FutureRecord loadRecord(IpfsFile recordCid)
+	public synchronized FutureRecord loadRecord(IpfsFile recordCid, boolean requestLeaves)
 	{
 		FutureRecord future;
 		if (null != _background)
 		{
 			future = _recordRequests.get(recordCid);
+			// If the request is here and we want leaves but the future isn't requesting them, we will replace it with a new instance.
+			FutureRecord flowThrough = null;
+			if ((null != future) && requestLeaves && !future.requestLeaves)
+			{
+				flowThrough = future;
+				future = null;
+			}
 			if (null == future)
 			{
-				future = new FutureRecord(recordCid);
+				future = new FutureRecord(recordCid, requestLeaves, flowThrough);
 				_recordRequests.put(recordCid, future);
 				this.notifyAll();
 			}
 		}
 		else
 		{
-			future = new FutureRecord(recordCid);
+			future = new FutureRecord(recordCid, requestLeaves, null);
 			FutureRecord[] recordsToLoad = new FutureRecord[] { future };
 			_runFullLoad(new FutureUserInfo[0], recordsToLoad, null);
 		}
@@ -341,9 +352,9 @@ public class ExplicitCacheManager
 		);
 	}
 
-	private CachedRecordInfo _loadRecordInfo(ConcurrentTransaction transaction, int videoEdgePixelMax, IpfsFile recordCid) throws ProtocolDataException, IpfsConnectionException
+	private CachedRecordInfo _loadRecordInfo(ConcurrentTransaction transaction, int videoEdgePixelMax, IpfsFile recordCid, boolean shouldPinLeaves) throws ProtocolDataException, IpfsConnectionException
 	{
-		CachedRecordInfo info = CommonRecordPinning.loadAndPinRecord(transaction, videoEdgePixelMax, recordCid);
+		CachedRecordInfo info = CommonRecordPinning.loadAndPinRecord(transaction, videoEdgePixelMax, recordCid, shouldPinLeaves);
 		// This is never null - throws on error.
 		Assert.assertTrue(null != info);
 		return info;
@@ -407,6 +418,7 @@ public class ExplicitCacheManager
 		ConcurrentTransaction[] userTransactions = new ConcurrentTransaction[usersToLoad.length];
 		ConcurrentTransaction[] recordTransactions = new ConcurrentTransaction[recordsToLoad.length];
 		FutureResolve[] keys = new FutureResolve[usersToLoad.length];
+		boolean[] recordsBeingReplaced = new boolean[recordsToLoad.length];
 		List<UserRefreshTuple> userInfoRefreshes = new ArrayList<>();
 		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
 		{
@@ -448,6 +460,13 @@ public class ExplicitCacheManager
 			{
 				FutureRecord record = recordsToLoad[i];
 				CachedRecordInfo info = data.getRecordInfo(record.recordCid);
+				// Make sure that this has all the data which was requested.
+				if (record.requestLeaves && (null != info) && info.hasDataToCache())
+				{
+					// We want all the data but the data is incomplete so null out this cache hit.
+					info = null;
+					recordsBeingReplaced[i] = true;
+				}
 				if (null != info)
 				{
 					record.success(info);
@@ -536,7 +555,7 @@ public class ExplicitCacheManager
 			{
 				try
 				{
-					CachedRecordInfo info = _loadRecordInfo(recordTransactions[i], videoEdgePixelMax, record.recordCid);
+					CachedRecordInfo info = _loadRecordInfo(recordTransactions[i], videoEdgePixelMax, record.recordCid, record.requestLeaves);
 					// This will throw instead of failing.
 					Assert.assertTrue(null != info);
 					recordsToWriteBack[i] = info;
@@ -621,10 +640,18 @@ public class ExplicitCacheManager
 				FutureRecord record = recordsToLoad[i];
 				if (null != record)
 				{
-					// Verify that nothing has changed in the cache - we are the only ones changing it so this is just to prove that.
-					Assert.assertTrue(null == data.getRecordInfo(record.recordCid));
 					CachedRecordInfo info = recordsToWriteBack[i];
-					data.addStreamRecord(record.recordCid, info);
+					// See if this is new or a replacement (this check is just to verify correctness).
+					if (recordsBeingReplaced[i])
+					{
+						data.replaceStreamRecord(record.recordCid, info);
+					}
+					else
+					{
+						// Verify that nothing has changed in the cache - we are the only ones changing it so this is just to prove that.
+						Assert.assertTrue(null == data.getRecordInfo(record.recordCid));
+						data.addStreamRecord(record.recordCid, info);
+					}
 					
 					record.success(info);
 					recordsToLoad[i] = null;
@@ -807,13 +834,18 @@ public class ExplicitCacheManager
 	public static class FutureRecord
 	{
 		public final IpfsFile recordCid;
+		public final boolean requestLeaves;
+		// If we "upgraded" the request, we want to also keep the old copy (since someone is waiting on it) to notify on completion.
+		private final FutureRecord _flowThrough;
 		private CachedRecordInfo _info;
 		private ProtocolDataException _protocolException;
 		private IpfsConnectionException _connectionException;
 		
-		public FutureRecord(IpfsFile recordCid)
+		public FutureRecord(IpfsFile recordCid, boolean requestLeaves, FutureRecord flowThrough)
 		{
 			this.recordCid = recordCid;
+			this.requestLeaves = requestLeaves;
+			_flowThrough = flowThrough;
 		}
 		
 		public synchronized CachedRecordInfo get() throws ProtocolDataException, IpfsConnectionException
@@ -850,6 +882,11 @@ public class ExplicitCacheManager
 			Assert.assertTrue(null == _connectionException);
 			_info = info;
 			this.notifyAll();
+			
+			if (null != _flowThrough)
+			{
+				_flowThrough.success(info);
+			}
 		}
 		
 		public synchronized void dataException(ProtocolDataException e)
@@ -860,6 +897,11 @@ public class ExplicitCacheManager
 			Assert.assertTrue(null == _connectionException);
 			_protocolException = e;
 			this.notifyAll();
+			
+			if (null != _flowThrough)
+			{
+				_flowThrough.dataException(e);
+			}
 		}
 		
 		public synchronized void connectionException(IpfsConnectionException e)
@@ -870,6 +912,11 @@ public class ExplicitCacheManager
 			Assert.assertTrue(null == _connectionException);
 			_connectionException = e;
 			this.notifyAll();
+			
+			if (null != _flowThrough)
+			{
+				_flowThrough.connectionException(e);
+			}
 		}
 	}
 

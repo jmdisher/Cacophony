@@ -42,7 +42,8 @@ public class TestShowPostCommand
 		IpfsFile postCid = _storeRecord(writeNode, title, fakeImage, MockKeys.K1);
 		
 		// Make sure that we see no error when this is valid.
-		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid, false));
+		// We need to force the update so it will actually fetch the leaves instead of using the quick cache of meta-data only.
+		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid, true));
 		Assert.assertEquals(title, details.name());
 		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());
 		Assert.assertNull(details.cachedAudioCid());
@@ -126,7 +127,8 @@ public class TestShowPostCommand
 		Assert.assertNull(details.cachedVideoCid());
 		
 		// Now, run with the normal context which doesn't have this cache, showing that we will populate it into the explicit cache.
-		details = readNode.runCommand(null, new ShowPostCommand(postCid, false));
+		// We will also need to force the update so it will actually fetch the leaves instead of using the quick cache of meta-data only.
+		details = readNode.runCommand(null, new ShowPostCommand(postCid, true));
 		Assert.assertEquals(title, details.name());
 		Assert.assertFalse(details.hasDataToCache());
 		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());

@@ -42,7 +42,9 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 		CachedRecordInfo info;
 		try
 		{
-			info = CommonRecordPinning.loadAndPinRecord(transaction, videoEdgePixelMax, _elementCid);
+			// We always want to pin favourite leaves.
+			boolean shouldPinLeaves = true;
+			info = CommonRecordPinning.loadAndPinRecord(transaction, videoEdgePixelMax, _elementCid, shouldPinLeaves);
 		}
 		catch (ProtocolDataException e)
 		{

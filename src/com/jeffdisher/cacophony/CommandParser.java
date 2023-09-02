@@ -346,8 +346,8 @@ public class CommandParser
 				, null, (PreParse[] required, PreParse[] optional, List<ICommand<?>> subElements) ->
 		{
 			IpfsFile elementCid = required[0].parse(IpfsFile.class);
-			// "forceCache" only changes behaviour when we have recordCache, which is not used in command-line mode.
-			boolean forceCache = false;
+			// We want to force a full fetch of all data associated with the record when running in this synchronous mode.
+			boolean forceCache = true;
 			return new ShowPostCommand(elementCid, forceCache);
 		}),
 		ADD_FAVOURITE(true, "--addFavourite"

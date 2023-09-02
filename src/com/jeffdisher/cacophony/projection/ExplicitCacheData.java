@@ -275,6 +275,24 @@ public class ExplicitCacheData implements IExplicitCacheReading
 		_totalCacheInBytes += recordInfo.combinedSizeBytes();
 	}
 
+	/**
+	 * Replaces an existing StreamRecord in the cache and marks it as most recently used.  Note that thumbnail, video,
+	 * and audio are all optional but at most one of video and audio can be present.
+	 * NOTE:  A record with the given streamCid MUST already be in the cache.
+	 * 
+	 * @param streamCid The CID of the StreamRecord.
+	 * @param recordInfo The common info of a cached record.
+	 */
+	public void replaceStreamRecord(IpfsFile streamCid, CachedRecordInfo recordInfo)
+	{
+		Assert.assertTrue(_recordInfo.containsKey(streamCid));
+		CachedRecordInfo oldInfo = _recordInfo.remove(streamCid);
+		_totalCacheInBytes -= oldInfo.combinedSizeBytes();
+		_recordInfo.put(streamCid, recordInfo);
+		_lru.add(streamCid);
+		_totalCacheInBytes += recordInfo.combinedSizeBytes();
+	}
+
 	@Override
 	public UserInfo getUserInfo(IpfsKey publicKey)
 	{
