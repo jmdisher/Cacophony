@@ -60,10 +60,10 @@ var GLOBAL_PostLoader = {
 	// -discussionUrl (string)
 	// -publisherKey (string)
 	// -replyTo (string) - usually null
-	// -cached (boolean)
-	// -thumbnailUrl (string) - can be null (null if not cached)
-	// -videoUrl (string) - can be null (null if not cached)
-	// -audioUrl (string) - can be null (null if not cached)
+	// -hasDataToCache (boolean)
+	// -thumbnailUrl (string) - can be null (null if hasDataToCache)
+	// -videoUrl (string) - can be null (null if hasDataToCache)
+	// -audioUrl (string) - can be null (null if hasDataToCache)
 	// -elementHash (string) - injected here
 	// -readableDate (string) - injected here
 	loadTuple: function(postHash)
@@ -84,7 +84,7 @@ var GLOBAL_PostLoader = {
 							"discussionUrl": elt["discussionUrl"],
 							"publisherKey": elt["publisherKey"],
 							"replyTo": elt["replyTo"],
-							"cached": elt["cached"],
+							"hasDataToCache": elt["hasDataToCache"],
 							"thumbnailUrl": elt["thumbnailUrl"],
 							"videoUrl": elt["videoUrl"],
 							"audioUrl": elt["audioUrl"],
@@ -212,11 +212,11 @@ let _template_postMutable = ''
 	+ '<div class="row card">'
 	+ '<h5 class="card-header">{{postTuple.name}} (Posted by <caco-user-link public-key="postTuple.publisherKey"></caco-user-link> on {{postTuple.readableDate}})</h5>'
 	+ '<div class="card-body container row">'
-	+ '	<div class="col-md-3" ng-show="{{postTuple.cached}}">'
+	+ '	<div class="col-md-3" ng-hide="{{postTuple.hasDataToCache}}">'
 	+ '		<a href="play.html?elt={{postTuple.elementHash}}"><img class="img-fluid" ng-src="{{postTuple.thumbnailUrl}}" alt="{{postTuple.name}}"/></a>'
 	+ '	</div>'
-	+ '	<div class="col-md-3" ng-hide="{{postTuple.cached}}">'
-	+ '		<a href="play.html?elt={{postTuple.elementHash}}">(not cached)</a>'
+	+ '	<div class="col-md-3" ng-show="{{postTuple.hasDataToCache}}">'
+	+ '		<a href="play.html?elt={{postTuple.elementHash}}">(some data not cached)</a>'
 	+ '	</div>'
 	+ '	<div class="col-md-9">'
 	+ '		{{postTuple.description}}<br />'

@@ -338,7 +338,7 @@ requireSubstring "$RECOMMENDED_KEYS" "[]"
 echo "Read the new post through the REST interface"
 POST_ID=$(echo "$POST_LIST" | cut -d "\"" -f 2)
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$POST_ID/OPTIONAL")
-requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"hasDataToCache\":false,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
 
 echo "Edit the post and make sure that we see the updates in both sockets and the post list..."
 OLD_POST_ID="$POST_ID"
@@ -379,7 +379,7 @@ STATUS_INDEX1=$((STATUS_INDEX1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$STATUS_INDEX1 2> /dev/null)
 requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":4,\"value\":null,\"isNewest\":false}"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$REPLY_HASH/OPTIONAL")
-requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":\"$POST_ID\",\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":\"$POST_ID\",\"hasDataToCache\":false,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":null}"
 # Find the hash of the new post.
 POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
 requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\"]"
@@ -408,7 +408,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$AUDIO_CID\",\"value
 POST_LIST=$(curl --no-progress-meter -XGET "http://127.0.0.1:9001/keys")
 requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\",\"$AUDIO_CID\"]"
 POST_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/postStruct/$AUDIO_CID/OPTIONAL")
-requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"cached\":true,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
+requireSubstring "$POST_STRUCT" ",\"publisherKey\":\"$PUBLIC_KEY\",\"replyTo\":null,\"hasDataToCache\":false,\"thumbnailUrl\":null,\"videoUrl\":null,\"audioUrl\":\"http://127.0.0.1:8080/ipfs/QmQyT5aRrJazL9T3AASkpM8AdS73a6eBGexa7W4GuXbMvJ\"}"
 
 echo "See what happens if we add this post to our favourites..."
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
@@ -465,9 +465,9 @@ requireSubstring "$POST_LIST" "[\"$POST_ID\",\"$REPLY_HASH\",\"$AUDIO_CID\"]"
 POST_TO_DELETE="$POST_ID"
 POST_TO_KEEP1="$REPLY_HASH"
 POST_TO_KEEP2="$AUDIO_CID"
-# Before deleting the post, we should see that it is known to be cached.
+# Before deleting the post, we should see that it is known to be cached so it has no data to cache.
 TARGET_STRUCT=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter --fail -XGET "http://127.0.0.1:8000/server/postStruct/$POST_TO_DELETE/OPTIONAL")
-requireSubstring "$TARGET_STRUCT" "\"cached\":true"
+requireSubstring "$TARGET_STRUCT" "\"hasDataToCache\":false"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XDELETE "http://127.0.0.1:8000/home/post/delete/$PUBLIC_KEY/$POST_TO_DELETE"
 checkPreviousCommand "DELETE post"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XDELETE "http://127.0.0.1:8000/home/post/delete/$PUBLIC_KEY/$POST_TO_DELETE" >& /dev/null

@@ -33,7 +33,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		{
 			post = _checkKnownCache(context);
 			// If we found the post, we want to force cached data, and we know that this post isn't cached, ignore the non-cached reference.
-			if ((null != post) && _forceCache && !post.isKnownToBeCached)
+			if ((null != post) && _forceCache && post.hasDataToCache)
 			{
 				post = null;
 			}
@@ -44,7 +44,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		{
 			post = _checkHeavyCaches(context);
 		}
-		else if (!post.isKnownToBeCached)
+		else if (post.hasDataToCache)
 		{
 			// See if we can override this with a more concretely cached element from the explicit cache.
 			CachedRecordInfo existingInfo = context.explicitCacheManager.getExistingRecord(_elementCid);
@@ -132,17 +132,19 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			// If this is something in one of our caches, we already must have deserialized it in this past.
 			throw Assert.unexpected(e);
 		}
-		// We will say that this is cached if we have any thumbnail and leaf pinned.  If one isn't pinned, it isn't cached.
+		// We will say that the post has data to cache if we determine that it has a thumbnail, video, or audio leaf,
+		// but we don't have the associated CID for that (since that means it is referenced in the meta-data, but not
+		// present in the local cache).
 		LeafFinder finder = LeafFinder.parseRecord(record);
 		boolean hasThumb = (null != finder.thumbnail);
 		boolean hasVideo = (finder.sortedVideos.length > 0);
 		boolean hasAudio = (null != finder.audio);
-		boolean isKnownToBeCached = (hasThumb == (null != info.thumbnailCid()))
-				&& (hasAudio == (null != info.audioCid()))
-				&& (hasVideo == (null != info.videoCid()))
+		boolean hasDataToCache = (hasThumb != (null != info.thumbnailCid()))
+				|| (hasAudio != (null != info.audioCid()))
+				|| (hasVideo != (null != info.videoCid()))
 		;
 		return new PostDetails(_elementCid
-				, isKnownToBeCached
+				, hasDataToCache
 				, record.getName()
 				, record.getDescription()
 				, record.getPublishedSecondsUtc()
@@ -156,17 +158,26 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 	}
 
 
+	/**
+	 * The basic information describing a post in Cacophony.
+	 * The "cached*Cid" fields talk about the leaf data which is pinned locally, set to null if there is no such leaf
+	 * data or the associated leaf data is not pinned locally.
+	 * "hasDataToCache" is set to true only if there are leaf data elements which do exist, are NOT pinned locally, but
+	 * WOULD be pinned locally, if requested (that is, this command were run again with _forceCache true).
+	 * This means that, if called with _forceCache true, this command will not return an instance with hasDataToCache
+	 * set to true.
+	 */
 	public static record PostDetails(IpfsFile elementCid
-			, boolean isKnownToBeCached
+			, boolean hasDataToCache
 			, String name
 			, String description
 			, long publishedSecondsUtc
 			, String discussionUrl
 			, IpfsKey publisherKey
 			, IpfsFile replyToCid
-			, IpfsFile thumbnailCid
-			, IpfsFile videoCid
-			, IpfsFile audioCid
+			, IpfsFile cachedThumbnailCid
+			, IpfsFile cachedVideoCid
+			, IpfsFile cachedAudioCid
 	) implements ICommand.Result
 	{
 		@Override
@@ -179,7 +190,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		public void writeHumanReadable(PrintStream output)
 		{
 			output.println("Post details:");
-			output.println("\tCached state: " + (this.isKnownToBeCached ? "CACHED" : "UNKNOWN"));
+			output.println("\tCached state: " + (this.hasDataToCache ? "Missing data" : "Fully cached"));
 			output.println("\tName: " + this.name);
 			output.println("\tDescription: " + this.description);
 			output.println("\tPublished time (seconds since UTC): " + this.publishedSecondsUtc);
@@ -192,17 +203,17 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			{
 				output.println("\tReply to: " + this.replyToCid);
 			}
-			if (null != this.thumbnailCid)
+			if (null != this.cachedThumbnailCid)
 			{
-				output.println("\tThumbnail: " + this.thumbnailCid);
+				output.println("\tCached Thumbnail: " + this.cachedThumbnailCid);
 			}
-			if (null != this.videoCid)
+			if (null != this.cachedVideoCid)
 			{
-				output.println("\tVideo: " + this.videoCid);
+				output.println("\tCached Video: " + this.cachedVideoCid);
 			}
-			if (null != this.audioCid)
+			if (null != this.cachedAudioCid)
 			{
-				output.println("\tAudio: " + this.audioCid);
+				output.println("\tCached Audio: " + this.cachedAudioCid);
 			}
 		}
 	}

@@ -95,7 +95,7 @@ function xsrfLoaded($scope)
 	// Create the root element, much like the replies, so they can be used in the same helpers.
 	$scope.rootElement = {
 		"isTombstone": false,
-		"cached": false,
+		"hasDataToCache": true,
 		"elementHash": hashArg,
 		"name": "Loading...",
 		"description": "Loading...",
@@ -113,7 +113,7 @@ function xsrfLoaded($scope)
 		},
 	};
 	
-	// We start by loading it without caching and merely present the option in the case where it isn't cached.
+	// We start by loading it without caching and merely present the option in the case where it hasDataToCache.
 	API_getPost($scope.rootElement.elementHash, false).then(elt => {
 		postWasLoaded($scope, elt);
 	});
@@ -140,14 +140,14 @@ function postWasLoaded($scope, elt)
 			$scope.discussionHost = "(invalid URL)";
 		}
 	}
-	$scope.cached = elt["cached"];
+	$scope.hasDataToCache = elt["hasDataToCache"];
 	$scope.isForcingCache = false;
 	
 	// We don't use Angular for the description since we may need to process it.
 	let descriptionElement = document.getElementById("description");
 	UTILS_renderLongTextIntoElement(descriptionElement, elt["description"]);
 	
-	if ($scope.cached)
+	if (!$scope.hasDataToCache)
 	{
 		$scope.thumbnailUrl = elt["thumbnailUrl"];
 		$scope.videoUrl = elt["videoUrl"];
@@ -303,7 +303,7 @@ function setupReplyTree($scope)
 			// Create a placeholder - we still use the shape of UTILS_addElementHashToArray so we can use the same directives.
 			let placeholder = {
 				"isTombstone": false,
-				"cached": false,
+				"hasDataToCache": true,
 				"elementHash": child,
 				"name": "Loading...",
 				"description": "Loading...",
@@ -329,7 +329,7 @@ function setupReplyTree($scope)
 				// We can't update the placeholder since the $apply() won't see nested updates so replace this.
 				let object = {
 					"isTombstone": false,
-					"cached": elt["cached"],
+					"hasDataToCache": elt["hasDataToCache"],
 					"elementHash": elt["elementHash"],
 					"readableDate": elt["readableDate"],
 					"name": elt["name"],
@@ -409,16 +409,16 @@ function setupReplyTree($scope)
 </nav>
 <div class="container">
 	<div class="jumbotron">
-		<div class="row card card-body" ng-show="cached && (null !== videoUrl)">
+		<div class="row card card-body" ng-show="!hasDataToCache && (null !== videoUrl)">
 			<center><video id="video" controls /></center>
 		</div>
-		<div class="row card card-body" ng-show="cached && (null !== audioUrl)">
+		<div class="row card card-body" ng-show="!hasDataToCache && (null !== audioUrl)">
 			<center><audio id="audio" controls /></center>
 		</div>
-		<div class="row card card-body" ng-show="cached && (null !== thumbnailUrl) && (null === videoUrl)">
+		<div class="row card card-body" ng-show="!hasDataToCache && (null !== thumbnailUrl) && (null === videoUrl)">
 			<img class="img-responsive" ng-src="{{thumbnailUrl}}" alt="{{rootElement.name}}"/>
 		</div>
-		<div class="row card card-body" ng-hide="cached">
+		<div class="row card card-body" ng-hide="!hasDataToCache">
 			<strong>NOTE:  This entry is not cached locally so any images or videos associated with it cannot be viewed.</strong><br />
 			<button class="btn btn-success" ng-disabled="isForcingCache" ng-click="populateCache()">Populate Cache</button><br />
 		</div>

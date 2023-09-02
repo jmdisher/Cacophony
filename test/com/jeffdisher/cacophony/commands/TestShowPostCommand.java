@@ -44,9 +44,9 @@ public class TestShowPostCommand
 		// Make sure that we see no error when this is valid.
 		ShowPostCommand.PostDetails details = readNode.runCommand(null, new ShowPostCommand(postCid, false));
 		Assert.assertEquals(title, details.name());
-		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		readNode.shutdown();
 		// Write node never started.
@@ -120,27 +120,27 @@ public class TestShowPostCommand
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
 		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
-		Assert.assertFalse(details.isKnownToBeCached());
-		Assert.assertNull(details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertTrue(details.hasDataToCache());
+		Assert.assertNull(details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		// Now, run with the normal context which doesn't have this cache, showing that we will populate it into the explicit cache.
 		details = readNode.runCommand(null, new ShowPostCommand(postCid, false));
 		Assert.assertEquals(title, details.name());
-		Assert.assertTrue(details.isKnownToBeCached());
-		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertFalse(details.hasDataToCache());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		// Now, use the special context again but observe that we still read through to the explicit cache and see the full result.
 		// (this approach doesn't force the cache but will use the cached value if it is there and the value it has isn't fully cached).
 		details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
-		Assert.assertTrue(details.isKnownToBeCached());
-		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertFalse(details.hasDataToCache());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		readNode.shutdown();
 		// Write node never started.
@@ -170,26 +170,26 @@ public class TestShowPostCommand
 		// Verify that we only see the non-cached version when reading this since it hasn't been populated in the explicit cache, yet.
 		ShowPostCommand.PostDetails details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
-		Assert.assertFalse(details.isKnownToBeCached());
-		Assert.assertNull(details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertTrue(details.hasDataToCache());
+		Assert.assertNull(details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		// Now, show that we DO see the cached variant if requested.
 		details = new ShowPostCommand(postCid, true).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
-		Assert.assertTrue(details.isKnownToBeCached());
-		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertFalse(details.hasDataToCache());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		// Re-run without that argument to see that we now see the cached result.
 		details = new ShowPostCommand(postCid, false).runInContext(specialContext);
 		Assert.assertEquals(title, details.name());
-		Assert.assertTrue(details.isKnownToBeCached());
-		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.thumbnailCid());
-		Assert.assertNull(details.audioCid());
-		Assert.assertNull(details.videoCid());
+		Assert.assertFalse(details.hasDataToCache());
+		Assert.assertEquals(MockSingleNode.generateHash(fakeImage), details.cachedThumbnailCid());
+		Assert.assertNull(details.cachedAudioCid());
+		Assert.assertNull(details.cachedVideoCid());
 		
 		readNode.shutdown();
 		// Write node never started.

@@ -18,7 +18,7 @@ function UTILS_readGetVar(name)
 // Adds a placeholder for the "hash" StreamRecord into "array", adding to beginning if "isNewest" or the end.
 // Asynchronously starts loading the actual information for the StreamRecord, calling "updateCallback" when returned.
 // Keys in the element added to the array:
-// "cached"
+// "hasDataToCache"
 // "elementHash"
 // "name"
 // "description"
@@ -30,7 +30,7 @@ function UTILS_addElementHashToArray(array, hash, isNewest, updateCallback)
 {
 	// Add empty objects to the array since we will replace them asynchronously.
 	let placeholder = {
-		"cached": false,
+		"hasDataToCache": true,
 		"elementHash": hash,
 		"name": "Loading...",
 		"description": "Loading...",
@@ -59,7 +59,7 @@ function UTILS_addElementHashToArray(array, hash, isNewest, updateCallback)
 		}
 		// We can't update the placeholder since the $apply() won't see nested updates so replace this.
 		let object = {
-			"cached": elt["cached"],
+			"hasDataToCache": elt["hasDataToCache"],
 			"elementHash": elt["elementHash"],
 			"readableDate": elt["readableDate"],
 			"name": elt["name"],
@@ -92,10 +92,10 @@ function UTILS_renderLongTextIntoElement(element, longText)
 // -discussionUrl (string)
 // -publisherKey (string)
 // -replyTo (string) - usually null
-// -cached (boolean)
-// -thumbnailUrl (string) - can be null (null if not cached)
-// -videoUrl (string) - can be null (null if not cached)
-// -audioUrl (string) - can be null (null if not cached)
+// -hasDataToCache (boolean)
+// -thumbnailUrl (string) - can be null (null if hasDataToCache)
+// -videoUrl (string) - can be null (null if hasDataToCache)
+// -audioUrl (string) - can be null (null if hasDataToCache)
 function API_getPost(hash, forceCache)
 {
 	return new Promise(resolve => {
