@@ -10,7 +10,6 @@ import org.junit.Test;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_AddFolloweeElement;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_DefineChannel;
-import com.jeffdisher.cacophony.data.local.v4.Opcode_SetFolloweeState;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsInt;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsLong;
 import com.jeffdisher.cacophony.projection.ChannelData;
@@ -63,8 +62,8 @@ public class TestV3Data
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
 		{
-			writer.writeOpcode(new Opcode_SetFolloweeState(MockKeys.K1, root1, 0L));
-			writer.writeOpcode(new Opcode_SetFolloweeState(MockKeys.K2, root2, 1L));
+			writer.writeOpcode(new Opcode_SetFolloweeStateV3(MockKeys.K1, root1, 0L));
+			writer.writeOpcode(new Opcode_SetFolloweeStateV3(MockKeys.K2, root2, 1L));
 			writer.writeOpcode(new Opcode_AddFolloweeElement(MockKeys.K2, elt1, image1, null, 5L));
 		}
 		

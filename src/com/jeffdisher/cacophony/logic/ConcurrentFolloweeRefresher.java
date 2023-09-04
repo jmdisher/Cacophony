@@ -239,7 +239,9 @@ public class ConcurrentFolloweeRefresher
 			{
 				// Update existing record.
 				_refreshSupport.commitFolloweeChanges(followees);
-				followees.updateExistingFollowee(_followeeKey, _newRoot, currentTimeMillis);
+				// TODO: Add support for incremental synchronization.
+				IpfsFile nextBackwardRecord = null;
+				followees.updateExistingFollowee(_followeeKey, _newRoot, nextBackwardRecord, currentTimeMillis);
 			}
 			// The record cache is null in cases where this is a one-off operation and there is no cache.
 			_refreshSupport.commitLocalCacheUpdates(cacheUpdater);
@@ -248,7 +250,9 @@ public class ConcurrentFolloweeRefresher
 		else
 		{
 			// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
-			followees.updateExistingFollowee(_followeeKey, _previousRoot, currentTimeMillis);
+			// TODO: Add support for incremental synchronization.
+			IpfsFile nextBackwardRecord = null;
+			followees.updateExistingFollowee(_followeeKey, _previousRoot, nextBackwardRecord, currentTimeMillis);
 			_transaction.rollback(resolver);
 		}
 		_didFinish = true;

@@ -36,18 +36,22 @@ public interface IFolloweeWriting extends IFolloweeReading
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param indexRoot The initial StreamIndex CID.
+	 * @param nextBackwardRecord The next record CID we need to fetch when loading backward (null if the stream is fully
+	 * loaded).
 	 * @param lastPollMillis The initial poll time (must be >= 0L).
 	 */
-	void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis);
+	void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis);
 
 	/**
 	 * Updates an existing followee's record.  Assumes that the followee already exists.
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param indexRoot The StreamIndex CID of the most recent refresh of the followee.
+	 * @param nextBackwardRecord The next record CID we need to fetch when loading backward (null if the stream is fully
+	 * loaded).
 	 * @param lastPollMillis The current time.
 	 */
-	void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis);
+	void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis);
 
 	/**
 	 * Removes a given followee entirely from tracking.  Note that this call assumes there are no elements associated

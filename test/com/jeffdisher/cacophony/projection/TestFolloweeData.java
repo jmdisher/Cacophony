@@ -41,9 +41,9 @@ public class TestFolloweeData
 	public void addSingleFollowee() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K1, F2, 2L);
+		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
@@ -73,9 +73,9 @@ public class TestFolloweeData
 	public void addRemoveSingleFollowee() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K1, F2, 2L);
+		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
@@ -107,11 +107,11 @@ public class TestFolloweeData
 	public void addTwoFollowees() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K1, F2, 2L);
-		data.createNewFollowee(MockKeys.K2, F1, 0L);
-		data.updateExistingFollowee(MockKeys.K2, F1, 3L);
+		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
+		data.createNewFollowee(MockKeys.K2, F1, null, 0L);
+		data.updateExistingFollowee(MockKeys.K2, F1, null, 3L);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(2, data.getAllKnownFollowees().size());
@@ -139,11 +139,11 @@ public class TestFolloweeData
 	public void addRemoveElements() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F2, F3, null, 6));
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F3, null, null, 0));
-		data.updateExistingFollowee(MockKeys.K1, F2, 2L);
+		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
@@ -203,8 +203,8 @@ public class TestFolloweeData
 		FolloweeData data = FolloweeData.createEmpty();
 		
 		// Start with an existing followee to make sure it is observed in the map.
-		data.createNewFollowee(MockKeys.K1, F1, 0L);
-		data.updateExistingFollowee(MockKeys.K1, F1, 1L);
+		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
+		data.updateExistingFollowee(MockKeys.K1, F1, null, 1L);
 		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>(dispatcher);
 		connector.registerListener(new HandoffConnector.IHandoffListener<IpfsKey, Long>()
 		{
@@ -237,9 +237,9 @@ public class TestFolloweeData
 		Assert.assertEquals(1L, map.get(MockKeys.K1).longValue());
 		
 		// Add a second followee and update both of them to verify we see both updated values.
-		data.createNewFollowee(MockKeys.K2, F1, 0L);
-		data.updateExistingFollowee(MockKeys.K1, F2, 3L);
-		data.updateExistingFollowee(MockKeys.K2, F2, 4L);
+		data.createNewFollowee(MockKeys.K2, F1, null, 0L);
+		data.updateExistingFollowee(MockKeys.K1, F2, null, 3L);
+		data.updateExistingFollowee(MockKeys.K2, F2, null, 4L);
 		Assert.assertEquals(2, map.size());
 		Assert.assertEquals(3L, map.get(MockKeys.K1).longValue());
 		Assert.assertEquals(4L, map.get(MockKeys.K2).longValue());

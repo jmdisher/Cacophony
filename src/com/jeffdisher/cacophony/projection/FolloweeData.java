@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.cacophony.data.local.v3.Opcode_SetFolloweeStateV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_AddFolloweeElement;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetFolloweeState;
@@ -26,14 +27,17 @@ public class FolloweeData implements IFolloweeWriting
 	{
 		Map<IpfsKey, List<FollowingCacheElement>> followeeElements = new HashMap<>();
 		Map<IpfsKey, IpfsFile> followeeLastIndices = new HashMap<>();
+		Map<IpfsKey, IpfsFile> followeeNextBackwardRecord = new HashMap<>();
 		Map<IpfsKey, Long> followeeLastFetchMillis = new HashMap<>();
-		return new FolloweeData(followeeElements, followeeLastIndices, followeeLastFetchMillis);
+		return new FolloweeData(followeeElements, followeeLastIndices, followeeNextBackwardRecord, followeeLastFetchMillis);
 	}
 
 
 	private final Map<IpfsKey, List<FollowingCacheElement>> _followeeElements;
 	private final Map<IpfsKey, Map<IpfsFile, FollowingCacheElement>> _elementsForLookup;
 	private final Map<IpfsKey, IpfsFile> _followeeLastIndices;
+	// We only store the entry in _followeeNextBackwardRecord if not null.
+	private final Map<IpfsKey, IpfsFile> _followeeNextBackwardRecord;
 	private final Map<IpfsKey, Long> _followeeLastFetchMillis;
 	// We keep track of the most recent fetch so that we can adjust the time of any updates to make tests more reliable.
 	private long _mostRecentFetchMillis;
@@ -41,7 +45,7 @@ public class FolloweeData implements IFolloweeWriting
 	// Only set in the cases of servers so it is bound late, but can only be bound once.
 	private HandoffConnector<IpfsKey, Long> _followeeRefreshConnector;
 
-	private FolloweeData(Map<IpfsKey, List<FollowingCacheElement>> followeeElements, Map<IpfsKey, IpfsFile> followeeLastIndices, Map<IpfsKey, Long> followeeLastFetchMillis)
+	private FolloweeData(Map<IpfsKey, List<FollowingCacheElement>> followeeElements, Map<IpfsKey, IpfsFile> followeeLastIndices, Map<IpfsKey, IpfsFile> followeeNextBackwardRecord, Map<IpfsKey, Long> followeeLastFetchMillis)
 	{
 		_followeeElements = new HashMap<>();
 		_elementsForLookup = new HashMap<>();
@@ -59,8 +63,27 @@ public class FolloweeData implements IFolloweeWriting
 			_elementsForLookup.put(key, map);
 		}
 		_followeeLastIndices = new HashMap<>(followeeLastIndices);
+		_followeeNextBackwardRecord = new HashMap<>(followeeNextBackwardRecord);
 		_followeeLastFetchMillis = new HashMap<>(followeeLastFetchMillis);
 		_mostRecentFetchMillis = 0;
+	}
+
+	public void serializeToOpcodeWriterV3(OpcodeCodec.Writer writer) throws IOException
+	{
+		for (Map.Entry<IpfsKey, List<FollowingCacheElement>> elt : _followeeElements.entrySet())
+		{
+			IpfsKey followee = elt.getKey();
+			IpfsFile indexRoot = _followeeLastIndices.get(followee);
+			Assert.assertTrue(null != indexRoot);
+			// V3 data cannot describe partially-loaded followees.
+			Assert.assertTrue(!_followeeNextBackwardRecord.containsKey(followee));
+			long lastPollMillis = _followeeLastFetchMillis.get(followee);
+			writer.writeOpcode(new Opcode_SetFolloweeStateV3(followee, indexRoot, lastPollMillis));
+			for (FollowingCacheElement record : elt.getValue())
+			{
+				writer.writeOpcode(new Opcode_AddFolloweeElement(followee, record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
+			}
+		}
 	}
 
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
@@ -70,8 +93,9 @@ public class FolloweeData implements IFolloweeWriting
 			IpfsKey followee = elt.getKey();
 			IpfsFile indexRoot = _followeeLastIndices.get(followee);
 			Assert.assertTrue(null != indexRoot);
+			IpfsFile nextBackwardRecord = _followeeNextBackwardRecord.get(followee);
 			long lastPollMillis = _followeeLastFetchMillis.get(followee);
-			writer.writeOpcode(new Opcode_SetFolloweeState(followee, indexRoot, lastPollMillis));
+			writer.writeOpcode(new Opcode_SetFolloweeState(followee, indexRoot, nextBackwardRecord, lastPollMillis));
 			for (FollowingCacheElement record : elt.getValue())
 			{
 				writer.writeOpcode(new Opcode_AddFolloweeElement(followee, record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
@@ -151,7 +175,7 @@ public class FolloweeData implements IFolloweeWriting
 	}
 
 	@Override
-	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
+	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
 	{
 		List<FollowingCacheElement> match0 = _followeeElements.put(followeeKey, new ArrayList<>());
 		Assert.assertTrue(null == match0);
@@ -159,6 +183,8 @@ public class FolloweeData implements IFolloweeWriting
 		Assert.assertTrue(null == match1);
 		IpfsFile match2 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null == match2);
+		// We don't have support for incremental synchronization, yet.
+		Assert.assertTrue(null == nextBackwardRecord);
 		Long match3 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
 		Assert.assertTrue(null == match3);
 		
@@ -169,7 +195,7 @@ public class FolloweeData implements IFolloweeWriting
 	}
 
 	@Override
-	public void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis)
+	public void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
 	{
 		// We expect that any actual update uses a non-zero time (since that is effectively the "never updated" value).
 		Assert.assertTrue(lastPollMillis > 0L);
@@ -182,6 +208,8 @@ public class FolloweeData implements IFolloweeWriting
 		_mostRecentFetchMillis = pollMillisToSave;
 		IpfsFile match0 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null != match0);
+		// We don't have support for incremental synchronization, yet.
+		Assert.assertTrue(null == nextBackwardRecord);
 		Long match1 = _followeeLastFetchMillis.put(followeeKey, pollMillisToSave);
 		Assert.assertTrue(null != match1);
 		

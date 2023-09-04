@@ -169,6 +169,48 @@ public class TestV3V4
 		Assert.assertEquals(8L, prefs.followeeCacheTargetBytes);
 	}
 
+	@Test
+	public void basicFollowees() throws Throwable
+	{
+		FolloweeData followees = FolloweeData.createEmpty();
+		followees.createNewFollowee(MockKeys.K0, F1, null, 10L);
+		followees.addElement(MockKeys.K0, new FollowingCacheElement(F2, F3, null, 5L));
+		
+		// Serialize as V3 and load.
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
+		{
+			followees.serializeToOpcodeWriterV3(writer);
+		}
+		byte[] bytes = out.toByteArray();
+		FolloweeData v3Followees = FolloweeData.createEmpty();
+		try (ByteArrayInputStream input = new ByteArrayInputStream(bytes))
+		{
+			OpcodeContextV3 context = new OpcodeContextV3(null, null, v3Followees, null, null, null);
+			OpcodeCodec.decodeWholeStreamV3(input, context);
+		}
+		// Check that these have the same data.
+		Assert.assertEquals(F1, v3Followees.getLastFetchedRootForFollowee(MockKeys.K0));
+		Assert.assertEquals(10L, v3Followees.getLastPollMillisForFollowee(MockKeys.K0));
+		
+		// Serialize as V4 and load.
+		out = new ByteArrayOutputStream();
+		try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(out))
+		{
+			followees.serializeToOpcodeWriter(writer);
+		}
+		bytes = out.toByteArray();
+		FolloweeData v4Followees = FolloweeData.createEmpty();
+		try (ByteArrayInputStream input = new ByteArrayInputStream(bytes))
+		{
+			OpcodeContext context = new OpcodeContext(null, null, v4Followees, null, null);
+			OpcodeCodec.decodeWholeStream(input, context);
+		}
+		// Check that these have the same data.
+		Assert.assertEquals(F1, v4Followees.getLastFetchedRootForFollowee(MockKeys.K0));
+		Assert.assertEquals(10L, v4Followees.getLastPollMillisForFollowee(MockKeys.K0));
+	}
+
 
 	private static byte[] _serializeV3(ExplicitCacheData start) throws IOException
 	{

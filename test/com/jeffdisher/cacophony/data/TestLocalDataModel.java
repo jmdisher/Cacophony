@@ -192,9 +192,9 @@ public class TestLocalDataModel
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
 			FolloweeData followees = access.readFollowIndex();
-			followees.createNewFollowee(MockKeys.K1, F1, 0L);
+			followees.createNewFollowee(MockKeys.K1, F1, null, 0L);
 			followees.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5L));
-			followees.updateExistingFollowee(MockKeys.K1, F1, 1L);
+			followees.updateExistingFollowee(MockKeys.K1, F1, null, 1L);
 			access.writeFollowIndex(followees);
 			PinCacheData pinCache = access.readGlobalPinCache();
 			pinCache.addRef(F1);

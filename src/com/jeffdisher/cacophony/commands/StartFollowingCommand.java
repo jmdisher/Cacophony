@@ -53,7 +53,9 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 			Assert.assertTrue(null != hackedRoot);
 			// If this worked, we will store this temporary root value.  We will do the initial data element refresh only when requested.
 			// Save this initial followee state.
-			followees.createNewFollowee(_publicKey, hackedRoot, 0L);
+			// TODO:  Populate nextBackwardRecord once we remove the hacked root approach.
+			IpfsFile nextBackwardRecord = null;
+			followees.createNewFollowee(_publicKey, hackedRoot, nextBackwardRecord, 0L);
 			didRefresh = true;
 		}
 		
