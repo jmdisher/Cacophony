@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.data.local.v4.FolloweeLoader;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsInt;
@@ -203,12 +204,24 @@ public class TestV3V4
 		FolloweeData v4Followees = FolloweeData.createEmpty();
 		try (ByteArrayInputStream input = new ByteArrayInputStream(bytes))
 		{
-			OpcodeContext context = new OpcodeContext(null, null, v4Followees, null, null);
+			OpcodeContext context = new OpcodeContext(null
+					, null
+					, new FolloweeLoader(v4Followees)
+					, null
+					, null
+			);
 			OpcodeCodec.decodeWholeStream(input, context);
 		}
 		// Check that these have the same data.
 		Assert.assertEquals(F1, v4Followees.getLastFetchedRootForFollowee(MockKeys.K0));
 		Assert.assertEquals(10L, v4Followees.getLastPollMillisForFollowee(MockKeys.K0));
+		Map<IpfsFile, FollowingCacheElement> entries = v4Followees.snapshotAllElementsForFollowee(MockKeys.K0);
+		Assert.assertEquals(1, entries.size());
+		FollowingCacheElement elt = entries.get(F2);
+		Assert.assertEquals(F2, elt.elementHash());
+		Assert.assertEquals(F3, elt.imageHash());
+		Assert.assertNull(elt.leafHash());
+		Assert.assertEquals(5L, elt.combinedSizeBytes());
 	}
 
 

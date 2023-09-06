@@ -8,7 +8,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
-import com.jeffdisher.cacophony.data.local.v4.Opcode_AddFolloweeElement;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_DefineChannel;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsInt;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetPrefsLong;
@@ -64,7 +63,7 @@ public class TestV3Data
 		{
 			writer.writeOpcode(new Opcode_SetFolloweeStateV3(MockKeys.K1, root1, 0L));
 			writer.writeOpcode(new Opcode_SetFolloweeStateV3(MockKeys.K2, root2, 1L));
-			writer.writeOpcode(new Opcode_AddFolloweeElement(MockKeys.K2, elt1, image1, null, 5L));
+			writer.writeOpcode(new Opcode_AddFolloweeElementV3(MockKeys.K2, elt1, image1, null, 5L));
 		}
 		
 		ChannelData channels = ChannelData.create();

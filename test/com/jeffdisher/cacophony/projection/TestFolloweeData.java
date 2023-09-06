@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.cacophony.data.local.v4.FolloweeLoader;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
@@ -250,6 +251,33 @@ public class TestFolloweeData
 		Assert.assertTrue(map.isEmpty());
 	}
 
+	@Test
+	public void dataLoadingAssumptions() throws Throwable
+	{
+		// Now that we are assuming that the data reader is stateful, make sure that we see the right elements.
+		FolloweeData data = FolloweeData.createEmpty();
+		data.createNewFollowee(MockKeys.K0, F1, null, 0L);
+		data.addElement(MockKeys.K0, new FollowingCacheElement(F1, F2, null, 5));
+		data.addElement(MockKeys.K0, new FollowingCacheElement(F2, F3, null, 6));
+		data.createNewFollowee(MockKeys.K1, F3, null, 0L);
+		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
+		data.addElement(MockKeys.K1, new FollowingCacheElement(F3, null, null, 0));
+		data.updateExistingFollowee(MockKeys.K0, F2, null, 2L);
+		
+		byte[] byteArray = _serializeAsOpcodeStream(data);
+		FolloweeData latest = _decodeOpcodeStream(byteArray);
+		Assert.assertEquals(2, latest.getAllKnownFollowees().size());
+		Assert.assertEquals(F2, latest.getLastFetchedRootForFollowee(MockKeys.K0));
+		Map<IpfsFile, FollowingCacheElement> u0 = latest.snapshotAllElementsForFollowee(MockKeys.K0);
+		Assert.assertEquals(2, u0.size());
+		Map<IpfsFile, FollowingCacheElement> u1 = latest.snapshotAllElementsForFollowee(MockKeys.K1);
+		Assert.assertEquals(2, u1.size());
+		Assert.assertEquals(F2, u0.get(F1).imageHash());
+		Assert.assertEquals(F3, u0.get(F2).imageHash());
+		Assert.assertEquals(F2, u1.get(F1).imageHash());
+		Assert.assertNull(u1.get(F3).imageHash());
+	}
+
 
 	private byte[] _serializeAsOpcodeStream(FolloweeData data) throws IOException
 	{
@@ -268,7 +296,12 @@ public class TestFolloweeData
 		FolloweeData followees = FolloweeData.createEmpty();
 		FavouritesCacheData favouritesCache = new FavouritesCacheData();
 		ExplicitCacheData explicitCache = new ExplicitCacheData();
-		OpcodeContext context = new OpcodeContext(channelData, prefs, followees, favouritesCache, explicitCache);
+		OpcodeContext context = new OpcodeContext(channelData
+				, prefs
+				, new FolloweeLoader(followees)
+				, favouritesCache
+				, explicitCache
+		);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(byteArray), context);
 		return followees;
 	}

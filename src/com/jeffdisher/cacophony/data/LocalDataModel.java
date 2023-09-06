@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
+import com.jeffdisher.cacophony.data.local.v4.FolloweeLoader;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.logic.IConfigFileSystem;
@@ -129,16 +130,16 @@ public class LocalDataModel
 				throw new UsageException("Local storage opcode log file is missing");
 			}
 			
+			FolloweeData followees = FolloweeData.createEmpty();
 			OpcodeContext context = new OpcodeContext(ChannelData.create()
 					, PrefsData.defaultPrefs()
-					, FolloweeData.createEmpty()
+					, new FolloweeLoader(followees)
 					, new FavouritesCacheData()
 					, new ExplicitCacheData()
 			);
 			OpcodeCodec.decodeWholeStream(opcodeLog, context);
 			ChannelData channels = context.channelData();
 			PrefsData prefs = context.prefs();
-			FolloweeData followees = context.followees();
 			FavouritesCacheData favouritesCache = context.favouritesCache();
 			ExplicitCacheData explicitCache = context.explicitCache();
 			Set<String> channelKeyNames = channels.getKeyNames();

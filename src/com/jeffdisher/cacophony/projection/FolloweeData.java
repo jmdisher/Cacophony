@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.cacophony.data.local.v3.Opcode_AddFolloweeElementV3;
 import com.jeffdisher.cacophony.data.local.v3.Opcode_SetFolloweeStateV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_AddFolloweeElement;
@@ -81,13 +82,15 @@ public class FolloweeData implements IFolloweeWriting
 			writer.writeOpcode(new Opcode_SetFolloweeStateV3(followee, indexRoot, lastPollMillis));
 			for (FollowingCacheElement record : elt.getValue())
 			{
-				writer.writeOpcode(new Opcode_AddFolloweeElement(followee, record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
+				writer.writeOpcode(new Opcode_AddFolloweeElementV3(followee, record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
 			}
 		}
 	}
 
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
 	{
+		// NOTE:  V4 uses stateful assumptions in the data stream.  It assumes that the initial followee state will be
+		// set before any of the elements within it.
 		for (Map.Entry<IpfsKey, List<FollowingCacheElement>> elt : _followeeElements.entrySet())
 		{
 			IpfsKey followee = elt.getKey();
@@ -98,7 +101,7 @@ public class FolloweeData implements IFolloweeWriting
 			writer.writeOpcode(new Opcode_SetFolloweeState(followee, indexRoot, nextBackwardRecord, lastPollMillis));
 			for (FollowingCacheElement record : elt.getValue())
 			{
-				writer.writeOpcode(new Opcode_AddFolloweeElement(followee, record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
+				writer.writeOpcode(new Opcode_AddFolloweeElement(record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
 			}
 		}
 	}
