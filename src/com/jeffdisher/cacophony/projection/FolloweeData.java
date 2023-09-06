@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.data.local.v3.Opcode_SetFolloweeStateV3;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_AddFolloweeElement;
 import com.jeffdisher.cacophony.data.local.v4.Opcode_SetFolloweeState;
+import com.jeffdisher.cacophony.data.local.v4.Opcode_SkipFolloweeRecord;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -102,12 +103,22 @@ public class FolloweeData implements IFolloweeReading
 			Assert.assertTrue(null != indexRoot);
 			IpfsFile nextBackwardRecord = _followeeNextBackwardRecord.get(followee);
 			long lastPollMillis = _followeeLastFetchMillis.get(followee);
+			// Write the followee state, first, to put us in the state where we can describe this followee.
 			writer.writeOpcode(new Opcode_SetFolloweeState(followee, indexRoot, nextBackwardRecord, lastPollMillis));
+			// Write any cached elements for this followee.
 			for (FollowingCacheElement record : elt.getValue())
 			{
 				writer.writeOpcode(new Opcode_AddFolloweeElement(record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
 			}
-			// TODO:  Serialize the skipped sets once their opcodes are implemented.
+			// Write any of the skipped records which would have been in this followee's list.
+			for (IpfsFile recordCid : _temporarilySkippedRecordsByFollowee.get(followee))
+			{
+				writer.writeOpcode(new Opcode_SkipFolloweeRecord(recordCid, false));
+			}
+			for (IpfsFile recordCid : _permanentlySkippedRecordsByFollowee.get(followee))
+			{
+				writer.writeOpcode(new Opcode_SkipFolloweeRecord(recordCid, true));
+			}
 		}
 	}
 

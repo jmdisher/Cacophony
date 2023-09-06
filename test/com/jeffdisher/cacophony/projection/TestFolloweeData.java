@@ -289,8 +289,8 @@ public class TestFolloweeData
 		data.addSkippedRecord(MockKeys.K0, F2, true);
 		data.addSkippedRecord(MockKeys.K0, F3, false);
 		
-		// TODO:  Replace this with codec calls once those are added.
-		FolloweeData latest = data;
+		byte[] byteArray = _serializeAsOpcodeStream(data);
+		FolloweeData latest = _decodeOpcodeStream(byteArray);
 		Set<IpfsFile> temporary = latest.getSkippedRecords(MockKeys.K0, true);
 		Assert.assertEquals(1, temporary.size());
 		Assert.assertTrue(temporary.contains(F3));

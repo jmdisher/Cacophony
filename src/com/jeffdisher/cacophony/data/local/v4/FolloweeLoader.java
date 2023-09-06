@@ -30,4 +30,9 @@ public class FolloweeLoader
 	{
 		_followees.addElement(_currentFolloweeKey, new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 	}
+
+	public void skipFolloweeRecord(IpfsFile recordCid, boolean isPermanent)
+	{
+		_followees.addSkippedRecord(_currentFolloweeKey, recordCid, isPermanent);
+	}
 }

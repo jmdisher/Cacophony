@@ -51,6 +51,7 @@ public class OpcodeCodec
 		Opcode_ExplicitStreamRecord.register(_OPCODE_TABLE);
 		Opcode_SetFolloweeState.register(_OPCODE_TABLE);
 		Opcode_AddFolloweeElement.register(_OPCODE_TABLE);
+		Opcode_SkipFolloweeRecord.register(_OPCODE_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _OPCODE_TABLE.length; ++i)
