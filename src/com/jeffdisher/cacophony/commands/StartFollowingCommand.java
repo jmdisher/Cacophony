@@ -6,7 +6,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.SimpleFolloweeStarter;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -37,7 +37,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<None
 				throw new UsageException("Cannot follow on of the home users");
 			}
 			
-			IFolloweeWriting followees = access.writableFolloweeData();
+			FolloweeData followees = access.writableFolloweeData();
 			
 			// We need to first verify that we aren't already following them.
 			IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(_publicKey);

@@ -26,8 +26,8 @@ import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.logic.IDraftWrapper;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.logic.LocalRecordCacheBuilder;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.scheduler.FutureCommand;
@@ -73,7 +73,7 @@ public class InteractiveServer
 		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();
-			IFolloweeWriting followees = access.writableFolloweeData();
+			FolloweeData followees = access.writableFolloweeData();
 			followees.attachRefreshConnector(followeeRefreshConnector);
 			
 			List<IReadingAccess.HomeUserTuple> homeTuples = access.readHomeUserData();

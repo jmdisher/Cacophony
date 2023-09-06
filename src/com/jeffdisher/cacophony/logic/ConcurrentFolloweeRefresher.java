@@ -5,8 +5,8 @@ import java.util.Map;
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -89,7 +89,7 @@ public class ConcurrentFolloweeRefresher
 	 * @throws IpfsConnectionException There was a failure unpinning during the cache cleaning operation.
 	 */
 	public void setupRefresh(IWritingAccess access
-			, IFolloweeWriting followees
+			, FolloweeData followees
 	) throws IpfsConnectionException
 	{
 		Assert.assertTrue(!_didSetup);
@@ -219,7 +219,7 @@ public class ConcurrentFolloweeRefresher
 	 */
 	public void finishRefresh(IWritingAccess access
 			, CacheUpdater cacheUpdater
-			, IFolloweeWriting followees
+			, FolloweeData followees
 			, long currentTimeMillis
 	) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{

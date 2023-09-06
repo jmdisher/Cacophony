@@ -5,7 +5,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.ILogger;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -24,7 +24,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 		ConcurrentFolloweeRefresher refresher = null;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			IFolloweeWriting followees = access.writableFolloweeData();
+			FolloweeData followees = access.writableFolloweeData();
 			
 			IpfsKey publicKey = followees.getNextFolloweeToPoll();
 			if (null == publicKey)
@@ -60,7 +60,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 	}
 
 
-	private ConcurrentFolloweeRefresher _setup(ILogger logger, IWritingAccess access, IFolloweeWriting followees, IpfsKey publicKey) throws IpfsConnectionException
+	private ConcurrentFolloweeRefresher _setup(ILogger logger, IWritingAccess access, FolloweeData followees, IpfsKey publicKey) throws IpfsConnectionException
 	{
 		IpfsFile lastRoot = followees.getLastFetchedRootForFollowee(publicKey);
 		Assert.assertTrue(null != lastRoot);
@@ -79,7 +79,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<None>
 
 	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
-		IFolloweeWriting followees = access.writableFolloweeData();
+		FolloweeData followees = access.writableFolloweeData();
 		
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
 		refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);

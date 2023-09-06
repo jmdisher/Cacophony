@@ -21,7 +21,6 @@ import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.IExplicitCacheReading;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
@@ -309,7 +308,7 @@ public class StandardAccess implements IWritingAccess
 
 	// ----- Writing methods -----
 	@Override
-	public IFolloweeWriting writableFolloweeData()
+	public FolloweeData writableFolloweeData()
 	{
 		Assert.assertTrue(null != _readWrite);
 		// We will want to write this back.

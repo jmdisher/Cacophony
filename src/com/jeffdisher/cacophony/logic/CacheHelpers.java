@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -38,7 +38,7 @@ public class CacheHelpers
 		return sizeBytes;
 	}
 
-	public static void pruneCacheIfNeeded(IWritingAccess access, IFolloweeWriting followees, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
+	public static void pruneCacheIfNeeded(IWritingAccess access, FolloweeData followees, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))
 		{

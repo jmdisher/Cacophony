@@ -11,8 +11,8 @@ import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
@@ -57,7 +57,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_pendingCacheUpdates = new ArrayList<>();
 	}
 
-	public void commitFolloweeChanges(IFolloweeWriting followees)
+	public void commitFolloweeChanges(FolloweeData followees)
 	{
 		for (IpfsFile cid : _elementsToRemoveFromCache)
 		{

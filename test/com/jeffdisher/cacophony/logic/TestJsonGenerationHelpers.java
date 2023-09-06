@@ -25,9 +25,9 @@ import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendation
 import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
@@ -148,7 +148,7 @@ public class TestJsonGenerationHelpers
 			// We want to create an oversized record to make sure that it is not in cached list.
 			IpfsFile oversizeRecordFile = access.uploadAndPin(new ByteArrayInputStream(new byte[(int) (SizeLimits.MAX_RECORD_SIZE_BYTES + 1)]));
 			
-			IFolloweeWriting followIndex = access.writableFolloweeData();
+			FolloweeData followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
 			followIndex.createNewFollowee(MockKeys.K2, followeeIndexFile, null, 1L);
 			followIndex.addElement(MockKeys.K2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));

@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -47,7 +47,7 @@ public class CommandHelpers
 	public static void shrinkCacheToFitInPrefs(ILogger logger, IWritingAccess access, double fullnessFraction) throws IpfsConnectionException
 	{
 		ILogger log = logger.logStart("Checking is cache requires shrinking...");
-		IFolloweeWriting followees = access.writableFolloweeData();
+		FolloweeData followees = access.writableFolloweeData();
 		PrefsData prefs = access.readPrefs();
 		
 		{

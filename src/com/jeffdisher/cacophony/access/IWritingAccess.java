@@ -7,7 +7,7 @@ import java.util.Set;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
-import com.jeffdisher.cacophony.projection.IFolloweeWriting;
+import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
@@ -27,7 +27,7 @@ public interface IWritingAccess extends IReadingAccess
 	 * 
 	 * @return The shared followee data instance.
 	 */
-	IFolloweeWriting writableFolloweeData();
+	FolloweeData writableFolloweeData();
 
 	/**
 	 * Requests that the given prefs be written to disk.

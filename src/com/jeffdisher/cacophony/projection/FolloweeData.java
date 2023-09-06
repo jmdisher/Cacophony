@@ -22,7 +22,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * A high-level projection of the followee data which also exposes a mutation interface.
  */
-public class FolloweeData implements IFolloweeWriting
+public class FolloweeData implements IFolloweeReading
 {
 	public static FolloweeData createEmpty()
 	{
@@ -152,7 +152,13 @@ public class FolloweeData implements IFolloweeWriting
 		return followee;
 	}
 
-	@Override
+	/**
+	 * Adds a new element for the given followee.
+	 * Asserts that an element with the same elementHash is not already in the cache for this followee.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param element The new element to track.
+	 */
 	public void addElement(IpfsKey followeeKey, FollowingCacheElement element)
 	{
 		// First, make sure that the element hasn't been added before.
@@ -165,7 +171,13 @@ public class FolloweeData implements IFolloweeWriting
 		_elementsForLookup.get(followeeKey).put(element.elementHash(), element);
 	}
 
-	@Override
+	/**
+	 * Removes the element from the tracking for this followee.
+	 * If the followee isn't already tracking this element, this method does nothing.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param elementCid The CID of the StreamRecord to drop from the cache.
+	 */
 	public void removeElement(IpfsKey followeeKey, IpfsFile elementCid)
 	{
 		boolean didRemove = _followeeElements.get(followeeKey).removeIf((FollowingCacheElement elt) -> (elementCid.equals(elt.elementHash())));
@@ -177,7 +189,16 @@ public class FolloweeData implements IFolloweeWriting
 		}
 	}
 
-	@Override
+	/**
+	 * Creates a new followee record, internally.  This must be called before this followeeKey can be used in any other
+	 * calls in this interface.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param indexRoot The initial StreamIndex CID.
+	 * @param nextBackwardRecord The next record CID we need to fetch when loading backward (null if the stream is fully
+	 * loaded).
+	 * @param lastPollMillis The initial poll time (must be >= 0L).
+	 */
 	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
 	{
 		List<FollowingCacheElement> match0 = _followeeElements.put(followeeKey, new ArrayList<>());
@@ -197,7 +218,15 @@ public class FolloweeData implements IFolloweeWriting
 		}
 	}
 
-	@Override
+	/**
+	 * Updates an existing followee's record.  Assumes that the followee already exists.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param indexRoot The StreamIndex CID of the most recent refresh of the followee.
+	 * @param nextBackwardRecord The next record CID we need to fetch when loading backward (null if the stream is fully
+	 * loaded).
+	 * @param lastPollMillis The current time.
+	 */
 	public void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
 	{
 		// We expect that any actual update uses a non-zero time (since that is effectively the "never updated" value).
@@ -222,7 +251,12 @@ public class FolloweeData implements IFolloweeWriting
 		}
 	}
 
-	@Override
+	/**
+	 * Removes a given followee entirely from tracking.  Note that this call assumes there are no elements associated
+	 * with this followee and that the record does already exist.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 */
 	public void removeFollowee(IpfsKey followeeKey)
 	{
 		List<FollowingCacheElement> match0 = _followeeElements.remove(followeeKey);
@@ -242,7 +276,13 @@ public class FolloweeData implements IFolloweeWriting
 		}
 	}
 
-	@Override
+	/**
+	 * Attaches the listener for followee refresh data updates.  This can be called at most once for any given instance.
+	 * Upon being called, the given followeeRefreshConnector will be populated with the current state of followee data
+	 * and will then be notified of refresh times whenever a followee is added/removed/refreshed.
+	 * 
+	 * @param followeeRefreshConnector The connector to notify of followee refreshes.
+	 */
 	public void attachRefreshConnector(HandoffConnector<IpfsKey, Long> followeeRefreshConnector)
 	{
 		Assert.assertTrue(null == _followeeRefreshConnector);
