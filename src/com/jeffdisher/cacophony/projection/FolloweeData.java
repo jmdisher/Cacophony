@@ -35,6 +35,8 @@ public class FolloweeData implements IFolloweeReading
 
 
 	private final Map<IpfsKey, List<FollowingCacheElement>> _followeeElements;
+	private final Map<IpfsKey, Set<IpfsFile>> _temporarilySkippedRecordsByFollowee;
+	private final Map<IpfsKey, Set<IpfsFile>> _permanentlySkippedRecordsByFollowee;
 	private final Map<IpfsKey, Map<IpfsFile, FollowingCacheElement>> _elementsForLookup;
 	private final Map<IpfsKey, IpfsFile> _followeeLastIndices;
 	// We only store the entry in _followeeNextBackwardRecord if not null.
@@ -49,6 +51,8 @@ public class FolloweeData implements IFolloweeReading
 	private FolloweeData(Map<IpfsKey, List<FollowingCacheElement>> followeeElements, Map<IpfsKey, IpfsFile> followeeLastIndices, Map<IpfsKey, IpfsFile> followeeNextBackwardRecord, Map<IpfsKey, Long> followeeLastFetchMillis)
 	{
 		_followeeElements = new HashMap<>();
+		_temporarilySkippedRecordsByFollowee = new HashMap<>();
+		_permanentlySkippedRecordsByFollowee = new HashMap<>();
 		_elementsForLookup = new HashMap<>();
 		for (Map.Entry<IpfsKey, List<FollowingCacheElement>> entry : followeeElements.entrySet())
 		{
@@ -103,6 +107,7 @@ public class FolloweeData implements IFolloweeReading
 			{
 				writer.writeOpcode(new Opcode_AddFolloweeElement(record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
 			}
+			// TODO:  Serialize the skipped sets once their opcodes are implemented.
 		}
 	}
 
@@ -167,6 +172,10 @@ public class FolloweeData implements IFolloweeReading
 		{
 			Assert.assertTrue(!element.elementHash().equals(elt.elementHash()));
 		}
+		// Make sure that this isn't being skipped (since we shouldn't have found it, in that case).
+		Assert.assertTrue(!_temporarilySkippedRecordsByFollowee.get(followeeKey).contains(element.elementHash()));
+		Assert.assertTrue(!_permanentlySkippedRecordsByFollowee.get(followeeKey).contains(element.elementHash()));
+		// Add this to the relevant collections.
 		list.add(element);
 		_elementsForLookup.get(followeeKey).put(element.elementHash(), element);
 	}
@@ -174,6 +183,8 @@ public class FolloweeData implements IFolloweeReading
 	/**
 	 * Removes the element from the tracking for this followee.
 	 * If the followee isn't already tracking this element, this method does nothing.
+	 * Note that this can be used by elements which are cached, elements which were skipped (temporary or permanent), or
+	 * elements with no special cache state.
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param elementCid The CID of the StreamRecord to drop from the cache.
@@ -187,6 +198,85 @@ public class FolloweeData implements IFolloweeReading
 			FollowingCacheElement match = _elementsForLookup.get(followeeKey).remove(elementCid);
 			Assert.assertTrue(null != match);
 		}
+		else
+		{
+			// This might have been a skipped element (permanent or temporary).
+			if (_temporarilySkippedRecordsByFollowee.get(followeeKey).contains(elementCid))
+			{
+				boolean didRemoveSkipped = _temporarilySkippedRecordsByFollowee.get(followeeKey).remove(elementCid);
+				Assert.assertTrue(didRemoveSkipped);
+			}
+			else if (_permanentlySkippedRecordsByFollowee.get(followeeKey).contains(elementCid))
+			{
+				boolean didRemoveSkipped = _permanentlySkippedRecordsByFollowee.get(followeeKey).remove(elementCid);
+				Assert.assertTrue(didRemoveSkipped);
+			}
+		}
+	}
+
+	/**
+	 * Records that the given recordCid was skipped when synchronizing followeeKey.  The same helper is used for
+	 * permanent and temporary skips.
+	 * Note that a given recordCid can only be added once (the caller should know what has been skipped when
+	 * synchronizing).
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param recordCid The CID of the record to skip.
+	 * @param isPermanent True if this should be permanently skipped or false if it should be temporary so it can be
+	 * retried, later.
+	 */
+	public void addSkippedRecord(IpfsKey followeeKey, IpfsFile recordCid, boolean isPermanent)
+	{
+		// This shouldn't already be in the collection.
+		Assert.assertTrue(!_temporarilySkippedRecordsByFollowee.get(followeeKey).contains(recordCid));
+		Assert.assertTrue(!_permanentlySkippedRecordsByFollowee.get(followeeKey).contains(recordCid));
+		
+		// Add it to the skipped records.
+		if (isPermanent)
+		{
+			_permanentlySkippedRecordsByFollowee.get(followeeKey).add(recordCid);
+		}
+		else
+		{
+			_temporarilySkippedRecordsByFollowee.get(followeeKey).add(recordCid);
+		}
+	}
+
+	/**
+	 * Removes the given recordCID from the list of previously-skipped elements for followeeKey.  This is expected to
+	 * only be called on the temporarily skipped records (permanently skipped records are removed with the normal
+	 * removeElement() call).
+	 * This call is specifically to be used in cases where a previously temporarily skipped element has been
+	 * successfully fetched and caching decisions are being made.
+	 * Note that the recordCid MUST be in the list of temporarily skipped elements.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param recordCid The CID of the record to remove from the temporarily skipped list.
+	 */
+	public void removeTemporarilySkippedRecord(IpfsKey followeeKey, IpfsFile recordCid)
+	{
+		Assert.assertTrue(_temporarilySkippedRecordsByFollowee.get(followeeKey).contains(recordCid));
+		boolean didRemove = _temporarilySkippedRecordsByFollowee.get(followeeKey).remove(recordCid);
+		Assert.assertTrue(didRemove);
+	}
+
+	/**
+	 * Looks up the set of previously skipped records for the given followeeKey.  If temporaryOnly, will only return
+	 * the temporarily skipped elements whereas passing false will return all of the skipped elements.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param temporaryOnly True if only temporarily skipped elements should be returned (false returns all skipped
+	 * elements).
+	 * @return The set of skipped records.
+	 */
+	public Set<IpfsFile> getSkippedRecords(IpfsKey followeeKey, boolean temporaryOnly)
+	{
+		Set<IpfsFile> copy = new HashSet<>(_temporarilySkippedRecordsByFollowee.get(followeeKey));
+		if (!temporaryOnly)
+		{
+			copy.addAll(_permanentlySkippedRecordsByFollowee.get(followeeKey));
+		}
+		return copy;
 	}
 
 	/**
@@ -203,6 +293,10 @@ public class FolloweeData implements IFolloweeReading
 	{
 		List<FollowingCacheElement> match0 = _followeeElements.put(followeeKey, new ArrayList<>());
 		Assert.assertTrue(null == match0);
+		Set<IpfsFile> skipped0 = _temporarilySkippedRecordsByFollowee.put(followeeKey, new HashSet<>());
+		Assert.assertTrue(null == skipped0);
+		Set<IpfsFile> skipped1 = _permanentlySkippedRecordsByFollowee.put(followeeKey, new HashSet<>());
+		Assert.assertTrue(null == skipped1);
 		Map<IpfsFile, FollowingCacheElement> match1 = _elementsForLookup.put(followeeKey, new HashMap<>());
 		Assert.assertTrue(null == match1);
 		IpfsFile match2 = _followeeLastIndices.put(followeeKey, indexRoot);
@@ -262,6 +356,12 @@ public class FolloweeData implements IFolloweeReading
 		List<FollowingCacheElement> match0 = _followeeElements.remove(followeeKey);
 		Assert.assertTrue(null != match0);
 		Assert.assertTrue(match0.isEmpty());
+		Set<IpfsFile> skipped0 = _temporarilySkippedRecordsByFollowee.remove(followeeKey);
+		Assert.assertTrue(null != skipped0);
+		Assert.assertTrue(skipped0.isEmpty());
+		Set<IpfsFile> skipped1 = _permanentlySkippedRecordsByFollowee.remove(followeeKey);
+		Assert.assertTrue(null != skipped1);
+		Assert.assertTrue(skipped1.isEmpty());
 		Map<IpfsFile, FollowingCacheElement> match1 = _elementsForLookup.remove(followeeKey);
 		Assert.assertTrue(null != match1);
 		Assert.assertTrue(match1.isEmpty());

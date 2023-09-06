@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
@@ -276,6 +277,35 @@ public class TestFolloweeData
 		Assert.assertEquals(F3, u0.get(F2).imageHash());
 		Assert.assertEquals(F2, u1.get(F1).imageHash());
 		Assert.assertNull(u1.get(F3).imageHash());
+	}
+
+	@Test
+	public void skippedRecords() throws Throwable
+	{
+		// Now that we are assuming that the data reader is stateful, make sure that we see the right elements.
+		FolloweeData data = FolloweeData.createEmpty();
+		data.createNewFollowee(MockKeys.K0, F1, null, 0L);
+		data.addElement(MockKeys.K0, new FollowingCacheElement(F1, F2, null, 5));
+		data.addSkippedRecord(MockKeys.K0, F2, true);
+		data.addSkippedRecord(MockKeys.K0, F3, false);
+		
+		// TODO:  Replace this with codec calls once those are added.
+		FolloweeData latest = data;
+		Set<IpfsFile> temporary = latest.getSkippedRecords(MockKeys.K0, true);
+		Assert.assertEquals(1, temporary.size());
+		Assert.assertTrue(temporary.contains(F3));
+		Set<IpfsFile> all = latest.getSkippedRecords(MockKeys.K0, false);
+		Assert.assertEquals(2, all.size());
+		Assert.assertTrue(all.contains(F2));
+		Assert.assertTrue(all.contains(F3));
+		
+		// Try to remove all of these and the followee.
+		latest.removeElement(MockKeys.K0, F1);
+		latest.removeElement(MockKeys.K0, F2);
+		latest.removeTemporarilySkippedRecord(MockKeys.K0, F3);
+		Assert.assertTrue(latest.getSkippedRecords(MockKeys.K0, false).isEmpty());
+		latest.removeFollowee(MockKeys.K0);
+		Assert.assertTrue(latest.getAllKnownFollowees().isEmpty());
 	}
 
 
