@@ -81,7 +81,7 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "h
 # Verify that we see the new followee reference created in the follow refresh time socket.
 INDEX_REFRESH=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0,\"isNewest\":true}"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
 # Note that we need to wait for the refresh to finish, since it is now asynchronous.
 INDEX=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
@@ -197,14 +197,10 @@ requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":5,\"value\":\"Refresh 
 INDEX=$((INDEX + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
 requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\":null,\"isNewest\":false}"
-# Similarly, we need to read the refresh from the followee output.
-INDEX_REFRESH=$((INDEX_REFRESH + 1))
-SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":0,\"isNewest\":true}"
 # We also want to wait for the refresh to complete, asynchronously.
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
 
 # Note that the socket will be disconnected from updates once the user is unfollowed so we need to reconnect now that the user is re-added.
 curl --no-progress-meter -XPOST "http://127.0.0.1:9002/close"

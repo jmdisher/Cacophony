@@ -41,6 +41,8 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		);
 		if (null != result)
 		{
+			// Historically, the start follow didn't refresh and in the future it will likely only partially refresh so
+			// we will enqueue it immediately to allow it another quick chance to refresh.
 			_backgroundOperations.enqueueFolloweeRefresh(userToAdd, 0L);
 		}
 	}

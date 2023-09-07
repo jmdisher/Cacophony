@@ -64,8 +64,6 @@ echo "Key is \"$PUBLIC2\""
 echo "Make key 2 follow key 1"
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --startFollowing --publicKey "$PUBLIC1"
 checkPreviousCommand "startFollowing"
-CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshFollowee --publicKey "$PUBLIC1"
-checkPreviousCommand "Initial refreshFollowee after first follow"
 
 echo "List followees"
 CANONICAL1=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --canonicalizeKey --key "$PUBLIC1")

@@ -30,6 +30,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final ILogger _logger;
 	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
+	private final boolean _isExistingFollowee;
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
 	
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
@@ -39,6 +40,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
+			, boolean isExistingFollowee
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
 	)
 	{
@@ -50,6 +52,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_logger = logger;
 		_transaction = transaction;
 		_followeeKey = followeeKey;
+		_isExistingFollowee = isExistingFollowee;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
 		
 		_elementsToRemoveFromCache = new HashSet<>();
@@ -91,7 +94,15 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public void followeeDescriptionNewOrUpdated(AbstractDescription description)
 	{
 		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			cacheUpdater.updatedFolloweeInfo(_followeeKey, description);
+			// We use a different update mechanism if this is a new or existing followee.
+			if (_isExistingFollowee)
+			{
+				cacheUpdater.updatedFolloweeInfo(_followeeKey, description);
+			}
+			else
+			{
+				cacheUpdater.addedFollowee(_followeeKey, description);
+			}
 		});
 	}
 	@Override

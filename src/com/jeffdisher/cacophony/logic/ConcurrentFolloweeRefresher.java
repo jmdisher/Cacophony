@@ -1,5 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.util.Collections;
 import java.util.Map;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
@@ -70,7 +71,7 @@ public class ConcurrentFolloweeRefresher
 	{
 		Assert.assertTrue(null != logger);
 		Assert.assertTrue(null != followeeKey);
-		Assert.assertTrue(null != previousRoot);
+		// previousRoot can be null.
 		Assert.assertTrue(null != prefs);
 		
 		_logger = logger;
@@ -100,7 +101,7 @@ public class ConcurrentFolloweeRefresher
 		{
 			// If this followee hasn't been refreshed before, that means it was only just added and its data hasn't been
 			// fetched, so we want to make extra room in the cache.
-			boolean isFirstRefresh = (0L == followees.getLastPollMillisForFollowee(_followeeKey));
+			boolean isFirstRefresh = (null == followees.getLastFetchedRootForFollowee(_followeeKey));
 			fullnessFraction = isFirstRefresh
 					? ConcurrentFolloweeRefresher.NEW_FOLLOWEE_FULLNESS_FRACTION
 					: ConcurrentFolloweeRefresher.EXISTING_FOLLOWEE_FULLNESS_FRACTION
@@ -108,7 +109,10 @@ public class ConcurrentFolloweeRefresher
 		}
 		CommandHelpers.shrinkCacheToFitInPrefs(_logger, access, fullnessFraction);
 		_transaction = access.openConcurrentTransaction();
-		_cachedEntriesForFollowee = followees.snapshotAllElementsForFollowee(_followeeKey);
+		_cachedEntriesForFollowee = (null != _previousRoot)
+				? followees.snapshotAllElementsForFollowee(_followeeKey)
+				: Collections.emptyMap()
+		;
 		Assert.assertTrue(null != _cachedEntriesForFollowee);
 		_currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
 		_keyResolve = _isDelete
@@ -131,10 +135,16 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(_didSetup);
 		Assert.assertTrue(!_didRun);
 		
-		cacheUpdater.followeeRefreshInProgress(_followeeKey, true);
+		// We only want to state that we are mid-refresh if we know of this followee, already.
+		boolean isExistingFollowee = (null != _previousRoot);
+		if (isExistingFollowee)
+		{
+			cacheUpdater.followeeRefreshInProgress(_followeeKey, true);
+		}
 		_refreshSupport = new StandardRefreshSupport(_logger
 				, _transaction
 				, _followeeKey
+				, isExistingFollowee
 				, _cachedEntriesForFollowee
 		);
 		boolean refreshWasSuccess = false;
@@ -179,7 +189,7 @@ public class ConcurrentFolloweeRefresher
 		}
 		catch (SizeConstraintException e)
 		{
-			log.logOperation("Root index element too big (probably wrong file published): " + e.getLocalizedMessage());
+			log.logOperation("Followee meta-data element too big (probably wrong file published):  " + e.getLocalizedMessage());
 			_protocolException = e;
 			refreshWasSuccess = false;
 		}
@@ -235,6 +245,14 @@ public class ConcurrentFolloweeRefresher
 				_refreshSupport.commitFolloweeChanges(followees);
 				followees.removeFollowee(_followeeKey);
 			}
+			else if (null == _previousRoot)
+			{
+				// Create the new record.
+				// TODO: Add support for incremental synchronization.
+				IpfsFile nextBackwardRecord = null;
+				followees.createNewFollowee(_followeeKey, _newRoot, nextBackwardRecord, currentTimeMillis);
+				_refreshSupport.commitFolloweeChanges(followees);
+			}
 			else
 			{
 				// Update existing record.
@@ -249,14 +267,21 @@ public class ConcurrentFolloweeRefresher
 		}
 		else
 		{
-			// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
-			// TODO: Add support for incremental synchronization.
-			IpfsFile nextBackwardRecord = null;
-			followees.updateExistingFollowee(_followeeKey, _previousRoot, nextBackwardRecord, currentTimeMillis);
+			if (null != _previousRoot)
+			{
+				// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
+				// TODO: Add support for incremental synchronization.
+				IpfsFile nextBackwardRecord = null;
+				followees.updateExistingFollowee(_followeeKey, _previousRoot, nextBackwardRecord, currentTimeMillis);
+			}
 			_transaction.rollback(resolver);
 		}
 		_didFinish = true;
-		cacheUpdater.followeeRefreshInProgress(_followeeKey, false);
+		// We only want to state that the refresh completed if we know of this followee, already.
+		if (null != _previousRoot)
+		{
+			cacheUpdater.followeeRefreshInProgress(_followeeKey, false);
+		}
 		// At this point, we want to throw any exceptions we caught in the main operation.
 		if (null != _connectionException)
 		{

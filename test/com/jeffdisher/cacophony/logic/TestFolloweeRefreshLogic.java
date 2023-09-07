@@ -26,7 +26,6 @@ import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
-import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
@@ -48,12 +47,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -69,13 +68,13 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		// We don't add leaf-less entries to the followee index, since that would be redundant.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
@@ -91,12 +90,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(3, result[0].combinedSizeBytes());
@@ -114,12 +113,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		Assert.assertEquals(1, result[0].combinedSizeBytes());
@@ -146,12 +145,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -180,12 +179,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -214,12 +213,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -254,6 +253,7 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		
@@ -262,7 +262,6 @@ public class TestFolloweeRefreshLogic
 		try
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
-			IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
 			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (IpfsConnectionException e)
@@ -287,6 +286,7 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		
@@ -295,10 +295,9 @@ public class TestFolloweeRefreshLogic
 		try
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
-			IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 			// If the start was a success, we should see the name.
 			Assert.assertEquals("name", testSupport.lastName);
-			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (IpfsConnectionException e)
 		{
@@ -328,14 +327,14 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		
 		// We expect that this will succeed, since it isn't a meta-data failure, but we will decide NOT to cache this element.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -351,12 +350,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 100L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -500,12 +499,12 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
-		Assert.assertEquals("name", testSupport.lastName);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
@@ -555,16 +554,16 @@ public class TestFolloweeRefreshLogic
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 100L;
 		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = indexHash;
 		long currentCacheUsageInBytes = 0L;
 		boolean didFail = false;
 		try
 		{
 			TestSupport testSupport = new TestSupport(data, originalElements);
-			IpfsFile oldIndexElement = FolloweeRefreshLogic.startFollowing(testSupport, newIndexElement);
+			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 			// If the start was a success, we should see the name.
 			Assert.assertEquals("name", testSupport.lastName);
-			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		}
 		catch (SizeConstraintException e)
 		{
@@ -738,7 +737,7 @@ public class TestFolloweeRefreshLogic
 	}
 
 
-	private static class TestSupport implements FolloweeRefreshLogic.IRefreshSupport, FolloweeRefreshLogic.IStartSupport
+	private static class TestSupport implements FolloweeRefreshLogic.IRefreshSupport
 	{
 		private final Map<IpfsFile, byte[]> _upstreamData;
 		private final List<FollowingCacheElement> _list;
@@ -992,43 +991,6 @@ public class TestFolloweeRefreshLogic
 			}
 			Assert.assertTrue(match >= 0);
 			_list.remove(match);
-		}
-		@Override
-		public <R> FutureSizedRead<R> loadNotCached(IpfsFile file, String context, long maxSizeInBytes, DataDeserializer<R> decoder)
-		{
-			Assert.assertTrue(_upstreamData.containsKey(file));
-			// While we could technically see something pinned in the non-cached load, we don't expect that in this test.
-			Assert.assertFalse(_data.containsKey(file));
-			FutureSizedRead<R> future = new FutureSizedRead<R>();
-			try
-			{
-				byte[] data = _upstreamData.get(file);
-				if (data.length <= maxSizeInBytes)
-				{
-					future.success(decoder.apply(data));
-				}
-				else
-				{
-					// One of the tests does use this.
-					future.failureInSizeCheck(new SizeConstraintException(context, data.length, maxSizeInBytes));
-				}
-			}
-			catch (FailedDeserializationException e)
-			{
-				future.failureInDecoding(e);
-			}
-			return future;
-		}
-		@Override
-		public IpfsFile uploadNewData(byte[] data) throws IpfsConnectionException
-		{
-			IpfsFile hash = MockSingleNode.generateHash(data);
-			Assert.assertFalse(_data.containsKey(hash));
-			Assert.assertFalse(_metaDataPinCount.containsKey(hash));
-			_data.put(hash, data);
-			// This case only uploads meta-data.
-			_metaDataPinCount.put(hash, 1);
-			return hash;
 		}
 	}
 }
