@@ -26,7 +26,6 @@ import com.jeffdisher.cacophony.data.global.record.DataArray;
 import com.jeffdisher.cacophony.data.global.record.StreamRecord;
 import com.jeffdisher.cacophony.data.global.records.StreamRecords;
 import com.jeffdisher.cacophony.projection.FolloweeData;
-import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.IFolloweeReading;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
@@ -151,7 +150,6 @@ public class TestJsonGenerationHelpers
 			FolloweeData followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
 			followIndex.createNewFollowee(MockKeys.K2, followeeIndexFile, null, 1L);
-			followIndex.addElement(MockKeys.K2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
 		}
 		
 		LocalRecordCache recordCache = new LocalRecordCache();

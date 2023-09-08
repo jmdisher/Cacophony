@@ -66,6 +66,8 @@ public record ListCachedElementsForFolloweeCommand(IpfsKey _followeeKey) impleme
 				String suffix = null;
 				if (null != element)
 				{
+					// If we see the record, there better be an image or hash.
+					Assert.assertTrue((null != element.imageHash()) || (null != element.leafHash()));
 					String imageString = (null != element.imageHash())
 							? element.imageHash().toSafeString()
 							: "(none)"

@@ -108,6 +108,8 @@ public class FolloweeData implements IFolloweeReading
 			// Write any cached elements for this followee.
 			for (FollowingCacheElement record : elt.getValue())
 			{
+				// In V4, Opcode_AddFolloweeElement MUST have at least image or leaf. 
+				Assert.assertTrue((null != record.imageHash()) || (null != record.leafHash()));
 				writer.writeOpcode(new Opcode_AddFolloweeElement(record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
 			}
 			// Write any of the skipped records which would have been in this followee's list.
@@ -177,7 +179,10 @@ public class FolloweeData implements IFolloweeReading
 	 */
 	public void addElement(IpfsKey followeeKey, FollowingCacheElement element)
 	{
-		// First, make sure that the element hasn't been added before.
+		// If we are adding an element, it MUST have at least an image or a leaf.
+		Assert.assertTrue((null != element.imageHash()) || (null != element.leafHash()));
+		
+		// Make sure that the element hasn't been added before.
 		List<FollowingCacheElement> list = _followeeElements.get(followeeKey);
 		for (FollowingCacheElement elt : list)
 		{
@@ -204,6 +209,7 @@ public class FolloweeData implements IFolloweeReading
 	{
 		boolean didRemove = _followeeElements.get(followeeKey).removeIf((FollowingCacheElement elt) -> (elementCid.equals(elt.elementHash())));
 		// Note that it is possible that we were asked to remove something which was never in the list.
+		// (this is because we only record the elements which have images or leaves)
 		if (didRemove)
 		{
 			FollowingCacheElement match = _elementsForLookup.get(followeeKey).remove(elementCid);

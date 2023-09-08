@@ -239,6 +239,8 @@ public class LocalRecordCacheBuilder
 		{
 			cachedImageOrNull = cachedElement.imageHash();
 			IpfsFile leafCid = cachedElement.leafHash();
+			// We expect at least one of the image or leaf in this element.
+			Assert.assertTrue((null != cachedImageOrNull) || (null != leafCid));
 			if (null != leafCid)
 			{
 				List<AbstractRecord.Leaf> elements = record.getVideoExtension();

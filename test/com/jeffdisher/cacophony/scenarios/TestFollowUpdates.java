@@ -17,8 +17,12 @@ import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
 import com.jeffdisher.cacophony.commands.SetGlobalPrefsCommand;
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
 import com.jeffdisher.cacophony.commands.StopFollowingCommand;
+import com.jeffdisher.cacophony.commands.results.OnePost;
+import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
+import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.testutils.MockSwarm;
@@ -285,6 +289,51 @@ public class TestFollowUpdates
 		
 		user1.shutdown();
 		user2.shutdown();
+	}
+
+	@Test
+	public void pinCountAfterFollow() throws Throwable
+	{
+		MockSwarm swarm = new MockSwarm();
+		MockUserNode user1 = new MockUserNode(KEY_NAME1, MockKeys.K1, new MockSingleNode(swarm), FOLDER.newFolder());
+		MockUserNode user2 = new MockUserNode(KEY_NAME2, MockKeys.K2, new MockSingleNode(swarm), FOLDER.newFolder());
+		
+		// Create the user on node 1.
+		user1.createChannel(KEY_NAME1, "user1", "description1", null);
+		
+		// Make 2 posts - one with attachments and one without.
+		OnePost result1 = user1.runCommand(null, new PublishCommand("post1", "desc", null, null, null, null, new ElementSubCommand[0]));
+		OnePost result2 = user1.runCommand(null, _createPublishCommand("post2", "thumbnail", "video"));
+		
+		int pinCacheBefore;
+		LocalDataModel model2 = user2.unsafeDataModel();
+		try (IReadOnlyLocalData reading = model2.openForRead())
+		{
+			PinCacheData pinCache = reading.readGlobalPinCache();
+			pinCacheBefore = pinCache.snapshotPinnedSet().size();
+		}
+		
+		// Make user2 follow user1.
+		user2.runCommand(null, new StartFollowingCommand(MockKeys.K1));
+		
+		int pinCacheAfter;
+		model2 = user2.unsafeDataModel();
+		try (IReadOnlyLocalData reading = model2.openForRead())
+		{
+			PinCacheData pinCache = reading.readGlobalPinCache();
+			pinCacheAfter = pinCache.snapshotPinnedSet().size();
+			// Make sure that we see both posts.
+			Assert.assertTrue(pinCache.isPinned(result1.recordCid));
+			Assert.assertTrue(pinCache.isPinned(result2.recordCid));
+		}
+		
+		user1.shutdown();
+		user2.shutdown();
+		
+		// The first check should be 0.
+		Assert.assertEquals(0, pinCacheBefore);
+		// After sync, it should be 9:  index, recommendations, description, userpic, records, post1, post2, thumbnail, video.
+		Assert.assertEquals(9, pinCacheAfter);
 	}
 
 

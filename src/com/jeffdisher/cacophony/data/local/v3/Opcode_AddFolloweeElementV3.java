@@ -7,7 +7,6 @@ import com.jeffdisher.cacophony.data.local.v4.OpcodeContext;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeDeserializer;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeSerializer;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeType;
-import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -45,7 +44,13 @@ public record Opcode_AddFolloweeElementV3(IpfsKey followeeKey, IpfsFile elementH
 	@Override
 	public void applyV3(OpcodeContextV3 context)
 	{
-		commonApply(context.followees());
+		// Note that V3 allows FollowingCacheElement without image or leaf but V4 doesn't.
+		if ((null != this.imageHash) || (null != this.leafHash))
+		{
+			context.followees().addElement(this.followeeKey
+					, new FollowingCacheElement(this.elementHash, this.imageHash, this.leafHash, this.combinedSizeBytes)
+			);
+		}
 	}
 
 	@Override
@@ -63,13 +68,5 @@ public record Opcode_AddFolloweeElementV3(IpfsKey followeeKey, IpfsFile elementH
 		serializer.writeCid(this.imageHash);
 		serializer.writeCid(this.leafHash);
 		serializer.writeLong(this.combinedSizeBytes);
-	}
-
-
-	private void commonApply(FolloweeData followees)
-	{
-		followees.addElement(this.followeeKey
-				, new FollowingCacheElement(this.elementHash, this.imageHash, this.leafHash, this.combinedSizeBytes)
-		);
 	}
 }

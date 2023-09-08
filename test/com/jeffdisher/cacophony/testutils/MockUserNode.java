@@ -91,7 +91,10 @@ public class MockUserNode
 
 	public void createChannel(String keyName, String name, String description, byte[] userPicData) throws Throwable
 	{
-		ByteArrayInputStream pictureStream = new ByteArrayInputStream(userPicData);
+		ByteArrayInputStream pictureStream = (null != userPicData)
+				? new ByteArrayInputStream(userPicData)
+				: null
+		;
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(keyName);
 		ICommand.Result result = createChannel.runInContext(_lazyContext());
@@ -248,6 +251,27 @@ public class MockUserNode
 	public Context getContext()
 	{
 		return _lazyContext();
+	}
+
+	/**
+	 * Note that this is "unsafe" since it returns access to an on-disk structure that this object could modify.  This
+	 * means that the caller may have to re-request it after calling anything else on this object or they may receive
+	 * stale data.
+	 * 
+	 * @return The internal data model.
+	 */
+	public LocalDataModel unsafeDataModel()
+	{
+		// This is unsafe since it returns access to an on-disk structure that this object could modify.
+		try
+		{
+			return LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, _fileSystem, _lazyScheduler);
+		}
+		catch (UsageException e)
+		{
+			// Not expected that we would even need to create the directory.
+			throw Assert.unexpected(e);
+		}
 	}
 
 
