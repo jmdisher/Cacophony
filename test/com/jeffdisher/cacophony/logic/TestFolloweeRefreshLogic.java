@@ -336,8 +336,9 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
+		// Even though we failed to fetch the leaf, so there will be no cached element, we will still pin the record.
 		Assert.assertEquals(0, result.length);
-		Assert.assertEquals(0, testSupport.getAndClearNewElementsPinned().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewElementsPinned().length);
 	}
 
 	@Test
