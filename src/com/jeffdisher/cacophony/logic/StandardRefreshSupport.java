@@ -154,7 +154,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		;
 	}
 	@Override
-	public void addElementToCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
+	public void addRecordForFollowee(IpfsFile elementHash, long publishedSecondsUtc)
+	{
+		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
+			cacheUpdater.newFolloweePostObserved(_followeeKey, elementHash, publishedSecondsUtc);
+		});
+	}
+	@Override
+	public void cacheRecordForFollowee(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
 	{
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 		// We only want to cache the actual element if there is at least an image or leaf.
@@ -163,7 +170,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 		}
 		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			cacheUpdater.addedFolloweePost(_followeeKey, elementHash, recordData, imageHash, audioLeaf, videoLeaf, videoEdgeSize);
+			cacheUpdater.cachedFolloweePost(_followeeKey, elementHash, recordData, imageHash, audioLeaf, videoLeaf, videoEdgeSize);
 		});
 	}
 	@Override

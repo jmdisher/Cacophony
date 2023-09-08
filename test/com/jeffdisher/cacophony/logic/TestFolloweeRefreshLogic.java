@@ -960,7 +960,12 @@ public class TestFolloweeRefreshLogic
 			;
 		}
 		@Override
-		public void addElementToCache(IpfsFile elementHash
+		public void addRecordForFollowee(IpfsFile elementHash, long publishedSecondsUtc)
+		{
+			_newElementsPinned.add(elementHash);
+		}
+		@Override
+		public void cacheRecordForFollowee(IpfsFile elementHash
 				, AbstractRecord recordData
 				, IpfsFile imageHash
 				, IpfsFile audioLeaf
@@ -969,11 +974,10 @@ public class TestFolloweeRefreshLogic
 				, long combinedLeafSizeBytes
 		)
 		{
-			_newElementsPinned.add(elementHash);
-			// We only want to add this to the list if there are leaves to cache.
-			if (combinedLeafSizeBytes > 0L)
+			IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
+			// We only want to cache the actual element if there is at least an image or leaf.
+			if ((null != imageHash) || (null != leafHash))
 			{
-				IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
 				_list.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedLeafSizeBytes));
 			}
 		}

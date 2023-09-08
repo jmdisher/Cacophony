@@ -436,23 +436,24 @@ public class FolloweeRefreshLogic
 				}
 				// We will only proceed to add this to the cache if everything was pinned and there were leaf elements.
 				// (Note that we don't record elements without leaves since we always cache meta-data, anyway)
-				if (shouldProceed && hasLeafElements)
+				if (shouldProceed)
 				{
-					support.logMessage("Successfully pinned " + data.elementCid + "!");
-					if (null != data.thumbnailHash)
+					// Whether or not we pinned any leaves, record that we saw this (in this non-incremental path, we do this after pinning the meta-data).
+					support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
+					if (hasLeafElements)
 					{
-						support.logMessage("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
+						support.logMessage("Successfully pinned " + data.elementCid + "!");
+						if (null != data.thumbnailHash)
+						{
+							support.logMessage("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
+						}
+						if (null != data.leafHash)
+						{
+							support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
+						}
 					}
-					if (null != data.leafHash)
-					{
-						support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
-					}
-					support.addElementToCache(data.elementCid, data.record, data.thumbnailHash, data.audioLeafHash, data.videoLeafHash, data.videoEdgeSize, data.thumbnailSizeBytes + data.leafSizeBytes);
-				}
-				else if (shouldProceed)
-				{
-					// If there are no leaves, we still want to report that this meta-data should be added to the cache.
-					support.addElementToCache(data.elementCid, data.record, null, null, null, 0, 0L);
+					// Notify the support that we pinned the leaves.
+					support.cacheRecordForFollowee(data.elementCid, data.record, data.thumbnailHash, data.audioLeafHash, data.videoLeafHash, data.videoEdgeSize, data.thumbnailSizeBytes + data.leafSizeBytes);
 				}
 				else
 				{
@@ -639,9 +640,18 @@ public class FolloweeRefreshLogic
 		 */
 		IpfsFile getLeafForCachedElement(IpfsFile elementHash);
 		/**
-		 * Requests that an element be added to the cache.  Note that this happens once the entire caching decision has
-		 * been made.  This means that the element MAY have leaf data (image, audio, video, etc) but the parameters can
-		 * be null if they were not cached.  The element, itself, is always cached.
+		 * Notifies that an element has been found in the record list for a user.
+		 * NOTE:  This may or may not be pinned, due to how incremental synchronization works.
+		 * 
+		 * @param elementHash The CID of the AbstractRecord meta-data XML CID.
+		 * @param publishedSecondsUtc The publication time of the record (0L if not known).
+		 */
+		void addRecordForFollowee(IpfsFile elementHash, long publishedSecondsUtc);
+		/**
+		 * Notifies that an encountered record has had a caching decision completed.  This means that minimally the
+		 * elementHash will be pinned and optionally the imageHash, audioLeaf, or videoLeaf have been cached.
+		 * This always happens AFTER addRecordForFollowee() has been called for this element, at some point (might have
+		 * been in a previous run, if this is incremental synchronization).
 		 * 
 		 * @param elementHash The now-pinned meta-data XML CID.
 		 * @param recordData The high-level record data.
@@ -651,7 +661,7 @@ public class FolloweeRefreshLogic
 		 * @param videoEdgeSize The edge size of the video (0 if null).
 		 * @param combinedLeafSizeBytes The combined size of both the image and video, in bytes.
 		 */
-		void addElementToCache(IpfsFile elementHash
+		void cacheRecordForFollowee(IpfsFile elementHash
 				, AbstractRecord recordData
 				, IpfsFile imageHash
 				, IpfsFile audioLeaf

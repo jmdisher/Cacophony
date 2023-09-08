@@ -225,9 +225,31 @@ public class CacheUpdater
 	 * 
 	 * @param publicKey The public key of the followee.
 	 * @param cid The CID of the post added.
-	 * @param record The record which was added at CID.
+	 * @param publishedSecondsUtc The publication time of the record (0L if not known).
 	 */
-	public void addedFolloweePost(IpfsKey publicKey
+	public void newFolloweePostObserved(IpfsKey publicKey
+			, IpfsFile cid
+			, long publishedSecondsUtc
+	)
+	{
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.addFolloweeElement(publicKey, cid, publishedSecondsUtc);
+		}
+	}
+
+	/**
+	 * Called when a followee post is cached (at least the meta-data is cached).
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param cid The CID of the post added.
+	 * @param record The record which was added at CID.
+	 * @param cachedImageOrNull The thumbnail, if cached (otherwise null).
+	 * @param cachedAudioOrNull The audio leaf, if cached (otherwise null).
+	 * @param cachedVideoOrNull The video leaf, if cached (otherwise null).
+	 * @param videoEdgeSize The largest edge size of the video, if not null.
+	 */
+	public void cachedFolloweePost(IpfsKey publicKey
 			, IpfsFile cid
 			, AbstractRecord record
 			, IpfsFile cachedImageOrNull
@@ -236,10 +258,6 @@ public class CacheUpdater
 			, int videoEdgeSize
 	)
 	{
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.addFolloweeElement(publicKey, cid, record.getPublishedSecondsUtc());
-		}
 		if (null != _recordCache)
 		{
 			_recordCache.recordMetaDataPinned(cid

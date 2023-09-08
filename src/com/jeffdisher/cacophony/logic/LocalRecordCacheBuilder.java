@@ -229,6 +229,10 @@ public class LocalRecordCacheBuilder
 	private static void _fetchDataForFolloweeElement(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<AbstractRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
 	{
 		AbstractRecord record = future.get();
+		cacheUpdater.newFolloweePostObserved(followeeKey
+				, cid
+				, record.getPublishedSecondsUtc()
+		);
 		
 		IpfsFile cachedImageOrNull = null;
 		IpfsFile cachedAudioOrNull = null;
@@ -271,7 +275,7 @@ public class LocalRecordCacheBuilder
 				}
 			}
 		}
-		cacheUpdater.addedFolloweePost(followeeKey
+		cacheUpdater.cachedFolloweePost(followeeKey
 				, cid
 				, record
 				, cachedImageOrNull
