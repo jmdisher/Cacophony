@@ -302,6 +302,26 @@ public class TestFolloweeData
 		Assert.assertTrue(latest.getAllKnownFollowees().isEmpty());
 	}
 
+	@Test
+	public void nextBackwardRecord() throws Throwable
+	{
+		FolloweeData data = FolloweeData.createEmpty();
+		data.createNewFollowee(MockKeys.K0, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K1, F2, F3, 0L);
+		
+		byte[] byteArray = _serializeAsOpcodeStream(data);
+		FolloweeData latest = _decodeOpcodeStream(byteArray);
+		Assert.assertNull(latest.getNextBackwardRecord(MockKeys.K0));
+		Assert.assertEquals(F3, latest.getNextBackwardRecord(MockKeys.K1));
+		latest.updateExistingFollowee(MockKeys.K0, F1, F3, 1L);
+		latest.updateExistingFollowee(MockKeys.K1, F2, null, 1L);
+		
+		byteArray = _serializeAsOpcodeStream(latest);
+		latest = _decodeOpcodeStream(byteArray);
+		Assert.assertEquals(F3, latest.getNextBackwardRecord(MockKeys.K0));
+		Assert.assertNull(latest.getNextBackwardRecord(MockKeys.K1));
+	}
+
 
 	private byte[] _serializeAsOpcodeStream(FolloweeData data) throws IOException
 	{

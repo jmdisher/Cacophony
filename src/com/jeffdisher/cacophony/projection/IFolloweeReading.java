@@ -48,4 +48,10 @@ public interface IFolloweeReading
 	 * @return The next followee key we should poll.
 	 */
 	IpfsKey getNextFolloweeToPoll();
+
+	/**
+	 * @param publicKey The key of the followee.
+	 * @return The next target record for incremental synchronization (null if incremental synchronization is complete).
+	 */
+	IpfsFile getNextBackwardRecord(IpfsKey followeeKey);
 }

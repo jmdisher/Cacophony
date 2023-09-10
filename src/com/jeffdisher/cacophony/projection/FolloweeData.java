@@ -318,8 +318,10 @@ public class FolloweeData implements IFolloweeReading
 		Assert.assertTrue(null == match1);
 		IpfsFile match2 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null == match2);
-		// We don't have support for incremental synchronization, yet.
-		Assert.assertTrue(null == nextBackwardRecord);
+		if (null != nextBackwardRecord)
+		{
+			_followeeNextBackwardRecord.put(followeeKey, nextBackwardRecord);
+		}
 		Long match3 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
 		Assert.assertTrue(null == match3);
 		
@@ -351,8 +353,14 @@ public class FolloweeData implements IFolloweeReading
 		_mostRecentFetchMillis = pollMillisToSave;
 		IpfsFile match0 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null != match0);
-		// We don't have support for incremental synchronization, yet.
-		Assert.assertTrue(null == nextBackwardRecord);
+		if (null != nextBackwardRecord)
+		{
+			_followeeNextBackwardRecord.put(followeeKey, nextBackwardRecord);
+		}
+		else
+		{
+			_followeeNextBackwardRecord.remove(followeeKey);
+		}
 		Long match1 = _followeeLastFetchMillis.put(followeeKey, pollMillisToSave);
 		Assert.assertTrue(null != match1);
 		
@@ -409,5 +417,11 @@ public class FolloweeData implements IFolloweeReading
 		{
 			_followeeRefreshConnector.create(elt.getKey(), elt.getValue());
 		}
+	}
+
+	@Override
+	public IpfsFile getNextBackwardRecord(IpfsKey followeeKey)
+	{
+		return _followeeNextBackwardRecord.get(followeeKey);
 	}
 }
