@@ -42,6 +42,7 @@ public class ConcurrentFolloweeRefresher
 	private Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
 	private long _currentCacheUsageInBytes;
 	private FutureResolve _keyResolve;
+	private IpfsFile _followeeNextBackwardRecord;
 
 	private boolean _didRun;
 	private IpfsFile _newRoot;
@@ -120,6 +121,7 @@ public class ConcurrentFolloweeRefresher
 				: access.resolvePublicKey(_followeeKey)
 		;
 		_didSetup = true;
+		_followeeNextBackwardRecord = followees.getNextBackwardRecord(_followeeKey);
 	}
 
 	/**
@@ -146,6 +148,7 @@ public class ConcurrentFolloweeRefresher
 				, _followeeKey
 				, isExistingFollowee
 				, _cachedEntriesForFollowee
+				, _followeeNextBackwardRecord
 		);
 		boolean refreshWasSuccess = false;
 		ILogger log = _logger.logStart("Starting concurrent refresh: " + _followeeKey);
@@ -239,6 +242,8 @@ public class ConcurrentFolloweeRefresher
 		ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 		if (_isSuccess)
 		{
+			// We want to the state the nextBackwardRecord was left in (usually null).
+			IpfsFile nextBackwardRecord = _refreshSupport.getNextBackwardRecord();
 			if (_isDelete)
 			{
 				// Delete the record.
@@ -248,8 +253,6 @@ public class ConcurrentFolloweeRefresher
 			else if (null == _previousRoot)
 			{
 				// Create the new record.
-				// TODO: Add support for incremental synchronization.
-				IpfsFile nextBackwardRecord = null;
 				followees.createNewFollowee(_followeeKey, _newRoot, nextBackwardRecord, currentTimeMillis);
 				_refreshSupport.commitFolloweeChanges(followees);
 			}
@@ -257,8 +260,6 @@ public class ConcurrentFolloweeRefresher
 			{
 				// Update existing record.
 				_refreshSupport.commitFolloweeChanges(followees);
-				// TODO: Add support for incremental synchronization.
-				IpfsFile nextBackwardRecord = null;
 				followees.updateExistingFollowee(_followeeKey, _newRoot, nextBackwardRecord, currentTimeMillis);
 			}
 			// The record cache is null in cases where this is a one-off operation and there is no cache.

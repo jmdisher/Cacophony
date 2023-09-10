@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -50,6 +51,11 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class FolloweeRefreshLogic
 {
+	/**
+	 * When incrementally synchronizing backward, we will fetch 5 records per increment.
+	 */
+	public static final int INCREMENTAL_RECORD_COUNT = 5;
+
 	/**
 	 * Performs a refresh of the cached elements referenced by the given indices.  It can be used to start following,
 	 * refresh an existing followee, and stop following a given user.
@@ -101,22 +107,58 @@ public class FolloweeRefreshLogic
 			IpfsFile newRecommendationsElement = newIndex.recommendationsCid;
 			_refreshRecommendations(support, oldRecommendationsElement, newRecommendationsElement);
 			
+			// Even if we did a normal sync of the user data, if the records didn't change, we will actually try an incremental sync on them.
 			IpfsFile oldRecordsElement = oldIndex.recordsCid;
 			IpfsFile newRecordsElement = newIndex.recordsCid;
-			// We want to break-out the different kinds of changes, here.
 			if (null == oldRecordsElement)
 			{
-				// First sync.
-				_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
+				// First sync - this is the same as the incremental case but we need to pin the records meta-data and select the starting-point.
+				_checkSizeInline(support, "records", newRecordsElement, AbstractRecords.SIZE_LIMIT_BYTES);
+				support.addMetaDataToFollowCache(newRecordsElement).get();
+				
+				AbstractRecords newRecords = _loadRecords(support, newRecordsElement);
+				List<IpfsFile> recordList = newRecords.getRecordList();
+				if (recordList.isEmpty())
+				{
+					// This is just a degenerate case - we are done since the list is empty.
+				}
+				else
+				{
+					// We actually need to do some work so synchronize from the last element, backward.
+					IpfsFile nextBackwardSyncRecord = recordList.get(recordList.size() - 1);
+					_refreshRecordsBackward(support, prefs, newRecordsElement, nextBackwardSyncRecord, currentCacheUsageInBytes, true);
+				}
 			}
 			else if (oldRecordsElement.equals(newRecordsElement))
 			{
-				// Nothing changed - do nothing.
+				// Nothing changed so check if this requires incremental sync.
+				IpfsFile nextBackwardSyncRecord = support.getNextBackwardRecord();
+				if (null != nextBackwardSyncRecord)
+				{
+					_refreshRecordsBackward(support, prefs, newRecordsElement, nextBackwardSyncRecord, currentCacheUsageInBytes, false);
+				}
+				// TODO: If this is null, we currently just assume we are done but we should go back and retry temporary skips, in that case.
 			}
 			else
 			{
-				// Something changed - this is the common case.
-				_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
+				// Normal forward synchronization - we just proceed as we did before incremental synchronization.
+				// Note that this may still be very heavy-weight, if the record list changed a lot since the last attempt, but should cover common use-cases well.
+				IpfsFile nextBackwardSyncRecord = support.getNextBackwardRecord();
+				_refreshRecordsForward(support, prefs, oldRecordsElement, newRecordsElement, nextBackwardSyncRecord, currentCacheUsageInBytes);
+			}
+		}
+		else
+		{
+			// See if we need to continue an incremental sync.
+			IpfsFile nextBackwardSyncRecord = support.getNextBackwardRecord();
+			// TODO: If this is null, we currently just assume we are done but we should go back and retry temporary skips, in that case.
+			
+			// If we have some work to do, do it (otherwise, we are done).
+			if (null != nextBackwardSyncRecord)
+			{
+				AbstractIndex newIndex = _loadIndex(support, newIndexElement);
+				IpfsFile newRecordsElement = newIndex.recordsCid;
+				_refreshRecordsBackward(support, prefs, newRecordsElement, nextBackwardSyncRecord, currentCacheUsageInBytes, false);
 			}
 		}
 	}
@@ -194,17 +236,18 @@ public class FolloweeRefreshLogic
 		}
 	}
 
-	private static void _refreshRecords(IRefreshSupport support
+	// NOTE:  Refreshing forward can fail with exceptions since that isn't expected.
+	private static void _refreshRecordsForward(IRefreshSupport support
 			, PrefsData prefs
 			, IpfsFile oldRecordsElement
 			, IpfsFile newRecordsElement
+			, IpfsFile nextBackwardSyncRecord
 			, long currentCacheUsageInBytes
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
-		if (null != oldRecordsElement)
-		{
-			support.deferredRemoveMetaDataFromFollowCache(oldRecordsElement);
-		}
+		// In this case, we already made sure this isn't the first call.
+		Assert.assertTrue(null != oldRecordsElement);
+		support.deferredRemoveMetaDataFromFollowCache(oldRecordsElement);
 		if (null != newRecordsElement)
 		{
 			// Make sure that this isn't too big.
@@ -223,48 +266,64 @@ public class FolloweeRefreshLogic
 		removedRecords.addAll(oldRecordSet);
 		removedRecords.removeAll(newRecordList);
 		
+		// If there is an incremental sync in progress, we need to create a set of records which have been pinned.
+		Set<IpfsFile> pinnedRecords = new HashSet<>();
+		pinnedRecords.addAll(oldRecordSet);
+		if (null != nextBackwardSyncRecord)
+		{
+			ListIterator<IpfsFile> iterator = _prepareBackwardIterator(oldRecords, nextBackwardSyncRecord);
+			// Now, walk backward, removing from the pinned set - note that the first "previous()" call will return nextBackwardSyncRecord.
+			while (iterator.hasPrevious())
+			{
+				pinnedRecords.remove(iterator.previous());
+			}
+		}
+		
 		// Process the removed set, adding them to the meta-data to unpin collection and adding any cached leaves to the files to unpin collection.
 		for (IpfsFile removedRecord : removedRecords)
 		{
-			AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
-			IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
-			IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
-			IpfsFile audioHash = null;
-			IpfsFile videoHash = null;
-			int videoEdgeSize = 0;
-			if (null != leafHash)
+			if (pinnedRecords.contains(removedRecord))
 			{
-				// We need to find out if the leaf is audio or video, so we can correctly report it.
-				for (Leaf leaf : record.getVideoExtension())
+				AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
+				IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
+				IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
+				IpfsFile audioHash = null;
+				IpfsFile videoHash = null;
+				int videoEdgeSize = 0;
+				if (null != leafHash)
 				{
-					if (leafHash.equals(leaf.cid()))
+					// We need to find out if the leaf is audio or video, so we can correctly report it.
+					for (Leaf leaf : record.getVideoExtension())
 					{
-						if (leaf.mime().startsWith("video/"))
+						if (leafHash.equals(leaf.cid()))
 						{
-							videoHash = leafHash;
-							videoEdgeSize = Math.max(leaf.width(), leaf.height());
+							if (leaf.mime().startsWith("video/"))
+							{
+								videoHash = leafHash;
+								videoEdgeSize = Math.max(leaf.width(), leaf.height());
+							}
+							else
+							{
+								Assert.assertTrue(leaf.mime().startsWith("audio/"));
+								audioHash = leafHash;
+							}
+							break;
 						}
-						else
-						{
-							Assert.assertTrue(leaf.mime().startsWith("audio/"));
-							audioHash = leafHash;
-						}
-						break;
 					}
+					// We must have matched something.
+					Assert.assertTrue((null != videoHash) || (null != audioHash));
 				}
-				// We must have matched something.
-				Assert.assertTrue((null != videoHash) || (null != audioHash));
+				support.deferredRemoveMetaDataFromFollowCache(removedRecord);
+				if (null != imageHash)
+				{
+					support.deferredRemoveFileFromFollowCache(imageHash);
+				}
+				if (null != leafHash)
+				{
+					support.deferredRemoveFileFromFollowCache(leafHash);
+				}
+				support.removeElementFromCache(removedRecord, record, imageHash, audioHash, videoHash, videoEdgeSize);
 			}
-			support.deferredRemoveMetaDataFromFollowCache(removedRecord);
-			if (null != imageHash)
-			{
-				support.deferredRemoveFileFromFollowCache(imageHash);
-			}
-			if (null != leafHash)
-			{
-				support.deferredRemoveFileFromFollowCache(leafHash);
-			}
-			support.removeElementFromCache(removedRecord, record, imageHash, audioHash, videoHash, videoEdgeSize);
 			support.removeRecordForFollowee(removedRecord);
 		}
 		
@@ -288,13 +347,126 @@ public class FolloweeRefreshLogic
 			}
 		}
 		
-		_finishStartedRecordSync(support, prefs, newRecordsBeingProcessedInitial, currentCacheUsageInBytes);
+		// Complete the rest of the work related to this.
+		// NOTE:  We always want to add the newest element whether this is a new followee or a refreshed one, so handle that as a special case.
+		_finishStartedRecordSync(support, prefs, null, null, newRecordsBeingProcessedInitial, currentCacheUsageInBytes, true, true);
+		
+		// It is possible that we are synchronizing forward despite there still being backward synchronization information so make sure we didn't break it.
+		if (null != nextBackwardSyncRecord)
+		{
+			// Check that this is still in the new list.
+			Set<IpfsFile> newRecordSet = new HashSet<>(newRecords.getRecordList());
+			boolean isStillPresent = newRecordSet.contains(nextBackwardSyncRecord);
+			if (!isStillPresent)
+			{
+				// The record is missing so walk backward in the old list and check each of those until we find a match, then we can use that as the next backward sync record.
+				ListIterator<IpfsFile> iterator = _prepareBackwardIterator(oldRecords, nextBackwardSyncRecord);
+				// Now, walk backward until we find a match - note that the first "previous()" call will return nextBackwardSyncRecord.
+				while ((null != nextBackwardSyncRecord) && !newRecordSet.contains(nextBackwardSyncRecord))
+				{
+					nextBackwardSyncRecord = iterator.hasPrevious()
+							? iterator.previous()
+							: null
+					;
+				}
+				// It is possible that we walked off the list but we can write this back, either way.
+				support.setNextBackwardRecord(nextBackwardSyncRecord);
+			}
+		}
+	}
+
+	// NOTE:  We have no way of safely failing in the backward sync so we need to handle the exceptions by recording skipped elements.
+	private static void _refreshRecordsBackward(IRefreshSupport support
+			, PrefsData prefs
+			, IpfsFile newRecordsElement
+			, IpfsFile nextBackwardSyncRecord
+			, long currentCacheUsageInBytes
+			, boolean isFirstSync
+	)
+	{
+		AbstractRecords newRecords;
+		try
+		{
+			newRecords = _loadRecords(support, newRecordsElement);
+		}
+		catch (FailedDeserializationException e)
+		{
+			// This can't happen since we already pinned this.
+			throw Assert.unexpected(e);
+		}
+		catch (IpfsConnectionException e)
+		{
+			// This means a problem with the node, so just do nothing and we will retry, later.
+			support.logMessage("Failed to load records for backward sync: " + e.getLocalizedMessage());
+			newRecords = null;
+		}
+		
+		if (null != newRecords)
+		{
+			// We want to notify that we have seen everything, if this is the first call.
+			if (isFirstSync)
+			{
+				for (IpfsFile cid : newRecords.getRecordList())
+				{
+					// We don't know the publish time so we return 0.
+					support.addRecordForFollowee(cid, 0L);
+				}
+			}
+			ListIterator<IpfsFile> iterator = _prepareBackwardIterator(newRecords, nextBackwardSyncRecord);
+			// Start walking backward - the first previous() call will return nextBackwardSyncRecord, which is our first candidate.
+			int remaining = INCREMENTAL_RECORD_COUNT;
+			List<RawElementData> newRecordsBeingProcessedInitial = new ArrayList<>();
+			while ((remaining > 0) && iterator.hasPrevious())
+			{
+				IpfsFile recordToSync = iterator.previous();
+				remaining -= 1;
+				
+				// Start the initial sync for this record.
+				RawElementData data = new RawElementData();
+				data.elementCid = recordToSync;
+				data.futureSize = support.getSizeInBytes(recordToSync);
+				newRecordsBeingProcessedInitial.add(data);
+			}
+			
+			// Complete the rest of the work related to this.
+			List<IpfsFile> permanentFailures = new ArrayList<>();
+			List<IpfsFile> temporaryFailures = new ArrayList<>();
+			try
+			{
+				// Note that we built this list by walking backward, so it is newest-first, but the core algorithm assumes oldest-first.
+				Collections.reverse(newRecordsBeingProcessedInitial);
+				_finishStartedRecordSync(support, prefs, permanentFailures, temporaryFailures, newRecordsBeingProcessedInitial, currentCacheUsageInBytes, isFirstSync, false);
+			}
+			catch (SizeConstraintException | FailedDeserializationException | IpfsConnectionException e)
+			{
+				// Exceptions are only thrown in the case where we DON'T pass in the failure lists.
+				throw Assert.unexpected(e);
+			}
+			
+			IpfsFile updatedNextRecord = iterator.hasPrevious()
+					? iterator.previous()
+					: null
+			;
+			support.setNextBackwardRecord(updatedNextRecord);
+			for (IpfsFile failure : permanentFailures)
+			{
+				support.addSkippedRecord(failure, true);
+			}
+			for (IpfsFile failure : temporaryFailures)
+			{
+				support.addSkippedRecord(failure, false);
+			}
+		}
 	}
 
 	private static void _finishStartedRecordSync(IRefreshSupport support
 			, PrefsData prefs
+			, List<IpfsFile> out_permanentFailures
+			, List<IpfsFile> out_temporaryFailures
 			, List<RawElementData> oldestFirstNewRecordsBeingProcessedInitial
 			, long currentCacheUsageInBytes
+			, boolean forceSelectFirstElement
+			, boolean shouldReportRecordFound
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
 		// Now, wait for all the sizes to come back and only pin elements which are below our size threshold.
@@ -303,17 +475,35 @@ public class FolloweeRefreshLogic
 		for (RawElementData data : oldestFirstNewRecordsBeingProcessedInitial)
 		{
 			// A connection exception here will cause refresh to fail.
-			data.size = data.futureSize.get();
-			// If this element is too big, we won't pin it or consider caching it (this is NOT refresh failure).
-			// Note that this means any path which directly reads this element should check the size to see if it is present.
-			if (data.size <= AbstractRecord.SIZE_LIMIT_BYTES)
+			try
 			{
-				data.futureElementPin = support.addMetaDataToFollowCache(data.elementCid);
-				newRecordsBeingProcessedSizeChecked.add(data);
+				data.size = data.futureSize.get();
+				// If this element is too big, we won't pin it or consider caching it (this is NOT refresh failure).
+				// Note that this means any path which directly reads this element should check the size to see if it is present.
+				if (data.size <= AbstractRecord.SIZE_LIMIT_BYTES)
+				{
+					data.futureElementPin = support.addMetaDataToFollowCache(data.elementCid);
+					newRecordsBeingProcessedSizeChecked.add(data);
+				}
+				else if (null != out_permanentFailures)
+				{
+					out_permanentFailures.add(data.elementCid);
+				}
+				else
+				{
+					throw new SizeConstraintException("record", data.size, AbstractRecord.SIZE_LIMIT_BYTES);
+				}
 			}
-			else
+			catch (IpfsConnectionException e)
 			{
-				throw new SizeConstraintException("record", data.size, AbstractRecord.SIZE_LIMIT_BYTES);
+				if (null != out_temporaryFailures)
+				{
+					out_temporaryFailures.add(data.elementCid);
+				}
+				else
+				{
+					throw e;
+				}
 			}
 		}
 		oldestFirstNewRecordsBeingProcessedInitial = null;
@@ -324,13 +514,45 @@ public class FolloweeRefreshLogic
 		for (RawElementData data : newRecordsBeingProcessedSizeChecked)
 		{
 			// A connection exception here will cause refresh to fail.
-			data.futureElementPin.get();
-			data.futureElementPin = null;
-			// We pinned this so the read should be pretty-well instantaneous.
-			data.record = support.loadCached(data.elementCid, AbstractRecord.DESERIALIZER).get();
-			// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
-			_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
-			newRecordsBeingProcessedCalculatingLeaves.add(data);
+			try
+			{
+				data.futureElementPin.get();
+				data.futureElementPin = null;
+				// We pinned this so the read should be pretty-well instantaneous.
+				try
+				{
+					data.record = support.loadCached(data.elementCid, AbstractRecord.DESERIALIZER).get();
+				}
+				catch (FailedDeserializationException e)
+				{
+					if (null != out_permanentFailures)
+					{
+						support.deferredRemoveMetaDataFromFollowCache(data.elementCid);
+						out_permanentFailures.add(data.elementCid);
+					}
+					else
+					{
+						throw e;
+					}
+				}
+				if (null != data.record)
+				{
+					// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
+					_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
+					newRecordsBeingProcessedCalculatingLeaves.add(data);
+				}
+			}
+			catch (IpfsConnectionException e)
+			{
+				if (null != out_temporaryFailures)
+				{
+					out_temporaryFailures.add(data.elementCid);
+				}
+				else
+				{
+					throw e;
+				}
+			}
 		}
 		newRecordsBeingProcessedSizeChecked = null;
 		
@@ -403,7 +625,7 @@ public class FolloweeRefreshLogic
 		}
 		newRecordsBeingProcessedCalculatingLeaves = null;
 		
-		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(prefs, currentCacheUsageInBytes, candidates);
+		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(prefs, currentCacheUsageInBytes, forceSelectFirstElement, candidates);
 		candidates = null;
 		
 		// We can now walk the final selection and pin all the relevant elements.
@@ -468,7 +690,10 @@ public class FolloweeRefreshLogic
 			}
 			
 			// Whether or not we pinned any leaves, record that we saw this (in this non-incremental path, we do this after pinning the meta-data).
-			support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
+			if (shouldReportRecordFound)
+			{
+				support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
+			}
 			support.logMessage("Successfully pinned attachments for record " + data.elementCid + "!");
 			
 			// We will only proceed to add leaves to the cache if everything was pinned and there were leaf elements.
@@ -508,7 +733,11 @@ public class FolloweeRefreshLogic
 		}
 	}
 
-	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(PrefsData prefs, long currentCacheUsageInBytes, List<CacheAlgorithm.Candidate<RawElementData>> oldestFirstCandidates)
+	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(PrefsData prefs
+			, long currentCacheUsageInBytes
+			, boolean forceSelectFirstElement
+			, List<CacheAlgorithm.Candidate<RawElementData>> oldestFirstCandidates
+	)
 	{
 		// NOTE:  The list we are given and the list we return should be in the order of how they are specified in the
 		// user's meta-data entry, but those are oldest-first.  Since our cache algorithm favours earlier elements, and
@@ -517,12 +746,11 @@ public class FolloweeRefreshLogic
 		List<CacheAlgorithm.Candidate<RawElementData>> newestFirstCandidates = new ArrayList<>(oldestFirstCandidates);
 		Collections.reverse(newestFirstCandidates);
 		
-		// NOTE:  We always want to add the newest element whether this is a new followee or a refreshed one, so handle that as a special case.
 		// Also remember that we need to add this size to the cache since it counts as already being selected.
 		// TODO:  Refactor this special logic into some kind of pluggable "cache strategy" for more reliable testing and more exotic performance considerations.
 		long effectiveCacheUsedBytes = currentCacheUsageInBytes;
 		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = new ArrayList<>();
-		if (newestFirstCandidates.size() > 0)
+		if (forceSelectFirstElement && (newestFirstCandidates.size() > 0))
 		{
 			CacheAlgorithm.Candidate<RawElementData> firstElement = newestFirstCandidates.remove(0);
 			effectiveCacheUsedBytes += firstElement.byteSize();
@@ -594,6 +822,20 @@ public class FolloweeRefreshLogic
 		{
 			throw new SizeConstraintException(context, size, sizeLimit);
 		}
+	}
+
+	/**
+	 * NOTE:  The returned iterator will return nextBackwardSyncRecord on next previous() call.
+	 */
+	private static ListIterator<IpfsFile> _prepareBackwardIterator(AbstractRecords records, IpfsFile nextBackwardSyncRecord)
+	{
+		ListIterator<IpfsFile> iterator = records.getRecordList().listIterator();
+		// Find the old element and then walk backward (this can't fail since we already selected from this list, before).
+		while (!iterator.next().equals(nextBackwardSyncRecord))
+		{
+			// Just advance.
+		}
+		return iterator;
 	}
 
 
@@ -732,5 +974,21 @@ public class FolloweeRefreshLogic
 				, IpfsFile videoHash
 				, int videoEdgeSize
 		);
+		/**
+		 * @return The next backward record of the followee, for incremental sync (usually null).
+		 */
+		IpfsFile getNextBackwardRecord();
+		/**
+		 * Updates the next backward record for the followee (setting null will conclude incremental synchronization).
+		 * @param nextBackwardSyncRecord The new record CID for the next incremental sync start (can be null).
+		 */
+		void setNextBackwardRecord(IpfsFile nextBackwardSyncRecord);
+		/**
+		 * Records that a given record failed to be loaded during incremental synchronization.
+		 * 
+		 * @param recordCid The CID of the AbstractRecord.
+		 * @param isPermanent True if this is a permanent failure or false if it could be retried in the future.
+		 */
+		void addSkippedRecord(IpfsFile recordCid, boolean isPermanent);
 	}
 }

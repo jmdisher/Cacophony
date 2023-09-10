@@ -36,12 +36,17 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 	private final List<Consumer<CacheUpdater>> _pendingCacheUpdates;
+	
+	private IpfsFile _followeeNextBackwardRecord;
+	private final List<IpfsFile> _temporarilySkippedRecords;
+	private final List<IpfsFile> _permanentlySkippedRecords;
 
 	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
 			, boolean isExistingFollowee
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
+			, IpfsFile followeeNextBackwardRecord
 	)
 	{
 		Assert.assertTrue(null != logger);
@@ -58,6 +63,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
 		_pendingCacheUpdates = new ArrayList<>();
+		
+		_followeeNextBackwardRecord = followeeNextBackwardRecord;
+		_temporarilySkippedRecords = new ArrayList<>();
+		_permanentlySkippedRecords = new ArrayList<>();
 	}
 
 	public void commitFolloweeChanges(FolloweeData followees)
@@ -69,6 +78,16 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		for (FollowingCacheElement elt : _elementsToAddToCache)
 		{
 			followees.addElement(_followeeKey, elt);
+		}
+		
+		// Write-back the failure data.
+		for (IpfsFile failure : _permanentlySkippedRecords)
+		{
+			followees.addSkippedRecord(_followeeKey, failure, true);
+		}
+		for (IpfsFile failure : _temporarilySkippedRecords)
+		{
+			followees.addSkippedRecord(_followeeKey, failure, false);
 		}
 	}
 
@@ -187,5 +206,27 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
 			cacheUpdater.removedFolloweePost(_followeeKey, elementHash, recordData, imageHash, audioHash, videoHash, videoEdgeSize);
 		});
+	}
+	@Override
+	public IpfsFile getNextBackwardRecord()
+	{
+		return _followeeNextBackwardRecord;
+	}
+	@Override
+	public void setNextBackwardRecord(IpfsFile nextBackwardSyncRecord)
+	{
+		_followeeNextBackwardRecord = nextBackwardSyncRecord;
+	}
+	@Override
+	public void addSkippedRecord(IpfsFile recordCid, boolean isPermanent)
+	{
+		if (isPermanent)
+		{
+			_permanentlySkippedRecords.add(recordCid);
+		}
+		else
+		{
+			_temporarilySkippedRecords.add(recordCid);
+		}
 	}
 }

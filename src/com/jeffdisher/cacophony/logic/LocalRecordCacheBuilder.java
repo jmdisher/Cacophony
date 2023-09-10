@@ -158,7 +158,7 @@ public class LocalRecordCacheBuilder
 			}
 			if (null != followeeRecordsElt)
 			{
-				_populateElementMapFromFolloweeUserRoot(access, cacheUpdater, future.publicKey, elementsCachedForUser, followeeRecordsElt);
+				_populateElementMapFromFolloweeUserRoot(access, cacheUpdater, future.publicKey, elementsCachedForUser, followeeRecordsElt, followees.getNextBackwardRecord(future.publicKey));
 			}
 		}
 	}
@@ -194,20 +194,35 @@ public class LocalRecordCacheBuilder
 		}
 	}
 
-	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, AbstractRecords records) throws IpfsConnectionException
+	private static void _populateElementMapFromFolloweeUserRoot(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, AbstractRecords records, IpfsFile nextBackwardRecord) throws IpfsConnectionException
 	{
 		// We want to distinguish between records which are cached for this user and which ones aren't.
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
 		//  displayed for all of them - we will currently ignore that case and only add the last entry).
 		List<IpfsFile> cids = records.getRecordList();
 		List<FutureRead<AbstractRecord>> loads = new ArrayList<>();
+		// Note that we will limit this list if the followee is being incrementally synchronized, still.
+		boolean isWaitingForBackwardMatch = (null != nextBackwardRecord);
 		for (IpfsFile cid : cids)
 		{
-			// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
-			if (access.getSizeInBytes(cid).get() < AbstractRecord.SIZE_LIMIT_BYTES)
+			if (isWaitingForBackwardMatch)
 			{
-				FutureRead<AbstractRecord> future = access.loadCached(cid, AbstractRecord.DESERIALIZER);
-				loads.add(future);
+				// This isn't something we have fetched so just notify that we have observed it and move on.
+				cacheUpdater.newFolloweePostObserved(followeeKey
+						, cid
+						, 0L
+				);
+				// See if this is the first one we want to synchronize (it will be the last one we can't fetch).
+				isWaitingForBackwardMatch = !nextBackwardRecord.equals(cid);
+			}
+			else
+			{
+				// Make sure that this isn't too big (we could adapt the checker for this, since it isn't pinned, but this is more explicit).
+				if (access.getSizeInBytes(cid).get() < AbstractRecord.SIZE_LIMIT_BYTES)
+				{
+					FutureRead<AbstractRecord> future = access.loadCached(cid, AbstractRecord.DESERIALIZER);
+					loads.add(future);
+				}
 			}
 		}
 		Iterator<IpfsFile> cidIterator = cids.iterator();

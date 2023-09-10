@@ -315,20 +315,15 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		
-		// We expect a failure if we can't pin a meta-data element for network reasons.
+		// Now that we use incremental sync, this won't fail to synchronize records, it will just mark them as temporary skips.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		// We expect a failure if we can't pin a meta-data element for network reasons.
-		boolean didFail = false;
-		try
-		{
-			FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
-		}
-		catch (IpfsConnectionException e)
-		{
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
-		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		
+		// Verify that this record was temporarily skipped.
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(1, testSupport.temporarySkips.size());
+		Assert.assertEquals(records[0], testSupport.temporarySkips.get(0));
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
 	}
@@ -368,6 +363,9 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		// This should just cause us to skip the leaves, but still sync everything.
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
 	}
 
 	@Test
@@ -590,6 +588,294 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
 	}
 
+	@Test
+	public void startFollowIncremental() throws Throwable
+	{
+		// We want to create a user which will take 2 incremental synchronizations to begin following.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		// It synchronizes 5 at a time so add 6, some with leaves, some without.
+		index = _addElementToStream(data, index, _storeRecord(data, "post0", new byte[] {0, 0}, new byte[] {1, 0}));
+		index = _addElementToStream(data, index, _storeRecord(data, "post1", null, new byte[] {1, 1}));
+		index = _addElementToStream(data, index, _storeRecord(data, "post2", null, null));
+		index = _addElementToStream(data, index, _storeRecord(data, "post3", new byte[] {0, 3}, null));
+		index = _addElementToStream(data, index, _storeRecord(data, "post4", new byte[] {0, 4}, new byte[] {1, 4}));
+		index = _addElementToStream(data, index, _storeRecord(data, "post5", new byte[] {0, 5}, new byte[] {1, 5}));
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		oldIndexElement = newIndexElement;
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see only the 4, since post2 has no attachments.
+		Assert.assertEquals(4, result.length);
+		// We should see all the records observed, but only the 5 limit pinned.
+		Assert.assertEquals(6, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
+		
+		// Refresh again to make sure that we get the remainder.
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(5, result.length);
+		// We should see nothing new observed but the 1 new element pinned.
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+	}
+
+	@Test
+	public void startFollowBrokenRecord() throws Throwable
+	{
+		// We want to create a user which will take 2 incremental synchronizations to begin following.
+		// We will then break the references to one of the elements as permanent, another as temporary, and make sure we see them handled that way.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		// It synchronizes 5 at a time so add 8, such that we can break a bunch in different ways, for both increments
+		byte[] thumb0 = new byte[] {0, 0};
+		IpfsFile post0 = _storeRecord(data, "post0", thumb0, new byte[] {1, 0});
+		IpfsFile post1 = _storeRecord(data, "post1", null, new byte[] {1, 1});
+		IpfsFile post2 = _storeRecord(data, "post2", null, null);
+		IpfsFile post3 = _storeRecord(data, "post3", new byte[] {0, 3}, null);
+		byte[] video4 = new byte[] {1, 4};
+		IpfsFile post4 = _storeRecord(data, "post4", new byte[] {0, 4}, video4);
+		IpfsFile post5 = _storeRecord(data, "post5", new byte[] {0, 5}, new byte[] {1, 5});
+		IpfsFile post6 = _storeRecord(data, "post6", null, new byte[] {1, 6});
+		IpfsFile post7 = _storeRecord(data, "post7", null, null);
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post3);
+		index = _addElementToStream(data, index, post4);
+		index = _addElementToStream(data, index, post5);
+		index = _addElementToStream(data, index, post6);
+		index = _addElementToStream(data, index, post7);
+		
+		// Break a bunch of records and leaves.
+		data.remove(MockSingleNode.generateHash(thumb0));
+		data.remove(post1);
+		data.put(post2, new byte[] {1,1,1});
+		data.remove(MockSingleNode.generateHash(video4));
+		data.remove(post5);
+		data.put(post7, new byte[] {1,1,1});
+		
+		// Now do both parts of the sync.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		oldIndexElement = newIndexElement;
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see only the 2, since only post6 and post3 are well-formed from the initial sync.
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post6, result[1].elementHash());
+		// We should see all the records observed, but only the ones we succeeded in reading pinned.
+		Assert.assertEquals(8, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(3, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		// Permanent skip of post7 since it is corrupted.
+		Assert.assertEquals(1, testSupport.permanentSkips.size());
+		Assert.assertEquals(post7, testSupport.permanentSkips.get(0));
+		// Temporary skip of post5 since it is missing.
+		Assert.assertEquals(1, testSupport.temporarySkips.size());
+		Assert.assertEquals(post5, testSupport.temporarySkips.get(0));
+		
+		// Refresh again to make sure that we get the remainder.
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post6, result[1].elementHash());
+		
+		// We should see nothing new observed but the 1 new element pinned.
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		// Permanent skip of post2 since it is corrupted.
+		Assert.assertEquals(2, testSupport.permanentSkips.size());
+		Assert.assertEquals(post2, testSupport.permanentSkips.get(1));
+		// Temporary skip of post1 since it is missing.
+		Assert.assertEquals(2, testSupport.temporarySkips.size());
+		Assert.assertEquals(post1, testSupport.temporarySkips.get(1));
+	}
+
+	@Test
+	public void startFollowAddRemove() throws Throwable
+	{
+		// We want to create a user which will take 2 incremental synchronizations to begin following.
+		// We will then add and remove some records and resync to make sure the result is as expected.
+		// Add a bunch of posts, do the initial sync, then add another and remove a synced and not yet synced element.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		IpfsFile post0 = _storeRecord(data, "post0", new byte[] {0, 0}, new byte[] {1, 0});
+		IpfsFile post1 = _storeRecord(data, "post1", null, new byte[] {1, 1});
+		IpfsFile post2 = _storeRecord(data, "post2", null, null);
+		IpfsFile post3 = _storeRecord(data, "post3", new byte[] {0, 3}, null);
+		IpfsFile post4 = _storeRecord(data, "post4", new byte[] {0, 4}, new byte[] {1, 4});
+		IpfsFile post5 = _storeRecord(data, "post5", new byte[] {0, 5}, new byte[] {1, 5});
+		IpfsFile post6 = _storeRecord(data, "post6", null, new byte[] {1, 6});
+		IpfsFile post7 = _storeRecord(data, "post7", null, null);
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post3);
+		index = _addElementToStream(data, index, post4);
+		index = _addElementToStream(data, index, post5);
+		index = _addElementToStream(data, index, post6);
+		
+		// Now do the first part of the sync.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		oldIndexElement = newIndexElement;
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see only the 4, since post2 has no attachments.
+		Assert.assertEquals(4, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post5, result[2].elementHash());
+		Assert.assertEquals(post6, result[3].elementHash());
+		// We should see all the records observed, but only the 5 limit pinned.
+		Assert.assertEquals(7, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Remove 0 and 6, then add 7 (1 will be the pivot so we will make that a different test).
+		index = _removeElementFromStream(data, index, post0);
+		index = _removeElementFromStream(data, index, post6);
+		index = _addElementToStream(data, index, post7);
+		
+		// In the next refresh, this will be a forward refresh, not yet picking up element 1.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		// The list will now just have 3 elements, since we removed post6 and post7 has no attachments.
+		Assert.assertEquals(3, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post5, result[2].elementHash());
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(2, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Refresh again to make sure that we get the remainder.
+		oldIndexElement = newIndexElement;
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(4, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post5, result[2].elementHash());
+		Assert.assertEquals(post1, result[3].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+	}
+
+	@Test
+	public void startFollowRemovePivot() throws Throwable
+	{
+		// We want to create a user which will take 2 incremental synchronizations to begin following.
+		// We will then remove the pivot point and make sure that the synchronization can handle that.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		IpfsFile post0 = _storeRecord(data, "post0", new byte[] {0, 0}, new byte[] {1, 0});
+		IpfsFile post1 = _storeRecord(data, "post1", null, new byte[] {1, 1});
+		IpfsFile post2 = _storeRecord(data, "post2", null, null);
+		IpfsFile post3 = _storeRecord(data, "post3", new byte[] {0, 3}, null);
+		IpfsFile post4 = _storeRecord(data, "post4", new byte[] {0, 4}, new byte[] {1, 4});
+		IpfsFile post5 = _storeRecord(data, "post5", new byte[] {0, 5}, new byte[] {1, 5});
+		IpfsFile post6 = _storeRecord(data, "post6", null, new byte[] {1, 6});
+		IpfsFile post7 = _storeRecord(data, "post7", null, null);
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post3);
+		index = _addElementToStream(data, index, post4);
+		index = _addElementToStream(data, index, post5);
+		index = _addElementToStream(data, index, post6);
+		index = _addElementToStream(data, index, post7);
+		
+		// Do the first step in the sync.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		oldIndexElement = newIndexElement;
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see only the 4, since post7 has no attachments.
+		Assert.assertEquals(4, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post5, result[2].elementHash());
+		Assert.assertEquals(post6, result[3].elementHash());
+		// We should see all the records observed, but only the 5 limit pinned.
+		Assert.assertEquals(8, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Remove 2 (the pivot) and verify that the incremental sync figures this out.
+		index = _removeElementFromStream(data, index, post2);
+		
+		// In the next refresh, this will be a forward refresh, not yet picking up element 1 or 0.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		// The list will be unchanged.
+		Assert.assertEquals(4, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post5, result[2].elementHash());
+		Assert.assertEquals(post6, result[3].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(1, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Refresh again to make sure that we get the remainder and that the pivot disappearance was handled.
+		oldIndexElement = newIndexElement;
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(6, result.length);
+		Assert.assertEquals(post3, result[0].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post5, result[2].elementHash());
+		Assert.assertEquals(post6, result[3].elementHash());
+		Assert.assertEquals(post0, result[4].elementHash());
+		Assert.assertEquals(post1, result[5].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(2, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+	}
+
 
 	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
@@ -795,6 +1081,9 @@ public class TestFolloweeRefreshLogic
 		
 		// Miscellaneous other checks.
 		public String lastName;
+		public IpfsFile nextBackwardSyncRecord;
+		public List<IpfsFile> permanentSkips = new ArrayList<>();
+		public List<IpfsFile> temporarySkips = new ArrayList<>();
 		
 		public TestSupport(Map<IpfsFile, byte[]> upstreamData, FollowingCacheElement[] initial)
 		{
@@ -1060,6 +1349,28 @@ public class TestFolloweeRefreshLogic
 			}
 			Assert.assertTrue(match >= 0);
 			_list.remove(match);
+		}
+		@Override
+		public IpfsFile getNextBackwardRecord()
+		{
+			return this.nextBackwardSyncRecord;
+		}
+		@Override
+		public void setNextBackwardRecord(IpfsFile nextBackwardSyncRecord)
+		{
+			this.nextBackwardSyncRecord = nextBackwardSyncRecord;
+		}
+		@Override
+		public void addSkippedRecord(IpfsFile recordCid, boolean isPermanent)
+		{
+			if (isPermanent)
+			{
+				this.permanentSkips.add(recordCid);
+			}
+			else
+			{
+				this.temporarySkips.add(recordCid);
+			}
 		}
 	}
 }
