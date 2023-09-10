@@ -103,7 +103,21 @@ public class FolloweeRefreshLogic
 			
 			IpfsFile oldRecordsElement = oldIndex.recordsCid;
 			IpfsFile newRecordsElement = newIndex.recordsCid;
-			_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
+			// We want to break-out the different kinds of changes, here.
+			if (null == oldRecordsElement)
+			{
+				// First sync.
+				_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
+			}
+			else if (oldRecordsElement.equals(newRecordsElement))
+			{
+				// Nothing changed - do nothing.
+			}
+			else
+			{
+				// Something changed - this is the common case.
+				_refreshRecords(support, prefs, oldRecordsElement, newRecordsElement, currentCacheUsageInBytes);
+			}
 		}
 	}
 
@@ -187,305 +201,310 @@ public class FolloweeRefreshLogic
 			, long currentCacheUsageInBytes
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
-		// Check if the root changed.
-		if ((null == oldRecordsElement) || !oldRecordsElement.equals(newRecordsElement))
+		if (null != oldRecordsElement)
 		{
-			if (null != oldRecordsElement)
-			{
-				support.deferredRemoveMetaDataFromFollowCache(oldRecordsElement);
-			}
-			if (null != newRecordsElement)
-			{
-				// Make sure that this isn't too big.
-				_checkSizeInline(support, "records", newRecordsElement, AbstractRecords.SIZE_LIMIT_BYTES);
-				
-				support.addMetaDataToFollowCache(newRecordsElement).get();
-			}
-			AbstractRecords oldRecords = _loadRecords(support, oldRecordsElement);
-			AbstractRecords newRecords = _loadRecords(support, newRecordsElement);
+			support.deferredRemoveMetaDataFromFollowCache(oldRecordsElement);
+		}
+		if (null != newRecordsElement)
+		{
+			// Make sure that this isn't too big.
+			_checkSizeInline(support, "records", newRecordsElement, AbstractRecords.SIZE_LIMIT_BYTES);
 			
-			// The records is the complex case since we need to walk the record lists, compare them (since it may have
-			// grown or shrunk) and then determine what actual data to cache from within the records.
-			Set<IpfsFile> oldRecordSet = oldRecords.getRecordList().stream().collect(Collectors.toSet());
-			List<IpfsFile> newRecordList = newRecords.getRecordList().stream().collect(Collectors.toList());
-			Set<IpfsFile> removedRecords = new HashSet<>();
-			removedRecords.addAll(oldRecordSet);
-			removedRecords.removeAll(newRecordList);
-			
-			// Process the removed set, adding them to the meta-data to unpin collection and adding any cached leaves to the files to unpin collection.
-			for (IpfsFile removedRecord : removedRecords)
+			support.addMetaDataToFollowCache(newRecordsElement).get();
+		}
+		AbstractRecords oldRecords = _loadRecords(support, oldRecordsElement);
+		AbstractRecords newRecords = _loadRecords(support, newRecordsElement);
+		
+		// The records is the complex case since we need to walk the record lists, compare them (since it may have
+		// grown or shrunk) and then determine what actual data to cache from within the records.
+		Set<IpfsFile> oldRecordSet = oldRecords.getRecordList().stream().collect(Collectors.toSet());
+		List<IpfsFile> newRecordList = newRecords.getRecordList().stream().collect(Collectors.toList());
+		Set<IpfsFile> removedRecords = new HashSet<>();
+		removedRecords.addAll(oldRecordSet);
+		removedRecords.removeAll(newRecordList);
+		
+		// Process the removed set, adding them to the meta-data to unpin collection and adding any cached leaves to the files to unpin collection.
+		for (IpfsFile removedRecord : removedRecords)
+		{
+			AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
+			IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
+			IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
+			IpfsFile audioHash = null;
+			IpfsFile videoHash = null;
+			int videoEdgeSize = 0;
+			if (null != leafHash)
 			{
-				AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
-				IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
-				IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
-				IpfsFile audioHash = null;
-				IpfsFile videoHash = null;
-				int videoEdgeSize = 0;
-				if (null != leafHash)
+				// We need to find out if the leaf is audio or video, so we can correctly report it.
+				for (Leaf leaf : record.getVideoExtension())
 				{
-					// We need to find out if the leaf is audio or video, so we can correctly report it.
-					for (Leaf leaf : record.getVideoExtension())
+					if (leafHash.equals(leaf.cid()))
 					{
-						if (leafHash.equals(leaf.cid()))
+						if (leaf.mime().startsWith("video/"))
 						{
-							if (leaf.mime().startsWith("video/"))
-							{
-								videoHash = leafHash;
-								videoEdgeSize = Math.max(leaf.width(), leaf.height());
-							}
-							else
-							{
-								Assert.assertTrue(leaf.mime().startsWith("audio/"));
-								audioHash = leafHash;
-							}
-							break;
+							videoHash = leafHash;
+							videoEdgeSize = Math.max(leaf.width(), leaf.height());
 						}
-					}
-					// We must have matched something.
-					Assert.assertTrue((null != videoHash) || (null != audioHash));
-				}
-				support.deferredRemoveMetaDataFromFollowCache(removedRecord);
-				if (null != imageHash)
-				{
-					support.deferredRemoveFileFromFollowCache(imageHash);
-				}
-				if (null != leafHash)
-				{
-					support.deferredRemoveFileFromFollowCache(leafHash);
-				}
-				support.removeElementFromCache(removedRecord, record, imageHash, audioHash, videoHash, videoEdgeSize);
-				support.removeRecordForFollowee(removedRecord);
-			}
-			
-			// Walk the new record list to create our final FollowingCacheElement list:
-			// -adding any existing FollowingCacheElement
-			// -process any new records to pin them and decide if we should pin their leaf elements
-			List<RawElementData> newRecordsBeingProcessedInitial = new ArrayList<>();
-			for (IpfsFile currentRecord : newRecordList)
-			{
-				if (oldRecordSet.contains(currentRecord))
-				{
-					// This is a record which is staying so leave its pinned elements and whether or not we cached it unchanged.
-				}
-				else
-				{
-					// This is a fully new record so check its size is acceptable.
-					RawElementData data = new RawElementData();
-					data.elementCid = currentRecord;
-					data.futureSize = support.getSizeInBytes(currentRecord);
-					newRecordsBeingProcessedInitial.add(data);
-				}
-			}
-			
-			// Now, wait for all the sizes to come back and only pin elements which are below our size threshold.
-			List<RawElementData> newRecordsBeingProcessedSizeChecked = new ArrayList<>();
-			support.logMessage("Checking sizes of new records (checking " + newRecordsBeingProcessedInitial.size() + " records)...");
-			for (RawElementData data : newRecordsBeingProcessedInitial)
-			{
-				// A connection exception here will cause refresh to fail.
-				data.size = data.futureSize.get();
-				// If this element is too big, we won't pin it or consider caching it (this is NOT refresh failure).
-				// Note that this means any path which directly reads this element should check the size to see if it is present.
-				if (data.size <= AbstractRecord.SIZE_LIMIT_BYTES)
-				{
-					data.futureElementPin = support.addMetaDataToFollowCache(data.elementCid);
-					newRecordsBeingProcessedSizeChecked.add(data);
-				}
-				else
-				{
-					throw new SizeConstraintException("record", data.size, AbstractRecord.SIZE_LIMIT_BYTES);
-				}
-			}
-			newRecordsBeingProcessedInitial = null;
-			
-			// Now, wait for all the pins of the elements and check the sizes of their leaves.
-			List<RawElementData> newRecordsBeingProcessedCalculatingLeaves = new ArrayList<>();
-			support.logMessage("Waiting for meta-data to be pinned (pinning " + newRecordsBeingProcessedSizeChecked.size() + " records)...");
-			for (RawElementData data : newRecordsBeingProcessedSizeChecked)
-			{
-				// A connection exception here will cause refresh to fail.
-				data.futureElementPin.get();
-				data.futureElementPin = null;
-				// We pinned this so the read should be pretty-well instantaneous.
-				data.record = support.loadCached(data.elementCid, AbstractRecord.DESERIALIZER).get();
-				// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
-				_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
-				newRecordsBeingProcessedCalculatingLeaves.add(data);
-			}
-			newRecordsBeingProcessedSizeChecked = null;
-			
-			// Now, we wait for the sizes to come back and then choose which elements to cache.
-			List<CacheAlgorithm.Candidate<RawElementData>> candidates = new ArrayList<>();
-			support.logMessage("Checking sizes of attachments (checking for " + newRecordsBeingProcessedCalculatingLeaves.size() + " records)...");
-			for (RawElementData data : newRecordsBeingProcessedCalculatingLeaves)
-			{
-				boolean bothLoaded = true;
-				// If we fail to fetch the sizes of any of the leaves, we will just decide to proceed without them.
-				if (null != data.thumbnailSizeFuture)
-				{
-					try
-					{
-						data.thumbnailSizeBytes = data.thumbnailSizeFuture.get();
-						// Make sure that this isn't over our preference limit.
-						if (data.thumbnailSizeBytes > prefs.followeeRecordThumbnailMaxBytes)
+						else
 						{
-							bothLoaded = false;
-							support.logMessage("Attachments for record " + data.elementCid + " are being skipped since its thumbnail is " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
+							Assert.assertTrue(leaf.mime().startsWith("audio/"));
+							audioHash = leafHash;
 						}
+						break;
 					}
-					catch (IpfsConnectionException e)
-					{
-						support.logMessage("Failed to load size for thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
-						bothLoaded = false;
-					}
-					data.thumbnailSizeFuture = null;
 				}
-				if (null != data.leafSizeFuture)
+				// We must have matched something.
+				Assert.assertTrue((null != videoHash) || (null != audioHash));
+			}
+			support.deferredRemoveMetaDataFromFollowCache(removedRecord);
+			if (null != imageHash)
+			{
+				support.deferredRemoveFileFromFollowCache(imageHash);
+			}
+			if (null != leafHash)
+			{
+				support.deferredRemoveFileFromFollowCache(leafHash);
+			}
+			support.removeElementFromCache(removedRecord, record, imageHash, audioHash, videoHash, videoEdgeSize);
+			support.removeRecordForFollowee(removedRecord);
+		}
+		
+		// Walk the new record list to create our final FollowingCacheElement list:
+		// -adding any existing FollowingCacheElement
+		// -process any new records to pin them and decide if we should pin their leaf elements
+		List<RawElementData> newRecordsBeingProcessedInitial = new ArrayList<>();
+		for (IpfsFile currentRecord : newRecordList)
+		{
+			if (oldRecordSet.contains(currentRecord))
+			{
+				// This is a record which is staying so leave its pinned elements and whether or not we cached it unchanged.
+			}
+			else
+			{
+				// This is a fully new record so check its size is acceptable.
+				RawElementData data = new RawElementData();
+				data.elementCid = currentRecord;
+				data.futureSize = support.getSizeInBytes(currentRecord);
+				newRecordsBeingProcessedInitial.add(data);
+			}
+		}
+		
+		_finishStartedRecordSync(support, prefs, newRecordsBeingProcessedInitial, currentCacheUsageInBytes);
+	}
+
+	private static void _finishStartedRecordSync(IRefreshSupport support
+			, PrefsData prefs
+			, List<RawElementData> oldestFirstNewRecordsBeingProcessedInitial
+			, long currentCacheUsageInBytes
+	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
+	{
+		// Now, wait for all the sizes to come back and only pin elements which are below our size threshold.
+		List<RawElementData> newRecordsBeingProcessedSizeChecked = new ArrayList<>();
+		support.logMessage("Checking sizes of new records (checking " + oldestFirstNewRecordsBeingProcessedInitial.size() + " records)...");
+		for (RawElementData data : oldestFirstNewRecordsBeingProcessedInitial)
+		{
+			// A connection exception here will cause refresh to fail.
+			data.size = data.futureSize.get();
+			// If this element is too big, we won't pin it or consider caching it (this is NOT refresh failure).
+			// Note that this means any path which directly reads this element should check the size to see if it is present.
+			if (data.size <= AbstractRecord.SIZE_LIMIT_BYTES)
+			{
+				data.futureElementPin = support.addMetaDataToFollowCache(data.elementCid);
+				newRecordsBeingProcessedSizeChecked.add(data);
+			}
+			else
+			{
+				throw new SizeConstraintException("record", data.size, AbstractRecord.SIZE_LIMIT_BYTES);
+			}
+		}
+		oldestFirstNewRecordsBeingProcessedInitial = null;
+		
+		// Now, wait for all the pins of the elements and check the sizes of their leaves.
+		List<RawElementData> newRecordsBeingProcessedCalculatingLeaves = new ArrayList<>();
+		support.logMessage("Waiting for meta-data to be pinned (pinning " + newRecordsBeingProcessedSizeChecked.size() + " records)...");
+		for (RawElementData data : newRecordsBeingProcessedSizeChecked)
+		{
+			// A connection exception here will cause refresh to fail.
+			data.futureElementPin.get();
+			data.futureElementPin = null;
+			// We pinned this so the read should be pretty-well instantaneous.
+			data.record = support.loadCached(data.elementCid, AbstractRecord.DESERIALIZER).get();
+			// We will decide on what leaves to pin, but we will still decide to cache this even if there aren't any leaves.
+			_selectLeavesForElement(support, data, data.record, prefs.videoEdgePixelMax);
+			newRecordsBeingProcessedCalculatingLeaves.add(data);
+		}
+		newRecordsBeingProcessedSizeChecked = null;
+		
+		// Now, we wait for the sizes to come back and then choose which elements to cache.
+		List<CacheAlgorithm.Candidate<RawElementData>> candidates = new ArrayList<>();
+		support.logMessage("Checking sizes of attachments (checking for " + newRecordsBeingProcessedCalculatingLeaves.size() + " records)...");
+		for (RawElementData data : newRecordsBeingProcessedCalculatingLeaves)
+		{
+			boolean bothLoaded = true;
+			// If we fail to fetch the sizes of any of the leaves, we will just decide to proceed without them.
+			if (null != data.thumbnailSizeFuture)
+			{
+				try
 				{
-					try
-					{
-						data.leafSizeBytes = data.leafSizeFuture.get();
-						// Make sure that this isn't over our preference limit.
-						long relevantSizeBytes = data.leafHash.equals(data.audioLeafHash)
-								? prefs.followeeRecordAudioMaxBytes
-								: prefs.followeeRecordVideoMaxBytes
-						;
-						if (data.leafSizeBytes > relevantSizeBytes)
-						{
-							bothLoaded = false;
-							support.logMessage("Attachments for record " + data.elementCid + " is being skipped since its leaf is " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(relevantSizeBytes));
-						}
-					}
-					catch (IpfsConnectionException e)
+					data.thumbnailSizeBytes = data.thumbnailSizeFuture.get();
+					// Make sure that this isn't over our preference limit.
+					if (data.thumbnailSizeBytes > prefs.followeeRecordThumbnailMaxBytes)
 					{
 						bothLoaded = false;
-						support.logMessage("Failed to load size for leaf for " + data.elementCid + ": " + data.leafHash);
+						support.logMessage("Attachments for record " + data.elementCid + " are being skipped since its thumbnail is " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
 					}
-					data.leafSizeFuture = null;
 				}
-				// We will only try to pin leaves if we could fetch the sizes for all of them.
-				long byteSize = 0L;
-				if (bothLoaded)
+				catch (IpfsConnectionException e)
 				{
-					byteSize += data.thumbnailSizeBytes;
-					byteSize += data.leafSizeBytes;
+					support.logMessage("Failed to load size for thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
+					bothLoaded = false;
 				}
-				else
+				data.thumbnailSizeFuture = null;
+			}
+			if (null != data.leafSizeFuture)
+			{
+				try
 				{
-					// We failed to load at least one of the sizes so we will abandon our attempt to pin any leaves.
+					data.leafSizeBytes = data.leafSizeFuture.get();
+					// Make sure that this isn't over our preference limit.
+					long relevantSizeBytes = data.leafHash.equals(data.audioLeafHash)
+							? prefs.followeeRecordAudioMaxBytes
+							: prefs.followeeRecordVideoMaxBytes
+					;
+					if (data.leafSizeBytes > relevantSizeBytes)
+					{
+						bothLoaded = false;
+						support.logMessage("Attachments for record " + data.elementCid + " is being skipped since its leaf is " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(relevantSizeBytes));
+					}
+				}
+				catch (IpfsConnectionException e)
+				{
+					bothLoaded = false;
+					support.logMessage("Failed to load size for leaf for " + data.elementCid + ": " + data.leafHash);
+				}
+				data.leafSizeFuture = null;
+			}
+			// We will only try to pin leaves if we could fetch the sizes for all of them.
+			long byteSize = 0L;
+			if (bothLoaded)
+			{
+				byteSize += data.thumbnailSizeBytes;
+				byteSize += data.leafSizeBytes;
+			}
+			else
+			{
+				// We failed to load at least one of the sizes so we will abandon our attempt to pin any leaves.
+				data.thumbnailHash = null;
+				data.leafHash = null;
+				data.audioLeafHash = null;
+				data.videoLeafHash = null;
+			}
+			CacheAlgorithm.Candidate<RawElementData> candidate = new CacheAlgorithm.Candidate<RawElementData>(byteSize, data);
+			candidates.add(candidate);
+		}
+		newRecordsBeingProcessedCalculatingLeaves = null;
+		
+		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(prefs, currentCacheUsageInBytes, candidates);
+		candidates = null;
+		
+		// We can now walk the final selection and pin all the relevant elements.
+		List<RawElementData> candidatesBeingPinned = new ArrayList<>();
+		support.logMessage("Pinning all attachments (selected " + finalSelection.size() + " records)...");
+		for (CacheAlgorithm.Candidate<RawElementData> candidate : finalSelection)
+		{
+			RawElementData data = candidate.data();
+			support.logMessage("Pinning attachments for record " + data.elementCid + "...");
+			if (null != data.thumbnailHash)
+			{
+				support.logMessage("\t-thumbnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
+				data.futureThumbnailPin = support.addFileToFollowCache(data.thumbnailHash);
+			}
+			if (null != data.leafHash)
+			{
+				support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
+				data.futureLeafPin = support.addFileToFollowCache(data.leafHash);
+			}
+			candidatesBeingPinned.add(data);
+		}
+		finalSelection = null;
+		
+		// Finally, walk the records whose leaves we pinned and build FollowingCacheElement instances for each.
+		support.logMessage("Waiting for all attachments to be pinned (" + candidatesBeingPinned.size() + " records)...");
+		for (RawElementData data : candidatesBeingPinned)
+		{
+			support.logMessage("Waiting for attachments for record " + data.elementCid + "...");
+			boolean allLeavesSuccess = true;
+			if (null != data.futureThumbnailPin)
+			{
+				try
+				{
+					data.futureThumbnailPin.get();
+				}
+				catch (IpfsConnectionException e)
+				{
+					// We failed the pin so drop this element.
+					support.logMessage("Failed to pin thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
+					allLeavesSuccess = false;
 					data.thumbnailHash = null;
+					data.thumbnailSizeBytes = 0;
+				}
+			}
+			if (null != data.futureLeafPin)
+			{
+				try
+				{
+					data.futureLeafPin.get();
+				}
+				catch (IpfsConnectionException e)
+				{
+					// We failed the pin so drop this element.
+					support.logMessage("Failed to pin leaf for " + data.elementCid + ": " + data.leafHash);
+					allLeavesSuccess = false;
 					data.leafHash = null;
 					data.audioLeafHash = null;
 					data.videoLeafHash = null;
+					data.videoEdgeSize = 0;
+					data.leafSizeBytes = 0;
 				}
-				CacheAlgorithm.Candidate<RawElementData> candidate = new CacheAlgorithm.Candidate<RawElementData>(byteSize, data);
-				candidates.add(candidate);
 			}
-			newRecordsBeingProcessedCalculatingLeaves = null;
 			
-			List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(prefs, currentCacheUsageInBytes, candidates);
-			candidates = null;
+			// Whether or not we pinned any leaves, record that we saw this (in this non-incremental path, we do this after pinning the meta-data).
+			support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
+			support.logMessage("Successfully pinned attachments for record " + data.elementCid + "!");
 			
-			// We can now walk the final selection and pin all the relevant elements.
-			List<RawElementData> candidatesBeingPinned = new ArrayList<>();
-			support.logMessage("Pinning all attachments (selected " + finalSelection.size() + " records)...");
-			for (CacheAlgorithm.Candidate<RawElementData> candidate : finalSelection)
+			// We will only proceed to add leaves to the cache if everything was pinned and there were leaf elements.
+			// (Note that we don't record elements without leaves since we always cache meta-data, anyway)
+			if (allLeavesSuccess)
 			{
-				RawElementData data = candidate.data();
-				support.logMessage("Pinning attachments for record " + data.elementCid + "...");
 				if (null != data.thumbnailHash)
 				{
-					support.logMessage("\t-thumbnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
-					data.futureThumbnailPin = support.addFileToFollowCache(data.thumbnailHash);
+					support.logMessage("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
 				}
 				if (null != data.leafHash)
 				{
-					support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
-					data.futureLeafPin = support.addFileToFollowCache(data.leafHash);
+					support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
 				}
-				candidatesBeingPinned.add(data);
 			}
-			finalSelection = null;
-			
-			// Finally, walk the records whose leaves we pinned and build FollowingCacheElement instances for each.
-			support.logMessage("Waiting for all attachments to be pinned (" + candidatesBeingPinned.size() + " records)...");
-			for (RawElementData data : candidatesBeingPinned)
+			else
 			{
-				support.logMessage("Waiting for attachments for record " + data.elementCid + "...");
-				boolean allLeavesSuccess = true;
-				if (null != data.futureThumbnailPin)
+				// We may have only partially failed so see which we may need to unpin.
+				if (null != data.thumbnailHash)
 				{
-					try
-					{
-						data.futureThumbnailPin.get();
-					}
-					catch (IpfsConnectionException e)
-					{
-						// We failed the pin so drop this element.
-						support.logMessage("Failed to pin thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
-						allLeavesSuccess = false;
-						data.thumbnailHash = null;
-						data.thumbnailSizeBytes = 0;
-					}
+					support.deferredRemoveFileFromFollowCache(data.thumbnailHash);
+					data.thumbnailHash = null;
+					data.thumbnailSizeBytes = 0;
 				}
-				if (null != data.futureLeafPin)
+				if (null != data.leafHash)
 				{
-					try
-					{
-						data.futureLeafPin.get();
-					}
-					catch (IpfsConnectionException e)
-					{
-						// We failed the pin so drop this element.
-						support.logMessage("Failed to pin leaf for " + data.elementCid + ": " + data.leafHash);
-						allLeavesSuccess = false;
-						data.leafHash = null;
-						data.audioLeafHash = null;
-						data.videoLeafHash = null;
-						data.videoEdgeSize = 0;
-						data.leafSizeBytes = 0;
-					}
+					support.deferredRemoveFileFromFollowCache(data.leafHash);
+					data.leafHash = null;
+					data.audioLeafHash = null;
+					data.videoLeafHash = null;
+					data.videoEdgeSize = 0;
+					data.leafSizeBytes = 0;
 				}
-				
-				// Whether or not we pinned any leaves, record that we saw this (in this non-incremental path, we do this after pinning the meta-data).
-				support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
-				support.logMessage("Successfully pinned attachments for record " + data.elementCid + "!");
-				
-				// We will only proceed to add leaves to the cache if everything was pinned and there were leaf elements.
-				// (Note that we don't record elements without leaves since we always cache meta-data, anyway)
-				if (allLeavesSuccess)
-				{
-					if (null != data.thumbnailHash)
-					{
-						support.logMessage("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
-					}
-					if (null != data.leafHash)
-					{
-						support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
-					}
-				}
-				else
-				{
-					// We may have only partially failed so see which we may need to unpin.
-					if (null != data.thumbnailHash)
-					{
-						support.deferredRemoveFileFromFollowCache(data.thumbnailHash);
-						data.thumbnailHash = null;
-						data.thumbnailSizeBytes = 0;
-					}
-					if (null != data.leafHash)
-					{
-						support.deferredRemoveFileFromFollowCache(data.leafHash);
-						data.leafHash = null;
-						data.audioLeafHash = null;
-						data.videoLeafHash = null;
-						data.videoEdgeSize = 0;
-						data.leafSizeBytes = 0;
-					}
-				}
-				// Notify the support that we pinned the record and leaves leaves.
-				support.cacheRecordForFollowee(data.elementCid, data.record, data.thumbnailHash, data.audioLeafHash, data.videoLeafHash, data.videoEdgeSize, data.thumbnailSizeBytes + data.leafSizeBytes);
 			}
+			// Notify the support that we pinned the record and leaves leaves.
+			support.cacheRecordForFollowee(data.elementCid, data.record, data.thumbnailHash, data.audioLeafHash, data.videoLeafHash, data.videoEdgeSize, data.thumbnailSizeBytes + data.leafSizeBytes);
 		}
 	}
 
