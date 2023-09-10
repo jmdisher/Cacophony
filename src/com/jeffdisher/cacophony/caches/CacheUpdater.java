@@ -288,6 +288,20 @@ public class CacheUpdater
 	}
 
 	/**
+	 * Called when a followee removes a new post from their stream.
+	 * 
+	 * @param publicKey The public key of the followee.
+	 * @param cid The CID of the post removed.
+	 */
+	public void existingFolloweePostDisappeared(IpfsKey publicKey, IpfsFile cid)
+	{
+		if (null != _entryRegistry)
+		{
+			_entryRegistry.removeFolloweeElement(publicKey, cid);
+		}
+	}
+
+	/**
 	 * Called when a followee removes a post from their stream.
 	 * 
 	 * @param publicKey The public key of the followee.
@@ -322,10 +336,6 @@ public class CacheUpdater
 				_recordCache.recordVideoReleased(cid, cachedVideoOrNull, videoEdgeSize);
 			}
 			_recordCache.recordMetaDataReleased(cid);
-		}
-		if (null != _entryRegistry)
-		{
-			_entryRegistry.removeFolloweeElement(publicKey, cid);
 		}
 		IpfsFile replyTo = record.getReplyTo();
 		if ((null != _replyForest) && (null != replyTo))

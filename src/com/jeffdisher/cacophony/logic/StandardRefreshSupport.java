@@ -174,6 +174,13 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		});
 	}
 	@Override
+	public void removeRecordForFollowee(IpfsFile elementHash)
+	{
+		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
+			cacheUpdater.existingFolloweePostDisappeared(_followeeKey, elementHash);
+		});
+	}
+	@Override
 	public void removeElementFromCache(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioHash, IpfsFile videoHash, int videoEdgeSize)
 	{
 		_elementsToRemoveFromCache.add(elementHash);

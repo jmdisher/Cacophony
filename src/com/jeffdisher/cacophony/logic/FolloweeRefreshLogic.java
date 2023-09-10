@@ -254,6 +254,7 @@ public class FolloweeRefreshLogic
 					support.deferredRemoveFileFromFollowCache(leafHash);
 				}
 				support.removeElementFromCache(removedRecord, record, imageHash, audioHash, videoHash, videoEdgeSize);
+				support.removeRecordForFollowee(removedRecord);
 			}
 			
 			// Walk the new record list to create our final FollowingCacheElement list:
@@ -686,6 +687,13 @@ public class FolloweeRefreshLogic
 				, int videoEdgeSize
 				, long combinedLeafSizeBytes
 		);
+		/**
+		 * Notifies that an element has been removed from the record list for a user.
+		 * NOTE:  This may or may not be pinned, due to how incremental synchronization works.
+		 * 
+		 * @param elementHash The CID of the AbstractRecord meta-data XML CID.
+		 */
+		void removeRecordForFollowee(IpfsFile elementHash);
 		/**
 		 * Called when a the meta-data of a previously-observed element has been enqueued for unpin and should be
 		 * dropped.
