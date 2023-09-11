@@ -567,7 +567,7 @@ public class TestBackgroundOperations
 			return publish;
 		}
 		@Override
-		public synchronized boolean refreshFollowee(IpfsKey followeeKey)
+		public synchronized BackgroundOperations.OperationResult refreshFollowee(IpfsKey followeeKey)
 		{
 			Assert.assertEquals(_expectedFolloweeKey, followeeKey);
 			Consumer<IpfsKey> toRun = _refresher;
@@ -576,7 +576,7 @@ public class TestBackgroundOperations
 			this.notifyAll();
 			
 			toRun.accept(followeeKey);
-			return true;
+			return BackgroundOperations.OperationResult.SUCCESS;
 		}
 		public synchronized void waitForConsume()
 		{

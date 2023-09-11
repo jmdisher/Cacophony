@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.commands.StartFollowingCommand;
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.Incremental;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -33,7 +33,7 @@ public class POST_Raw_AddFollowee implements ValidatedEntryPoints.POST_Raw
 		IpfsKey userToAdd = (IpfsKey)path[2];
 		
 		StartFollowingCommand command = new StartFollowingCommand(userToAdd);
-		InteractiveHelpers.SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response
+		InteractiveHelpers.SuccessfulCommand<Incremental> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, userToAdd
 				, command

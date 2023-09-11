@@ -18,7 +18,7 @@ import com.jeffdisher.cacophony.caches.LocalUserInfoCache;
 import com.jeffdisher.cacophony.caches.ReplyForest;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RefreshFolloweeCommand;
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.Incremental;
 import com.jeffdisher.cacophony.data.local.v4.Draft;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
@@ -114,31 +114,33 @@ public class InteractiveServer
 				return publish;
 			}
 			@Override
-			public boolean refreshFollowee(IpfsKey followeeKey)
+			public BackgroundOperations.OperationResult refreshFollowee(IpfsKey followeeKey)
 			{
 				// We just want to run the RefreshFolloweeCommand, since it internally does everything.
 				RefreshFolloweeCommand command = new RefreshFolloweeCommand(followeeKey);
-				FutureCommand<None> result = runner.runBlockedCommand(followeeKey, command, null);
-				boolean didRefresh;
+				FutureCommand<Incremental> result = runner.runBlockedCommand(followeeKey, command, null);
+				BackgroundOperations.OperationResult operationResult;
 				try
 				{
-					result.get();
-					didRefresh = true;
+					operationResult = result.get().moreToDo
+							? BackgroundOperations.OperationResult.MORE_TO_DO
+							: BackgroundOperations.OperationResult.SUCCESS
+					;
 				}
 				catch (IpfsConnectionException e)
 				{
 					// This just means it didn't succeed due to some kind of network error.
-					didRefresh = false;
+					operationResult = BackgroundOperations.OperationResult.TEMPORARY_FAILURE;
 				}
 				catch (KeyException e)
 				{
 					// We couldn't look up the key - this is common since IPNS has a timeout.
-					didRefresh = false;
+					operationResult = BackgroundOperations.OperationResult.TEMPORARY_FAILURE;
 				}
 				catch (ProtocolDataException e)
 				{
 					// This means the user had corrupt data (we won't be able to refresh them until they fix it).
-					didRefresh = false;
+					operationResult = BackgroundOperations.OperationResult.TEMPORARY_FAILURE;
 				}
 				catch (UsageException e)
 				{
@@ -151,7 +153,7 @@ public class InteractiveServer
 					// A more specific exception would be caught, above.
 					throw Assert.unexpected(e);
 				}
-				return didRefresh;
+				return operationResult;
 			}
 		}, statusHandoff, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		

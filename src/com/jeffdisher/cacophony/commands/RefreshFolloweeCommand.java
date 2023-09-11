@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.Incremental;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.FolloweeData;
@@ -14,10 +14,10 @@ import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
-public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<None>
+public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Incremental>
 {
 	@Override
-	public None runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
+	public Incremental runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException, KeyException
 	{
 		if (null == _publicKey)
 		{
@@ -32,14 +32,12 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 		}
 		
 		// Run the actual refresh.
-		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh(context.cacheUpdater)
-				: false
-		;
+		boolean didRefresh = refresher.runRefresh(context.cacheUpdater);
 		
+		boolean moreWork;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			_finish(context, access, refresher);
+			moreWork = _finish(context, access, refresher);
 		}
 		finally
 		{
@@ -52,7 +50,7 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 				log.logFinish("Refresh failed!");
 			}
 		}
-		return None.NONE;
+		return new Incremental(moreWork);
 	}
 
 
@@ -79,11 +77,11 @@ public record RefreshFolloweeCommand(IpfsKey _publicKey) implements ICommand<Non
 		return refresher;
 	}
 
-	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException, KeyException
+	private boolean _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException, KeyException
 	{
 		FolloweeData followees = access.writableFolloweeData();
 		
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
-		refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
+		return refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
 	}
 }

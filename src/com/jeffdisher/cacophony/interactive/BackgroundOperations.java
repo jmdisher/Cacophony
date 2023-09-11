@@ -64,9 +64,9 @@ public class BackgroundOperations
 				{
 					ILogger log = logger.logStart("Background start refresh: " + operation.followeeKey);
 					_connector.create(operation.followeeNumber, "Refresh " + operation.followeeKey);
-					boolean didRefresh = operations.refreshFollowee(operation.followeeKey);
+					OperationResult refreshResult = operations.refreshFollowee(operation.followeeKey);
 					_connector.destroy(operation.followeeNumber);
-					log.logFinish("Background end refresh: " + operation.followeeKey + " -> " + (didRefresh ? "SUCCESS" : "FAILURE"));
+					log.logFinish("Background end refresh: " + operation.followeeKey + " -> " + refreshResult);
 				}
 				// Now, we can wait for the publish before we go back for more work.
 				if (null != publish)
@@ -380,9 +380,29 @@ public class BackgroundOperations
 		 * This doesn't report any information around what changed, just whether or not the refresh was a "success".
 		 * 
 		 * @param followeeKey The public key of the followee to refresh.
-		 * @return True if the refresh was a success (although nothing may have changed) or false if there was an error.
+		 * @return A result describing how the operation completed.
 		 */
-		boolean refreshFollowee(IpfsKey followeeKey);
+		OperationResult refreshFollowee(IpfsKey followeeKey);
+	}
+
+
+	/**
+	 * Just an enum describing the result of a followee refresh operation.
+	 */
+	public static enum OperationResult
+	{
+		/**
+		 * The refresh completed normally.
+		 */
+		SUCCESS,
+		/**
+		 * There was a failure in the refresh, meaning nothing changed, and it should be retried later.
+		 */
+		TEMPORARY_FAILURE,
+		/**
+		 * The refresh completed in incremental mode and there is more work to do.
+		 */
+		MORE_TO_DO,
 	}
 
 

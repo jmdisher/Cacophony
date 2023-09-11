@@ -226,11 +226,12 @@ public class ConcurrentFolloweeRefresher
 	 * @param cacheUpdater Used for updating internal caches.
 	 * @param followees The followees structure to update.
 	 * @param currentTimeMillis The current time of the refresh, in milliseconds since the epoch.
+	 * @return True if there is more work which could be done with this followee (incomplete incremental sync).
 	 * @throws IpfsConnectionException There was a problem accessing data from the network.
 	 * @throws ProtocolDataException Found data which violated the constraints of the Cacophony protocol.
 	 * @throws KeyException There was an error resolving the followee key (probably expired from IPNS).
 	 */
-	public void finishRefresh(IWritingAccess access
+	public boolean finishRefresh(IWritingAccess access
 			, CacheUpdater cacheUpdater
 			, FolloweeData followees
 			, long currentTimeMillis
@@ -240,10 +241,10 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(!_didFinish);
 		
 		ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
+		// We want to the state the nextBackwardRecord was left in (usually null).
+		IpfsFile nextBackwardRecord = _refreshSupport.getNextBackwardRecord();
 		if (_isSuccess)
 		{
-			// We want to the state the nextBackwardRecord was left in (usually null).
-			IpfsFile nextBackwardRecord = _refreshSupport.getNextBackwardRecord();
 			if (_isDelete)
 			{
 				// Delete the record.
@@ -271,8 +272,6 @@ public class ConcurrentFolloweeRefresher
 			if (null != _previousRoot)
 			{
 				// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
-				// TODO: Add support for incremental synchronization.
-				IpfsFile nextBackwardRecord = null;
 				followees.updateExistingFollowee(_followeeKey, _previousRoot, nextBackwardRecord, currentTimeMillis);
 			}
 			_transaction.rollback(resolver);
@@ -296,5 +295,7 @@ public class ConcurrentFolloweeRefresher
 		{
 			throw _keyException;
 		}
+		// Return true if there is still an incremental sync starting-point since there is more work to do.
+		return (null != nextBackwardRecord);
 	}
 }

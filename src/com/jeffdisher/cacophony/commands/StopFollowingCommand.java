@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
-import com.jeffdisher.cacophony.commands.results.None;
+import com.jeffdisher.cacophony.commands.results.Incremental;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.FolloweeData;
@@ -15,10 +15,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
+public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<Incremental>
 {
 	@Override
-	public None runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
+	public Incremental runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
 	{
 		if (null == _publicKey)
 		{
@@ -33,14 +33,12 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		}
 		
 		// Run the actual refresh.
-		boolean didRefresh = (null != refresher)
-				? refresher.runRefresh(context.cacheUpdater)
-				: false
-		;
+		boolean didRefresh = refresher.runRefresh(context.cacheUpdater);
 		
+		boolean moreWork;
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			_finish(context, access, refresher);
+			moreWork = _finish(context, access, refresher);
 		}
 		finally
 		{
@@ -50,7 +48,7 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 			log.logFinish("Cleanup complete.  No longer following " + _publicKey);
 		}
 		context.cacheUpdater.removedFollowee(_publicKey);
-		return None.NONE;
+		return new Incremental(moreWork);
 	}
 
 
@@ -75,18 +73,18 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 		return refresher;
 	}
 
-	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
+	private boolean _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
 	{
 		FolloweeData followees = access.writableFolloweeData();
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
 		try
 		{
-			refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
+			return refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
 		}
 		catch (KeyException e)
 		{
 			// The key is not resolved in the "stop following" case.
-			Assert.unexpected(e);
+			throw Assert.unexpected(e);
 		}
 	}
 }
