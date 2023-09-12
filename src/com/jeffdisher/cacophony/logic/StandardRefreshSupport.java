@@ -105,7 +105,12 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	}
 
 	@Override
-	public void logMessage(String message)
+	public void logMessageImportant(String message)
+	{
+		_logger.logOperation(message);
+	}
+	@Override
+	public void logMessageVerbose(String message)
 	{
 		_logger.logVerbose(message);
 	}

@@ -346,6 +346,7 @@ public class FolloweeRefreshLogic
 				newRecordsBeingProcessedInitial.add(data);
 			}
 		}
+		support.logMessageImportant("Standard synchronization processing " + newRecordsBeingProcessedInitial.size() + " new records (" + removedRecords.size() + " have been removed).");
 		
 		// Complete the rest of the work related to this.
 		// NOTE:  We always want to add the newest element whether this is a new followee or a refreshed one, so handle that as a special case.
@@ -397,7 +398,7 @@ public class FolloweeRefreshLogic
 		catch (IpfsConnectionException e)
 		{
 			// This means a problem with the node, so just do nothing and we will retry, later.
-			support.logMessage("Failed to load records for backward sync: " + e.getLocalizedMessage());
+			support.logMessageImportant("Failed to load records for backward sync: " + e.getLocalizedMessage());
 			newRecords = null;
 		}
 		
@@ -406,11 +407,13 @@ public class FolloweeRefreshLogic
 			// We want to notify that we have seen everything, if this is the first call.
 			if (isFirstSync)
 			{
-				for (IpfsFile cid : newRecords.getRecordList())
+				List<IpfsFile> recordList = newRecords.getRecordList();
+				for (IpfsFile cid : recordList)
 				{
 					// We don't know the publish time so we return 0.
 					support.addRecordForFollowee(cid, 0L);
 				}
+				support.logMessageImportant("First synchronization reported " + recordList.size() + " new records (will be incrementally pinned).");
 			}
 			ListIterator<IpfsFile> iterator = _prepareBackwardIterator(newRecords, nextBackwardSyncRecord);
 			// Start walking backward - the first previous() call will return nextBackwardSyncRecord, which is our first candidate.
@@ -456,6 +459,12 @@ public class FolloweeRefreshLogic
 			{
 				support.addSkippedRecord(failure, false);
 			}
+			support.logMessageImportant("Incremental sync completed"
+					+ ((null != updatedNextRecord) ? " (more to do)" : " (done)")
+					+ ", processing " + newRecordsBeingProcessedInitial.size() + " records"
+					+ (permanentFailures.isEmpty() ? "" : " (added " + permanentFailures.size() + " permanent failures)")
+					+ (temporaryFailures.isEmpty() ? "" : " (added " + temporaryFailures.size() + " temporary failures)")
+			);
 		}
 	}
 
@@ -471,7 +480,7 @@ public class FolloweeRefreshLogic
 	{
 		// Now, wait for all the sizes to come back and only pin elements which are below our size threshold.
 		List<RawElementData> newRecordsBeingProcessedSizeChecked = new ArrayList<>();
-		support.logMessage("Checking sizes of new records (checking " + oldestFirstNewRecordsBeingProcessedInitial.size() + " records)...");
+		support.logMessageVerbose("Checking sizes of new records (checking " + oldestFirstNewRecordsBeingProcessedInitial.size() + " records)...");
 		for (RawElementData data : oldestFirstNewRecordsBeingProcessedInitial)
 		{
 			// A connection exception here will cause refresh to fail.
@@ -510,7 +519,7 @@ public class FolloweeRefreshLogic
 		
 		// Now, wait for all the pins of the elements and check the sizes of their leaves.
 		List<RawElementData> newRecordsBeingProcessedCalculatingLeaves = new ArrayList<>();
-		support.logMessage("Waiting for meta-data to be pinned (pinning " + newRecordsBeingProcessedSizeChecked.size() + " records)...");
+		support.logMessageVerbose("Waiting for meta-data to be pinned (pinning " + newRecordsBeingProcessedSizeChecked.size() + " records)...");
 		for (RawElementData data : newRecordsBeingProcessedSizeChecked)
 		{
 			// A connection exception here will cause refresh to fail.
@@ -558,7 +567,7 @@ public class FolloweeRefreshLogic
 		
 		// Now, we wait for the sizes to come back and then choose which elements to cache.
 		List<CacheAlgorithm.Candidate<RawElementData>> candidates = new ArrayList<>();
-		support.logMessage("Checking sizes of attachments (checking for " + newRecordsBeingProcessedCalculatingLeaves.size() + " records)...");
+		support.logMessageVerbose("Checking sizes of attachments (checking for " + newRecordsBeingProcessedCalculatingLeaves.size() + " records)...");
 		for (RawElementData data : newRecordsBeingProcessedCalculatingLeaves)
 		{
 			boolean bothLoaded = true;
@@ -572,12 +581,12 @@ public class FolloweeRefreshLogic
 					if (data.thumbnailSizeBytes > prefs.followeeRecordThumbnailMaxBytes)
 					{
 						bothLoaded = false;
-						support.logMessage("Attachments for record " + data.elementCid + " are being skipped since its thumbnail is " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
+						support.logMessageImportant("Attachments for record " + data.elementCid + " are being skipped since its thumbnail is " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(prefs.followeeRecordThumbnailMaxBytes));
 					}
 				}
 				catch (IpfsConnectionException e)
 				{
-					support.logMessage("Failed to load size for thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
+					support.logMessageImportant("Failed to load size for thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
 					bothLoaded = false;
 				}
 				data.thumbnailSizeFuture = null;
@@ -595,13 +604,13 @@ public class FolloweeRefreshLogic
 					if (data.leafSizeBytes > relevantSizeBytes)
 					{
 						bothLoaded = false;
-						support.logMessage("Attachments for record " + data.elementCid + " is being skipped since its leaf is " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(relevantSizeBytes));
+						support.logMessageImportant("Attachments for record " + data.elementCid + " is being skipped since its leaf is " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " which is above the prefs limit of " + MiscHelpers.humanReadableBytes(relevantSizeBytes));
 					}
 				}
 				catch (IpfsConnectionException e)
 				{
 					bothLoaded = false;
-					support.logMessage("Failed to load size for leaf for " + data.elementCid + ": " + data.leafHash);
+					support.logMessageImportant("Failed to load size for leaf for " + data.elementCid + ": " + data.leafHash);
 				}
 				data.leafSizeFuture = null;
 			}
@@ -630,19 +639,19 @@ public class FolloweeRefreshLogic
 		
 		// We can now walk the final selection and pin all the relevant elements.
 		List<RawElementData> candidatesBeingPinned = new ArrayList<>();
-		support.logMessage("Pinning all attachments (selected " + finalSelection.size() + " records)...");
+		support.logMessageVerbose("Pinning all attachments (selected " + finalSelection.size() + " records)...");
 		for (CacheAlgorithm.Candidate<RawElementData> candidate : finalSelection)
 		{
 			RawElementData data = candidate.data();
-			support.logMessage("Pinning attachments for record " + data.elementCid + "...");
+			support.logMessageVerbose("Pinning attachments for record " + data.elementCid + "...");
 			if (null != data.thumbnailHash)
 			{
-				support.logMessage("\t-thumbnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
+				support.logMessageVerbose("\t-thumbnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")...");
 				data.futureThumbnailPin = support.addFileToFollowCache(data.thumbnailHash);
 			}
 			if (null != data.leafHash)
 			{
-				support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
+				support.logMessageVerbose("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")...");
 				data.futureLeafPin = support.addFileToFollowCache(data.leafHash);
 			}
 			candidatesBeingPinned.add(data);
@@ -650,10 +659,10 @@ public class FolloweeRefreshLogic
 		finalSelection = null;
 		
 		// Finally, walk the records whose leaves we pinned and build FollowingCacheElement instances for each.
-		support.logMessage("Waiting for all attachments to be pinned (" + candidatesBeingPinned.size() + " records)...");
+		support.logMessageVerbose("Waiting for all attachments to be pinned (" + candidatesBeingPinned.size() + " records)...");
 		for (RawElementData data : candidatesBeingPinned)
 		{
-			support.logMessage("Waiting for attachments for record " + data.elementCid + "...");
+			support.logMessageVerbose("Waiting for attachments for record " + data.elementCid + "...");
 			boolean allLeavesSuccess = true;
 			if (null != data.futureThumbnailPin)
 			{
@@ -664,7 +673,7 @@ public class FolloweeRefreshLogic
 				catch (IpfsConnectionException e)
 				{
 					// We failed the pin so drop this element.
-					support.logMessage("Failed to pin thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
+					support.logMessageImportant("Failed to pin thumbnail for " + data.elementCid + ": " + data.thumbnailHash);
 					allLeavesSuccess = false;
 					data.thumbnailHash = null;
 					data.thumbnailSizeBytes = 0;
@@ -679,7 +688,7 @@ public class FolloweeRefreshLogic
 				catch (IpfsConnectionException e)
 				{
 					// We failed the pin so drop this element.
-					support.logMessage("Failed to pin leaf for " + data.elementCid + ": " + data.leafHash);
+					support.logMessageImportant("Failed to pin leaf for " + data.elementCid + ": " + data.leafHash);
 					allLeavesSuccess = false;
 					data.leafHash = null;
 					data.audioLeafHash = null;
@@ -694,7 +703,7 @@ public class FolloweeRefreshLogic
 			{
 				support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
 			}
-			support.logMessage("Successfully pinned attachments for record " + data.elementCid + "!");
+			support.logMessageVerbose("Successfully pinned attachments for record " + data.elementCid + "!");
 			
 			// We will only proceed to add leaves to the cache if everything was pinned and there were leaf elements.
 			// (Note that we don't record elements without leaves since we always cache meta-data, anyway)
@@ -702,11 +711,11 @@ public class FolloweeRefreshLogic
 			{
 				if (null != data.thumbnailHash)
 				{
-					support.logMessage("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
+					support.logMessageVerbose("\t-thumnail " + MiscHelpers.humanReadableBytes(data.thumbnailSizeBytes) + " (" + data.thumbnailHash + ")");
 				}
 				if (null != data.leafHash)
 				{
-					support.logMessage("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
+					support.logMessageVerbose("\t-leaf " + MiscHelpers.humanReadableBytes(data.leafSizeBytes) + " (" + data.leafHash + ")");
 				}
 			}
 			else
@@ -846,11 +855,17 @@ public class FolloweeRefreshLogic
 	public interface IRefreshSupport
 	{
 		/**
-		 * Logs an informational message.
+		 * Logs a message which is considered important (should be used sparingly).
 		 * 
 		 * @param message The message to log.
 		 */
-		void logMessage(String message);
+		void logMessageImportant(String message);
+		/**
+		 * Logs a verbose message (not shown in default modes).
+		 * 
+		 * @param message The message to log.
+		 */
+		void logMessageVerbose(String message);
 		/**
 		 * Requests the size of a CID entry, in bytes.  This CID may or may not be pinned.
 		 * 

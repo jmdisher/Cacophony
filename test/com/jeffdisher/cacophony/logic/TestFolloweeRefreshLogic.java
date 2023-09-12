@@ -1167,7 +1167,12 @@ public class TestFolloweeRefreshLogic
 			_existingRecordsDisappeared.clear();
 		}
 		@Override
-		public void logMessage(String message)
+		public void logMessageImportant(String message)
+		{
+			// No logging in tests.
+		}
+		@Override
+		public void logMessageVerbose(String message)
 		{
 			// No logging in tests.
 		}
