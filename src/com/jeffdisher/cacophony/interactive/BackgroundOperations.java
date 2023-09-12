@@ -1,8 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.function.LongSupplier;
@@ -34,7 +36,7 @@ public class BackgroundOperations
 	// Instance variables which are shared between caller thread and background thread (can only be touched on monitor).
 	private boolean _handoff_keepRunning;
 	private final PriorityQueue<SchedulableFollowee> _handoff_knownFollowees;
-	private final Map<IpfsKey, ScheduleableRepublish> _handoff_localChannelsByKey;
+	private final Map<IpfsKey, SchedulableRepublish> _handoff_localChannelsByKey;
 	private IpfsKey _handoff_currentlyPublishing;
 	private long _republishIntervalMillis;
 	private long _followeeRefreshMillis;
@@ -44,9 +46,12 @@ public class BackgroundOperations
 
 	public BackgroundOperations(LongSupplier currentTimeMillisGenerator, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, long republishIntervalMillis, long followeeRefreshMillis)
 	{
+		Assert.assertTrue(republishIntervalMillis > 0L);
+		Assert.assertTrue(followeeRefreshMillis > 0L);
+		
 		_connector = connector;
 		_background = MiscHelpers.createThread(() -> {
-			RequestedOperation operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong());
+			RequestedOperation operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong(), null);
 			while (null != operation)
 			{
 				// If we have a publish operation, start that first, since that typically takes a long time.
@@ -60,6 +65,8 @@ public class BackgroundOperations
 					_connector.create(operation.publishNumber, "Publish " + operation.publishTarget);
 				}
 				// If we have a followee to refresh, do that work.
+				// We also want to handle the case of pending incremental work a bit differently, since we will prioritize its scheduling.
+				IpfsKey priorizedFolloweeRefresh = null;
 				if (null != operation.followeeKey)
 				{
 					ILogger log = logger.logStart("Background start refresh: " + operation.followeeKey);
@@ -67,6 +74,10 @@ public class BackgroundOperations
 					OperationResult refreshResult = operations.refreshFollowee(operation.followeeKey);
 					_connector.destroy(operation.followeeNumber);
 					log.logFinish("Background end refresh: " + operation.followeeKey + " -> " + refreshResult);
+					if (OperationResult.MORE_TO_DO == refreshResult)
+					{
+						priorizedFolloweeRefresh = operation.followeeKey;
+					}
 				}
 				// Now, we can wait for the publish before we go back for more work.
 				if (null != publish)
@@ -82,7 +93,7 @@ public class BackgroundOperations
 						publishLog.logFinish("FAILURE of background publish for \"" + operation.publisherKeyName + "\" (" + operation.publisherKey + "): " + error.getLocalizedMessage());
 					}
 				}
-				operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong());
+				operation = _background_consumeNextOperation(currentTimeMillisGenerator.getAsLong(), priorizedFolloweeRefresh);
 			}
 		}, "Background Operations");
 		_republishIntervalMillis = republishIntervalMillis;
@@ -96,7 +107,7 @@ public class BackgroundOperations
 			{
 				// The documentation of Comparator does a terrible job of saying how the order is actually derived from the result here so "if positive -> arg0 comes AFTER arg1").
 				// In our case, we want the list to be sorted with the oldest refresh first.  Hence:  Ascending order on the last refresh millis.
-				return Long.signum(arg0.lastRefreshMillis - arg1.lastRefreshMillis);
+				return Long.signum(arg0.nextRefreshMillis - arg1.nextRefreshMillis);
 			}
 		});
 		_handoff_localChannelsByKey = new HashMap<>();
@@ -139,8 +150,8 @@ public class BackgroundOperations
 		// The same channel should never be redundantly added.
 		Assert.assertTrue(!_handoff_localChannelsByKey.containsKey(publicKey));
 		// We will treat our startup as though we have never published before, since this isn't worth tracking in the data store.
-		long lastPublishMillis = 0L;
-		ScheduleableRepublish localChannel = new ScheduleableRepublish(keyName, publicKey, rootElement, lastPublishMillis);
+		long nextPublishMillis = 0L;
+		SchedulableRepublish localChannel = new SchedulableRepublish(keyName, publicKey, rootElement, nextPublishMillis);
 		_handoff_localChannelsByKey.put(publicKey, localChannel);
 		this.notifyAll();
 	}
@@ -167,9 +178,9 @@ public class BackgroundOperations
 		Assert.assertTrue(_handoff_localChannelsByKey.containsKey(publicKey));
 		
 		// Just reset the publication time and add the new root.
-		long lastPublishMillis = 0L;
-		ScheduleableRepublish original = _handoff_localChannelsByKey.remove(publicKey);
-		ScheduleableRepublish updated = new ScheduleableRepublish(original.keyName, publicKey, rootElement, lastPublishMillis);
+		long nextPublishMillis = 0L;
+		SchedulableRepublish original = _handoff_localChannelsByKey.remove(publicKey);
+		SchedulableRepublish updated = new SchedulableRepublish(original.keyName, publicKey, rootElement, nextPublishMillis);
 		_handoff_localChannelsByKey.put(publicKey, updated);
 		this.notifyAll();
 	}
@@ -181,41 +192,59 @@ public class BackgroundOperations
 		synchronized (this)
 		{
 			// We just add this to the priority list of followees and the background will decide what to do with it.
-			_handoff_knownFollowees.add(new SchedulableFollowee(followeeKey, lastRefreshMillis));
+			long nextRefreshMillis = lastRefreshMillis + _followeeRefreshMillis;
+			_handoff_knownFollowees.add(new SchedulableFollowee(followeeKey, nextRefreshMillis));
 			this.notifyAll();
 		}
 	}
 
 	public synchronized void intervalsWereUpdated(long republishIntervalMillis, long followeeRefreshMillis)
 	{
-		// Note that we just update the instance variables but won't reschedule anything already in our system.
+		Assert.assertTrue(republishIntervalMillis > 0L);
+		Assert.assertTrue(followeeRefreshMillis > 0L);
+		
+		// We schedule the events based on when we want them to happen (so we have flexibility in scheduling) so we will
+		// need to update their scheduling and notify when done (will have no effect if nothing is ready).
+		List<SchedulableRepublish> channelsToFix = new ArrayList<>(_handoff_localChannelsByKey.values());
+		_handoff_localChannelsByKey.clear();
+		for (SchedulableRepublish channel : channelsToFix)
+		{
+			// Subtract the old interval and add the new one.
+			long nextRepublishMillis = channel.nextPublishMillis - _republishIntervalMillis + republishIntervalMillis;
+			// If there is underflow, just say that this should be "now".
+			if (nextRepublishMillis < 0L)
+			{
+				nextRepublishMillis = 0L;
+			}
+			_handoff_localChannelsByKey.put(channel.publicKey, new SchedulableRepublish(channel.keyName, channel.publicKey, channel.rootElement, nextRepublishMillis));
+		}
+		
+		List<SchedulableFollowee> toFix = new ArrayList<>(_handoff_knownFollowees);
+		_handoff_knownFollowees.clear();
+		for (SchedulableFollowee followee : toFix)
+		{
+			// Subtract the old interval and add the new one.
+			long nextRefreshMillis = followee.nextRefreshMillis - _followeeRefreshMillis + followeeRefreshMillis;
+			// If there is underflow, just say that this should be "now".
+			if (nextRefreshMillis < 0L)
+			{
+				nextRefreshMillis = 0L;
+			}
+			_handoff_knownFollowees.add(new SchedulableFollowee(followee.followee, nextRefreshMillis));
+		}
+		
+		// Now, update the stored values for future scheduling decisions.
 		_republishIntervalMillis = republishIntervalMillis;
 		_followeeRefreshMillis = followeeRefreshMillis;
+		
+		this.notifyAll();
 	}
 
 	public synchronized boolean refreshFollowee(IpfsKey followeeKey)
 	{
-		Assert.assertTrue(null != followeeKey);
-		
-		// We will look for the followee and replace its entry in the scheduler with a last refresh time of 0L so it
-		// will be scheduled next.
-		boolean didFindFollowee = false;
-		Iterator<SchedulableFollowee> iter = _handoff_knownFollowees.iterator();
-		while (iter.hasNext())
-		{
-			SchedulableFollowee elt = iter.next();
-			if (elt.followee.equals(followeeKey))
-			{
-				// Remove this since we will re-add it.
-				iter.remove();
-				didFindFollowee = true;
-				break;
-			}
-		}
-		
+		boolean didFindFollowee = _locked_prioritizeFollowee(followeeKey, 0L);
 		if (didFindFollowee)
 		{
-			_handoff_knownFollowees.add(new SchedulableFollowee(followeeKey, 0L));
 			this.notifyAll();
 		}
 		return didFindFollowee;
@@ -251,7 +280,7 @@ public class BackgroundOperations
 
 
 	// Requests work to perform but also is responsible for the core scheduling operations - creating operations from the system described to us and the requests passed in from callers.
-	private synchronized RequestedOperation _background_consumeNextOperation(long currentTimeMillis)
+	private synchronized RequestedOperation _background_consumeNextOperation(long currentTimeMillis, IpfsKey priorizedFolloweeRefresh)
 	{
 		RequestedOperation work = null;
 		if (_handoff_keepRunning)
@@ -271,10 +300,10 @@ public class BackgroundOperations
 			long nextDueRepublishMillis = Long.MAX_VALUE;
 			// We just walk the map since it is very rare that it has more than ~1 element.
 			// For the same reason, we don't care which one we get - if multiple are ready, we will get around to them.
-			for (ScheduleableRepublish thisPublish : _handoff_localChannelsByKey.values())
+			for (SchedulableRepublish thisPublish : _handoff_localChannelsByKey.values())
 			{
 				// Before waiting, we want to see if we should perform any scheduler operations and then look at what kind of delay we should use.
-				long dueTimePublishMillis = thisPublish.lastPublishMillis + _republishIntervalMillis;
+				long dueTimePublishMillis = thisPublish.nextPublishMillis;
 				if (dueTimePublishMillis <= currentTimeMillis)
 				{
 					publishKeyName = thisPublish.keyName;
@@ -292,8 +321,9 @@ public class BackgroundOperations
 			if (null != publisherKey)
 			{
 				// The republish is due - set the current time as when we updated.
-				ScheduleableRepublish original = _handoff_localChannelsByKey.remove(publisherKey);
-				ScheduleableRepublish updated = new ScheduleableRepublish(publishKeyName, publisherKey, original.rootElement, currentTimeMillis);
+				SchedulableRepublish original = _handoff_localChannelsByKey.remove(publisherKey);
+				long nextRepublishMillis = currentTimeMillis + _republishIntervalMillis;
+				SchedulableRepublish updated = new SchedulableRepublish(publishKeyName, publisherKey, original.rootElement, nextRepublishMillis);
 				_handoff_localChannelsByKey.put(publisherKey, updated);
 				_handoff_currentlyPublishing = publisherKey;
 				shouldNotify = true;
@@ -301,17 +331,25 @@ public class BackgroundOperations
 				_background_nextOperationNumber += 1;
 			}
 			
+			// If we want to prioritize a followee, at this point, we will re-enqueue it.
+			if (null != priorizedFolloweeRefresh)
+			{
+				// We want to say that it is due "now", meaning that anything behind schedule will run first but we can still run this immediately.
+				_locked_prioritizeFollowee(priorizedFolloweeRefresh, currentTimeMillis);
+			}
+			
 			// Determine if we have refresh work to do.
 			IpfsKey refresh = null;
 			int refreshNumber = -1;
 			if (!_handoff_knownFollowees.isEmpty())
 			{
-				long dueTimeRefreshMillis = _handoff_knownFollowees.peek().lastRefreshMillis + _followeeRefreshMillis;
+				long dueTimeRefreshMillis = _handoff_knownFollowees.peek().nextRefreshMillis;
 				if (dueTimeRefreshMillis <= currentTimeMillis)
 				{
 					// The refresh is due - remove this from the list and re-add a new schedulable at the end, with the current time.
 					SchedulableFollowee followee = _handoff_knownFollowees.remove();
-					_handoff_knownFollowees.add(new SchedulableFollowee(followee.followee, currentTimeMillis));
+					long nextRefreshMillis = currentTimeMillis + _followeeRefreshMillis;
+					_handoff_knownFollowees.add(new SchedulableFollowee(followee.followee, nextRefreshMillis));
 					refresh = followee.followee;
 					refreshNumber = _background_nextOperationNumber;
 					_background_nextOperationNumber += 1;
@@ -339,7 +377,7 @@ public class BackgroundOperations
 				long nextDueMillis = nextDueRepublishMillis;
 				if (!_handoff_knownFollowees.isEmpty())
 				{
-					nextDueMillis = Math.min(nextDueMillis, _handoff_knownFollowees.peek().lastRefreshMillis + _followeeRefreshMillis);
+					nextDueMillis = Math.min(nextDueMillis, _handoff_knownFollowees.peek().nextRefreshMillis);
 				}
 				Assert.assertTrue(currentTimeMillis < nextDueMillis);
 				long millisToWait = nextDueMillis - currentTimeMillis;
@@ -357,6 +395,39 @@ public class BackgroundOperations
 			}
 		}
 		return work;
+	}
+
+	private boolean _locked_prioritizeFollowee(IpfsKey followeeKey, long scheduledTimeMillis)
+	{
+		Assert.assertTrue(null != followeeKey);
+		
+		// We will look for the followee and replace its entry in the scheduler with a last refresh time of 0L so it
+		// will be scheduled next.
+		boolean didFindFollowee = false;
+		boolean didChangeFollowee = false;
+		Iterator<SchedulableFollowee> iter = _handoff_knownFollowees.iterator();
+		while (iter.hasNext())
+		{
+			SchedulableFollowee elt = iter.next();
+			if (elt.followee.equals(followeeKey))
+			{
+				// We will disregard this if the scheduled time is already sooner than the requested.
+				if (scheduledTimeMillis < elt.nextRefreshMillis)
+				{
+					// Remove this since we will re-add it.
+					iter.remove();
+					didChangeFollowee = true;
+				}
+				didFindFollowee = true;
+				break;
+			}
+		}
+		
+		if (didChangeFollowee)
+		{
+			_handoff_knownFollowees.add(new SchedulableFollowee(followeeKey, scheduledTimeMillis));
+		}
+		return didFindFollowee;
 	}
 
 
@@ -415,7 +486,7 @@ public class BackgroundOperations
 	) {}
 
 
-	private static record SchedulableFollowee(IpfsKey followee, long lastRefreshMillis) {}
+	private static record SchedulableFollowee(IpfsKey followee, long nextRefreshMillis) {}
 
-	private static record ScheduleableRepublish(String keyName, IpfsKey publicKey, IpfsFile rootElement, long lastPublishMillis) {}
+	private static record SchedulableRepublish(String keyName, IpfsKey publicKey, IpfsFile rootElement, long nextPublishMillis) {}
 }

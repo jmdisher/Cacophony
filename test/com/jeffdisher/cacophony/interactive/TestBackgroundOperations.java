@@ -537,9 +537,46 @@ public class TestBackgroundOperations
 		back.shutdownProcess();
 	}
 
+	@Test
+	public void incrementalScheduling() throws Throwable
+	{
+		long republishIntervalMillis = 500L;
+		// Do a normal start-up with one channel - we will use 500 ms reschedule so that we will see some internal prioritization.
+		long followeeRefreshMillis = 500L;
+		MockTimeGenerator generator = new MockTimeGenerator();
+		SilentLogger logger = new SilentLogger();
+		TestOperations ops = new TestOperations();
+		ops.incrementalResultCount = 2;
+		HandoffConnector<Integer, String> statusHandoff = new HandoffConnector<>(DISPATCHER);
+		BackgroundOperations back = new BackgroundOperations(generator, logger, ops, statusHandoff, republishIntervalMillis, followeeRefreshMillis);
+		TestListener listener = new TestListener();
+		back.startProcess();
+		statusHandoff.registerListener(listener, 0);
+		
+		// Add the new followee with a counter on the calls.
+		int callCount[] = new int[1];
+		Consumer<IpfsKey> refresher = (IpfsKey key) -> {
+			callCount[0] += 1;
+		};
+		ops.returnFolloweeOn(MockKeys.K1, refresher);
+		back.enqueueFolloweeRefresh(MockKeys.K1, 1L);
+		
+		// Wait until these are done.
+		ops.waitForConsume();
+		back.removeFollowee(MockKeys.K1);
+		
+		back.shutdownProcess();
+		
+		// Check call count: should be 3 since 2 times returned that there was more work to do and then the final one will finish.
+		Assert.assertEquals(3, callCount[0]);
+		Assert.assertEquals(3, listener.started);
+		Assert.assertEquals(3, listener.ended);
+	}
+
 
 	private static class TestOperations implements BackgroundOperations.IOperationRunner
 	{
+		public int incrementalResultCount;
 		private IpfsFile _match;
 		private FuturePublish _return;
 		private IpfsKey _expectedFolloweeKey;
@@ -571,12 +608,22 @@ public class TestBackgroundOperations
 		{
 			Assert.assertEquals(_expectedFolloweeKey, followeeKey);
 			Consumer<IpfsKey> toRun = _refresher;
-			_expectedFolloweeKey = null;
-			_refresher = null;
+			BackgroundOperations.OperationResult result;
+			if (this.incrementalResultCount > 0)
+			{
+				this.incrementalResultCount -= 1;
+				result = BackgroundOperations.OperationResult.MORE_TO_DO;
+			}
+			else
+			{
+				_expectedFolloweeKey = null;
+				_refresher = null;
+				result = BackgroundOperations.OperationResult.SUCCESS;
+			}
 			this.notifyAll();
 			
 			toRun.accept(followeeKey);
-			return BackgroundOperations.OperationResult.SUCCESS;
+			return result;
 		}
 		public synchronized void waitForConsume()
 		{
