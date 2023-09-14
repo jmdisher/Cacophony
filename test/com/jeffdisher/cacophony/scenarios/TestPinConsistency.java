@@ -465,9 +465,9 @@ public class TestPinConsistency
 		Assert.assertEquals(0, records.getRecordList().size());
 		IpfsFile elt = userNode.storeDataToNode(data);
 		records.addRecord(elt);
-		IpfsFile newRecords = userNode.storeDataToNode(records.serializeV1());
+		IpfsFile newRecords = userNode.storeDataToNode(records.serializeV2());
 		index.recordsCid = newRecords;
-		IpfsFile newIndex = userNode.storeDataToNode(index.serializeV1());
+		IpfsFile newIndex = userNode.storeDataToNode(index.serializeV2());
 		userNode.manualPublishLocal(newIndex);
 	}
 
@@ -481,9 +481,9 @@ public class TestPinConsistency
 		Assert.assertEquals(1, records.getRecordList().size());
 		userNode.deleteFile(records.getRecordList().get(0));
 		records.removeRecord(records.getRecordList().get(0));
-		IpfsFile newRecords = userNode.storeDataToNode(records.serializeV1());
+		IpfsFile newRecords = userNode.storeDataToNode(records.serializeV2());
 		index.recordsCid = newRecords;
-		IpfsFile newIndex = userNode.storeDataToNode(index.serializeV1());
+		IpfsFile newIndex = userNode.storeDataToNode(index.serializeV2());
 		userNode.manualPublishLocal(newIndex);
 	}
 
