@@ -51,7 +51,12 @@ public class CacheHelpers
 			{
 				for (FollowingCacheElement elt : followees.snapshotAllElementsForFollowee(key).values())
 				{
-					evictionCandidates.add(new CacheAlgorithm.Candidate<>(elt.combinedSizeBytes(), new Pair<>(key, elt)));
+					// We only consider this a candidate if it has attached leaves (a non-zero combined size).
+					long combinedSize = elt.combinedSizeBytes();
+					if (combinedSize > 0L)
+					{
+						evictionCandidates.add(new CacheAlgorithm.Candidate<>(combinedSize, new Pair<>(key, elt)));
+					}
 				}
 			}
 			
@@ -76,8 +81,9 @@ public class CacheHelpers
 					access.unpin(leafHash);
 				}
 				
-				// Clean up the cache.
+				// Clean up the cache - we want to remove the existing cache element and replace it with one which only has the meta-data.
 				followees.removeElement(followee, element.elementHash());
+				followees.addElement(followee, new FollowingCacheElement(element.elementHash(), null, null, 0L));
 			}
 		}
 	}

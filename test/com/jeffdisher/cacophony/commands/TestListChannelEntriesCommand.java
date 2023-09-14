@@ -121,7 +121,7 @@ public class TestListChannelEntriesCommand
 		user2.shutdown();
 		
 		String fullOutput = new String(captureStream.toByteArray());
-		Assert.assertTrue(fullOutput.contains("Element CID: " + replyTo.toSafeString() + " (not cached)"));
-		Assert.assertTrue(fullOutput.contains("Element CID: " + theReply.recordCid.toSafeString() + " (not cached) is a reply to: " + replyTo.toSafeString()));
+		Assert.assertTrue(fullOutput.contains("Element CID: " + replyTo.toSafeString() + " (image: (none), leaf: (none))"));
+		Assert.assertTrue(fullOutput.contains("Element CID: " + theReply.recordCid.toSafeString() + " (image: (none), leaf: (none)) is a reply to: " + replyTo.toSafeString()));
 	}
 }

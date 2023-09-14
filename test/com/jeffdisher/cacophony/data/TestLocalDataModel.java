@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -24,9 +25,12 @@ import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockKeys;
+import com.jeffdisher.cacophony.testutils.MockNodeHelpers;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
+import com.jeffdisher.cacophony.testutils.MockSwarm;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -377,6 +381,52 @@ public class TestLocalDataModel
 		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(stats, fileSystem, null);
 		model.openForRead().close();
 		model.openForWrite().close();
+	}
+
+	@Test
+	public void v3FolloweeMigration() throws Throwable
+	{
+		// This just shows how we migrate the V3 followee data by looking up referenced records with no cached leaves.
+		// We will create a single node and populate it with followee data.
+		MockSingleNode node = new MockSingleNode(new MockSwarm());
+		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
+		
+		// Create the home data with 1 post with one attachment.
+		IpfsFile homeRoot = MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K1, "Home", "pic".getBytes());
+		byte[] thumb = "thumb".getBytes();
+		IpfsFile thumbHash = MockSingleNode.generateHash(thumb);
+		IpfsFile postWithThumb = MockNodeHelpers.storeStreamRecord(node, MockKeys.K1, "First post!", thumb, null, 0, null);
+		homeRoot = MockNodeHelpers.attachPostToUserAndPublish(node, MockKeys.K1, homeRoot, postWithThumb);
+		IpfsFile postNoLeaves = MockNodeHelpers.storeStreamRecord(node, MockKeys.K1, "Nothing", null, null, 0, null);
+		homeRoot = MockNodeHelpers.attachPostToUserAndPublish(node, MockKeys.K1, homeRoot, postNoLeaves);
+		
+		// Populate just the followee entry and save it as V3.
+		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
+		fileSystem.createConfigDirectory();
+		fileSystem.writeTrivialFile("version", new byte[] {3});
+		try (IConfigFileSystem.AtomicOutputStream output = fileSystem.writeAtomicFile("opcodes.v3.gzlog"))
+		{
+			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(output.getStream()))
+			{
+				FolloweeData followees = FolloweeData.createEmpty();
+				followees.createNewFollowee(MockKeys.K1, homeRoot, null, 0L);
+				followees.addElement(MockKeys.K1, new FollowingCacheElement(postWithThumb, thumbHash, null, thumb.length));
+				followees.serializeToOpcodeWriterV3(writer);
+			}
+			output.commit();
+		}
+		
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, network);
+		try (IReadOnlyLocalData reader = model.openForRead())
+		{
+			FolloweeData followees = reader.readFollowIndex();
+			Assert.assertEquals(1, followees.getAllKnownFollowees().size());
+			Map<IpfsFile, FollowingCacheElement> map = followees.snapshotAllElementsForFollowee(MockKeys.K1);
+			Assert.assertEquals(thumbHash, map.get(postWithThumb).imageHash());
+			Assert.assertNull(map.get(postNoLeaves).imageHash());
+		}
+		
+		network.shutdown();
 	}
 
 

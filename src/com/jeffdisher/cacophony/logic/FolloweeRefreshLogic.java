@@ -479,6 +479,10 @@ public class FolloweeRefreshLogic
 			, boolean shouldReportRecordFound
 	) throws IpfsConnectionException, SizeConstraintException, FailedDeserializationException
 	{
+		// We want to verify that we handle all of the elements in oldestFirstRecordCandidates, somehow (either cache or skip).
+		int initialCandidateListSize = oldestFirstNewRecordsBeingProcessedInitial.size();
+		int elementsCached = 0;
+		
 		// Now, wait for all the sizes to come back and only pin elements which are below our size threshold.
 		List<RawElementData> newRecordsBeingProcessedSizeChecked = new ArrayList<>();
 		support.logMessageVerbose("Checking sizes of new records (checking " + oldestFirstNewRecordsBeingProcessedInitial.size() + " records)...");
@@ -636,6 +640,26 @@ public class FolloweeRefreshLogic
 		newRecordsBeingProcessedCalculatingLeaves = null;
 		
 		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = _selectCandidatesForAddition(prefs, currentCacheUsageInBytes, forceSelectFirstElement, candidates);
+		// Note that we still need to produce a cached record decision for this, even if we don't want to cache the leaves.
+		if (finalSelection.size() != candidates.size())
+		{
+			// We _could_ use identity for this but relying on that seems dangerous.
+			Set<IpfsFile> selectedElementSet = finalSelection.stream()
+					.map((CacheAlgorithm.Candidate<RawElementData> candidate) -> candidate.data().elementCid)
+					.collect(Collectors.toSet())
+			;
+			for (CacheAlgorithm.Candidate<RawElementData> candidate : candidates)
+			{
+				RawElementData data = candidate.data();
+				if (!selectedElementSet.contains(data.elementCid))
+				{
+					// This was passed over so just create the degenerate cache result.
+					Assert.assertTrue(null != data.record);
+					support.cacheRecordForFollowee(data.elementCid, data.record, null, null, null, 0, 0L);
+					elementsCached += 1;
+				}
+			}
+		}
 		candidates = null;
 		
 		// We can now walk the final selection and pin all the relevant elements.
@@ -740,7 +764,18 @@ public class FolloweeRefreshLogic
 			}
 			// Notify the support that we pinned the record and leaves leaves.
 			support.cacheRecordForFollowee(data.elementCid, data.record, data.thumbnailHash, data.audioLeafHash, data.videoLeafHash, data.videoEdgeSize, data.thumbnailSizeBytes + data.leafSizeBytes);
+			elementsCached += 1;
 		}
+		// Make sure that we didn't miss anything.
+		int permanentSkips = (null != out_permanentFailures)
+				? out_permanentFailures.size()
+				: 0
+		;
+		int temporarySkips = (null != out_temporaryFailures)
+				? out_temporaryFailures.size()
+				: 0
+		;
+		Assert.assertTrue(initialCandidateListSize == (permanentSkips + temporarySkips + elementsCached));
 	}
 
 	private static List<CacheAlgorithm.Candidate<RawElementData>> _selectCandidatesForAddition(PrefsData prefs

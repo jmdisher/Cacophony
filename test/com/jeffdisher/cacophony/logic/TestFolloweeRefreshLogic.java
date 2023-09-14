@@ -65,7 +65,8 @@ public class TestFolloweeRefreshLogic
 	{
 		Map<IpfsFile, byte[]> data = new HashMap<>();
 		IpfsFile index = _buildEmptyUser(data);
-		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
+		IpfsFile element = _storeRecord(data, "Name", null, null);
+		index = _addElementToStream(data, index, element);
 		PrefsData prefs = PrefsData.defaultPrefs();
 		prefs.videoEdgePixelMax = 1280;
 		prefs.followeeCacheTargetBytes = 5L;
@@ -73,12 +74,13 @@ public class TestFolloweeRefreshLogic
 		IpfsFile oldIndexElement = null;
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
-		// We don't add leaf-less entries to the followee index, since that would be redundant.
+		
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
-		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(element, result[0].elementHash());
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
@@ -169,15 +171,16 @@ public class TestFolloweeRefreshLogic
 		
 		// Now, add an element with no leaves and refresh.
 		IpfsFile oldIndex = index;
-		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
+		IpfsFile element = _storeRecord(data, "Name", null, null);
+		index = _addElementToStream(data, index, element);
 		originalElements = result;
 		oldIndexElement = oldIndex;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
-		// We don't add leaf-less entries to the followee index, since that would be redundant.
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(element, result[0].elementHash());
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
@@ -353,13 +356,16 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		
-		// We expect that this will succeed, since it isn't a meta-data failure, but we will decide NOT to cache this element.
+		// We will cache the element but neither of the leaves, even though we would normally consider them since we will gracfully fail.
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
-		// Even though we failed to fetch the leaf, so there will be no cached element, we will still pin the record.
-		Assert.assertEquals(0, result.length);
+		
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(records[0], result[0].elementHash());
+		Assert.assertNull(result[0].imageHash());
+		Assert.assertNull(result[0].leafHash());
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
@@ -576,13 +582,15 @@ public class TestFolloweeRefreshLogic
 		// Now, replace it with a valid element (with no leaves) and see that we do see this pin but also the unpin of the previous (vacuous unpin).
 		oldIndex = index;
 		index = _removeElementFromStream(data, index, rawHash);
-		index = _addElementToStream(data, index, _storeRecord(data, "Name", null, null));
+		IpfsFile newHash = _storeRecord(data, "Name", null, null);
+		index = _addElementToStream(data, index, newHash);
 		originalElements = result;
 		newIndexElement = index;
 		currentCacheUsageInBytes = 0L;
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(newHash, result[0].elementHash());
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
@@ -610,8 +618,8 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		oldIndexElement = newIndexElement;
 		FollowingCacheElement[] result = testSupport.getList();
-		// We should see only the 4, since post2 has no attachments.
-		Assert.assertEquals(4, result.length);
+		// We should see all 5 elements.
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, result.length);
 		// We should see all the records observed, but only the 5 limit pinned.
 		Assert.assertEquals(6, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
@@ -619,7 +627,7 @@ public class TestFolloweeRefreshLogic
 		// Refresh again to make sure that we get the remainder.
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(5, result.length);
+		Assert.assertEquals(6, result.length);
 		// We should see nothing new observed but the 1 new element pinned.
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
@@ -673,10 +681,11 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		oldIndexElement = newIndexElement;
 		FollowingCacheElement[] result = testSupport.getList();
-		// We should see only the 2, since only post6 and post3 are well-formed from the initial sync.
-		Assert.assertEquals(2, result.length);
+		// We should see only the 3, since only post6, post4, and post3 are well-formed from the initial sync.
+		Assert.assertEquals(3, result.length);
 		Assert.assertEquals(post3, result[0].elementHash());
-		Assert.assertEquals(post6, result[1].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post6, result[2].elementHash());
 		// We should see all the records observed, but only the ones we succeeded in reading pinned.
 		Assert.assertEquals(8, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(3, testSupport.getAndClearNewRecordsPinned().length);
@@ -691,9 +700,11 @@ public class TestFolloweeRefreshLogic
 		// Refresh again to make sure that we get the remainder.
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(4, result.length);
 		Assert.assertEquals(post3, result[0].elementHash());
-		Assert.assertEquals(post6, result[1].elementHash());
+		Assert.assertEquals(post4, result[1].elementHash());
+		Assert.assertEquals(post6, result[2].elementHash());
+		Assert.assertEquals(post0, result[3].elementHash());
 		
 		// We should see nothing new observed but the 1 new element pinned.
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
@@ -741,12 +752,13 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		oldIndexElement = newIndexElement;
 		FollowingCacheElement[] result = testSupport.getList();
-		// We should see only the 4, since post2 has no attachments.
-		Assert.assertEquals(4, result.length);
-		Assert.assertEquals(post3, result[0].elementHash());
-		Assert.assertEquals(post4, result[1].elementHash());
-		Assert.assertEquals(post5, result[2].elementHash());
-		Assert.assertEquals(post6, result[3].elementHash());
+		// We should see the 5 elements.
+		Assert.assertEquals(5, result.length);
+		Assert.assertEquals(post2, result[0].elementHash());
+		Assert.assertEquals(post3, result[1].elementHash());
+		Assert.assertEquals(post4, result[2].elementHash());
+		Assert.assertEquals(post5, result[3].elementHash());
+		Assert.assertEquals(post6, result[4].elementHash());
 		// We should see all the records observed, but only the 5 limit pinned.
 		Assert.assertEquals(7, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
@@ -764,13 +776,18 @@ public class TestFolloweeRefreshLogic
 		newIndexElement = index;
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		// The list will now just have 3 elements, since we removed post6 and post7 has no attachments.
-		Assert.assertEquals(3, result.length);
-		Assert.assertEquals(post3, result[0].elementHash());
-		Assert.assertEquals(post4, result[1].elementHash());
-		Assert.assertEquals(post5, result[2].elementHash());
+		// The list will now just have 5 elements, since we removed post6.
+		Assert.assertEquals(5, result.length);
+		Assert.assertEquals(post2, result[0].elementHash());
+		Assert.assertEquals(post3, result[1].elementHash());
+		Assert.assertEquals(post4, result[2].elementHash());
+		Assert.assertEquals(post5, result[3].elementHash());
+		Assert.assertEquals(post7, result[4].elementHash());
+		// We observe 7 being added.
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
+		// We pinned 7.
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		// We observed 0 and 6 disappearing.
 		Assert.assertEquals(2, testSupport.getAndClearRecordsDisappeared().length);
 		Assert.assertEquals(0, testSupport.permanentSkips.size());
 		Assert.assertEquals(0, testSupport.temporarySkips.size());
@@ -779,11 +796,13 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = newIndexElement;
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(4, result.length);
-		Assert.assertEquals(post3, result[0].elementHash());
-		Assert.assertEquals(post4, result[1].elementHash());
-		Assert.assertEquals(post5, result[2].elementHash());
-		Assert.assertEquals(post1, result[3].elementHash());
+		Assert.assertEquals(6, result.length);
+		Assert.assertEquals(post2, result[0].elementHash());
+		Assert.assertEquals(post3, result[1].elementHash());
+		Assert.assertEquals(post4, result[2].elementHash());
+		Assert.assertEquals(post5, result[3].elementHash());
+		Assert.assertEquals(post7, result[4].elementHash());
+		Assert.assertEquals(post1, result[5].elementHash());
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
@@ -825,12 +844,13 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		oldIndexElement = newIndexElement;
 		FollowingCacheElement[] result = testSupport.getList();
-		// We should see only the 4, since post7 has no attachments.
-		Assert.assertEquals(4, result.length);
+		// We should see 5 posts.
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, result.length);
 		Assert.assertEquals(post3, result[0].elementHash());
 		Assert.assertEquals(post4, result[1].elementHash());
 		Assert.assertEquals(post5, result[2].elementHash());
 		Assert.assertEquals(post6, result[3].elementHash());
+		Assert.assertEquals(post7, result[4].elementHash());
 		// We should see all the records observed, but only the 5 limit pinned.
 		Assert.assertEquals(8, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
@@ -847,11 +867,12 @@ public class TestFolloweeRefreshLogic
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
 		// The list will be unchanged.
-		Assert.assertEquals(4, result.length);
+		Assert.assertEquals(5, result.length);
 		Assert.assertEquals(post3, result[0].elementHash());
 		Assert.assertEquals(post4, result[1].elementHash());
 		Assert.assertEquals(post5, result[2].elementHash());
 		Assert.assertEquals(post6, result[3].elementHash());
+		Assert.assertEquals(post7, result[4].elementHash());
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(1, testSupport.getAndClearRecordsDisappeared().length);
@@ -862,13 +883,79 @@ public class TestFolloweeRefreshLogic
 		oldIndexElement = newIndexElement;
 		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(6, result.length);
+		Assert.assertEquals(7, result.length);
 		Assert.assertEquals(post3, result[0].elementHash());
 		Assert.assertEquals(post4, result[1].elementHash());
 		Assert.assertEquals(post5, result[2].elementHash());
 		Assert.assertEquals(post6, result[3].elementHash());
-		Assert.assertEquals(post0, result[4].elementHash());
-		Assert.assertEquals(post1, result[5].elementHash());
+		Assert.assertEquals(post7, result[4].elementHash());
+		Assert.assertEquals(post0, result[5].elementHash());
+		Assert.assertEquals(post1, result[6].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(2, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+	}
+
+	@Test
+	public void saturateCache() throws Throwable
+	{
+		// Make sure that we still see a cached record, even if not everything is selected for caching.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		IpfsFile post0 = _storeRecord(data, "post0", new byte[] {0, 0}, new byte[] {1, 0});
+		IpfsFile post1 = _storeRecord(data, "post1", new byte[] {0, 1}, new byte[] {1, 1});
+		IpfsFile post2 = _storeRecord(data, "post2", new byte[] {0, 2}, new byte[] {1, 2});
+		IpfsFile post3 = _storeRecord(data, "post3", new byte[] {0, 3}, new byte[] {1, 3});
+		IpfsFile post4 = _storeRecord(data, "post4", new byte[] {0, 4}, new byte[] {1, 4});
+		IpfsFile post5 = _storeRecord(data, "post5", new byte[] {0, 5}, new byte[] {1, 5});
+		IpfsFile post6 = _storeRecord(data, "post6", new byte[] {0, 6}, new byte[] {1, 6});
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post3);
+		index = _addElementToStream(data, index, post4);
+		index = _addElementToStream(data, index, post5);
+		index = _addElementToStream(data, index, post6);
+		
+		// Do the first step in the sync.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		prefs.followeeCacheTargetBytes = 10L;
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		oldIndexElement = newIndexElement;
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see 5 posts.
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, result.length);
+		Assert.assertEquals(post2, result[0].elementHash());
+		Assert.assertEquals(post3, result[1].elementHash());
+		Assert.assertEquals(post4, result[2].elementHash());
+		Assert.assertEquals(post5, result[3].elementHash());
+		Assert.assertEquals(post6, result[4].elementHash());
+		// We should see all the records observed, but only the 5 limit pinned.
+		Assert.assertEquals(7, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Refresh again to see the remainder.
+		oldIndexElement = newIndexElement;
+		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(7, result.length);
+		Assert.assertEquals(post2, result[0].elementHash());
+		Assert.assertEquals(post3, result[1].elementHash());
+		Assert.assertEquals(post4, result[2].elementHash());
+		Assert.assertEquals(post5, result[3].elementHash());
+		Assert.assertEquals(post6, result[4].elementHash());
+		Assert.assertEquals(post0, result[5].elementHash());
+		Assert.assertEquals(post1, result[6].elementHash());
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(2, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
@@ -1309,11 +1396,7 @@ public class TestFolloweeRefreshLogic
 		{
 			_newRecordsPinned.add(elementHash);
 			IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
-			// We only want to cache the actual element if there is at least an image or leaf.
-			if ((null != imageHash) || (null != leafHash))
-			{
-				_list.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedLeafSizeBytes));
-			}
+			_list.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedLeafSizeBytes));
 		}
 		@Override
 		public void removeRecordForFollowee(IpfsFile elementHash)

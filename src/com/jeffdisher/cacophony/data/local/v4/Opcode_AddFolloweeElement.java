@@ -9,10 +9,12 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * The opcode to describe a single cached element of a followee.
- * Note that, while we pin all StreamRecord meta-data elements, we only create one of these instances for the case where
- * we also pinned some of the sub-elements.
+ * As of V4 data model, we now store one of these records for every followee element we have cached, at all, even if it
+ * is only the elementHash for the meta-data.
+ * However, in these cases, combinedLeafSizeBytes will be 0 since it only counts the combined sizes of the imageHash and
+ * leafHash (since we don't allow the elementHash to be evicted from cache).
  */
-public record Opcode_AddFolloweeElement(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes) implements IDataOpcode
+public record Opcode_AddFolloweeElement(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedLeafSizeBytes) implements IDataOpcode
 {
 	public static final OpcodeType TYPE = OpcodeType.ADD_FOLLOWEE_ELEMENT;
 
@@ -44,7 +46,7 @@ public record Opcode_AddFolloweeElement(IpfsFile elementHash, IpfsFile imageHash
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.followeeLoader().addFolloweeElement(this.elementHash, this.imageHash, this.leafHash, this.combinedSizeBytes);
+		context.followeeLoader().addFolloweeElement(this.elementHash, this.imageHash, this.leafHash, this.combinedLeafSizeBytes);
 	}
 
 	@Override
@@ -53,6 +55,6 @@ public record Opcode_AddFolloweeElement(IpfsFile elementHash, IpfsFile imageHash
 		serializer.writeCid(this.elementHash);
 		serializer.writeCid(this.imageHash);
 		serializer.writeCid(this.leafHash);
-		serializer.writeLong(this.combinedSizeBytes);
+		serializer.writeLong(this.combinedLeafSizeBytes);
 	}
 }

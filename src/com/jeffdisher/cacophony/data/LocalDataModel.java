@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.jeffdisher.cacophony.data.global.AbstractIndex;
+import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.data.local.v3.OpcodeContextV3;
 import com.jeffdisher.cacophony.data.local.v4.FolloweeLoader;
 import com.jeffdisher.cacophony.data.local.v4.OpcodeCodec;
@@ -19,10 +22,12 @@ import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.projection.ExplicitCacheData;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
 import com.jeffdisher.cacophony.projection.FolloweeData;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PinCacheData;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
@@ -108,7 +113,15 @@ public class LocalDataModel
 			else if (V3 == version)
 			{
 				// This version can be migrated.
-				_migrateData(fileSystem, scheduler);
+				try
+				{
+					_migrateData(fileSystem, scheduler);
+				}
+				catch (IpfsConnectionException e)
+				{
+					// This was a network error during migration so we will throw this as usage that they should check their IPFS daemon.
+					throw new UsageException("Migration aborted due to IPFS connection error.  Make sure that your IPFS daemon is running: " + e.getLocalizedMessage());
+				}
 			}
 			else
 			{
@@ -181,7 +194,7 @@ public class LocalDataModel
 		return builder.finish();
 	}
 
-	private static void _migrateData(IConfigFileSystem fileSystem, INetworkScheduler scheduler)
+	private static void _migrateData(IConfigFileSystem fileSystem, INetworkScheduler scheduler) throws IpfsConnectionException
 	{
 		try (InputStream opcodeLog = fileSystem.readAtomicFile(V3_LOG))
 		{
@@ -200,11 +213,41 @@ public class LocalDataModel
 			FolloweeData followees = context.followees();
 			FavouritesCacheData favouritesCache = context.favouritesCache();
 			ExplicitCacheData explicitCache = context.explicitCache();
+			
+			// Get all the home channel data.
 			Set<String> channelKeyNames = channels.getKeyNames();
 			IpfsFile[] homeRoots = channelKeyNames.stream()
 					.map((String channelKeyName) -> channels.getLastPublishedIndex(channelKeyName))
 					.toArray((int size) -> new IpfsFile[size])
 			;
+			
+			// Look up all the data associated with the followees (since V3 only had partial data, but we need all the elements).
+			// Since this is just one-time migration, we will fetch everything synchronously (for simplicity).
+			try
+			{
+				for (IpfsKey followeeKey : followees.getAllKnownFollowees())
+				{
+					// Load the records element so we can access the raw list of posts.
+					AbstractIndex index = scheduler.readData(followees.getLastFetchedRootForFollowee(followeeKey), AbstractIndex.DESERIALIZER).get();
+					AbstractRecords records = scheduler.readData(index.recordsCid, AbstractRecords.DESERIALIZER).get();
+					Map<IpfsFile, FollowingCacheElement> map = followees.snapshotAllElementsForFollowee(followeeKey);
+					for (IpfsFile cid : records.getRecordList())
+					{
+						// We are just looking at these to add the trivial records (those without pinned leaves).
+						if (!map.containsKey(cid))
+						{
+							followees.addElement(followeeKey, new FollowingCacheElement(cid, null, null, 0L));
+						}
+					}
+				}
+			}
+			catch (FailedDeserializationException e)
+			{
+				// (note that all of the data we are referencing here is actually pinned, so these loads are safe).
+				throw Assert.unexpected(e);
+			}
+			
+			// We can now build the pin cache.
 			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
 			
 			// In preparation for the change to the explicit cache user info shape, rationalize all the user info unpins.

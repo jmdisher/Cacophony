@@ -108,8 +108,6 @@ public class FolloweeData implements IFolloweeReading
 			// Write any cached elements for this followee.
 			for (FollowingCacheElement record : elt.getValue())
 			{
-				// In V4, Opcode_AddFolloweeElement MUST have at least image or leaf. 
-				Assert.assertTrue((null != record.imageHash()) || (null != record.leafHash()));
 				writer.writeOpcode(new Opcode_AddFolloweeElement(record.elementHash(), record.imageHash(), record.leafHash(), record.combinedSizeBytes()));
 			}
 			// Write any of the skipped records which would have been in this followee's list.
@@ -179,18 +177,17 @@ public class FolloweeData implements IFolloweeReading
 	 */
 	public void addElement(IpfsKey followeeKey, FollowingCacheElement element)
 	{
-		// If we are adding an element, it MUST have at least an image or a leaf.
-		Assert.assertTrue((null != element.imageHash()) || (null != element.leafHash()));
-		
 		// Make sure that the element hasn't been added before.
 		List<FollowingCacheElement> list = _followeeElements.get(followeeKey);
 		for (FollowingCacheElement elt : list)
 		{
 			Assert.assertTrue(!element.elementHash().equals(elt.elementHash()));
 		}
+		
 		// Make sure that this isn't being skipped (since we shouldn't have found it, in that case).
 		Assert.assertTrue(!_temporarilySkippedRecordsByFollowee.get(followeeKey).contains(element.elementHash()));
 		Assert.assertTrue(!_permanentlySkippedRecordsByFollowee.get(followeeKey).contains(element.elementHash()));
+		
 		// Add this to the relevant collections.
 		list.add(element);
 		_elementsForLookup.get(followeeKey).put(element.elementHash(), element);

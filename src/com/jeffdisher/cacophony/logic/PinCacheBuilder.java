@@ -139,6 +139,8 @@ public class PinCacheBuilder
 		// For the followee, we only see the filtered set and only pin what we recorded in the element (meta-data is always pinned, of course).
 		for (FollowingCacheElement elt : snapshotAllElementsForFollowee.values())
 		{
+			// Every element has a meta-data entry but image and leaf are optional.
+			_pin(elt.elementHash());
 			IpfsFile image = elt.imageHash();
 			if (null != image)
 			{
@@ -171,12 +173,13 @@ public class PinCacheBuilder
 		}
 		AbstractRecords records = _scheduler.readData(recordsFile, AbstractRecords.DESERIALIZER).get();
 		
-		List<FutureRead<AbstractRecord>> futures = fetchRecords ? new ArrayList<>() : null;
-		for (IpfsFile recordFile : records.getRecordList())
+		List<FutureRead<AbstractRecord>> futures = null;
+		if (fetchRecords)
 		{
-			_pin(recordFile);
-			if (fetchRecords)
+			futures = new ArrayList<>();
+			for (IpfsFile recordFile : records.getRecordList())
 			{
+				_pin(recordFile);
 				futures.add(_scheduler.readData(recordFile, AbstractRecord.DESERIALIZER));
 			}
 		}

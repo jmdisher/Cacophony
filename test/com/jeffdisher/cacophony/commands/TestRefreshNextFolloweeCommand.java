@@ -315,11 +315,12 @@ public class TestRefreshNextFolloweeCommand
 		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(MockKeys.K2, nextKey);
 		
-		// Check that we see just the one entry in the cache.
+		// We should see both of these in the cash, but only recordToKeep will have leaves since the second would give up on leaves when it saw the missing one.
 		followees = user.readFollowIndex();
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = followees.snapshotAllElementsForFollowee(MockKeys.K3);
-		Assert.assertEquals(1, cachedEntries.size());
-		Assert.assertEquals(recordToKeep, cachedEntries.values().iterator().next().elementHash());
+		Assert.assertEquals(2, cachedEntries.size());
+		Assert.assertNull(cachedEntries.get(records.getRecordList().get(0)).leafHash());
+		Assert.assertNotNull(cachedEntries.get(records.getRecordList().get(1)).imageHash());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();

@@ -4,7 +4,6 @@ import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
 /**
@@ -29,8 +28,6 @@ public class FolloweeLoader
 
 	public void addFolloweeElement(IpfsFile elementHash, IpfsFile imageHash, IpfsFile leafHash, long combinedSizeBytes)
 	{
-		// Note that V3 allows FollowingCacheElement without image or leaf but V4 doesn't.
-		Assert.assertTrue((null != imageHash) || (null != leafHash));
 		_followees.addElement(_currentFolloweeKey, new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 	}
 

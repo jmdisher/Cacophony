@@ -284,8 +284,8 @@ public class TestFollowUpdates
 		IpfsFile videoHash = MockSingleNode.generateHash(passingVideo.getBytes());
 		
 		Assert.assertTrue(capturedString.contains(acceptElement.toSafeString() + " (image: " + thumbHash.toSafeString() + ", leaf: " + videoHash.toSafeString() + ")\n"));
-		Assert.assertTrue(capturedString.contains(thumbElement.toSafeString() + " (not cached)\n"));
-		Assert.assertTrue(capturedString.contains(videoElement.toSafeString() + " (not cached)\n"));
+		Assert.assertTrue(capturedString.contains(thumbElement.toSafeString() + " (image: (none), leaf: (none))\n"));
+		Assert.assertTrue(capturedString.contains(videoElement.toSafeString() + " (image: (none), leaf: (none))\n"));
 		
 		user1.shutdown();
 		user2.shutdown();

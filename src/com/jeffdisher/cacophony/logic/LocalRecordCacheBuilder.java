@@ -249,45 +249,41 @@ public class LocalRecordCacheBuilder
 				, record.getPublishedSecondsUtc()
 		);
 		
-		IpfsFile cachedImageOrNull = null;
-		IpfsFile cachedAudioOrNull = null;
-		IpfsFile cachedVideoOrNull = null;
 		int videoEdgeSize = 0;
 		FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
-		if (null != cachedElement)
+		// We only take this path if we know something about this element.
+		Assert.assertTrue(null != cachedElement);
+		IpfsFile cachedImageOrNull = cachedElement.imageHash();
+		IpfsFile cachedAudioOrNull = null;
+		IpfsFile cachedVideoOrNull = null;
+		IpfsFile leafCid = cachedElement.leafHash();
+		if (null != leafCid)
 		{
-			cachedImageOrNull = cachedElement.imageHash();
-			IpfsFile leafCid = cachedElement.leafHash();
-			// We expect at least one of the image or leaf in this element.
-			Assert.assertTrue((null != cachedImageOrNull) || (null != leafCid));
-			if (null != leafCid)
+			List<AbstractRecord.Leaf> elements = record.getVideoExtension();
+			String leafMime = _findMimeForLeaf(elements, leafCid);
+			if (leafMime.startsWith("video/"))
 			{
-				List<AbstractRecord.Leaf> elements = record.getVideoExtension();
-				String leafMime = _findMimeForLeaf(elements, leafCid);
-				if (leafMime.startsWith("video/"))
+				// We want to record the size so go find it.
+				int maxEdge = 0;
+				for (AbstractRecord.Leaf leaf : elements)
 				{
-					// We want to record the size so go find it.
-					int maxEdge = 0;
-					for (AbstractRecord.Leaf leaf : elements)
+					if (leafCid.equals(leaf.cid()))
 					{
-						if (leafCid.equals(leaf.cid()))
-						{
-							maxEdge = Math.max(leaf.height(), leaf.width());
-						}
+						maxEdge = Math.max(leaf.height(), leaf.width());
 					}
-					Assert.assertTrue(maxEdge > 0);
-					cachedVideoOrNull = leafCid;
-					videoEdgeSize = maxEdge;
 				}
-				else if (leafMime.startsWith("audio/"))
-				{
-					cachedAudioOrNull = leafCid;
-				}
-				else
-				{
-					// We don't currently pin anything like this.
-					throw Assert.unreachable();
-				}
+				Assert.assertTrue(maxEdge > 0);
+				cachedVideoOrNull = leafCid;
+				videoEdgeSize = maxEdge;
+			}
+			else if (leafMime.startsWith("audio/"))
+			{
+				cachedAudioOrNull = leafCid;
+			}
+			else
+			{
+				// We don't currently pin anything like this.
+				throw Assert.unreachable();
 			}
 		}
 		cacheUpdater.cachedFolloweePost(followeeKey

@@ -175,11 +175,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	public void cacheRecordForFollowee(IpfsFile elementHash, AbstractRecord recordData, IpfsFile imageHash, IpfsFile audioLeaf, IpfsFile videoLeaf, int videoEdgeSize, long combinedSizeBytes)
 	{
 		IpfsFile leafHash = (null != audioLeaf) ? audioLeaf : videoLeaf;
-		// We only want to cache the actual element if there is at least an image or leaf.
-		if ((null != imageHash) || (null != leafHash))
-		{
-			_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
-		}
+		_elementsToAddToCache.add(new FollowingCacheElement(elementHash, imageHash, leafHash, combinedSizeBytes));
 		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
 			cacheUpdater.cachedFolloweePost(_followeeKey, elementHash, recordData, imageHash, audioLeaf, videoLeaf, videoEdgeSize);
 		});
