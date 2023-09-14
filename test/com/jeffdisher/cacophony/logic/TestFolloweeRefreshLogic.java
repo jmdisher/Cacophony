@@ -1279,7 +1279,7 @@ public class TestFolloweeRefreshLogic
 			return future;
 		}
 		@Override
-		public IpfsFile getImageForCachedElement(IpfsFile elementHash)
+		public FollowingCacheElement getCacheDataForElement(IpfsFile elementHash)
 		{
 			FollowingCacheElement match = null;
 			for (FollowingCacheElement elt : _list)
@@ -1290,30 +1290,10 @@ public class TestFolloweeRefreshLogic
 					match = elt;
 				}
 			}
-			return (null != match)
-					? match.imageHash()
-					: null
-			;
+			return match;
 		}
 		@Override
-		public IpfsFile getLeafForCachedElement(IpfsFile elementHash)
-		{
-			FollowingCacheElement match = null;
-			for (FollowingCacheElement elt : _list)
-			{
-				if (elt.elementHash().equals(elementHash))
-				{
-					Assert.assertNull(match);
-					match = elt;
-				}
-			}
-			return (null != match)
-					? match.leafHash()
-					: null
-			;
-		}
-		@Override
-		public void addRecordForFollowee(IpfsFile elementHash, long publishedSecondsUtc)
+		public void addRecordForFollowee(IpfsFile elementHash)
 		{
 			_newRecordsObserved.add(elementHash);
 		}

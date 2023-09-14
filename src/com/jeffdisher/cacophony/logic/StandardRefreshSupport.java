@@ -160,28 +160,15 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		return _transaction.loadCached(file, decoder);
 	}
 	@Override
-	public IpfsFile getImageForCachedElement(IpfsFile elementHash)
+	public FollowingCacheElement getCacheDataForElement(IpfsFile elementHash)
 	{
-		FollowingCacheElement elt = _cachedEntriesForFollowee.get(elementHash);
-		return (null != elt)
-				? elt.imageHash()
-				: null
-		;
+		return _cachedEntriesForFollowee.get(elementHash);
 	}
 	@Override
-	public IpfsFile getLeafForCachedElement(IpfsFile elementHash)
-	{
-		FollowingCacheElement elt = _cachedEntriesForFollowee.get(elementHash);
-		return (null != elt)
-				? elt.leafHash()
-				: null
-		;
-	}
-	@Override
-	public void addRecordForFollowee(IpfsFile elementHash, long publishedSecondsUtc)
+	public void addRecordForFollowee(IpfsFile elementHash)
 	{
 		_pendingCacheUpdates.add((CacheUpdater cacheUpdater) -> {
-			cacheUpdater.newFolloweePostObserved(_followeeKey, elementHash, publishedSecondsUtc);
+			cacheUpdater.newFolloweePostObserved(_followeeKey, elementHash, 0L);
 		});
 	}
 	@Override

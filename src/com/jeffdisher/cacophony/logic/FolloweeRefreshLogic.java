@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecord.Leaf;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
+import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
@@ -285,8 +286,9 @@ public class FolloweeRefreshLogic
 			if (pinnedRecords.contains(removedRecord))
 			{
 				AbstractRecord record = support.loadCached(removedRecord, AbstractRecord.DESERIALIZER).get();
-				IpfsFile imageHash = support.getImageForCachedElement(removedRecord);
-				IpfsFile leafHash = support.getLeafForCachedElement(removedRecord);
+				FollowingCacheElement cachedObject = support.getCacheDataForElement(removedRecord);
+				IpfsFile imageHash = (null != cachedObject) ? cachedObject.imageHash() : null;
+				IpfsFile leafHash = (null != cachedObject) ? cachedObject.leafHash() : null;
 				IpfsFile audioHash = null;
 				IpfsFile videoHash = null;
 				int videoEdgeSize = 0;
@@ -410,8 +412,7 @@ public class FolloweeRefreshLogic
 				List<IpfsFile> recordList = newRecords.getRecordList();
 				for (IpfsFile cid : recordList)
 				{
-					// We don't know the publish time so we return 0.
-					support.addRecordForFollowee(cid, 0L);
+					support.addRecordForFollowee(cid);
 				}
 				support.logMessageImportant("First synchronization reported " + recordList.size() + " new records (will be incrementally pinned).");
 			}
@@ -701,7 +702,7 @@ public class FolloweeRefreshLogic
 			// Whether or not we pinned any leaves, record that we saw this (in this non-incremental path, we do this after pinning the meta-data).
 			if (shouldReportRecordFound)
 			{
-				support.addRecordForFollowee(data.elementCid, data.record.getPublishedSecondsUtc());
+				support.addRecordForFollowee(data.elementCid);
 			}
 			support.logMessageVerbose("Successfully pinned attachments for record " + data.elementCid + "!");
 			
@@ -920,27 +921,19 @@ public class FolloweeRefreshLogic
 		 */
 		<R> FutureRead<R> loadCached(IpfsFile file, DataDeserializer<R> decoder);
 		/**
-		 * Returns the thumbnail image CID for a given elementHash which is already in the cache.
+		 * Returns the object describing the data cached for this AbstractRecord element.
 		 * 
 		 * @param elementHash The CID of the element meta-data XML.
-		 * @return The CID of the thumbnail or null, if one wasn't cached.
+		 * @return The cached data or null, if one wasn't cached.
 		 */
-		IpfsFile getImageForCachedElement(IpfsFile elementHash);
-		/**
-		 * Returns the leaf video CID for a given elementHash which is already in the cache.
-		 * 
-		 * @param elementHash The CID of the element meta-data XML.
-		 * @return The CID of the video or null, if one wasn't cached.
-		 */
-		IpfsFile getLeafForCachedElement(IpfsFile elementHash);
+		FollowingCacheElement getCacheDataForElement(IpfsFile elementHash);
 		/**
 		 * Notifies that an element has been found in the record list for a user.
 		 * NOTE:  This may or may not be pinned, due to how incremental synchronization works.
 		 * 
 		 * @param elementHash The CID of the AbstractRecord meta-data XML CID.
-		 * @param publishedSecondsUtc The publication time of the record (0L if not known).
 		 */
-		void addRecordForFollowee(IpfsFile elementHash, long publishedSecondsUtc);
+		void addRecordForFollowee(IpfsFile elementHash);
 		/**
 		 * Notifies that an encountered record has had a caching decision completed.  This means that minimally the
 		 * elementHash will be pinned and optionally the imageHash, audioLeaf, or videoLeaf have been cached.
