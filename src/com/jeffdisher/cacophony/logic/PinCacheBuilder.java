@@ -111,7 +111,14 @@ public class PinCacheBuilder
 
 	private void _addHomeUser(IpfsFile lastRootElement) throws FailedDeserializationException, SizeConstraintException, IpfsConnectionException
 	{
-		List<FutureRead<AbstractRecord>> futures = _commonStart(lastRootElement, true);
+		IpfsFile recordsFile = _pinMetaDataAndDescription(lastRootElement);
+		AbstractRecords records = _scheduler.readData(recordsFile, AbstractRecords.DESERIALIZER).get();
+		List<FutureRead<AbstractRecord>> futures = new ArrayList<>();
+		for (IpfsFile recordFile : records.getRecordList())
+		{
+			_pin(recordFile);
+			futures.add(_scheduler.readData(recordFile, AbstractRecord.DESERIALIZER));
+		}
 		
 		// For the home user, we want to just pin all the leaf elements, since we host them all.
 		for (FutureRead<AbstractRecord> future : futures)
@@ -134,7 +141,7 @@ public class PinCacheBuilder
 
 	private void _addFollowee(IpfsFile lastFetchedRootForFollowee, Map<IpfsFile, FollowingCacheElement> snapshotAllElementsForFollowee) throws FailedDeserializationException, SizeConstraintException, IpfsConnectionException
 	{
-		_commonStart(lastFetchedRootForFollowee, false);
+		_pinMetaDataAndDescription(lastFetchedRootForFollowee);
 		
 		// For the followee, we only see the filtered set and only pin what we recorded in the element (meta-data is always pinned, of course).
 		for (FollowingCacheElement elt : snapshotAllElementsForFollowee.values())
@@ -154,7 +161,8 @@ public class PinCacheBuilder
 		}
 	}
 
-	private List<FutureRead<AbstractRecord>> _commonStart(IpfsFile indexFile, boolean fetchRecords) throws FailedDeserializationException, IpfsConnectionException
+	// Returns records CID.
+	private IpfsFile _pinMetaDataAndDescription(IpfsFile indexFile) throws FailedDeserializationException, IpfsConnectionException
 	{
 		_pin(indexFile);
 		// We know that everything reachable from a root is valid, here, since it is either our own data or a followee root which we already validated.
@@ -171,19 +179,7 @@ public class PinCacheBuilder
 		{
 			_pin(description.getPicCid());
 		}
-		AbstractRecords records = _scheduler.readData(recordsFile, AbstractRecords.DESERIALIZER).get();
-		
-		List<FutureRead<AbstractRecord>> futures = null;
-		if (fetchRecords)
-		{
-			futures = new ArrayList<>();
-			for (IpfsFile recordFile : records.getRecordList())
-			{
-				_pin(recordFile);
-				futures.add(_scheduler.readData(recordFile, AbstractRecord.DESERIALIZER));
-			}
-		}
-		return futures;
+		return recordsFile;
 	}
 
 	private void _pin(IpfsFile cid)

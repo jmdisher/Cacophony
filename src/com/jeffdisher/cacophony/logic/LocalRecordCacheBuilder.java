@@ -231,24 +231,23 @@ public class LocalRecordCacheBuilder
 			IpfsFile cid = cidIterator.next();
 			try
 			{
-				_fetchDataForFolloweeElement(access, cacheUpdater, followeeKey, elementsCachedForUser, future, cid);
+				AbstractRecord record = future.get();
+				cacheUpdater.newFolloweePostObserved(followeeKey
+						, cid
+						, record.getPublishedSecondsUtc()
+				);
+				_fetchDataForFolloweeElement(access, cacheUpdater, followeeKey, elementsCachedForUser, record, cid);
 			}
 			catch (FailedDeserializationException e)
 			{
-				// We will just skip this element.
-				System.err.println("WARNING:  Deserialization error building cache in element: " + cid);
+				// We already pinned this so it can't fail deserialization.
+				throw Assert.unexpected(e);
 			}
 		}
 	}
 
-	private static void _fetchDataForFolloweeElement(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, FutureRead<AbstractRecord> future, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
+	private static void _fetchDataForFolloweeElement(IReadingAccess access, CacheUpdater cacheUpdater, IpfsKey followeeKey, Map<IpfsFile, FollowingCacheElement> elementsCachedForUser, AbstractRecord record, IpfsFile cid) throws IpfsConnectionException, FailedDeserializationException
 	{
-		AbstractRecord record = future.get();
-		cacheUpdater.newFolloweePostObserved(followeeKey
-				, cid
-				, record.getPublishedSecondsUtc()
-		);
-		
 		int videoEdgeSize = 0;
 		FollowingCacheElement cachedElement = elementsCachedForUser.get(cid);
 		// We only take this path if we know something about this element.

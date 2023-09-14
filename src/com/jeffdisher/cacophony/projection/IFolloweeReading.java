@@ -54,4 +54,15 @@ public interface IFolloweeReading
 	 * @return The next target record for incremental synchronization (null if incremental synchronization is complete).
 	 */
 	IpfsFile getNextBackwardRecord(IpfsKey followeeKey);
+
+	/**
+	 * Looks up the set of previously skipped records for the given followeeKey.  If temporaryOnly, will only return
+	 * the temporarily skipped elements whereas passing false will return all of the skipped elements.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param temporaryOnly True if only temporarily skipped elements should be returned (false returns all skipped
+	 * elements).
+	 * @return The set of skipped records.
+	 */
+	Set<IpfsFile> getSkippedRecords(IpfsKey followeeKey, boolean temporaryOnly);
 }

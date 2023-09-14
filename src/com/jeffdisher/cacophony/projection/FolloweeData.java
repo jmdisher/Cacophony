@@ -27,11 +27,7 @@ public class FolloweeData implements IFolloweeReading
 {
 	public static FolloweeData createEmpty()
 	{
-		Map<IpfsKey, List<FollowingCacheElement>> followeeElements = new HashMap<>();
-		Map<IpfsKey, IpfsFile> followeeLastIndices = new HashMap<>();
-		Map<IpfsKey, IpfsFile> followeeNextBackwardRecord = new HashMap<>();
-		Map<IpfsKey, Long> followeeLastFetchMillis = new HashMap<>();
-		return new FolloweeData(followeeElements, followeeLastIndices, followeeNextBackwardRecord, followeeLastFetchMillis);
+		return new FolloweeData();
 	}
 
 
@@ -49,28 +45,15 @@ public class FolloweeData implements IFolloweeReading
 	// Only set in the cases of servers so it is bound late, but can only be bound once.
 	private HandoffConnector<IpfsKey, Long> _followeeRefreshConnector;
 
-	private FolloweeData(Map<IpfsKey, List<FollowingCacheElement>> followeeElements, Map<IpfsKey, IpfsFile> followeeLastIndices, Map<IpfsKey, IpfsFile> followeeNextBackwardRecord, Map<IpfsKey, Long> followeeLastFetchMillis)
+	private FolloweeData()
 	{
 		_followeeElements = new HashMap<>();
 		_temporarilySkippedRecordsByFollowee = new HashMap<>();
 		_permanentlySkippedRecordsByFollowee = new HashMap<>();
 		_elementsForLookup = new HashMap<>();
-		for (Map.Entry<IpfsKey, List<FollowingCacheElement>> entry : followeeElements.entrySet())
-		{
-			IpfsKey key = entry.getKey();
-			List<FollowingCacheElement> list = new ArrayList<>();
-			Map<IpfsFile, FollowingCacheElement> map = new HashMap<>();
-			for (FollowingCacheElement elt : entry.getValue())
-			{
-				list.add(elt);
-				map.put(elt.elementHash(), elt);
-			}
-			_followeeElements.put(key, list);
-			_elementsForLookup.put(key, map);
-		}
-		_followeeLastIndices = new HashMap<>(followeeLastIndices);
-		_followeeNextBackwardRecord = new HashMap<>(followeeNextBackwardRecord);
-		_followeeLastFetchMillis = new HashMap<>(followeeLastFetchMillis);
+		_followeeLastIndices = new HashMap<>();
+		_followeeNextBackwardRecord = new HashMap<>();
+		_followeeLastFetchMillis = new HashMap<>();
 		_mostRecentFetchMillis = 0;
 	}
 
@@ -274,15 +257,7 @@ public class FolloweeData implements IFolloweeReading
 		Assert.assertTrue(didRemove);
 	}
 
-	/**
-	 * Looks up the set of previously skipped records for the given followeeKey.  If temporaryOnly, will only return
-	 * the temporarily skipped elements whereas passing false will return all of the skipped elements.
-	 * 
-	 * @param followeeKey The public key of the followee.
-	 * @param temporaryOnly True if only temporarily skipped elements should be returned (false returns all skipped
-	 * elements).
-	 * @return The set of skipped records.
-	 */
+	@Override
 	public Set<IpfsFile> getSkippedRecords(IpfsKey followeeKey, boolean temporaryOnly)
 	{
 		Set<IpfsFile> copy = new HashSet<>(_temporarilySkippedRecordsByFollowee.get(followeeKey));
