@@ -20,9 +20,9 @@ public class FolloweeLoader
 		_followees = followees;
 	}
 
-	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
+	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis, long lastSuccessMillis)
 	{
-		_followees.createNewFollowee(followeeKey, indexRoot, nextBackwardRecord, lastPollMillis);
+		_followees.createNewFollowee(followeeKey, indexRoot, lastPollMillis, lastSuccessMillis);
 		_currentFolloweeKey = followeeKey;
 	}
 

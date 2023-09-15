@@ -36,9 +36,8 @@ public class FolloweeData implements IFolloweeReading
 	private final Map<IpfsKey, Set<IpfsFile>> _permanentlySkippedRecordsByFollowee;
 	private final Map<IpfsKey, Map<IpfsFile, FollowingCacheElement>> _elementsForLookup;
 	private final Map<IpfsKey, IpfsFile> _followeeLastIndices;
-	// We only store the entry in _followeeNextBackwardRecord if not null.
-	private final Map<IpfsKey, IpfsFile> _followeeNextBackwardRecord;
-	private final Map<IpfsKey, Long> _followeeLastFetchMillis;
+	private final Map<IpfsKey, Long> _followeeLastPollMillis;
+	private final Map<IpfsKey, Long> _followeeLastSuccessMillis;
 	// We keep track of the most recent fetch so that we can adjust the time of any updates to make tests more reliable.
 	private long _mostRecentFetchMillis;
 
@@ -52,8 +51,8 @@ public class FolloweeData implements IFolloweeReading
 		_permanentlySkippedRecordsByFollowee = new HashMap<>();
 		_elementsForLookup = new HashMap<>();
 		_followeeLastIndices = new HashMap<>();
-		_followeeNextBackwardRecord = new HashMap<>();
-		_followeeLastFetchMillis = new HashMap<>();
+		_followeeLastPollMillis = new HashMap<>();
+		_followeeLastSuccessMillis = new HashMap<>();
 		_mostRecentFetchMillis = 0;
 	}
 
@@ -64,9 +63,7 @@ public class FolloweeData implements IFolloweeReading
 			IpfsKey followee = elt.getKey();
 			IpfsFile indexRoot = _followeeLastIndices.get(followee);
 			Assert.assertTrue(null != indexRoot);
-			// V3 data cannot describe partially-loaded followees.
-			Assert.assertTrue(!_followeeNextBackwardRecord.containsKey(followee));
-			long lastPollMillis = _followeeLastFetchMillis.get(followee);
+			long lastPollMillis = _followeeLastPollMillis.get(followee);
 			writer.writeOpcode(new Opcode_SetFolloweeStateV3(followee, indexRoot, lastPollMillis));
 			for (FollowingCacheElement record : elt.getValue())
 			{
@@ -84,10 +81,10 @@ public class FolloweeData implements IFolloweeReading
 			IpfsKey followee = elt.getKey();
 			IpfsFile indexRoot = _followeeLastIndices.get(followee);
 			Assert.assertTrue(null != indexRoot);
-			IpfsFile nextBackwardRecord = _followeeNextBackwardRecord.get(followee);
-			long lastPollMillis = _followeeLastFetchMillis.get(followee);
+			long lastPollMillis = _followeeLastPollMillis.get(followee);
+			long lastSuccessMillis = _followeeLastSuccessMillis.get(followee);
 			// Write the followee state, first, to put us in the state where we can describe this followee.
-			writer.writeOpcode(new Opcode_SetFolloweeState(followee, indexRoot, nextBackwardRecord, lastPollMillis));
+			writer.writeOpcode(new Opcode_SetFolloweeState(followee, indexRoot, lastPollMillis, lastSuccessMillis));
 			// Write any cached elements for this followee.
 			for (FollowingCacheElement record : elt.getValue())
 			{
@@ -130,7 +127,7 @@ public class FolloweeData implements IFolloweeReading
 	@Override
 	public long getLastPollMillisForFollowee(IpfsKey publicKey)
 	{
-		return _followeeLastFetchMillis.get(publicKey);
+		return _followeeLastPollMillis.get(publicKey);
 	}
 
 	@Override
@@ -139,7 +136,7 @@ public class FolloweeData implements IFolloweeReading
 		// For this query, we won't worry about having a specialized projection but will just walk a list.
 		IpfsKey followee = null;
 		long oldestTime = Long.MAX_VALUE;
-		for (Map.Entry<IpfsKey, Long> elt : _followeeLastFetchMillis.entrySet())
+		for (Map.Entry<IpfsKey, Long> elt : _followeeLastPollMillis.entrySet())
 		{
 			long thisTime = elt.getValue();
 			if (thisTime < oldestTime)
@@ -274,11 +271,10 @@ public class FolloweeData implements IFolloweeReading
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param indexRoot The initial StreamIndex CID.
-	 * @param nextBackwardRecord The next record CID we need to fetch when loading backward (null if the stream is fully
-	 * loaded).
 	 * @param lastPollMillis The initial poll time (must be >= 0L).
+	 * @param lastSuccessMillis The initial success time (must be >= 0L).
 	 */
-	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
+	public void createNewFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis, long lastSuccessMillis)
 	{
 		List<FollowingCacheElement> match0 = _followeeElements.put(followeeKey, new ArrayList<>());
 		Assert.assertTrue(null == match0);
@@ -290,12 +286,10 @@ public class FolloweeData implements IFolloweeReading
 		Assert.assertTrue(null == match1);
 		IpfsFile match2 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null == match2);
-		if (null != nextBackwardRecord)
-		{
-			_followeeNextBackwardRecord.put(followeeKey, nextBackwardRecord);
-		}
-		Long match3 = _followeeLastFetchMillis.put(followeeKey, lastPollMillis);
+		Long match3 = _followeeLastPollMillis.put(followeeKey, lastPollMillis);
 		Assert.assertTrue(null == match3);
+		Long match4 = _followeeLastSuccessMillis.put(followeeKey, lastSuccessMillis);
+		Assert.assertTrue(null == match4);
 		
 		if (null != _followeeRefreshConnector)
 		{
@@ -308,11 +302,10 @@ public class FolloweeData implements IFolloweeReading
 	 * 
 	 * @param followeeKey The public key of the followee.
 	 * @param indexRoot The StreamIndex CID of the most recent refresh of the followee.
-	 * @param nextBackwardRecord The next record CID we need to fetch when loading backward (null if the stream is fully
-	 * loaded).
 	 * @param lastPollMillis The current time.
+	 * @param isSuccess True if the poll was successful in reading the followee data.
 	 */
-	public void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis)
+	public void updateExistingFollowee(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis, boolean isSuccess)
 	{
 		// We expect that any actual update uses a non-zero time (since that is effectively the "never updated" value).
 		Assert.assertTrue(lastPollMillis > 0L);
@@ -325,16 +318,13 @@ public class FolloweeData implements IFolloweeReading
 		_mostRecentFetchMillis = pollMillisToSave;
 		IpfsFile match0 = _followeeLastIndices.put(followeeKey, indexRoot);
 		Assert.assertTrue(null != match0);
-		if (null != nextBackwardRecord)
-		{
-			_followeeNextBackwardRecord.put(followeeKey, nextBackwardRecord);
-		}
-		else
-		{
-			_followeeNextBackwardRecord.remove(followeeKey);
-		}
-		Long match1 = _followeeLastFetchMillis.put(followeeKey, pollMillisToSave);
+		Long match1 = _followeeLastPollMillis.put(followeeKey, pollMillisToSave);
 		Assert.assertTrue(null != match1);
+		if (isSuccess)
+		{
+			Long match2 = _followeeLastSuccessMillis.put(followeeKey, pollMillisToSave);
+			Assert.assertTrue(null != match2);
+		}
 		
 		if (null != _followeeRefreshConnector)
 		{
@@ -364,8 +354,10 @@ public class FolloweeData implements IFolloweeReading
 		Assert.assertTrue(match1.isEmpty());
 		IpfsFile match2 = _followeeLastIndices.remove(followeeKey);
 		Assert.assertTrue(null != match2);
-		Long match3 = _followeeLastFetchMillis.remove(followeeKey);
+		Long match3 = _followeeLastPollMillis.remove(followeeKey);
 		Assert.assertTrue(null != match3);
+		Long match4 = _followeeLastSuccessMillis.remove(followeeKey);
+		Assert.assertTrue(null != match4);
 		
 		if (null != _followeeRefreshConnector)
 		{
@@ -385,15 +377,9 @@ public class FolloweeData implements IFolloweeReading
 		Assert.assertTrue(null == _followeeRefreshConnector);
 		_followeeRefreshConnector = followeeRefreshConnector;
 		
-		for(Map.Entry<IpfsKey, Long> elt : _followeeLastFetchMillis.entrySet())
+		for(Map.Entry<IpfsKey, Long> elt : _followeeLastPollMillis.entrySet())
 		{
 			_followeeRefreshConnector.create(elt.getKey(), elt.getValue());
 		}
-	}
-
-	@Override
-	public IpfsFile getNextBackwardRecord(IpfsKey followeeKey)
-	{
-		return _followeeNextBackwardRecord.get(followeeKey);
 	}
 }

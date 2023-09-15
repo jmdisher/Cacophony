@@ -11,12 +11,10 @@ import com.jeffdisher.cacophony.utils.Assert;
 /**
  * The opcode to set the state of a followee's channel.  Note that the individual cached elements are described by
  * Opcode_AddFolloweeElement.
- * Note that neither followeeKey nor indexRoot can be null but lastPollMillis will be 0L before the first full refresh.
- * Under normal circumstances, nextBackwardRecord is null.  It is used when a followee is still new since we synchronize
- * backward through their post list, incrementally.  This is the CID of the next stream to consider in their record
- * list.
+ * Note that neither followeeKey nor indexRoot can be null but lastPollMillis and lastSuccessMillis will be 0L before
+ * the first full refresh (and lastSuccessMillis will be 0L until a successful fetch).
  */
-public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, IpfsFile nextBackwardRecord, long lastPollMillis) implements IDataOpcode
+public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, long lastPollMillis, long lastSuccessMillis) implements IDataOpcode
 {
 	public static final OpcodeType TYPE = OpcodeType.SET_FOLLOWEE_STATE;
 
@@ -25,9 +23,9 @@ public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, I
 		opcodeTable[TYPE.ordinal()] = (OpcodeDeserializer deserializer) -> {
 			IpfsKey followeeKey = deserializer.readKey();
 			IpfsFile indexRoot = deserializer.readCid();
-			IpfsFile nextBackwardRecord = deserializer.readCid();
 			long lastPollMillis = deserializer.readLong();
-			return new Opcode_SetFolloweeState(followeeKey, indexRoot, nextBackwardRecord, lastPollMillis);
+			long lastSuccessMillis = deserializer.readLong();
+			return new Opcode_SetFolloweeState(followeeKey, indexRoot, lastPollMillis, lastSuccessMillis);
 		};
 	}
 
@@ -48,7 +46,7 @@ public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, I
 	@Override
 	public void apply(OpcodeContext context)
 	{
-		context.followeeLoader().createNewFollowee(this.followeeKey, this.indexRoot, this.nextBackwardRecord, this.lastPollMillis);
+		context.followeeLoader().createNewFollowee(this.followeeKey, this.indexRoot, this.lastPollMillis, this.lastSuccessMillis);
 	}
 
 	@Override
@@ -60,7 +58,7 @@ public record Opcode_SetFolloweeState(IpfsKey followeeKey, IpfsFile indexRoot, I
 		
 		serializer.writeKey(this.followeeKey);
 		serializer.writeCid(this.indexRoot);
-		serializer.writeCid(this.nextBackwardRecord);
 		serializer.writeLong(this.lastPollMillis);
+		serializer.writeLong(this.lastSuccessMillis);
 	}
 }

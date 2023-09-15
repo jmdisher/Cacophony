@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.logic;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
@@ -40,14 +41,15 @@ public class ConcurrentFolloweeRefresher
 	private boolean _didSetup;
 	private ConcurrentTransaction _transaction;
 	private Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
+	private Set<IpfsFile> _initialFailureSet;
 	private long _currentCacheUsageInBytes;
 	private FutureResolve _keyResolve;
-	private IpfsFile _followeeNextBackwardRecord;
 
 	private boolean _didRun;
 	private IpfsFile _newRoot;
 	private StandardRefreshSupport _refreshSupport;
 	private boolean _isSuccess;
+	private boolean _moreToDo;
 	private IpfsConnectionException _connectionException;
 	private ProtocolDataException _protocolException;
 	private KeyException _keyException;
@@ -114,6 +116,11 @@ public class ConcurrentFolloweeRefresher
 				? followees.snapshotAllElementsForFollowee(_followeeKey)
 				: Collections.emptyMap()
 		;
+		// Get all the skipped records, not just the temporary ones.
+		_initialFailureSet = (null != _previousRoot)
+				? followees.getSkippedRecords(_followeeKey, false)
+				: Collections.emptySet()
+		;
 		Assert.assertTrue(null != _cachedEntriesForFollowee);
 		_currentCacheUsageInBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
 		_keyResolve = _isDelete
@@ -121,7 +128,6 @@ public class ConcurrentFolloweeRefresher
 				: access.resolvePublicKey(_followeeKey)
 		;
 		_didSetup = true;
-		_followeeNextBackwardRecord = followees.getNextBackwardRecord(_followeeKey);
 	}
 
 	/**
@@ -148,7 +154,7 @@ public class ConcurrentFolloweeRefresher
 				, _followeeKey
 				, isExistingFollowee
 				, _cachedEntriesForFollowee
-				, _followeeNextBackwardRecord
+				, _initialFailureSet
 		);
 		boolean refreshWasSuccess = false;
 		ILogger log = _logger.logStart("Starting concurrent refresh: " + _followeeKey);
@@ -156,12 +162,14 @@ public class ConcurrentFolloweeRefresher
 		{
 			if (_isDelete)
 			{
-				FolloweeRefreshLogic.refreshFollowee(_refreshSupport
+				_moreToDo = FolloweeRefreshLogic.refreshFollowee(_refreshSupport
 						, _prefs
 						, _previousRoot
 						, null
 						, _currentCacheUsageInBytes
 				);
+				// There CANNOT be more to do if this was a delete.
+				Assert.assertTrue(!_moreToDo);
 				refreshWasSuccess = true;
 			}
 			else
@@ -169,7 +177,7 @@ public class ConcurrentFolloweeRefresher
 				_newRoot = _keyResolve.get();
 				// If this failed to resolve, it will throw.
 				Assert.assertTrue(null != _newRoot);
-				FolloweeRefreshLogic.refreshFollowee(_refreshSupport
+				_moreToDo = FolloweeRefreshLogic.refreshFollowee(_refreshSupport
 						, _prefs
 						, _previousRoot
 						, _newRoot
@@ -241,8 +249,6 @@ public class ConcurrentFolloweeRefresher
 		Assert.assertTrue(!_didFinish);
 		
 		ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
-		// We want to the state the nextBackwardRecord was left in (usually null).
-		IpfsFile nextBackwardRecord = _refreshSupport.getNextBackwardRecord();
 		if (_isSuccess)
 		{
 			if (_isDelete)
@@ -254,14 +260,14 @@ public class ConcurrentFolloweeRefresher
 			else if (null == _previousRoot)
 			{
 				// Create the new record.
-				followees.createNewFollowee(_followeeKey, _newRoot, nextBackwardRecord, currentTimeMillis);
+				followees.createNewFollowee(_followeeKey, _newRoot, currentTimeMillis, currentTimeMillis);
 				_refreshSupport.commitFolloweeChanges(followees);
 			}
 			else
 			{
 				// Update existing record.
 				_refreshSupport.commitFolloweeChanges(followees);
-				followees.updateExistingFollowee(_followeeKey, _newRoot, nextBackwardRecord, currentTimeMillis);
+				followees.updateExistingFollowee(_followeeKey, _newRoot, currentTimeMillis, _isSuccess);
 			}
 			// The record cache is null in cases where this is a one-off operation and there is no cache.
 			_refreshSupport.commitLocalCacheUpdates(cacheUpdater);
@@ -272,7 +278,7 @@ public class ConcurrentFolloweeRefresher
 			if (null != _previousRoot)
 			{
 				// In the failure case, we still want to update the followee, if we have it, so that we don't get stuck on a missing followee (usually not refreshed key).
-				followees.updateExistingFollowee(_followeeKey, _previousRoot, nextBackwardRecord, currentTimeMillis);
+				followees.updateExistingFollowee(_followeeKey, _previousRoot, currentTimeMillis, _isSuccess);
 			}
 			_transaction.rollback(resolver);
 		}
@@ -296,6 +302,6 @@ public class ConcurrentFolloweeRefresher
 			throw _keyException;
 		}
 		// Return true if there is still an incremental sync starting-point since there is more work to do.
-		return (null != nextBackwardRecord);
+		return _moreToDo;
 	}
 }

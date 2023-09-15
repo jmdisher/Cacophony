@@ -43,9 +43,9 @@ public class TestFolloweeData
 	public void addSingleFollowee() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
+		data.updateExistingFollowee(MockKeys.K1, F2, 2L, true);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
@@ -75,9 +75,9 @@ public class TestFolloweeData
 	public void addRemoveSingleFollowee() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
+		data.updateExistingFollowee(MockKeys.K1, F2, 2L, true);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
@@ -109,11 +109,11 @@ public class TestFolloweeData
 	public void addTwoFollowees() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
-		data.createNewFollowee(MockKeys.K2, F1, null, 0L);
-		data.updateExistingFollowee(MockKeys.K2, F1, null, 3L);
+		data.updateExistingFollowee(MockKeys.K1, F2, 2L, true);
+		data.createNewFollowee(MockKeys.K2, F1, 0L, 0L);
+		data.updateExistingFollowee(MockKeys.K2, F1, 3L, true);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries1 = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(2, data.getAllKnownFollowees().size());
@@ -141,10 +141,10 @@ public class TestFolloweeData
 	public void addRemoveElements() throws Throwable
 	{
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F2, F3, null, 6));
-		data.updateExistingFollowee(MockKeys.K1, F2, null, 2L);
+		data.updateExistingFollowee(MockKeys.K1, F2, 2L, true);
 		
 		Map<IpfsFile, FollowingCacheElement> cachedEntries = data.snapshotAllElementsForFollowee(MockKeys.K1);
 		Assert.assertEquals(1, data.getAllKnownFollowees().size());
@@ -201,8 +201,8 @@ public class TestFolloweeData
 		FolloweeData data = FolloweeData.createEmpty();
 		
 		// Start with an existing followee to make sure it is observed in the map.
-		data.createNewFollowee(MockKeys.K1, F1, null, 0L);
-		data.updateExistingFollowee(MockKeys.K1, F1, null, 1L);
+		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
+		data.updateExistingFollowee(MockKeys.K1, F1, 1L, true);
 		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>(dispatcher);
 		connector.registerListener(new HandoffConnector.IHandoffListener<IpfsKey, Long>()
 		{
@@ -235,9 +235,9 @@ public class TestFolloweeData
 		Assert.assertEquals(1L, map.get(MockKeys.K1).longValue());
 		
 		// Add a second followee and update both of them to verify we see both updated values.
-		data.createNewFollowee(MockKeys.K2, F1, null, 0L);
-		data.updateExistingFollowee(MockKeys.K1, F2, null, 3L);
-		data.updateExistingFollowee(MockKeys.K2, F2, null, 4L);
+		data.createNewFollowee(MockKeys.K2, F1, 0L, 0L);
+		data.updateExistingFollowee(MockKeys.K1, F2, 3L, true);
+		data.updateExistingFollowee(MockKeys.K2, F2, 4L, true);
 		Assert.assertEquals(2, map.size());
 		Assert.assertEquals(3L, map.get(MockKeys.K1).longValue());
 		Assert.assertEquals(4L, map.get(MockKeys.K2).longValue());
@@ -253,12 +253,12 @@ public class TestFolloweeData
 	{
 		// Now that we are assuming that the data reader is stateful, make sure that we see the right elements.
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K0, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K0, F1, 0L, 0L);
 		data.addElement(MockKeys.K0, new FollowingCacheElement(F1, F2, null, 5));
 		data.addElement(MockKeys.K0, new FollowingCacheElement(F2, F3, null, 6));
-		data.createNewFollowee(MockKeys.K1, F3, null, 0L);
+		data.createNewFollowee(MockKeys.K1, F3, 0L, 0L);
 		data.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5));
-		data.updateExistingFollowee(MockKeys.K0, F2, null, 2L);
+		data.updateExistingFollowee(MockKeys.K0, F2, 2L, true);
 		
 		byte[] byteArray = _serializeAsOpcodeStream(data);
 		FolloweeData latest = _decodeOpcodeStream(byteArray);
@@ -278,7 +278,7 @@ public class TestFolloweeData
 	{
 		// Now that we are assuming that the data reader is stateful, make sure that we see the right elements.
 		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K0, F1, null, 0L);
+		data.createNewFollowee(MockKeys.K0, F1, 0L, 0L);
 		data.addElement(MockKeys.K0, new FollowingCacheElement(F1, F2, null, 5));
 		data.addSkippedRecord(MockKeys.K0, F2, true);
 		data.addSkippedRecord(MockKeys.K0, F3, false);
@@ -300,26 +300,6 @@ public class TestFolloweeData
 		Assert.assertTrue(latest.getSkippedRecords(MockKeys.K0, false).isEmpty());
 		latest.removeFollowee(MockKeys.K0);
 		Assert.assertTrue(latest.getAllKnownFollowees().isEmpty());
-	}
-
-	@Test
-	public void nextBackwardRecord() throws Throwable
-	{
-		FolloweeData data = FolloweeData.createEmpty();
-		data.createNewFollowee(MockKeys.K0, F1, null, 0L);
-		data.createNewFollowee(MockKeys.K1, F2, F3, 0L);
-		
-		byte[] byteArray = _serializeAsOpcodeStream(data);
-		FolloweeData latest = _decodeOpcodeStream(byteArray);
-		Assert.assertNull(latest.getNextBackwardRecord(MockKeys.K0));
-		Assert.assertEquals(F3, latest.getNextBackwardRecord(MockKeys.K1));
-		latest.updateExistingFollowee(MockKeys.K0, F1, F3, 1L);
-		latest.updateExistingFollowee(MockKeys.K1, F2, null, 1L);
-		
-		byteArray = _serializeAsOpcodeStream(latest);
-		latest = _decodeOpcodeStream(byteArray);
-		Assert.assertEquals(F3, latest.getNextBackwardRecord(MockKeys.K0));
-		Assert.assertNull(latest.getNextBackwardRecord(MockKeys.K1));
 	}
 
 

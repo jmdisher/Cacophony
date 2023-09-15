@@ -174,7 +174,7 @@ public class TestV3V4
 	public void basicFollowees() throws Throwable
 	{
 		FolloweeData followees = FolloweeData.createEmpty();
-		followees.createNewFollowee(MockKeys.K0, F1, null, 10L);
+		followees.createNewFollowee(MockKeys.K0, F1, 10L, 10L);
 		followees.addElement(MockKeys.K0, new FollowingCacheElement(F2, F3, null, 5L));
 		
 		// Serialize as V3 and load.

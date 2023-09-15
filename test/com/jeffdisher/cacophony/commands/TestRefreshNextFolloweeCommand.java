@@ -240,23 +240,19 @@ public class TestRefreshNextFolloweeCommand
 		IpfsFile recordToDelete = records.getRecordList().get(0);
 		user3.deleteFile(recordToDelete);
 		
-		// This should abort, just advancing the next to poll.
-		boolean didFail = false;
-		try
-		{
-			user.runCommand(null, command);
-		}
-		catch (IpfsConnectionException e)
-		{
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
+		// This used to fail but now we only fail if the top-level meta-data is broken, and are more tolerant to record-level corruption/failures.
+		user.runCommand(null, command);
 		nextKey = followees.getNextFolloweeToPoll();
 		Assert.assertEquals(MockKeys.K2, nextKey);
 		
-		// Check that we see that we did update the cache with the valid entry.
+		// Verify that we failed to read the deleted record (should be a temporary failure since it is missing).
+		Assert.assertEquals(1, followees.getSkippedRecords(MockKeys.K3, false).size());
+		Assert.assertEquals(recordToDelete, followees.getSkippedRecords(MockKeys.K3, false).iterator().next());
+		
+		// Check that we see that we did update the cache with the valid entry but no leaves (text isn't a leaf type we cache).
 		followees = user.readFollowIndex();
-		Assert.assertEquals(0, followees.snapshotAllElementsForFollowee(MockKeys.K3).size());
+		Assert.assertEquals(1, followees.snapshotAllElementsForFollowee(MockKeys.K3).size());
+		Assert.assertNull(followees.snapshotAllElementsForFollowee(MockKeys.K3).values().iterator().next().leafHash());
 		user2.shutdown();
 		user3.shutdown();
 		user.shutdown();

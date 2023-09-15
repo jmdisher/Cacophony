@@ -202,9 +202,9 @@ public class TestLocalDataModel
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
 			FolloweeData followees = access.readFollowIndex();
-			followees.createNewFollowee(MockKeys.K1, F1, null, 0L);
+			followees.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
 			followees.addElement(MockKeys.K1, new FollowingCacheElement(F1, F2, null, 5L));
-			followees.updateExistingFollowee(MockKeys.K1, F1, null, 1L);
+			followees.updateExistingFollowee(MockKeys.K1, F1, 1L, true);
 			access.writeFollowIndex(followees);
 			PinCacheData pinCache = access.readGlobalPinCache();
 			pinCache.addRef(F1);
@@ -409,7 +409,7 @@ public class TestLocalDataModel
 			try (OpcodeCodec.Writer writer = OpcodeCodec.createOutputWriter(output.getStream()))
 			{
 				FolloweeData followees = FolloweeData.createEmpty();
-				followees.createNewFollowee(MockKeys.K1, homeRoot, null, 0L);
+				followees.createNewFollowee(MockKeys.K1, homeRoot, 0L, 0L);
 				followees.addElement(MockKeys.K1, new FollowingCacheElement(postWithThumb, thumbHash, null, thumb.length));
 				followees.serializeToOpcodeWriterV3(writer);
 			}

@@ -50,12 +50,6 @@ public interface IFolloweeReading
 	IpfsKey getNextFolloweeToPoll();
 
 	/**
-	 * @param publicKey The key of the followee.
-	 * @return The next target record for incremental synchronization (null if incremental synchronization is complete).
-	 */
-	IpfsFile getNextBackwardRecord(IpfsKey followeeKey);
-
-	/**
 	 * Looks up the set of previously skipped records for the given followeeKey.  If temporaryOnly, will only return
 	 * the temporarily skipped elements whereas passing false will return all of the skipped elements.
 	 * 

@@ -31,13 +31,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final ConcurrentTransaction _transaction;
 	private final IpfsKey _followeeKey;
 	private final boolean _isExistingFollowee;
+
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
-	
+	private final Set<IpfsFile> _initialFailureSet;
+
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 	private final List<Consumer<CacheUpdater>> _pendingCacheUpdates;
-	
-	private IpfsFile _followeeNextBackwardRecord;
+
 	private final List<IpfsFile> _temporarilySkippedRecords;
 	private final List<IpfsFile> _permanentlySkippedRecords;
 
@@ -46,7 +47,7 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 			, IpfsKey followeeKey
 			, boolean isExistingFollowee
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
-			, IpfsFile followeeNextBackwardRecord
+			, Set<IpfsFile> initialFailureSet
 	)
 	{
 		Assert.assertTrue(null != logger);
@@ -59,12 +60,12 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_followeeKey = followeeKey;
 		_isExistingFollowee = isExistingFollowee;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
+		_initialFailureSet = initialFailureSet;
 		
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
 		_pendingCacheUpdates = new ArrayList<>();
 		
-		_followeeNextBackwardRecord = followeeNextBackwardRecord;
 		_temporarilySkippedRecords = new ArrayList<>();
 		_permanentlySkippedRecords = new ArrayList<>();
 	}
@@ -196,16 +197,6 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		});
 	}
 	@Override
-	public IpfsFile getNextBackwardRecord()
-	{
-		return _followeeNextBackwardRecord;
-	}
-	@Override
-	public void setNextBackwardRecord(IpfsFile nextBackwardSyncRecord)
-	{
-		_followeeNextBackwardRecord = nextBackwardSyncRecord;
-	}
-	@Override
 	public void addSkippedRecord(IpfsFile recordCid, boolean isPermanent)
 	{
 		if (isPermanent)
@@ -216,5 +207,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		{
 			_temporarilySkippedRecords.add(recordCid);
 		}
+	}
+	@Override
+	public boolean hasRecordBeenProcessed(IpfsFile recordCid)
+	{
+		// We only check the initial state - the caller is responsible for tracking anything it has, or is currently
+		// processing, in this invocation.
+		return _cachedEntriesForFollowee.containsKey(recordCid)
+				|| _initialFailureSet.contains(recordCid)
+		;
 	}
 }

@@ -67,7 +67,7 @@ public record Opcode_SetFolloweeStateV3(IpfsKey followeeKey, IpfsFile indexRoot,
 
 	private void commonApply(FolloweeData followees)
 	{
-		// V3 data doesn't have partially-loaded followees.
-		followees.createNewFollowee(this.followeeKey, this.indexRoot, null, this.lastPollMillis);
+		// V3 data doesn't distinguish between poll and success.
+		followees.createNewFollowee(this.followeeKey, this.indexRoot, this.lastPollMillis, this.lastPollMillis);
 	}
 }

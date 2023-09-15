@@ -150,7 +150,7 @@ public class TestJsonGenerationHelpers
 			
 			FolloweeData followIndex = access.writableFolloweeData();
 			IpfsFile followeeIndexFile = _storeNewIndex(access, followeeRecordFile, oversizeRecordFile, false);
-			followIndex.createNewFollowee(MockKeys.K2, followeeIndexFile, null, 1L);
+			followIndex.createNewFollowee(MockKeys.K2, followeeIndexFile, 1L, 1L);
 			followIndex.addElement(MockKeys.K2, new FollowingCacheElement(followeeRecordFile, null, null, 0L));
 		}
 		
