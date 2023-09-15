@@ -185,62 +185,28 @@ public class TestFolloweeData
 	public void listenForRefresh() throws Throwable
 	{
 		// The dispatcher is expected to lock-step execution, so we synchronize the call as a simple approach.
-		Consumer<Runnable> dispatcher = new Consumer<>() {
-			@Override
-			public void accept(Runnable arg0)
-			{
-				synchronized (this)
-				{
-					arg0.run();
-				}
-			}
-		};
+		InlineDispatcher dispatcher = new InlineDispatcher();
 		
 		// We will run all callbacks inline so we will just use a map to observe the state.
-		Map<IpfsKey, Long> map = new HashMap<>();
+		Map<IpfsKey, FolloweeData.TimePair> map = new HashMap<>();
 		FolloweeData data = FolloweeData.createEmpty();
 		
 		// Start with an existing followee to make sure it is observed in the map.
 		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
 		data.updateExistingFollowee(MockKeys.K1, F1, 1L, true);
-		HandoffConnector<IpfsKey, Long> connector = new HandoffConnector<>(dispatcher);
-		connector.registerListener(new HandoffConnector.IHandoffListener<IpfsKey, Long>()
-		{
-			@Override
-			public boolean update(IpfsKey key, Long value)
-			{
-				Assert.assertNotNull(map.put(key, value));
-				return true;
-			}
-			@Override
-			public boolean destroy(IpfsKey key)
-			{
-				Assert.assertNotNull(map.remove(key));
-				return true;
-			}
-			@Override
-			public boolean create(IpfsKey key, Long value, boolean isNewest)
-			{
-				Assert.assertNull(map.put(key, value));
-				return true;
-			}
-			@Override
-			public boolean specialChanged(String special)
-			{
-				throw new AssertionError("Not used");
-			}
-		}, 0);
+		HandoffConnector<IpfsKey, FolloweeData.TimePair> connector = new HandoffConnector<>(dispatcher);
+		connector.registerListener(new MapBasedListener(map), 0);
 		data.attachRefreshConnector(connector);
 		Assert.assertEquals(1, map.size());
-		Assert.assertEquals(1L, map.get(MockKeys.K1).longValue());
+		Assert.assertEquals(1L, map.get(MockKeys.K1).pollMillis());
 		
 		// Add a second followee and update both of them to verify we see both updated values.
 		data.createNewFollowee(MockKeys.K2, F1, 0L, 0L);
 		data.updateExistingFollowee(MockKeys.K1, F2, 3L, true);
 		data.updateExistingFollowee(MockKeys.K2, F2, 4L, true);
 		Assert.assertEquals(2, map.size());
-		Assert.assertEquals(3L, map.get(MockKeys.K1).longValue());
-		Assert.assertEquals(4L, map.get(MockKeys.K2).longValue());
+		Assert.assertEquals(3L, map.get(MockKeys.K1).pollMillis());
+		Assert.assertEquals(4L, map.get(MockKeys.K2).pollMillis());
 		
 		// Remove them both and make sure the map is empty.
 		data.removeFollowee(MockKeys.K1);
@@ -302,6 +268,37 @@ public class TestFolloweeData
 		Assert.assertTrue(latest.getAllKnownFollowees().isEmpty());
 	}
 
+	@Test
+	public void observeFailedUpdate() throws Throwable
+	{
+		// We want to show that the failed update doesn't change the time in the handoff listener.
+		InlineDispatcher dispatcher = new InlineDispatcher();
+		Map<IpfsKey, FolloweeData.TimePair> map = new HashMap<>();
+		HandoffConnector<IpfsKey, FolloweeData.TimePair> connector = new HandoffConnector<>(dispatcher);
+		connector.registerListener(new MapBasedListener(map), 0);
+		FolloweeData data = FolloweeData.createEmpty();
+		data.attachRefreshConnector(connector);
+		
+		// Create a followee and observe the results of the times seen in the listener.
+		data.createNewFollowee(MockKeys.K1, F1, 0L, 0L);
+		Assert.assertEquals(0L, map.get(MockKeys.K1).pollMillis());
+		
+		data.updateExistingFollowee(MockKeys.K1, F1, 1L, true);
+		Assert.assertEquals(1L, map.get(MockKeys.K1).pollMillis());
+		Assert.assertEquals(1L, map.get(MockKeys.K1).successMillis());
+		
+		data.updateExistingFollowee(MockKeys.K1, F1, 2L, false);
+		Assert.assertEquals(2L, map.get(MockKeys.K1).pollMillis());
+		Assert.assertEquals(1L, map.get(MockKeys.K1).successMillis());
+		
+		data.updateExistingFollowee(MockKeys.K1, F1, 3L, true);
+		Assert.assertEquals(3L, map.get(MockKeys.K1).pollMillis());
+		Assert.assertEquals(3L, map.get(MockKeys.K1).successMillis());
+		
+		data.removeFollowee(MockKeys.K1);
+		Assert.assertTrue(map.isEmpty());
+	}
+
 
 	private byte[] _serializeAsOpcodeStream(FolloweeData data) throws IOException
 	{
@@ -328,5 +325,52 @@ public class TestFolloweeData
 		);
 		OpcodeCodec.decodeWholeStream(new ByteArrayInputStream(byteArray), context);
 		return followees;
+	}
+
+
+	private static class MapBasedListener implements HandoffConnector.IHandoffListener<IpfsKey, FolloweeData.TimePair>
+	{
+		private final Map<IpfsKey, FolloweeData.TimePair> _sharedMap;
+		public MapBasedListener(Map<IpfsKey, FolloweeData.TimePair> sharedMap)
+		{
+			// Note that this instance is shared with the caller for easy data lookup.
+			_sharedMap = sharedMap;
+		}
+		@Override
+		public boolean update(IpfsKey key, FolloweeData.TimePair value)
+		{
+			Assert.assertNotNull(_sharedMap.put(key, value));
+			return true;
+		}
+		@Override
+		public boolean destroy(IpfsKey key)
+		{
+			Assert.assertNotNull(_sharedMap.remove(key));
+			return true;
+		}
+		@Override
+		public boolean create(IpfsKey key, FolloweeData.TimePair value, boolean isNewest)
+		{
+			Assert.assertNull(_sharedMap.put(key, value));
+			return true;
+		}
+		@Override
+		public boolean specialChanged(String special)
+		{
+			throw new AssertionError("Not used");
+		}
+	}
+
+
+	private static class InlineDispatcher implements Consumer<Runnable>
+	{
+		@Override
+		public void accept(Runnable arg0)
+		{
+			synchronized (this)
+			{
+				arg0.run();
+			}
+		}
 	}
 }

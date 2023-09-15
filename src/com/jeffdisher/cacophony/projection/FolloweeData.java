@@ -42,7 +42,7 @@ public class FolloweeData implements IFolloweeReading
 	private long _mostRecentFetchMillis;
 
 	// Only set in the cases of servers so it is bound late, but can only be bound once.
-	private HandoffConnector<IpfsKey, Long> _followeeRefreshConnector;
+	private HandoffConnector<IpfsKey, TimePair> _followeeRefreshConnector;
 
 	private FolloweeData()
 	{
@@ -293,7 +293,7 @@ public class FolloweeData implements IFolloweeReading
 		
 		if (null != _followeeRefreshConnector)
 		{
-			_followeeRefreshConnector.create(followeeKey, lastPollMillis);
+			_followeeRefreshConnector.create(followeeKey, new TimePair(lastPollMillis, lastSuccessMillis));
 		}
 	}
 
@@ -328,7 +328,7 @@ public class FolloweeData implements IFolloweeReading
 		
 		if (null != _followeeRefreshConnector)
 		{
-			_followeeRefreshConnector.update(followeeKey, pollMillisToSave);
+			_followeeRefreshConnector.update(followeeKey, new TimePair(pollMillisToSave, _followeeLastSuccessMillis.get(followeeKey)));
 		}
 	}
 
@@ -372,14 +372,19 @@ public class FolloweeData implements IFolloweeReading
 	 * 
 	 * @param followeeRefreshConnector The connector to notify of followee refreshes.
 	 */
-	public void attachRefreshConnector(HandoffConnector<IpfsKey, Long> followeeRefreshConnector)
+	public void attachRefreshConnector(HandoffConnector<IpfsKey, TimePair> followeeRefreshConnector)
 	{
 		Assert.assertTrue(null == _followeeRefreshConnector);
 		_followeeRefreshConnector = followeeRefreshConnector;
 		
 		for(Map.Entry<IpfsKey, Long> elt : _followeeLastPollMillis.entrySet())
 		{
-			_followeeRefreshConnector.create(elt.getKey(), elt.getValue());
+			IpfsKey key = elt.getKey();
+			TimePair pair = new TimePair(elt.getValue(), _followeeLastSuccessMillis.get(key));
+			_followeeRefreshConnector.create(key, pair);
 		}
 	}
+
+
+	public static record TimePair(long pollMillis, long successMillis) {}
 }

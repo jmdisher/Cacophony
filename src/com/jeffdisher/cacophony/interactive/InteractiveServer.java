@@ -60,7 +60,7 @@ public class InteractiveServer
 		// Create the ConnectorDispatcher for our various HandoffConnector instances in the server.
 		ConnectorDispatcher dispatcher = new ConnectorDispatcher();
 		dispatcher.start();
-		HandoffConnector<IpfsKey, Long> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
+		HandoffConnector<IpfsKey, FolloweeData.TimePair> followeeRefreshConnector = new HandoffConnector<>(dispatcher);
 		HandoffConnector<IpfsFile, IpfsFile> replyCacheConnector = new HandoffConnector<>(dispatcher);
 		
 		PrefsData prefs = null;

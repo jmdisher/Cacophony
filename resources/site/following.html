@@ -79,7 +79,8 @@ function beginPopulating($scope)
 				"name": key,
 				"description": "Pending...",
 				"userPicUrl": null,
-				"readableRefreshTime": new Date(value).toLocaleString(),
+				"readablePollTime": new Date(value["poll_millis"]).toLocaleString(),
+				"readableSuccessTime": new Date(value["success_millis"]).toLocaleString(),
 				"isRefreshing": false,
 			};
 			if (isNewest)
@@ -104,7 +105,8 @@ function beginPopulating($scope)
 		, function(key, value)
 		{
 			// Look this up and update the time.
-			keyToObjectMap[key]["readableRefreshTime"] = new Date(value).toLocaleString();
+			keyToObjectMap[key]["readablePollTime"] = new Date(value["poll_millis"]).toLocaleString();
+			keyToObjectMap[key]["readableSuccessTime"] = new Date(value["success_millis"]).toLocaleString();
 			keyToObjectMap[key]["isRefreshing"] = false;
 			$scope.$apply();
 		}
@@ -194,7 +196,9 @@ function beginPopulating($scope)
 					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<button class="btn btn-sm btn-success" ng-click="requestRefresh(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Refresh</button>Updated: {{user.readableRefreshTime}}<br />
+						Last checked: {{user.readablePollTime}}<br />
+						Last success: {{user.readableSuccessTime}}<br />
+						<button class="btn btn-sm btn-success" ng-click="requestRefresh(user)" ng-show="isConnected" ng-disabled="user.isRefreshing">Refresh</button>
 						<div class="btn-group">
 							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-show="isConnected" ng-disabled="user.isRefreshing">Stop Following User</button>
 							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="stopFollowing(user)">Confirm</a></li></ul>

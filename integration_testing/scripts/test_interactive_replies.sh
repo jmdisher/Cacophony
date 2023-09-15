@@ -86,10 +86,10 @@ curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST ht
 # This also requires waiting for us to see the initial follow attempts happen.
 INDEX_REFRESH1=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$KEY2\",\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$KEY2\",\"value\":{\"poll_millis\":"
 INDEX_REFRESH2=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9003/waitAndGet/$INDEX_REFRESH2 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$KEY1\",\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$KEY1\",\"value\":{\"poll_millis\":"
 # Make sure that we drain the initial refresh from the status socket.
 INDEX_STATUS1=0
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
@@ -137,7 +137,7 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":3,\"value\":null
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/followee/refresh/$KEY1
 INDEX_REFRESH2=$((INDEX_REFRESH2 + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9003/waitAndGet/$INDEX_REFRESH2 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY1\",\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY1\",\"value\":{\"poll_millis\":"
 # ...and the status socket.
 INDEX_STATUS2=$((INDEX_STATUS2 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_STATUS2 2> /dev/null)
@@ -178,7 +178,7 @@ echo "Refresh server 1, verify that we see the response, and then verify that it
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/followee/refresh/$KEY2
 INDEX_REFRESH1=$((INDEX_REFRESH1 + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\":{\"poll_millis\":"
 # ...and the status socket.
 INDEX_STATUS1=$((INDEX_STATUS1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)
@@ -244,7 +244,7 @@ requireSubstring "$STATUS_EVENT" "{\"event\":\"delete\",\"key\":5,\"value\":null
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/followee/refresh/$KEY2
 INDEX_REFRESH1=$((INDEX_REFRESH1 + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9002/waitAndGet/$INDEX_REFRESH1 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\""
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$KEY2\",\"value\":{\"poll_millis\":"
 # ...and the status socket.
 INDEX_STATUS1=$((INDEX_STATUS1 + 1))
 STATUS_EVENT=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX_STATUS1 2> /dev/null)

@@ -81,7 +81,7 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "h
 # Verify that we see the new followee reference created in the follow refresh time socket.
 INDEX_REFRESH=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":{\"poll_millis\":"
 # Note that we need to wait for the refresh to finish, since it is now asynchronous.
 INDEX=0
 SAMPLE=$(curl -XGET http://127.0.0.1:9000/waitAndGet/$INDEX 2> /dev/null)
@@ -102,7 +102,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":2,\"value\":null,\"isN
 # The followee refresh should similarly show that this has completed.
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":{\"poll_millis\":"
 
 echo "Verify that we can read the followee data from the cache..."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC2")
@@ -127,7 +127,7 @@ requireSubstring "$POST_LIST" "[]"
 # We should also see this update the refresh time.
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":{\"poll_millis\":"
 
 echo "Make a post as user2..."
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "post" --description "no description"
@@ -147,7 +147,7 @@ requireSubstring "$POST_LIST" "[\"Qm"
 echo "Verify that we see the refresh in the followee socket..."
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"update\",\"key\":\"$PUBLIC2\",\"value\":{\"poll_millis\":"
 
 echo "Verify that we see the new entry in the entry socket..."
 INDEX_ENTRIES=0
@@ -200,7 +200,7 @@ requireSubstring "$SAMPLE" "{\"event\":\"delete\",\"key\":5,\"value\":null,\"isN
 # We also want to wait for the refresh to complete, asynchronously.
 INDEX_REFRESH=$((INDEX_REFRESH + 1))
 SAMPLE=$(curl -XGET http://127.0.0.1:9001/waitAndGet/$INDEX_REFRESH 2> /dev/null)
-requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":"
+requireSubstring "$SAMPLE" "{\"event\":\"create\",\"key\":\"$PUBLIC2\",\"value\":{\"poll_millis\":"
 
 # Note that the socket will be disconnected from updates once the user is unfollowed so we need to reconnect now that the user is re-added.
 curl --no-progress-meter -XPOST "http://127.0.0.1:9002/close"
