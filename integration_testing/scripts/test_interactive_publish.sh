@@ -417,8 +417,8 @@ curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XPOST "
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
 requireSubstring "$FAVOURITES_LIST" "[\"$AUDIO_CID\"]"
 # Check that we see this in the cache sizing data.
-STATS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/caches")
-requireSubstring "$STATS" "{\"followeeCacheBytes\":0,\"explicitCacheBytes\":0,\"favouritesCacheBytes\":810}"
+STATS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/status")
+requireSubstring "$STATS" ",\"explicitCacheBytes\":0,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":810}"
 # We also want to verify that the delete works.
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XDELETE "http://127.0.0.1:8000/favourites/remove/$AUDIO_CID"
 FAVOURITES_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/favourites/list")
@@ -443,7 +443,7 @@ PREFS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter 
 requireSubstring "$PREFS" "{\"videoEdgePixelMax\":500,\"republishIntervalMillis\":70000,\"explicitCacheTargetBytes\":1000000001,\"explicitUserInfoRefreshMillis\":60001,\"followeeCacheTargetBytes\":2000000000,\"followeeRefreshMillis\":80000,\"followeeRecordThumbnailMaxBytes\":10000000,\"followeeRecordAudioMaxBytes\":200000000,\"followeeRecordVideoMaxBytes\":2000000002}"
 
 echo "Check that we can read the version"
-VERSION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/version")
+VERSION=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8000/server/status")
 requireSubstring "$VERSION" "\"version\""
 
 echo "Verify that we can load the status page..."

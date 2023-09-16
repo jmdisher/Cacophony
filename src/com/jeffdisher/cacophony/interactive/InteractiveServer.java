@@ -203,7 +203,7 @@ public class InteractiveServer
 		
 		// Entry-points for server-global.
 		server.addPostRawHandler("/server/cookie", new POST_Raw_Cookie(xsrf));
-		validated.addGetHandler("/server/version", new GET_Version());
+		validated.addGetHandler("/server/status", new GET_ServerStatus(serverContext));
 		validated.addPostRawHandler("/server/stop", new POST_Raw_Stop(stopLatch));
 		validated.addGetHandler("/server/videoConfig", new GET_VideoConfig(processingCommand, canChangeCommand));
 		validated.addGetHandler("/server/prefs", new GET_Prefs(serverContext));
@@ -216,7 +216,6 @@ public class InteractiveServer
 		validated.addGetHandler("/server/recommendedKeys/{KEY}", new GET_RecommendedKeys(runner));
 		validated.addGetHandler("/server/postStruct/{CID}/{string}", new GET_PostStruct(runner));
 		validated.addGetHandler("/server/unknownUser/{KEY}", new GET_UnknownUserInfo(runner));
-		validated.addGetHandler("/server/caches", new GET_CacheStats(serverContext));
 		validated.addPostRawHandler("/server/clearExplicitCache", new POST_Raw_ClearExplicitCache(runner));
 		
 		// Home user operations.

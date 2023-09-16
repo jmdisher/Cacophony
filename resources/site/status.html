@@ -94,27 +94,24 @@ function xsrfLoaded($scope)
 		})
 	;
 	
-	REST.GET("/server/version")
-		.then(result => result.json())
-		.then(version => {
-			$scope.hash = version["hash"];
-			$scope.version = version["version"];
-			$scope.$apply();
-		});
-	
 	// Create a placeholder struct.
-	$scope.caches = {
+	$scope.serverStatus = {
+		hash: "Loading...",
+		version: "Loading...",
 		followeeCacheBytes: 0,
 		explicitCacheBytes: 0,
 		favouritesCacheBytes: 0,
 	};
-	REST.GET("/server/caches")
-		.then((response) => response.json())
-		.then((data) => {
-			$scope.caches = data;
+	REST.GET("/server/status")
+		.then(result => result.json())
+		.then(status => {
+			$scope.serverStatus.hash = status["hash"];
+			$scope.serverStatus.version = status["version"];
+			$scope.serverStatus.followeeCacheBytes = status["followeeCacheBytes"];
+			$scope.serverStatus.explicitCacheBytes = status["explicitCacheBytes"];
+			$scope.serverStatus.favouritesCacheBytes = status["favouritesCacheBytes"];
 			$scope.$apply();
-		})
-	;
+		});
 	
 	EVENTS_API.backgroundStatus(
 		// Socket open.
@@ -204,10 +201,10 @@ function xsrfLoaded($scope)
 		</div>
 		<div class="col-md-9">
 			<div class="card card-body">
-				Welcome to Cacophony {{version}} (build hash: {{hash}}).<br />
-				Followee cache size: {{caches.followeeCacheBytes}} bytes.<br />
-				Explicit cache size: {{caches.explicitCacheBytes}} bytes.<br />
-				Favourites cache size: {{caches.favouritesCacheBytes}} bytes.<br />
+				Welcome to Cacophony {{serverStatus.version}} (build hash: {{serverStatus.hash}}).<br />
+				Followee cache size: {{serverStatus.followeeCacheBytes}} bytes.<br />
+				Explicit cache size: {{serverStatus.explicitCacheBytes}} bytes.<br />
+				Favourites cache size: {{serverStatus.favouritesCacheBytes}} bytes.<br />
 			</div>
 			<div class="row card card-body">
 				<span class="badge text-bg-success" ng-show="null !== socket">Server Online</span>
