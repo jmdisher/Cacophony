@@ -24,10 +24,13 @@ import com.jeffdisher.cacophony.utils.Assert;
  * This gives rise to a key point about this class:  None of the mutative calls (adding or removing) are for actual data
  * roots, but only for posts which are relies to others.
  * The public interface is synchronized since it is a cache which could be populated from any part of the system.
+ * Note that it is possible for a post to be observed multiple times (rebroadcasts, etc) so this structure must be
+ * internally reference-counted such that it only notifies listeners on the first add or last remove.
  */
 public class ReplyForest
 {
 	private final Map<IpfsFile, Set<IpfsFile>> _roots = new HashMap<>();
+	private final Map<IpfsFile, Integer> _refCounts = new HashMap<>();
 	private final IdentityHashMap<ForestAdapter, Void> _listeners = new IdentityHashMap<>();
 
 	/**
@@ -41,20 +44,30 @@ public class ReplyForest
 		Assert.assertTrue(null != post);
 		Assert.assertTrue(null != parent);
 		
-		Set<IpfsFile> children = _roots.get(parent);
-		// This might not yet be known.
-		if (null == children)
+		// We should only change state if this is new.
+		int refCount = 0;
+		if (!_refCounts.containsKey(post))
 		{
-			children = new HashSet<>();
-			_roots.put(parent, children);
+			Set<IpfsFile> children = _roots.get(parent);
+			// This might not yet be known.
+			if (null == children)
+			{
+				children = new HashSet<>();
+				_roots.put(parent, children);
+			}
+			children.add(post);
+			
+			// Notify the listeners of this new post.
+			for (ForestAdapter adapter : _listeners.keySet())
+			{
+				adapter.addChild(parent, post);
+			}
 		}
-		children.add(post);
-		
-		// Notify the listeners of this new post.
-		for (ForestAdapter adapter : _listeners.keySet())
+		else
 		{
-			adapter.addChild(parent, post);
+			refCount = _refCounts.get(post);
 		}
+		_refCounts.put(post, refCount + 1);
 	}
 
 	/**
@@ -68,16 +81,26 @@ public class ReplyForest
 		Assert.assertTrue(null != post);
 		Assert.assertTrue(null != parent);
 		
-		Set<IpfsFile> children = _roots.get(parent);
-		// We MUST see this since it was added, at some point.
-		Assert.assertTrue(null != children);
-		Assert.assertTrue(children.contains(post));
-		children.remove(post);
-		
-		// Notify the listeners of this removed post.
-		for (ForestAdapter adapter : _listeners.keySet())
+		// We should only change state if this was the last reference
+		int refCount = _refCounts.get(post);
+		if (1 == refCount)
 		{
-			adapter.removeChild(parent, post);
+			Set<IpfsFile> children = _roots.get(parent);
+			// We MUST see this since it was added, at some point.
+			Assert.assertTrue(null != children);
+			Assert.assertTrue(children.contains(post));
+			children.remove(post);
+			
+			// Notify the listeners of this removed post.
+			for (ForestAdapter adapter : _listeners.keySet())
+			{
+				adapter.removeChild(parent, post);
+			}
+			_refCounts.remove(post);
+		}
+		else
+		{
+			_refCounts.put(post, refCount - 1);
 		}
 	}
 

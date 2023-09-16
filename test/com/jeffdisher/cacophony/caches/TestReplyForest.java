@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.caches;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -230,6 +231,61 @@ public class TestReplyForest
 		Assert.assertEquals(parent, listener.childrenToParents.get(child));
 		
 		forest.removeListener(adapter);
+	}
+
+	@Test
+	public void duplicatedReferences() throws Throwable
+	{
+		// Tests the case where posts are observed via multiple paths and the ReplyForest needs to reference count them before deleting them.
+		ReplyForest forest = new ReplyForest();
+		Consumer<Runnable> dispatcher = (Runnable r) -> r.run();
+		IpfsFile parent = MockSingleNode.generateHash(new byte[] {1});
+		IpfsFile child = MockSingleNode.generateHash(new byte[] {2});
+		forest.addPost(child, parent);
+		
+		// Listen to the parent and make sure we see this relationship.
+		HandoffConnector<IpfsFile, IpfsFile> connector1 = new HandoffConnector<IpfsFile, IpfsFile>(dispatcher);
+		ReplyForest.IAdapterToken adapter1 = forest.addListener(connector1, parent);
+		Assert.assertNotNull(adapter1);
+		FakeListener listener1 = new FakeListener();
+		connector1.registerListener(listener1, 0);
+		Assert.assertEquals(1, listener1.childrenToParents.size());
+		
+		// Pretend that another user did a rebroadcast on both of these.
+		forest.addPost(child, parent);
+		
+		// Attach another listener and make sure that they see everything.
+		HandoffConnector<IpfsFile, IpfsFile> connector2 = new HandoffConnector<IpfsFile, IpfsFile>(dispatcher);
+		ReplyForest.IAdapterToken adapter2 = forest.addListener(connector2, parent);
+		Assert.assertNotNull(adapter2);
+		FakeListener listener2 = new FakeListener();
+		connector1.registerListener(listener2, 0);
+		Assert.assertEquals(1, listener2.childrenToParents.size());
+		
+		// Add a grandchild and make sure we see it.
+		IpfsFile grandchild = MockSingleNode.generateHash(new byte[] {3});
+		forest.addPost(grandchild, child);
+		Assert.assertEquals(2, listener1.childrenToParents.size());
+		Assert.assertEquals(child, listener1.childrenToParents.get(grandchild));
+		Assert.assertEquals(2, listener2.childrenToParents.size());
+		Assert.assertEquals(child, listener2.childrenToParents.get(grandchild));
+		
+		// Remove the child from one and verify that the listeners still see it.
+		forest.removePost(child, parent);
+		Assert.assertEquals(2, listener1.childrenToParents.size());
+		Assert.assertEquals(parent, listener1.childrenToParents.get(child));
+		Assert.assertEquals(2, listener2.childrenToParents.size());
+		Assert.assertEquals(parent, listener2.childrenToParents.get(child));
+		
+		// Now, remove the child from both and make sure we see it reflected in the listeners.
+		forest.removePost(child, parent);
+		Assert.assertEquals(1, listener1.childrenToParents.size());
+		Assert.assertNull(listener1.childrenToParents.get(child));
+		Assert.assertEquals(1, listener2.childrenToParents.size());
+		Assert.assertNull(listener2.childrenToParents.get(child));
+		
+		forest.removeListener(adapter2);
+		forest.removeListener(adapter1);
 	}
 
 
