@@ -82,7 +82,8 @@ function UTILS_renderLongTextIntoElement(element, longText)
 	// We write the data in as text (meaning it won't change the meaning of the DOM), then we replace the new lines with explicit break tags in the HTML.
 	// We do it in this order for security reasons:  Any other tags in the text will be rendered as text instead of modifying the DOM, so only the <br /> we add will modify it.
 	element.innerText = longText;
-	element.innerHTML = element.innerHTML.replace(/\/n/g, "<br />");
+	const regex = new RegExp("\n", "g");
+	element.innerHTML = element.innerHTML.replace(regex, "<br />");
 }
 
 // Returns an object describing the post with the given hash, via a promise (null on error).  Implementation of this is in GET_PostStruct.java and defines these keys:

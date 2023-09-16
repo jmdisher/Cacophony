@@ -208,18 +208,16 @@ GLOBAL_Application.directive('cacoUserLink', ['UnknownUserLoader', function(Unkn
 	}
 }]);
 
+// This is the common way of displaying a post, in most situations.  There is no handling of incomplete caching, nor is the description expanded with newlines (newlines are replaced with spaces to keep this vertically contained).  Description is truncated if longer than 135 characters.
 let _template_postMutable = ''
 	+ '<div class="row card">'
 	+ '<h5 class="card-header">{{postTuple.name}} (Posted by <caco-user-link public-key="postTuple.publisherKey"></caco-user-link> on {{postTuple.readableDate}})</h5>'
 	+ '<div class="card-body container row">'
-	+ '	<div class="col-md-3" ng-hide="{{postTuple.hasDataToCache}}">'
+	+ '	<div class="col-md-3">'
 	+ '		<a href="play.html?elt={{postTuple.elementHash}}"><img class="img-fluid" ng-src="{{postTuple.thumbnailUrl}}" alt="{{postTuple.name}}"/></a>'
 	+ '	</div>'
-	+ '	<div class="col-md-3" ng-show="{{postTuple.hasDataToCache}}">'
-	+ '		<a href="play.html?elt={{postTuple.elementHash}}">(some data not cached)</a>'
-	+ '	</div>'
 	+ '	<div class="col-md-9">'
-	+ '		{{postTuple.description}}<br />'
+	+ '		<span><!--This will be replaced with description--></span><br />'
 	+ '		<div class="btn-group" role="group" ng-show="enableDanger || enableEdit">'
 	+ '			<div class="btn-group" ng-show="enableDanger">'
 	+ '				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="isDangerActive">{{dangerName}}</button>'
@@ -249,11 +247,87 @@ GLOBAL_Application.directive('cacoPost', [function()
 		{
 			scope.isDangerActive = false;
 			
+			// We need to dynamically bind this content since we want to truncate description.
+			let dynamicDescription = element[0].getElementsByTagName("span")[0];
+			
 			scope.onDanger = function()
 			{
 				scope.isDangerActive = true;
 				scope.onDangerKey()(scope.postTuple["elementHash"]);
 			}
+			scope.$watch('postTuple.description', function(newValue, oldValue)
+			{
+				// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
+				let description = scope.postTuple.description;
+				const regex = new RegExp("\n", "g");
+				description = description.replace(regex, " ");
+				if (description.length > 135)
+				{
+					// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
+					description = description.slice(0, 130) + "...";
+				}
+				// Inject as text since we don't want to honour HTML.
+				dynamicDescription.innerText = description;
+			});
+		}
+	}
+}]);
+
+// This is just used on the "play" page to show the entire content from a post or reply.  The key element to this is that the description has newlines expanded.
+let _template_postFull = ''
+	+ '<div class="row card">'
+	+ '<h5 class="card-header">{{postTuple.name}} (Posted by <caco-user-link public-key="postTuple.publisherKey"></caco-user-link> on {{postTuple.readableDate}})</h5>'
+	+ '<div class="card-body container row">'
+	+ '	<div class="col-md-3" ng-hide="{{postTuple.hasDataToCache}}">'
+	+ '		<a href="play.html?elt={{postTuple.elementHash}}"><img class="img-fluid" ng-src="{{postTuple.thumbnailUrl}}" alt="{{postTuple.name}}"/></a>'
+	+ '	</div>'
+	+ '	<div class="col-md-3" ng-show="{{postTuple.hasDataToCache}}">'
+	+ '		<a href="play.html?elt={{postTuple.elementHash}}">(some data not cached)</a>'
+	+ '	</div>'
+	+ '	<div class="col-md-9">'
+	+ '		<span><!--This will be replaced with description--></span><br />'
+	+ '		<div class="btn-group" role="group" ng-show="enableDanger || enableEdit">'
+	+ '			<div class="btn-group" ng-show="enableDanger">'
+	+ '				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="isDangerActive">{{dangerName}}</button>'
+	+ '				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="onDanger()">Confirm</a></li></ul>'
+	+ '			</div>'
+	+ '			<a class="btn btn-sm btn-warning" ng-show="enableEdit" ng-href="/basic_edit.html?elt={{postTuple.elementHash}}">Edit Post</a>'
+	+ '		</div>'
+	+ '	</div>'
+	+ '</div>'
+	+ '</div>'
+;
+GLOBAL_Application.directive('cacoPostFull', [function()
+{
+	// NOTES:
+	return {
+		restrict: 'E',
+		scope: {
+			postTuple: '=postTuple',
+			enableEdit: '=enableEdit',
+			enableDanger: '=enableDanger',
+			dangerName: '@dangerName',
+			onDangerKey: '&onDangerKey',
+		},
+		replace: true,
+		template: _template_postFull,
+		link: function(scope, element, attrs)
+		{
+			scope.isDangerActive = false;
+			
+			// We need to dynamically bind this content since we want to inject the <br /> so look up our nested span.
+			let dynamicDescription = element[0].getElementsByTagName("span")[0];
+			
+			scope.onDanger = function()
+			{
+				scope.isDangerActive = true;
+				scope.onDangerKey()(scope.postTuple["elementHash"]);
+			}
+			scope.$watch('postTuple.description', function(newValue, oldValue)
+			{
+				// Expand the newlines into the element.
+				UTILS_renderLongTextIntoElement(dynamicDescription, scope.postTuple.description);
+			});
 		}
 	}
 }]);
@@ -263,7 +337,7 @@ let _template_unknownUser = ''
 	+ '	<h5 class="card-header">{{tuple.name}}</h5>'
 	+ '	<div class="card-body row">'
 	+ '		<div class="col-md-4">'
-	+ '			<img class="img-fluid" ng-src="{{tuple.userPicUrl}}" />'
+	+ '			<a ng-href="user.html?publicKey={{tuple.publicKey}}"><img class="img-fluid" ng-src="{{tuple.userPicUrl}}" alt="{{tuple.name}}"/></a>'
 	+ '		</div>'
 	+ '		<div class="col-md-8">'
 	+ '			Public Key: <strong>{{tuple.publicKey}}</strong><br />'

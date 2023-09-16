@@ -430,7 +430,10 @@ function setupReplyTree($scope)
 	</div>
 	<div class="row justify-content-md-center">
 		<div class="col-md-6">
-			<div class="row card card-body" id="description">
+			<div class="row card">
+				<h5 class="card-header">{{rootElement.name}}</h5>
+				<div class="card-body" id="description">
+				</div>
 			</div>
 			<div class="row card card-body" ng-show="rootElement.discussionUrl">
 				<a ng-href="{{rootElement.discussionUrl}}">View discussion on {{discussionHost}}</a>
@@ -443,19 +446,19 @@ function setupReplyTree($scope)
 		Replies:
 			<!-- We will use a fixed-4 depth and link out to anything beyond that, just to keep the shape of the page sane. -->
 			<div class="row card card-body" ng-repeat="reply in rootElement.replies">
-				<caco-post ng-show="!reply.isTombstone" post-tuple="reply" enable-edit="reply.publisherKey === homePublicKey" enable-danger="reply.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+				<caco-post-full ng-show="!reply.isTombstone" post-tuple="reply" enable-edit="reply.publisherKey === homePublicKey" enable-danger="reply.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post-full>
 				<quick-reply post-tuple="reply" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 				<div ng-show="reply.isTombstone">(post deleted/edited)</div>
 				<div class="row card card-body" ng-repeat="reply1 in reply.replies">
-					<caco-post ng-show="!reply1.isTombstone" post-tuple="reply1" enable-edit="reply1.publisherKey === homePublicKey" enable-danger="reply1.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+					<caco-post-full ng-show="!reply1.isTombstone" post-tuple="reply1" enable-edit="reply1.publisherKey === homePublicKey" enable-danger="reply1.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post-full>
 					<quick-reply post-tuple="reply1" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 					<div ng-show="reply1.isTombstone">(post deleted/edited)</div>
 					<div class="row card card-body" ng-repeat="reply2 in reply1.replies">
-						<caco-post ng-show="!reply2.isTombstone" post-tuple="reply2" enable-edit="reply2.publisherKey === homePublicKey" enable-danger="reply2.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+						<caco-post-full ng-show="!reply2.isTombstone" post-tuple="reply2" enable-edit="reply2.publisherKey === homePublicKey" enable-danger="reply2.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post-full>
 						<quick-reply post-tuple="reply2" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 						<div ng-show="reply2.isTombstone">(post deleted/edited)</div>
 						<div class="row card card-body" ng-repeat="reply3 in reply2.replies">
-							<caco-post ng-show="!reply3.isTombstone" post-tuple="reply3" enable-edit="reply3.publisherKey === homePublicKey" enable-danger="reply3.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+							<caco-post-full ng-show="!reply3.isTombstone" post-tuple="reply3" enable-edit="reply3.publisherKey === homePublicKey" enable-danger="reply3.publisherKey === homePublicKey" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post-full>
 							<div ng-show="reply3.isTombstone">(post deleted/edited)</div>
 							<a href="play.html?elt={{reply3.elementHash}}">See more of this thread or reply</a>
 						</div>
