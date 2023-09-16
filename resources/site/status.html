@@ -101,6 +101,7 @@ function xsrfLoaded($scope)
 		followeeCacheBytes: 0,
 		explicitCacheBytes: 0,
 		favouritesCacheBytes: 0,
+		ipfsStatus: null,
 	};
 	REST.GET("/server/status")
 		.then(result => result.json())
@@ -110,6 +111,7 @@ function xsrfLoaded($scope)
 			$scope.serverStatus.followeeCacheBytes = status["followeeCacheBytes"];
 			$scope.serverStatus.explicitCacheBytes = status["explicitCacheBytes"];
 			$scope.serverStatus.favouritesCacheBytes = status["favouritesCacheBytes"];
+			$scope.serverStatus.ipfsStatus = status["ipfsStatus"];
 			$scope.$apply();
 		});
 	
@@ -202,6 +204,7 @@ function xsrfLoaded($scope)
 		<div class="col-md-9">
 			<div class="card card-body">
 				Welcome to Cacophony {{serverStatus.version}} (build hash: {{serverStatus.hash}}).<br />
+				<span class="badge text-bg-success" ng-show="serverStatus.ipfsStatus">IPFS ONLINE</span><span class="badge text-bg-danger" ng-show="false === serverStatus.ipfsStatus">IPFS OFFLINE</span><span class="badge text-bg-secondary" ng-show="null === serverStatus.ipfsStatus">IPFS status Loading...</span><br />
 				Followee cache size: {{serverStatus.followeeCacheBytes}} bytes.<br />
 				Explicit cache size: {{serverStatus.explicitCacheBytes}} bytes.<br />
 				Favourites cache size: {{serverStatus.favouritesCacheBytes}} bytes.<br />

@@ -81,4 +81,12 @@ public interface IConnection
 	 * @throws IpfsConnectionException If there is some problem contacting the server.
 	 */
 	void deletePublicKey(String keyName) throws IpfsConnectionException;
+
+	/**
+	 * Checks the status string of the IPFS daemon (data returned as JSON).
+	 * 
+	 * @return The status string from the IPFS daemon.
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	String getIpfsStatus() throws IpfsConnectionException;
 }

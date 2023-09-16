@@ -108,12 +108,12 @@ requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "9"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/status")
-requireSubstring "$CACHES" ",\"explicitCacheBytes\":4585,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0}"
+requireSubstring "$CACHES" ",\"explicitCacheBytes\":4585,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0,\"ipfsStatus\":true}"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/server/clearExplicitCache" >& /dev/null
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
 requireSubstring "$LIST_SIZE" "7"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/status")
-requireSubstring "$CACHES" ",\"explicitCacheBytes\":0,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0}"
+requireSubstring "$CACHES" ",\"explicitCacheBytes\":0,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0,\"ipfsStatus\":true}"
 
 echo "Observe the false cache-hit behaviour on users found in the cache."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")

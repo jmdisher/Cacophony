@@ -398,6 +398,23 @@ public class StandardAccess implements IWritingAccess
 	}
 
 	@Override
+	public boolean isIpfsOnline()
+	{
+		boolean isOnline;
+		try
+		{
+			_sharedConnection.getIpfsStatus();
+			isOnline = true;
+		}
+		catch (IpfsConnectionException e)
+		{
+			// This means that the IPFS daemon is offline.
+			isOnline = false;
+		}
+		return isOnline;
+	}
+
+	@Override
 	public void close()
 	{
 		// We always assume the pin cache is being written.

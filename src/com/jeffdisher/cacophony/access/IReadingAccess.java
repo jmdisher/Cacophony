@@ -112,5 +112,12 @@ public interface IReadingAccess extends AutoCloseable, IBasicNetworkOps
 	 */
 	IExplicitCacheReading readableExplicitCache();
 
+	/**
+	 * Checks the status of the underlying IPFS daemon.
+	 * 
+	 * @return True if the daemon is online and responding.
+	 */
+	boolean isIpfsOnline();
+
 	record HomeUserTuple(String keyName, IpfsKey publicKey, IpfsFile lastRoot) {}
 }

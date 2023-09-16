@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * -"followeeCacheBytes" (long)
  * -"explicitCacheBytes" (long)
  * -"favouritesCacheBytes" (long)
+ * -"ipfsStatus" (boolean)
  */
 public class GET_ServerStatus implements ValidatedEntryPoints.GET
 {
@@ -47,6 +48,8 @@ public class GET_ServerStatus implements ValidatedEntryPoints.GET
 			long favouritesSizeBytes = access.readableFavouritesCache().getFavouritesSizeBytes();
 			serverStatus.add("followeeCacheBytes", followeeCacheBytes);
 			serverStatus.add("favouritesCacheBytes", favouritesSizeBytes);
+			boolean ipfsStatus = access.isIpfsOnline();
+			serverStatus.add("ipfsStatus", ipfsStatus);
 		}
 		response.setContentType("application/json");
 		response.setStatus(HttpServletResponse.SC_OK);

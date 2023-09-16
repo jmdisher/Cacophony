@@ -296,6 +296,12 @@ public class MockWritingAccess implements IWritingAccess
 	}
 
 	@Override
+	public boolean isIpfsOnline()
+	{
+		return true;
+	}
+
+	@Override
 	public ExplicitCacheData writableExplicitCache()
 	{
 		return this.explicitCacheData;
