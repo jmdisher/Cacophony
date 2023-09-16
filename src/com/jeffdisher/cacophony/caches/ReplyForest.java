@@ -92,13 +92,22 @@ public class ReplyForest
 	 */
 	public synchronized IAdapterToken addListener(HandoffConnector<IpfsFile, IpfsFile> connector, IpfsFile root)
 	{
-		ForestAdapter adapter = null;
+		Assert.assertTrue(null != root);
+		
+		ForestAdapter adapter = new ForestAdapter(connector, root);
+		_listeners.put(adapter, null);
 		if (_roots.containsKey(root))
 		{
-			adapter = new ForestAdapter(connector, root);
-			_listeners.put(adapter, null);
+			// This is the common case:  We know about the post so we know that this is a valid call.
 			// Walk all the children of this root, recursively, and populate the adapter.
 			_fillNewAdapter(adapter, root);
+		}
+		else
+		{
+			// This case happens when the user tries to listen to a post which we don't know about.  While this could
+			// just be a bogus call, it is typically what happens when they view a post which is valid but doesn't yet
+			// have any children.
+			// In this case, we don't walk the roots but otherwise leave the listener installed.
 		}
 		return adapter;
 	}

@@ -21,8 +21,9 @@ public class TestReplyForest
 		HandoffConnector<IpfsFile, IpfsFile> connector = new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run());
 		IpfsFile missingRoot = MockSingleNode.generateHash(new byte[] {1});
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, missingRoot);
-		// The root is not known so it should fail to register.
-		Assert.assertNull(adapter);
+		// We should still be able to look this up, even though the post is unknown (as it may be added later).
+		Assert.assertNotNull(adapter);
+		forest.removeListener(adapter);
 	}
 
 	@Test
@@ -34,6 +35,7 @@ public class TestReplyForest
 		IpfsFile child = MockSingleNode.generateHash(new byte[] {2});
 		forest.addPost(child, parent);
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, parent);
+		Assert.assertNotNull(adapter);
 		FakeListener listener = new FakeListener();
 		connector.registerListener(listener, 0);
 		Assert.assertEquals(1, listener.childrenToParents.size());
@@ -50,6 +52,7 @@ public class TestReplyForest
 		IpfsFile child = MockSingleNode.generateHash(new byte[] {2});
 		forest.addPost(child, parent);
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, parent);
+		Assert.assertNotNull(adapter);
 		FakeListener listener = new FakeListener();
 		connector.registerListener(listener, 0);
 		forest.removePost(child, parent);
@@ -73,6 +76,7 @@ public class TestReplyForest
 		forest.addPost(AAA, AA);
 		forest.addPost(BA, B);
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, A);
+		Assert.assertNotNull(adapter);
 		FakeListener listener = new FakeListener();
 		connector.registerListener(listener, 0);
 		// We don't see the B tree.
@@ -96,6 +100,7 @@ public class TestReplyForest
 		forest.addPost(AB, A);
 		forest.addPost(AAA, AA);
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, AA);
+		Assert.assertNotNull(adapter);
 		FakeListener listener = new FakeListener();
 		connector.registerListener(listener, 0);
 		// We only see what is rooted in AA.
@@ -120,6 +125,7 @@ public class TestReplyForest
 		forest.addPost(AAA, AA);
 		forest.addPost(BA, B);
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, A);
+		Assert.assertNotNull(adapter);
 		FakeListener listener = new FakeListener();
 		connector.registerListener(listener, 0);
 		// Now, do the removals.
@@ -148,6 +154,7 @@ public class TestReplyForest
 		
 		// Register everything after the first relationship.
 		ReplyForest.IAdapterToken adapter = forest.addListener(connector, A);
+		Assert.assertNotNull(adapter);
 		FakeListener listener = new FakeListener();
 		connector.registerListener(listener, 0);
 		
@@ -170,6 +177,58 @@ public class TestReplyForest
 		Assert.assertEquals(2, listener.childrenToParents.size());
 		Assert.assertEquals(A, listener.childrenToParents.get(AA));
 		Assert.assertEquals(AA, listener.childrenToParents.get(AAA));
+		forest.removeListener(adapter);
+	}
+
+	@Test
+	public void listenToChild() throws Throwable
+	{
+		ReplyForest forest = new ReplyForest();
+		HandoffConnector<IpfsFile, IpfsFile> connector = new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run());
+		IpfsFile parent = MockSingleNode.generateHash(new byte[] {1});
+		IpfsFile child = MockSingleNode.generateHash(new byte[] {2});
+		forest.addPost(child, parent);
+		
+		// Attach to the new child and make sure we see nothing.
+		ReplyForest.IAdapterToken adapter = forest.addListener(connector, child);
+		Assert.assertNotNull(adapter);
+		FakeListener listener = new FakeListener();
+		connector.registerListener(listener, 0);
+		Assert.assertEquals(0, listener.childrenToParents.size());
+		// There is a parent but this adapter wouldn't be told about it.
+		Assert.assertNull(listener.childrenToParents.get(child));
+		
+		// Add a grandchild and make sure we see it.
+		IpfsFile grandchild = MockSingleNode.generateHash(new byte[] {3});
+		forest.addPost(grandchild, child);
+		Assert.assertEquals(1, listener.childrenToParents.size());
+		Assert.assertEquals(child, listener.childrenToParents.get(grandchild));
+		
+		forest.removeListener(adapter);
+	}
+
+	@Test
+	public void observeSingleAddition() throws Throwable
+	{
+		// Add the root node before we begin listening.
+		ReplyForest forest = new ReplyForest();
+		IpfsFile parent = MockSingleNode.generateHash(new byte[] {1});
+		
+		// Begin listening and add the child.
+		HandoffConnector<IpfsFile, IpfsFile> connector = new HandoffConnector<IpfsFile, IpfsFile>((Runnable r) -> r.run());
+		ReplyForest.IAdapterToken adapter = forest.addListener(connector, parent);
+		Assert.assertNotNull(adapter);
+		FakeListener listener = new FakeListener();
+		connector.registerListener(listener, 0);
+		Assert.assertEquals(0, listener.childrenToParents.size());
+		Assert.assertNull(listener.childrenToParents.get(parent));
+		IpfsFile child = MockSingleNode.generateHash(new byte[] {2});
+		forest.addPost(child, parent);
+		
+		// Verify we see the new child in the tree.
+		Assert.assertEquals(1, listener.childrenToParents.size());
+		Assert.assertEquals(parent, listener.childrenToParents.get(child));
+		
 		forest.removeListener(adapter);
 	}
 
