@@ -47,7 +47,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		// We will expect that any entry-point will allocate this, so it isn't a user-facing error.
 		Assert.assertTrue(null != _elements);
 		
-		ILogger log = context.logger.logStart("Publish: " + this);
+		ILogger log = context.logger.logStart("Publishing post: " + _name);
 		PublishElement[] openElements = openElementFiles(context.logger, _elements);
 		Assert.assertTrue(null != openElements);
 		IpfsFile newRoot;
@@ -136,7 +136,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		List<AbstractRecord.Leaf> array = new ArrayList<>();
 		for (PublishElement elt : openElements)
 		{
-			ILogger eltLog = log.logStart("-Element: " + elt);
+			ILogger eltLog = log.logStart("-Uploading element with MIME: " + elt.mime);
 			// Note that this call will close the file (since it is intended to drain it) but we will still close it in
 			// the caller, just to cover error cases before getting this far.
 			IpfsFile uploaded = access.uploadAndPin(elt.fileData);
