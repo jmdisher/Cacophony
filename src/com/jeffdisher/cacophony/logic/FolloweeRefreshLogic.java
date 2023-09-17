@@ -181,7 +181,14 @@ public class FolloweeRefreshLogic
 			Collections.reverse(newestFirst);
 			Iterator<IpfsFile> newestIterator = newestFirst.iterator();
 			List<IpfsFile> newestFirstSelection = new ArrayList<>();
-			while (newestIterator.hasNext() && (newestFirstSelection.size() < INCREMENTAL_RECORD_COUNT))
+			// Note that, in order to improve the experience at the top-level, the first synchronization will not
+			// synchronize any actual records (note that it will attempt to re-sync almost immediately so this is just
+			// to speed up the initial follow operation since someone may be waiting to verify the user is valid).
+			int maximumRecordsToSynchronize = (null != oldIndexElement)
+					? INCREMENTAL_RECORD_COUNT
+					: 0
+			;
+			while (newestIterator.hasNext() && (newestFirstSelection.size() < maximumRecordsToSynchronize))
 			{
 				IpfsFile check = newestIterator.next();
 				if (!support.hasRecordBeenProcessed(check))
@@ -200,22 +207,22 @@ public class FolloweeRefreshLogic
 						, currentCacheUsageInBytes
 						, forceSelectFirstElement
 				);
-				
-				// We also want to see if there is more work to do.
-				while (!moreToDo && newestIterator.hasNext())
-				{
-					IpfsFile check = newestIterator.next();
-					moreToDo = !support.hasRecordBeenProcessed(check);
-				}
-				support.logMessageImportant("Incremental sync completed"
-						+ (moreToDo ? " (more to do)" : " (done)")
-						+ ", processing " + newestFirstSelection.size() + " records"
-				);
 			}
 			else
 			{
 				// TODO:  If there is nothing to do, look at the temporary skips to see if we can address those.
 			}
+			
+			// We also want to see if there is more work to do.
+			while (!moreToDo && newestIterator.hasNext())
+			{
+				IpfsFile check = newestIterator.next();
+				moreToDo = !support.hasRecordBeenProcessed(check);
+			}
+			support.logMessageImportant("Incremental sync completed"
+					+ (moreToDo ? " (more to do)" : " (done)")
+					+ ", processing " + newestFirstSelection.size() + " records"
+			);
 		}
 		return moreToDo;
 	}

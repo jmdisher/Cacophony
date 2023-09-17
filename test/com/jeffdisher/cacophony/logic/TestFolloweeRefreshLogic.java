@@ -51,7 +51,8 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(0, result.length);
@@ -76,7 +77,12 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
@@ -100,7 +106,12 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
@@ -125,7 +136,12 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
@@ -320,7 +336,12 @@ public class TestFolloweeRefreshLogic
 		
 		// Now that we use incremental sync, this won't fail to synchronize records, it will just mark them as temporary skips.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
 		
 		// Verify that this record was temporarily skipped.
 		Assert.assertEquals(0, testSupport.permanentSkips.size());
@@ -358,7 +379,12 @@ public class TestFolloweeRefreshLogic
 		
 		// We will cache the element but neither of the leaves, even though we would normally consider them since we will gracfully fail.
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
 		Assert.assertEquals("name", testSupport.lastName);
 		FollowingCacheElement[] result = testSupport.getList();
 		
@@ -611,6 +637,10 @@ public class TestFolloweeRefreshLogic
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
 		oldIndexElement = newIndexElement;
 		FollowingCacheElement[] result = testSupport.getList();
 		// We should see all 5 elements.
@@ -674,8 +704,12 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
 		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
 		FollowingCacheElement[] result = testSupport.getList();
 		// We should see only the 3, since only post6, post4, and post3 are well-formed from the initial sync.
 		Assert.assertEquals(3, result.length);
@@ -746,6 +780,10 @@ public class TestFolloweeRefreshLogic
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertTrue(moreToDo);
 		oldIndexElement = newIndexElement;
 		FollowingCacheElement[] result = testSupport.getList();
@@ -843,7 +881,10 @@ public class TestFolloweeRefreshLogic
 		TestSupport testSupport = new TestSupport(data, originalElements);
 		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
 		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
 		FollowingCacheElement[] result = testSupport.getList();
 		// We should see 5 posts.
 		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, result.length);
@@ -932,8 +973,12 @@ public class TestFolloweeRefreshLogic
 		IpfsFile newIndexElement = index;
 		long currentCacheUsageInBytes = 0L;
 		TestSupport testSupport = new TestSupport(data, originalElements);
-		FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
 		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
 		FollowingCacheElement[] result = testSupport.getList();
 		// We should see 5 posts.
 		Assert.assertEquals(FolloweeRefreshLogic.INCREMENTAL_RECORD_COUNT, result.length);

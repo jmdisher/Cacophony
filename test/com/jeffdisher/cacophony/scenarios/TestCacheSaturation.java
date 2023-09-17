@@ -183,6 +183,8 @@ public class TestCacheSaturation
 		{
 			StartFollowingCommand startFollowingCommand = new StartFollowingCommand(followee._publicKey);
 			_user.runCommand(null, startFollowingCommand);
+			// We want to make sure we also do the initial fetch of records since "start" only fetches meta-data.
+			_user.runCommand(null, new RefreshFolloweeCommand(followee._publicKey));
 		}
 		
 		public void publish(String name, byte[] thumbnail, byte[] video) throws Throwable

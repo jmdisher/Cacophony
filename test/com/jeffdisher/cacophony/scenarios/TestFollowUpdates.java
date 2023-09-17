@@ -315,6 +315,8 @@ public class TestFollowUpdates
 		
 		// Make user2 follow user1.
 		user2.runCommand(null, new StartFollowingCommand(MockKeys.K1));
+		// "start" doesn't fetch the records, just validates that the user is well-formed and fetches meta-data.
+		user2.runCommand(null, new RefreshFolloweeCommand(MockKeys.K1));
 		
 		int pinCacheAfter;
 		model2 = user2.unsafeDataModel();
