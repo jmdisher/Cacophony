@@ -580,26 +580,36 @@ public class ExplicitCacheManager
 		{
 			if (null != tuple.commitTransaction)
 			{
-				try
+				// Before loading the data associated with the user, see if it has changed.
+				if (tuple.resolvedRoot.equals(tuple.oldInfo.indexCid()))
 				{
-					tuple.newInfo = _loadUserInfo(tuple.commitTransaction, tuple.resolvedRoot);
-					// This will throw instead of failing.
-					Assert.assertTrue(null != tuple.newInfo);
-					// We also need to update this by removing the old info (these might overlap but the transaction should do the counting).
-					tuple.commitTransaction.unpin(tuple.oldInfo.indexCid());
-					tuple.commitTransaction.unpin(tuple.oldInfo.recommendationsCid());
-					tuple.commitTransaction.unpin(tuple.oldInfo.recordsCid());
-					tuple.commitTransaction.unpin(tuple.oldInfo.descriptionCid());
-					IpfsFile pic = tuple.oldInfo.userPicCid();
-					if (null != pic)
-					{
-						tuple.commitTransaction.unpin(pic);
-					}
+					// The root we resolved is unchanged so just use the existing info.
+					tuple.newInfo = tuple.oldInfo;
 				}
-				catch (ProtocolDataException | IpfsConnectionException e)
+				else
 				{
-					tuple.rollbackTransaction = tuple.commitTransaction;
-					tuple.commitTransaction = null;
+					// This is a new root so fetch the data.
+					try
+					{
+						tuple.newInfo = _loadUserInfo(tuple.commitTransaction, tuple.resolvedRoot);
+						// This will throw instead of failing.
+						Assert.assertTrue(null != tuple.newInfo);
+						// We also need to update this by removing the old info (these might overlap but the transaction should do the counting).
+						tuple.commitTransaction.unpin(tuple.oldInfo.indexCid());
+						tuple.commitTransaction.unpin(tuple.oldInfo.recommendationsCid());
+						tuple.commitTransaction.unpin(tuple.oldInfo.recordsCid());
+						tuple.commitTransaction.unpin(tuple.oldInfo.descriptionCid());
+						IpfsFile pic = tuple.oldInfo.userPicCid();
+						if (null != pic)
+						{
+							tuple.commitTransaction.unpin(pic);
+						}
+					}
+					catch (ProtocolDataException | IpfsConnectionException e)
+					{
+						tuple.rollbackTransaction = tuple.commitTransaction;
+						tuple.commitTransaction = null;
+					}
 				}
 			}
 		}
