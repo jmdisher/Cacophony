@@ -39,7 +39,7 @@ public class DELETE_RemoveFollowee implements ValidatedEntryPoints.DELETE
 				StopFollowingCommand command = new StopFollowingCommand(userToRemove);
 				InteractiveHelpers.runCommandAndHandleErrors(response
 						, _runner
-						, null
+						, userToRemove
 						, command
 						, null
 				);

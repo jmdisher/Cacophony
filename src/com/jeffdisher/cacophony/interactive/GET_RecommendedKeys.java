@@ -29,9 +29,10 @@ public class GET_RecommendedKeys implements ValidatedEntryPoints.GET
 		IpfsKey userToResolve = (IpfsKey)path[2];
 		// While this could be a home user, we don't bother specializing that case, here.
 		ListRecommendationsCommand command = new ListRecommendationsCommand(userToResolve);
+		// This is just a reading case so we don't bother with blocking key.
 		InteractiveHelpers.SuccessfulCommand<KeyList> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
-				, userToResolve
+				, null
 				, command
 				, null
 		);

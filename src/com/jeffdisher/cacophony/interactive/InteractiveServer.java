@@ -49,8 +49,8 @@ public class InteractiveServer
 {
 	// The common WebSocket protocol name for all front-end pages which use event_api.js.
 	public  static final String EVENT_API_PROTOCOL = "event_api";
-	// The number of threads to use in the CommandRunner.
-	public static final int COMMAND_RUNNER_THREAD_COUNT = 4;
+	// The number of threads to use in the CommandRunner.  Most of these operations are simple but may block so we enable lots.
+	public static final int COMMAND_RUNNER_THREAD_COUNT = 16;
 
 	public static void runServerUntilStop(Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
 	{

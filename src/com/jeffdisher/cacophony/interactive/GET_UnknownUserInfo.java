@@ -37,9 +37,10 @@ public class GET_UnknownUserInfo implements ValidatedEntryPoints.GET
 		IpfsKey userToResolve = (IpfsKey)path[2];
 		// While this could be a home user, we don't bother specializing that case, here.
 		ReadDescriptionCommand command = new ReadDescriptionCommand(userToResolve);
+		// This is just a reading case so we don't bother with blocking key.
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
-				, userToResolve
+				, null
 				, command
 				, null
 		);
