@@ -28,6 +28,7 @@ import com.jeffdisher.cacophony.types.KeyException;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
+import com.jeffdisher.cacophony.utils.MiscHelpers;
 import com.jeffdisher.cacophony.utils.SizeLimits;
 
 
@@ -86,14 +87,14 @@ public class ExplicitCacheManager
 		_currentTimeMillisSupplier = currentTimeMillisSupplier;
 		if (enableAsync)
 		{
-			_background = new Thread(() -> {
+			_background = MiscHelpers.createThread(() -> {
 				Runnable runner = _backgroundGetNextRunnable();
 				while (null != runner)
 				{
 					runner.run();
 					runner = _backgroundGetNextRunnable();
 				}
-			});
+			}, "ExplicitCacheManager");
 			_userRequests = new HashMap<>();
 			_recordRequests = new HashMap<>();
 			_isBackgroundRunning = true;
@@ -706,7 +707,8 @@ public class ExplicitCacheManager
 			
 			if (null != purgeRequest)
 			{
-				_purgeExcess(access, data, explicitCacheTargetBytes);
+				// If we were given an explicit purge request, it actually means we need to clear the entire cache and complete the future.
+				_purgeExcess(access, data, 0L);
 				try
 				{
 					access.requestIpfsGc();
@@ -717,6 +719,11 @@ public class ExplicitCacheManager
 					purgeRequest.failure(e);
 				}
 				purgeRequest = null;
+			}
+			else
+			{
+				// If not, we just want to the basic purge of anything over limit.
+				_purgeExcess(access, data, explicitCacheTargetBytes);
 			}
 		}
 		

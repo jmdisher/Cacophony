@@ -107,7 +107,7 @@ public class Context
 				, userInfoCache
 				, entryRegistry
 				, cacheUpdater
-				, this.explicitCacheManager
+				, explicitCacheManager
 				, _selectedKey
 		);
 		return context;
