@@ -204,6 +204,26 @@ public class FolloweeRefreshLogic
 				}
 			}
 			
+			// We didn't select anything so see if there are some temporary skips we can retry.
+			if (newestFirstSelection.isEmpty())
+			{
+				IpfsFile recordCid = support.getAndResetNextTemporarySkip();
+				while (null != recordCid)
+				{
+					// We know that this isn't processed, nor could be it a duplicate.
+					newestFirstSelection.add(recordCid);
+					if (newestFirstSelection.size() < maximumRecordsToSynchronize)
+					{
+						// We have more space so continue.
+						recordCid = support.getAndResetNextTemporarySkip();
+					}
+					else
+					{
+						// We are full so drop out.
+						recordCid = null;
+					}
+				}
+			}
 			// If we selected something, run the sync.
 			if (!newestFirstSelection.isEmpty())
 			{
@@ -213,10 +233,6 @@ public class FolloweeRefreshLogic
 						, currentCacheUsageInBytes
 						, forceSelectFirstElement
 				);
-			}
-			else
-			{
-				// TODO:  If there is nothing to do, look at the temporary skips to see if we can address those.
 			}
 			
 			// We also want to see if there is more work to do.
@@ -903,5 +919,16 @@ public class FolloweeRefreshLogic
 		 * @return True if there is some existing tracking of this record or false if it is unknown.
 		 */
 		boolean hasRecordBeenProcessed(IpfsFile recordCid);
+		/**
+		 * Used to look-up the set of records which were skipped for temporary reasons.  Each call will remove one
+		 * temporarily skipped record from the skipped set, treating it as though nothing is known about it, and return
+		 * the CID.
+		 * Since this removes the tracking that this was previously skipped, the caller will either need to call
+		 * cacheRecordForFollowee(), to mark this as now valid, or re-call addSkippedRecord() in order to make sure that
+		 * it is accounted for.
+		 * 
+		 * @return A previously temporarily skipped record or null, if there are no such records.
+		 */
+		IpfsFile getAndResetNextTemporarySkip();
 	}
 }

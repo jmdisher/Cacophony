@@ -1078,21 +1078,21 @@ public class TestFolloweeRefreshLogic
 		index = _addElementToStream(data, index, post2);
 		index = _addElementToStream(data, index, post1);
 		
-		// TODO:  Change this once we change to re-check temporary failures.
+		// We should see the previous failure processed since it was restored.
 		oldIndexElement = newIndexElement;
 		newIndexElement = index;
 		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
 		result = testSupport.getList();
-		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(3, result.length);
 		Assert.assertEquals(post0, result[0].elementHash());
 		Assert.assertEquals(post1, result[1].elementHash());
+		Assert.assertEquals(post2, result[2].elementHash());
 		
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
-		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
 		Assert.assertEquals(0, testSupport.permanentSkips.size());
-		Assert.assertEquals(1, testSupport.temporarySkips.size());
-		Assert.assertEquals(post2, testSupport.temporarySkips.get(0));
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
 	}
 
 	@Test
@@ -1667,6 +1667,14 @@ public class TestFolloweeRefreshLogic
 			return _list.stream().anyMatch((FollowingCacheElement elt) -> elt.elementHash().equals(recordCid))
 					|| this.permanentSkips.contains(recordCid)
 					|| this.temporarySkips.contains(recordCid)
+			;
+		}
+		@Override
+		public IpfsFile getAndResetNextTemporarySkip()
+		{
+			return this.temporarySkips.isEmpty()
+					? null
+					: this.temporarySkips.remove(0)
 			;
 		}
 	}

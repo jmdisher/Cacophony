@@ -199,6 +199,10 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	@Override
 	public void addSkippedRecord(IpfsFile recordCid, boolean isPermanent)
 	{
+		// These shouldn't already be in any collections (duplicates should be avoided in the FolloweeRefreshLogic implementation).
+		Assert.assertTrue(!_cachedEntriesForFollowee.containsKey(recordCid));
+		Assert.assertTrue(!_permanentlySkippedRecords.contains(recordCid));
+		Assert.assertTrue(!_temporarilySkippedRecords.contains(recordCid));
 		if (isPermanent)
 		{
 			_permanentlySkippedRecords.add(recordCid);
@@ -215,6 +219,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		// processing, in this invocation.
 		return _cachedEntriesForFollowee.containsKey(recordCid)
 				|| _initialFailureSet.contains(recordCid)
+		;
+	}
+	@Override
+	public IpfsFile getAndResetNextTemporarySkip()
+	{
+		return _temporarilySkippedRecords.isEmpty()
+				? null
+				: _temporarilySkippedRecords.remove(0)
 		;
 	}
 }
