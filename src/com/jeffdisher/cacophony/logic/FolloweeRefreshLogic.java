@@ -133,9 +133,10 @@ public class FolloweeRefreshLogic
 				Set<IpfsFile> newRecordSet = new HashSet<>(newRecordList);
 				
 				// See if anything was removed.
+				Set<IpfsFile> removedRecords = new HashSet<>();
 				for (IpfsFile removed : oldRecordList)
 				{
-					if (!newRecordSet.contains(removed))
+					if (!newRecordSet.contains(removed) && !removedRecords.contains(removed))
 					{
 						// This was removed.
 						// Note that this may have been cached, skipped, or not yet processed.
@@ -146,16 +147,19 @@ public class FolloweeRefreshLogic
 						}
 						// We also want to remove the knowledge of it.
 						support.removeRecordForFollowee(removed);
+						removedRecords.add(removed);
 					}
 				}
 				// See if anything was added.
+				Set<IpfsFile> addedRecords = new HashSet<>();
 				for (IpfsFile added : newRecordList)
 				{
-					if (!oldRecordSet.contains(added))
+					if (!oldRecordSet.contains(added) && !addedRecords.contains(added))
 					{
 						// This was added.
 						// We will make decisions around when to pin the element or leaves at the top-level so here we just record that we saw the element.
 						support.addRecordForFollowee(added);
+						addedRecords.add(added);
 					}
 				}
 				
@@ -188,13 +192,15 @@ public class FolloweeRefreshLogic
 					? INCREMENTAL_RECORD_COUNT
 					: 0
 			;
+			Set<IpfsFile> selectedSet = new HashSet<>();
 			while (newestIterator.hasNext() && (newestFirstSelection.size() < maximumRecordsToSynchronize))
 			{
 				IpfsFile check = newestIterator.next();
-				if (!support.hasRecordBeenProcessed(check))
+				if (!selectedSet.contains(check) && !support.hasRecordBeenProcessed(check))
 				{
 					// This is neither cached nor skipped so make this a candidate.
 					newestFirstSelection.add(check);
+					selectedSet.add(check);
 				}
 			}
 			

@@ -1013,6 +1013,188 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(0, testSupport.temporarySkips.size());
 	}
 
+	@Test
+	public void duplicatedRecords() throws Throwable
+	{
+		// We want to create a user which has duplicated entries, some of them failing to load, to make sure that this doesn't confuse the sync logic.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		
+		byte[] thumb0 = new byte[] {0, 0};
+		byte[] video0 = new byte[] {1, 0};
+		byte[] video1 = new byte[] {1, 1};
+		IpfsFile post0 = _storeRecord(data, "post0", thumb0, video0);
+		IpfsFile post1 = _storeRecord(data, "post1", null, video1);
+		IpfsFile post2 = _storeRecord(data, "post2", null, null);
+		
+		// Create a stream with a few duplicates.
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post1);
+		
+		// Break a few records and leaves in a temporary way.
+		byte[] dataVideo1 = data.remove(MockSingleNode.generateHash(video1));
+		byte[] dataPost2 = data.remove(post2);
+		
+		// Now, synchronize twice.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see post0 and post1 (without leaves), but post2 is missing.
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(MockSingleNode.generateHash(thumb0), result[0].imageHash());
+		Assert.assertEquals(MockSingleNode.generateHash(video0), result[0].leafHash());
+		Assert.assertEquals(post1, result[1].elementHash());
+		Assert.assertNull(result[1].imageHash());
+		Assert.assertNull(result[1].leafHash());
+		// We shouldn't see duplicates in the observed.
+		Assert.assertEquals(3, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(2, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		// Verify the temporary skips.
+		Assert.assertEquals(1, testSupport.temporarySkips.size());
+		Assert.assertEquals(post2, testSupport.temporarySkips.get(0));
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		
+		// Add another duplicate and fix the data before resyncing again.
+		data.put(MockSingleNode.generateHash(video1), dataVideo1);
+		data.put(post2, dataPost2);
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post1);
+		
+		// TODO:  Change this once we change to re-check temporary failures.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(post1, result[1].elementHash());
+		
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(1, testSupport.temporarySkips.size());
+		Assert.assertEquals(post2, testSupport.temporarySkips.get(0));
+	}
+
+	@Test
+	public void removeDuplicates() throws Throwable
+	{
+		// We want to create a user which has duplicated entries, and show how we report adding and removing them.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		
+		byte[] thumb0 = new byte[] {0, 0};
+		byte[] video0 = new byte[] {1, 0};
+		byte[] video1 = new byte[] {1, 1};
+		IpfsFile post0 = _storeRecord(data, "post0", thumb0, video0);
+		IpfsFile post1 = _storeRecord(data, "post1", null, video1);
+		IpfsFile post2 = _storeRecord(data, "post2", null, null);
+		
+		// Create a stream with a few duplicates.
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post0);
+		index = _addElementToStream(data, index, post1);
+		
+		// Start following and then synchronize to verify that we see both.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertTrue(moreToDo);
+		// First sync doesn't fetch records so run again.
+		oldIndexElement = newIndexElement;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		FollowingCacheElement[] result = testSupport.getList();
+		// We should see both.
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(post1, result[1].elementHash());
+		// We shouldn't see duplicates in the observed.
+		Assert.assertEquals(2, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(2, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		
+		// Add another duplicate and some new posts before resyncing again.
+		index = _addElementToStream(data, index, post2);
+		index = _addElementToStream(data, index, post1);
+		index = _addElementToStream(data, index, post2);
+		
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(3, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(post1, result[1].elementHash());
+		Assert.assertEquals(post2, result[2].elementHash());
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Remove one reference to each and verify that nothing changes.
+		index = _removeElementFromStream(data, index, post0);
+		index = _removeElementFromStream(data, index, post1);
+		index = _removeElementFromStream(data, index, post2);
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(3, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(post1, result[1].elementHash());
+		Assert.assertEquals(post2, result[2].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Remove one reference to each, again, and verify that post0 and post0 were removed.
+		index = _removeElementFromStream(data, index, post0);
+		index = _removeElementFromStream(data, index, post1);
+		index = _removeElementFromStream(data, index, post2);
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		result = testSupport.getList();
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(post1, result[0].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(2, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+	}
+
 
 	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
