@@ -25,7 +25,7 @@ public class CommandRunner
 	private final Context _sharedContext;
 	private final WorkQueue _queue;
 	private final Thread[] _threads;
-	private final Map<IpfsKey, List<Runnable>> _blockedRunnables;
+	private final Map<IpfsKey, List<RunningTuple>> _blockedRunnables;
 
 	/**
 	 * Creates a runner in a not-started state.
@@ -108,7 +108,7 @@ public class CommandRunner
 		;
 		Context one = _sharedContext.cloneWithSelectedKey(keyToChoose);
 		FutureCommand<T> future = new FutureCommand<>(one);
-		_queue.enqueue(() -> {
+		boolean didEnqueue = _queue.enqueue(() -> {
 			try
 			{
 				T result = command.runInContext(one);
@@ -119,6 +119,10 @@ public class CommandRunner
 				future.failure(e);
 			}
 		});
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -155,30 +159,38 @@ public class CommandRunner
 				_unblockKey(blockingKey);
 			}
 		};
-		_enqueueOrBlock(blockingKey, runnable);
+		Runnable shutdownRunnable = () -> {
+			future.failure(WorkQueue.createShutdownError());
+			_unblockKey(blockingKey);
+		};
+		_enqueueOrBlock(blockingKey, new RunningTuple(runnable, shutdownRunnable));
 		return future;
 	}
 
 
-	private synchronized void _enqueueOrBlock(IpfsKey blockingKey, Runnable runnable)
+	private synchronized void _enqueueOrBlock(IpfsKey blockingKey, RunningTuple tuple)
 	{
-		List<Runnable> runnables = _blockedRunnables.get(blockingKey);
+		List<RunningTuple> runnables = _blockedRunnables.get(blockingKey);
 		if (null == runnables)
 		{
 			// There is nothing in the queue with this key so we can add the empty blocking queue and enqueue this to the scheduler.
 			_blockedRunnables.put(blockingKey, new ArrayList<>());
-			_queue.enqueue(runnable);
+			boolean didEnqueue = _queue.enqueue(tuple.runnable);
+			if (!didEnqueue)
+			{
+				tuple.shutdownError.run();
+			}
 		}
 		else
 		{
 			// We are blocked on someone so just enter the blocking queue.
-			runnables.add(runnable);
+			runnables.add(tuple);
 		}
 	}
 
 	private synchronized void _unblockKey(IpfsKey blockingKey)
 	{
-		List<Runnable> runnables = _blockedRunnables.get(blockingKey);
+		List<RunningTuple> runnables = _blockedRunnables.get(blockingKey);
 		// Since we were running and blocking this queue, this MUST not be null.
 		Assert.assertTrue(null != runnables);
 		
@@ -189,8 +201,15 @@ public class CommandRunner
 		}
 		else
 		{
-			Runnable next = runnables.remove(0);
-			_queue.enqueue(next);
+			RunningTuple next = runnables.remove(0);
+			boolean didEnqueue = _queue.enqueue(next.runnable);
+			if (!didEnqueue)
+			{
+				next.shutdownError.run();
+			}
 		}
 	}
+
+
+	private static record RunningTuple(Runnable runnable, Runnable shutdownError) {}
 }

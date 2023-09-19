@@ -300,15 +300,25 @@ public class InteractiveServer
 			// This thread isn't interrupted.
 			throw Assert.unexpected(e);
 		}
-		serverLog.logOperation("Shutting down server...");
-		server.stop();
+		// We want to shut-down the server components from the top-down, in order to avoid interruption exceptions from
+		// Jetty (as we want to avoid our stack worrying about them just for this case).
+		serverLog.logOperation("Received stop call.");
+		// Some functionality sits on the background operations system but none of these other components.
+		serverLog.logOperation("Shutting down background process...");
+		background.shutdownProcess();
+		// The command runner is what the background and most REST end-points use so that is next to stop.
+		serverLog.logOperation("Shutting down command runner...");
+		runner.shutdownThreads();
+		// Explicit cache manager is used by commands, which are now shut down, so this can be stopped.
 		serverLog.logOperation("Shutting down explicit cache manager...");
 		explicitCacheManager.shutdown();
+		// The connector dispatcher just responds to changes in explicit cache and commands so it can now come down.
 		serverLog.logOperation("Shutting down connector dispatcher...");
 		dispatcher.shutdown();
-		serverLog.logOperation("Shutting down background process...");
-		runner.shutdownThreads();
-		background.shutdownProcess();
-		serverLog.logFinish("Background process shut down.");
+		// The server can now shut down since we shouldn't be blocked in any of our synchronization primitives.
+		serverLog.logOperation("Shutting down Breakwater server...");
+		server.stop();
+		// The network scheduler is stopped in the top-level caller, and it is all that should remain.
+		serverLog.logFinish("Shutdown complete.");
 	}
 }

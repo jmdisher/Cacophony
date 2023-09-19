@@ -12,6 +12,7 @@ import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.testutils.MockKeys;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
@@ -182,6 +183,60 @@ public class TestCommandRunner
 				, null
 				, MockKeys.K1
 		);
+	}
+
+	@Test
+	public void earlyShutdown() throws Throwable
+	{
+		Context context = _buildContext();
+		CommandRunner runner = new CommandRunner(context, 1);
+		
+		// We will enqueue a few tasks and block the first one with a barrier in order to make sure all the threads are running.
+		// We then release the barrier and let the commands run through.  Some of the later may pass or fail, as scheduling allows.
+		
+		CyclicBarrier barrier1 = new CyclicBarrier(2);
+		TestCommand c1 = new TestCommand(true, barrier1);
+		TestCommand c2 = new TestCommand(true, null);
+		TestCommand c3 = new TestCommand(true, null);
+		TestCommand c4 = new TestCommand(true, null);
+		runner.startThreads();
+		
+		FutureCommand<None> f1 = runner.runBlockedCommand(MockKeys.K0, c1, null);
+		FutureCommand<None> f2 = runner.runCommand(c2, null);
+		FutureCommand<None> f3 = runner.runBlockedCommand(MockKeys.K0, c3, null);
+		
+		barrier1.await();
+		runner.shutdownThreads();
+		// This one MUST fail since we are adding it late.
+		FutureCommand<None> f4 = runner.runBlockedCommand(MockKeys.K0, c4, null);
+		
+		// F1 must pass and F4 must fail, but 2 and 3 could do either.
+		f1.get();
+		try
+		{
+			f2.get();
+		}
+		catch (IpfsConnectionException e)
+		{
+			// This is the synthetic exception.
+		}
+		try
+		{
+			f3.get();
+		}
+		catch (IpfsConnectionException e)
+		{
+			// This is the synthetic exception.
+		}
+		try
+		{
+			f4.get();
+			Assert.fail();
+		}
+		catch (IpfsConnectionException e)
+		{
+			// This is the synthetic exception.
+		}
 	}
 
 

@@ -69,7 +69,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failureInDecoding(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failureInConnection(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -102,7 +106,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failureInDecoding(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failureInConnection(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -133,7 +141,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				}
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -156,7 +168,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failure(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -178,7 +194,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failure(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -197,7 +217,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failure(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -216,7 +240,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failure(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -235,7 +263,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failure(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -256,7 +288,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failureInConnection(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failureInConnection(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
@@ -275,7 +311,11 @@ public class MultiThreadedScheduler implements INetworkScheduler
 				future.failure(e);
 			}
 		};
-		_queue.enqueue(r);
+		boolean didEnqueue = _queue.enqueue(r);
+		if (!didEnqueue)
+		{
+			future.failure(WorkQueue.createShutdownError());
+		}
 		return future;
 	}
 
