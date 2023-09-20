@@ -86,6 +86,101 @@ function UTILS_renderLongTextIntoElement(element, longText)
 	element.innerHTML = element.innerHTML.replace(regex, "<br />");
 }
 
+// Returns a Promise which resolves an array of structs with {width, height, frameRate}.
+function UTILS_checkCamera(includeAudio)
+{
+	// A note about this utility:  I originally tried to make this automatically discover all "sensible" resolutions by stepping past each accepted constraint until they were all enumerated.
+	// This seemed to work in FireFox but Chromium responded that it can manage every requested resolution in the range, sometimes with completely bogus framerate, so this isn't feasible.
+	// In short, this means that FireFox gave me something like what I wanted while Chromium gave me what I asked for.
+	// As it isn't useful to list 1000s of options (things like 640x481), we will instead just try this basic hard-coded list of "reasonable" resolutions and framerates.
+	// These are just a collection of likely 16:9 and 4:3 ratios.
+	const kResolutions = [ [320, 240]
+	, [640, 480]
+	, [1024, 768]
+	// 720p
+	, [1280, 720]
+	// 1080p
+	, [1920, 1080]
+	// 4K UHD-1
+	, [3840, 2160]
+	];
+	const kFrameRates = [10, 15, 30, 60];
+	
+	return new Promise((resolve, reject) => {
+		let resultArray = [];
+		let resolutionIndex = 0;
+		let frameRateIndex = 0;
+		
+		// We start by just asking for the camera, saying it needs video (and potentially audio).
+		let startConstraints = {video: true};
+		if (includeAudio)
+		{
+			startConstraints.audio = true;
+		}
+		navigator.mediaDevices
+			.getUserMedia(startConstraints)
+			.then((stream) => {
+				// We have a camera so start asking about constraints.
+				// We seem to only need the first track (haven't seen examples where there is more than one, on my test system).
+				let tracks = stream.getVideoTracks();
+				let track = tracks[0];
+				check(stream, track);
+			})
+			.catch(reject);
+		
+		// Essentially the "asynchronous 2-level for loop".  Increments the indices and returns result when completed.
+		function nextScan(stream, track)
+		{
+			// We treat the resolutions as columns and the frame rates as rows, scanning row-first.
+			frameRateIndex += 1;
+			if (frameRateIndex < kFrameRates.length)
+			{
+				check(stream, track);
+			}
+			else
+			{
+				frameRateIndex = 0;
+				resolutionIndex += 1;
+				if (resolutionIndex < kResolutions.length)
+				{
+					check(stream, track);
+				}
+				else
+				{
+					// We are done.
+					stream.getTracks().forEach(function(track) { track.stop(); });
+					resolve(resultArray);
+				}
+			}
+		}
+		// Performs the next check described by the indices.  Appends to the resultArray on success.
+		function check(stream, track)
+		{
+			let videoConstraints = {
+				width: {exact: kResolutions[resolutionIndex][0]},
+				height: {exact: kResolutions[resolutionIndex][1]},
+				frameRate: {exact: kFrameRates[frameRateIndex]},
+			};
+			track.applyConstraints(videoConstraints)
+				.then(() => {
+					// This is valid, so write what we have.
+					resultArray.push({
+						width: kResolutions[resolutionIndex][0],
+						height: kResolutions[resolutionIndex][1],
+						frameRate: kFrameRates[frameRateIndex],
+					});
+					
+					// Now, move on to the next.
+					nextScan(stream, track);
+				})
+				.catch((err) => {
+					// If this failed, just check the next.
+					nextScan(stream, track);
+				});
+		}
+	});
+}
+
 // Returns an object describing the post with the given hash, via a promise (null on error).  Implementation of this is in GET_PostStruct.java and defines these keys:
 // -name (string)
 // -description (string)

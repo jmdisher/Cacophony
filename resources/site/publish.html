@@ -377,6 +377,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 	// This is set after we get the cookie - call to "GET /videoConfig".
 	$scope.videoConfig = null;
 	$scope.videoState = {
+		detecting: false,
+		resolutions: null,
 		stream: null,
 		recorder: null,
 		processingSocket: null,
@@ -440,20 +442,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 	}
 	$scope.startCamera = function()
 	{
-		let fps = $scope.videoConfig.enableFps
-			? $scope.videoConfig.fps
-			: null
-		;
-		startCamera($scope.videoConfig.height, $scope.videoConfig.width, fps)
+		startCamera($scope.videoConfig.height, $scope.videoConfig.width, $scope.videoConfig.fps)
 			.then(result => {
 				$scope.videoState.stream = result;
 				// We will also extract the audio track.
 				$scope.audioState.stream = new MediaStream(result.getAudioTracks());
-				// If the framerate was disabled, see what we got and store it in the UI.
-				if (!$scope.videoConfig.enableFps)
-				{
-					$scope.videoConfig.fps = result.getVideoTracks()[0].getSettings().frameRate;
-				}
 				video_preview.srcObject = result;
 				$scope.$apply();
 			}, error => {
@@ -642,6 +635,37 @@ GLOBAL_Application.controller('AppController', function($scope)
 				});
 		});
 	}
+	$scope.detectVideo = function()
+	{
+		$scope.videoState.detecting = true;
+		UTILS_checkCamera(true)
+			.then((resultArray) => {
+				// We want to create readable elements, too.
+				let resolutions = [];
+				resultArray.forEach(function(elt, index, arr) {
+					resolutions.push({
+						width: elt.width,
+						height: elt.height,
+						frameRate: elt.frameRate,
+						readable: (elt.width + " x " + elt.height + " @" + elt.frameRate),
+					});
+				});
+				$scope.videoState.resolutions = resolutions;
+				$scope.videoState.detecting = false;
+				$scope.$apply();
+			})
+			.catch((err) => {
+				console.log(err);
+				$scope.videoState.detecting = false;
+				$scope.$apply();
+			});
+	}
+	$scope.selectResolution = function(resolution)
+	{
+		$scope.videoConfig.width = resolution.width;
+		$scope.videoConfig.height = resolution.height;
+		$scope.videoConfig.fps = resolution.frameRate;
+	}
 	
 	// Setup related to the manual file selections.
 	document.getElementById("video_upload_selector").addEventListener("change", function(event)
@@ -781,11 +805,6 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		$scope.selectedDraft.type = type;
 	}
-	$scope.setVideoConfig = function(width, height)
-	{
-		$scope.videoConfig.width = width;
-		$scope.videoConfig.height = height;
-	}
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
@@ -916,19 +935,16 @@ function xsrfLoaded($scope)
 				</div>
 				<div class="card card-body">
 					Video preview: <br />
-					<div class="btn-group btn-group-sm" role="group" aria-label="Presets">
-						Common presets: 
-						<button type="button" class="btn btn-light" ng-click="setVideoConfig(640, 480)" ng-disabled="null != videoState.stream">480p (4:3)</button>
-						<button type="button" class="btn btn-light" ng-click="setVideoConfig(1280, 720)" ng-disabled="null != videoState.stream">720p (16:9)</button>
+					<button type="button" class="btn btn-primary" ng-show="null === videoState.resolutions" ng-click="detectVideo()" ng-disabled="videoState.detecting">Detect camera and resolutions</button>
+					<div class="btn-group" ng-show="null !== videoState.resolutions">
+						<button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Select camera resolution</button>
+						<ul class="dropdown-menu">
+							<li ng-repeat="resolution in videoState.resolutions"><a class="dropdown-item" ng-click="selectResolution(resolution)">{{resolution.readable}}</a></li>
+						</ul>
 					</div>
 					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoState.stream"></input><br />
 					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoState.stream"></input><br />
-					<div class="input-group">
-						<input type="checkbox" class="btn-check" ng-model="videoConfig.enableFps" id="framecheck" autocomplete="off">
-							<label class="btn btn-outline-primary" for="framecheck">Enable framerate</label>
-						</input>
-						<input type="text" class="form-control" placeholder="Specify framerate" ng-model="videoConfig.fps" ng-disabled="(null !== videoState.stream) || !videoConfig.enableFps"></input>
-					</div>
+					FPS: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoState.stream"></input><br />
 					<video id="video_preview" ng-show="null !== videoState.stream" playsinline autoplay muted></video><br />
 					<div class="btn-group" role="group">
 						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-disabled="null != videoState.stream">Start Camera</button>
