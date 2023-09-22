@@ -430,9 +430,9 @@ function updateDescriptionText(descriptionText)
 				<video id="video_preview" ng-show="null !== editState.videoStream" playsinline autoplay muted></video><br />
 				Upload user pic from filesystem: <input type="file" accept="image/*" id="pic_upload_selector" /><br />
 				<div class="btn-group" role="group" aria-label="Camera">
-					<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-enabled="null === editState.videoStream">Start Camera</button>
-					<button type="button" class="btn btn-success" ng-click="capturePicture()" ng-enabled="null !== editState.videoStream">Capture Picture</button>
-					<button type="button" class="btn btn-secondary" ng-click="stopCamera()" ng-enabled="null !== editState.videoStream">Stop Camera</button>
+					<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-disabled="null !== editState.videoStream">Start Camera</button>
+					<button type="button" class="btn btn-success" ng-click="capturePicture()" ng-disabled="null === editState.videoStream">Capture Picture</button>
+					<button type="button" class="btn btn-secondary" ng-click="stopCamera()" ng-disabled="null === editState.videoStream">Stop Camera</button>
 				</div>
 			</div>
 			<div class="row card card-body" ng-show="inEditMode">
