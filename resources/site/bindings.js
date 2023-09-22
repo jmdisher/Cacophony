@@ -117,14 +117,17 @@ GLOBAL_Application.factory('UnknownUserLoader', [function() { return function(pu
 GLOBAL_Application.factory('PostLoader', [function() { return function(postHash) {return GLOBAL_PostLoader.loadTuple(postHash); } ; }]);
 
 let _template_channelSelector = ''
-	+ '<div class="row btn-group">'
-	+ '	<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>'
-	+ '	<ul class="dropdown-menu">'
-	+ '		<li ng-repeat="user in homeUserDescriptions"><a class="dropdown-item" ng-click="selectUser(user)">{{user.title}}</a></li>'
-	+ '	</ul>'
-	+ '</div>'
+	+ '<center>'
+	+ '<a ng-show="null !== selectedUserPublicKey" ng-href="user.html?publicKey={{selectedUserPublicKey}}"><img class="img-fluid" ng-src="{{selectedUserPic}}" alt="Show {{selectedUserName}}"/><br />{{selectedUserName}}</a><br />'
+	+ '	<div class="row btn-group">'
+	+ '		<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>'
+	+ '		<ul class="dropdown-menu">'
+	+ '			<li ng-repeat="user in homeUserDescriptions"><a class="dropdown-item" ng-click="selectUser(user)">{{user.title}}</a></li>'
+	+ '		</ul>'
+	+ '	</div>'
+	+ '</center>'
 ;
-GLOBAL_Application.directive('cacoChannelSelector', [function()
+GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', function(UnknownUserLoader)
 {
 	// NOTES:
 	// -channelTuples - an array of objects as returned by GET_HomeChannels (has "name", "keyName", "publicKey", and "isSelected").
@@ -139,23 +142,63 @@ GLOBAL_Application.directive('cacoChannelSelector', [function()
 		template: _template_channelSelector,
 		link: function(scope, element, attrs)
 		{
+			// We want to store an internal map to the user pic URLs for the channels we are told about.
+			let _publicKeyToUserPicMap = null;
 			let _setState = function(rawChannelTuples)
 			{
+				// Create a local array instead of modifying the one we are given.
+				scope.homeUserDescriptions = [];
+				// Reset our user info map
+				_publicKeyToUserPicMap = {};
+				// We treat the "selected*" pieces of info specially since we want more control when there isn't a selected user.
+				scope.selectedUserTitle = "(no user selected)";
+				scope.selectedUserPublicKey = null;
+				scope.selectedUserName = null;
+				scope.selectedUserPic = null;
+				// Populate the readable titles and see who is selected.
 				for (let user of rawChannelTuples)
 				{
-					// We want to create a readable description of a user so we will just add that to the structure.
-					user["title"] = user["name"] + " (key name: " + user["keyName"] + ")";
+					// We want to create our own tuple for our channel list, including building a readable title and loading the user pic.
+					let tuple = {
+						// Copied.
+						name: user["name"],
+						keyName: user["keyName"],
+						publicKey: user["publicKey"],
+						// Derived.
+						title: (user["name"] + " (key name: " + user["keyName"] + ")"),
+						userPicUrl: null,
+					};
 					if (user["isSelected"])
 					{
-						scope.selectedUserTitle = user["title"];
+						scope.selectedUserTitle = tuple["title"];
+						scope.selectedUserPublicKey = tuple["publicKey"];
+						scope.selectedUserName = tuple["name"];
 					}
+					UnknownUserLoader(tuple["publicKey"]).then((userTuple) => {
+						// If there was an error, we get a null.
+						if (null !== userTuple)
+						{
+							tuple["userPicUrl"] = userTuple["userPicUrl"];
+							if (scope.selectedUserPublicKey === tuple["publicKey"])
+							{
+								scope.selectedUserPic = tuple["userPicUrl"];
+							}
+							scope.$apply();
+						}
+					});
+					scope.homeUserDescriptions.push(tuple);
 				}
-				scope.homeUserDescriptions = rawChannelTuples;
 			}
 			
 			scope.selectUser = function(userTuple)
 			{
+				// Update our flat copies.
 				scope.selectedUserTitle = userTuple["title"];
+				scope.selectedUserPublicKey = userTuple["publicKey"];
+				scope.selectedUserName = userTuple["name"];
+				scope.selectedUserPic = userTuple["userPicUrl"];
+				
+				// Send the callback.
 				scope.onSelectUser()(userTuple["publicKey"]);
 			}
 			
