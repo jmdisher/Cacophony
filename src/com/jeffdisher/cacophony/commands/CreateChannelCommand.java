@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
@@ -70,10 +69,6 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		AbstractDescription description = AbstractDescription.createNew();
 		description.setName("Unnamed");
 		description.setDescription("Description forthcoming");
-		InputStream pictureStream = CreateChannelCommand.class.getResourceAsStream("/resources/unknown_user.png");
-		Assert.assertTrue(null != pictureStream);
-		IpfsFile pictureHash = access.uploadAndPin(pictureStream);
-		description.setUserPic("image/png", pictureHash);
 		return description;
 	}
 

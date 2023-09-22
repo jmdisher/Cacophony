@@ -39,7 +39,7 @@ public class TestCreateChannelCommand
 		AbstractDescription description = AbstractDescription.DESERIALIZER.apply(user1.loadDataFromNode(descriptionCid));
 		Assert.assertEquals("Unnamed", description.getName());
 		Assert.assertEquals("Description forthcoming", description.getDescription());
-		Assert.assertTrue(user1.isInPinCache(description.getPicCid()));
+		Assert.assertNull(description.getPicCid());
 		IpfsFile recommendationsCid = index.recommendationsCid;
 		Assert.assertTrue(user1.isInPinCache(recommendationsCid));
 		AbstractRecommendations recommendations = AbstractRecommendations.DESERIALIZER.apply(user1.loadDataFromNode(recommendationsCid));

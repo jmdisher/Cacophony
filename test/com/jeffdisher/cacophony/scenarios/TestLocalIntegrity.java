@@ -52,13 +52,12 @@ public class TestLocalIntegrity
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(context);
 		
-		// We expect 5 keys in the storage:
+		// We expect 4 keys in the storage:
 		// -index
 		// -recommendations
 		// -records
 		// -description
-		// -description image
-		Assert.assertEquals(5, node.getStoredFileSet().size());
+		Assert.assertEquals(4, node.getStoredFileSet().size());
 		scheduler.shutdown();
 	}
 
@@ -76,9 +75,9 @@ public class TestLocalIntegrity
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
 		createChannel.runInContext(context);
 		
-		// We expect the normal 5.
+		// We expect the normal 4.
 		Set<IpfsFile> initialFiles = node.getStoredFileSet();
-		Assert.assertEquals(5, initialFiles.size());
+		Assert.assertEquals(4, initialFiles.size());
 		
 		// Now, publish an entry.
 		File tempFile = FOLDER.newFile();
@@ -96,9 +95,8 @@ public class TestLocalIntegrity
 		// -record
 		// -record image
 		// -description
-		// -description image
 		Set<IpfsFile> afterPublishFiles = node.getStoredFileSet();
-		Assert.assertEquals(7, afterPublishFiles.size());
+		Assert.assertEquals(6, afterPublishFiles.size());
 		
 		// Find the entry.
 		IpfsFile entry = null;
@@ -120,7 +118,7 @@ public class TestLocalIntegrity
 		
 		// We should see the same files from the original post.
 		Set<IpfsFile> afterRemoveFiles = node.getStoredFileSet();
-		Assert.assertEquals(5, afterRemoveFiles.size());
+		Assert.assertEquals(4, afterRemoveFiles.size());
 		Assert.assertEquals(initialFiles, afterRemoveFiles);
 		scheduler.shutdown();
 	}

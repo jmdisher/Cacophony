@@ -334,8 +334,8 @@ public class TestFollowUpdates
 		
 		// The first check should be 0.
 		Assert.assertEquals(0, pinCacheBefore);
-		// After sync, it should be 9:  index, recommendations, description, userpic, records, post1, post2, thumbnail, video.
-		Assert.assertEquals(9, pinCacheAfter);
+		// After sync, it should be 8:  index, recommendations, description, records, post1, post2, thumbnail, video.
+		Assert.assertEquals(8, pinCacheAfter);
 	}
 
 

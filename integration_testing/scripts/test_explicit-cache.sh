@@ -66,15 +66,15 @@ checkPreviousCommand "update 1"
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --updateDescription --name "user 2" >& /dev/null
 checkPreviousCommand "update 2"
 
-echo "Count the pins after the creation (6 = 1 + 5 (index, recommendations, records, description, pic))..."
+echo "Count the pins after the creation (5 = 1 + 4 (index, recommendations, records, description))..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "6"
+requireSubstring "$LIST_SIZE" "5"
 
-echo "Fetch information about the other user and observe the pins created (8 = 6 + 2 (other description, other index))..."
+echo "Fetch information about the other user and observe the pins created (7 = 5 + 2 (other description, other index))..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2" >& /dev/null
 checkPreviousCommand "update 1"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "8"
+requireSubstring "$LIST_SIZE" "7"
 
 echo "Make a post and fetch that so we can see it isn't impacted by other explicit cache behaviour..."
 POST_CID=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "post" --description "nothing interesting" | grep "New element" | cut -d "(" -f 2 | cut -d ")" -f 1)
@@ -82,19 +82,19 @@ POST_CID=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --showPost --elementCid "$POST_CID" >& /dev/null
 checkPreviousCommand "show post"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "9"
+requireSubstring "$LIST_SIZE" "8"
 
 echo "Now, refetch the purged user entry..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --readDescription --publicKey "$PUBLIC_KEY2" >& /dev/null
 checkPreviousCommand "update 1"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "9"
+requireSubstring "$LIST_SIZE" "8"
 
 echo "Verify that purging the entire cache works..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --purgeExplicitCache >& /dev/null
 checkPreviousCommand "purgeExplicitCache"
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "6"
+requireSubstring "$LIST_SIZE" "5"
 
 echo "Start the interactive server so we can see how the explicit cache works when alive across calls..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --port 8001 &
@@ -106,12 +106,12 @@ echo "Run the basic cache behaviour tests."
 USER_INFO=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
 requireSubstring "$USER_INFO" "{\"name\":\"user 2\","
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "9"
+requireSubstring "$LIST_SIZE" "8"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/status")
-requireSubstring "$CACHES" ",\"explicitCacheBytes\":4585,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0,\"ipfsStatus\":true}"
+requireSubstring "$CACHES" ",\"explicitCacheBytes\":1108,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0,\"ipfsStatus\":true}"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST "http://127.0.0.1:8001/server/clearExplicitCache" >& /dev/null
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "7"
+requireSubstring "$LIST_SIZE" "6"
 CACHES=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET "http://127.0.0.1:8001/server/status")
 requireSubstring "$CACHES" ",\"explicitCacheBytes\":0,\"followeeCacheBytes\":0,\"favouritesCacheBytes\":0,\"ipfsStatus\":true}"
 

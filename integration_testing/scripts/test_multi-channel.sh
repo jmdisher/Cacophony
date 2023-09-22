@@ -73,9 +73,9 @@ echo "Creating channel on node 1..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --createNewChannel
 checkPreviousCommand "createNewChannel1"
 
-echo "Count the pins after the creation (6 = 1 + 5 (index, recommendations, records, description, pic))..."
+echo "Count the pins after the creation (5 = 1 + 4 (index, recommendations, records, description))..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "6"
+requireSubstring "$LIST_SIZE" "5"
 
 echo "Quickstart another channel..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=quick java -Xmx32m -jar Cacophony.jar --quickstart --name "Quick user"
@@ -87,9 +87,9 @@ requireSubstring "$CHANNEL_LIST" "Found 2 channels:"
 requireSubstring "$CHANNEL_LIST" "Key name: test1 (SELECTED)"
 requireSubstring "$CHANNEL_LIST" "Key name: quick"
 
-echo "Count the pins after the creation (8 = 1 + 5 (index, recommendations, records, description, pic) + 2 (index, description))..."
+echo "Count the pins after the creation (7 = 1 + 4 (index, recommendations, records, description) + 2 (index, description))..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "8"
+requireSubstring "$LIST_SIZE" "7"
 
 echo "Verify that we aren't allowed to start following a home user..."
 RESULT_STRING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --getPublicKey)
@@ -122,9 +122,9 @@ requireSubstring "$USER_INFO2" "{\"name\":\"Quick user\",\"description\":\"The q
 echo "Check the list of home channels..."
 CHANNEL_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/home/channels")
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"quick\",\"publicKey\":\"$PUBLIC_KEY2\","
-requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Quick user\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\"}"
+requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Quick user\",\"userPicUrl\":null}"
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"test1\",\"publicKey\":\"$PUBLIC_KEY1\","
-requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Test1 User\",\"userPicUrl\":\"http://127.0.0.1:8080/ipfs/QmXsfdKGurBGFfzyRjVQ5APrhC6JE8x3hRRm8kGfGWRA5V\"}"
+requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Test1 User\",\"userPicUrl\":null}"
 
 echo "Make sure that we can set the quick user as selected..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/set/$PUBLIC_KEY2"
@@ -203,9 +203,9 @@ CHANNEL_LIST=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1
 requireSubstring "$CHANNEL_LIST" "Found 1 channels:"
 requireSubstring "$CHANNEL_LIST" "Key name: quick"
 
-echo "Count the pins after the creation (7 = 1 + 5 (index, recommendations, records, description, pic) + 1 elt)..."
+echo "Count the pins after the creation (6 = 1 + 4 (index, recommendations, records, description) + 1 elt)..."
 LIST_SIZE=$(IPFS_PATH="$REPO1" "$PATH_TO_IPFS" pin ls | wc -l)
-requireSubstring "$LIST_SIZE" "7"
+requireSubstring "$LIST_SIZE" "6"
 
 echo "Make sure that we see the expected output from descriptions and recommendations..."
 CACOPHONY_STORAGE="$USER1" CACOPHONY_KEY_NAME=test1 java -Xmx32m -jar Cacophony.jar --readDescription >& /dev/null
