@@ -21,6 +21,16 @@ GLOBAL_Application.controller('AppController', function($scope)
 		xsrfLoaded($scope)
 	});
 });
+function resetHomeUserAfterChange(scope)
+{
+	// Clear this out of the user cache since it has changed.
+	GLOBAL_UnknownUserLoader.resetUser(scope.homePublicKey);
+	// We need to swap out the descriptions so that the binding re-observes this.
+	let temp = scope.homeUserDescriptions;
+	scope.homeUserDescriptions = [];
+	scope.$apply();
+	scope.homeUserDescriptions = temp;
+}
 function xsrfLoaded($scope)
 {
 	// We need to see if there is a "publicKey" argument and compare it to our public key to see if this is the local user (or just user our public key if the arg isn't there).
@@ -63,6 +73,12 @@ function xsrfLoaded($scope)
 	{
 		$scope.homePublicKey = publicKey;
 		REST.POST("/home/channel/set/" + $scope.homePublicKey);
+		
+		// We need to fake-up this change in the description tuples we already loaded, since the selected user is now stale.
+		for (let tuple of $scope.homeUserDescriptions)
+		{
+			tuple["isSelected"] = ($scope.homePublicKey === tuple["publicKey"]);
+		}
 		
 		// We should update the page with this selection.
 		$scope.isHomeUser = true;
@@ -112,8 +128,12 @@ function xsrfLoaded($scope)
 		};
 		REST.POST_asForm("/home/userInfo/info/" + $scope.homePublicKey, variables)
 			.then(function() {
+				// Update the local data for the UI.
 				$scope.description = $scope.editState;
 				$scope.inEditMode = false;
+				
+				// Clear any cached information in the user loader and force a reload.
+				resetHomeUserAfterChange($scope);
 				$scope.$apply();
 				updateDescriptionText($scope.editState.description);
 			})
@@ -155,8 +175,12 @@ function xsrfLoaded($scope)
 		REST.POST_withBinary("/home/userInfo/image/" + $scope.homePublicKey, $scope.editState.imageData)
 			.then(result => result.text())
 			.then(function(newUrl) {
-				$scope.inEditMode = false;
+				// Update the local data for the UI.
 				$scope.description.userPicUrl = newUrl;
+				$scope.inEditMode = false;
+				
+				// Clear any cached information in the user loader and force a reload.
+				resetHomeUserAfterChange($scope);
 				$scope.$apply();
 			})
 		;

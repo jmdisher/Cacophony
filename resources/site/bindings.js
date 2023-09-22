@@ -47,6 +47,10 @@ var GLOBAL_UnknownUserLoader = {
 			}
 		});
 	},
+	resetUser: function(publicKey)
+	{
+		delete this.map[publicKey];
+	}
 };
 
 // We put this post loader helper here since is an injected dependency to some directives.
@@ -151,9 +155,9 @@ GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', functi
 				// Reset our user info map
 				_publicKeyToUserPicMap = {};
 				// We treat the "selected*" pieces of info specially since we want more control when there isn't a selected user.
-				scope.selectedUserTitle = "(no user selected)";
-				scope.selectedUserPublicKey = null;
 				scope.selectedUserName = null;
+				scope.selectedUserPublicKey = null;
+				scope.selectedUserTitle = "(no user selected)";
 				scope.selectedUserPic = null;
 				// Populate the readable titles and see who is selected.
 				for (let user of rawChannelTuples)
@@ -178,9 +182,14 @@ GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', functi
 						// If there was an error, we get a null.
 						if (null !== userTuple)
 						{
+							// We need the user pic but we also want to re-fetch the name since it could change in the user.html page.
+							tuple["name"] = userTuple["name"];
+							tuple["title"] = (tuple["name"] + " (key name: " + tuple["keyName"] + ")");
 							tuple["userPicUrl"] = userTuple["userPicUrl"];
 							if (scope.selectedUserPublicKey === tuple["publicKey"])
 							{
+								scope.selectedUserName = tuple["name"];
+								scope.selectedUserTitle = tuple["title"];
 								scope.selectedUserPic = tuple["userPicUrl"];
 							}
 							scope.$apply();
