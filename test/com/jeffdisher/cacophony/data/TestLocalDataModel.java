@@ -371,10 +371,19 @@ public class TestLocalDataModel
 				Assert.assertEquals(expectedMillis, waitMillis);
 			}
 			@Override
+			public void releasedReadLock()
+			{
+			}
+			@Override
 			public void acquiredWriteLock(long waitMillis)
 			{
 				Assert.assertEquals(expectedMillis, waitMillis);
-			}};
+			}
+			@Override
+			public void releasedWriteLock()
+			{
+			}
+		};
 		
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		

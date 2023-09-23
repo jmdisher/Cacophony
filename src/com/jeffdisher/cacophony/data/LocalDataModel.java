@@ -328,7 +328,7 @@ public class LocalDataModel
 		long endMillis = _stats.currentTimeMillis();
 		long deltaMillis = endMillis - startMillis;
 		_stats.acquiredReadLock(deltaMillis);
-		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
+		return LoadedStorage.openReadOnly(new ReadLock(_stats, lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
 	/**
@@ -362,7 +362,7 @@ public class LocalDataModel
 		long endMillis = _stats.currentTimeMillis();
 		long deltaMillis = endMillis - startMillis;
 		_stats.acquiredWriteLock(deltaMillis);
-		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
+		return LoadedStorage.openReadWrite(new WriteLock(_stats, lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
 	private static void _writeToDisk(IConfigFileSystem fileSystem
@@ -394,23 +394,28 @@ public class LocalDataModel
 
 	public class ReadLock implements LoadedStorage.UnlockRead
 	{
+		private final ILockingStats _stats;
 		private final Lock _lock;
-		public ReadLock(Lock lock)
+		public ReadLock(ILockingStats stats, Lock lock)
 		{
+			_stats = stats;
 			_lock = lock;
 		}
 		@Override
 		public void closeRead()
 		{
+			_stats.releasedReadLock();
 			_lock.unlock();
 		}
 	}
 
 	public class WriteLock implements LoadedStorage.UnlockWrite
 	{
+		private final ILockingStats _stats;
 		private final Lock _lock;
-		public WriteLock(Lock lock)
+		public WriteLock(ILockingStats stats, Lock lock)
 		{
+			_stats = stats;
 			_lock = lock;
 		}
 		@Override
@@ -462,6 +467,7 @@ public class LocalDataModel
 					throw Assert.unexpected(e);
 				}
 			}
+			_stats.releasedWriteLock();
 			_lock.unlock();
 		}
 	}
@@ -470,6 +476,7 @@ public class LocalDataModel
 	/**
 	 * A simple mechanism for collecting stats around lock acquisition times within the LocalDataModel.
 	 * This is intended to provide insights into unusually long lock times for later investigation.
+	 * TODO:  Remove this before final release.
 	 */
 	public static interface ILockingStats
 	{
@@ -483,10 +490,18 @@ public class LocalDataModel
 		 */
 		void acquiredReadLock(long waitMillis);
 		/**
+		 * Called to release the read lock.
+		 */
+		void releasedReadLock();
+		/**
 		 * Called after acquiring the write lock.
 		 * @param waitMillis The number of milliseconds the thread waited to acquire the lock.
 		 */
 		void acquiredWriteLock(long waitMillis);
+		/**
+		 * Called to release the write lock.
+		 */
+		void releasedWriteLock();
 	}
 
 
@@ -505,7 +520,15 @@ public class LocalDataModel
 		{
 		}
 		@Override
+		public void releasedWriteLock()
+		{
+		}
+		@Override
 		public void acquiredReadLock(long waitMillis)
+		{
+		}
+		@Override
+		public void releasedReadLock()
 		{
 		}
 	};
