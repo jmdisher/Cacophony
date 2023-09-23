@@ -334,7 +334,7 @@ function updateDescriptionText(descriptionText)
 				<h5 class="card-header">{{description.name}}</h5>
 				<div class="card-body container row">
 					<div class="col-md-4">
-						<img class="img-fluid" ng-src="{{description.userPicUrl}}" />
+						<img class="img-fluid" ng-show="null !== description.userPicUrl" ng-src="{{description.userPicUrl}}" />
 					</div>
 					<div class="col-md-8">
 						<div class="card">

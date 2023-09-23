@@ -123,7 +123,7 @@ GLOBAL_Application.factory('PostLoader', [function() { return function(postHash)
 
 let _template_channelSelector = ''
 	+ '<center>'
-	+ '<a ng-show="null !== selectedUserPublicKey" ng-href="user.html?publicKey={{selectedUserPublicKey}}"><img class="img-fluid" ng-src="{{selectedUserPic}}" alt="Show {{selectedUserName}}"/><br />{{selectedUserName}}</a><br />'
+	+ '<a ng-show="null !== selectedUserPublicKey" ng-href="user.html?publicKey={{selectedUserPublicKey}}"><img class="img-fluid" ng-show="null !== selectedUserPic" ng-src="{{selectedUserPic}}" alt="Show {{selectedUserName}}"/><br />{{selectedUserName}}</a><br />'
 	+ '	<div class="row btn-group">'
 	+ '		<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{selectedUserTitle}}</button>'
 	+ '		<ul class="dropdown-menu">'
