@@ -16,12 +16,12 @@
 <script type="text/javascript">
 // We define a directive for the quick replies.
 let _template_quickReply = ''
-	+ '<div>'
+	+ '<div ng-show="null !== publicKey">'
 	+ '<a class="btn btn-sm btn-success col-md-3" ng-show="!postTuple.isTombstone && !postTuple.quick.isReplyOpen" ng-click="openReply(postTuple)">Quick Reply</a>'
 	+ '<div ng-show="postTuple.quick.isReplyOpen">'
 	+ '	Replying as <a ng-href="user.html?publicKey={{publicKey}}">{{userName}}</a>:'
-	+ '	<input type="text" class="col-md-3" ng-model="postTuple.quick.title" ng-disabled="postTuple.quick.isPosting" placeholder="Title"></input><br />'
-	+ '	<textarea rows="4" class="col-md-8" ng-model="postTuple.quick.description" ng-disabled="postTuple.quick.isPosting" placeholder="Description"></textarea><br />'
+	+ '	<input type="text" class="col-md-6" ng-model="postTuple.quick.title" ng-disabled="postTuple.quick.isPosting" placeholder="Title"></input><br />'
+	+ '	<textarea rows="4" class="col-md-12" ng-model="postTuple.quick.description" ng-disabled="postTuple.quick.isPosting" placeholder="Description"></textarea><br />'
 	+ '	<a class="btn btn-sm btn-success" ng-disabled="postTuple.quick.isPosting" ng-click="setupPost(postTuple)">Post</a>'
 	+ '	<a class="btn btn-sm btn-warning" ng-disabled="postTuple.quick.isPosting" href="publish.html?replyTo={{postTuple.elementHash}}">Open as Full Draft</a>'
 	+ '	<a class="btn btn-sm btn-primary" ng-disabled="postTuple.quick.isPosting" ng-click="cancelReply(postTuple)">Cancel</a>'
@@ -172,6 +172,7 @@ function postWasLoaded($scope, elt)
 	
 	// We need to get the public key to see if we made this post.
 	// Then, we need to check that user's info to see if this is the feature.
+	$scope.homeUserDescriptions = [];
 	$scope.homePublicKey = null;
 	$scope.homeUserName = null;
 	$scope.isFeature = false;
@@ -187,6 +188,7 @@ function postWasLoaded($scope, elt)
 					$scope.homeUserName = user["name"];
 				}
 			}
+			$scope.homeUserDescriptions = data;
 			let isOurPost = ($scope.rootElement.publisherKey === $scope.homePublicKey);
 			if (isOurPost)
 			{
@@ -197,6 +199,22 @@ function postWasLoaded($scope, elt)
 			}
 			$scope.$apply();
 		});
+	$scope.selectUserKey = function(publicKey)
+	{
+		$scope.homePublicKey = publicKey;
+		REST.POST("/home/channel/set/" + $scope.homePublicKey);
+		
+		// We need to fake-up this change in the description tuples we already loaded, since the selected user is now stale.
+		for (let tuple of $scope.homeUserDescriptions)
+		{
+			let isMatch = ($scope.homePublicKey === tuple["publicKey"]);
+			tuple["isSelected"] = isMatch;
+			if (isMatch)
+			{
+				$scope.homeUserName = tuple["name"];
+			}
+		}
+	}
 	
 	// Start listening for the replies.
 	setupReplyTree($scope);
@@ -441,8 +459,11 @@ function setupReplyTree($scope)
 		</div>
 	</div>
 	<hr />
-	<div class="row justify-content-md-center">
-		<div class="col-md-10">
+	<div class="row">
+		<div class="card card-body col-md-3">
+			<caco-channel-selector channel-tuples="homeUserDescriptions" on-select-user="selectUserKey"></caco-channel-selector>
+		</div>
+		<div class="col-md-9">
 		Replies:
 			<!-- We will use a fixed-4 depth and link out to anything beyond that, just to keep the shape of the page sane. -->
 			<div class="row card card-body" ng-repeat="reply in rootElement.replies">
@@ -465,12 +486,12 @@ function setupReplyTree($scope)
 					</div>
 				</div>
 			</div>
+			<quick-reply post-tuple="rootElement" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 		</div>
 	</div>
 	<hr />
 	<div class="row justify-content-md-center">
 		<div class="col-md-6">
-			<quick-reply post-tuple="rootElement" public-key="homePublicKey" user-name="homeUserName" on-post="postQuickReply"></quick-reply>
 			<div class="btn-group" ng-show="true === isFavourite">
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Remove from favourites</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteFavourite()">Confirm</a></li></ul>
