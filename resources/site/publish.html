@@ -815,28 +815,13 @@ GLOBAL_Application.controller('AppController', function($scope)
 function xsrfLoaded($scope)
 {
 	// Start with no selection.
-	$scope.homeUserDescriptions = [];
 	$scope.homePublicKey = null;
+	// We trigger the reset immediately, since we have no dependent data.
+	$scope.channelSelectorResetCounter = 1;
 	
-	REST.GET("/home/channels")
-		.then((response) => response.json())
-		.then((data) => {
-			// See which user is selected (could be none of them).
-			for (let user of data)
-			{
-				if (user["isSelected"])
-				{
-					$scope.homePublicKey = user["publicKey"];
-				}
-			}
-			$scope.homeUserDescriptions = data;
-			$scope.$apply();
-		})
-	;
 	$scope.selectUserKey = function(publicKey)
 	{
 		$scope.homePublicKey = publicKey;
-		REST.POST("/home/channel/set/" + $scope.homePublicKey);
 	}
 	
 	// We can proceed to load the other data, concurrently.
@@ -895,7 +880,7 @@ function xsrfLoaded($scope)
 			<div class="row"><a class="btn" href="replies.html">Replies</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
-			<caco-channel-selector channel-tuples="homeUserDescriptions" on-select-user="selectUserKey"></caco-channel-selector>
+			<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
 		</div>
 		<div class="card card-body col-md-6" ng-show="null !== homePublicKey">
 			<em ng-show="null == drafts">Loading drafts...</em>

@@ -170,50 +170,21 @@ function postWasLoaded($scope, elt)
 		}
 	}
 	
-	// We need to get the public key to see if we made this post.
-	// Then, we need to check that user's info to see if this is the feature.
-	$scope.homeUserDescriptions = [];
+	// At this point, we can trigger the selector to load.
+	$scope.channelSelectorResetCounter = 1;
 	$scope.homePublicKey = null;
 	$scope.homeUserName = null;
 	$scope.isFeature = false;
-	REST.GET("/home/channels")
-		.then((response) => response.json())
-		.then((data) => {
-			// See which user is selected (could be none of them).
-			for (let user of data)
-			{
-				if (user["isSelected"])
-				{
-					$scope.homePublicKey = user["publicKey"];
-					$scope.homeUserName = user["name"];
-				}
-			}
-			$scope.homeUserDescriptions = data;
-			let isOurPost = ($scope.rootElement.publisherKey === $scope.homePublicKey);
-			if (isOurPost)
-			{
-				GLOBAL_UnknownUserLoader.loadTuple($scope.homePublicKey).then(userInfo => {
-					$scope.isFeature = (userInfo.feature === $scope.rootElement.elementHash);
-					$scope.$apply();
-				});
-			}
-			$scope.$apply();
-		});
 	$scope.selectUserKey = function(publicKey)
 	{
 		$scope.homePublicKey = publicKey;
-		REST.POST("/home/channel/set/" + $scope.homePublicKey);
 		
-		// We need to fake-up this change in the description tuples we already loaded, since the selected user is now stale.
-		for (let tuple of $scope.homeUserDescriptions)
-		{
-			let isMatch = ($scope.homePublicKey === tuple["publicKey"]);
-			tuple["isSelected"] = isMatch;
-			if (isMatch)
-			{
-				$scope.homeUserName = tuple["name"];
-			}
-		}
+		// Populate the user name and see if this is the feature.
+		GLOBAL_UnknownUserLoader.loadTuple($scope.homePublicKey).then(userInfo => {
+			$scope.homeUserName = userInfo["name"];
+			$scope.isFeature = (userInfo.feature === $scope.rootElement.elementHash);
+			$scope.$apply();
+		});
 	}
 	
 	// Start listening for the replies.
@@ -284,9 +255,12 @@ function setupEnvironment($scope)
 	}
 	$scope.setAsFeature = function()
 	{
-		REST.POST("/home/userInfo/feature/" + $scope.rootElement.publisherKey + "/" + $scope.rootElement.elementHash)
+		REST.POST("/home/userInfo/feature/" + $scope.homePublicKey + "/" + $scope.rootElement.elementHash)
 			.then(function() {
+				// This is now the feature.
 				$scope.isFeature = true;
+				// Clear the cache for this user in case we are switching between them (although this is a very rare use-case).
+				GLOBAL_UnknownUserLoader.resetUser($scope.homePublicKey);
 				$scope.$apply();
 			})
 		;
@@ -461,7 +435,7 @@ function setupReplyTree($scope)
 	<hr />
 	<div class="row">
 		<div class="card card-body col-md-3">
-			<caco-channel-selector channel-tuples="homeUserDescriptions" on-select-user="selectUserKey"></caco-channel-selector>
+			<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
 		</div>
 		<div class="col-md-9">
 		Replies:
@@ -505,11 +479,11 @@ function setupReplyTree($scope)
 				<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Delete post</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="deleteRoot()">Confirm</a></li></ul>
 			</div>
-			<div class="btn-group" ng-show="(rootElement.publisherKey === publicKey) && !isFeature">
+			<div class="btn-group" ng-show="(rootElement.publisherKey === homePublicKey) && !isFeature">
 				<button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Set as feature post</button>
 				<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="setAsFeature()">Confirm</a></li></ul>
 			</div>
-			<div ng-show="(rootElement.publisherKey === publicKey) && isFeature">
+			<div ng-show="(rootElement.publisherKey === homePublicKey) && isFeature">
 				Note that this is the feature post on your profile.
 			</div>
 		</div>

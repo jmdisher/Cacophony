@@ -16,7 +16,6 @@
 // GLOBAL_Application is defined in bindings.js.
 GLOBAL_Application.controller('AppController', function($scope)
 {
-	$scope.canChangeRecommendations = false;
 	$scope.unknownUserKey = "";
 	$scope.selectedUserKey = null;
 	
@@ -28,7 +27,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.startRecommending = function(publicKey)
 	{
 		// We will send the request and then treat this like a new recommended key was loaded, on success.
-		REST.POST("/home/recommend/add/" + $scope.homePublicKey + "/" + publicKey)
+		REST.POST("/home/recommend/add/" + $scope.publicKey + "/" + publicKey)
 			.then((response) => {
 				if (response.ok)
 				{
@@ -55,51 +54,22 @@ function xsrfLoaded($scope)
 {
 	let keyArg = UTILS_readGetVar("publicKey");
 	
-	// Start with no selection.
-	$scope.homeUserDescriptions = [];
-	$scope.homePublicKey = null;
-	$scope.selectedUserTitle = null;
+	// We trigger the reset immediately, since we have no dependent data.
+	$scope.channelSelectorResetCounter = 1;
+	// If we were given a public key, we want to load it.
+	if (undefined !== keyArg)
+	{
+		publicKeyLoaded($scope, keyArg);
+	}
 	
-	REST.GET("/home/channels")
-		.then((response) => response.json())
-		.then((data) => {
-			// See which user is selected (could be none of them).
-			for (let user of data)
-			{
-				if (user["isSelected"])
-				{
-					$scope.homePublicKey = user["publicKey"];
-				}
-			}
-			$scope.homeUserDescriptions = data;
-			// If there was no argument, we want to default to whatever this is.
-			if (undefined === keyArg)
-			{
-				// This is typically how we end up viewing the home user so we can change recommendations.
-				if (null !== $scope.homePublicKey)
-				{
-					publicKeyLoaded($scope, $scope.homePublicKey);
-				}
-				else
-				{
-					// There is no home user.
-					$scope.publicKey = $scope.homePublicKey;
-				}
-				$scope.canChangeRecommendations = true;
-				$scope.$apply();
-			}
-			
-			$scope.$apply();
-		})
-	;
 	$scope.selectUserKey = function(publicKey)
 	{
-		$scope.homePublicKey = publicKey;
-		REST.POST("/home/channel/set/" + $scope.homePublicKey);
-		
-		// We should update the page with this selection.
-		publicKeyLoaded($scope, $scope.homePublicKey);
-		$scope.canChangeRecommendations = true;
+		// If we selected something and we aren't looking at someone specific, load this user.
+		if (undefined === keyArg)
+		{
+			publicKeyLoaded($scope, publicKey);
+		}
+		$scope.isSelectedUser = ($scope.publicKey === publicKey);
 	}
 	
 	// If there was a key arg, we want to load it as the key.
@@ -145,7 +115,7 @@ function recommendedUsersLoaded($scope, recommended)
 	$scope.stopRecommending = function(user)
 	{
 		// When the delete returns, remove them from the list.
-		REST.DELETE("/home/recommend/remove/" + $scope.homePublicKey + "/" + user.publicKey)
+		REST.DELETE("/home/recommend/remove/" + $scope.publicKey + "/" + user.publicKey)
 			.then((response) => {
 				if (response.ok)
 				{
@@ -226,10 +196,10 @@ function addKeyToList(list, key, onPopulate)
 			<div class="row"><a class="btn" href="replies.html">Replies</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
-			<caco-channel-selector channel-tuples="homeUserDescriptions" on-select-user="selectUserKey"></caco-channel-selector>
+			<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
 		</div>
 		<div class="col-md-9" ng-show="null !== publicKey">
-			<div class="input-group mb-3" ng-show="canChangeRecommendations">
+			<div class="input-group mb-3" ng-show="isSelectedUser">
 				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()">Check User</button>
 				<input type="text" class="form-control" ng-model="unknownUserKey" aria-label="User Public Key" aria-describedby="public-key">
 			</div>
@@ -245,7 +215,7 @@ function addKeyToList(list, key, onPopulate)
 					<div class="col-md-8" ng-show="{{user.known}}">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<button class="btn btn-sm btn-danger" ng-click="stopRecommending(user)" ng-show="canChangeRecommendations" ng-disabled="user.isDeleting">Stop Recommending User</button><br />
+						<button class="btn btn-sm btn-danger" ng-click="stopRecommending(user)" ng-show="isSelectedUser" ng-disabled="user.isDeleting">Stop Recommending User</button><br />
 					</div>
 					<div class="col-md-12" ng-hide="{{user.known}}">
 						Public key of unknown user: {{user.publicKey}}

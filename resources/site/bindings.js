@@ -118,6 +118,7 @@ var GLOBAL_PostLoader = {
 // Define the factory methods for dependency injection.
 // Generally, we want to return a helper pointing to the shared instances since they typically have caches.
 GLOBAL_Application.factory('UnknownUserLoader', [function() { return function(publicKey) {return GLOBAL_UnknownUserLoader.loadTuple(publicKey); } ; }]);
+GLOBAL_Application.factory('ResetUserLoader', [function() { return function(publicKey) {return GLOBAL_UnknownUserLoader.resetUser(publicKey); } ; }]);
 GLOBAL_Application.factory('PostLoader', [function() { return function(postHash) {return GLOBAL_PostLoader.loadTuple(postHash); } ; }]);
 
 let _template_channelSelector = ''
@@ -131,16 +132,16 @@ let _template_channelSelector = ''
 	+ '	</div>'
 	+ '</center>'
 ;
-GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', function(UnknownUserLoader)
+GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', 'ResetUserLoader', function(UnknownUserLoader, ResetUserLoader)
 {
 	// NOTES:
-	// -channelTuples - an array of objects as returned by GET_HomeChannels (has "name", "keyName", "publicKey", and "isSelected").
 	// -onSelectUser - a method called with the public key of a user when it is selected by this widget.
+	// -resetCounter - if set to non-zero, will cause the selector reset the UnknownUserLoader and then the user list.  This is required in order to trigger the initial load (since in case there is any setup required, first) and can also be used to force an update in case the data changed, extenally, and needs to be recached.
 	return {
 		restrict: 'E',
 		scope: {
-			channelTuples: '=channelTuples',
 			onSelectUser: '&onSelectUser',
+			resetCounter: '=resetCounter',
 		},
 		replace: true,
 		template: _template_channelSelector,
@@ -148,6 +149,17 @@ GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', functi
 		{
 			// We want to store an internal map to the user pic URLs for the channels we are told about.
 			let _publicKeyToUserPicMap = null;
+			let _setUserSelected = function(userTuple)
+			{
+				// Update our flat copies.
+				scope.selectedUserTitle = userTuple["title"];
+				scope.selectedUserPublicKey = userTuple["publicKey"];
+				scope.selectedUserName = userTuple["name"];
+				scope.selectedUserPic = userTuple["userPicUrl"];
+				
+				// Send the callback.
+				scope.onSelectUser()(userTuple["publicKey"]);
+			}
 			let _setState = function(rawChannelTuples)
 			{
 				// Create a local array instead of modifying the one we are given.
@@ -174,9 +186,7 @@ GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', functi
 					};
 					if (user["isSelected"])
 					{
-						scope.selectedUserTitle = tuple["title"];
-						scope.selectedUserPublicKey = tuple["publicKey"];
-						scope.selectedUserName = tuple["name"];
+						_setUserSelected(tuple);
 					}
 					UnknownUserLoader(tuple["publicKey"]).then((userTuple) => {
 						// If there was an error, we get a null.
@@ -201,23 +211,35 @@ GLOBAL_Application.directive('cacoChannelSelector', ['UnknownUserLoader', functi
 			
 			scope.selectUser = function(userTuple)
 			{
-				// Update our flat copies.
-				scope.selectedUserTitle = userTuple["title"];
-				scope.selectedUserPublicKey = userTuple["publicKey"];
-				scope.selectedUserName = userTuple["name"];
-				scope.selectedUserPic = userTuple["userPicUrl"];
+				// Send the update to the server.
+				REST.POST("/home/channel/set/" + userTuple["publicKey"]);
 				
-				// Send the callback.
-				scope.onSelectUser()(userTuple["publicKey"]);
+				// Set the rest of our state.
+				_setUserSelected(userTuple);
 			}
 			
-			scope.$watch('channelTuples', function(newValue, oldValue)
+			scope.$watch('resetCounter', function(newValue, oldValue)
 			{
-				if (undefined !== newValue)
+				if (newValue > 0)
 				{
-					_setState(newValue);
+					// If we already have data, we need to purge the cache.
+					for (let user of scope.homeUserDescriptions)
+					{
+						ResetUserLoader(user["publicKey"]);
+					}
+					
+					// Load the data, whether we already have it or not.
+					REST.GET("/home/channels")
+						.then((response) => response.json())
+						.then((data) => {
+							_setState(data);
+							scope.$apply();
+						});
 				}
 			});
+			
+			// Start the system by setting the state to something harmless.
+			_setState([]);
 		}
 	}
 }]);

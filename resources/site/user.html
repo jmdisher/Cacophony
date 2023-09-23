@@ -21,74 +21,33 @@ GLOBAL_Application.controller('AppController', function($scope)
 		xsrfLoaded($scope)
 	});
 });
-function resetHomeUserAfterChange(scope)
-{
-	// Clear this out of the user cache since it has changed.
-	GLOBAL_UnknownUserLoader.resetUser(scope.homePublicKey);
-	// We need to swap out the descriptions so that the binding re-observes this.
-	let temp = scope.homeUserDescriptions;
-	scope.homeUserDescriptions = [];
-	scope.$apply();
-	scope.homeUserDescriptions = temp;
-}
 function xsrfLoaded($scope)
 {
-	// We need to see if there is a "publicKey" argument and compare it to our public key to see if this is the local user (or just user our public key if the arg isn't there).
-	$scope.isHomeUser = false;
+	// We need to see if there is a "publicKey" argument and compare it to the public key of the current home user (or just use the current home user, if the arg isn't present).
 	let keyArg = UTILS_readGetVar("publicKey");
 	
+	// We trigger the reset immediately, since we have no dependent data.
+	$scope.channelSelectorResetCounter = 1;
+	// If we were given a public key, we want to load it.
+	if (undefined !== keyArg)
+	{
+		publicKeyLoaded($scope, keyArg);
+	}
 	
-	// Start with no selection.
-	$scope.homeUserDescriptions = [];
-	$scope.homePublicKey = null;
-	
-	REST.GET("/home/channels")
-		.then((response) => response.json())
-		.then((data) => {
-			// See which user is selected (could be none of them).
-			for (let user of data)
-			{
-				if (user["isSelected"])
-				{
-					$scope.homePublicKey = user["publicKey"];
-				}
-			}
-			$scope.homeUserDescriptions = data;
-			
-			$scope.isHomeUser = (undefined === keyArg) || ($scope.homePublicKey === keyArg);
-			let keyWeAreUsing = (keyArg !== undefined) ? keyArg : $scope.homePublicKey;
-			// This keyWeAreUsing should only be null if no specific key was provided and we have no selected home user.
-			if (null !== keyWeAreUsing)
-			{
-				publicKeyLoaded($scope, keyWeAreUsing, $scope.isHomeUser);
-			}
-			else
-			{
-				$scope.publicKey = keyWeAreUsing;
-			}
-			$scope.$apply();
-		})
-	;
 	$scope.selectUserKey = function(publicKey)
 	{
-		$scope.homePublicKey = publicKey;
-		REST.POST("/home/channel/set/" + $scope.homePublicKey);
-		
-		// We need to fake-up this change in the description tuples we already loaded, since the selected user is now stale.
-		for (let tuple of $scope.homeUserDescriptions)
+		// If we selected something and we aren't looking at someone specific, load this user.
+		if (undefined === keyArg)
 		{
-			tuple["isSelected"] = ($scope.homePublicKey === tuple["publicKey"]);
+			publicKeyLoaded($scope, publicKey);
 		}
-		
-		// We should update the page with this selection.
-		$scope.isHomeUser = true;
-		publicKeyLoaded($scope, $scope.homePublicKey, $scope.isHomeUser);
+		$scope.isSelectedUser = ($scope.publicKey === publicKey);
 	}
 	
 	$scope.deletePostKey = function(elementHash)
 	{
 		// We will set the post to deleting, then send the request, and wait for the removal to come through the WebSocket.
-		REST.DELETE("/home/post/delete/" + $scope.homePublicKey + "/" + elementHash);
+		REST.DELETE("/home/post/delete/" + $scope.publicKey + "/" + elementHash);
 	}
 	
 	$scope.enterEditMode = function()
@@ -126,14 +85,14 @@ function xsrfLoaded($scope)
 			"EMAIL": (null !== $scope.editState.email) ? $scope.editState.email : "",
 			"WEBSITE": (null !== $scope.editState.website) ? $scope.editState.website : "",
 		};
-		REST.POST_asForm("/home/userInfo/info/" + $scope.homePublicKey, variables)
+		REST.POST_asForm("/home/userInfo/info/" + $scope.publicKey, variables)
 			.then(function() {
 				// Update the local data for the UI.
 				$scope.description = $scope.editState;
 				$scope.inEditMode = false;
 				
 				// Clear any cached information in the user loader and force a reload.
-				resetHomeUserAfterChange($scope);
+				$scope.channelSelectorResetCounter += 1;
 				$scope.$apply();
 				updateDescriptionText($scope.editState.description);
 			})
@@ -172,7 +131,7 @@ function xsrfLoaded($scope)
 	{
 		$scope.editState.saveInProgress = true;
 		
-		REST.POST_withBinary("/home/userInfo/image/" + $scope.homePublicKey, $scope.editState.imageData)
+		REST.POST_withBinary("/home/userInfo/image/" + $scope.publicKey, $scope.editState.imageData)
 			.then(result => result.text())
 			.then(function(newUrl) {
 				// Update the local data for the UI.
@@ -180,7 +139,7 @@ function xsrfLoaded($scope)
 				$scope.inEditMode = false;
 				
 				// Clear any cached information in the user loader and force a reload.
-				resetHomeUserAfterChange($scope);
+				$scope.channelSelectorResetCounter += 1;
 				$scope.$apply();
 			})
 		;
@@ -222,8 +181,9 @@ function xsrfLoaded($scope)
 		$scope.allowScrollBack = false;
 		$scope.entrySocket.send("COMMAND_SCROLL_BACK");
 	}
+	$scope.$apply();
 }
-function publicKeyLoaded($scope, publicKey, isHomeUser)
+function publicKeyLoaded($scope, publicKey)
 {
 	let video_preview = document.getElementById("video_preview");
 	let canvas = document.getElementById("canvas");
@@ -284,7 +244,10 @@ function publicKeyLoaded($scope, publicKey, isHomeUser)
 	{
 		REST.POST("/home/userInfo/feature/" + $scope.publicKey + "/NONE")
 			.then(result => {
+				// We will clear this.
 				$scope.description.feature = null;
+				// Clear the cache for this user in case we are switching between them (although this is a very rare use-case).
+				GLOBAL_UnknownUserLoader.resetUser($scope.publicKey);
 				$scope.$apply();
 			})
 		;
@@ -364,7 +327,7 @@ function updateDescriptionText(descriptionText)
 			<div class="row"><a class="btn" href="replies.html">Replies</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
-			<caco-channel-selector channel-tuples="homeUserDescriptions" on-select-user="selectUserKey"></caco-channel-selector>
+			<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
 		</div>
 		<div class="col-md-9" ng-show="null !== publicKey">
 			<div class="row card" ng-show="!inEditMode">
@@ -392,11 +355,11 @@ function updateDescriptionText(descriptionText)
 								<!-- This is populated by expanding the newlines, not directly as a binding -->
 							</div>
 						</div>
-						<button class="btn btn-primary" ng-click="enterEditMode()" ng-show="isHomeUser">Edit Info</button><br />
+						<button class="btn btn-primary" ng-click="enterEditMode()" ng-show="isSelectedUser">Edit Info</button><br />
 						<a ng-href="recommending.html?publicKey={{publicKey}}">Recommended Users</a><br />
 						<span ng-show="null != description.feature">
 							Channel feature post:  <caco-post-small cid="description.feature"></caco-post-small>
-							<div class="btn-group" ng-show="isHomeUser">
+							<div class="btn-group" ng-show="isSelectedUser">
 								<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Clear Feature</button>
 								<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="clearFeature()">Confirm</a></li></ul>
 							</div>
@@ -443,7 +406,7 @@ function updateDescriptionText(descriptionText)
 				</div>
 			</div>
 			<h3 ng-show="null !== specialString">{{specialString}}</h3>
-			<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isHomeUser" enable-danger="isHomeUser" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+			<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isSelectedUser" enable-danger="isSelectedUser" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 		<div class="col-md-9" ng-show="null === publicKey">
