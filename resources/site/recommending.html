@@ -142,8 +142,11 @@ function recommendedUsersLoaded($scope, recommended)
 function addKeyToList(list, key, onPopulate)
 {
 	let placeholder = {
-		"known": false,
 		"publicKey": key,
+		"name": ("Loading " + key + "..."),
+		"description": "Pending...",
+		"userPicUrl": null,
+		"isDeleting": false,
 	};
 	let nextIndex = list.push(placeholder);
 	GLOBAL_UnknownUserLoader.loadTuple(key).then(elt => {
@@ -151,12 +154,11 @@ function addKeyToList(list, key, onPopulate)
 		{
 			// We can't update the placeholder since the $apply() won't see nested updates so replace this.
 			let object = {
-				"known": true,
 				"publicKey": key,
 				"name": elt["name"],
 				"description": elt["description"],
 				"userPicUrl": elt["userPicUrl"],
-				"isDeleting": false,
+				"isDeleting": placeholder["isDeleting"],
 			};
 			list[nextIndex - 1] = object;
 			onPopulate();
@@ -207,18 +209,18 @@ function addKeyToList(list, key, onPopulate)
 			
 			<h3>Users Recommmended by <a ng-href="user.html?publicKey={{publicKey}}">{{thisUserName}}</a></h3>
 			<div ng-repeat="user in recommended" class="card">
-				<h5 class="card-header" ng-show="{{user.known}}"><a ng-href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
-				<div class="card-body container row">
-					<div class="col-md-4" ng-show="{{user.known}}">
-						<a ng-href="user.html?publicKey={{user.publicKey}}"><img class="img-fluid" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a>
+				<h5 class="card-header"><a href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
+				<div class="card-body row">
+					<div class="col-md-4">
+						<a href="user.html?publicKey={{user.publicKey}}"><img class="img-fluid" ng-src="{{user.userPicUrl}}" alt="{{user.name}}"/></a><br />
 					</div>
-					<div class="col-md-8" ng-show="{{user.known}}">
+					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<button class="btn btn-sm btn-danger" ng-click="stopRecommending(user)" ng-show="isSelectedUser" ng-disabled="user.isDeleting">Stop Recommending User</button><br />
-					</div>
-					<div class="col-md-12" ng-hide="{{user.known}}">
-						Public key of unknown user: {{user.publicKey}}
+						<div class="btn-group">
+							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="user.isDeleting">Stop Recommending User</button>
+							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="stopRecommending(user)">Confirm</a></li></ul>
+						</div><br />
 					</div>
 				</div>
 			</div>
