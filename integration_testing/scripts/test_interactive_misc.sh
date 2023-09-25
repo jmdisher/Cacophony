@@ -62,7 +62,7 @@ CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java
 SERVER_PID=$!
 waitForHttpStart 8001
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8001/")
-requireSubstring "$INDEX" "Cacophony - Static Index"
+requireSubstring "$INDEX" "Cacophony - Index"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8001/server/cookie
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 
@@ -326,7 +326,7 @@ CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java
 SERVER2_PID=$!
 waitForHttpStart 8002
 INDEX=$(curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XGET -L "http://127.0.0.1:8002/")
-requireSubstring "$INDEX" "Cacophony - Static Index"
+requireSubstring "$INDEX" "Cacophony - Index"
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" --no-progress-meter -XPOST http://127.0.0.1:8002/server/cookie
 XSRF2=$(grep XSRF "$COOKIES2" | cut -f 7)
 

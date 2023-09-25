@@ -118,6 +118,10 @@ function oldHashRemoved($scope, key)
 				<caco-post post-tuple="post"></caco-post>
 				As a reply to: <caco-post-small cid="post.replyTo"></caco-post-small>
 			</div>
+			<div ng-show="0 === posts.length">
+				No replies to any home user posts.<br />
+				This page will be populated with any posts made by your <a href="following.html">followers</a> which are replies to any post made by any of the home users on this node.<br />
+			</div>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 	</div>

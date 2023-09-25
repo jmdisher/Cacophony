@@ -26,6 +26,7 @@ function xsrfLoaded($scope)
 	// We need to see if there is a "publicKey" argument and compare it to the public key of the current home user (or just use the current home user, if the arg isn't present).
 	let keyArg = UTILS_readGetVar("publicKey");
 	
+	$scope.publicKey = null;
 	// We trigger the reset immediately, since we have no dependent data.
 	$scope.channelSelectorResetCounter = 1;
 	// If we were given a public key, we want to load it.
@@ -407,10 +408,13 @@ function updateDescriptionText(descriptionText)
 			</div>
 			<h3 ng-show="null !== specialString">{{specialString}}</h3>
 			<caco-post ng-repeat="post in posts" post-tuple="post" enable-edit="isSelectedUser" enable-danger="isSelectedUser" danger-name="Delete Post" on-danger-key="deletePostKey"></caco-post>
+			<div ng-show="0 === posts.length">
+				This user has made no posts.
+			</div>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 		<div class="col-md-9" ng-show="null === publicKey">
-			<strong>No home user selected.</strong>
+			<strong>No user selected.</strong>
 		</div>
 	</div>
 </div>

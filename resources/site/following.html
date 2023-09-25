@@ -94,8 +94,10 @@ function beginPopulating($scope)
 			keyToObjectMap[key] = object;
 			
 			GLOBAL_UnknownUserLoader.loadTuple(key).then(elt => {
+				// Since this is used just to show a short summary of the user, we also want to truncate their description (the full user.html page will show the full description).
+				let description = UTILS_truncateDescription(elt["description"]);
 				object["name"] = elt["name"];
-				object["description"] = elt["description"];
+				object["description"] = description;
 				object["userPicUrl"] = elt["userPicUrl"];
 				$scope.$apply();
 			});
@@ -180,13 +182,6 @@ function beginPopulating($scope)
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
 		</div>
 		<div class="col-md-9">
-			<div class="input-group mb-3">
-				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()">Check User</button>
-				<input type="text" class="form-control" ng-model="unknownUserKey" aria-label="User Public Key" aria-describedby="public-key">
-			</div>
-			<caco-unknown-user ng-show="null !== selectedUserKey" public-key="selectedUserKey" success-name="Start Following User" on-success-key="startFollowing"></caco-unknown-user>
-			
-			<h3>Users you Follow</h3>
 			<div ng-repeat="user in following" class="card">
 				<h5 class="card-header"><a href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
 				<div class="card-body row">
@@ -206,6 +201,15 @@ function beginPopulating($scope)
 					</div>
 				</div>
 			</div>
+			<div ng-show="0 === following.length">
+				Not following any users.
+			</div>
+
+			<div class="input-group mb-3">
+				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()">Check user by public key</button>
+				<input type="text" class="form-control" ng-model="unknownUserKey" aria-label="User Public Key" aria-describedby="public-key">
+			</div>
+			<caco-unknown-user ng-show="null !== selectedUserKey" public-key="selectedUserKey" success-name="Start Following User" on-success-key="startFollowing"></caco-unknown-user>
 		</div>
 	</div>
 </div>

@@ -66,7 +66,7 @@ waitForHttpStart 8000
 
 echo "Make sure that we can access static files..."
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8000/")
-requireSubstring "$INDEX" "Cacophony - Static Index"
+requireSubstring "$INDEX" "Cacophony - Index"
 
 echo "Requesting creation of XSRF token..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/server/cookie

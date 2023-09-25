@@ -88,6 +88,11 @@ function oldHashRemoved($scope, key)
 		</div>
 		<div class="col-md-9">
 			<caco-post ng-repeat="post in posts" post-tuple="post" enable-danger="true" danger-name="Delete Favourite" on-danger-key="deleteFavouriteKey"></caco-post>
+			<div ng-show="0 === posts.length">
+				You have no favourites.<br />
+				Favourites are posts which will not be purged from local cache so long as they remain as favourites.  This means that they have the same stability as the posts you yourself have made (since those are also never purged).<br />
+				When looking at a post made by another user, you can choose to add or remove it from your favourites list.<br />
+			</div>
 		</div>
 	</div>
 </div>

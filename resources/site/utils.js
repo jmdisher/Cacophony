@@ -50,24 +50,38 @@ function UTILS_addElementHashToArray(array, hash, isNewest, updateCallback)
 		array.push(placeholder);
 	}
 	GLOBAL_PostLoader.loadTuple(hash).then(elt => {
-		// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
-		let description = elt["description"];
-		if (description.length > 135)
+		// We will get a null if we failed to load this post.
+		let object = null;
+		if (null !== elt)
 		{
-			// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
-			description = description.slice(0, 130) + "...";
+			// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
+			let description = UTILS_truncateDescription(elt["description"]);
+			// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+			object = {
+				"hasDataToCache": elt["hasDataToCache"],
+				"elementHash": elt["elementHash"],
+				"readableDate": elt["readableDate"],
+				"name": elt["name"],
+				"description": description,
+				"publisherKey": elt["publisherKey"],
+				"isDeleting": false,
+				"thumbnailUrl": elt["thumbnailUrl"],
+				"replyTo": elt["replyTo"],
+			}
 		}
-		// We can't update the placeholder since the $apply() won't see nested updates so replace this.
-		let object = {
-			"hasDataToCache": elt["hasDataToCache"],
-			"elementHash": elt["elementHash"],
-			"readableDate": elt["readableDate"],
-			"name": elt["name"],
-			"description": description,
-			"publisherKey": elt["publisherKey"],
-			"isDeleting": false,
-			"thumbnailUrl": elt["thumbnailUrl"],
-			"replyTo": elt["replyTo"],
+		else
+		{
+			object = {
+				"hasDataToCache": placeholder["hasDataToCache"],
+				"elementHash": placeholder["elementHash"],
+				"readableDate": "Unknown date",
+				"name": "Failed to load",
+				"description": "Failed to load post information",
+				"publisherKey": placeholder["publisherKey"],
+				"isDeleting": placeholder["isDeleting"],
+				"thumbnailUrl": placeholder["thumbnailUrl"],
+				"replyTo": placeholder["replyTo"],
+			}
 		}
 		// We need to replace the index due to the earlier mention of $apply.
 		// (we will use indexOf() since this is an exact instance match)
@@ -179,6 +193,23 @@ function UTILS_checkCamera(includeAudio)
 				});
 		}
 	});
+}
+
+// We replace newlines with spaces and restrict the length of the description.
+function UTILS_truncateDescription(description)
+{
+	// Replace newlines.
+	const regex = new RegExp("\n", "g");
+	description = description.replace(regex, " ");
+	
+	// Restrict total string length.
+	const kMaxLength = 250;
+	if (description.length > kMaxLength)
+	{
+		// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
+		description = description.slice(0, (kMaxLength - 3)) + "...";
+	}
+	return description;
 }
 
 // Returns an object describing the post with the given hash, via a promise (null on error).  Implementation of this is in GET_PostStruct.java and defines these keys:

@@ -43,7 +43,7 @@ CACOPHONY_ENABLE_FAKE_SYSTEM="$DRAFTS_DIR" java -Xmx1g -jar "Cacophony.jar" --ru
 SERVER_PID=$!
 waitForHttpStart 8000
 INDEX=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET -L "http://127.0.0.1:8000/")
-requireSubstring "$INDEX" "Cacophony - Static Index"
+requireSubstring "$INDEX" "Cacophony - Index"
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/server/cookie
 XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
 PUBLIC_KEY=$(getPublicKey "$COOKIES1" "http://127.0.0.1:8000")

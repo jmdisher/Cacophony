@@ -282,7 +282,7 @@ GLOBAL_Application.directive('cacoUserLink', ['UnknownUserLoader', function(Unkn
 	}
 }]);
 
-// This is the common way of displaying a post, in most situations.  There is no handling of incomplete caching, nor is the description expanded with newlines (newlines are replaced with spaces to keep this vertically contained).  Description is truncated if longer than 135 characters.
+// This is the common way of displaying a post, when not looking at the entire post, directly.  Essentially, this means how the post is shown in lists and other previews.  Because we want this to be short, and not take up too much vertical space, we replace newlines with spaces and truncate the description.
 let _template_postMutable = ''
 	+ '<div class="row card">'
 	+ '<h5 class="card-header">{{postTuple.name}} (Posted by <caco-user-link public-key="postTuple.publisherKey"></caco-user-link> on {{postTuple.readableDate}})</h5>'
@@ -332,14 +332,7 @@ GLOBAL_Application.directive('cacoPost', [function()
 			scope.$watch('postTuple.description', function(newValue, oldValue)
 			{
 				// We want to make sure the description isn't too long to reasonably render (since it is allowed to be unbounded in length, at the protocol level).
-				let description = scope.postTuple.description;
-				const regex = new RegExp("\n", "g");
-				description = description.replace(regex, " ");
-				if (description.length > 135)
-				{
-					// We use mismatched truncation to avoid spilling just a few chars - the actual limits are unimportant.
-					description = description.slice(0, 130) + "...";
-				}
+				let description = UTILS_truncateDescription(scope.postTuple.description);
 				// Inject as text since we don't want to honour HTML.
 				dynamicDescription.innerText = description;
 			});
@@ -463,6 +456,8 @@ GLOBAL_Application.directive('cacoUnknownUser', ['UnknownUserLoader', function(U
 						{
 							scope.isLoadComplete = true;
 							scope.tuple = userTuple;
+							// Since this is used just to show a short summary of the user, we also want to truncate their description (the full user.html page will show the full description).
+							scope.tuple.description = UTILS_truncateDescription(scope.tuple.description);
 						}
 						else
 						{

@@ -81,7 +81,7 @@ function oldHashRemoved($scope, key)
 }
 </script>
 
-	<title>Cacophony - Static Index</title>
+	<title>Cacophony - Index</title>
 </head>
 <body ng-controller="AppController">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -115,6 +115,9 @@ function oldHashRemoved($scope, key)
 		</div>
 		<div class="col-md-9">
 			<caco-post ng-repeat="post in posts" post-tuple="post"></caco-post>
+			<div ng-show="0 === posts.length">
+				No posts have been made or observed.
+			</div>
 			<button class="btn btn-success" ng-click="loadMoreEntries()" ng-disabled="!allowScrollBack">Load More</button><br />
 		</div>
 	</div>

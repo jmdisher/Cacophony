@@ -214,10 +214,20 @@ function xsrfLoaded($scope)
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>
 				<button class="btn btn-danger" ng-show="null !== socket" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
 			</div>
-			<div class="row card card-body">
-				New channel key name:  <input type="text" class="form-control" ng-model="newChannel.keyName" ng-disabled="newChannel.isPosting"></input>
-				<button class="btn btn-sm btn-danger" ng-disabled="newChannel.isPosting" ng-click="createNewChannel()">Create Channel</button><br/>
+			
+			<hr />
+			<h3>Background actvity on this server:</h3>
+			<div class="row card card-body" ng-repeat="state in states">
+				<span class="badge rounded-pill text-bg-success">Running</span>
+				{{state.description}}
 			</div>
+			<div ng-show="0 === states.length">
+				There are no background operations currently running.<br />
+				Background operations include things like publications of a home user's root node to IPNS or refreshing the content of a <a href="following.html">followee</a>.<br />
+			</div>
+			
+			<hr />
+			<h3>Home users on this server:</h3>
 			<div class="row" ng-repeat="userInfo in homeUserDescriptions">
 				<div class="card" ng-show="!inEditMode">
 					<h5 class="card-header">{{userInfo.name}}</h5>
@@ -238,9 +248,14 @@ function xsrfLoaded($scope)
 					</div>
 				</div>
 			</div>
-			<div class="row card card-body" ng-repeat="state in states">
-				<span class="badge rounded-pill text-bg-success">Running</span>
-				{{state.description}}
+			<div ng-show="0 === homeUserDescriptions.length">
+				There are no home users on this node.<br />
+				Home users are the users which live on this server (their keys are on this IPFS node) and can publish content here.<br />
+				Note that you don't need to create a home user in order to follow users, favourite posts, or navigate data on Cacophony.  You will only need a home user to post new content, including replies.<br />
+			</div>
+			<div class="input-group mb-3">
+				<button type="button" class="btn btn-sm btn-danger" ng-disabled="newChannel.isPosting" ng-click="createNewChannel()">Create new home user channel with key name</button>
+				<input type="text" class="form-control" ng-model="newChannel.keyName" ng-disabled="newChannel.isPosting" aria-label="Key name">
 			</div>
 		</div>
 	</div>

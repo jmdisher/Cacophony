@@ -18,6 +18,7 @@ GLOBAL_Application.controller('AppController', function($scope)
 {
 	$scope.unknownUserKey = "";
 	$scope.selectedUserKey = null;
+	$scope.publicKey = null;
 	
 	$scope.checkUnknownUser = function()
 	{
@@ -70,12 +71,6 @@ function xsrfLoaded($scope)
 			publicKeyLoaded($scope, publicKey);
 		}
 		$scope.isSelectedUser = ($scope.publicKey === publicKey);
-	}
-	
-	// If there was a key arg, we want to load it as the key.
-	if (keyArg !== undefined)
-	{
-		publicKeyLoaded($scope, keyArg);
 	}
 	$scope.$apply();
 }
@@ -143,21 +138,37 @@ function addKeyToList(list, key, onPopulate)
 {
 	let placeholder = {
 		"publicKey": key,
-		"name": ("Loading " + key + "..."),
+		"name": "Loading...",
 		"description": "Pending...",
 		"userPicUrl": null,
 		"isDeleting": false,
 	};
 	let nextIndex = list.push(placeholder);
 	GLOBAL_UnknownUserLoader.loadTuple(key).then(elt => {
-		if (undefined !== elt)
+		// This returns null if we don't find the user.
+		if (null !== elt)
 		{
+			// Since this is used just to show a short summary of the user, we also want to truncate their description (the full user.html page will show the full description).
+			let description = UTILS_truncateDescription(elt["description"]);
 			// We can't update the placeholder since the $apply() won't see nested updates so replace this.
 			let object = {
 				"publicKey": key,
 				"name": elt["name"],
-				"description": elt["description"],
+				"description": description,
 				"userPicUrl": elt["userPicUrl"],
+				"isDeleting": placeholder["isDeleting"],
+			};
+			list[nextIndex - 1] = object;
+			onPopulate();
+		}
+		else
+		{
+			// We can't update the placeholder since the $apply() won't see nested updates so replace this.
+			let object = {
+				"publicKey": key,
+				"name": "Unknown user",
+				"description": "Failed to load information about this user",
+				"userPicUrl": null,
 				"isDeleting": placeholder["isDeleting"],
 			};
 			list[nextIndex - 1] = object;
@@ -201,12 +212,6 @@ function addKeyToList(list, key, onPopulate)
 			<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
 		</div>
 		<div class="col-md-9" ng-show="null !== publicKey">
-			<div class="input-group mb-3" ng-show="isSelectedUser">
-				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()">Check User</button>
-				<input type="text" class="form-control" ng-model="unknownUserKey" aria-label="User Public Key" aria-describedby="public-key">
-			</div>
-			<caco-unknown-user ng-show="null !== selectedUserKey" public-key="selectedUserKey" success-name="Start Recommending User" on-success-key="startRecommending"></caco-unknown-user>
-			
 			<h3>Users Recommmended by <a ng-href="user.html?publicKey={{publicKey}}">{{thisUserName}}</a></h3>
 			<div ng-repeat="user in recommended" class="card">
 				<h5 class="card-header"><a href="user.html?publicKey={{user.publicKey}}">{{user.name}}</a></h5>
@@ -217,16 +222,25 @@ function addKeyToList(list, key, onPopulate)
 					<div class="col-md-8">
 						Public Key: <strong>{{user.publicKey}}</strong><br />
 						{{user.description}}<br />
-						<div class="btn-group">
+						<div class="btn-group" ng-show="isSelectedUser">
 							<button class="btn btn-sm btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" ng-disabled="user.isDeleting">Stop Recommending User</button>
 							<ul class="dropdown-menu"><li><a class="dropdown-item" ng-click="stopRecommending(user)">Confirm</a></li></ul>
 						</div><br />
 					</div>
 				</div>
 			</div>
+			<div ng-show="0 === recommended.length">
+				Not recommending any users.
+			</div>
+			
+			<div class="input-group mb-3" ng-show="isSelectedUser">
+				<button type="button" class="btn btn-danger" ng-click="checkUnknownUser()">Check user by public key</button>
+				<input type="text" class="form-control" ng-model="unknownUserKey" aria-label="User Public Key" aria-describedby="public-key">
+			</div>
+			<caco-unknown-user ng-show="null !== selectedUserKey" public-key="selectedUserKey" success-name="Start Recommending User" on-success-key="startRecommending"></caco-unknown-user>
 		</div>
 		<div class="col-md-9" ng-show="null === publicKey">
-			<strong>No home user selected.</strong>
+			<strong>No user selected.</strong>
 		</div>
 	</div>
 </div>
