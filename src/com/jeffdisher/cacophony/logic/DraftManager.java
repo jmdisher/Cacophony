@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.cacophony.commands.ElementSubCommand;
-import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.data.local.v4.Draft;
 import com.jeffdisher.cacophony.data.local.v4.SizedElement;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -113,17 +111,18 @@ public class DraftManager
 	}
 
 	/**
-	 * Returns the ready-to-run command to publish the draft.  This operation is read-only and doesn't change the draft.
-	 * This may be removed/changed in the future as it is oddly specific to this one application, but avoids adding lots
-	 * of other information to the draft interfaces in order to implement this externally.
+	 * Populates the given IPublishBuilder with the information about attachments and other content required to publish
+	 * the draft to the channel.
+	 * This operation is read-only and doesn't change the draft.
 	 * 
+	 * @param builder The publish command builder.
 	 * @param id The draft ID.
 	 * @param shouldPublishVideo True if we should publish video.
 	 * @param shouldPublishAudio True if we should publish audio.
-	 * @return The command which can be run to publish the draft.
 	 * @throws FileNotFoundException The draft is unknown.
 	 */
-	public synchronized PublishCommand prepareToPublishDraft(int id
+	public synchronized void prepareToPublishDraft(IPublishBuilder builder
+			, int id
 			, boolean shouldPublishVideo
 			, boolean shouldPublishAudio
 	) throws FileNotFoundException
@@ -149,6 +148,10 @@ public class DraftManager
 				video = draft.originalVideo();
 				videoFile = wrapper.existingOriginalVideoFile();
 			}
+			if (null != video)
+			{
+				builder.attach(video.mime(), videoFile, video.height(), video.width());
+			}
 		}
 		SizedElement audio = null;
 		File audioFile = null;
@@ -156,29 +159,10 @@ public class DraftManager
 		{
 			audio = draft.audio();
 			audioFile = wrapper.existingAudioFile();
-		}
-		int elementCount = 0;
-		if (null != video)
-		{
-			elementCount += 1;
-		}
-		if (null != audio)
-		{
-			elementCount += 1;
-		}
-		ElementSubCommand[] subElements = new ElementSubCommand[elementCount];
-		int index = 0;
-		if (null != video)
-		{
-			Assert.assertTrue(null != videoFile);
-			subElements[index] = new ElementSubCommand(video.mime(), videoFile, video.height(), video.width());
-			index += 1;
-		}
-		if (null != audio)
-		{
-			Assert.assertTrue(null != audioFile);
-			subElements[index] = new ElementSubCommand(audio.mime(), audioFile, audio.height(), audio.width());
-			index += 1;
+			if (null != audio)
+			{
+				builder.attach(audio.mime(), audioFile, audio.height(), audio.width());
+			}
 		}
 		
 		String name = draft.title();
@@ -194,7 +178,7 @@ public class DraftManager
 				? wrapper.existingThumbnailFile()
 				: null
 		;
-		return new PublishCommand(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailFile, subElements);
+		builder.complete(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailFile);
 	}
 
 
@@ -207,5 +191,36 @@ public class DraftManager
 			DraftWrapper wrapper = new DraftWrapper(dir);
 			container.put(id, wrapper);
 		}
+	}
+
+
+	/**
+	 * The interface used for the DraftManager to request that a publish command be created for one of its drafts.
+	 * The purpose of this is that this relatively low-level class doesn't know directly about the much higher-level
+	 * Command system.
+	 */
+	public static interface IPublishBuilder
+	{
+		/**
+		 * Attaches a file to the publish.
+		 * 
+		 * @param mime MIME type of the data.
+		 * @param filePath The location of the file.
+		 * @param height The height of the attachment (0 if not relevant).
+		 * @param width The width of the attachment (0 if not relevant).
+		 */
+		void attach(String mime, File filePath, int height, int width);
+		/**
+		 * Called to finalize the creation of the publish command.  This is expected to only be called once and only
+		 * after any attachments are provided.
+		 * 
+		 * @param name The name of the new post.
+		 * @param description The description of the new post.
+		 * @param discussionUrl A reference to an external discussion (can be null).
+		 * @param replyTo Another post CID to which this one is a reply (can be null).
+		 * @param thumbnailMime The MIME of the thumbnail (null if not present).
+		 * @param thumbnailPath The location of the thumbnail image (null if not present).
+		 */
+		void complete(String name, String description, String discussionUrl, IpfsFile replyTo, String thumbnailMime, File thumbnailPath);
 	}
 }

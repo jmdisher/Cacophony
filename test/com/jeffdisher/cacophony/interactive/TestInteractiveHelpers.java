@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -21,6 +22,7 @@ import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
+import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -248,7 +250,9 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishCommand publish = draftManager.prepareToPublishDraft(id, true, false);
+			PublishBuilder builder = new PublishBuilder();
+			draftManager.prepareToPublishDraft(builder, id, true, false);
+			PublishCommand publish = builder.getCommand();
 			OnePost result = publish.runInContext(context);
 			access.beginIndexPublish(result.getIndexToPublish());
 		}
@@ -287,7 +291,9 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishCommand publish = draftManager.prepareToPublishDraft(id, true, false);
+			PublishBuilder builder = new PublishBuilder();
+			draftManager.prepareToPublishDraft(builder, id, true, false);
+			PublishCommand publish = builder.getCommand();
 			OnePost result = publish.runInContext(context);
 			access.beginIndexPublish(result.getIndexToPublish());
 		}
@@ -334,7 +340,9 @@ public class TestInteractiveHelpers
 		// Publish the draft WITHOUT uploading the video attachment.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishCommand publish = draftManager.prepareToPublishDraft(id, false, false);
+			PublishBuilder builder = new PublishBuilder();
+			draftManager.prepareToPublishDraft(builder, id, false, false);
+			PublishCommand publish = builder.getCommand();
 			OnePost result = publish.runInContext(context);
 			access.beginIndexPublish(result.getIndexToPublish());
 		}
@@ -406,7 +414,9 @@ public class TestInteractiveHelpers
 		// Publish the draft.
 		try (IWritingAccess access = StandardAccess.writeAccess(context))
 		{
-			PublishCommand publish = draftManager.prepareToPublishDraft(id, false, true);
+			PublishBuilder builder = new PublishBuilder();
+			draftManager.prepareToPublishDraft(builder, id, false, true);
+			PublishCommand publish = builder.getCommand();
 			OnePost result = publish.runInContext(context);
 			access.beginIndexPublish(result.getIndexToPublish());
 		}
@@ -438,5 +448,30 @@ public class TestInteractiveHelpers
 	{
 		File directory = FOLDER.newFolder();
 		return new RealConfigFileSystem(directory);
+	}
+
+
+	private static class PublishBuilder implements DraftManager.IPublishBuilder
+	{
+		private final List<ElementSubCommand> _subCommands = new ArrayList<>();
+		private PublishCommand _finishedCommand;
+		
+		@Override
+		public void attach(String mime, File filePath, int height, int width)
+		{
+			_subCommands.add(new ElementSubCommand(mime, filePath, height, width));
+		}
+		@Override
+		public void complete(String name, String description, String discussionUrl, IpfsFile replyTo, String thumbnailMime, File thumbnailPath)
+		{
+			Assert.assertTrue(null == _finishedCommand);
+			ElementSubCommand[] attachments = _subCommands.toArray((int size) -> new ElementSubCommand[size]);
+			_finishedCommand = new PublishCommand(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailPath, attachments);
+		}
+		public PublishCommand getCommand()
+		{
+			Assert.assertTrue(null != _finishedCommand);
+			return _finishedCommand;
+		}
 	}
 }

@@ -1,11 +1,16 @@
 package com.jeffdisher.cacophony.interactive;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.jeffdisher.cacophony.commands.ElementSubCommand;
 import com.jeffdisher.cacophony.commands.PublishCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
+import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;
 
@@ -47,11 +52,13 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 			// First, we will use the draft manager to construct the publish command.
 			draftId = (Integer)path[3];
 			PublishType type = PublishType.valueOf((String)path[4]);
-			command = _draftManager.prepareToPublishDraft(draftId
+			PublishBuilder builder = new PublishBuilder();
+			_draftManager.prepareToPublishDraft(builder
+					, draftId
 					, (PublishType.VIDEO == type)
 					, (PublishType.AUDIO == type)
 			);
-			
+			command = builder.getCommand();
 		}
 		catch (NumberFormatException e)
 		{
@@ -103,5 +110,30 @@ public class POST_Raw_DraftPublish implements ValidatedEntryPoints.POST_Raw
 		VIDEO,
 		TEXT_ONLY,
 		AUDIO,
+	}
+
+
+	private static class PublishBuilder implements DraftManager.IPublishBuilder
+	{
+		private final List<ElementSubCommand> _subCommands = new ArrayList<>();
+		private PublishCommand _finishedCommand;
+		
+		@Override
+		public void attach(String mime, File filePath, int height, int width)
+		{
+			_subCommands.add(new ElementSubCommand(mime, filePath, height, width));
+		}
+		@Override
+		public void complete(String name, String description, String discussionUrl, IpfsFile replyTo, String thumbnailMime, File thumbnailPath)
+		{
+			Assert.assertTrue(null == _finishedCommand);
+			ElementSubCommand[] attachments = _subCommands.toArray((int size) -> new ElementSubCommand[size]);
+			_finishedCommand = new PublishCommand(name, description, discussionUrl, replyTo, thumbnailMime, thumbnailPath, attachments);
+		}
+		public PublishCommand getCommand()
+		{
+			Assert.assertTrue(null != _finishedCommand);
+			return _finishedCommand;
+		}
 	}
 }
