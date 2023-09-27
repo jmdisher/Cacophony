@@ -5,4 +5,4 @@ build/
 dist*
 Cacophony.jar
 
-src/com/jeffdisher/cacophony/Version.java
+src/com/jeffdisher/cacophony/utils/Version.java

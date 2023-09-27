@@ -7,7 +7,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
+import com.jeffdisher.cacophony.utils.Version;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,9 +37,8 @@ public class GET_ServerStatus implements ValidatedEntryPoints.GET
 	{
 		JsonObject serverStatus = new JsonObject();
 		
-		JsonObject dataVersion = JsonGenerationHelpers.dataVersion();
-		serverStatus.add("hash", dataVersion.get("hash"));
-		serverStatus.add("version", dataVersion.get("version"));
+		serverStatus.add("hash", Version.HASH);
+		serverStatus.add("version", Version.TAG);
 		long explicitCacheBytes = _context.explicitCacheManager.getExplicitCacheSize();
 		serverStatus.add("explicitCacheBytes", explicitCacheBytes);
 		try (IReadingAccess access = StandardAccess.readAccess(_context))

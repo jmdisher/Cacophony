@@ -53,13 +53,6 @@ public class TestJsonGenerationHelpers
 	private static final String KEY_NAME = "keyName";
 
 	@Test
-	public void testDataVersion() throws Throwable
-	{
-		JsonObject data = JsonGenerationHelpers.dataVersion();
-		Assert.assertTrue(data.toString().startsWith("{\"hash\":\""));
-	}
-
-	@Test
 	public void testPrefs() throws Throwable
 	{
 		PrefsData prefs = PrefsData.defaultPrefs();

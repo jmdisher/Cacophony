@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.logic;
 
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.Version;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
@@ -11,11 +10,6 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public class JsonGenerationHelpers
 {
-	public static JsonObject dataVersion()
-	{
-		return _dataVersion();
-	}
-
 	public static JsonObject prefs(PrefsData prefs)
 	{
 		JsonObject dataPrefs = new JsonObject();
@@ -41,14 +35,5 @@ public class JsonGenerationHelpers
 		thisUser.set("website", websiteOrNull);
 		thisUser.set("feature", (null != featureOrNull) ? featureOrNull.toSafeString() : null);
 		return thisUser;
-	}
-
-
-	private static JsonObject _dataVersion()
-	{
-		JsonObject dataVersion = new JsonObject();
-		dataVersion.set("hash", Version.HASH);
-		dataVersion.set("version", Version.TAG);
-		return dataVersion;
 	}
 }
