@@ -3,7 +3,7 @@ package com.jeffdisher.cacophony.interactive;
 import org.eclipse.jetty.websocket.api.Session;
 
 import com.eclipsesource.json.Json;
-import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
+import com.jeffdisher.cacophony.logic.HandoffConnector;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -11,7 +11,7 @@ import com.jeffdisher.cacophony.utils.Assert;
  * The callbacks we use for video processing are byte sizes keyed by information we are reporting to the front-end, as
  * defined in VideoProcessContainer.
  */
-public class VideoProcessorCallbackHandler implements IHandoffListener<String, Long>
+public class VideoProcessorCallbackHandler implements HandoffConnector.IHandoffListener<String, Long>
 {
 	private final Session _session;
 

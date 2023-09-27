@@ -1,6 +1,5 @@
 package com.jeffdisher.cacophony.projection;
 
-import com.jeffdisher.cacophony.projection.ExplicitCacheData.UserInfo;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -19,7 +18,7 @@ public interface IExplicitCacheReading
 	 * @param publicKey The user's public key.
 	 * @return The UserInfo for the user (null if not found).
 	 */
-	UserInfo getUserInfo(IpfsKey publicKey);
+	ExplicitCacheData.UserInfo getUserInfo(IpfsKey publicKey);
 
 	/**
 	 * Reads the CachedRecordInfo of the given StreamRecord's recordCid.  On success, marks the record as most recently used.

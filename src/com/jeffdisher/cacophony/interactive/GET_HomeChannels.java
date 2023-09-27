@@ -3,9 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.commands.ListChannelsCommand;
-import com.jeffdisher.cacophony.commands.ListChannelsCommand.ChannelList;
-import com.jeffdisher.cacophony.commands.ListChannelsCommand.OneChannel;
-import com.jeffdisher.cacophony.interactive.InteractiveHelpers.SuccessfulCommand;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +32,7 @@ public class GET_HomeChannels implements ValidatedEntryPoints.GET
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
 		ListChannelsCommand command = new ListChannelsCommand();
-		SuccessfulCommand<ChannelList> result = InteractiveHelpers.runCommandAndHandleErrors(response
+		InteractiveHelpers.SuccessfulCommand<ListChannelsCommand.ChannelList> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, null
 				, command
@@ -53,7 +50,7 @@ public class GET_HomeChannels implements ValidatedEntryPoints.GET
 		}
 	}
 
-	private JsonObject _asJson(OneChannel channel)
+	private JsonObject _asJson(ListChannelsCommand.OneChannel channel)
 	{
 		JsonObject object = new JsonObject();
 		object.add("keyName", channel.keyName());

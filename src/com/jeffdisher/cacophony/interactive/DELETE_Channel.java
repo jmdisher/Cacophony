@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.interactive;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.DeleteChannelCommand;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.interactive.InteractiveHelpers.SuccessfulCommand;
 import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -36,7 +35,7 @@ public class DELETE_Channel implements ValidatedEntryPoints.DELETE
 		IpfsKey homePublicKey = (IpfsKey)path[3];
 		
 		DeleteChannelCommand command = new DeleteChannelCommand();
-		SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response
+		InteractiveHelpers.SuccessfulCommand<None> result = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, homePublicKey
 				, command

@@ -12,7 +12,6 @@ import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
-import com.jeffdisher.cacophony.data.global.AbstractRecord.Leaf;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.projection.FollowingCacheElement;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -343,7 +342,7 @@ public class FolloweeRefreshLogic
 		if (null != leafHash)
 		{
 			// We need to find out if the leaf is audio or video, so we can correctly report it.
-			for (Leaf leaf : record.getVideoExtension())
+			for (AbstractRecord.Leaf leaf : record.getVideoExtension())
 			{
 				if (leafHash.equals(leaf.cid()))
 				{

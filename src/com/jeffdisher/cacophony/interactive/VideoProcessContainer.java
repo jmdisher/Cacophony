@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
-import com.jeffdisher.cacophony.logic.HandoffConnector.IHandoffListener;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
@@ -57,7 +56,7 @@ public class VideoProcessContainer
 		return didStart;
 	}
 
-	public synchronized boolean attachListener(IHandoffListener<String, Long> listener, int draftId)
+	public synchronized boolean attachListener(HandoffConnector.IHandoffListener<String, Long> listener, int draftId)
 	{
 		boolean didConnect = false;
 		if ((null != _processor) && (_draftId == draftId))
@@ -68,7 +67,7 @@ public class VideoProcessContainer
 		return didConnect;
 	}
 
-	public synchronized void detachListener(IHandoffListener<String, Long> listener)
+	public synchronized void detachListener(HandoffConnector.IHandoffListener<String, Long> listener)
 	{
 		_connector.unregisterListener(listener);
 	}
