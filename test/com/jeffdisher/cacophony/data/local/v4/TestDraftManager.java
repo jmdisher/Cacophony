@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.io.File;
 import java.io.OutputStream;
@@ -11,8 +11,6 @@ import org.junit.rules.TemporaryFolder;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.data.local.v4.Draft;
-import com.jeffdisher.cacophony.data.local.v4.SizedElement;
 import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
 

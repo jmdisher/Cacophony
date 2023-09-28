@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.caches.IEntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.ILocalRecordCache;
 import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.logic.DraftManager;
+import com.jeffdisher.cacophony.data.local.v4.DraftManager;
 import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.IConnection;

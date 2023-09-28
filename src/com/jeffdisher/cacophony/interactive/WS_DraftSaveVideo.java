@@ -6,8 +6,8 @@ import java.io.OutputStream;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
-import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.IDraftWrapper;
+import com.jeffdisher.cacophony.data.local.v4.DraftManager;
+import com.jeffdisher.cacophony.data.local.v4.IDraftWrapper;
 import com.jeffdisher.cacophony.utils.Assert;
 
 

@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,8 +9,6 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import com.jeffdisher.cacophony.data.local.v4.Draft;
 
 
 public class TestDraftWrapper

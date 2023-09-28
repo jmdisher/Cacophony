@@ -7,10 +7,10 @@ import java.io.OutputStream;
 import java.util.function.Consumer;
 
 import com.jeffdisher.cacophony.data.local.v4.Draft;
+import com.jeffdisher.cacophony.data.local.v4.DraftManager;
+import com.jeffdisher.cacophony.data.local.v4.IDraftWrapper;
 import com.jeffdisher.cacophony.data.local.v4.SizedElement;
-import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.ExternalStreamProcessor;
-import com.jeffdisher.cacophony.logic.IDraftWrapper;
 
 
 /**

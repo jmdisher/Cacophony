@@ -1,10 +1,8 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.data.local.v4;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Function;
-
-import com.jeffdisher.cacophony.data.local.v4.Draft;
 
 
 /**
