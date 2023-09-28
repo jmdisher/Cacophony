@@ -10,8 +10,8 @@ import java.util.PriorityQueue;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.cacophony.logic.HandoffConnector;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.types.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;

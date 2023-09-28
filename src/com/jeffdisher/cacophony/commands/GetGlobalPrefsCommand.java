@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.commands;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.projection.PrefsData;
+import com.jeffdisher.cacophony.types.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
 

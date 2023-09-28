@@ -3,8 +3,8 @@ package com.jeffdisher.cacophony.scheduler;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
+import com.jeffdisher.cacophony.types.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;

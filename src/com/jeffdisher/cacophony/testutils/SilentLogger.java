@@ -1,6 +1,6 @@
 package com.jeffdisher.cacophony.testutils;
 
-import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.types.ILogger;
 
 
 public class SilentLogger implements ILogger

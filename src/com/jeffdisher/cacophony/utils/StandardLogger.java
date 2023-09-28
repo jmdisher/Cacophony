@@ -1,6 +1,8 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.utils;
 
 import java.io.PrintStream;
+
+import com.jeffdisher.cacophony.types.ILogger;
 
 
 public class StandardLogger implements ILogger

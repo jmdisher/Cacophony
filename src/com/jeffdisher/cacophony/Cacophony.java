@@ -12,21 +12,21 @@ import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
-import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
-import com.jeffdisher.cacophony.logic.IConnection;
 import com.jeffdisher.cacophony.types.CacophonyException;
+import com.jeffdisher.cacophony.types.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Pair;
+import com.jeffdisher.cacophony.utils.StandardLogger;
 import com.jeffdisher.cacophony.utils.Version;
 
 

@@ -8,7 +8,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.jeffdisher.cacophony.commands.Context;
-import com.jeffdisher.cacophony.logic.ILogger;
+import com.jeffdisher.cacophony.types.ILogger;
 import com.jeffdisher.cacophony.utils.Assert;
 
 

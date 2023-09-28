@@ -20,7 +20,6 @@ import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.DraftManager;
-import com.jeffdisher.cacophony.logic.StandardLogger;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.testutils.MemoryConfigFileSystem;
 import com.jeffdisher.cacophony.testutils.MockKeys;
@@ -31,6 +30,7 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.utils.SizeLimits;
+import com.jeffdisher.cacophony.utils.StandardLogger;
 
 
 public class TestStartFollowingCommand

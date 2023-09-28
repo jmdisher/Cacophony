@@ -1,10 +1,6 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.types;
 
 import java.io.InputStream;
-
-import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.types.IpfsFile;
-import com.jeffdisher.cacophony.types.IpfsKey;
 
 
 /**
@@ -12,8 +8,23 @@ import com.jeffdisher.cacophony.types.IpfsKey;
  */
 public interface IConnection
 {
+	/**
+	 * Writes data from the given dataStream to the local IPFS node, returning the CID created.
+	 * Note that the implementation does NOT close the dataStream.
+	 * 
+	 * @param dataStream The data stream to write to the local node.  NOT closed by the caller.
+	 * @return The CID of the written data.
+	 * @throws IpfsConnectionException If an error was encountered when attempting the upload.
+	 */
 	IpfsFile storeData(InputStream dataStream) throws IpfsConnectionException;
 
+	/**
+	 * Loads the data from the local node with the given file CID.
+	 * 
+	 * @param file The CID to read.
+	 * @return All the data from the given file.
+	 * @throws IpfsConnectionException If an error was encountered when attempting the load.
+	 */
 	byte[] loadData(IpfsFile file) throws IpfsConnectionException;
 
 	/**
@@ -36,6 +47,14 @@ public interface IConnection
 	 */
 	IpfsFile resolve(IpfsKey key) throws IpfsConnectionException;
 
+	/**
+	 * Looks up the size of the given CID.
+	 * 
+	 * @param cid The CID to check.
+	 * @return The size of the contents of the CID, in bytes.
+	 * @throws IpfsConnectionException If an error was encountered when attempting to read the data (usually couldn't be
+	 * found).
+	 */
 	long getSizeInBytes(IpfsFile cid) throws IpfsConnectionException;
 
 	/**

@@ -10,9 +10,9 @@ import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.logic.DraftManager;
 import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
-import com.jeffdisher.cacophony.logic.IConnection;
-import com.jeffdisher.cacophony.logic.ILogger;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IConnection;
+import com.jeffdisher.cacophony.types.ILogger;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 
