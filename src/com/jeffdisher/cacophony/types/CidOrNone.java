@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.types;
 
-import com.jeffdisher.cacophony.utils.Assert;
-
 
 /**
  * A wrapper over IpfsFile in cases where it has a "null-like" value (generally meaning "clear the field").  This is for
@@ -55,7 +53,6 @@ public class CidOrNone
 
 	private CidOrNone(IpfsFile cid)
 	{
-		Assert.assertTrue(null != cid);
 		this.cid = cid;
 	}
 }

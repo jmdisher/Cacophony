@@ -1,7 +1,5 @@
 package com.jeffdisher.cacophony.types;
 
-import com.jeffdisher.cacophony.utils.Assert;
-
 import io.ipfs.multihash.Multihash;
 
 
@@ -16,7 +14,6 @@ public class IpfsFile
 	 */
 	public static IpfsFile fromIpfsCid(String base58Cid)
 	{
-		Assert.assertTrue(null != base58Cid);
 		IpfsFile file = null;
 		try
 		{
@@ -34,7 +31,6 @@ public class IpfsFile
 
 	public IpfsFile(Multihash cid)
 	{
-		Assert.assertTrue(null != cid);
 		_cid = cid;
 	}
 
