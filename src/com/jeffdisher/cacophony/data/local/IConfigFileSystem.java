@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.data.local;
 
 import java.io.Closeable;
 import java.io.File;

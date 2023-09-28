@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.logic;
+package com.jeffdisher.cacophony.data.local;
 
 import java.io.File;
 import java.io.FileInputStream;

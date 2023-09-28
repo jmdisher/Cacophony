@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.cacophony.logic.IConfigFileSystem;
+import com.jeffdisher.cacophony.data.local.IConfigFileSystem;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
