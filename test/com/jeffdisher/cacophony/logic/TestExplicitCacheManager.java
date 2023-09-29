@@ -37,7 +37,7 @@ public class TestExplicitCacheManager
 		MockNodeHelpers.createAndPublishEmptyChannelWithDescription(node, MockKeys.K0, "user", "pic".getBytes());
 		
 		// Test that we can read the user.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		ExplicitCacheData.UserInfo info = manager.loadUserInfo(MockKeys.K0).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.userPicCid());
 		// While we pin all for elements (index, recommendations, records, description, picture), we don't actually load the picture.
@@ -60,7 +60,7 @@ public class TestExplicitCacheManager
 		
 		// Test that we fail to find the user.
 		int startPin = node.pinCalls;
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		boolean didLoad;
 		try
 		{
@@ -93,7 +93,7 @@ public class TestExplicitCacheManager
 		IpfsFile cid = MockNodeHelpers.storeStreamRecord(node, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
 		
 		// Test that we can read the post.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		CachedRecordInfo info = manager.loadRecord(cid, true).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), info.thumbnailCid());
 		
@@ -110,7 +110,7 @@ public class TestExplicitCacheManager
 		
 		// Test that we fail to read the post.
 		int startPin = node.pinCalls;
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		boolean didLoad;
 		try
 		{
@@ -138,7 +138,7 @@ public class TestExplicitCacheManager
 		MockSingleNode node = new MockSingleNode(new MockSwarm());
 		MultiThreadedScheduler network = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, network);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		// Define a post.
 		IpfsFile cid = MockNodeHelpers.storeStreamRecord(node, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
@@ -180,7 +180,7 @@ public class TestExplicitCacheManager
 		IpfsFile cid = MockNodeHelpers.storeStreamRecord(upstream, MockKeys.K0, "title", "pic".getBytes(), null, 0, null);
 		
 		// Test that we can read the user and post in an async manager.
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, true);
 		ExplicitCacheData.UserInfo user = manager.loadUserInfo(MockKeys.K0).get();
 		Assert.assertEquals(MockSingleNode.generateHash("pic".getBytes()), user.userPicCid());
 		CachedRecordInfo post = manager.loadRecord(cid, true).get();
@@ -205,7 +205,7 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.pinCalls;
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		boolean didLoad;
 		try
 		{
@@ -245,7 +245,7 @@ public class TestExplicitCacheManager
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
 		
 		int startPin = node.pinCalls;
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		boolean didLoad;
 		try
 		{
@@ -279,7 +279,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
@@ -306,7 +306,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
@@ -333,7 +333,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		CachedRecordInfo record = manager.loadRecord(cid, true).get();
 		Assert.assertNotNull(record);
@@ -363,7 +363,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		int startPin = node.getStoredFileSet().size();
 		boolean didFail;
@@ -399,7 +399,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		Assert.assertNull(manager.getExistingRecord(cid));
 		CachedRecordInfo record = manager.loadRecord(cid, true).get();
@@ -423,7 +423,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		Thread[] threads = new Thread[10];
 		for (int i = 0; i < threads.length; ++i)
@@ -491,7 +491,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		Thread[] threads = new Thread[10];
 		for (int i = 0; i < threads.length; ++i)
@@ -549,7 +549,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, false);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, false);
 		
 		// Populate the cache.
 		CachedRecordInfo record = manager.loadRecord(cid, true).get();
@@ -588,7 +588,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, true);
 		
 		// We want to install a barrier in the upstream node, waiting on us and the single scheduler thread, so we can queue up multiple requests and see them de-duplicate.
 		CyclicBarrier barrier = new CyclicBarrier(2);
@@ -669,7 +669,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, true);
 		
 		// We do the initial look-up to prime the cache.
 		ExplicitCacheData.UserInfo startInfo = manager.loadUserInfo(MockKeys.K0).get();
@@ -730,7 +730,7 @@ public class TestExplicitCacheManager
 		
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		Context context = MockNodeHelpers.createWallClockContext(node, scheduler);
-		ExplicitCacheManager manager = new ExplicitCacheManager(context.accessTuple, context.logger, context.currentTimeMillisGenerator, true);
+		ExplicitCacheManager manager = new ExplicitCacheManager(context.sharedDataModel, context.basicConnection, context.scheduler, context.logger, context.currentTimeMillisGenerator, true);
 		
 		// Make one request to verify that it thinks there is more data.
 		CachedRecordInfo start = manager.loadRecord(cid0, false).get();

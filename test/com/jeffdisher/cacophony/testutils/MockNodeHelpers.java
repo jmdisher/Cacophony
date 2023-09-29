@@ -41,12 +41,13 @@ public class MockNodeHelpers
 		{
 			throw Assert.unexpected(e);
 		}
-		Context.AccessTuple accessTuple = new Context.AccessTuple(model, connection, network);
 		LongSupplier currentTimeMillisGenerator = () -> System.currentTimeMillis();
 		// WARNING:  This is not shut down so it MUST be synchronous.
-		ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(accessTuple, null, currentTimeMillisGenerator, false);
+		ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(model, connection, network, null, currentTimeMillisGenerator, false);
 		Context context = new Context(null
-				, accessTuple
+				, model
+				, connection
+				, network
 				, currentTimeMillisGenerator
 				, null
 				, null

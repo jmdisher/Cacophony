@@ -74,7 +74,9 @@ public class TestJsonGenerationHelpers
 		
 		IpfsFile indexFile = null;
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, new Context.AccessTuple(model, remoteConnection, scheduler)
+				, model
+				, remoteConnection
+				, scheduler
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -85,7 +87,7 @@ public class TestJsonGenerationHelpers
 				, null
 				, MockKeys.K1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, context.accessTuple.sharedDataModel(), KEY_NAME, MockKeys.K1))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.basicConnection, context.scheduler, context.logger, context.sharedDataModel, KEY_NAME, MockKeys.K1))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
@@ -122,7 +124,9 @@ public class TestJsonGenerationHelpers
 		IpfsFile indexFile = null;
 		IpfsFile followeeRecordFile = null;
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, new Context.AccessTuple(model, remoteConnection, scheduler)
+				, model
+				, remoteConnection
+				, scheduler
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -133,7 +137,7 @@ public class TestJsonGenerationHelpers
 				, null
 				, MockKeys.K1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, context.accessTuple.sharedDataModel(), KEY_NAME, MockKeys.K1))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.basicConnection, context.scheduler, context.logger, context.sharedDataModel, KEY_NAME, MockKeys.K1))
 		{
 			recordFile = _storeEntry(access, "entry1", MockKeys.K1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);

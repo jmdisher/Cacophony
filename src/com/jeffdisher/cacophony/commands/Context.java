@@ -35,7 +35,7 @@ public class Context
 	 */
 	public static IReadingAccess readAccess(Context context)
 	{
-		return StandardAccess.readAccess(context.accessTuple.basicConnection, context.accessTuple.scheduler, context.logger, context.accessTuple.sharedDataModel(), context.getSelectedKey());
+		return StandardAccess.readAccess(context.basicConnection, context.scheduler, context.logger, context.sharedDataModel, context.getSelectedKey());
 	}
 
 	/**
@@ -47,38 +47,14 @@ public class Context
 	 */
 	public static IWritingAccess writeAccess(Context context)
 	{
-		return StandardAccess.writeAccess(context.accessTuple.basicConnection, context.accessTuple.scheduler, context.logger, context.accessTuple.sharedDataModel(), context.getSelectedKey());
-	}
-
-	/**
-	 * Requests read access using the minimal access tuple and no selected key.
-	 * This helper is static since Context shouldn't be acting as though it has behaviour.
-	 * 
-	 * @param accessTuple The minimal access tuple.
-	 * @param logger The logger.
-	 * @return The read access interface.
-	 */
-	public static IReadingAccess readAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
-	{
-		return StandardAccess.readAccess(accessTuple.basicConnection, accessTuple.scheduler, logger, accessTuple.sharedDataModel(), null);
-	}
-
-	/**
-	 * Requests write access using the minimal access tuple and no selected key.
-	 * This helper is static since Context shouldn't be acting as though it has behaviour.
-	 * 
-	 * @param accessTuple The minimal access tuple.
-	 * @param logger The logger.
-	 * @return The write access interface.
-	 */
-	public static IWritingAccess writeAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
-	{
-		return StandardAccess.writeAccess(accessTuple.basicConnection, accessTuple.scheduler, logger, accessTuple.sharedDataModel(), null);
+		return StandardAccess.writeAccess(context.basicConnection, context.scheduler, context.logger, context.sharedDataModel, context.getSelectedKey());
 	}
 
 
 	public final DraftManager sharedDraftManager;
-	public final AccessTuple accessTuple;
+	public final LocalDataModel sharedDataModel;
+	public final IConnection basicConnection;
+	public final INetworkScheduler scheduler;
 	public final LongSupplier currentTimeMillisGenerator;
 	public final ILogger logger;
 	public final URL baseUrl;
@@ -90,7 +66,9 @@ public class Context
 	private IpfsKey _selectedKey;
 
 	public Context(DraftManager sharedDraftManager
-			, AccessTuple accessTuple
+			, LocalDataModel sharedDataModel
+			, IConnection basicConnection
+			, INetworkScheduler scheduler
 			, LongSupplier currentTimeMillisGenerator
 			, ILogger logger
 			, URL baseUrl
@@ -103,7 +81,9 @@ public class Context
 	)
 	{
 		this.sharedDraftManager = sharedDraftManager;
-		this.accessTuple = accessTuple;
+		this.sharedDataModel = sharedDataModel;
+		this.basicConnection = basicConnection;
+		this.scheduler = scheduler;
 		this.currentTimeMillisGenerator = currentTimeMillisGenerator;
 		this.logger = logger;
 		this.baseUrl = baseUrl;
@@ -130,7 +110,9 @@ public class Context
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
 		Context context = new Context(this.sharedDraftManager
-				, this.accessTuple
+				, this.sharedDataModel
+				, this.basicConnection
+				, this.scheduler
 				, this.currentTimeMillisGenerator
 				, this.logger
 				, this.baseUrl
@@ -153,7 +135,9 @@ public class Context
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
 		Context context = new Context(this.sharedDraftManager
-				, this.accessTuple
+				, this.sharedDataModel
+				, this.basicConnection
+				, this.scheduler
 				, this.currentTimeMillisGenerator
 				, this.logger
 				, this.baseUrl
@@ -166,11 +150,4 @@ public class Context
 		);
 		return context;
 	}
-
-
-	/**
-	 * Components required to use StandardAccess (since these are almost exclusively for those cases and never change
-	 * during a run - some other parts of the context change or are replaced in clones).
-	 */
-	public static record AccessTuple(LocalDataModel sharedDataModel, IConnection basicConnection, INetworkScheduler scheduler) {}
 }

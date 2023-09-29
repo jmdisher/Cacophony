@@ -75,7 +75,9 @@ public class MockUserNode
 			throw Assert.unexpected(e);
 		}
 		_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
-				, new Context.AccessTuple(model, _sharedConnection, _lazyScheduler)
+				, model
+				, _sharedConnection
+				, _lazyScheduler
 				, () -> System.currentTimeMillis()
 				, _logger
 				, DataDomain.FAKE_BASE_URL
@@ -122,7 +124,9 @@ public class MockUserNode
 			logger = StandardLogger.topLogger(new PrintStream(captureStream), false);
 			IpfsKey publicKey = defaultContext.getSelectedKey();
 			usedContext = new Context(defaultContext.sharedDraftManager
-					, defaultContext.accessTuple
+					, defaultContext.sharedDataModel
+					, defaultContext.basicConnection
+					, defaultContext.scheduler
 					, defaultContext.currentTimeMillisGenerator
 					, logger
 					, defaultContext.baseUrl
@@ -299,12 +303,13 @@ public class MockUserNode
 				// We don't expect this in the test.
 				throw Assert.unexpected(e);
 			}
-			Context.AccessTuple accessTuple = new Context.AccessTuple(model, _sharedConnection, _lazyScheduler);
 			LongSupplier currentTimeMillisGenerator = () -> System.currentTimeMillis();
 			// WARNING:  This is not shut down so it MUST be synchronous.
-			ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(accessTuple, _logger, currentTimeMillisGenerator, false);
+			ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(model, _sharedConnection, _lazyScheduler, _logger, currentTimeMillisGenerator, false);
 			_lazyContext = new Context(new DraftManager(_fileSystem.getDraftsTopLevelDirectory())
-					, accessTuple
+					, model
+					, _sharedConnection
+					, _lazyScheduler
 					, currentTimeMillisGenerator
 					, _logger
 					, DataDomain.FAKE_BASE_URL

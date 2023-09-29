@@ -75,7 +75,9 @@ public class TestStartFollowingCommand
 		
 		remoteConnection.publish(REMOTE_KEY_NAME, MockKeys.K2, originalRoot);
 		Context context = new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-				, new Context.AccessTuple(localDataModel, sharedConnection, scheduler)
+				, localDataModel
+				, sharedConnection
+				, scheduler
 				, () -> System.currentTimeMillis()
 				, logger
 				, DataDomain.FAKE_BASE_URL
@@ -132,7 +134,9 @@ public class TestStartFollowingCommand
 		try
 		{
 			command.runInContext(new Context(new DraftManager(fileSystem.getDraftsTopLevelDirectory())
-					, new Context.AccessTuple(localDataModel, sharedConnection, scheduler)
+					, localDataModel
+					, sharedConnection
+					, scheduler
 					, () -> System.currentTimeMillis()
 					, logger
 					, DataDomain.FAKE_BASE_URL

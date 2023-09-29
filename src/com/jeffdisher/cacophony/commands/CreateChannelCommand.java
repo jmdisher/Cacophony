@@ -32,7 +32,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		// Before we have a publication key, we can't really configure any of the other communication and data abstractions we need.
 		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + _keyName + "\"");
 		// We are performing a very low-level operation so we need to reach down into the IConnection object.
-		IConnection connection = context.accessTuple.basicConnection();
+		IConnection connection = context.basicConnection;
 		IpfsKey publicKey = connection.getOrCreatePublicKey(_keyName);
 		// This will fail with exception, never null.
 		Assert.assertTrue(null != publicKey);
@@ -41,7 +41,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		AbstractDescription description;
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, context.accessTuple.sharedDataModel(), _keyName, publicKey))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.basicConnection, context.scheduler, context.logger, context.sharedDataModel, _keyName, publicKey))
 		{
 			// Make sure that this isn't something which already exists.
 			for (IReadingAccess.HomeUserTuple tuple : access.readHomeUserData())

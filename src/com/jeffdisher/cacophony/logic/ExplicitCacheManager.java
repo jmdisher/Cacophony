@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.commands.Context;
+import com.jeffdisher.cacophony.access.StandardAccess;
+import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
@@ -20,6 +21,8 @@ import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.scheduler.FuturePin;
 import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureVoid;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
+import com.jeffdisher.cacophony.types.IConnection;
 import com.jeffdisher.cacophony.types.ILogger;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -61,7 +64,9 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class ExplicitCacheManager
 {
-	private final Context.AccessTuple _accessTuple;
+	private final LocalDataModel _sharedDataModel;
+	private final IConnection _basicConnection;
+	private final INetworkScheduler _scheduler;
 	private final ILogger _logger;
 	private final LongSupplier _currentTimeMillisSupplier;
 	private final Thread _background;
@@ -75,14 +80,20 @@ public class ExplicitCacheManager
 	private boolean _isBackgroundRunning;
 
 	/**
-	 * Creates the receiver on top of the given context, using it to access the network and explicit storage.
+	 * Creates the manager on top of the given components..
 	 * 
-	 * @param context The context.
+	 * @param sharedDataModel The shared LocalDataModel instance.
+	 * @param basicConnection The low-level IPFS connection.
+	 * @param scheduler The network scheduler.
+	 * @param logger The logger.
+	 * @param currentTimeMillisSupplier A supplier of the current system time in milliseconds.
 	 * @param enableAsync True if the manager should run in a truly asynchronous mode.
 	 */
-	public ExplicitCacheManager(Context.AccessTuple accessTuple, ILogger logger, LongSupplier currentTimeMillisSupplier, boolean enableAsync)
+	public ExplicitCacheManager(LocalDataModel sharedDataModel, IConnection basicConnection, INetworkScheduler scheduler, ILogger logger, LongSupplier currentTimeMillisSupplier, boolean enableAsync)
 	{
-		_accessTuple = accessTuple;
+		_sharedDataModel = sharedDataModel;
+		_basicConnection = basicConnection;
+		_scheduler = scheduler;
 		_logger = logger;
 		_currentTimeMillisSupplier = currentTimeMillisSupplier;
 		if (enableAsync)
@@ -245,7 +256,7 @@ public class ExplicitCacheManager
 	 */
 	public CachedRecordInfo getExistingRecord(IpfsFile recordCid)
 	{
-		try (IReadingAccess access = Context.readAccessBasic(_accessTuple, _logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_basicConnection, _scheduler, _logger, _sharedDataModel, null))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getRecordInfo(recordCid);
@@ -259,7 +270,7 @@ public class ExplicitCacheManager
 	 */
 	public long getExplicitCacheSize()
 	{
-		try (IReadingAccess access = Context.readAccessBasic(_accessTuple, _logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_basicConnection, _scheduler, _logger, _sharedDataModel, null))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getCacheSizeBytes();
@@ -271,7 +282,7 @@ public class ExplicitCacheManager
 	{
 		try
 		{
-			try (IWritingAccess access = Context.writeAccessBasic(_accessTuple, _logger))
+			try (IWritingAccess access = StandardAccess.writeAccess(_basicConnection, _scheduler, _logger, _sharedDataModel, null))
 			{
 				ExplicitCacheData data = access.writableExplicitCache();
 				_purgeExcess(access, data, 0L);
@@ -421,7 +432,7 @@ public class ExplicitCacheManager
 		FutureResolve[] keys = new FutureResolve[usersToLoad.length];
 		boolean[] recordsBeingReplaced = new boolean[recordsToLoad.length];
 		List<UserRefreshTuple> userInfoRefreshes = new ArrayList<>();
-		try (IReadingAccess access = Context.readAccessBasic(_accessTuple, _logger))
+		try (IReadingAccess access = StandardAccess.readAccess(_basicConnection, _scheduler, _logger, _sharedDataModel, null))
 		{
 			PrefsData prefs = access.readPrefs();
 			videoEdgePixelMax = prefs.videoEdgePixelMax;
@@ -619,7 +630,7 @@ public class ExplicitCacheManager
 		// -commit the transaction
 		// -update the cache data
 		// -run any purge request
-		try (IWritingAccess access = Context.writeAccessBasic(_accessTuple, _logger))
+		try (IWritingAccess access = StandardAccess.writeAccess(_basicConnection, _scheduler, _logger, _sharedDataModel, null))
 		{
 			ExplicitCacheData data = access.writableExplicitCache();
 			for (int i = 0; i < usersToLoad.length; ++i)

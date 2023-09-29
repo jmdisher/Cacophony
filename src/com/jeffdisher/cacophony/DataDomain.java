@@ -125,7 +125,9 @@ public class DataDomain implements Closeable
 		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, ourFileSystem, ourScheduler);
 		ILogger ourLogger = new SilentLogger();
 		Context ourContext = new Context(new DraftManager(ourFileSystem.getDraftsTopLevelDirectory())
-				, new Context.AccessTuple(ourDataModel, us, ourScheduler)
+				, ourDataModel
+				, us
+				, ourScheduler
 				, () -> System.currentTimeMillis()
 				, ourLogger
 				, FAKE_BASE_URL
@@ -156,7 +158,9 @@ public class DataDomain implements Closeable
 		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, theirFileSystem, theirScheduler);
 		ILogger theirLogger = new SilentLogger();
 		Context theirContext = new Context(new DraftManager(theirFileSystem.getDraftsTopLevelDirectory())
-				, new Context.AccessTuple(theirDataModel, them, theirScheduler)
+				, theirDataModel
+				, them
+				, theirScheduler
 				, () -> System.currentTimeMillis()
 				, theirLogger
 				, FAKE_BASE_URL

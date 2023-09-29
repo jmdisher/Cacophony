@@ -14,6 +14,7 @@ import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.local.v4.DraftManager;
 import com.jeffdisher.cacophony.projection.ChannelData;
 import com.jeffdisher.cacophony.scheduler.FuturePublish;
+import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.scheduler.MultiThreadedScheduler;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.ExplicitCacheManager;
@@ -130,14 +131,15 @@ public class Cacophony {
 					boolean verbose = (null != System.getenv(EnvVars.ENV_VAR_CACOPHONY_VERBOSE));
 					StandardLogger logger = StandardLogger.topLogger(System.out, verbose);
 					URL baseUrl = connectionData.second();
-					Context.AccessTuple accessTuple = new Context.AccessTuple(localDataModel, connection, scheduler);
 					LongSupplier currentTimeMillisGenerator = () -> System.currentTimeMillis();
 					// Create the default explicit cache manager (could be over-ridden by the interactive server, in its Context).
 					// The default manager runs in synchronous mode, since that makes more sense for command-line usage.
-					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(accessTuple, logger, currentTimeMillisGenerator, false);
+					ExplicitCacheManager explicitCacheManager = new ExplicitCacheManager(localDataModel, connection, scheduler, logger, currentTimeMillisGenerator, false);
 					Context context = _createContext(keyName
 							, draftManager
-							, accessTuple
+							, localDataModel
+							, connection
+							, scheduler
 							, logger
 							, currentTimeMillisGenerator
 							, explicitCacheManager
@@ -211,7 +213,9 @@ public class Cacophony {
 
 	private static Context _createContext(String keyName
 			, DraftManager draftManager
-			, Context.AccessTuple accessTuple
+			, LocalDataModel localDataModel
+			, IConnection connection
+			, INetworkScheduler scheduler
 			, StandardLogger logger
 			, LongSupplier currentTimeMillisGenerator
 			, ExplicitCacheManager explicitCacheManager
@@ -220,7 +224,7 @@ public class Cacophony {
 	{
 		// We want to see if the key name we are working with is one which exists for us (could be null).
 		IpfsKey selectedHomeKey = null;
-		try (IReadOnlyLocalData reading = accessTuple.sharedDataModel().openForRead())
+		try (IReadOnlyLocalData reading = localDataModel.openForRead())
 		{
 			ChannelData channels = reading.readLocalIndex();
 			selectedHomeKey = channels.getPublicKey(keyName);
@@ -228,7 +232,9 @@ public class Cacophony {
 		
 		CacheUpdater cacheUpdater = new CacheUpdater(null, null, null, null, null);
 		Context context = new Context(draftManager
-				, accessTuple
+				, localDataModel
+				, connection
+				, scheduler
 				, currentTimeMillisGenerator
 				, logger
 				, baseUrl
