@@ -11,7 +11,6 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -98,7 +97,7 @@ public class TestStartFollowingCommand
 		
 		// Make sure that the local index is correct.
 		IpfsFile lastPublishedIndex;
-		try (IReadingAccess reading = StandardAccess.readAccess(context))
+		try (IReadingAccess reading = Context.readAccess(context))
 		{
 			lastPublishedIndex = reading.getLastRootElement();
 		}

@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.ILogger;
@@ -14,7 +13,7 @@ public record GetGlobalPrefsCommand() implements ICommand<None>
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			ILogger log = context.logger.logStart("Preferences:");
 			PrefsData prefs = access.readPrefs();

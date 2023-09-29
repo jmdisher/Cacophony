@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -39,7 +38,7 @@ public record RebroadcastCommand(IpfsFile _elementCid) implements ICommand<Chang
 		}
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			HomeChannelModifier modifier = new HomeChannelModifier(access);

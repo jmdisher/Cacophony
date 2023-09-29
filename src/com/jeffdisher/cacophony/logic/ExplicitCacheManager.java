@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
@@ -246,7 +245,7 @@ public class ExplicitCacheManager
 	 */
 	public CachedRecordInfo getExistingRecord(IpfsFile recordCid)
 	{
-		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+		try (IReadingAccess access = Context.readAccessBasic(_accessTuple, _logger))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getRecordInfo(recordCid);
@@ -260,7 +259,7 @@ public class ExplicitCacheManager
 	 */
 	public long getExplicitCacheSize()
 	{
-		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+		try (IReadingAccess access = Context.readAccessBasic(_accessTuple, _logger))
 		{
 			IExplicitCacheReading data = access.readableExplicitCache();
 			return data.getCacheSizeBytes();
@@ -272,7 +271,7 @@ public class ExplicitCacheManager
 	{
 		try
 		{
-			try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+			try (IWritingAccess access = Context.writeAccessBasic(_accessTuple, _logger))
 			{
 				ExplicitCacheData data = access.writableExplicitCache();
 				_purgeExcess(access, data, 0L);
@@ -422,7 +421,7 @@ public class ExplicitCacheManager
 		FutureResolve[] keys = new FutureResolve[usersToLoad.length];
 		boolean[] recordsBeingReplaced = new boolean[recordsToLoad.length];
 		List<UserRefreshTuple> userInfoRefreshes = new ArrayList<>();
-		try (IReadingAccess access = StandardAccess.readAccessBasic(_accessTuple, _logger))
+		try (IReadingAccess access = Context.readAccessBasic(_accessTuple, _logger))
 		{
 			PrefsData prefs = access.readPrefs();
 			videoEdgePixelMax = prefs.videoEdgePixelMax;
@@ -620,7 +619,7 @@ public class ExplicitCacheManager
 		// -commit the transaction
 		// -update the cache data
 		// -run any purge request
-		try (IWritingAccess access = StandardAccess.writeAccessBasic(_accessTuple, _logger))
+		try (IWritingAccess access = Context.writeAccessBasic(_accessTuple, _logger))
 		{
 			ExplicitCacheData data = access.writableExplicitCache();
 			for (int i = 0; i < usersToLoad.length; ++i)

@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
@@ -30,7 +29,7 @@ public class POST_Raw_SetChannel implements ValidatedEntryPoints.POST_Raw
 		
 		// Check that this key exists (we need to use a low-level accessor since we might not currently have something selected).
 		boolean didFind = false;
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
+		try (IReadingAccess access = Context.readAccess(_context))
 		{
 			didFind = access.readHomeUserData().stream().anyMatch((IReadingAccess.HomeUserTuple tuple) -> homePublicKey.equals(tuple.publicKey()));
 		}

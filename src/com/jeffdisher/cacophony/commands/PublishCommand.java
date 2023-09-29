@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -53,7 +52,7 @@ public record PublishCommand(String _name, String _description, String _discussi
 		IpfsFile newRoot;
 		IpfsFile newElement;
 		AbstractRecord newRecord;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			// We expect that this context exists.
 			Assert.assertTrue(null != access.getLastRootElement());

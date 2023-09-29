@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.ILogger;
@@ -24,7 +23,7 @@ public record SetGlobalPrefsCommand(int _edgeMax
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			_runCore(context.logger, access);
 		}

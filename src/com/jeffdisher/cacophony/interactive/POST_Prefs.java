@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.breakwater.StringMultiMap;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.projection.PrefsData;
 import com.jeffdisher.cacophony.types.UsageException;
@@ -58,7 +57,7 @@ public class POST_Prefs implements ValidatedEntryPoints.POST_Form
 			throw new UsageException("Invalid parameter");
 		}
 		boolean didChangeIntervals = false;
-		try (IWritingAccess access = StandardAccess.writeAccess(_context))
+		try (IWritingAccess access = Context.writeAccess(_context))
 		{
 			PrefsData prefs = access.readPrefs();
 			didChangeIntervals = ((prefs.republishIntervalMillis != republishIntervalMillis) || (prefs.followeeRefreshMillis != followeeRefreshMillis));

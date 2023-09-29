@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
 import com.jeffdisher.cacophony.utils.Version;
@@ -41,7 +40,7 @@ public class GET_ServerStatus implements ValidatedEntryPoints.GET
 		serverStatus.add("version", Version.TAG);
 		long explicitCacheBytes = _context.explicitCacheManager.getExplicitCacheSize();
 		serverStatus.add("explicitCacheBytes", explicitCacheBytes);
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
+		try (IReadingAccess access = Context.readAccess(_context))
 		{
 			long followeeCacheBytes = CacheHelpers.getCurrentCacheSizeBytes(access.readableFolloweeData());
 			long favouritesSizeBytes = access.readableFavouritesCache().getFavouritesSizeBytes();

@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
 import com.jeffdisher.cacophony.projection.FavouritesCacheData;
@@ -17,7 +16,7 @@ public record RemoveFavouriteCommand(IpfsFile _elementCid) implements ICommand<N
 	public None runInContext(Context context) throws IpfsConnectionException, UsageException
 	{
 		// Look this up and add it to the cache or throw UsageException if it isn't a StreamRecord.
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			FavouritesCacheData favourites = access.writableFavouritesCache();
 			CachedRecordInfo removed = favourites.removeStreamRecord(_elementCid);

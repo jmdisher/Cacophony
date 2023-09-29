@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.LocalRecordCache;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.record.DataArray;
@@ -112,7 +111,7 @@ public class TestShowPostCommand
 		// We want to create a special context which allows us to slide in a LocalRecordCache.
 		LocalRecordCache specialRecordCache = new LocalRecordCache();
 		// (be sure to pin this, since we are about to say it was pinned)
-		try (IWritingAccess access = StandardAccess.writeAccess(readNode.getContext()))
+		try (IWritingAccess access = Context.writeAccess(readNode.getContext()))
 		{
 			access.pin(postCid).get();
 		}
@@ -163,7 +162,7 @@ public class TestShowPostCommand
 		// We want to create a special context which allows us to slide in a LocalRecordCache.
 		LocalRecordCache specialRecordCache = new LocalRecordCache();
 		// (be sure to pin this, since we are about to say it was pinned)
-		try (IWritingAccess access = StandardAccess.writeAccess(readNode.getContext()))
+		try (IWritingAccess access = Context.writeAccess(readNode.getContext()))
 		{
 			access.pin(postCid).get();
 		}

@@ -8,7 +8,6 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 import com.eclipsesource.json.Json;
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
 import com.jeffdisher.cacophony.logic.HandoffConnector;
@@ -104,7 +103,7 @@ public class WS_UserEntries implements ValidatedEntryPoints.WEB_SOCKET_FACTORY
 					// Create the connector, ourselves.
 					_userConnector = new HandoffConnector<IpfsFile, Void>(_dispatcher);
 					// Read the post list and feed them into the connector (which will do the rest of this work for us).
-					try (IReadingAccess access = StandardAccess.readAccess(_context))
+					try (IReadingAccess access = Context.readAccess(_context))
 					{
 						AbstractRecords records = access.loadCached(info.recordsCid(), AbstractRecords.DESERIALIZER).get();
 						// This list goes from oldest to newest so just walk in-order.

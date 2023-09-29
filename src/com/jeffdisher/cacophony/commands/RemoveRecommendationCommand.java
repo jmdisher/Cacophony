@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.logic.HomeChannelModifier;
@@ -28,7 +27,7 @@ public record RemoveRecommendationCommand(IpfsKey _channelPublicKey) implements 
 		}
 		
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			ILogger log = context.logger.logStart("Removing recommendation " + _channelPublicKey + "...");

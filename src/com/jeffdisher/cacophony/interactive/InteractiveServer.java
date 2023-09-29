@@ -9,7 +9,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import com.jeffdisher.breakwater.RestServer;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
@@ -70,7 +69,7 @@ public class InteractiveServer
 		EntryCacheRegistry entryRegistry = new EntryCacheRegistry(dispatcher);
 		ReplyForest replyForest = new ReplyForest();
 		CacheUpdater cacheUpdater = new CacheUpdater(localRecordCache, userInfoCache, entryRegistry, replyCache, replyForest);
-		try (IWritingAccess access = StandardAccess.writeAccess(startingContext))
+		try (IWritingAccess access = Context.writeAccess(startingContext))
 		{
 			prefs = access.readPrefs();
 			FolloweeData followees = access.writableFolloweeData();
@@ -107,7 +106,7 @@ public class InteractiveServer
 				// We need to fake-up a context since we are "acting as" the channel with the given keyName, not related to the selected channel.
 				Context localContext = serverContext.cloneWithSelectedKey(publicKey);
 				FuturePublish publish = null;
-				try (IReadingAccess access = StandardAccess.readAccess(localContext))
+				try (IReadingAccess access = Context.readAccess(localContext))
 				{
 					publish = access.beginIndexPublish(newRoot);
 				}
@@ -157,7 +156,7 @@ public class InteractiveServer
 			}
 		}, statusHandoff, prefs.republishIntervalMillis, prefs.followeeRefreshMillis);
 		
-		try (IReadingAccess access = StandardAccess.readAccess(serverContext))
+		try (IReadingAccess access = Context.readAccess(serverContext))
 		{
 			// Load all the local channels.
 			List<IReadingAccess.HomeUserTuple> homeTuples = access.readHomeUserData();

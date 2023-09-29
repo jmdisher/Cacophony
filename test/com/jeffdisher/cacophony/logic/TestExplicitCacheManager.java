@@ -6,7 +6,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.global.GlobalData;
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
@@ -683,7 +682,7 @@ public class TestExplicitCacheManager
 		Assert.assertEquals(5, node.pinCalls);
 		
 		// We now set the refresh threshold to something very low.
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			PrefsData prefs = access.readPrefs();
 			prefs.explicitUserInfoRefreshMillis = 1L;

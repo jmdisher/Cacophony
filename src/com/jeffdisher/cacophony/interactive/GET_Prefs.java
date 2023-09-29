@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.logic.JsonGenerationHelpers;
 import com.jeffdisher.cacophony.projection.PrefsData;
@@ -37,7 +36,7 @@ public class GET_Prefs implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
+		try (IReadingAccess access = Context.readAccess(_context))
 		{
 			PrefsData prefs = access.readPrefs();
 			JsonObject userInfo = JsonGenerationHelpers.prefs(prefs);

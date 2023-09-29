@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -23,7 +22,7 @@ public record RepublishCommand() implements ICommand<ChangedRoot>
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
 		IpfsFile indexHash;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			// Get the previously posted index hash.

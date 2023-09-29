@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.Incremental;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.projection.FolloweeData;
@@ -27,7 +26,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<Incr
 		
 		ILogger log = context.logger.logStart("Attempting to follow " + _publicKey + "...");
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			refresher = _setup(log, access);
 		}
@@ -36,7 +35,7 @@ public record StartFollowingCommand(IpfsKey _publicKey) implements ICommand<Incr
 		boolean didRefresh = refresher.runRefresh(context.cacheUpdater);
 
 		boolean moreWork;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			moreWork = _finish(context, access, refresher);
 		}

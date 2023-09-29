@@ -4,7 +4,6 @@ import java.io.PrintStream;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.logic.LeafFinder;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
@@ -51,7 +50,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 			// This can be null since we are just checking if it already has the info.
 			if (null != existingInfo)
 			{
-				try (IReadingAccess access = StandardAccess.readAccess(context))
+				try (IReadingAccess access = Context.readAccess(context))
 				{
 					post = _buildDetailsWithCachedInfo(access, existingInfo);
 				}
@@ -71,7 +70,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		{
 			// The cache only tracks what part of the post we have pinned so we need to now load the meta-data in order
 			// to see what leaves are available and what the meta-data actually says.
-			try (IReadingAccess access = StandardAccess.readAccess(context))
+			try (IReadingAccess access = Context.readAccess(context))
 			{
 				post = _buildDetailsWithCachedInfo(access, info);
 			}
@@ -82,7 +81,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 	private PostDetails _checkHeavyCaches(Context context) throws KeyException, ProtocolDataException, IpfsConnectionException
 	{
 		PostDetails post;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			// We will check the favourites cache here, too, as the explicit cache MUST be last.
 			// (we could use a read-only pass to check the favourites cache but no point in reading twice).
@@ -115,7 +114,7 @@ public record ShowPostCommand(IpfsFile _elementCid, boolean _forceCache) impleme
 		// We will request the leaves be added only if this was a forced load, otherwise, we will just make the cheaper meta-data request.
 		boolean shouldPinLeaves = _forceCache;
 		CachedRecordInfo info = context.explicitCacheManager.loadRecord(_elementCid, shouldPinLeaves).get();
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			// Everything in the explicit cache is cached.
 			return _buildDetailsWithCachedInfo(access, info);

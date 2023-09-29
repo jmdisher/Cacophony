@@ -85,7 +85,7 @@ public class TestJsonGenerationHelpers
 				, null
 				, MockKeys.K1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, MockKeys.K1))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, context.accessTuple.sharedDataModel(), KEY_NAME, MockKeys.K1))
 		{
 			indexFile = _storeNewIndex(access, null, null, true);
 		}
@@ -93,7 +93,7 @@ public class TestJsonGenerationHelpers
 		LocalRecordCache recordCache = new LocalRecordCache();
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, null, null);
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			IFolloweeReading followIndex = access.readableFolloweeData();
 			LocalRecordCacheBuilder.populateInitialCacheForLocalUser(access, cacheUpdater, context.getSelectedKey(), indexFile);
@@ -133,7 +133,7 @@ public class TestJsonGenerationHelpers
 				, null
 				, MockKeys.K1
 		);
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, KEY_NAME, MockKeys.K1))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, context.accessTuple.sharedDataModel(), KEY_NAME, MockKeys.K1))
 		{
 			recordFile = _storeEntry(access, "entry1", MockKeys.K1);
 			indexFile = _storeNewIndex(access, recordFile, null, true);
@@ -152,7 +152,7 @@ public class TestJsonGenerationHelpers
 		LocalUserInfoCache userInfoCache = new LocalUserInfoCache();
 		HomeUserReplyCache replyCache = new HomeUserReplyCache(new HandoffConnector<IpfsFile, IpfsFile>((Runnable run) -> run.run()));
 		CacheUpdater cacheUpdater = new CacheUpdater(recordCache, userInfoCache, null, replyCache, null);
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			IpfsFile publishedIndex = access.getLastRootElement();
 			Assert.assertEquals(indexFile, publishedIndex);

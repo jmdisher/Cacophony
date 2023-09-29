@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.CommandHelpers;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
@@ -18,7 +17,7 @@ public record CleanCacheCommand() implements ICommand<None>
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			// First, we want to shrink the local cache.
 			CommandHelpers.shrinkCacheToFitInPrefs(context.logger, access, ConcurrentFolloweeRefresher.NO_RESIZE_FOLLOWEE_FULLNESS_FRACTION);

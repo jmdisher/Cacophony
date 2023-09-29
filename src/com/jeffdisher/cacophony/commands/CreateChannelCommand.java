@@ -41,7 +41,7 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		ILogger log = context.logger.logStart("Creating initial channel state...");
 		AbstractDescription description;
 		IpfsFile newRoot;
-		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context, _keyName, publicKey))
+		try (IWritingAccess access = StandardAccess.writeAccessWithKeyOverride(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, context.accessTuple.sharedDataModel(), _keyName, publicKey))
 		{
 			// Make sure that this isn't something which already exists.
 			for (IReadingAccess.HomeUserTuple tuple : access.readHomeUserData())

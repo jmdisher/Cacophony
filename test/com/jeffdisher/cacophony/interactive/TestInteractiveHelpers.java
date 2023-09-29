@@ -18,7 +18,6 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.CreateChannelCommand;
@@ -248,7 +247,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateDraftText(draftManager, id, "title", "description", null);
 		
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			PublishBuilder builder = new PublishBuilder();
 			draftManager.prepareToPublishDraft(builder, id, true, false);
@@ -289,7 +288,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			PublishBuilder builder = new PublishBuilder();
 			draftManager.prepareToPublishDraft(builder, id, true, false);
@@ -338,7 +337,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateOriginalVideo(openDraft, "video/webm", 5, 6, data.length);
 		
 		// Publish the draft WITHOUT uploading the video attachment.
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			PublishBuilder builder = new PublishBuilder();
 			draftManager.prepareToPublishDraft(builder, id, false, false);
@@ -412,7 +411,7 @@ public class TestInteractiveHelpers
 		InteractiveHelpers.updateAudio(openDraft, "audio/ogg", data.length);
 
 		// Publish the draft.
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			PublishBuilder builder = new PublishBuilder();
 			draftManager.prepareToPublishDraft(builder, id, false, true);

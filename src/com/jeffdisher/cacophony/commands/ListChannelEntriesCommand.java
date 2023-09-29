@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
 import com.jeffdisher.cacophony.data.global.AbstractRecords;
@@ -26,7 +25,7 @@ public record ListChannelEntriesCommand(IpfsKey _channelPublicKey) implements IC
 	@Override
 	public None runInContext(Context context) throws IpfsConnectionException, KeyException, ProtocolDataException
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			_runCore(context.logger, access);
 		}

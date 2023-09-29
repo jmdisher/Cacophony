@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.ConcurrentTransaction;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.CommonRecordPinning;
 import com.jeffdisher.cacophony.projection.CachedRecordInfo;
@@ -22,7 +21,7 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 		// Look this up and add it to the cache or throw UsageException if it isn't a StreamRecord.
 		ConcurrentTransaction transaction;
 		int videoEdgePixelMax;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			FavouritesCacheData favourites = access.writableFavouritesCache();
 			if (null == favourites.getRecordInfo(_elementCid))
@@ -65,7 +64,7 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 
 	private void _commit(Context context, ConcurrentTransaction transaction, CachedRecordInfo info) throws UsageException
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 			FavouritesCacheData favourites = access.writableFavouritesCache();
@@ -87,7 +86,7 @@ public record AddFavouriteCommand(IpfsFile _elementCid) implements ICommand<None
 
 	private void _rollback(Context context, ConcurrentTransaction transaction)
 	{
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			ConcurrentTransaction.IStateResolver resolver = ConcurrentTransaction.buildCommonResolver(access);
 			transaction.rollback(resolver);

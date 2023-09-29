@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.IReadWriteLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
@@ -49,10 +48,6 @@ import com.jeffdisher.cacophony.utils.KeyNameRules;
  * Note that the point of this design is that it doesn't distinguish between local storage versus network access
  * primitives, allowing the accessing code to interact in as high-level a way as possible without needing to manage
  * those individual parts of the system which would otherwise expose more specific pieces of primitive functionality.
- * 
- * NOTE:  Some of the methods currently exposed are just temporary, while the system transitions to this new design.
- * Eventually, these methods which grant direct access to the underlying components will be removed as they are replaced
- * with abstract high-level calls.
  */
 public class StandardAccess implements IWritingAccess
 {
@@ -61,12 +56,18 @@ public class StandardAccess implements IWritingAccess
 	 * Note that this assumes that the config directory has already been created and is valid (see
 	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
 	 * 
-	 * @param context The current command context.
+	 * @param connection The low-level IPFS connection.
+	 * @param scheduler The network scheduler.
+	 * @param logger The logger.
+	 * @param dataModel The shared local data model.
+	 * @param publicKey The public key of the current home user.
 	 * @return The read access interface.
 	 */
-	public static IReadingAccess readAccess(Context context)
+	public static IReadingAccess readAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, LocalDataModel dataModel, IpfsKey publicKey)
 	{
-		return _readAccessBasic(context.accessTuple, context.logger, context.getSelectedKey());
+		IReadOnlyLocalData reading = dataModel.openForRead();
+		String keyName = _findKeyName(reading, publicKey);
+		return new StandardAccess(connection, scheduler, logger, reading, null, keyName, publicKey);
 	}
 
 	/**
@@ -74,75 +75,38 @@ public class StandardAccess implements IWritingAccess
 	 * Note that this assumes that the config directory has already been created and is valid (see
 	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
 	 * 
-	 * @param context The current command context.
+	 * @param connection The low-level IPFS connection.
+	 * @param scheduler The network scheduler.
+	 * @param logger The logger.
+	 * @param dataModel The shared local data model.
+	 * @param publicKey The public key of the current home user.
 	 * @return The write access interface.
 	 */
-	public static IWritingAccess writeAccess(Context context)
+	public static IWritingAccess writeAccess(IConnection connection, INetworkScheduler scheduler, ILogger logger, LocalDataModel dataModel, IpfsKey publicKey)
 	{
-		return _writeAccessBasic(context.accessTuple, context.logger, context.getSelectedKey());
+		IReadWriteLocalData writing = dataModel.openForWrite();
+		String keyName = _findKeyName(writing, publicKey);
+		return new StandardAccess(connection, scheduler, logger, writing, writing, keyName, publicKey);
 	}
 
 	/**
 	 * Requests write access with key overrides.
-	 * This is a special-case of writeAccess(Context) used for initial channel creation.
+	 * This is a special-case of writeAccess() used for initial channel creation.
 	 * 
-	 * @param context The current command context.
+	 * @param connection The low-level IPFS connection.
+	 * @param scheduler The network scheduler.
+	 * @param logger The logger.
+	 * @param dataModel The shared local data model.
+	 * @param keyName The name of the publicKey, on this IPFS node
+	 * @param publicKey The public key of the current home user.
 	 * @return The write access interface.
 	 */
-	public static IWritingAccess writeAccessWithKeyOverride(Context context, String keyName, IpfsKey selectedKey)
+	public static IWritingAccess writeAccessWithKeyOverride(IConnection connection, INetworkScheduler scheduler, ILogger logger, LocalDataModel dataModel, String keyName, IpfsKey publicKey)
 	{
-		LocalDataModel dataModel = context.accessTuple.sharedDataModel();
 		IReadWriteLocalData writing = dataModel.openForWrite();
-		
-		return new StandardAccess(context.accessTuple.basicConnection(), context.accessTuple.scheduler(), context.logger, writing, writing, keyName, selectedKey);
+		return new StandardAccess(connection, scheduler, logger, writing, writing, keyName, publicKey);
 	}
 
-	/**
-	 * Requests read access.
-	 * Note that this assumes that the config directory has already been created and is valid (see
-	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
-	 * 
-	 * @param accessTuple The access information from the context.
-	 * @param logger The logger.
-	 * @return The read access interface.
-	 */
-	public static IReadingAccess readAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
-	{
-		return _readAccessBasic(accessTuple, logger, null);
-	}
-
-	/**
-	 * Requests write access.
-	 * Note that this assumes that the config directory has already been created and is valid (see
-	 * "StandardAccess.createNewChannelConfig" and "LocalDataModel.verifyStorageConsistency").
-	 * 
-	 * @param accessTuple The access information from the context.
-	 * @param logger The logger.
-	 * @return The write access interface.
-	 */
-	public static IWritingAccess writeAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
-	{
-		return _writeAccessBasic(accessTuple, logger, null);
-	}
-
-
-	private static IReadingAccess _readAccessBasic(Context.AccessTuple accessTuple, ILogger logger, IpfsKey selectedKey)
-	{
-		LocalDataModel dataModel = accessTuple.sharedDataModel();
-		IReadOnlyLocalData reading = dataModel.openForRead();
-		
-		String keyName = _findKeyName(reading, selectedKey);
-		return new StandardAccess(accessTuple.basicConnection(), accessTuple.scheduler(), logger, reading, null, keyName, selectedKey);
-	}
-
-	private static IWritingAccess _writeAccessBasic(Context.AccessTuple accessTuple, ILogger logger, IpfsKey selectedKey)
-	{
-		LocalDataModel dataModel = accessTuple.sharedDataModel();
-		IReadWriteLocalData writing = dataModel.openForWrite();
-		
-		String keyName = _findKeyName(writing, selectedKey);
-		return new StandardAccess(accessTuple.basicConnection(), accessTuple.scheduler(), logger, writing, writing, keyName, selectedKey);
-	}
 
 	private static String _findKeyName(IReadOnlyLocalData data, IpfsKey publicKey)
 	{

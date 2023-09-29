@@ -2,7 +2,6 @@ package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
@@ -77,7 +76,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		// We don't have a cache when running in the direct command-line mode.
 		context.logger.logVerbose("Check known users directly: " + keyToCheck);
 		ChannelDescription result = null;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			IpfsFile rootToLoad = null;
 			// First is to see if this is us.
@@ -119,7 +118,7 @@ public record ReadDescriptionCommand(IpfsKey _channelPublicKey) implements IComm
 		// Consult the cache - this never returns null but will throw on error.
 		ExplicitCacheData.UserInfo userInfo = context.explicitCacheManager.loadUserInfo(keyToCheck).get();
 		ChannelDescription result;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			// Everything in the explicit cache is cached.
 			AbstractDescription description = access.loadCached(userInfo.descriptionCid(), AbstractDescription.DESERIALIZER).get();

@@ -9,7 +9,6 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.cacophony.DataDomain;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.caches.EntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.HomeUserReplyCache;
@@ -166,7 +165,7 @@ public class MockUserNode
 
 	public IpfsFile getLastRootElement() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_lazyContext()))
+		try (IReadingAccess reading = Context.readAccess(_lazyContext()))
 		{
 			return reading.getLastRootElement();
 		}
@@ -179,7 +178,7 @@ public class MockUserNode
 
 	public boolean isInPinCache(IpfsFile file) throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_lazyContext()))
+		try (IReadingAccess reading = Context.readAccess(_lazyContext()))
 		{
 			return reading.isInPinCached(file);
 		}
@@ -187,7 +186,7 @@ public class MockUserNode
 
 	public PrefsData readPrefs() throws IpfsConnectionException
 	{
-		try (IReadingAccess reading = StandardAccess.readAccess(_lazyContext()))
+		try (IReadingAccess reading = Context.readAccess(_lazyContext()))
 		{
 			return reading.readPrefs();
 		}
@@ -196,7 +195,7 @@ public class MockUserNode
 	public IFolloweeReading readFollowIndex() throws IpfsConnectionException
 	{
 		// We use the write accessor since we want the full FollowIndex interface for tests (returning this outside of the access closure is incorrect, either way).
-		try (IWritingAccess writing = StandardAccess.writeAccess(_lazyContext()))
+		try (IWritingAccess writing = Context.writeAccess(_lazyContext()))
 		{
 			return writing.readableFolloweeData();
 		}

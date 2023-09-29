@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.eclipsesource.json.JsonArray;
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.projection.IFavouritesReading;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -29,7 +28,7 @@ public class GET_FavouritesHashes implements ValidatedEntryPoints.GET
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
-		try (IReadingAccess access = StandardAccess.readAccess(_context))
+		try (IReadingAccess access = Context.readAccess(_context))
 		{
 			JsonArray array = new JsonArray();
 			IFavouritesReading favourites = access.readableFavouritesCache();

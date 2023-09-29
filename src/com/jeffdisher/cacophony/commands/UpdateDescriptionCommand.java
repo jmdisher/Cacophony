@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
 import com.jeffdisher.cacophony.data.global.AbstractIndex;
@@ -52,7 +51,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 		
 		Result result;
 		String pictureUrl;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			// Verify that this feature post is part of this user's stream.

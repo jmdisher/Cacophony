@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.data.global.AbstractRecommendations;
 import com.jeffdisher.cacophony.logic.ForeignChannelReader;
@@ -63,7 +62,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		// We don't have a cache when running in the direct command-line mode.
 		context.logger.logVerbose("Check known users directly: " + keyToCheck);
 		AbstractRecommendations result = null;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			IpfsFile rootToLoad = null;
 			// First is to see if this is us.
@@ -93,7 +92,7 @@ public record ListRecommendationsCommand(IpfsKey _targetKey) implements ICommand
 		ExplicitCacheData.UserInfo userInfo = context.explicitCacheManager.loadUserInfo(keyToCheck).get();
 		
 		AbstractRecommendations result;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			// Everything in the explicit cache is cached.
 			result = access.loadCached(userInfo.recommendationsCid(), AbstractRecommendations.DESERIALIZER).get();

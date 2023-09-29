@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.data.global.AbstractDescription;
@@ -27,7 +26,7 @@ public record DeleteChannelCommand() implements ICommand<None>
 			throw new UsageException("Channel must first be created with --createNewChannel");
 		}
 		
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			IpfsFile indexCid = access.getLastRootElement();
 			AbstractIndex index = access.loadCached(indexCid, AbstractIndex.DESERIALIZER).get();

@@ -3,7 +3,6 @@ package com.jeffdisher.cacophony.commands;
 import java.io.ByteArrayInputStream;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.results.OnePost;
 import com.jeffdisher.cacophony.data.global.AbstractRecord;
@@ -44,7 +43,7 @@ public record EditPostCommand(IpfsFile _postToEdit, String _name, String _descri
 		}
 		
 		Result result;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			Assert.assertTrue(null != access.getLastRootElement());
 			result = _run(access, _postToEdit, _name, _description, _discussionUrl);

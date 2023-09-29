@@ -1,7 +1,6 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.commands.results.Incremental;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.projection.FolloweeData;
@@ -22,7 +21,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<Incremental>
 	{
 		ILogger log;
 		ConcurrentFolloweeRefresher refresher = null;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			FolloweeData followees = access.writableFolloweeData();
 			
@@ -39,7 +38,7 @@ public record RefreshNextFolloweeCommand() implements ICommand<Incremental>
 		boolean didRefresh = refresher.runRefresh(context.cacheUpdater);
 		
 		boolean moreWork;
-		try (IWritingAccess access = StandardAccess.writeAccess(context))
+		try (IWritingAccess access = Context.writeAccess(context))
 		{
 			moreWork = _finish(context, access, refresher);
 		}

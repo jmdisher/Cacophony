@@ -4,7 +4,6 @@ import java.io.PrintStream;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
-import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.ILocalUserInfoCache;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;
@@ -18,7 +17,7 @@ public record ListChannelsCommand() implements ICommand<ListChannelsCommand.Chan
 	public ChannelList runInContext(Context context) throws IpfsConnectionException
 	{
 		ChannelList list;
-		try (IReadingAccess access = StandardAccess.readAccess(context))
+		try (IReadingAccess access = Context.readAccess(context))
 		{
 			OneChannel[] channels = access.readHomeUserData().stream()
 					.map((IReadingAccess.HomeUserTuple tuple) -> {

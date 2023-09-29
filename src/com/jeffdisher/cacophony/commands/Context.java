@@ -3,6 +3,9 @@ package com.jeffdisher.cacophony.commands;
 import java.net.URL;
 import java.util.function.LongSupplier;
 
+import com.jeffdisher.cacophony.access.IReadingAccess;
+import com.jeffdisher.cacophony.access.IWritingAccess;
+import com.jeffdisher.cacophony.access.StandardAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.caches.IEntryCacheRegistry;
 import com.jeffdisher.cacophony.caches.ILocalRecordCache;
@@ -23,6 +26,57 @@ import com.jeffdisher.cacophony.types.IpfsKey;
  */
 public class Context
 {
+	/**
+	 * Requests read access.
+	 * This helper is static since Context shouldn't be acting as though it has behaviour.
+	 * 
+	 * @param context The current command context.
+	 * @return The read access interface.
+	 */
+	public static IReadingAccess readAccess(Context context)
+	{
+		return StandardAccess.readAccess(context.accessTuple.basicConnection, context.accessTuple.scheduler, context.logger, context.accessTuple.sharedDataModel(), context.getSelectedKey());
+	}
+
+	/**
+	 * Requests write access.
+	 * This helper is static since Context shouldn't be acting as though it has behaviour.
+	 * 
+	 * @param context The current command context.
+	 * @return The write access interface.
+	 */
+	public static IWritingAccess writeAccess(Context context)
+	{
+		return StandardAccess.writeAccess(context.accessTuple.basicConnection, context.accessTuple.scheduler, context.logger, context.accessTuple.sharedDataModel(), context.getSelectedKey());
+	}
+
+	/**
+	 * Requests read access using the minimal access tuple and no selected key.
+	 * This helper is static since Context shouldn't be acting as though it has behaviour.
+	 * 
+	 * @param accessTuple The minimal access tuple.
+	 * @param logger The logger.
+	 * @return The read access interface.
+	 */
+	public static IReadingAccess readAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
+	{
+		return StandardAccess.readAccess(accessTuple.basicConnection, accessTuple.scheduler, logger, accessTuple.sharedDataModel(), null);
+	}
+
+	/**
+	 * Requests write access using the minimal access tuple and no selected key.
+	 * This helper is static since Context shouldn't be acting as though it has behaviour.
+	 * 
+	 * @param accessTuple The minimal access tuple.
+	 * @param logger The logger.
+	 * @return The write access interface.
+	 */
+	public static IWritingAccess writeAccessBasic(Context.AccessTuple accessTuple, ILogger logger)
+	{
+		return StandardAccess.writeAccess(accessTuple.basicConnection, accessTuple.scheduler, logger, accessTuple.sharedDataModel(), null);
+	}
+
+
 	public final DraftManager sharedDraftManager;
 	public final AccessTuple accessTuple;
 	public final LongSupplier currentTimeMillisGenerator;
