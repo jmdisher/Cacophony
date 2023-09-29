@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.access;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,7 @@ import com.jeffdisher.cacophony.scheduler.FutureResolve;
 import com.jeffdisher.cacophony.scheduler.FutureSave;
 import com.jeffdisher.cacophony.scheduler.FutureSize;
 import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
+import com.jeffdisher.cacophony.scheduler.FutureVoid;
 import com.jeffdisher.cacophony.scheduler.INetworkScheduler;
 import com.jeffdisher.cacophony.types.DataDeserializer;
 import com.jeffdisher.cacophony.types.IConnection;
@@ -409,6 +411,8 @@ public class StandardAccess implements IWritingAccess
 	@Override
 	public void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins)
 	{
+		// During stop follow, this can involve lots of unpin operations so we want to complete them asynchronously.
+		List<FutureUnpin> unpins = new ArrayList<>();
 		// First, walk the map of changed reference counts, adding and removing references where listed.
 		for (Map.Entry<IpfsFile, Integer> entry: changedPinCounts.entrySet())
 		{
@@ -425,12 +429,25 @@ public class StandardAccess implements IWritingAccess
 				_pinCache.delRef(cid);
 			}
 			Assert.assertTrue(0 == countToChange);
-			_rationalizeUnpin(cid);
+			_rationalizeUnpin(unpins, cid);
 		}
 		// Now, walk the set of false pins, requesting that the network unpin them if they aren't referenced.
 		for (IpfsFile pin : falsePins)
 		{
-			_rationalizeUnpin(pin);
+			_rationalizeUnpin(unpins, pin);
+		}
+		// Wait for all the unpins to complete.
+		for (FutureUnpin unpin : unpins)
+		{
+			try
+			{
+				unpin.future.get();
+			}
+			catch (IpfsConnectionException e)
+			{
+				// This is non-fatal but a concern.
+				_logger.logError("Failed to unpin " + unpin.cid + ": " + e.getLocalizedMessage());
+			}
 		}
 	}
 
@@ -464,19 +481,15 @@ public class StandardAccess implements IWritingAccess
 	}
 
 
-	private void _rationalizeUnpin(IpfsFile cid)
+	private void _rationalizeUnpin(List<FutureUnpin> out_unpins, IpfsFile cid)
 	{
 		if (!_pinCache.isPinned(cid))
 		{
-			try
-			{
-				_scheduler.unpin(cid).get();
-			}
-			catch (IpfsConnectionException e)
-			{
-				// This is non-fatal but a concern.
-				_logger.logError("Failed to unpin " + cid + ": " + e.getLocalizedMessage());
-			}
+			FutureUnpin unpin = new FutureUnpin(cid, _scheduler.unpin(cid));
+			out_unpins.add(unpin);
 		}
 	}
+
+
+	private static record FutureUnpin(IpfsFile cid, FutureVoid future) {}
 }
