@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import com.jeffdisher.cacophony.data.global.index.StreamIndex;
 import com.jeffdisher.cacophony.data.global.v2.root.CacophonyRoot;
 import com.jeffdisher.cacophony.data.global.v2.root.DataReference;
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
+import com.jeffdisher.cacophony.types.DataDeserializer;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;

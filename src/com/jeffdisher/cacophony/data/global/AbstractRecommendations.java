@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.jeffdisher.cacophony.data.global.recommendations.StreamRecommendations;
 import com.jeffdisher.cacophony.data.global.v2.recommendations.CacophonyRecommendations;
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
+import com.jeffdisher.cacophony.types.DataDeserializer;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.SizeConstraintException;

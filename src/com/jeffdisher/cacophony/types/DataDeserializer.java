@@ -1,6 +1,4 @@
-package com.jeffdisher.cacophony.scheduler;
-
-import com.jeffdisher.cacophony.types.FailedDeserializationException;
+package com.jeffdisher.cacophony.types;
 
 
 /**

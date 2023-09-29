@@ -1,8 +1,8 @@
 package com.jeffdisher.cacophony.access;
 
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
 import com.jeffdisher.cacophony.scheduler.FutureRead;
 import com.jeffdisher.cacophony.scheduler.FutureSizedRead;
+import com.jeffdisher.cacophony.types.DataDeserializer;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 

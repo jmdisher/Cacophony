@@ -8,7 +8,7 @@ import com.jeffdisher.cacophony.data.global.description.StreamDescription;
 import com.jeffdisher.cacophony.data.global.v2.description.CacophonyDescription;
 import com.jeffdisher.cacophony.data.global.v2.description.MiscData;
 import com.jeffdisher.cacophony.data.global.v2.description.PictureReference;
-import com.jeffdisher.cacophony.scheduler.DataDeserializer;
+import com.jeffdisher.cacophony.types.DataDeserializer;
 import com.jeffdisher.cacophony.types.FailedDeserializationException;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.SizeConstraintException;

@@ -2,6 +2,7 @@ package com.jeffdisher.cacophony.scheduler;
 
 import java.io.InputStream;
 
+import com.jeffdisher.cacophony.types.DataDeserializer;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
