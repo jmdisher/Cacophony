@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.cacophony.commands.AddFavouriteCommand;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;

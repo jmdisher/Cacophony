@@ -1,12 +1,14 @@
-package com.jeffdisher.cacophony.scheduler;
+package com.jeffdisher.cacophony.utils;
 
 import java.util.LinkedList;
 import java.util.Queue;
 
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
-import com.jeffdisher.cacophony.utils.Assert;
 
 
+/**
+ * A blocking queue of Runnable objects for use in multi-threaded schedulers.
+ */
 public class WorkQueue
 {
 	private Queue<Runnable> _queue = new LinkedList<>();

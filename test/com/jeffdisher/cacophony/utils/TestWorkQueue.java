@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.scheduler;
+package com.jeffdisher.cacophony.utils;
 
 import org.junit.Assert;
 import org.junit.Test;

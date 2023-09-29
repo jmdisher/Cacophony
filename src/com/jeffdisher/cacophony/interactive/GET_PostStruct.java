@@ -3,9 +3,9 @@ package com.jeffdisher.cacophony.interactive;
 import java.net.URL;
 
 import com.eclipsesource.json.JsonObject;
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ShowPostCommand;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import jakarta.servlet.http.HttpServletRequest;

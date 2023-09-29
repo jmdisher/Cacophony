@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.DeleteChannelCommand;
 import com.jeffdisher.cacophony.commands.results.None;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;

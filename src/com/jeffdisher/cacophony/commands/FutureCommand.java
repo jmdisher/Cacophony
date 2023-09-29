@@ -1,6 +1,5 @@
-package com.jeffdisher.cacophony.scheduler;
+package com.jeffdisher.cacophony.commands;
 
-import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.types.CacophonyException;
 import com.jeffdisher.cacophony.utils.Assert;
 

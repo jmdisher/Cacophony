@@ -13,6 +13,7 @@ import com.jeffdisher.cacophony.types.SizeConstraintException;
 import com.jeffdisher.cacophony.utils.Assert;
 import com.jeffdisher.cacophony.utils.KeyNameRules;
 import com.jeffdisher.cacophony.utils.MiscHelpers;
+import com.jeffdisher.cacophony.utils.WorkQueue;
 
 
 /**

@@ -2,10 +2,10 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.InputStream;
 
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.UpdateDescriptionCommand;
 import com.jeffdisher.cacophony.commands.results.ChannelDescription;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsKey;
 
 import jakarta.servlet.http.HttpServletRequest;

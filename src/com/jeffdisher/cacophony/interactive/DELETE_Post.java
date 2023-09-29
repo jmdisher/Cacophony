@@ -1,9 +1,9 @@
 package com.jeffdisher.cacophony.interactive;
 
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.RemoveEntryFromThisChannelCommand;
 import com.jeffdisher.cacophony.commands.results.ChangedRoot;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.utils.Assert;

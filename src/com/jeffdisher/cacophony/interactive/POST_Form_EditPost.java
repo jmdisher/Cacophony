@@ -1,10 +1,10 @@
 package com.jeffdisher.cacophony.interactive;
 
 import com.jeffdisher.breakwater.StringMultiMap;
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.EditPostCommand;
 import com.jeffdisher.cacophony.commands.results.OnePost;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.types.IpfsKey;
 

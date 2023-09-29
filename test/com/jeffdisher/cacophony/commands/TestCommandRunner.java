@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony.scheduler;
+package com.jeffdisher.cacophony.commands;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -6,8 +6,6 @@ import java.util.concurrent.CyclicBarrier;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.cacophony.commands.Context;
-import com.jeffdisher.cacophony.commands.ICommand;
 import com.jeffdisher.cacophony.commands.results.KeyList;
 import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.testutils.MockKeys;

@@ -2,8 +2,8 @@ package com.jeffdisher.cacophony.interactive;
 
 import java.io.IOException;
 
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.PurgeExplicitCacheCommand;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

@@ -2,8 +2,8 @@ package com.jeffdisher.cacophony.interactive;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.jeffdisher.cacophony.commands.CommandRunner;
 import com.jeffdisher.cacophony.commands.ListChannelsCommand;
-import com.jeffdisher.cacophony.scheduler.CommandRunner;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
