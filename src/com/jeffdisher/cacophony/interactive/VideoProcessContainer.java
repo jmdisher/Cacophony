@@ -103,13 +103,15 @@ public class VideoProcessContainer
 			{
 				boolean didDelete = InteractiveHelpers.deleteProcessedVideo(_manager, _draftId);
 				// For us to get to this point, it must be there.
-				// TODO: Verify that a race condition couldn't cause this to fail for safe reason.
+				// Theoretically, some kind of race condition could cause a failure here but this has never been
+				// observed and would likely fail elsewhere.
 				Assert.assertTrue(didDelete);
 			}
 			catch (FileNotFoundException e)
 			{
 				// For us to get to this point, it must be there.
-				// TODO: Verify that a race condition couldn't cause this to fail for safe reason.
+				// Theoretically, some kind of race condition could cause a failure here but this has never been
+				// observed and would likely fail elsewhere.
 				throw Assert.unexpected(e);
 			}
 		}

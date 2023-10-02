@@ -106,7 +106,7 @@ public class WS_DraftSaveVideo implements ValidatedEntryPoints.WEB_SOCKET_FACTOR
 			}
 			catch (IOException e)
 			{
-				// TODO:  Determine how we want to handle this failure if we see it happen.
+				// This is a corner-case which we have never observed and will considered an exceptionally rare problem (full disk, for example).
 				throw Assert.unexpected(e);
 			}
 		}

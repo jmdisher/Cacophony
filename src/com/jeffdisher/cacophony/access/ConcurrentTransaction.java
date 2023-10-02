@@ -31,10 +31,11 @@ import com.jeffdisher.cacophony.utils.Assert;
  * -acquire the write access lock to commit/rollback the transaction, then release that lock
  * 
  * WARNING:  It is possible that another operation using the write access lock could unpin a resource we are assuming to
- * be pinned, here.  We rely on the IPFS node note aggressively GC-ing unpinned resources in order to keep this from
- * causing problems.
- * TODO:  Develop a mechanism for in-flight transactions to block unpinning in the write access, forcing them to
- * complete only after all transactions have completed.
+ * be pinned, here.  We rely on the IPFS node not aggressively GC-ing unpinned resources in order to keep this from
+ * causing problems.  This could be addressed by coordinating the commits of multiple in-flight transactions in order to
+ * make sure that the pins are forced to happen before unpins, so this couldn't happen, but that would add significant
+ * complexity and some non-obvious blocking behaviour for a case which shouldn't happen in normal usage (and can
+ * technically be recovered in the common case - the pin will likely be satisfied by the network).
  */
 public class ConcurrentTransaction implements IBasicNetworkOps
 {

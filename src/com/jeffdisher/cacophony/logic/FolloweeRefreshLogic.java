@@ -688,7 +688,8 @@ public class FolloweeRefreshLogic
 		Collections.reverse(newestFirstCandidates);
 		
 		// Also remember that we need to add this size to the cache since it counts as already being selected.
-		// TODO:  Refactor this special logic into some kind of pluggable "cache strategy" for more reliable testing and more exotic performance considerations.
+		// NOTE:  In the future, we could refactor this special logic into some kind of pluggable "cache strategy" for
+		// more reliable testing and more exotic performance considerations.
 		long effectiveCacheUsedBytes = currentCacheUsageInBytes;
 		List<CacheAlgorithm.Candidate<RawElementData>> finalSelection = new ArrayList<>();
 		if (forceSelectFirstElement && (newestFirstCandidates.size() > 0))

@@ -273,7 +273,6 @@ public class TestFolloweeRefreshLogic
 		result = testSupport.getList();
 		Assert.assertEquals(1, result.length);
 		// NOTE:  Since there is only one element, it is currently allowed to overflow the cache.
-		// TODO:  Change this when we apply this limit.
 		Assert.assertEquals(16, result[0].combinedSizeBytes());
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
