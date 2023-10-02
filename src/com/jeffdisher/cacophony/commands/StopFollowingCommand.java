@@ -1,7 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
 import com.jeffdisher.cacophony.access.IWritingAccess;
-import com.jeffdisher.cacophony.commands.results.Incremental;
+import com.jeffdisher.cacophony.commands.results.None;
 import com.jeffdisher.cacophony.logic.ConcurrentFolloweeRefresher;
 import com.jeffdisher.cacophony.projection.FolloweeData;
 import com.jeffdisher.cacophony.types.ILogger;
@@ -14,10 +14,10 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
-public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<Incremental>
+public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<None>
 {
 	@Override
-	public Incremental runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
+	public None runInContext(Context context) throws IpfsConnectionException, UsageException, ProtocolDataException
 	{
 		if (null == _publicKey)
 		{
@@ -34,20 +34,25 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<Incre
 		// Run the actual refresh.
 		boolean didRefresh = refresher.runRefresh(context.cacheUpdater);
 		
-		boolean moreWork;
 		try (IWritingAccess access = Context.writeAccess(context))
 		{
-			moreWork = _finish(context, access, refresher);
+			_finish(context, access, refresher);
+		}
+		catch (IpfsConnectionException e)
+		{
+			// NOTE:  The finish can technically fail with a connection exception if the daemon is down when we try to
+			// stop following.  This would leave the on-node data in an inconsistent state and should be exceptionally
+			// rare so we will just log the error and proceed to remove the followee tracking.
+			log.logError("WARNING: Network exception occurred during the unfollow so some data may have been leaked on the node: " + e.getLocalizedMessage());
 		}
 		finally
 		{
 			// There is no real way to fail at this refresh since we are just dropping things.
 			Assert.assertTrue(didRefresh);
-			// TODO: Determine if we want to handle unfollow errors as just log operations or if we should leave them as fatal.
 			log.logFinish("Cleanup complete.  No longer following " + _publicKey);
 		}
 		context.cacheUpdater.removedFollowee(_publicKey);
-		return new Incremental(moreWork);
+		return None.NONE;
 	}
 
 
@@ -72,17 +77,24 @@ public record StopFollowingCommand(IpfsKey _publicKey) implements ICommand<Incre
 		return refresher;
 	}
 
-	private boolean _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException, ProtocolDataException
+	private void _finish(Context context, IWritingAccess access, ConcurrentFolloweeRefresher refresher) throws IpfsConnectionException
 	{
 		FolloweeData followees = access.writableFolloweeData();
 		long lastPollMillis = context.currentTimeMillisGenerator.getAsLong();
 		try
 		{
-			return refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
+			boolean moreToDo = refresher.finishRefresh(access, context.cacheUpdater, followees, lastPollMillis);
+			// There is never more incremental work to do for a followee, when unfollowing.
+			Assert.assertTrue(!moreToDo);
 		}
 		catch (KeyException e)
 		{
 			// The key is not resolved in the "stop following" case.
+			throw Assert.unexpected(e);
+		}
+		catch (ProtocolDataException e)
+		{
+			// The data we would be reading when stopping the follow is only the data we have already loaded and validated.
 			throw Assert.unexpected(e);
 		}
 	}
