@@ -233,7 +233,8 @@ function xsrfLoaded($scope)
 					<h5 class="card-header">{{userInfo.name}}</h5>
 					<div class="card-body row">
 						<div class="col-md-3">
-							<a ng-href="user.html?publicKey={{userInfo.publicKey}}"><img class="img-fluid" ng-src="{{userInfo.userPicUrl}}" alt="{{userInfo.name}}"/></a>
+							<a ng-show="null !== userInfo.userPicUrl" ng-href="user.html?publicKey={{userInfo.publicKey}}"><img class="img-fluid" ng-src="{{userInfo.userPicUrl}}" alt="{{userInfo.name}}"/></a>
+							<a ng-show="null === userInfo.userPicUrl" ng-href="user.html?publicKey={{userInfo.publicKey}}">{{userInfo.name}}</a>
 						</div>
 						<div class="col-md-9">
 							Public Key: <strong>{{userInfo.publicKey}}</strong><br />
