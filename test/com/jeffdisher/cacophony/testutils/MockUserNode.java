@@ -96,11 +96,15 @@ public class MockUserNode
 				? new ByteArrayInputStream(userPicData)
 				: null
 		;
+		String pictureMime = (null != userPicData)
+				? "image/jpeg"
+				: null
+		;
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(keyName);
 		ICommand.Result result = createChannel.runInContext(_lazyContext());
 		_handleResult(result);
-		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, null, null, null);
+		UpdateDescriptionCommand updateDescription = new UpdateDescriptionCommand(name, description, pictureStream, pictureMime, null, null, null);
 		result = updateDescription.runInContext(_lazyContext());
 		_handleResult(result);
 	}

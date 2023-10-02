@@ -22,7 +22,7 @@ public class TestUpdateDescriptionCommand
 	public void testMissingChannel() throws Throwable
 	{
 		MockUserNode user1 = new MockUserNode(KEY_NAME, MockKeys.K1, new MockSingleNode(new MockSwarm()), FOLDER.newFolder());
-		UpdateDescriptionCommand command = new UpdateDescriptionCommand("name", "description", null, null, null, null);
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand("name", "description", null, null, null, null, null);
 		try
 		{
 			user1.runCommand(null, command);

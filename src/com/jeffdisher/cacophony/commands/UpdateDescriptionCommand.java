@@ -25,7 +25,7 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  * NOTE:  The _pictureStream, if not null, will be closed by this command, during runInEnvironment, so the caller can
  * relinguish ownership of it.
  */
-public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _email, String _website, CidOrNone _featurePost) implements ICommand<ChannelDescription>
+public record UpdateDescriptionCommand(String _name, String _description, InputStream _pictureStream, String _pictureMime, String _email, String _website, CidOrNone _featurePost) implements ICommand<ChannelDescription>
 {
 	@Override
 	public ChannelDescription runInContext(Context context) throws IpfsConnectionException, UsageException
@@ -74,7 +74,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				
 			}
 			ILogger log = context.logger.logStart("Updating channel description...");
-			result = _run(access, _name, _description, _pictureStream, _email, _website, _featurePost);
+			result = _run(access, _name, _description, _pictureStream, _pictureMime, _email, _website, _featurePost);
 			// We want to capture the picture URL while we still have access (whether or not we changed it).
 			IpfsFile pictureCid = result.updatedStreamDescription().getPicCid();
 			if (null != pictureCid)
@@ -124,6 +124,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 	 * @param name The new name (or null, if not changed).
 	 * @param description The new description (or null, if not changed).
 	 * @param picture The stream containing the new picture (or null, if not changed).
+	 * @param pictureMime The MIME type of the picture (null if not provided).
 	 * @param email The E-Mail address (or null, if not changed).
 	 * @param website The web site (or null, if not changed).
 	 * @param featurePost The feature post CID (null, if not changed, resolving null if clearing).
@@ -135,6 +136,7 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 			, String name
 			, String description
 			, InputStream picture
+			, String pictureMime
 			, String email
 			, String website
 			, CidOrNone featurePost
@@ -166,8 +168,8 @@ public record UpdateDescriptionCommand(String _name, String _description, InputS
 				throw new UsageException("Picture too big (is " + MiscHelpers.humanReadableBytes(sizeInBytes) + ", limit " + MiscHelpers.humanReadableBytes(SizeLimits.MAX_DESCRIPTION_IMAGE_SIZE_BYTES) + ")");
 			}
 			pictureToUnpin = descriptionObject.getPicCid();
-			// TODO:  Plumb the mime in here.
-			descriptionObject.setUserPic("image/jpeg", pictureHash);
+			Assert.assertTrue(null != pictureMime);
+			descriptionObject.setUserPic(pictureMime, pictureHash);
 		}
 		if (null != email)
 		{

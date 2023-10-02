@@ -230,7 +230,7 @@ public class InteractiveServer
 		validated.addPostRawHandler("/home/recommend/add/{KEY}/{KEY}", new POST_Raw_AddRecommendation(runner, background));
 		validated.addDeleteHandler("/home/recommend/remove/{KEY}/{KEY}", new DELETE_RemoveRecommendation(runner, background));
 		validated.addPostFormHandler("/home/userInfo/info/{KEY}", new POST_Form_UserInfo(runner, background));
-		validated.addPostRawHandler("/home/userInfo/image/{KEY}", new POST_Raw_UserInfo(runner, background));
+		validated.addPostRawHandler("/home/userInfo/image/{KEY}/{string}", new POST_Raw_UserInfo(runner, background));
 		validated.addPostRawHandler("/home/userInfo/feature/{KEY}/{string}", new POST_Raw_Feature(runner, background));
 		validated.addGetHandler("/home/channels", new GET_HomeChannels(runner));
 		validated.addPostRawHandler("/home/channel/set/{KEY}", new POST_Raw_SetChannel(serverContext));

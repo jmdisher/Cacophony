@@ -107,6 +107,7 @@ public class CommandParser
 					, new ArgParameter("--pictureFile", ParameterType.FILE
 						, "The path to the image to use as the user pic"
 					)
+					, new ArgParameter("--pictureMime", ParameterType.STRING, "The MIME type of the picture (example: \"image/jpeg\")")
 					, new ArgParameter("--email", ParameterType.STRING, "Email address, if you want to share that")
 					, new ArgParameter("--website", ParameterType.URL, "Website, if you have one you want to share")
 					, new ArgParameter("--feature", ParameterType.CID_OR_NONE, "The CID of a stream from your channel to set as the feature post, or \"NONE\"")
@@ -117,12 +118,17 @@ public class CommandParser
 			String name = _optionalString(optional[0]);
 			String description = _optionalString(optional[1]);
 			File picturePath = _optionalFile(optional[2]);
-			String email = _optionalString(optional[3]);
-			String website = _optionalString(optional[4]);
-			CidOrNone feature = _optionalCidOrNone(optional[5]);
+			String pictureMime = _optionalString(optional[3]);
+			String email = _optionalString(optional[4]);
+			String website = _optionalString(optional[5]);
+			CidOrNone feature = _optionalCidOrNone(optional[6]);
 			FileInputStream pictureStream = null;
 			if (null != picturePath)
 			{
+				if (null == pictureMime)
+				{
+					throw new UsageException("Picture MIME type must be provided");
+				}
 				try
 				{
 					pictureStream = new FileInputStream(picturePath);
@@ -132,7 +138,7 @@ public class CommandParser
 					throw new UsageException("File not found: " + picturePath);
 				}
 			}
-			return new UpdateDescriptionCommand(name, description, pictureStream, email, website, feature);
+			return new UpdateDescriptionCommand(name, description, pictureStream, pictureMime, email, website, feature);
 		}),
 		READ_DESCRIPTION(true, "--readDescription"
 				, new ArgParameter[0]

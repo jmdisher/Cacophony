@@ -144,7 +144,7 @@ public class DataDomain implements Closeable
 		IpfsKey theirKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3QxV");
 		them.addNewKey(keyName, theirKey);
 		new CreateChannelCommand(keyName).runInContext(ourContext);
-		ICommand.Result result = new UpdateDescriptionCommand("us", "the main user", null, "email", null, null).runInContext(ourContext);
+		ICommand.Result result = new UpdateDescriptionCommand("us", "the main user", null, null, "email", null, null).runInContext(ourContext);
 		us.publish(keyName, ourKey, result.getIndexToPublish());
 		
 		// We will post something as "us" that the "they" can reply to.
@@ -172,7 +172,7 @@ public class DataDomain implements Closeable
 				, null
 		);
 		new CreateChannelCommand(keyName).runInContext(theirContext);
-		new UpdateDescriptionCommand("them", "the other user", null, null, "other.site", null).runInContext(theirContext);
+		new UpdateDescriptionCommand("them", "the other user", null, null, null, "other.site", null).runInContext(theirContext);
 		result = new PublishCommand("post1", "some description of the post", null, basePostCid, null, null, new ElementSubCommand[0]).runInContext(theirContext);
 		them.publish(keyName, theirKey, result.getIndexToPublish());
 		theirScheduler.shutdown();

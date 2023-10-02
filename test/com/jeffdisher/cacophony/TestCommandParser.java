@@ -111,7 +111,7 @@ public class TestCommandParser
 	public void testUpdateDescription() throws Throwable
 	{
 		File tempFile = FOLDER.newFile();
-		String[] foo = {"--updateDescription", "--name", "name", "--description", "description", "--pictureFile", tempFile.getAbsolutePath()};
+		String[] foo = {"--updateDescription", "--name", "name", "--description", "description", "--pictureFile", tempFile.getAbsolutePath(), "--pictureMime", "image/jpeg"};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		PrintStream capture = new PrintStream(outStream);
 		ICommand<?> command = CommandParser.parseArgs(foo, capture);

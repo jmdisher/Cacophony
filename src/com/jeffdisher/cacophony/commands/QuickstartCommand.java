@@ -39,7 +39,7 @@ public record QuickstartCommand(String _keyName, String _optionalChannelName) im
 		if (null != _optionalChannelName)
 		{
 			log = context.logger.logStart("Quickstart:  Setting channel name...");
-			UpdateDescriptionCommand updateCommand = new UpdateDescriptionCommand(_optionalChannelName, null, null, null, null, null);
+			UpdateDescriptionCommand updateCommand = new UpdateDescriptionCommand(_optionalChannelName, null, null, null, null, null, null);
 			finalUpdatedRoot = updateCommand.runInContext(context).getIndexToPublish();
 			log.logFinish("Done!");
 		}

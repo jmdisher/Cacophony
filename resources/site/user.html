@@ -71,6 +71,7 @@ function xsrfLoaded($scope)
 			canvas.toBlob(function(blob)
 			{
 				$scope.editState.imageData = blob;
+				$scope.editState.imageType = "jpeg";
 			}, "image/jpeg");
 		};
 		imageObject.src = $scope.editState.userPicUrl;
@@ -120,6 +121,7 @@ function xsrfLoaded($scope)
 				canvas.toBlob(function(blob)
 				{
 					$scope.editState.imageData = blob;
+					$scope.editState.imageType = "jpeg";
 					$scope.$apply();
 				}, "image/jpeg");
 				$scope.$apply();
@@ -132,7 +134,7 @@ function xsrfLoaded($scope)
 	{
 		$scope.editState.saveInProgress = true;
 		
-		REST.POST_withBinary("/home/userInfo/image/" + $scope.publicKey, $scope.editState.imageData)
+		REST.POST_withBinary("/home/userInfo/image/" + $scope.publicKey + "/" + $scope.editState.imageType, $scope.editState.imageData)
 			.then(result => result.text())
 			.then(function(newUrl) {
 				// Update the local data for the UI.
@@ -167,6 +169,8 @@ function xsrfLoaded($scope)
 		capturePicture(canvas, video_preview, function(blob)
 		{
 			$scope.editState.imageData = blob;
+			// This always captures as JPEG.
+			$scope.editState.imageType = "jpeg";
 		});
 		stopCamera(video_preview, $scope.editState.videoStream);
 		$scope.editState.videoStream = null;

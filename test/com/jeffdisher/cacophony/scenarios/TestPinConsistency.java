@@ -326,7 +326,7 @@ public class TestPinConsistency
 		user1.createChannel(KEY_NAME1, "User", "Description", "User pic\n".getBytes());
 		
 		// Change the picture.
-		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, new ByteArrayInputStream("new pic\n".getBytes()), null, null, null);
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, new ByteArrayInputStream("new pic\n".getBytes()), "image/jpeg", null, null, null);
 		user1.runCommand(null, command);
 		
 		// Verify integrity of user 1.

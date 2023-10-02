@@ -36,7 +36,7 @@ public class POST_Raw_Feature implements ValidatedEntryPoints.POST_Raw
 	{
 		IpfsKey homePublicKey = (IpfsKey)path[3];
 		CidOrNone featurePost = CidOrNone.parse((String)path[4]);
-		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, null, null, null, featurePost);
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, null, null, null, null, featurePost);
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, homePublicKey

@@ -34,9 +34,12 @@ public class POST_Raw_UserInfo implements ValidatedEntryPoints.POST_Raw
 	public void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable
 	{
 		IpfsKey homePublicKey = (IpfsKey)path[3];
+		String imageType = (String)path[4];
+		// We take in the second part of the MIME type for the image, so just add the prefix.
+		String mimeType = "image/" + imageType;
 		InputStream input = request.getInputStream();
 		
-		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, null, null, null);
+		UpdateDescriptionCommand command = new UpdateDescriptionCommand(null, null, input, mimeType, null, null, null);
 		InteractiveHelpers.SuccessfulCommand<ChannelDescription> success = InteractiveHelpers.runCommandAndHandleErrors(response
 				, _runner
 				, homePublicKey
