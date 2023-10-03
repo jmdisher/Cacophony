@@ -385,6 +385,16 @@ GLOBAL_Application.controller('AppController', function($scope)
 		audioBitrate: 64000,
 		// We will set this to non-null if it can be changed.
 		mutableProcessingCommand: null,
+		// We will just install our hard-coded bitrate defaults for the selector, here.
+		bitrates: [{
+			video: 256000,
+			audio: 64000,
+			readable: "256 kbit video is poor quality but very small.  Best when you can't reprocess or use a small resolution."
+		},{
+			video: 2500000,
+			audio: 64000,
+			readable: "2.5 Mbit video is high quality but huge.  Best when you are planning to reprocess the video."
+		}],
 	};
 	$scope.videoState = {
 		detecting: false,
@@ -677,6 +687,11 @@ GLOBAL_Application.controller('AppController', function($scope)
 		$scope.videoConfig.height = resolution.height;
 		$scope.videoConfig.fps = resolution.frameRate;
 	}
+	$scope.selectBitrate = function(bitrate)
+	{
+		$scope.videoConfig.videoBitrate = bitrate.video;
+		$scope.videoConfig.audioBitrate = bitrate.audio;
+	}
 	
 	// Setup related to the manual file selections.
 	document.getElementById("video_upload_selector").addEventListener("change", function(event)
@@ -901,7 +916,6 @@ function xsrfLoaded($scope)
 			<div class="row"><a class="btn" href="replies.html">Replies</a></div>
 			<div class="row"><a class="btn" href="publish.html">Publish or Create Draft</a></div>
 			<div class="row"><a class="btn" href="status.html">Server Status</a></div>
-			<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
 		</div>
 		<div class="card card-body col-md-6" ng-show="null !== homePublicKey">
 			<em ng-show="null == drafts">Loading drafts...</em>
@@ -919,7 +933,13 @@ function xsrfLoaded($scope)
 			</div>
 		</div>
 		<div class="card card-body col-md-3" ng-show="null !== homePublicKey">
-			<button class="btn btn-sm btn-success" ng-click="createNewDraft()" ng-disabled="inProgress">New Draft</button><br />
+			<button class="row btn btn-sm btn-success" ng-click="createNewDraft()" ng-disabled="inProgress">Create New Draft</button><br />
+			<div class="row card">
+				<h5 class="card-header">Publishing as user</h5>
+				<div class="card-body">
+					<caco-channel-selector on-select-user="selectUserKey" reset-counter="channelSelectorResetCounter"></caco-channel-selector>
+				</div>
+			</div>
 		</div>
 		<div class="col-md-9" ng-show="null === homePublicKey">
 			<strong>No home user selected.</strong>
@@ -931,116 +951,182 @@ function xsrfLoaded($scope)
 				Select a draft to see details.
 			</div>
 			<div class="card card-body" ng-show="null != selectedDraft">
-				Draft:  <strong>{{selectedDraft.title}}</strong><br />
 				<span ng-show="null !== selectedDraft.replyTo">Reply to: <caco-post-small cid="selectedDraft.replyTo"></caco-post-small></span><br />
-				Post type:
-				<div class="btn-group" role="group">
-					<button type="button" class="btn btn-primary" ng-click="setDraftType('TEXT_ONLY')" ng-disabled="'TEXT_ONLY' === selectedDraft.type">Text only</button>
-					<button type="button" class="btn btn-primary" ng-click="setDraftType('VIDEO')" ng-disabled="'VIDEO' === selectedDraft.type">Video</button>
-					<button type="button" class="btn btn-primary" ng-click="setDraftType('AUDIO')" ng-disabled="'AUDIO' === selectedDraft.type">Audio</button>
-				</div>
-				<div class="card card-body">
-					Video preview: <br />
-					<button type="button" class="btn btn-primary" ng-show="null === videoState.resolutions" ng-click="detectVideo()" ng-disabled="videoState.detecting">Detect camera and resolutions</button>
-					<div class="btn-group" ng-show="null !== videoState.resolutions">
-						<button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Select camera resolution</button>
-						<ul class="dropdown-menu">
-							<li ng-repeat="resolution in videoState.resolutions"><a class="dropdown-item" ng-click="selectResolution(resolution)">{{resolution.readable}}</a></li>
-						</ul>
-					</div>
-					Height: <input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoState.stream"></input><br />
-					Width: <input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoState.stream"></input><br />
-					FPS: <input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoState.stream"></input><br />
-					<video id="video_preview" ng-show="null !== videoState.stream" playsinline autoplay muted></video><br />
-					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-disabled="null != videoState.stream">Start Camera</button>
-						<button type="button" class="btn btn-primary" ng-click="stopCamera()" ng-disabled="null == videoState.stream">Stop Camera</button>
-					</div>
-				</div>
-				<div class="card card-body" ng-show="'VIDEO' === selectedDraft.type">
-					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload video from filesystem: <input type="file" accept="video/*" id="video_upload_selector" ng-disabled="selectedFiles.video.uploading" />
-					<div class="progress" ng-show="selectedFiles.video.uploading">
-						<div class="progress-bar" id="video_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-							0%
+				<div class="row card">
+					<h5 class="card-header">Post Type</h5>
+					<div class="card-body">
+						<div class="col-md-12 btn-group" role="group">
+							<button type="button" class="btn btn-primary" ng-click="setDraftType('TEXT_ONLY')" ng-disabled="'TEXT_ONLY' === selectedDraft.type">Text only</button>
+							<button type="button" class="btn btn-primary" ng-click="setDraftType('VIDEO')" ng-disabled="'VIDEO' === selectedDraft.type">Video</button>
+							<button type="button" class="btn btn-primary" ng-click="setDraftType('AUDIO')" ng-disabled="'AUDIO' === selectedDraft.type">Audio</button>
 						</div>
 					</div>
 				</div>
-				<div class="card card-body" ng-show="'AUDIO' === selectedDraft.type">
-					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload audio from filesystem: <input type="file" accept="audio/*" id="audio_upload_selector" ng-disabled="selectedFiles.audio.uploading" />
-					<div class="progress" ng-show="selectedFiles.audio.uploading">
-						<div class="progress-bar" id="audio_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-							0%
+				<div class="row card">
+					<h5 class="card-header">Video Preview</h5>
+					<div class="card-body">
+						<div class="input-group mb-3 ">
+							<button type="button" class="btn btn-primary" ng-show="null === videoState.resolutions" ng-click="detectVideo()" ng-disabled="videoState.detecting">Detect camera and resolutions</button>
+							<div class="btn-group" ng-show="null !== videoState.resolutions">
+								<button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Select camera resolution</button>
+								<ul class="dropdown-menu">
+									<li ng-repeat="resolution in videoState.resolutions"><a class="dropdown-item" ng-click="selectResolution(resolution)">{{resolution.readable}}</a></li>
+								</ul>
+							</div>
+							<span class="input-group-text">Height (pixels)</span>
+							<input type="text" class="form-control" ng-model="videoConfig.height" ng-disabled="null != videoState.stream"></input>
+							<span class="input-group-text">Width (pixels)</span>
+							<input type="text" class="form-control" ng-model="videoConfig.width" ng-disabled="null != videoState.stream"></input>
+							<span class="input-group-text">Frame Rate (FPS)</span>
+							<input type="text" class="form-control" ng-model="videoConfig.fps" ng-disabled="null != videoState.stream"></input>
+						</div>
+						<video id="video_preview" ng-show="null !== videoState.stream" playsinline autoplay muted></video><br />
+						<div class="col-md-12 btn-group" role="group">
+							<button type="button" class="btn btn-primary" ng-click="startCamera()" ng-disabled="null != videoState.stream">Start Camera</button>
+							<button type="button" class="btn btn-primary" ng-click="stopCamera()" ng-disabled="null == videoState.stream">Stop Camera</button>
+						</div>
+						<div class="row card" ng-show="(null !== videoState.stream) && ('VIDEO' === selectedDraft.type)">
+							<h5 class="card-header">Recording Video</h5>
+							<div class="card-body">
+								<div class="input-group mb-3 ">
+									<div class="btn-group">
+										<button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Select bitrates</button>
+										<ul class="dropdown-menu">
+											<li ng-repeat="bitrate in videoConfig.bitrates"><a class="dropdown-item" ng-click="selectBitrate(bitrate)">{{bitrate.readable}}</a></li>
+										</ul>
+									</div>
+									<span class="input-group-text">Video bits/s</span>
+									<input type="text" class="form-control" ng-model="videoConfig.videoBitrate" ng-disabled="null != videoState.recorder"></input>
+									<span class="input-group-text">Audio bits/s</span>
+									<input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != videoState.recorder"></input>
+								</div>
+								<div class="col-md-12 btn-group" role="group">
+									<button class="btn btn-success" ng-click="startRecordingVideo()" ng-disabled="null != videoState.recorder">Start Recording</button>
+									<button class="btn btn-danger" ng-click="stopRecordingVideo()" ng-disabled="null == videoState.recorder">Stop Recording</button>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
-				<div class="card card-body" ng-show="(null != videoState.stream) && ('VIDEO' === selectedDraft.type)">
-					Recording: <br />
-					Video bits/s: <input type="text" class="form-control" ng-model="videoConfig.videoBitrate" ng-disabled="null != videoState.recorder"></input><br />
-					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != videoState.recorder"></input><br />
-					<button class="btn btn-success" ng-click="startRecordingVideo()" ng-disabled="null != videoState.recorder">Start Recording</button>
-					<button class="btn btn-danger" ng-click="stopRecordingVideo()" ng-disabled="null == videoState.recorder">Stop Recording</button>
-				</div>
-				<div class="card card-body" ng-show="(null != audioState.stream) && ('AUDIO' === selectedDraft.type)">
-					Recording: <br />
-					Audio bits/s: <input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null != audioState.recorder"></input><br />
-					<button class="btn btn-success" ng-click="startRecordingAudioOnly()" ng-disabled="null !== audioState.recorder">Start Recording Audio</button>
-					<button class="btn btn-danger" ng-click="stopRecordingAudio()" ng-disabled="null === audioState.recorder">Stop Recording Audio</button>
-				</div>
-				<div class="card card-body" ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
-					<video id="original_review" controls></video><br />
-					<button class="btn btn-danger" ng-click="deleteOriginalVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Original video:  {{selectedDraft.originalVideo.byteSize}} bytes.
-				</div>
-				<div class="card card-body"  ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
-					Post-processing: <br />
-					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
-					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed (default is ffmpeg but you can change this with "--overrideCommand", when starting the server).<br />
-					<span ng-show="null !== videoConfig.mutableProcessingCommand">Recompression command: <input type="text" class="form-control" ng-model="videoConfig.mutableProcessingCommand" ng-disabled="null !== videoState.processingSocket"></input></span><br />
-					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="inProgress || (null != videoState.processingSocket)">Start Processing</button>
-					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="inProgress || (null == videoState.processingSocket)">Stop Processing</button>
-					<div class="progress" ng-show="null != videoState.processingSocket">
-						<div class="progress-bar" id="processing_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-							0%
+				<div class="row card" ng-show="(null != audioState.stream) && ('AUDIO' === selectedDraft.type)">
+					<h5 class="card-header">Recording Audio</h5>
+					<div class="card-body">
+						<div class="input-group mb-3 ">
+							<span class="input-group-text">Audio bits/s</span>
+							<input type="text" class="form-control" ng-model="videoConfig.audioBitrate" ng-disabled="null !== audioState.recorder"></input>
+						</div>
+						<div class="col-md-12 btn-group" role="group">
+							<button class="btn btn-success" ng-click="startRecordingAudioOnly()" ng-disabled="null !== audioState.recorder">Start Recording Audio</button>
+							<button class="btn btn-danger" ng-click="stopRecordingAudio()" ng-disabled="null === audioState.recorder">Stop Recording Audio</button>
 						</div>
 					</div>
 				</div>
-				<div class="card card-body" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
-					<video id="processed_review" controls></video><br />
-					<button class="btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress">Delete</button> Processed video:  {{selectedDraft.processedVideo.byteSize}} bytes.
-				</div>
-				<div class="card card-body" ng-show="(null !== selectedDraft.audio) && ('AUDIO' === selectedDraft.type)">
-					<audio id="audio_review" controls></audio><br />
-					<button class="btn btn-danger" ng-click="deleteAudio(selectedDraft)" ng-disabled="inProgress">Delete</button> Audio:  {{selectedDraft.audio.byteSize}} bytes.
-				</div>
-				<div class="card card-body">
-					Thumbnail: <br />
-					<div class="card card-body" ng-show="selectedDraft.thumbnail.byteSize > 0">
-						<canvas id="canvas"></canvas><br />
-						<button class="btn btn-danger" ng-click="deletethumbnail(selectedDraft)" ng-disabled="(null == selectedDraft.thumbnail) || (0 == selectedDraft.thumbnail.byteSize) || inProgress">Delete</button> Thumbnail:  {{selectedDraft.thumbnail.width}} x {{selectedDraft.thumbnail.height}} ({{selectedDraft.thumbnail.byteSize}} bytes).
+				<div class="row card" ng-show="'VIDEO' === selectedDraft.type">
+					<h5 class="card-header">Upload Video</h5>
+					<div class="card-body col-md-12">
+						<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
+						Select a video file from your local filesystem: <input type="file" accept="video/*" id="video_upload_selector" ng-disabled="selectedFiles.video.uploading" />
+						<div class="progress" ng-show="selectedFiles.video.uploading">
+							<div class="progress-bar" id="video_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+								0%
+							</div>
+						</div>
 					</div>
-					Capture thumbnail:<br />
-					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-primary" ng-click="captureFromPreview()" ng-disabled="null == videoState.stream">Capture from preview</button>
-						<button type="button" class="btn btn-primary" ng-click="captureOriginal()" ng-disabled="(null == selectedDraft.originalVideo) || (0 == selectedDraft.originalVideo.byteSize)">Capture from original video</button>
-						<button type="button" class="btn btn-primary" ng-click="captureProcessed()" ng-disabled="(null == selectedDraft.processedVideo) || (0 == selectedDraft.processedVideo.byteSize)">Capture from processed video</button>
-					</div>
-					
-					<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
-					<br />Upload thumbnail from filesystem: <input type="file" accept="image/*" id="thumbnail_upload_selector" ng-disabled="selectedFiles.thumbnail.uploading" />
 				</div>
-				<div class="card card-body">
-					Title: <input type="text" class="form-control" ng-model="selectedDraft.title"></input><br />
-					Description (limited to 20000 characters):<br />
-					<textarea class="form-control" ng-model="selectedDraft.description" rows="12" maxlength="20000"></textarea><br />
-					Discussion URL:
-					<input type="text" class="form-control" placeholder="(no link)" ng-model="selectedDraft.discussionUrl"></input><br />
-					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress || (null === homePublicKey)">Publish without video</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with original video</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with processed video</button>
-						<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.audio.byteSize > 0) && ('AUDIO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with audio</button>
+				<div class="row card" ng-show="'AUDIO' === selectedDraft.type">
+					<h5 class="card-header">Upload Audio</h5>
+					<div class="card-body col-md-12">
+						<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
+						Select an audio file from your local filesystem: <input type="file" accept="audio/*" id="audio_upload_selector" ng-disabled="selectedFiles.audio.uploading" />
+						<div class="progress" ng-show="selectedFiles.audio.uploading">
+							<div class="progress-bar" id="audio_upload_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+								0%
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row card" ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
+					<h5 class="card-header">Original Video</h5>
+					<div class="card-body col-md-12">
+						<video id="original_review" controls></video><br />
+						<button class="col-md-12 btn btn-danger" ng-click="deleteOriginalVideo(selectedDraft)" ng-disabled="inProgress">Delete original video</button>
+						Original video size:  {{selectedDraft.originalVideo.byteSize}} bytes.<br />
+					</div>
+				</div>
+				<div class="row card" ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
+					<h5 class="card-header">Post-processing</h5>
+					<div class="card-body col-md-12">
+						Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
+						Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed (default is ffmpeg but you can change this with "--overrideCommand", when starting the server).<br />
+						<div class="input-group mb-3" ng-show="null !== videoConfig.mutableProcessingCommand">
+							<span class="input-group-text">Recompression command</span>
+							<input type="text" class="form-control" ng-model="videoConfig.mutableProcessingCommand" ng-disabled="null !== videoState.processingSocket"></input>
+						</div>
+						<div class="col-md-12 btn-group" role="group">
+							<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="inProgress || (null != videoState.processingSocket)">Start Processing</button>
+							<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="inProgress || (null == videoState.processingSocket)">Stop Processing</button>
+						</div>
+						<div class="progress" ng-show="null != videoState.processingSocket">
+							<div class="progress-bar" id="processing_progress_bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+								0%
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row card" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
+					<h5 class="card-header">Processed Video</h5>
+					<div class="card-body col-md-12">
+						<video id="processed_review" controls></video><br />
+						<button class="col-md-12 btn btn-danger" ng-click="deleteProcessedVideo(selectedDraft)" ng-disabled="inProgress">Delete processed video</button>
+						Processed video size:  {{selectedDraft.processedVideo.byteSize}} bytes.<br />
+					</div>
+				</div>
+				<div class="row card" ng-show="(null !== selectedDraft.audio) && ('AUDIO' === selectedDraft.type)">
+					<h5 class="card-header">Audio</h5>
+					<div class="card-body col-md-12">
+						<audio id="audio_review" class="col-md-12" controls></audio><br />
+						<button class="col-md-12 btn btn-danger" ng-click="deleteAudio(selectedDraft)" ng-disabled="inProgress">Delete audio</button>
+						Audio size:  {{selectedDraft.audio.byteSize}} bytes.<br />
+					</div>
+				</div>
+				<div class="row card">
+					<h5 class="card-header">Thumbnail</h5>
+					<div class="card-body col-md-12">
+						<div class="card card-body" ng-show="selectedDraft.thumbnail.byteSize > 0">
+							<canvas id="canvas"></canvas><br />
+							<button class="btn btn-danger" ng-click="deletethumbnail(selectedDraft)" ng-disabled="(null == selectedDraft.thumbnail) || (0 == selectedDraft.thumbnail.byteSize) || inProgress">Delete</button> Thumbnail:  {{selectedDraft.thumbnail.width}} x {{selectedDraft.thumbnail.height}} ({{selectedDraft.thumbnail.byteSize}} bytes).
+						</div>
+						Capture thumbnail:<br />
+						<div class="col-md-12 btn-group" role="group">
+							<button type="button" class="btn btn-primary" ng-click="captureFromPreview()" ng-disabled="null == videoState.stream">Capture from preview</button>
+							<button type="button" class="btn btn-primary" ng-click="captureOriginal()" ng-disabled="(null == selectedDraft.originalVideo) || (0 == selectedDraft.originalVideo.byteSize)">Capture from original video</button>
+							<button type="button" class="btn btn-primary" ng-click="captureProcessed()" ng-disabled="(null == selectedDraft.processedVideo) || (0 == selectedDraft.processedVideo.byteSize)">Capture from processed video</button>
+						</div>
+						
+						<!-- It looks like this old version of Angular doesn't bind file inputs so we need to do this manually. -->
+						<br />Upload thumbnail from filesystem: <input type="file" accept="image/*" id="thumbnail_upload_selector" ng-disabled="selectedFiles.thumbnail.uploading" />
+					</div>
+				</div>
+				<div class="row card">
+					<h5 class="card-header">Post text</h5>
+					<div class="card-body col-md-12">
+						<div class="input-group mb-3 ">
+							<span class="input-group-text">Title</span>
+							<input type="text" class="form-control" ng-model="selectedDraft.title"></input>
+						</div>
+						Description (limited to 20000 characters):<br />
+						<textarea class="form-control" ng-model="selectedDraft.description" rows="12" maxlength="20000"></textarea><br />
+						<div class="input-group mb-3 ">
+							<span class="input-group-text">Discussion URL</span>
+							<input type="text" class="form-control" placeholder="(no link)" ng-model="selectedDraft.discussionUrl"></input>
+						</div>
+						<div class="col-md-12 btn-group" role="group">
+							<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
+							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress || (null === homePublicKey)">Publish without video</button>
+							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with original video</button>
+							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with processed video</button>
+							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.audio.byteSize > 0) && ('AUDIO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with audio</button>
+						</div>
 					</div>
 				</div>
 			</div>
