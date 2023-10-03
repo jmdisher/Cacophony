@@ -625,6 +625,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 				$scope.inProgress = false;
 				$scope.$apply();
 			});
+		// Since we just sent the data to save, it is no longer dirty.
+		$scope.autosave.dirty = false;
 	}
 	$scope.publish = function()
 	{
@@ -655,6 +657,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 					$scope.$apply();
 				});
 		});
+		// Since we just sent the data to save, it is no longer dirty.
+		$scope.autosave.dirty = false;
 	}
 	$scope.detectVideo = function()
 	{
@@ -831,6 +835,81 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		$scope.selectedDraft.type = type;
 	}
+	
+	// Set up the auto-save mechanism - this will write-back every second where changes have been made.
+	$scope.autosave = {};
+	$scope.autosave.dirty = false;
+	$scope.autosave.waitingForSave = false;
+	$scope.autosave.selectedDraft = null;
+	$scope.autosave.scheduleSave = function()
+	{
+		// Schedule the auto-save in 5 seconds (so we batch together changes).
+		console.log("Schedule auto-save");
+		setTimeout(function()
+		{
+			// Save the draft we selected (even though the user may have switched to another).
+			$scope.inProgress = true;
+			console.log("Run auto-save");
+			saveDraft($scope.autosave.selectedDraft)
+				.then(data => {
+					$scope.inProgress = false;
+					// We are ready to save again.
+					$scope.autosave.waitingForSave = false;
+					// If the dirty flag has been set, we want to reschedule this.
+					if ($scope.autosave.dirty)
+					{
+						$scope.autosave.scheduleSave();
+					}
+					$scope.$apply();
+				});
+			// Since we just sent the data to save, it is no longer dirty.
+			$scope.autosave.dirty = false;
+			// We can also clear our selected draft.
+			$scope.autosave.selectedDraft = null;
+			$scope.$apply();
+		}, 5000);
+		$scope.autosave.waitingForSave = true;
+	}
+	$scope.autosave.setDirty = function(selectedDraft)
+	{
+		// Make sure that there isn't already one scheduled for another draft (we will only do 1 at a time).
+		if ((selectedDraft === $scope.autosave.selectedDraft) || (null === $scope.autosave.selectedDraft))
+		{
+			// Select the current draft.
+			$scope.autosave.selectedDraft = selectedDraft;
+			// Set the dirty flag.
+			$scope.autosave.dirty = true;
+			// If we aren't already waiting to save or saving, request the save.
+			if (!$scope.autosave.waitingForSave)
+			{
+				$scope.autosave.scheduleSave();
+			}
+		}
+	}
+	$scope.$watch('selectedDraft.title', function(newValue, oldValue)
+	{
+		// Make sure that this isn't just on initial load.
+		if (null !== $scope.selectedDraft)
+		{
+			$scope.autosave.setDirty($scope.selectedDraft);
+		}
+	});
+	$scope.$watch('selectedDraft.description', function(newValue, oldValue)
+	{
+		// Make sure that this isn't just on initial load.
+		if (null !== $scope.selectedDraft)
+		{
+			$scope.autosave.setDirty($scope.selectedDraft);
+		}
+	});
+	$scope.$watch('selectedDraft.discussionUrl', function(newValue, oldValue)
+	{
+		// Make sure that this isn't just on initial load.
+		if (null !== $scope.selectedDraft)
+		{
+			$scope.autosave.setDirty($scope.selectedDraft);
+		}
+	});
 	
 	// NOTE:  We need to call this "cookie" page to set the cookie to defeat some XSRF cases (we mostly rely on SameSite to make this safe).
 	API_getXsrf().then(function() {
@@ -1121,7 +1200,7 @@ function xsrfLoaded($scope)
 							<input type="text" class="form-control" placeholder="(no link)" ng-model="selectedDraft.discussionUrl"></input>
 						</div>
 						<div class="col-md-12 btn-group" role="group">
-							<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress">Save Draft</button>
+							<button type="button" class="btn btn-success" ng-click="saveDraft()" ng-disabled="inProgress || !autosave.dirty">Save Draft</button>
 							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="('TEXT_ONLY' === selectedDraft.type) || ((null === selectedDraft.originalVideo) && (null === selectedDraft.processedVideo) && (null === selectedDraft.audio))" ng-disabled="inProgress || (null === homePublicKey)">Publish without video</button>
 							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.originalVideo.byteSize > 0) && (null === selectedDraft.processedVideo) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with original video</button>
 							<button type="button" class="btn btn-danger" ng-click="publish()" ng-show="(selectedDraft.processedVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)" ng-disabled="inProgress || (null === homePublicKey)">Publish with processed video</button>
