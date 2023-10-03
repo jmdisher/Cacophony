@@ -374,8 +374,18 @@ GLOBAL_Application.controller('AppController', function($scope)
 	$scope.selectedDraft = null;
 	$scope.inProgress = false;
 	
-	// This is set after we get the cookie - call to "GET /videoConfig".
-	$scope.videoConfig = null;
+	// We populate the videoConfig with some basic defaults and then we will see if we can read and modify the processing command, later ("GET /server/processingCommand").
+	$scope.videoConfig = {
+		// We will default to 480p with 30 FPS since this configuration is commonly supported.
+		height: 480,
+		width: 640,
+		fps: 30,
+		// The browser tends to default to something like 2.5 Mbps for video and 128 kbps for audio but we will use a smaller number in case the user can't post-process (they can change this in the UI, themselves).
+		videoBitrate: 256000,
+		audioBitrate: 64000,
+		// We will set this to non-null if it can be changed.
+		mutableProcessingCommand: null,
+	};
 	$scope.videoState = {
 		detecting: false,
 		resolutions: null,
@@ -507,7 +517,8 @@ GLOBAL_Application.controller('AppController', function($scope)
 	{
 		// The processing socket uses our standard events API.
 		// These keys are defined in VideoProcessContainer.java.
-		$scope.videoState.processingSocket = EVENTS_API.processVideo($scope.selectedDraft.id, $scope.videoConfig.processingCommand
+		// (Note that the processing command may be null in the cases where the server was ignoring it, anyway).
+		$scope.videoState.processingSocket = EVENTS_API.processVideo($scope.selectedDraft.id, $scope.videoConfig.mutableProcessingCommand
 			// onSocketOpen
 			, onProcessingSocketOpen
 			// onCreate
@@ -839,12 +850,22 @@ function xsrfLoaded($scope)
 			}
 			$scope.$apply();
 		});
-	REST.GET("/server/videoConfig")
-		.then(data => data.json())
-		.then(json => {
-			$scope.videoConfig = json;
+	// Check to see if we can change the processing command (returns 403 if we can't, so we will leave it null).
+	REST.GET("/server/processingCommand")
+		.then((response) => {
+			// We only want to continue to read the data if it is meaningful.
+			if (!response.ok)
+			{
+				throw response.status;
+			}
+			return response.text();
+		})
+		.then(command => {
+			$scope.videoConfig.mutableProcessingCommand = command;
 			$scope.$apply();
-		});
+		})
+		// On error, just do nothing - this is just so the error doesn't appear in the logs as uncaught when this is the common case.
+		.catch((errorCode) => {});
 }
 
 </script>
@@ -974,8 +995,8 @@ function xsrfLoaded($scope)
 				<div class="card card-body"  ng-show="(selectedDraft.originalVideo.byteSize > 0) && ('VIDEO' === selectedDraft.type)">
 					Post-processing: <br />
 					Web browsers typically do a poor job of compressing video since they are favouring real-time framerate, as opposed to minimal size.<br />
-					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed.<br />
-					Recompression command: <input type="text" class="form-control" ng-model="videoConfig.processingCommand" ng-disabled="!videoConfig.canChangeCommand || (null != videoState.processingSocket)"></input><br />
+					Since most web applications rely on a central server to do recompression, for their own storage benefits, this isn't as big a deal as it is for Cacophony (since every user hosts whatever they record, and their followers replicate it).  To allow better compression, Cacophony can invoke host-side recompression programs, if you have one installed (default is ffmpeg but you can change this with "--overrideCommand", when starting the server).<br />
+					<span ng-show="null !== videoConfig.mutableProcessingCommand">Recompression command: <input type="text" class="form-control" ng-model="videoConfig.mutableProcessingCommand" ng-disabled="null !== videoState.processingSocket"></input></span><br />
 					<button class="btn btn-success" ng-click="startProcessing()" ng-disabled="inProgress || (null != videoState.processingSocket)">Start Processing</button>
 					<button class="btn btn-danger" ng-click="stopProcessing()" ng-disabled="inProgress || (null == videoState.processingSocket)">Stop Processing</button>
 					<div class="progress" ng-show="null != videoState.processingSocket">

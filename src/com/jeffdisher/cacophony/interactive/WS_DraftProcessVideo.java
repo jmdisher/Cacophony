@@ -41,12 +41,11 @@ public class WS_DraftProcessVideo implements ValidatedEntryPoints.WEB_SOCKET_FAC
 	public WebSocketListener build(Object[] path)
 	{
 		int draftId = (Integer)path[3];
-		String processCommand = (String)path[4];
-		// See if we are supposed to override this connection.
-		if (null != _forcedCommand)
-		{
-			processCommand = _forcedCommand;
-		}
+		// We will ignore the processing command if we are forced to use a specific one (since this is otherwise a security/misuse concern).
+		String processCommand = (null == _forcedCommand)
+				? (String)path[4]
+				: _forcedCommand
+		;
 		return new ProcessVideoWebSocketListener(draftId, processCommand);
 	}
 

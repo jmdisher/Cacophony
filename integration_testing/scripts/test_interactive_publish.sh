@@ -82,9 +82,9 @@ touch "$WS_STATUS2.out"
 java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.WebSocketUtility "$XSRF_TOKEN" DRAIN "ws://127.0.0.1:8000/server/events/status" "event_api" "$WS_STATUS2.out" &
 STATUS_PID2=$!
 
-echo "Get the default video config..."
-VIDEO_CONFIG=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/server/videoConfig)
-requireSubstring "$VIDEO_CONFIG" "ffmpeg"
+echo "Get the default video post-processing command..."
+PROCESSING_COMMAND=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/server/processingCommand)
+requireSubstring "$PROCESSING_COMMAND" "ffmpeg"
 
 echo "Get the empty list of drafts..."
 echo "CALLING curl --cookie $COOKIES1 --cookie-jar $COOKIES1 --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all"

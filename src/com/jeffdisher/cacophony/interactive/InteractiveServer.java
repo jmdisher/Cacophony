@@ -210,7 +210,7 @@ public class InteractiveServer
 		server.addPostRawHandler("/server/cookie", new POST_Raw_Cookie(xsrf));
 		validated.addGetHandler("/server/status", new GET_ServerStatus(serverContext));
 		validated.addPostRawHandler("/server/stop", new POST_Raw_Stop(stopLatch));
-		validated.addGetHandler("/server/videoConfig", new GET_VideoConfig(processingCommand, canChangeCommand));
+		validated.addGetHandler("/server/processingCommand", new GET_ProcessingCommand(processingCommand, canChangeCommand));
 		validated.addGetHandler("/server/prefs", new GET_Prefs(serverContext));
 		validated.addPostFormHandler("/server/prefs", new POST_Prefs(serverContext, background));
 		validated.addWebSocketFactory("/server/events/status", EVENT_API_PROTOCOL, new WS_BackgroundStatus(statusHandoff));
@@ -292,7 +292,7 @@ public class InteractiveServer
 		}
 		else
 		{
-			serverLog.logOperation("WARNING:  Dangerous processing mode enabled!  User will be able to control server-side command from front-end.");
+			serverLog.logOperation("WARNING:  Dangerous processing mode enabled!  User will be able to control server-side command from front-end.  Default command is: \"" + processingCommand + "\"");
 		}
 		serverLog.logOperation("Cacophony interactive server running: http://127.0.0.1:" + port);
 		
