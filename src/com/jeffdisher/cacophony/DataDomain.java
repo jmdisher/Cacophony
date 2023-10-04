@@ -122,7 +122,7 @@ public class DataDomain implements Closeable
 		IpfsKey ourKey = IpfsKey.fromPublicKey("z5AanNVJCxnN4WUyz1tPDQxHx1QZxndwaCCeHAFj4tcadpRKaht3Qx1");
 		us.addNewKey(keyName, ourKey);
 		MultiThreadedScheduler ourScheduler = new MultiThreadedScheduler(us, 2);
-		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, ourFileSystem, ourScheduler);
+		LocalDataModel ourDataModel = LocalDataModel.verifiedAndLoadedModel(ourFileSystem, ourScheduler);
 		ILogger ourLogger = new SilentLogger();
 		Context ourContext = new Context(new DraftManager(ourFileSystem.getDraftsTopLevelDirectory())
 				, ourDataModel
@@ -155,7 +155,7 @@ public class DataDomain implements Closeable
 		// "They" never save drafts so we will just use the same one as "our", just to pass the sanity checks.
 		MemoryConfigFileSystem theirFileSystem = new MemoryConfigFileSystem(ourFileSystem.getDraftsTopLevelDirectory());
 		MultiThreadedScheduler theirScheduler = new MultiThreadedScheduler(them, 2);
-		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, theirFileSystem, theirScheduler);
+		LocalDataModel theirDataModel = LocalDataModel.verifiedAndLoadedModel(theirFileSystem, theirScheduler);
 		ILogger theirLogger = new SilentLogger();
 		Context theirContext = new Context(new DraftManager(theirFileSystem.getDraftsTopLevelDirectory())
 				, theirDataModel

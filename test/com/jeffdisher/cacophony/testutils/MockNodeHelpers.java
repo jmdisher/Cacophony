@@ -35,7 +35,7 @@ public class MockNodeHelpers
 		LocalDataModel model;
 		try
 		{
-			model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, new MemoryConfigFileSystem(null), network);
+			model = LocalDataModel.verifiedAndLoadedModel(new MemoryConfigFileSystem(null), network);
 		}
 		catch (UsageException e)
 		{

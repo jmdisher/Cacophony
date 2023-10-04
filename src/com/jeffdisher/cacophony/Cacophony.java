@@ -124,7 +124,7 @@ public class Cacophony {
 					scheduler = new MultiThreadedScheduler(connection, THREAD_COUNT);
 					
 					// Make sure that the local storage is in a sane state and load it into memory.
-					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(new LockingStats(), dataDirectoryWrapper.getFileSystem(), scheduler);
+					LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(dataDirectoryWrapper.getFileSystem(), scheduler);
 					
 					// Create the executor and logger for our run and put them into the context.
 					DraftManager draftManager = new DraftManager(dataDirectoryWrapper.getFileSystem().getDraftsTopLevelDirectory());

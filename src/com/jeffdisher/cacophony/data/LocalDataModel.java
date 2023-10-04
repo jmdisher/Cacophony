@@ -53,11 +53,10 @@ public class LocalDataModel
 	 * Verifies the on-disk data model, creating it if it isn't already present.
 	 * Loads the on-disk model into memory, returning this representation.
 	 * 
-	 * @param stats The locking stats object which will be notified about lock acquisition times.
 	 * @param fileSystem The file system where the data lives.
 	 * @param scheduler The scheduler for fetching network resources.
 	 */
-	public static LocalDataModel verifiedAndLoadedModel(ILockingStats stats, IConfigFileSystem fileSystem, INetworkScheduler scheduler) throws UsageException
+	public static LocalDataModel verifiedAndLoadedModel(IConfigFileSystem fileSystem, INetworkScheduler scheduler) throws UsageException
 	{
 		// If the config doesn't exist, create it with default values.
 		if (!fileSystem.doesConfigDirectoryExist())
@@ -160,8 +159,7 @@ public class LocalDataModel
 					.toArray((int size) -> new IpfsFile[size])
 			;
 			PinCacheData pinCache = _buildPinCache(scheduler, homeRoots, followees, favouritesCache, explicitCache);
-			return new LocalDataModel(stats
-					, fileSystem
+			return new LocalDataModel(fileSystem
 					, channels
 					, prefs
 					, pinCache
@@ -282,7 +280,6 @@ public class LocalDataModel
 	}
 
 
-	private final ILockingStats _stats;
 	private final IConfigFileSystem _fileSystem;
 	private final ChannelData _localIndex;
 	private final PrefsData _globalPrefs;
@@ -292,8 +289,7 @@ public class LocalDataModel
 	private final ExplicitCacheData _explicitCache;
 	private final ReadWriteLock _readWriteLock;
 
-	private LocalDataModel(ILockingStats stats
-			, IConfigFileSystem fileSystem
+	private LocalDataModel(IConfigFileSystem fileSystem
 			, ChannelData localIndex
 			, PrefsData globalPrefs
 			, PinCacheData globalPinCache
@@ -302,7 +298,6 @@ public class LocalDataModel
 			, ExplicitCacheData explicitCache
 	)
 	{
-		_stats = stats;
 		_fileSystem = fileSystem;
 		_localIndex = localIndex;
 		_globalPrefs = globalPrefs;
@@ -322,12 +317,8 @@ public class LocalDataModel
 	public IReadOnlyLocalData openForRead()
 	{
 		Lock lock = _readWriteLock.readLock();
-		long startMillis = _stats.currentTimeMillis();
 		lock.lock();
-		long endMillis = _stats.currentTimeMillis();
-		long deltaMillis = endMillis - startMillis;
-		_stats.acquiredReadLock(deltaMillis);
-		return LoadedStorage.openReadOnly(new ReadLock(_stats, lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
+		return LoadedStorage.openReadOnly(new ReadLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
 	/**
@@ -356,12 +347,8 @@ public class LocalDataModel
 	private IReadWriteLocalData _openForWrite()
 	{
 		Lock lock = _readWriteLock.writeLock();
-		long startMillis = _stats.currentTimeMillis();
 		lock.lock();
-		long endMillis = _stats.currentTimeMillis();
-		long deltaMillis = endMillis - startMillis;
-		_stats.acquiredWriteLock(deltaMillis);
-		return LoadedStorage.openReadWrite(new WriteLock(_stats, lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
+		return LoadedStorage.openReadWrite(new WriteLock(lock), _localIndex, _globalPinCache, _followIndex, _globalPrefs, _favouritesCache, _explicitCache);
 	}
 
 	private static void _writeToDisk(IConfigFileSystem fileSystem
@@ -393,28 +380,23 @@ public class LocalDataModel
 
 	public class ReadLock implements LoadedStorage.UnlockRead
 	{
-		private final ILockingStats _stats;
 		private final Lock _lock;
-		public ReadLock(ILockingStats stats, Lock lock)
+		public ReadLock(Lock lock)
 		{
-			_stats = stats;
 			_lock = lock;
 		}
 		@Override
 		public void closeRead()
 		{
-			_stats.releasedReadLock();
 			_lock.unlock();
 		}
 	}
 
 	public class WriteLock implements LoadedStorage.UnlockWrite
 	{
-		private final ILockingStats _stats;
 		private final Lock _lock;
-		public WriteLock(ILockingStats stats, Lock lock)
+		public WriteLock(Lock lock)
 		{
-			_stats = stats;
 			_lock = lock;
 		}
 		@Override
@@ -466,69 +448,7 @@ public class LocalDataModel
 					throw Assert.unexpected(e);
 				}
 			}
-			_stats.releasedWriteLock();
 			_lock.unlock();
 		}
 	}
-
-
-	/**
-	 * A simple mechanism for collecting stats around lock acquisition times within the LocalDataModel.
-	 * This is intended to provide insights into unusually long lock times for later investigation.
-	 * TODO:  Remove this before final release.
-	 */
-	public static interface ILockingStats
-	{
-		/**
-		 * @return The current time, in milliseconds.
-		 */
-		long currentTimeMillis();
-		/**
-		 * Called after acquiring the read lock.
-		 * @param waitMillis The number of milliseconds the thread waited to acquire the lock.
-		 */
-		void acquiredReadLock(long waitMillis);
-		/**
-		 * Called to release the read lock.
-		 */
-		void releasedReadLock();
-		/**
-		 * Called after acquiring the write lock.
-		 * @param waitMillis The number of milliseconds the thread waited to acquire the lock.
-		 */
-		void acquiredWriteLock(long waitMillis);
-		/**
-		 * Called to release the write lock.
-		 */
-		void releasedWriteLock();
-	}
-
-
-	/**
-	 * An empty implementation of LocalDataModel.ILockingStats which does nothing.  This is intended for use in tests
-	 * and other environments where this information isn't meaningful.
-	 */
-	public static final LocalDataModel.ILockingStats NONE = new LocalDataModel.ILockingStats() {
-		@Override
-		public long currentTimeMillis()
-		{
-			return 0L;
-		}
-		@Override
-		public void acquiredWriteLock(long waitMillis)
-		{
-		}
-		@Override
-		public void releasedWriteLock()
-		{
-		}
-		@Override
-		public void acquiredReadLock(long waitMillis)
-		{
-		}
-		@Override
-		public void releasedReadLock()
-		{
-		}
-	};
 }

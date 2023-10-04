@@ -46,7 +46,7 @@ public class TestLocalIntegrity
 		node.addNewKey(KEY_NAME1, MockKeys.K1);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		Context context = _createSingleNode(model, node, scheduler, null);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);
@@ -69,7 +69,7 @@ public class TestLocalIntegrity
 		node.addNewKey(KEY_NAME1, MockKeys.K1);
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(node, 1);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		Context context = _createSingleNode(model, node, scheduler, null);
 		
 		CreateChannelCommand createChannel = new CreateChannelCommand(KEY_NAME1);

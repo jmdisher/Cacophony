@@ -55,7 +55,7 @@ public class TestStartFollowingCommand
 		StartFollowingCommand command = new StartFollowingCommand(MockKeys.K2);
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
-		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, scheduler);
+		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
 		SilentLogger logger = new SilentLogger();
 		
 		AbstractDescription originalDescriptionData = AbstractDescription.createNew();
@@ -127,7 +127,7 @@ public class TestStartFollowingCommand
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(FOLDER.newFolder());
 		MultiThreadedScheduler scheduler = new MultiThreadedScheduler(sharedConnection, 1);
-		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, scheduler);
+		LocalDataModel localDataModel = LocalDataModel.verifiedAndLoadedModel(fileSystem, scheduler);
 		StandardLogger logger = StandardLogger.topLogger(new PrintStream(outputStream), false);
 		
 		boolean didFail = false;

@@ -50,7 +50,7 @@ public class TestLocalDataModel
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		
 		IReadOnlyLocalData reader = model.openForRead();
 		PrefsData prefs = reader.readGlobalPrefs();
@@ -66,7 +66,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		
 		// Create a bunch of threads with a barrier to synchronize them inside the read lock.
 		Thread[] threads = new Thread[3];
@@ -111,7 +111,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		
 		// Create a bunch of threads with an atomic counter to verify that nobody is ever inside the write lock at the same time.
 		// NOTE:  This is racy but should only rarely pass when it is actually broken.
@@ -170,7 +170,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model with some minimal data.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		byte[] serialized = _serializeModelToOpcodes(model);
 		
 		// Replay the stream to make sure it is what we expected to see.
@@ -198,7 +198,7 @@ public class TestLocalDataModel
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
 		// Create the model with enough data to see positive opcode generated.
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		try (IReadWriteLocalData access = model.openForWrite())
 		{
 			FolloweeData followees = access.readFollowIndex();
@@ -247,7 +247,7 @@ public class TestLocalDataModel
 		boolean error = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		}
 		catch (UsageException e)
 		{
@@ -269,7 +269,7 @@ public class TestLocalDataModel
 		boolean didFail = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		}
 		catch (UsageException e)
 		{
@@ -282,7 +282,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		}
 		catch (UsageException e)
 		{
@@ -295,7 +295,7 @@ public class TestLocalDataModel
 		didFail = false;
 		try
 		{
-			LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+			LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		}
 		catch (UsageException e)
 		{
@@ -314,7 +314,7 @@ public class TestLocalDataModel
 			}
 			atomic.commit();
 		}
-		LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 	}
 
 	@Test
@@ -331,7 +331,7 @@ public class TestLocalDataModel
 	{
 		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
 		
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, null);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, null);
 		
 		try (IReadWriteLocalData reader = model.openForWrite())
 		{
@@ -352,44 +352,6 @@ public class TestLocalDataModel
 			ChannelData channels = reader.readLocalIndex();
 			Assert.assertEquals(0, channels.getKeyNames().size());
 		}
-	}
-
-	@Test
-	public void lockStats() throws Throwable
-	{
-		long expectedMillis = 100L;
-		LocalDataModel.ILockingStats stats = new LocalDataModel.ILockingStats() {
-			private long time = 100L;
-			@Override
-			public long currentTimeMillis()
-			{
-				return this.time += 100L;
-			}
-			@Override
-			public void acquiredReadLock(long waitMillis)
-			{
-				Assert.assertEquals(expectedMillis, waitMillis);
-			}
-			@Override
-			public void releasedReadLock()
-			{
-			}
-			@Override
-			public void acquiredWriteLock(long waitMillis)
-			{
-				Assert.assertEquals(expectedMillis, waitMillis);
-			}
-			@Override
-			public void releasedWriteLock()
-			{
-			}
-		};
-		
-		MemoryConfigFileSystem fileSystem = new MemoryConfigFileSystem(null);
-		
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(stats, fileSystem, null);
-		model.openForRead().close();
-		model.openForWrite().close();
 	}
 
 	@Test
@@ -425,7 +387,7 @@ public class TestLocalDataModel
 			output.commit();
 		}
 		
-		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(LocalDataModel.NONE, fileSystem, network);
+		LocalDataModel model = LocalDataModel.verifiedAndLoadedModel(fileSystem, network);
 		try (IReadOnlyLocalData reader = model.openForRead())
 		{
 			FolloweeData followees = reader.readFollowIndex();
