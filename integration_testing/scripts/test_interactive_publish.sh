@@ -555,11 +555,49 @@ echo "Verify that we can see the published post in out list..."
 LISTING=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --listChannel)
 requireSubstring "$LISTING" "New Draft - $PUBLISH_ID"
 
+echo "Start the server again, to verify that a draft failing to publish will still be left in the drafts..."
+# Start the server.
+CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar "Cacophony.jar" --run --commandSelection DANGEROUS &
+SERVER_PID=$!
+waitForHttpStart 8000
 
+# Get the cookie.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/server/cookie >& /dev/null
+XSRF_TOKEN=$(grep XSRF "$COOKIES1" | cut -f 7)
+
+# Create the new draft.
+CREATED=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XPOST http://127.0.0.1:8000/allDrafts/new/NONE)
+# We need to parse out the ID (look for '{"id":2107961294,')
+ID_PARSE=$(echo "$CREATED" | sed 's/{"id":/\n/g'  | cut -d , -f 1)
+PUBLISH_ID=$(echo $ID_PARSE)
+
+# Verify that we see the draft in the list.
+DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all)
+requireSubstring "$DRAFTS" "[{\"id\":$PUBLISH_ID,\"publishedSecondsUtc\":0,\"title\":\"New Draft - $PUBLISH_ID\",\"description\":\"No description\",\"thumbnail\":null,\"discussionUrl\":\"\",\"originalVideo\":null,\"processedVideo\":null,\"audio\":null,\"replyTo\":null}]"
+
+echo "We will stop the IPFS node, early, to verify that the publish fails..."
 kill $PID1
+wait $PID1
+
+echo "Do the publish, verify that it fails, and then verify that the draft is still in the list..."
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --fail --no-progress-meter -XPOST http://127.0.0.1:8000/draft/publish/$PUBLIC_KEY/$PUBLISH_ID/TEXT_ONLY >& /dev/null
+if [ "22" != "$?" ];
+then
+	echo "Expected failure"
+	exit 1
+fi
+
+# Verify that it is still in the list.
+DRAFTS=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter -XGET http://127.0.0.1:8000/allDrafts/all)
+requireSubstring "$DRAFTS" "[{\"id\":$PUBLISH_ID,\"publishedSecondsUtc\":0,\"title\":\"New Draft - $PUBLISH_ID\",\"description\":\"No description\",\"thumbnail\":null,\"discussionUrl\":\"\",\"originalVideo\":null,\"processedVideo\":null,\"audio\":null,\"replyTo\":null}]"
+
+# Stop the server.
+curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8000/server/stop" >& /dev/null
+wait $SERVER_PID
+
+
 kill $PID2
 
-wait $PID1
 wait $PID2
 
 echo -e "\033[32;40mSUCCESS!\033[0m"
