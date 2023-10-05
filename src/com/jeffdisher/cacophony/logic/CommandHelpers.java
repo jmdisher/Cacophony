@@ -50,20 +50,16 @@ public class CommandHelpers
 		ILogger log = logger.logStart("Checking is cache requires shrinking...");
 		FolloweeData followees = access.writableFolloweeData();
 		PrefsData prefs = access.readPrefs();
-		
+		long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
+		long targetSizeBytes = (long)(prefs.followeeCacheTargetBytes * fullnessFraction);
+		if (currentCacheSizeBytes > targetSizeBytes)
 		{
-			long currentCacheSizeBytes = CacheHelpers.getCurrentCacheSizeBytes(followees);
-			long targetSizeBytes = (long)(prefs.followeeCacheTargetBytes * fullnessFraction);
-			if (currentCacheSizeBytes > targetSizeBytes)
-			{
-				log.logOperation("Pruning cache to " + MiscHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
-				long bytesToAdd = 0L;
-				CacheHelpers.pruneCacheIfNeeded(access, followees, new CacheAlgorithm(targetSizeBytes, currentCacheSizeBytes), bytesToAdd);
-			}
-			else
-			{
-				log.logOperation("Not pruning cache since " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + MiscHelpers.humanReadableBytes(targetSizeBytes));
-			}
+			log.logOperation("Pruning cache to " + MiscHelpers.humanReadableBytes(targetSizeBytes) + " from current size of " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + "...");
+			CacheHelpers.pruneCache(access, followees, currentCacheSizeBytes, targetSizeBytes);
+		}
+		else
+		{
+			log.logOperation("Not pruning cache since " + MiscHelpers.humanReadableBytes(currentCacheSizeBytes) + " is below target of " + MiscHelpers.humanReadableBytes(targetSizeBytes));
 		}
 		log.logFinish("Cache clean finished without issue");
 	}

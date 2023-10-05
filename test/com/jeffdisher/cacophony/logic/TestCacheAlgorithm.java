@@ -16,22 +16,6 @@ public class TestCacheAlgorithm
 	}
 
 	@Test
-	public void testAddingSmallToEmptyCache()
-	{
-		CacheAlgorithm manager = new CacheAlgorithm(10, 0);
-		boolean shouldClean = manager.needsCleanAfterAddition(5);
-		Assert.assertFalse(shouldClean);
-	}
-
-	@Test
-	public void testAddingBigToEmptyCache()
-	{
-		CacheAlgorithm manager = new CacheAlgorithm(10, 0);
-		boolean shouldClean = manager.needsCleanAfterAddition(12);
-		Assert.assertTrue(shouldClean);
-	}
-
-	@Test
 	public void testRemovingFromNonFull()
 	{
 		CacheAlgorithm.Candidate<Void> candidate = new CacheAlgorithm.Candidate<Void>(5, null);

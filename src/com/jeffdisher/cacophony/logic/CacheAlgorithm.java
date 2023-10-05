@@ -51,18 +51,6 @@ public class CacheAlgorithm
 	}
 
 	/**
-	 * Updates the internal size of the cache to assume bytesAdded has been added by some external decision-maker.
-	 * 
-	 * @param bytesAdded The number of bytes explicitly added to the cache.
-	 * @return True if the cache is now overflowing and needs to be cleaned.
-	 */
-	public boolean needsCleanAfterAddition(long bytesAdded)
-	{
-		_currentSizeBytes += bytesAdded;
-		return (_currentSizeBytes > _maximumSizeBytes);
-	}
-
-	/**
 	 * Returns a subset of the given candidatesList which should be removed.  Selection is done at random until the
 	 * cache is back within its limits.
 	 * 
