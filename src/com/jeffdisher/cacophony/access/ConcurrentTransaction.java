@@ -47,6 +47,12 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 	// We track any asynchronous operations we started so that we can verify that they were all observed, on commit or rollback.
 	private final List<IObservableFuture> _futures;
 
+	/**
+	 * Creates the transaction on top of the given scheduler, assuming the existing set of pinned files given.
+	 * 
+	 * @param scheduler The scheduler to use for network operations.
+	 * @param existingPin The existing set of files we can assume are pinned at the start of the transaction.
+	 */
 	public ConcurrentTransaction(INetworkScheduler scheduler, Set<IpfsFile> existingPin)
 	{
 		_scheduler = scheduler;
@@ -56,6 +62,12 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 		_futures = new ArrayList<>();
 	}
 
+	/**
+	 * Reads the size of a given CID, on the network.
+	 * 
+	 * @param cid The CID to read.
+	 * @return The size of the given CID, in bytes, as a future.
+	 */
 	public FutureSize getSizeInBytes(IpfsFile cid)
 	{
 		FutureSize result = _scheduler.getSizeInBytes(cid);
@@ -80,6 +92,12 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 		return result;
 	}
 
+	/**
+	 * Pins a given file on the local node.
+	 * 
+	 * @param cid The CID to pin.
+	 * @return The result of the pin, as a future.
+	 */
 	public FuturePin pin(IpfsFile cid)
 	{
 		int modifiedCount = _changedPinCounts.containsKey(cid)
@@ -107,6 +125,11 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 		return result;
 	}
 
+	/**
+	 * Records that the given CID should be unpinned on the local node, when the transaction commits.
+	 * 
+	 * @param cid The CID to unpin.
+	 */
 	public void unpin(IpfsFile cid)
 	{
 		int modifiedCount = _changedPinCounts.containsKey(cid)
@@ -117,6 +140,12 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 		_changedPinCounts.put(cid, (modifiedCount - 1));
 	}
 
+	/**
+	 * Commits the transaction, verifying that all associated network operations have been observed and then writes
+	 * back the final pin changes to the given resolver target.
+	 * 
+	 * @param target The resolver to use for updating pin counts.
+	 */
 	public void commit(IStateResolver target)
 	{
 		// Make sure that the caller has consumed everything.
@@ -128,6 +157,12 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 		target.commitTransactionPinCanges(_changedPinCounts, Collections.emptySet());
 	}
 
+	/**
+	 * Rolls-back and fails out of the transaction, waiting for all operations to complete (although they may not all
+	 * have been observed), and instructs the given resolver target to reverse any pin operations performed.
+	 * 
+	 * @param target The resolve to use for reverting pin changes.
+	 */
 	public void rollback(IStateResolver target)
 	{
 		// The futures may not have been observed but we still want them to complete in case, for example, the rollback
@@ -143,10 +178,18 @@ public class ConcurrentTransaction implements IBasicNetworkOps
 
 
 	/**
-	 * This should actually just call through to IWritingAccess.  It is spelled out directly just to make testing eaiser.
+	 * This should actually just call through to IWritingAccess.  It is spelled out directly just to make testing easier.
 	 */
 	public static interface IStateResolver
 	{
+		/**
+		 * Called when the transaction completes, either via commit or rollback.  The implementation is given the pin
+		 * state changes to instruct it how to rationalize the changes to the local IPFS node with its shared
+		 * representation.
+		 * 
+		 * @param changedPinCounts The pin counts which have changed, in commit.
+		 * @param falsePins The pins which should be reverted, on rollback.
+		 */
 		void commitTransactionPinCanges(Map<IpfsFile, Integer> changedPinCounts, Set<IpfsFile> falsePins);
 	}
 

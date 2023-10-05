@@ -13,6 +13,11 @@ public class ChangedRoot implements ICommand.Result
 {
 	private final IpfsFile _newRoot;
 
+	/**
+	 * Creates the result with the given new root.
+	 * 
+	 * @param newRoot The new root of the channel.
+	 */
 	public ChangedRoot(IpfsFile newRoot)
 	{
 		_newRoot = newRoot;

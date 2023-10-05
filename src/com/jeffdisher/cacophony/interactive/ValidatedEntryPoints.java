@@ -31,32 +31,69 @@ public class ValidatedEntryPoints
 	private final RestServer _server;
 	private final String _xsrf;
 
+	/**
+	 * Creates the entry-point wrapper over top of the given server, validating against the given xsrf.
+	 * 
+	 * @param server The server these entry-points should be built on.
+	 * @param xsrf The XSRF token to use in validation.
+	 */
 	public ValidatedEntryPoints(RestServer server, String xsrf)
 	{
 		_server = server;
 		_xsrf = xsrf;
 	}
 
+	/**
+	 * Installs a validated GET handler.
+	 * 
+	 * @param path The path to bind.
+	 * @param handler The handler to install.
+	 */
 	public void addGetHandler(String path, GET handler)
 	{
 		_server.addGetHandler(path, new VerifiedGet(handler));
 	}
 
+	/**
+	 * Installs a validated raw POST handler.
+	 * 
+	 * @param path The path to bind.
+	 * @param handler The handler to install.
+	 */
 	public void addPostRawHandler(String path, POST_Raw handler)
 	{
 		_server.addPostRawHandler(path, new VerifiedPostRaw(handler));
 	}
 
+	/**
+	 * Installs a validated form POST handler.
+	 * 
+	 * @param path The path to bind.
+	 * @param handler The handler to install.
+	 */
 	public void addPostFormHandler(String path, POST_Form handler)
 	{
 		_server.addPostFormHandler(path, new VerifiedPostForm(handler));
 	}
 
+	/**
+	 * Installs a validated DELETE handler.
+	 * 
+	 * @param path The path to bind.
+	 * @param handler The handler to install.
+	 */
 	public void addDeleteHandler(String path, DELETE handler)
 	{
 		_server.addDeleteHandler(path, new VerifiedDelete(handler));
 	}
 
+	/**
+	 * Installs a validated WebSocket factory.
+	 * 
+	 * @param path The path to bind.
+	 * @param protocolName The protocol to bind.
+	 * @param factory The factory to install.
+	 */
 	public void addWebSocketFactory(String path, String protocolName, WEB_SOCKET_FACTORY factory)
 	{
 		_server.addWebSocketFactory(path, protocolName, new VerifiedSocketFactory(factory));
@@ -182,28 +219,82 @@ public class ValidatedEntryPoints
 	}
 
 
+	/**
+	 * Validated GET handler.
+	 */
 	public interface GET
 	{
+		/**
+		 * Handles the call, after validation.
+		 * 
+		 * @param request The request.
+		 * @param response The response.
+		 * @param path The processed path components.
+		 * @throws Throwable If something went wrong.
+		 */
 		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable;
 	}
 
+	/**
+	 * Validated raw POST handler.
+	 */
 	public interface POST_Raw
 	{
+		/**
+		 * Handles the call, after validation.
+		 * 
+		 * @param request The request.
+		 * @param response The response.
+		 * @param path The processed path components.
+		 * @throws Throwable If something went wrong.
+		 */
 		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable;
 	}
 
+	/**
+	 * Validated form POST handler.
+	 */
 	public interface POST_Form
 	{
+		/**
+		 * Handles the call, after validation.
+		 * 
+		 * @param request The request.
+		 * @param response The response.
+		 * @param path The processed path components.
+		 * @param formVariables The data posted as form-encoded.
+		 * @throws Throwable If something went wrong.
+		 */
 		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path, StringMultiMap<String> formVariables) throws Throwable;
 	}
 
+	/**
+	 * Validated DELETE handler.
+	 */
 	public interface DELETE
 	{
+		/**
+		 * Handles the call, after validation.
+		 * 
+		 * @param request The request.
+		 * @param response The response.
+		 * @param path The processed path components.
+		 * @throws Throwable If something went wrong.
+		 */
 		void handle(HttpServletRequest request, HttpServletResponse response, Object[] path) throws Throwable;
 	}
 
+	/**
+	 * Validated WebSocket factory.
+	 */
 	public interface WEB_SOCKET_FACTORY
 	{
+		/**
+		 * Builds the WebSocketListener, after validation.
+		 * 
+		 * @param path The processed path components.
+		 * @return The listener for this WebSocket connection.
+		 */
 		WebSocketListener build(Object[] path);
 	}
 

@@ -25,6 +25,11 @@ public class DraftManager
 	private final File _draftsDirectory;
 	private final Map<Integer, DraftWrapper> _sharedWrappers;
 
+	/**
+	 * Creates a manager on top of the given drafts directory.
+	 * 
+	 * @param draftsDirectory The parent directory of the drafts.
+	 */
 	public DraftManager(File draftsDirectory)
 	{
 		Assert.assertTrue(null != draftsDirectory);

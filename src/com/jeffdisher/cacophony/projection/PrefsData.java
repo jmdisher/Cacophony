@@ -46,6 +46,9 @@ public class PrefsData
 	public static final long DEFAULT_FOLLOWEE_VIDEO_BYTES = 2_000_000_000L;
 
 
+	/**
+	 * @return A prefs object with default values populated for all fields.
+	 */
 	public static PrefsData defaultPrefs()
 	{
 		PrefsData prefs = new PrefsData();
@@ -122,6 +125,12 @@ public class PrefsData
 	{
 	}
 
+	/**
+	 * Serializes the preference data to the given opcode writer.
+	 * 
+	 * @param writer The writer which will serialize the given opcodes.
+	 * @throws IOException There was a problem while writing.
+	 */
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
 	{
 		writer.writeOpcode(new Opcode_SetPrefsInt(INT_VIDEO_EDGE, Integer.valueOf(this.videoEdgePixelMax)));

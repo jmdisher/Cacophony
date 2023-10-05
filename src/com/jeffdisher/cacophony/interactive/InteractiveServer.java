@@ -51,7 +51,23 @@ public class InteractiveServer
 	// The number of threads to use in the CommandRunner.  Most of these operations are simple but may block so we enable lots.
 	public static final int COMMAND_RUNNER_THREAD_COUNT = 16;
 
-	public static void runServerUntilStop(Context startingContext, Resource staticResource, int port, String processingCommand, boolean canChangeCommand) throws IpfsConnectionException
+	/**
+	 * Sets up, starts, and runs the interactive server.  Only returns once the server has shut down.
+	 * 
+	 * @param startingContext The initial context, as seen by any other non-interactive command.
+	 * @param staticResource The source of static resources (the HTML/JS WebUI).
+	 * @param port The port on which the server should listen.
+	 * @param processingCommand The command to use when processing videos.
+	 * @param canChangeCommand True if this command can be changed by the user, from the WebUI (DANGEROUS).
+	 * @throws IpfsConnectionException There was a failure setting up initial cache state due to problems contacting the
+	 * local IPFS node.
+	 */
+	public static void runServerUntilStop(Context startingContext
+			, Resource staticResource
+			, int port
+			, String processingCommand
+			, boolean canChangeCommand
+	) throws IpfsConnectionException
 	{
 		ILogger startupLogger = startingContext.logger.logStart("Setting up initial state before starting server...");
 		long startMillis = startingContext.currentTimeMillisGenerator.getAsLong();

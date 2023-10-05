@@ -56,6 +56,12 @@ public class FolloweeData implements IFolloweeReading
 		_mostRecentFetchMillis = 0;
 	}
 
+	/**
+	 * Serializes the data in V3 format.  This is only used for testing migration.
+	 * 
+	 * @param writer The opcode writer which will serialize the data.
+	 * @throws IOException There was a problem while writing.
+	 */
 	public void serializeToOpcodeWriterV3(OpcodeCodec.Writer writer) throws IOException
 	{
 		for (Map.Entry<IpfsKey, List<FollowingCacheElement>> elt : _followeeElements.entrySet())
@@ -72,6 +78,12 @@ public class FolloweeData implements IFolloweeReading
 		}
 	}
 
+	/**
+	 * Serializes the data in the receiver into opcodes.
+	 * 
+	 * @param writer The writer which will serialize the produced opcodes.
+	 * @throws IOException There was a problem while writing.
+	 */
 	public void serializeToOpcodeWriter(OpcodeCodec.Writer writer) throws IOException
 	{
 		// NOTE:  V4 uses stateful assumptions in the data stream.  It assumes that the initial followee state will be
@@ -386,5 +398,8 @@ public class FolloweeData implements IFolloweeReading
 	}
 
 
+	/**
+	 * A simple tuple to describe polling times, as we want to communicate the last attempt and last success times.
+	 */
 	public static record TimePair(long pollMillis, long successMillis) {}
 }

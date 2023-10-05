@@ -10,6 +10,10 @@ import com.jeffdisher.cacophony.types.IpfsKey;
 import com.jeffdisher.cacophony.types.UsageException;
 
 
+/**
+ * The list of parameter types which can be specified on the command-line.  The implementations will create the
+ * associated types from the given input strings.
+ */
 public enum ParameterType
 {
 	INT("int"
@@ -174,6 +178,16 @@ public enum ParameterType
 		_parser = parser;
 	}
 
+	/**
+	 * Parses the given argument value into the type of clazz provided.
+	 * 
+	 * @param <T> The type to return.
+	 * @param clazz The runtime class of the type to return.
+	 * @param arg The string value to parse.
+	 * @return A representation of arg, parsed into T.
+	 * @throws UsageException There was an error parsing the given arg with the parsing rules of the receiver (malformed
+	 * input).
+	 */
 	public <T> T parse(Class<T> clazz, String arg) throws UsageException
 	{
 		return clazz.cast(_parser.parse(arg));

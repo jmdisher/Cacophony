@@ -3,6 +3,9 @@ package com.jeffdisher.cacophony.testutils;
 import com.jeffdisher.cacophony.types.ILogger;
 
 
+/**
+ * A logger implementation which doesn't write the logs anywhere.  Note that it does still track the logger error state.
+ */
 public class SilentLogger implements ILogger
 {
 	private final SilentLogger _parent;

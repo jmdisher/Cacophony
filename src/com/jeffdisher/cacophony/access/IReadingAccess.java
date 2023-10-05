@@ -119,5 +119,9 @@ public interface IReadingAccess extends AutoCloseable, IBasicNetworkOps
 	 */
 	boolean isIpfsOnline();
 
+
+	/**
+	 * A basic record of the data associated with a single home user.
+	 */
 	record HomeUserTuple(String keyName, IpfsKey publicKey, IpfsFile lastRoot) {}
 }

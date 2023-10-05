@@ -26,6 +26,9 @@ public class FavouritesCacheData implements IFavouritesReading
 	private final Map<IpfsFile, CachedRecordInfo> _recordInfo;
 	private final List<IpfsFile> _additionOrder;
 
+	/**
+	 * Creates the empty cache.
+	 */
 	public FavouritesCacheData()
 	{
 		_recordInfo = new HashMap<>();

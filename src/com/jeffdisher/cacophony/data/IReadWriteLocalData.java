@@ -15,10 +15,28 @@ import com.jeffdisher.cacophony.projection.PrefsData;
  */
 public interface IReadWriteLocalData extends IReadOnlyLocalData
 {
+	/**
+	 * @param index The changed home channel data.
+	 */
 	void writeLocalIndex(ChannelData index);
+	/**
+	 * @param prefs The changed prefs data.
+	 */
 	void writeGlobalPrefs(PrefsData prefs);
+	/**
+	 * @param pinCache The changed global pin cache.
+	 */
 	void writeGlobalPinCache(PinCacheData pinCache);
+	/**
+	 * @param followIndex The changed followee data.
+	 */
 	void writeFollowIndex(FolloweeData followIndex);
+	/**
+	 * @param explicitCache The changed explicit cache.
+	 */
 	void writeExplicitCache(ExplicitCacheData explicitCache);
+	/**
+	 * @param favouritesCache The changed favourites data.
+	 */
 	void writeFavouritesCache(FavouritesCacheData favouritesCache);
 }

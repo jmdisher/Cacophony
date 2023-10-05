@@ -42,7 +42,16 @@ public class InteractiveHelpers
 	private static final String XSRF = "XSRF";
 	private static final String LOCAL_IP = "127.0.0.1";
 
-	// --- Methods related to saving the new video.
+	/**
+	 * Updates the information about the original video in the given draft.  This is called after the video has been
+	 * saved.
+	 * 
+	 * @param openDraft The draft to update.
+	 * @param mime The MIME type of the video.
+	 * @param height The height, in pixels, of the video.
+	 * @param width The width, in pixels, of the video.
+	 * @param savedFileSizeBytes The total size of the video, in bytes.
+	 */
 	public static void updateOriginalVideo(IDraftWrapper openDraft, String mime, int height, int width, long savedFileSizeBytes)
 	{
 		SizedElement originalVideo = new SizedElement(mime, height, width, savedFileSizeBytes);
@@ -60,6 +69,13 @@ public class InteractiveHelpers
 			)
 		);
 	}
+	/**
+	 * Updates the information about the audio in the given draft.  This is called after the audio has been saved.
+	 * 
+	 * @param openDraft The draft to update.
+	 * @param mime The MIME type of the audio.
+	 * @param savedFileSizeBytes The total size of the audio, in bytes.
+	 */
 	public static void updateAudio(IDraftWrapper openDraft, String mime, long savedFileSizeBytes)
 	{
 		SizedElement audio = new SizedElement(mime, 0, 0, savedFileSizeBytes);
@@ -78,25 +94,61 @@ public class InteractiveHelpers
 		);
 	}
 
-	// --- Methods related to processing the video (this is small since it mostly just invokes callbacks to the session on a different thread).
-	public static VideoProcessor openVideoProcessor(VideoProcessor.ProcessWriter session, DraftManager draftManager, int draftId, String processCommand) throws IOException
+	/**
+	 * Starts the video processor to convert the original video associated with the draftId using the given
+	 * processCommand.
+	 * 
+	 * @param session The session to use when updating the progress of the processing.
+	 * @param draftManager The draft manager.
+	 * @param draftId The draft ID to open.
+	 * @param processCommand The processing command to use.
+	 * @return The video processor for this operation.
+	 * @throws FileNotFoundException If the draft doesn't exist.
+	 * @throws IOException If the background process fails to start.
+	 */
+	public static VideoProcessor openVideoProcessor(VideoProcessor.ProcessWriter session, DraftManager draftManager, int draftId, String processCommand) throws FileNotFoundException, IOException
 	{
 		return new VideoProcessor(session, draftManager, draftId, processCommand);
 	}
+	/**
+	 * Called to stop the video processing operation.
+	 * 
+	 * @param processor The processor to stop.
+	 */
 	public static void closeVideoProcessor(VideoProcessor processor)
 	{
 		processor.stopProcess();
 	}
 
-	// --- Methods related to draft management.
+	/**
+	 * Fetches a list of all drafts known to the given manager.
+	 * 
+	 * @param draftManager The manager to query.
+	 * @return The list of draft objects.
+	 */
 	public static List<Draft> listDrafts(DraftManager draftManager)
 	{
 		return draftManager.listAllDrafts();
 	}
-	public static Draft createNewDraft(DraftManager draftManager, int draftId, IpfsFile replyTo) throws IOException
+	/**
+	 * Creates a new draft with the given ID.
+	 * 
+	 * @param draftManager The manager.
+	 * @param draftId The new draft ID to create.
+	 * @param replyTo The CID of another post on the network, if this is a reply (usually null).
+	 * @return The new draft object.
+	 */
+	public static Draft createNewDraft(DraftManager draftManager, int draftId, IpfsFile replyTo)
 	{
 		return draftManager.createNewDraft(draftId, replyTo).loadDraft();
 	}
+	/**
+	 * Reads data around an existing draft.
+	 * 
+	 * @param draftManager The manager.
+	 * @param draftId The ID to read.
+	 * @return The new draft object, null if the ID is unknown.
+	 */
 	public static Draft readExistingDraft(DraftManager draftManager, int draftId)
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -153,12 +205,30 @@ public class InteractiveHelpers
 		}
 		return finalDraft;
 	}
+	/**
+	 * Deletes an existing draft.
+	 * 
+	 * @param draftManager The manager.
+	 * @param draftId The ID to delete.
+	 * @return True if the draft was deleted or false if the draft couldn't be deleted due to existing readers or
+	 * writers.
+	 * @throws FileNotFoundException The draft is unknown.
+	 */
 	public static boolean deleteExistingDraft(DraftManager draftManager, int draftId) throws FileNotFoundException
 	{
 		return draftManager.deleteExistingDraft(draftId);
 	}
 
-	// --- Methods related to thumbnails.
+	/**
+	 * Loads a thumbnail from disk and writes it to the given outStream.
+	 * 
+	 * @param draftManager The manager.
+	 * @param draftId The ID of the draft to read.
+	 * @param mimeConsumer The consumer which will be given the MIME type.
+	 * @param outStream The stream which will receive the data.
+	 * @throws FileNotFoundException The draft wasn't found or it had no thumbnail.
+	 * @throws IOException There was an error writing to the stream.
+	 */
 	public static void loadThumbnailToStream(DraftManager draftManager, int draftId, Consumer<String> mimeConsumer, OutputStream outStream) throws FileNotFoundException, IOException
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -176,6 +246,19 @@ public class InteractiveHelpers
 			MiscHelpers.copyToEndOfFile(input, outStream);
 		}
 	}
+	/**
+	 * Saves a new thumbnail from the given inStream to disk for the given draft, replacing an existing one if it was
+	 * already there.  Also updates the draft to describe the thumbnail.
+	 * 
+	 * @param draftManager The manager.
+	 * @param draftId The ID of the draft to modify.
+	 * @param height The height of the image, in pixels
+	 * @param width The width of the image, in pixels.
+	 * @param mime The MIME type of the image.
+	 * @param inStream The stream which contains the raw image data.
+	 * @throws FileNotFoundException The draft doesn't exist.
+	 * @throws IOException There was an error reading the bytes from the network.
+	 */
 	public static void saveThumbnailFromStream(DraftManager draftManager, int draftId, int height, int width, String mime, InputStream inStream) throws FileNotFoundException, IOException
 	{
 		IDraftWrapper wrapper = draftManager.openExistingDraft(draftId);
@@ -461,5 +544,10 @@ public class InteractiveHelpers
 	}
 
 
+	/**
+	 * A common class used to communicate back the result of an internal command to the caller.
+	 *
+	 * @param <T> The type of data returned by the underlying command being run.
+	 */
 	public static record SuccessfulCommand<T extends ICommand.Result>(T result, Context context) {}
 }

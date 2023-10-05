@@ -17,11 +17,23 @@ import com.jeffdisher.cacophony.types.UsageException;
  */
 public class KeyNameRules
 {
+	/**
+	 * Checks the key name, throwing on failure.
+	 * 
+	 * @param key The key name to check.
+	 * @throws UsageException The key name is invalid.
+	 */
 	public static void validateKey(String key) throws UsageException
 	{
 		_validateKey(key);
 	}
 
+	/**
+	 * Checks the key name, returning whether it is valid or not.
+	 * 
+	 * @param key The key name to check.
+	 * @return True if valid, false if not.
+	 */
 	public static boolean isValidKey(String key)
 	{
 		boolean isValid;

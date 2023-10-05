@@ -28,6 +28,9 @@ import io.ipfs.api.IPFS;
 import io.ipfs.api.KeyInfo;
 
 
+/**
+ * An implementation of the connection used when contacting a real IPFS API server.
+ */
 public class IpfsConnection implements IConnection
 {
 	private final Uploader _uploader;

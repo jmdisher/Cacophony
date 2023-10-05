@@ -72,6 +72,13 @@ public class GlobalData2 {
 		}
 	}
 
+	/**
+	 * Serializes a V2 root object.
+	 * 
+	 * @param root The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRoot(CacophonyRoot root) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != root);
@@ -82,11 +89,25 @@ public class GlobalData2 {
 		);
 	}
 
+	/**
+	 * Deserializes bytes as a V2 root file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static CacophonyRoot deserializeRoot(byte[] data) throws FailedDeserializationException
 	{
 		return _deserializeData(data, SizeLimits2.MAX_ROOT_SIZE_BYTES, ROOT_SCHEMA, CacophonyRoot.class);
 	}
 
+	/**
+	 * Serializes a V2 records object.
+	 * 
+	 * @param records The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRecords(CacophonyRecords records) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != records);
@@ -97,11 +118,25 @@ public class GlobalData2 {
 		);
 	}
 
+	/**
+	 * Deserializes bytes as a V2 records file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static CacophonyRecords deserializeRecords(byte[] data) throws FailedDeserializationException
 	{
 		return _deserializeData(data, SizeLimits2.MAX_RECORDS_SIZE_BYTES, RECORDS_SCHEMA, CacophonyRecords.class);
 	}
 
+	/**
+	 * Serializes a V2 extended record object.
+	 * 
+	 * @param record The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRecord(CacophonyExtendedRecord record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
@@ -133,6 +168,13 @@ public class GlobalData2 {
 		return result;
 	}
 
+	/**
+	 * Deserializes bytes as a V2 extended record file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static CacophonyExtendedRecord deserializeRecord(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
@@ -171,6 +213,13 @@ public class GlobalData2 {
 		return result;
 	}
 
+	/**
+	 * Serializes a V2 description object.
+	 * 
+	 * @param description The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeDescription(CacophonyDescription description) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != description);
@@ -181,11 +230,25 @@ public class GlobalData2 {
 		);
 	}
 
+	/**
+	 * Deserializes bytes as a V2 description file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static CacophonyDescription deserializeDescription(byte[] data) throws FailedDeserializationException
 	{
 		return _deserializeData(data, SizeLimits2.MAX_DESCRIPTION_SIZE_BYTES, DESCRIPTION_SCHEMA, CacophonyDescription.class);
 	}
 
+	/**
+	 * Serializes a V2 recommendations object.
+	 * 
+	 * @param recommendations The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRecommendations(CacophonyRecommendations recommendations) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != recommendations);
@@ -196,6 +259,13 @@ public class GlobalData2 {
 		);
 	}
 
+	/**
+	 * Deserializes bytes as a V2 recommendations file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static CacophonyRecommendations deserializeRecommendations(byte[] data) throws FailedDeserializationException
 	{
 		return _deserializeData(data, SizeLimits2.MAX_RECOMMENDATIONS_SIZE_BYTES, RECOMMENDATIONS_SCHEMA, CacophonyRecommendations.class);

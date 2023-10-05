@@ -43,6 +43,16 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final List<IpfsFile> _temporarilySkippedRecords;
 	private final List<IpfsFile> _permanentlySkippedRecords;
 
+	/**
+	 * Creates the refresh support instance.
+	 * 
+	 * @param logger The logger.
+	 * @param transaction The transaction all actions will use (since this could be long-running).
+	 * @param followeeKey The public key of the followee to refresh.
+	 * @param isExistingFollowee True if this is someone we are already following (false if they are new).
+	 * @param cachedEntriesForFollowee The map of entries we have cached something about, for this user.
+	 * @param initialFailureSet The initial set of elements we have previously failed to load.
+	 */
 	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
@@ -71,6 +81,11 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_permanentlySkippedRecords = new ArrayList<>();
 	}
 
+	/**
+	 * Commits all changes to the followee to the given followees data.
+	 * 
+	 * @param followees The data to modify.
+	 */
 	public void commitFolloweeChanges(FolloweeData followees)
 	{
 		for (IpfsFile cid : _elementsToRemoveFromCache)

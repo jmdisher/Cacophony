@@ -49,8 +49,14 @@ import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
+/**
+ * The full command-line parsing options and logic.
+ */
 public class CommandParser
 {
+	/**
+	 * The default name used to describe the key, on the IPFS node.
+	 */
 	public static final String DEFAULT_KEY_NAME = "Cacophony";
 
 	private static record PreParse(ParameterType type, String pre) {
@@ -797,6 +803,14 @@ public class CommandParser
 		}
 	}
 
+	/**
+	 * Parses the given args, returning the command they describe.
+	 * 
+	 * @param args The command-line arguments.
+	 * @param errorStream The stream where parsing errors will be written.
+	 * @return The command to run (null if parameters don't describe a command).
+	 * @throws UsageException Thrown if options were provided but they were the wrong type.
+	 */
 	public static ICommand<?> parseArgs(String[] args, PrintStream errorStream) throws UsageException
 	{
 		// We assume that we only get this far is we have args.
@@ -845,6 +859,11 @@ public class CommandParser
 		return matched;
 	}
 
+	/**
+	 * Prints a usage string to the given stream, based on the possible options.
+	 * 
+	 * @param stream The output stream.
+	 */
 	public static void printUsage(PrintStream stream)
 	{
 		stream.println("Commands:");
@@ -859,6 +878,11 @@ public class CommandParser
 		}
 	}
 
+	/**
+	 * Prints the long-form help string, including the command and argument descriptions, to the given stream.
+	 * 
+	 * @param stream The output stream.
+	 */
 	public static void printHelp(PrintStream stream)
 	{
 		// We want to walk all the arguments and generate a detailed description for each.

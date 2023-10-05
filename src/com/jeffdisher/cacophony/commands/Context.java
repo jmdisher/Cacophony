@@ -95,17 +95,31 @@ public class Context
 		_selectedKey = selectedKey;
 	}
 
+	/**
+	 * @return The selected home user key (could be null).
+	 */
 	public IpfsKey getSelectedKey()
 	{
 		return _selectedKey;
 	}
 
+	/**
+	 * Changes the selected home user key.
+	 * 
+	 * @param key The new user key (could be null).
+	 */
 	public void setSelectedKey(IpfsKey key)
 	{
-		// Note that this could be null.
 		_selectedKey = key;
 	}
 
+	/**
+	 * Creates a clone of the receiver, but with the given home user selected.  This is often used in sub-commands where
+	 * the home user is specified but shouldn't change the existing context.
+	 * 
+	 * @param selectedKey The home user to select.
+	 * @return The new Context object.
+	 */
 	public Context cloneWithSelectedKey(IpfsKey selectedKey)
 	{
 		// We reference everything as a shared structure except for the key-name map, which is a duplicate.
@@ -126,6 +140,17 @@ public class Context
 		return context;
 	}
 
+	/**
+	 * Creates a clone of the receiver, but populating it with the given caches.  This is typically only used during
+	 * server start-up, when it needs to override the non-interactive Context created when the system started.
+	 * 
+	 * @param localRecordCache The local record cache.
+	 * @param userInfoCache The user info cache.
+	 * @param entryRegistry The entry registry.
+	 * @param cacheUpdater The cache updater object.
+	 * @param explicitCacheManager The manager of the explicit cache.
+	 * @return The new Context object.
+	 */
 	public Context cloneWithExtras(ILocalRecordCache localRecordCache
 			, ILocalUserInfoCache userInfoCache
 			, IEntryCacheRegistry entryRegistry

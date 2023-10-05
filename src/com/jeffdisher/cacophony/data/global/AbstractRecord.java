@@ -32,7 +32,13 @@ import com.jeffdisher.cacophony.utils.SizeLimits2;
  */
 public class AbstractRecord
 {
+	/**
+	 * The maximum size, in bytes, of a record file (user post).
+	 */
 	public static final long SIZE_LIMIT_BYTES = SizeLimits2.MAX_RECORD_SIZE_BYTES;
+	/**
+	 * The shared deserializer for reading an instance from raw data.
+	 */
 	public static final DataDeserializer<AbstractRecord> DESERIALIZER = (byte[] data) -> _commonMultiVersionLoad(data);
 
 	static {

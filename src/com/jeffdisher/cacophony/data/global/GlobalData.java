@@ -50,6 +50,13 @@ public class GlobalData {
 		}
 	}
 
+	/**
+	 * Serializes a V1 index file to bytes.
+	 * 
+	 * @param index The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeIndex(StreamIndex index) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != index);
@@ -75,6 +82,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Deserializes bytes as an index file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static StreamIndex deserializeIndex(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
@@ -98,6 +112,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Serializes a V1 records file to bytes.
+	 * 
+	 * @param records The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRecords(StreamRecords records) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != records);
@@ -123,6 +144,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Deserializes bytes as a records file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static StreamRecords deserializeRecords(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
@@ -140,6 +168,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Serializes a V1 record file to bytes.
+	 * 
+	 * @param record The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRecord(StreamRecord record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
@@ -165,6 +200,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Deserializes bytes as a record file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static StreamRecord deserializeRecord(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
@@ -182,6 +224,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Serializes a V1 description file to bytes.
+	 * 
+	 * @param record The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeDescription(StreamDescription record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
@@ -207,6 +256,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Deserializes bytes as a description file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static StreamDescription deserializeDescription(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);
@@ -224,6 +280,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Serializes a V1 recommendations file to bytes.
+	 * 
+	 * @param record The object to serialize.
+	 * @return The serialized bytes.
+	 * @throws SizeConstraintException The serialized data was too big for the protocol.
+	 */
 	public static byte[] serializeRecommendations(StreamRecommendations record) throws SizeConstraintException
 	{
 		Assert.assertTrue(null != record);
@@ -249,6 +312,13 @@ public class GlobalData {
 		return result;
 	}
 
+	/**
+	 * Deserializes bytes as a recommendations file.
+	 * 
+	 * @param data The raw bytes.
+	 * @return The new instance.
+	 * @throws FailedDeserializationException The data was malformed or violated schema.
+	 */
 	public static StreamRecommendations deserializeRecommendations(byte[] data) throws FailedDeserializationException
 	{
 		Assert.assertTrue(null != data);

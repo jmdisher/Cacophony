@@ -13,6 +13,9 @@ import com.jeffdisher.cacophony.data.local.IConfigFileSystem;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
+/**
+ * An in-memory implementation of the file system.  Note that it still requires a real directory for drafts.
+ */
 public class MemoryConfigFileSystem implements IConfigFileSystem
 {
 	private final File _draftsDirectoryOrNull;

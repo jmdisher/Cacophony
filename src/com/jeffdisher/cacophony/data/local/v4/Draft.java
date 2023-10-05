@@ -9,7 +9,7 @@ import com.jeffdisher.cacophony.utils.Assert;
 
 /**
  * Draft represents a not-yet-published post to a Cacophony stream.
- * It uses Java serialization for on-disk storage and JSON for its wire encoding for the web interface.
+ * It uses JSON for on-disk and over-the-wire encoding but the actual IO and serialization is handled elsewhere.
  * Note that the  title, description, and discussionUrl are never null but _can_ be empty strings (which, in the case of
  * discussionUrl, means "no link").
  */
@@ -26,7 +26,7 @@ public record Draft(int id
 )
 {
 	/**
-	 * This is currently only used in testing but may be used in place of Java Serialization, at some point.
+	 * Creates an instance from a JSON representation, typically loaded from disk.
 	 * 
 	 * @param json The JSON object.
 	 * @return The new Draft instance.
@@ -68,6 +68,9 @@ public record Draft(int id
 	}
 
 
+	/**
+	 * @return The receiver, encoded as a JSON object.
+	 */
 	public JsonObject toJson()
 	{
 		return new JsonObject()

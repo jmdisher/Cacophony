@@ -11,6 +11,9 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public class None implements ICommand.Result
 {
+	/**
+	 * There is no information within this type so we only ever use a shared instance.
+	 */
 	public static final None NONE = new None();
 
 	private None()

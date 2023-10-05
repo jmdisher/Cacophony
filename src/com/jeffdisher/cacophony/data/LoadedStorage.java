@@ -16,11 +16,35 @@ import com.jeffdisher.cacophony.utils.Assert;
  */
 public class LoadedStorage implements IReadWriteLocalData
 {
+	/**
+	 * Returns storage as a shared, read-only instance.
+	 * 
+	 * @param readLock The read lock to release when closing.
+	 * @param localIndex The local index.
+	 * @param globalPinCache The global pin cache.
+	 * @param followIndex The followee data.
+	 * @param globalPrefs The preferences.
+	 * @param favouritesCache The favourites data.
+	 * @param explicitCache The explicit cache.
+	 * @return A read-only view of the storage.
+	 */
 	public static IReadOnlyLocalData openReadOnly(UnlockRead readLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
 	{
 		return new LoadedStorage(readLock, null, localIndex, globalPinCache, followIndex, globalPrefs, favouritesCache, explicitCache);
 	}
 
+	/**
+	 * Returns storage as an exclusive, read-write instance.
+	 * 
+	 * @param writeLock The write lock to release when closing.
+	 * @param localIndex The local index.
+	 * @param globalPinCache The global pin cache.
+	 * @param followIndex The followee data.
+	 * @param globalPrefs The preferences.
+	 * @param favouritesCache The favourites data.
+	 * @param explicitCache The explicit cache.
+	 * @return A read-write view of the storage.
+	 */
 	public static IReadWriteLocalData openReadWrite(UnlockWrite writeLock, ChannelData localIndex, PinCacheData globalPinCache, FolloweeData followIndex, PrefsData globalPrefs, FavouritesCacheData favouritesCache, ExplicitCacheData explicitCache)
 	{
 		return new LoadedStorage(null, writeLock, localIndex, globalPinCache, followIndex, globalPrefs, favouritesCache, explicitCache);

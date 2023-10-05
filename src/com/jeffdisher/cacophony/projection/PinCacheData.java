@@ -10,8 +10,15 @@ import com.jeffdisher.cacophony.types.IpfsFile;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
+/**
+ * The pin cache maintains a reference count of all CIDs known to be pinned by Cacophony, on the local node, for any
+ * reason.  It is build during startup and used when interacting with the pin/unpin operations on the local node.
+ */
 public class PinCacheData
 {
+	/**
+	 * @return An empty cache.
+	 */
 	public static PinCacheData createEmpty()
 	{
 		return new PinCacheData(new HashMap<>());
@@ -25,12 +32,21 @@ public class PinCacheData
 		_map = map;
 	}
 
+	/**
+	 * @param file The file to check.
+	 * @return True if this file is known to be pinned by Cacophony.
+	 */
 	public boolean isPinned(IpfsFile file)
 	{
 		Assert.assertTrue(null != file);
 		return _map.containsKey(file);
 	}
 
+	/**
+	 * Increments the reference count on the pin state for file, setting it to 1 if not found.
+	 * 
+	 * @param file The file.
+	 */
 	public void addRef(IpfsFile file)
 	{
 		Assert.assertTrue(null != file);
@@ -42,6 +58,11 @@ public class PinCacheData
 		_map.put(file, newValue);
 	}
 
+	/**
+	 * Decrements the reference count on the pin state for file, removing it from the cache if it reaches 0.
+	 * 
+	 * @param file The file.
+	 */
 	public void delRef(IpfsFile file)
 	{
 		Assert.assertTrue(null != file);

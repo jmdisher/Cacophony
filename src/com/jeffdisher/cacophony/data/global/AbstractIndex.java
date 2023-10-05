@@ -19,7 +19,13 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class AbstractIndex
 {
+	/**
+	 * The maximum size, in bytes, of an index file.
+	 */
 	public static final long SIZE_LIMIT_BYTES = SizeLimits.MAX_INDEX_SIZE_BYTES;
+	/**
+	 * The shared deserializer for reading an instance from raw data.
+	 */
 	public static final DataDeserializer<AbstractIndex> DESERIALIZER = (byte[] data) -> _commonMultiVersionLoad(data);
 
 	/**

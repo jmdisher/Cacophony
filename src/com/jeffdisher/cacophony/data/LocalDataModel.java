@@ -378,7 +378,7 @@ public class LocalDataModel
 	}
 
 
-	public class ReadLock implements LoadedStorage.UnlockRead
+	private class ReadLock implements LoadedStorage.UnlockRead
 	{
 		private final Lock _lock;
 		public ReadLock(Lock lock)
@@ -392,7 +392,7 @@ public class LocalDataModel
 		}
 	}
 
-	public class WriteLock implements LoadedStorage.UnlockWrite
+	private class WriteLock implements LoadedStorage.UnlockWrite
 	{
 		private final Lock _lock;
 		public WriteLock(Lock lock)

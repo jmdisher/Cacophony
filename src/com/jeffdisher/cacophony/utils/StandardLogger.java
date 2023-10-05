@@ -5,8 +5,19 @@ import java.io.PrintStream;
 import com.jeffdisher.cacophony.types.ILogger;
 
 
+/**
+ * The standard logger is used in most cases, as it is given an output stream and told whether or not to log verbose
+ * messages there.
+ */
 public class StandardLogger implements ILogger
 {
+	/**
+	 * Creates a top-level logger on the given stream.
+	 * 
+	 * @param stream The stream where the logs will be written.
+	 * @param verbose True if the verbose logs should be written, false to ignore them.
+	 * @return The new logger instance.
+	 */
 	public static StandardLogger topLogger(PrintStream stream, boolean verbose)
 	{
 		return new StandardLogger(null, stream, "", verbose);

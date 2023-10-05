@@ -27,18 +27,24 @@ public class IpfsFile
 	}
 
 
-	private Multihash _cid;
+	private final Multihash _cid;
 
-	public IpfsFile(Multihash cid)
+	private IpfsFile(Multihash cid)
 	{
 		_cid = cid;
 	}
 
+	/**
+	 * @return The raw IPFS Multihash.
+	 */
 	public Multihash getMultihash()
 	{
 		return _cid;
 	}
 
+	/**
+	 * @return The Base58 encoding of the CID ("Qm" prefix).
+	 */
 	public String toSafeString()
 	{
 		// Both toString and toBase58 give the same answer for underlying files (although they differ for keys).

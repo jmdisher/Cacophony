@@ -15,27 +15,44 @@ public class OpcodeDeserializer
 {
 	private final ByteBuffer _data;
 
+	/**
+	 * Creates the deserializer, reading from the given ByteBuffer (whose state it will modify).
+	 * 
+	 * @param data The buffer to read.
+	 */
 	public OpcodeDeserializer(ByteBuffer data)
 	{
 		_data = data;
 	}
 
+	/**
+	 * @return The next byte in stream, as a boolean.
+	 */
 	public boolean readBoolean()
 	{
 		// We store a boolean as a byte of either 0 or 1 (physically, 0 and non-0).
 		return (0 != _data.get());
 	}
 
+	/**
+	 * @return The next 4 bytes in stream, as a signed integer.
+	 */
 	public int readInt()
 	{
 		return _data.getInt();
 	}
 
+	/**
+	 * @return The next 8 bytes in stream, as a signed long integer.
+	 */
 	public long readLong()
 	{
 		return _data.getLong();
 	}
 
+	/**
+	 * @return The next IpfsKey in the stream (could be null).
+	 */
 	public IpfsKey readKey()
 	{
 		// We will serialize these as strings, just since the helpers to use the binary encoding are unclear.
@@ -46,6 +63,9 @@ public class OpcodeDeserializer
 		;
 	}
 
+	/**
+	 * @return The next IpfsFile in the stream (could be null).
+	 */
 	public IpfsFile readCid()
 	{
 		// We will serialize these as strings, just since the helpers to use the binary encoding are unclear.
@@ -56,6 +76,9 @@ public class OpcodeDeserializer
 		;
 	}
 
+	/**
+	 * @return The next String in the stream (could be null).
+	 */
 	public String readString()
 	{
 		return _readString();

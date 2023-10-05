@@ -15,12 +15,23 @@ public class FutureCommand<T>
 	private T _result;
 	private CacophonyException _error;
 
+	/**
+	 * Creates the future, with the given context as an attribute which can be pulled from it.
+	 * 
+	 * @param context The context to associate with the future, for later look-up.
+	 */
 	public FutureCommand(Context context)
 	{
 		Assert.assertTrue(null != context);
 		this.context = context;
 	}
 
+	/**
+	 * Blocks for the future to complete, before returning success or throwing error.
+	 * 
+	 * @return The result of the command, on success.
+	 * @throws CacophonyException The exception encountered while running the command.
+	 */
 	public synchronized T get() throws CacophonyException
 	{
 		while ((null == _result) && (null == _error))
@@ -42,6 +53,11 @@ public class FutureCommand<T>
 		return _result;
 	}
 
+	/**
+	 * Sets the future's state to success, notifying anyone blocked.
+	 * 
+	 * @param result The result of the command.
+	 */
 	public synchronized void success(T result)
 	{
 		// Can only be set once and must be valid.
@@ -51,6 +67,11 @@ public class FutureCommand<T>
 		this.notifyAll();
 	}
 
+	/**
+	 * Sets the future's state to failure, notifying anyone blocked.
+	 * 
+	 * @param error The error which caused the command to fail.
+	 */
 	public synchronized void failure(CacophonyException error)
 	{
 		// Can only be set once and must be valid.

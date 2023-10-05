@@ -13,6 +13,11 @@ public class Incremental implements ICommand.Result
 {
 	public final boolean moreToDo;
 
+	/**
+	 * Creates the incremental result.
+	 * 
+	 * @param moreToDo True if the incremental operation left more to do or false if it was completed.
+	 */
 	public Incremental(boolean moreToDo)
 	{
 		this.moreToDo = moreToDo;

@@ -18,7 +18,13 @@ import com.jeffdisher.cacophony.utils.SizeLimits2;
  */
 public class AbstractRecords
 {
+	/**
+	 * The maximum size, in bytes, of a records file.
+	 */
 	public static final long SIZE_LIMIT_BYTES = SizeLimits2.MAX_RECORDS_SIZE_BYTES;
+	/**
+	 * The shared deserializer for reading an instance from raw data.
+	 */
 	public static final DataDeserializer<AbstractRecords> DESERIALIZER = (byte[] data) -> _commonMultiVersionLoad(data);
 
 	/**

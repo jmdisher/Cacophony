@@ -44,7 +44,23 @@ public class BackgroundOperations
 	// Instance variables which are only used by the background thread (only safe for the background thread).
 	private int _background_nextOperationNumber;
 
-	public BackgroundOperations(LongSupplier currentTimeMillisGenerator, ILogger logger, IOperationRunner operations, HandoffConnector<Integer, String> connector, long republishIntervalMillis, long followeeRefreshMillis)
+	/**
+	 * Creates an instance of the background operation runner, but doesn't start it (call "startProcess()").
+	 * 
+	 * @param currentTimeMillisGenerator Returns the current time, in millis since epoch, when called.
+	 * @param logger The logger.
+	 * @param operations A utility to run refresh and republish operations on the instance's behalf.
+	 * @param connector The connector to notify when operations start/stop.
+	 * @param republishIntervalMillis The initial interval, in milliseconds, for root republish operations.
+	 * @param followeeRefreshMillis The initial interval, in milliseconds, for followee refresh operations.
+	 */
+	public BackgroundOperations(LongSupplier currentTimeMillisGenerator
+			, ILogger logger
+			, IOperationRunner operations
+			, HandoffConnector<Integer, String> connector
+			, long republishIntervalMillis
+			, long followeeRefreshMillis
+	)
 	{
 		Assert.assertTrue(republishIntervalMillis > 0L);
 		Assert.assertTrue(followeeRefreshMillis > 0L);
@@ -113,12 +129,18 @@ public class BackgroundOperations
 		_handoff_localChannelsByKey = new HashMap<>();
 	}
 
+	/**
+	 * Starts the background process running.
+	 */
 	public void startProcess()
 	{
 		_handoff_keepRunning = true;
 		_background.start();
 	}
 
+	/**
+	 * Shuts down the receiver, waiting for the background thread to join before returning.
+	 */
 	public void shutdownProcess()
 	{
 		synchronized (this)
@@ -185,6 +207,13 @@ public class BackgroundOperations
 		this.notifyAll();
 	}
 
+	/**
+	 * Adds another followee to the receiver for background refresh.  Note that this assumes it hasn't been added,
+	 * before.
+	 * 
+	 * @param followeeKey The public key of the followee.
+	 * @param lastRefreshMillis The last time the followee was refreshed, in milliseconds since epoch.
+	 */
 	public void enqueueFolloweeRefresh(IpfsKey followeeKey, long lastRefreshMillis)
 	{
 		Assert.assertTrue(null != followeeKey);
@@ -198,6 +227,14 @@ public class BackgroundOperations
 		}
 	}
 
+	/**
+	 * Called to notify the receiver that the operation intervals have been updated.  This will update the internal
+	 * scheduled plans for any existing followees or home users so this call could result in a refresh triggering sooner
+	 * than initially planned.
+	 * 
+	 * @param republishIntervalMillis The new interval, in milliseconds, for root republish operations.
+	 * @param followeeRefreshMillis The new interval, in milliseconds, for followee refresh operations.
+	 */
 	public synchronized void intervalsWereUpdated(long republishIntervalMillis, long followeeRefreshMillis)
 	{
 		Assert.assertTrue(republishIntervalMillis > 0L);
@@ -240,6 +277,12 @@ public class BackgroundOperations
 		this.notifyAll();
 	}
 
+	/**
+	 * Requests that a followee be scheduled for refresh as soon as possible.
+	 * 
+	 * @param followeeKey The followee to prioritize.
+	 * @return True if the followee was found and prioritized, false if it wasn't found.
+	 */
 	public synchronized boolean refreshFollowee(IpfsKey followeeKey)
 	{
 		boolean didFindFollowee = _locked_prioritizeFollowee(followeeKey, 0L);

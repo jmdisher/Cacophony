@@ -12,6 +12,9 @@ import java.nio.file.Files;
 import com.jeffdisher.cacophony.utils.Assert;
 
 
+/**
+ * An implementation of IConfigFileSystem used in cases where the backing-store is on a real disk.
+ */
 public class RealConfigFileSystem implements IConfigFileSystem
 {
 	public static final String DRAFTS_DIRECTORY_NAME = "drafts";
@@ -19,6 +22,11 @@ public class RealConfigFileSystem implements IConfigFileSystem
 
 	private final File _directory;
 
+	/**
+	 * Creates the file system abstraction on top of the given directory.
+	 * 
+	 * @param directory The directory to use as the backing-store.
+	 */
 	public RealConfigFileSystem(File directory)
 	{
 		_directory = directory;

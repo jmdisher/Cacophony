@@ -38,6 +38,15 @@ public class CacheHelpers
 		return sizeBytes;
 	}
 
+	/**
+	 * Prunes the followee cache, if adding bytesToAdd would put it over its limit.
+	 * 
+	 * @param access Write-access.
+	 * @param followees The followees data.
+	 * @param algorithm The cache algorithm to consult.
+	 * @param bytesToAdd The number of bytes we want to reserve.
+	 * @throws IpfsConnectionException There was a problem unpinning cached elements.
+	 */
 	public static void pruneCacheIfNeeded(IWritingAccess access, FolloweeData followees, CacheAlgorithm algorithm, long bytesToAdd) throws IpfsConnectionException
 	{
 		if (algorithm.needsCleanAfterAddition(bytesToAdd))

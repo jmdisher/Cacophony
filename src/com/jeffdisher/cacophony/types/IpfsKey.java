@@ -42,18 +42,24 @@ public class IpfsKey
 	}
 
 
-	private Multihash _key;
+	private final Multihash _key;
 
 	public IpfsKey(Multihash key)
 	{
 		_key = key;
 	}
 
+	/**
+	 * @return The raw IPFS Multihash.
+	 */
 	public Multihash getMultihash()
 	{
 		return _key;
 	}
 
+	/**
+	 * @return The Base58 encoding of the CID ("z" prefix).
+	 */
 	public String toPublicKey()
 	{
 		// Note that toBase58 doesn't give the "z" prefix so we use the toString() helper.

@@ -28,6 +28,9 @@ public class LocalRecordCache implements ILocalRecordCache
 {
 	private final Map<IpfsFile, InternalElement> _cache;
 
+	/**
+	 * Creates an empty record cache.
+	 */
 	public LocalRecordCache()
 	{
 		_cache = new HashMap<>();

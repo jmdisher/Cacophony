@@ -35,11 +35,22 @@ public class HomeChannelModifier
 	private Tuple<AbstractRecords> _records;
 	private Tuple<AbstractDescription> _description;
 
+	/**
+	 * Creates the modifier on top of the given access, using its previously-writing root as its starting-point.
+	 * 
+	 * @param access Write-access.
+	 */
 	public HomeChannelModifier(IWritingAccess access)
 	{
 		_access = access;
 	}
 
+	/**
+	 * Lazily loads the recommendations.
+	 * 
+	 * @return The recommendations object.
+	 * @throws IpfsConnectionException There was a problem loading the channel data.
+	 */
 	public AbstractRecommendations loadRecommendations() throws IpfsConnectionException
 	{
 		if (null == _recommendations)
@@ -60,12 +71,23 @@ public class HomeChannelModifier
 		return _recommendations.element;
 	}
 
+	/**
+	 * Updates the recommendations to the new object, marking it for write-back on commit.
+	 * 
+	 * @param elt The new object.
+	 */
 	public void storeRecommendations(AbstractRecommendations elt)
 	{
 		Assert.assertTrue(null != _recommendations);
 		_recommendations = new Tuple<>(elt, _recommendations.originalCid, true);
 	}
 
+	/**
+	 * Lazily loads the records.
+	 * 
+	 * @return The records object.
+	 * @throws IpfsConnectionException There was a problem loading the channel data.
+	 */
 	public AbstractRecords loadRecords() throws IpfsConnectionException
 	{
 		if (null == _records)
@@ -86,12 +108,23 @@ public class HomeChannelModifier
 		return _records.element;
 	}
 
+	/**
+	 * Updates the records to the new object, marking it for write-back on commit.
+	 * 
+	 * @param elt The new object.
+	 */
 	public void storeRecords(AbstractRecords elt)
 	{
 		Assert.assertTrue(null != _records);
 		_records = new Tuple<>(elt, _records.originalCid, true);
 	}
 
+	/**
+	 * Lazily loads the description.
+	 * 
+	 * @return The description object.
+	 * @throws IpfsConnectionException There was a problem loading the channel data.
+	 */
 	public AbstractDescription loadDescription() throws IpfsConnectionException
 	{
 		if (null == _description)
@@ -112,6 +145,11 @@ public class HomeChannelModifier
 		return _description.element;
 	}
 
+	/**
+	 * Updates the description to the new object, marking it for write-back on commit.
+	 * 
+	 * @param elt The new object.
+	 */
 	public void storeDescription(AbstractDescription elt)
 	{
 		Assert.assertTrue(null != _description);

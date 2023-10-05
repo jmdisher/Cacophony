@@ -33,21 +33,45 @@ public class Uploader
 
 	private final HttpClient _client;
 
+	/**
+	 * Creates the uploader but doesn't start it (call "start()").
+	 */
 	public Uploader()
 	{
 		_client = new HttpClient();
 	}
 
+	/**
+	 * Starts the HTTP client.
+	 * 
+	 * @throws Exception Something went wrong.
+	 */
 	public void start() throws Exception
 	{
 		_client.start();
 	}
 
+	/**
+	 * Stops the HTTP client.
+	 * 
+	 * @throws Exception Something went wrong.
+	 */
 	public void stop() throws Exception
 	{
 		_client.stop();
 	}
 
+	/**
+	 * Uploads all the data in stream to the IPFS server as a multi-part chunked upload.
+	 * 
+	 * @param host The host to contact.
+	 * @param port The port to use.
+	 * @param stream The stream of data to write to the server.
+	 * @return The CID of the new file created.
+	 * @throws InterruptedException The upload was interrupted.
+	 * @throws TimeoutException The server timed out during upload.
+	 * @throws ExecutionException There was a problem within the HTTP client.
+	 */
 	public IpfsFile uploadFileInline(String host, int port, InputStream stream) throws InterruptedException, TimeoutException, ExecutionException
 	{
 		MultiPartRequestContent multiPart = new MultiPartRequestContent();

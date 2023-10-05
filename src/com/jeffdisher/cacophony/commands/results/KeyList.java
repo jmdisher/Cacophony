@@ -16,6 +16,12 @@ public class KeyList implements ICommand.Result
 	private final String _elementDescription;
 	public final IpfsKey[] keys;
 
+	/**
+	 * Creates a key list with a description of what they represent.
+	 * 
+	 * @param elementDescription The human-readable description of what the keys represent.
+	 * @param keys The list of keys.
+	 */
 	public KeyList(String elementDescription, IpfsKey[] keys)
 	{
 		Assert.assertTrue(null != keys);

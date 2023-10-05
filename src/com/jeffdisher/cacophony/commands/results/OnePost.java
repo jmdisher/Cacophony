@@ -18,6 +18,13 @@ public class OnePost implements ICommand.Result
 	public final IpfsFile recordCid;
 	public final AbstractRecord streamRecord;
 
+	/**
+	 * Creates the result describing the one post made.
+	 * 
+	 * @param newRoot The new root of the channel.
+	 * @param recordCid The CID of the new post, itself.
+	 * @param streamRecord The data which was written to recordCid.
+	 */
 	public OnePost(IpfsFile newRoot, IpfsFile recordCid, AbstractRecord streamRecord)
 	{
 		Assert.assertTrue(null != recordCid);

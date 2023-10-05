@@ -71,6 +71,13 @@ public class LeafFinder
 		this.sortedVideos = sortedVideos;
 	}
 
+	/**
+	 * Looks up the largest video in the list which is no larger than the given maxEdge, returning null if they are all
+	 * too large or there aren't any.
+	 * 
+	 * @param maxEdge The maximum edge size to return, in pixels.
+	 * @return The largest video matching or null if none exist or fit below the limit.
+	 */
 	public VideoLeaf largestVideoWithLimit(int maxEdge)
 	{
 		// The larger videos are at the end so we will just grab the last one which matches our comparison.
@@ -86,5 +93,8 @@ public class LeafFinder
 	}
 
 
+	/**
+	 * Describes a single video leaf.
+	 */
 	public static record VideoLeaf(IpfsFile cid, String mime, int edgeSize) {}
 }

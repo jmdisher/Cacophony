@@ -8,6 +8,9 @@ package com.jeffdisher.cacophony.types;
  */
 public class CidOrNone
 {
+	/**
+	 * "NONE" is a special-case which we identify via instance-equality so it must be a shared instance.
+	 */
 	public static final CidOrNone NONE = new CidOrNone();
 
 	/**

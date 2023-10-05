@@ -27,12 +27,26 @@ public class VideoProcessContainer
 	private int _draftId;
 	private VideoProcessor _processor;
 
+	/**
+	 * Creates the shared container for video processing.
+	 * 
+	 * @param manager 
+	 * @param connector
+	 */
 	public VideoProcessContainer(DraftManager manager, HandoffConnector<String, Long> connector)
 	{
 		_manager = manager;
 		_connector = connector;
 	}
 
+	/**
+	 * Starts the video process.
+	 * 
+	 * @param draftId The draft to open.
+	 * @param processCommand The command to run to process the video.
+	 * @return True if the command did start, false if there is already a process running.
+	 * @throws IOException The process failed to start.
+	 */
 	public synchronized boolean startProcess(int draftId, String processCommand) throws IOException
 	{
 		boolean didStart = false;
@@ -56,6 +70,13 @@ public class VideoProcessContainer
 		return didStart;
 	}
 
+	/**
+	 * Attaches a new listener to the current processing.
+	 * 
+	 * @param listener The listener to attach.
+	 * @param draftId The draft to which it should be attached.
+	 * @return True if the process was running for this draft, false if it wasn't and the listener was NOT attached.
+	 */
 	public synchronized boolean attachListener(HandoffConnector.IHandoffListener<String, Long> listener, int draftId)
 	{
 		boolean didConnect = false;
@@ -67,17 +88,25 @@ public class VideoProcessContainer
 		return didConnect;
 	}
 
+	/**
+	 * Detaches a previously attached listener.
+	 * 
+	 * @param listener The listener to detach.
+	 */
 	public synchronized void detachListener(HandoffConnector.IHandoffListener<String, Long> listener)
 	{
 		_connector.unregisterListener(listener);
 	}
 
+	/**
+	 * Requests that the current process be cancelled.  This will return once the process has stopped.
+	 */
 	public void cancelProcess()
 	{
 		// This could have been asynchronously completed, since it is called from the processor callback and from the
 		// socket, so check that.
 		// NOTE:  The cancel operation can take some time, and can create hidden deadlocks since it waits on thread join
-		// so we just unregister the processor vaiable under lock and run the close outside.
+		// so we just unregister the processor variable under lock and run the close outside.
 		VideoProcessor processorToClose = null;
 		synchronized(this)
 		{

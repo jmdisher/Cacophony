@@ -15,6 +15,11 @@ public class VideoProcessorCallbackHandler implements HandoffConnector.IHandoffL
 {
 	private final Session _session;
 
+	/**
+	 * Creates the handler on top of the given WebSocket session.
+	 * 
+	 * @param session The session of the WebSocket to use.
+	 */
 	public VideoProcessorCallbackHandler(Session session)
 	{
 		_session = session;

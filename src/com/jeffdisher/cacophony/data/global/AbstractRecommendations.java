@@ -19,7 +19,13 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class AbstractRecommendations
 {
+	/**
+	 * The maximum size, in bytes, of a recommendations file.
+	 */
 	public static final long SIZE_LIMIT_BYTES = SizeLimits.MAX_META_DATA_LIST_SIZE_BYTES;
+	/**
+	 * The shared deserializer for reading an instance from raw data.
+	 */
 	public static final DataDeserializer<AbstractRecommendations> DESERIALIZER = (byte[] data) -> _commonMultiVersionLoad(data);
 
 	/**

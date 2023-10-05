@@ -26,6 +26,12 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	private final WorkQueue _queue;
 	private final Thread[] _threads;
 
+	/**
+	 * Creates the multi-threaded scheduler and immediately starts its internal threads.
+	 * 
+	 * @param ipfs The low-level IPFS connection.
+	 * @param threadCount The number of threads to create to run background operations.
+	 */
 	public MultiThreadedScheduler(IConnection ipfs, int threadCount)
 	{
 		_ipfs = ipfs;

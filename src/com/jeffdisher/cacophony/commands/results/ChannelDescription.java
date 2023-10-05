@@ -22,6 +22,18 @@ public class ChannelDescription implements ICommand.Result
 	public final String userPicUrl;
 	public final IpfsFile feature;
 
+	/**
+	 * Creates a new channel description result.
+	 * 
+	 * @param newRoot The root of the channel.
+	 * @param name The name.
+	 * @param description The description.
+	 * @param userPicCid The CID of the user pic (could be null).
+	 * @param email The email address (could be null).
+	 * @param website The website (could be null).
+	 * @param userPicUrl The URL to use when fetching the user pic from the local node (could be null).
+	 * @param feature The CID of this channel's feature post (could be null).
+	 */
 	public ChannelDescription(IpfsFile newRoot
 			, String name
 			, String description

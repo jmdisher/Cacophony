@@ -10,6 +10,12 @@ import com.jeffdisher.cacophony.types.IpfsFile;
  */
 public class JsonGenerationHelpers
 {
+	/**
+	 * Encodes the preferences as JSON.
+	 * 
+	 * @param prefs The prefs object.
+	 * @return The prefs, encoded as JSON.
+	 */
 	public static JsonObject prefs(PrefsData prefs)
 	{
 		JsonObject dataPrefs = new JsonObject();
@@ -25,6 +31,17 @@ public class JsonGenerationHelpers
 		return dataPrefs;
 	}
 
+	/**
+	 * Encodes the given user description information as JSON.
+	 * 
+	 * @param name The user name.
+	 * @param description The user description.
+	 * @param userPicUrl The user pic URL (could be null).
+	 * @param emailOrNull The user's E-Mail address (could be null).
+	 * @param websiteOrNull The user's website address (could be null).
+	 * @param featureOrNull The user's feature post (could be null).
+	 * @return The user data, encoded as JSON.
+	 */
 	public static JsonObject userDescription(String name, String description, String userPicUrl, String emailOrNull, String websiteOrNull, IpfsFile featureOrNull)
 	{
 		JsonObject thisUser = new JsonObject();

@@ -76,9 +76,13 @@ public class DataDomain implements Closeable
 		}
 	}
 
+	/**
+	 * Called to see if we should be using the "fake" system (typically used in UI testing).
+	 * 
+	 * @return The data domain to describe the fake or real environment.
+	 */
 	public static DataDomain detectDataDomain()
 	{
-		// See if we are using the "fake" system (typically used in UI testing).
 		String fakeDirectory = System.getenv(EnvVars.ENV_VAR_CACOPHONY_ENABLE_FAKE_SYSTEM);
 		return (null != fakeDirectory)
 				? _fakeDirectory(fakeDirectory)
@@ -227,6 +231,13 @@ public class DataDomain implements Closeable
 		}
 	}
 
+	/**
+	 * Creates the connection object and base static content URL based on the data domain.
+	 * 
+	 * @param ipfsConnectString The IPFS API server string (of the form "/ip4/127.0.0.1/tcp/5001").
+	 * @return A pair describing the connection object and base static content URL.
+	 * @throws IpfsConnectionException There was a failure when attempting to contact the IPFS daemon.
+	 */
 	public Pair<IConnection, URL> buildSharedConnection(String ipfsConnectString) throws IpfsConnectionException
 	{
 		IConnection connection;
@@ -269,11 +280,21 @@ public class DataDomain implements Closeable
 		return new Pair<>(connection, baseUrl);
 	}
 
+	/**
+	 * @return The filesystem abstraction associated with this data domain.
+	 */
 	public IConfigFileSystem getFileSystem()
 	{
 		return _fileSystem;
 	}
 
+	/**
+	 * Finds the shared lock file, creating it if required.  This must be held over the course of the run to make sure
+	 * that multiple instances of Cacophony are not running.
+	 * 
+	 * @return The file lock to hold to avoid other instances concurrent accessing the same storage.
+	 * @throws UsageException There was a failure creating the lock file.
+	 */
 	public Lock lock() throws UsageException
 	{
 		FileChannel lockedChannel = (null != _realDirectoryOrNull)
@@ -333,6 +354,10 @@ public class DataDomain implements Closeable
 	}
 
 
+	/**
+	 * A basic wrapper over the FileChannel lock which exposes a basic close method to use with a try-with-resources
+	 * idiom.
+	 */
 	public class Lock implements AutoCloseable
 	{
 		private final FileChannel _lockedChannelOrNull;

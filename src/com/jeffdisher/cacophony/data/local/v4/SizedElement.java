@@ -16,6 +16,12 @@ public record SizedElement(String mime
 		, long byteSize
 )
 {
+	/**
+	 * Creates a new instance, reading it from a JSON representation.
+	 * 
+	 * @param json The representation of the element.
+	 * @return The new instance.
+	 */
 	public static SizedElement fromJson(JsonObject json)
 	{
 		// Note that these are allowed to be null.
@@ -36,6 +42,9 @@ public record SizedElement(String mime
 		return element;
 	}
 
+	/**
+	 * @return The receiver, represented in JSON.
+	 */
 	public JsonObject toJson()
 	{
 		return new JsonObject()

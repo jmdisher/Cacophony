@@ -34,6 +34,9 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	private final Map<IpfsFile, CachedRecordInfo> _recordInfo;
 	private long _totalCacheInBytes;
 
+	/**
+	 * Creates the empty cache.
+	 */
 	public ExplicitCacheData()
 	{
 		_lru = new ArrayList<>();

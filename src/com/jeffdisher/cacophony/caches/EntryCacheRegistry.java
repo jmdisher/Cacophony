@@ -35,6 +35,12 @@ public class EntryCacheRegistry implements IEntryCacheRegistry
 	// The refcounts of all of the elements in _combinedConnector (not populated until initializeCombinedView()).
 	private Map<IpfsFile, Integer> _combinedRefCounts;
 
+	/**
+	 * Creates the registry with the given dispatcher, using it to run changes against the HandofConnector instances
+	 * created within.
+	 * 
+	 * @param dispatcher The dispatcher used by any HandoffConnector instances created by the registry.
+	 */
 	public EntryCacheRegistry(Consumer<Runnable> dispatcher)
 	{
 		_dispatcher = dispatcher;

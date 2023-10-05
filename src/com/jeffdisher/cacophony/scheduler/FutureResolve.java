@@ -16,6 +16,11 @@ public class FutureResolve
 	private IpfsFile _file;
 	private IpfsConnectionException _exception;
 
+	/**
+	 * Creates an instance with the given key.
+	 * 
+	 * @param key The key (used to report failures).
+	 */
 	public FutureResolve(IpfsKey key)
 	{
 		_key = key;

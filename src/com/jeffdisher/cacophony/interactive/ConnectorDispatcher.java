@@ -19,17 +19,26 @@ public class ConnectorDispatcher implements Consumer<Runnable>
 	private boolean _keepRunning;
 	private Runnable _nextTask;
 
+	/**
+	 * Creates a new dispatcher with a single background thread, but doesn't start it (call "start()").
+	 */
 	public ConnectorDispatcher()
 	{
 		_backgroundThread = MiscHelpers.createThread(() -> _backgroundMain(), "ConnectorDispatcher");
 	}
 
+	/**
+	 * Starts the instance running.
+	 */
 	public void start()
 	{
 		_keepRunning = true;
 		_backgroundThread.start();
 	}
 
+	/**
+	 * Shuts down the instance, waiting for the background thread to join before returning.
+	 */
 	public void shutdown()
 	{
 		synchronized (this)

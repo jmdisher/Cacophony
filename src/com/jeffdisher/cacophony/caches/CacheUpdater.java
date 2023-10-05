@@ -23,6 +23,15 @@ public class CacheUpdater
 	private final HomeUserReplyCache _replyCache;
 	private final ReplyForest _replyForest;
 
+	/**
+	 * Creates the updater to populate the given list of caches.
+	 * 
+	 * @param recordCache Stores local records.
+	 * @param userInfoCache Stores local user info.
+	 * @param entryRegistry The registry of cached entries.
+	 * @param replyCache The cache of the home user replies.
+	 * @param replyForest The representation of the reply structure, emergent on top of replyTo fields.
+	 */
 	public CacheUpdater(LocalRecordCache recordCache
 			, LocalUserInfoCache userInfoCache
 			, EntryCacheRegistry entryRegistry

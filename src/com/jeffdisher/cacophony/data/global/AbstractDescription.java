@@ -22,7 +22,13 @@ import com.jeffdisher.cacophony.utils.SizeLimits;
  */
 public class AbstractDescription
 {
+	/**
+	 * The maximum size, in bytes, of a description file.
+	 */
 	public static final long SIZE_LIMIT_BYTES = SizeLimits.MAX_DESCRIPTION_SIZE_BYTES;
+	/**
+	 * The shared deserializer for reading an instance from raw data.
+	 */
 	public static final DataDeserializer<AbstractDescription> DESERIALIZER = (byte[] data) -> _commonMultiVersionLoad(data);
 
 	/**

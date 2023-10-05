@@ -17,10 +17,25 @@ import com.jeffdisher.cacophony.projection.PrefsData;
  */
 public interface IReadOnlyLocalData extends AutoCloseable
 {
+	/**
+	 * @return The description of home channel data.
+	 */
 	ChannelData readLocalIndex();
+	/**
+	 * @return The preferences.
+	 */
 	PrefsData readGlobalPrefs();
+	/**
+	 * @return The state of what is pinned on the local node.
+	 */
 	PinCacheData readGlobalPinCache();
+	/**
+	 * @return The information about what channels are being followed.
+	 */
 	FolloweeData readFollowIndex();
+	/**
+	 * @return The description of the posts which have been marked as favourite.
+	 */
 	FavouritesCacheData readFavouritesCache();
 	/**
 	 * Note that the explicit cache is technically being modified, even when only read, since it maintains an internal
