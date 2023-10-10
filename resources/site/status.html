@@ -20,11 +20,31 @@ function stopServer(onComplete)
 		.then(data => data.text())
 		.then(onComplete);
 }
+function purgeCache(onComplete)
+{
+	REST.POST("/server/clearExplicitCache")
+		.then(data => data.text())
+		.then(onComplete);
+}
 function republish($scope, publicKey, onComplete)
 {
 	REST.POST("/home/republish/" + publicKey)
 		.then(data => data.text())
 		.then(onComplete);
+}
+function refreshCacheData($scope)
+{
+	REST.GET("/server/status")
+		.then(result => result.json())
+		.then(status => {
+			$scope.serverStatus.hash = status["hash"];
+			$scope.serverStatus.version = status["version"];
+			$scope.serverStatus.followeeCacheBytes = status["followeeCacheBytes"];
+			$scope.serverStatus.explicitCacheBytes = status["explicitCacheBytes"];
+			$scope.serverStatus.favouritesCacheBytes = status["favouritesCacheBytes"];
+			$scope.serverStatus.ipfsStatus = status["ipfsStatus"];
+			$scope.$apply();
+		});
 }
 
 
@@ -32,6 +52,7 @@ function republish($scope, publicKey, onComplete)
 GLOBAL_Application.controller('AppController', function($scope)
 {
 	$scope.canPressStop = true;
+	$scope.canPurgeCache = true;
 	$scope.socket = null;
 	$scope.states = [];
 	$scope.newChannel = {
@@ -44,6 +65,15 @@ GLOBAL_Application.controller('AppController', function($scope)
 		$scope.canPressStop = false;
 		stopServer(function(text){
 			$scope.$apply();
+		});
+	}
+	$scope.purgeCache = function()
+	{
+		$scope.canPurgeCache = false;
+		purgeCache(function(ignored) {
+			$scope.canPurgeCache = true;
+			// Refresh the information.
+			refreshCacheData($scope);
 		});
 	}
 	$scope.republishRoot = function(homeTuple)
@@ -103,17 +133,8 @@ function xsrfLoaded($scope)
 		favouritesCacheBytes: 0,
 		ipfsStatus: null,
 	};
-	REST.GET("/server/status")
-		.then(result => result.json())
-		.then(status => {
-			$scope.serverStatus.hash = status["hash"];
-			$scope.serverStatus.version = status["version"];
-			$scope.serverStatus.followeeCacheBytes = status["followeeCacheBytes"];
-			$scope.serverStatus.explicitCacheBytes = status["explicitCacheBytes"];
-			$scope.serverStatus.favouritesCacheBytes = status["favouritesCacheBytes"];
-			$scope.serverStatus.ipfsStatus = status["ipfsStatus"];
-			$scope.$apply();
-		});
+	// Load the initial data.
+	refreshCacheData($scope);
 	
 	EVENTS_API.backgroundStatus(
 		// Socket open.
@@ -208,11 +229,12 @@ function xsrfLoaded($scope)
 				Followee cache size: {{serverStatus.followeeCacheBytes}} bytes.<br />
 				Explicit cache size: {{serverStatus.explicitCacheBytes}} bytes.<br />
 				Favourites cache size: {{serverStatus.favouritesCacheBytes}} bytes.<br />
+				<button class="btn btn-primary" ng-disabled="!canPurgeCache" ng-click="purgeCache()">Purge explicit cache and GC storage</button><br/>
 			</div>
 			<div class="row card card-body">
 				<span class="badge text-bg-success" ng-show="null !== socket">Server Online</span>
 				<span class="badge text-bg-secondary" ng-show="null === socket">Server Offline</span>
-				<button class="btn btn-danger" ng-show="null !== socket" ng-enabled="canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
+				<button class="btn btn-danger" ng-show="null !== socket" ng-disabled="!canPressStop" ng-click="stopServer()">STOP SERVER</button><br/>
 			</div>
 			
 			<hr />
