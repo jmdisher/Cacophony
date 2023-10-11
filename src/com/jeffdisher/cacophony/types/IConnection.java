@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.types;
 
 import java.io.InputStream;
+import java.util.Map;
 
 
 /**
@@ -85,13 +86,21 @@ public interface IConnection
 	void requestStorageGc() throws IpfsConnectionException;
 
 	/**
-	 * Looks up a named key on the local IPFS node, generating it if it doesn't exist.
+	 * Gets the map of keys which exist on the local node, resolved by their names.
+	 * 
+	 * @return The map of key names to public keys (never null).
+	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 */
+	Map<String, IpfsKey> getLocalPublicKeys() throws IpfsConnectionException;
+
+	/**
+	 * Generates a new key for the given name.
 	 * 
 	 * @param keyName The name of the key.
 	 * @return The generated key (never null).
-	 * @throws IpfsConnectionException If there is some problem contacting the server.
+	 * @throws IpfsConnectionException If there is some problem contacting the server or the key already exists.
 	 */
-	IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException;
+	IpfsKey generateLocalPublicKey(String keyName) throws IpfsConnectionException;
 
 	/**
 	 * Deletes the named public key from the local node.

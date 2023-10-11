@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -202,11 +203,16 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
-	public IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException
+	public Map<String, IpfsKey> getLocalPublicKeys() throws IpfsConnectionException
+	{
+		return Collections.unmodifiableMap(_keys);
+	}
+
+	@Override
+	public IpfsKey generateLocalPublicKey(String keyName) throws IpfsConnectionException
 	{
 		// We don't create keys in any existing tests, just look them up.
-		Assert.assertTrue(_keys.containsKey(keyName));
-		return _keys.get(keyName);
+		throw Assert.unreachable();
 	}
 
 	@Override

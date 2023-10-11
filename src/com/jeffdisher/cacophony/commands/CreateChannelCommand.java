@@ -1,6 +1,7 @@
 package com.jeffdisher.cacophony.commands;
 
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.access.IWritingAccess;
@@ -33,7 +34,12 @@ public record CreateChannelCommand(String _keyName) implements ICommand<ChangedR
 		ILogger setupLog = context.logger.logStart("Verifying IPFS and setting up public key called \"" + _keyName + "\"");
 		// We are performing a very low-level operation so we need to reach down into the IConnection object.
 		IConnection connection = context.basicConnection;
-		IpfsKey publicKey = connection.getOrCreatePublicKey(_keyName);
+		Map<String, IpfsKey> existingKeys = connection.getLocalPublicKeys();
+		IpfsKey publicKey = existingKeys.get(_keyName);
+		if (null == publicKey)
+		{
+			publicKey = connection.generateLocalPublicKey(_keyName);
+		}
 		// This will fail with exception, never null.
 		Assert.assertTrue(null != publicKey);
 		setupLog.logFinish("Key setup done:  " + publicKey);

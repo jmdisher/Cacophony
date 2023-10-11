@@ -7,7 +7,6 @@ import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -211,31 +210,41 @@ public class IpfsConnection implements IConnection
 	}
 
 	@Override
-	public IpfsKey getOrCreatePublicKey(String keyName) throws IpfsConnectionException
+	public Map<String, IpfsKey> getLocalPublicKeys() throws IpfsConnectionException
 	{
-		// We expect that the caller already validated this name.
-		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
 		String context = "lookup";
 		try
 		{
-			List<IpfsKey> matchOrEmpty = _defaultConnection.key.list().stream()
-					.filter((KeyInfo info) -> keyName.equals(info.name))
-					.map((KeyInfo info) -> new IpfsKey(info.id))
-					.collect(Collectors.toList())
+			Map<String, IpfsKey> allKeys = _defaultConnection.key.list().stream()
+					.collect(Collectors.toMap(
+							(KeyInfo info) -> info.name,
+							(KeyInfo info) -> new IpfsKey(info.id)
+					))
 			;
-			// We can have only 1 or 0 entries in this list.
-			Assert.assertTrue(matchOrEmpty.size() <= 1);
-			IpfsKey publicKey = (1 == matchOrEmpty.size())
-					? matchOrEmpty.get(0)
-					: null
-			;
-			if (null == publicKey)
-			{
-				// We need to create the key.
-				context = "creation";
-				KeyInfo info = _defaultConnection.key.gen(keyName, Optional.empty(), Optional.empty());
-				publicKey = new IpfsKey(info.id);
-			}
+			// Any failures should hit the exception cases.
+			Assert.assertTrue(null != allKeys);
+			return allKeys;
+		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException("getOrCreatePublicKey", context, e);
+		}
+		catch (IOException e)
+		{
+			throw new IpfsConnectionException("getOrCreatePublicKey", context, e);
+		}
+	}
+
+	@Override
+	public IpfsKey generateLocalPublicKey(String keyName) throws IpfsConnectionException
+	{
+		// We expect that the caller already validated this name.
+		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
+		String context = "creation";
+		try
+		{
+			KeyInfo info = _defaultConnection.key.gen(keyName, Optional.empty(), Optional.empty());
+			IpfsKey publicKey = new IpfsKey(info.id);
 			// Any failures should hit the exception cases.
 			Assert.assertTrue(null != publicKey);
 			return publicKey;
