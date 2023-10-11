@@ -276,23 +276,6 @@ public class IpfsConnection implements IConnection
 		}
 	}
 
-	@Override
-	public String getIpfsStatus() throws IpfsConnectionException
-	{
-		try
-		{
-			return _defaultConnection.diag.sys();
-		}
-		catch (RuntimeException e)
-		{
-			throw _handleIpfsRuntimeException("getIpfsStatus", null, e);
-		}
-		catch (IOException e)
-		{
-			throw new IpfsConnectionException("getIpfsStatus", null, e);
-		}
-	}
-
 
 	private IpfsConnectionException _handleIpfsRuntimeException(String action, Object context, RuntimeException e) throws IpfsConnectionException
 	{

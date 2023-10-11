@@ -369,7 +369,8 @@ public class StandardAccess implements IWritingAccess
 		boolean isOnline;
 		try
 		{
-			_sharedConnection.getIpfsStatus();
+			// We just want to hit a cheap end-point so use the key list, since that is local-only and requires no special knowledge.
+			_sharedConnection.getLocalPublicKeys();
 			isOnline = true;
 		}
 		catch (IpfsConnectionException e)

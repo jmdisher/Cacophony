@@ -221,12 +221,6 @@ public class MockSingleNode implements IConnection
 		_keys.remove(keyName);
 	}
 
-	@Override
-	public String getIpfsStatus() throws IpfsConnectionException
-	{
-		return "mock";
-	}
-
 
 	private byte[] _networkLoadData(IpfsFile file)
 	{
