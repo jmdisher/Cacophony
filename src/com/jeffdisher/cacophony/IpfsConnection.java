@@ -203,6 +203,10 @@ public class IpfsConnection implements IConnection
 		{
 			_defaultConnection.repo.gc();
 		}
+		catch (RuntimeException e)
+		{
+			throw _handleIpfsRuntimeException("gc", null, e);
+		}
 		catch (IOException e)
 		{
 			throw new IpfsConnectionException("gc", null, e);
