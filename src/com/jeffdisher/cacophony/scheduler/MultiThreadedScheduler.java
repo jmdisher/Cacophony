@@ -280,31 +280,6 @@ public class MultiThreadedScheduler implements INetworkScheduler
 	}
 
 	@Override
-	public FutureKey getOrCreatePublicKey(String keyName)
-	{
-		// We expect that the caller already validated this name.
-		Assert.assertTrue(KeyNameRules.isValidKey(keyName));
-		FutureKey future = new FutureKey();
-		Runnable r = () -> {
-			try
-			{
-				IpfsKey publicKey = _ipfs.getOrCreatePublicKey(keyName);
-				future.success(publicKey);
-			}
-			catch (IpfsConnectionException e)
-			{
-				future.failureInConnection(e);
-			}
-		};
-		boolean didEnqueue = _queue.enqueue(r);
-		if (!didEnqueue)
-		{
-			future.failureInConnection(WorkQueue.createShutdownError());
-		}
-		return future;
-	}
-
-	@Override
 	public FutureVoid deletePublicKey(String keyName)
 	{
 		FutureVoid future = new FutureVoid();
