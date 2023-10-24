@@ -148,8 +148,11 @@ public class IpfsConnection implements IConnection
 	{
 		try
 		{
-			Map<?,?> dataMap = _defaultConnection.file.ls(cid.getMultihash());
-			return ((Number)((Map<?,?>)((Map<?,?>)dataMap.get("Objects")).get(cid.toSafeString())).get("Size")).longValue();
+			// Note that the "ls(CID)" helper _seems_ like it should work, and also show the size of every Merkle node
+			// but seems broken:  Sometimes it returns an empty list of links even though the file is non-empty and can
+			// be fetched.
+			Map<?,?> dataMap = _defaultConnection.files.stat("/ipfs/" + cid.toSafeString());
+			return ((Number)dataMap.get("Size")).longValue();
 		}
 		catch (RuntimeException e)
 		{

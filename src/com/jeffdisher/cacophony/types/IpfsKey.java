@@ -62,8 +62,7 @@ public class IpfsKey
 	 */
 	public String toPublicKey()
 	{
-		// Note that toBase58 doesn't give the "z" prefix so we use the toString() helper.
-		return _key.toString();
+		return _toPublicKey();
 	}
 
 	@Override
@@ -86,6 +85,13 @@ public class IpfsKey
 	@Override
 	public String toString()
 	{
-		return "IpfsKey(" + _key.toString() + ")";
+		return "IpfsKey(" + _toPublicKey() + ")";
+	}
+
+
+	private String _toPublicKey()
+	{
+		// Note that toBase58 doesn't give the "z" prefix so we add it, ourselves.
+		return "z" + _key.toBase58();
 	}
 }

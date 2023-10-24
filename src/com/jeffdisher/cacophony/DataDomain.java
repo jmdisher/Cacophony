@@ -247,14 +247,14 @@ public class DataDomain implements Closeable
 			// Real connection.
 			try {
 				MultiAddress addr = new MultiAddress(ipfsConnectString);
-				IPFS defaultConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, SHORT_READ_TIMEOUT_MILLIS, false);
+				IPFS defaultConnection = new IPFS(addr.getHost(), addr.getPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, SHORT_READ_TIMEOUT_MILLIS, false);
 				@SuppressWarnings("unchecked")
 				Map<String, Object> addresses = (Map<String, Object>) defaultConnection.config.get("Addresses");
 				String result = (String) addresses.get("Gateway");
 				// This "Gateway" is of the form:  /ip4/127.0.0.1/tcp/8080
 				int gatewayPort = Integer.parseInt(result.split("/")[4]);
 				
-				IPFS longWaitConnection = new IPFS(addr.getHost(), addr.getTCPPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, LONG_READ_TIMEOUT_MILLIS, false);
+				IPFS longWaitConnection = new IPFS(addr.getHost(), addr.getPort(), "/api/v0/", CONNECTION_TIMEOUT_MILLIS, LONG_READ_TIMEOUT_MILLIS, false);
 				connection = new IpfsConnection(_uploaderOrNull, defaultConnection, longWaitConnection);
 				baseUrl = new URL(defaultConnection.protocol, defaultConnection.host, gatewayPort, "/ipfs/");
 			}

@@ -20,7 +20,7 @@ public class StreamUploader
 		{
 			MultiAddress addr = new MultiAddress(args[0]);
 			String host = addr.getHost();
-			int port = addr.getTCPPort();
+			int port = addr.getPort();
 			Uploader uploader = new Uploader();
 			uploader.start();
 			IpfsFile output = uploader.uploadFileInline(host, port, new ByteArrayInputStream("FOO".getBytes()));

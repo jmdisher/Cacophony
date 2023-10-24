@@ -73,7 +73,7 @@
 			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
-				<attribute name="Class-Path" value="lib/cid.jar lib/ipfs.jar lib/istack-commons-runtime.jar lib/javax.activation-api.jar lib/jaxb-api.jar lib/jaxb-runtime.jar lib/multihash.jar lib/multiaddr.jar lib/multibase.jar lib/minimal-json-0.9.5.jar lib/rest-server-0.3.1-jar-with-dependencies.jar lib/slf4j-nop-2.0.6.jar"/>
+				<attribute name="Class-Path" value="lib/java-cid-v1.3.7.jar lib/java-ipfs-http-client-1.4.4.jar lib/istack-commons-runtime.jar lib/javax.activation-api.jar lib/jaxb-api.jar lib/jaxb-runtime.jar lib/java-multihash-v1.3.4.jar lib/java-multiaddr-v1.4.12.jar lib/java-multibase-v1.1.1.jar lib/minimal-json-0.9.5.jar lib/rest-server-0.3.1-jar-with-dependencies.jar lib/slf4j-nop-2.0.6.jar"/>
 			</manifest>
 		</jar>
 	</target>
@@ -130,17 +130,17 @@
 		</copy>
 		<copy todir="${dir.global.dist}/lib">
 			<fileset dir="${dir.global.lib}">
-				<include name="cid.jar" />
-				<include name="ipfs.jar" />
+				<include name="java-cid-v1.3.7.jar" />
+				<include name="java-ipfs-http-client-1.4.4.jar" />
 				<include name="istack-commons-runtime.jar" />
 				<include name="javax.activation-api.jar" />
 				<include name="jaxb-api.jar" />
 				<include name="jaxb-runtime.jar" />
 				<include name="minimal-json-0.9.5.jar" />
-				<include name="multiaddr.jar" />
-				<include name="multibase.jar" />
+				<include name="java-multiaddr-v1.4.12.jar" />
+				<include name="java-multibase-v1.1.1.jar" />
 				<include name="rest-server-0.3.1-jar-with-dependencies.jar" />
-				<include name="multihash.jar" />
+				<include name="java-multihash-v1.3.4.jar" />
 				<include name="slf4j-nop-2.0.6.jar" />
 			</fileset>
 		</copy>

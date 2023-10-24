@@ -27,8 +27,7 @@ public class TestTypes
 		IpfsKey key = IpfsKey.fromPublicKey(input);
 		Assert.assertNotNull(key);
 		Assert.assertEquals(input, key.toPublicKey());
-		Assert.assertEquals("z" + key.getMultihash().toBase58(), key.getMultihash().toString());
-		Assert.assertEquals(key.getMultihash().toString(), key.toPublicKey());
+		Assert.assertEquals(input, "z" + key.getMultihash().toBase58());
 	}
 
 	/**
