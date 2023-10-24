@@ -8,7 +8,7 @@ fi
 TAG="$1"
 HASH=`git rev-parse HEAD`
 
-echo "package com.jeffdisher.cacophony.utils;"
+echo "package com.jeffdisher.cacophony.commands;"
 echo
 echo
 echo "/**"

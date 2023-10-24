@@ -9,6 +9,7 @@ import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.caches.CacheUpdater;
 import com.jeffdisher.cacophony.commands.Context;
 import com.jeffdisher.cacophony.commands.ICommand;
+import com.jeffdisher.cacophony.commands.Version;
 import com.jeffdisher.cacophony.data.IReadOnlyLocalData;
 import com.jeffdisher.cacophony.data.LocalDataModel;
 import com.jeffdisher.cacophony.data.local.v4.DraftManager;
@@ -27,7 +28,6 @@ import com.jeffdisher.cacophony.types.ProtocolDataException;
 import com.jeffdisher.cacophony.types.UsageException;
 import com.jeffdisher.cacophony.utils.Pair;
 import com.jeffdisher.cacophony.utils.StandardLogger;
-import com.jeffdisher.cacophony.utils.Version;
 
 
 // XML Generation:  https://edwin.baculsoft.com/2019/11/java-generate-xml-from-xsd-using-xjc/

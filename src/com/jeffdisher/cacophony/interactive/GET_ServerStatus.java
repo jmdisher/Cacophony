@@ -5,8 +5,8 @@ import java.io.IOException;
 import com.eclipsesource.json.JsonObject;
 import com.jeffdisher.cacophony.access.IReadingAccess;
 import com.jeffdisher.cacophony.commands.Context;
+import com.jeffdisher.cacophony.commands.Version;
 import com.jeffdisher.cacophony.logic.CacheHelpers;
-import com.jeffdisher.cacophony.utils.Version;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

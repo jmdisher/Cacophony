@@ -42,7 +42,7 @@
 
 	<target name="generate_version" >
 		<echo>Using version ${version} for build.</echo>
-		<exec executable="${dir.global.workspace}/src/generate_version_file.sh" output="${dir.global.workspace}/src/com/jeffdisher/cacophony/utils/Version.java">
+		<exec executable="${dir.global.workspace}/src/generate_version_file.sh" output="${dir.global.workspace}/src/com/jeffdisher/cacophony/commands/Version.java">
 			<arg value="${version}" />
 		</exec>
 	</target>
