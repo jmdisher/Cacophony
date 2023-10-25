@@ -2,7 +2,7 @@ package com.jeffdisher.cacophony.testutils;
 
 import java.io.ByteArrayInputStream;
 
-import com.jeffdisher.cacophony.logic.Uploader;
+import com.jeffdisher.cacophony.net.Uploader;
 import com.jeffdisher.cacophony.types.IpfsFile;
 
 import io.ipfs.multiaddr.MultiAddress;

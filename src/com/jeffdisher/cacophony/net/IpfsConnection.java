@@ -1,4 +1,4 @@
-package com.jeffdisher.cacophony;
+package com.jeffdisher.cacophony.net;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.jeffdisher.cacophony.logic.Uploader;
 import com.jeffdisher.cacophony.types.IConnection;
 import com.jeffdisher.cacophony.types.IpfsConnectionException;
 import com.jeffdisher.cacophony.types.IpfsFile;

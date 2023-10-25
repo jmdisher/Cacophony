@@ -1,5 +1,8 @@
 package com.jeffdisher.cacophony.data.global;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,9 +25,10 @@ import com.jeffdisher.cacophony.data.global.v2.record.ThumbnailReference;
 import com.jeffdisher.cacophony.data.global.v2.records.CacophonyRecords;
 import com.jeffdisher.cacophony.data.global.v2.root.CacophonyRoot;
 import com.jeffdisher.cacophony.data.global.v2.root.DataReference;
-import com.jeffdisher.cacophony.testutils.MockKeys;
-import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
+
+import io.ipfs.cid.Cid;
 
 
 public class TestAbstractWrappers
@@ -37,7 +41,7 @@ public class TestAbstractWrappers
 		record.setName("name");
 		record.setDescription("description");
 		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(MockKeys.K0.toPublicKey());
+		record.setPublisherKey(K0.toPublicKey());
 		record.setElements(new DataArray());
 		byte[] data = GlobalData.serializeRecord(record);
 		AbstractRecord middle = AbstractRecord.DESERIALIZER.apply(data);
@@ -47,7 +51,7 @@ public class TestAbstractWrappers
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
 		Assert.assertEquals(1L, middle.getPublishedSecondsUtc());
-		Assert.assertEquals(MockKeys.K0, middle.getPublisherKey());
+		Assert.assertEquals(K0, middle.getPublisherKey());
 		Assert.assertNull(middle.getDiscussionUrl());
 		Assert.assertNull(middle.getThumbnailMime());
 		Assert.assertEquals(0, middle.getExternalElementCount());
@@ -61,7 +65,7 @@ public class TestAbstractWrappers
 		CacophonyRecord record = new CacophonyRecord();
 		record.setName("name");
 		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(MockKeys.K0.toPublicKey());
+		record.setPublisherKey(K0.toPublicKey());
 		byte[] data = GlobalData2.serializeRecord(new CacophonyExtendedRecord(record, null));
 		AbstractRecord middle = AbstractRecord.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV2();
@@ -69,7 +73,7 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals(1L, middle.getPublishedSecondsUtc());
-		Assert.assertEquals(MockKeys.K0, middle.getPublisherKey());
+		Assert.assertEquals(K0, middle.getPublisherKey());
 		Assert.assertNull(middle.getDiscussionUrl());
 		Assert.assertNull(middle.getThumbnailMime());
 		Assert.assertNull(middle.getReplyTo());
@@ -81,16 +85,16 @@ public class TestAbstractWrappers
 	public void fullRecord() throws Throwable
 	{
 		DataElement thumbnail = new DataElement();
-		thumbnail.setCid(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		thumbnail.setCid(_generateHash(new byte[] { 1 }).toSafeString());
 		thumbnail.setMime("image/jpeg");
 		thumbnail.setSpecial(ElementSpecialType.IMAGE);
 		DataElement video = new DataElement();
-		video.setCid(MockSingleNode.generateHash(new byte[] { 2 }).toSafeString());
+		video.setCid(_generateHash(new byte[] { 2 }).toSafeString());
 		video.setMime("video/webm");
 		video.setWidth(1);
 		video.setHeight(1);
 		DataElement audio = new DataElement();
-		audio.setCid(MockSingleNode.generateHash(new byte[] { 3 }).toSafeString());
+		audio.setCid(_generateHash(new byte[] { 3 }).toSafeString());
 		audio.setMime("audio/ogg");
 		audio.setWidth(0);
 		audio.setHeight(0);
@@ -102,7 +106,7 @@ public class TestAbstractWrappers
 		record.setName("name");
 		record.setDescription("description");
 		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(MockKeys.K0.toPublicKey());
+		record.setPublisherKey(K0.toPublicKey());
 		record.setDiscussion("http://example.com");
 		record.setElements(elements);
 		byte[] data = GlobalData.serializeRecord(record);
@@ -113,10 +117,10 @@ public class TestAbstractWrappers
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
 		Assert.assertEquals(1L, middle.getPublishedSecondsUtc());
-		Assert.assertEquals(MockKeys.K0, middle.getPublisherKey());
+		Assert.assertEquals(K0, middle.getPublisherKey());
 		Assert.assertEquals("http://example.com", middle.getDiscussionUrl());
 		Assert.assertEquals("image/jpeg", middle.getThumbnailMime());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getThumbnailCid());
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getThumbnailCid());
 		Assert.assertEquals(3, middle.getExternalElementCount());
 		Assert.assertEquals(2, middle.getVideoExtension().size());
 	}
@@ -126,15 +130,15 @@ public class TestAbstractWrappers
 	{
 		CacophonyExtensionVideo extension = new CacophonyExtensionVideo();
 		ThumbnailReference thumbnail = new ThumbnailReference();
-		thumbnail.setValue(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		thumbnail.setValue(_generateHash(new byte[] { 1 }).toSafeString());
 		thumbnail.setMime("image/jpeg");
 		VideoFormat video = new VideoFormat();
-		video.setCid(MockSingleNode.generateHash(new byte[] { 2 }).toSafeString());
+		video.setCid(_generateHash(new byte[] { 2 }).toSafeString());
 		video.setMime("video/webm");
 		video.setWidth(1);
 		video.setHeight(1);
 		VideoFormat audio = new VideoFormat();
-		audio.setCid(MockSingleNode.generateHash(new byte[] { 3 }).toSafeString());
+		audio.setCid(_generateHash(new byte[] { 3 }).toSafeString());
 		audio.setMime("audio/ogg");
 		audio.setWidth(0);
 		audio.setHeight(0);
@@ -144,7 +148,7 @@ public class TestAbstractWrappers
 		record.setName("name");
 		record.setDescription("description");
 		record.setPublishedSecondsUtc(1L);
-		record.setPublisherKey(MockKeys.K0.toPublicKey());
+		record.setPublisherKey(K0.toPublicKey());
 		record.setDiscussionUrl("http://example.com");
 		record.setThumbnail(thumbnail);
 		byte[] data = GlobalData2.serializeRecord(new CacophonyExtendedRecord(record, extension));
@@ -155,10 +159,10 @@ public class TestAbstractWrappers
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
 		Assert.assertEquals(1L, middle.getPublishedSecondsUtc());
-		Assert.assertEquals(MockKeys.K0, middle.getPublisherKey());
+		Assert.assertEquals(K0, middle.getPublisherKey());
 		Assert.assertEquals("http://example.com", middle.getDiscussionUrl());
 		Assert.assertEquals("image/jpeg", middle.getThumbnailMime());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getThumbnailCid());
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getThumbnailCid());
 		Assert.assertEquals(3, middle.getExternalElementCount());
 		Assert.assertEquals(2, middle.getVideoExtension().size());
 	}
@@ -187,28 +191,28 @@ public class TestAbstractWrappers
 	public void smallRecords() throws Throwable
 	{
 		StreamRecords records = new StreamRecords();
-		records.getRecord().add(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		records.getRecord().add(_generateHash(new byte[] { 1 }).toSafeString());
 		byte[] data = GlobalData.serializeRecords(records);
 		AbstractRecords middle = AbstractRecords.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV1();
 		Assert.assertArrayEquals(data, data2);
 		
 		Assert.assertEquals(1, middle.getRecordList().size());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getRecordList().get(0));
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getRecordList().get(0));
 	}
 
 	@Test
 	public void smallRecordsV2() throws Throwable
 	{
 		CacophonyRecords records = new CacophonyRecords();
-		records.getRecord().add(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		records.getRecord().add(_generateHash(new byte[] { 1 }).toSafeString());
 		byte[] data = GlobalData2.serializeRecords(records);
 		AbstractRecords middle = AbstractRecords.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV2();
 		Assert.assertArrayEquals(data, data2);
 		
 		Assert.assertEquals(1, middle.getRecordList().size());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getRecordList().get(0));
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getRecordList().get(0));
 	}
 
 	@Test
@@ -235,28 +239,28 @@ public class TestAbstractWrappers
 	public void smallRecommendations() throws Throwable
 	{
 		StreamRecommendations recommendations = new StreamRecommendations();
-		recommendations.getUser().add(MockKeys.K0.toPublicKey());
+		recommendations.getUser().add(K0.toPublicKey());
 		byte[] data = GlobalData.serializeRecommendations(recommendations);
 		AbstractRecommendations middle = AbstractRecommendations.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV1();
 		Assert.assertArrayEquals(data, data2);
 		
 		Assert.assertEquals(1, middle.getUserList().size());
-		Assert.assertEquals(MockKeys.K0, middle.getUserList().get(0));
+		Assert.assertEquals(K0, middle.getUserList().get(0));
 	}
 
 	@Test
 	public void smallRecommendationsV2() throws Throwable
 	{
 		CacophonyRecommendations recommendations = new CacophonyRecommendations();
-		recommendations.getUser().add(MockKeys.K0.toPublicKey());
+		recommendations.getUser().add(K0.toPublicKey());
 		byte[] data = GlobalData2.serializeRecommendations(recommendations);
 		AbstractRecommendations middle = AbstractRecommendations.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV2();
 		Assert.assertArrayEquals(data, data2);
 		
 		Assert.assertEquals(1, middle.getUserList().size());
-		Assert.assertEquals(MockKeys.K0, middle.getUserList().get(0));
+		Assert.assertEquals(K0, middle.getUserList().get(0));
 	}
 
 	@Test
@@ -266,7 +270,7 @@ public class TestAbstractWrappers
 		StreamDescription description = new StreamDescription();
 		description.setName("name");
 		description.setDescription("description");
-		description.setPicture(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		description.setPicture(_generateHash(new byte[] { 1 }).toSafeString());
 		byte[] data = GlobalData.serializeDescription(description);
 		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV1();
@@ -274,7 +278,7 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getPicCid());
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getPicCid());
 		// We use "image/jpeg" as the synthetic mime.
 		Assert.assertEquals("image/jpeg", middle.getPicMime());
 	}
@@ -288,7 +292,7 @@ public class TestAbstractWrappers
 		description.setDescription("description");
 		PictureReference ref = new PictureReference();
 		ref.setMime("image/jpeg");
-		ref.setValue(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		ref.setValue(_generateHash(new byte[] { 1 }).toSafeString());
 		description.setPicture(ref);
 		byte[] data = GlobalData2.serializeDescription(description);
 		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
@@ -297,7 +301,7 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getPicCid());
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getPicCid());
 		// We use "image/jpeg" as the synthetic mime.
 		Assert.assertEquals("image/jpeg", middle.getPicMime());
 	}
@@ -310,7 +314,7 @@ public class TestAbstractWrappers
 		description.setDescription("description");
 		description.setEmail("test@example.com");
 		description.setWebsite("http://example.com");
-		description.setPicture(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		description.setPicture(_generateHash(new byte[] { 1 }).toSafeString());
 		byte[] data = GlobalData.serializeDescription(description);
 		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV1();
@@ -318,7 +322,7 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getPicCid());
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getPicCid());
 		Assert.assertEquals("image/jpeg", middle.getPicMime());
 		Assert.assertEquals("test@example.com", middle.getEmail());
 		Assert.assertEquals("http://example.com", middle.getWebsite());
@@ -340,9 +344,9 @@ public class TestAbstractWrappers
 		description.getMisc().add(website);
 		PictureReference pictureRef = new PictureReference();
 		pictureRef.setMime("image/jpeg");
-		pictureRef.setValue(MockSingleNode.generateHash(new byte[] { 1 }).toSafeString());
+		pictureRef.setValue(_generateHash(new byte[] { 1 }).toSafeString());
 		description.setPicture(pictureRef);
-		description.setFeature(MockSingleNode.generateHash(new byte[] {2}).toSafeString());
+		description.setFeature(_generateHash(new byte[] {2}).toSafeString());
 		byte[] data = GlobalData2.serializeDescription(description);
 		AbstractDescription middle = AbstractDescription.DESERIALIZER.apply(data);
 		byte[] data2 = middle.serializeV2();
@@ -350,19 +354,19 @@ public class TestAbstractWrappers
 		
 		Assert.assertEquals("name", middle.getName());
 		Assert.assertEquals("description", middle.getDescription());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 1 }), middle.getPicCid());
+		Assert.assertEquals(_generateHash(new byte[] { 1 }), middle.getPicCid());
 		Assert.assertEquals("image/jpeg", middle.getPicMime());
 		Assert.assertEquals("test@example.com", middle.getEmail());
 		Assert.assertEquals("http://example.com", middle.getWebsite());
-		Assert.assertEquals(MockSingleNode.generateHash(new byte[] { 2 }), middle.getFeature());
+		Assert.assertEquals(_generateHash(new byte[] { 2 }), middle.getFeature());
 	}
 
 	@Test
 	public void basicIndex() throws Throwable
 	{
-		IpfsFile description = MockSingleNode.generateHash(new byte[] { 1 });
-		IpfsFile recommendations = MockSingleNode.generateHash(new byte[] { 2 });
-		IpfsFile records = MockSingleNode.generateHash(new byte[] { 3 });
+		IpfsFile description = _generateHash(new byte[] { 1 });
+		IpfsFile recommendations = _generateHash(new byte[] { 2 });
+		IpfsFile records = _generateHash(new byte[] { 3 });
 		StreamIndex index = new StreamIndex();
 		index.setVersion(1);
 		index.setDescription(description.toSafeString());
@@ -381,9 +385,9 @@ public class TestAbstractWrappers
 	@Test
 	public void basicIndexV2() throws Throwable
 	{
-		IpfsFile description = MockSingleNode.generateHash(new byte[] { 1 });
-		IpfsFile recommendations = MockSingleNode.generateHash(new byte[] { 2 });
-		IpfsFile records = MockSingleNode.generateHash(new byte[] { 3 });
+		IpfsFile description = _generateHash(new byte[] { 1 });
+		IpfsFile recommendations = _generateHash(new byte[] { 2 });
+		IpfsFile records = _generateHash(new byte[] { 3 });
 		CacophonyRoot index = new CacophonyRoot();
 		index.setVersion(2);
 		DataReference data_description = new DataReference();
@@ -406,5 +410,18 @@ public class TestAbstractWrappers
 		Assert.assertEquals(description, middle.descriptionCid);
 		Assert.assertEquals(recommendations, middle.recommendationsCid);
 		Assert.assertEquals(records, middle.recordsCid);
+	}
+
+
+	private static final IpfsKey K0 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14Y");
+
+	private static IpfsFile _generateHash(byte[] data)
+	{
+		int hashCode = Arrays.hashCode(data);
+		byte[] hash = new byte[34];
+		ByteBuffer buffer = ByteBuffer.wrap(hash);
+		buffer.put((byte)18).put((byte)32);
+		buffer.putInt(hashCode).putInt(hashCode).putInt(hashCode).putInt(hashCode);
+		return IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
 	}
 }

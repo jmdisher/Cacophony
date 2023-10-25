@@ -1,5 +1,7 @@
 package com.jeffdisher.cacophony.data.global;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
@@ -18,15 +20,16 @@ import com.jeffdisher.cacophony.data.global.v2.record.ThumbnailReference;
 import com.jeffdisher.cacophony.data.global.v2.records.CacophonyRecords;
 import com.jeffdisher.cacophony.data.global.v2.root.CacophonyRoot;
 import com.jeffdisher.cacophony.data.global.v2.root.DataReference;
-import com.jeffdisher.cacophony.testutils.MockKeys;
-import com.jeffdisher.cacophony.testutils.MockSingleNode;
 import com.jeffdisher.cacophony.types.IpfsFile;
+import com.jeffdisher.cacophony.types.IpfsKey;
+
+import io.ipfs.cid.Cid;
 
 
 public class TestV2DataModel
 {
-	private static final IpfsFile H1 = MockSingleNode.generateHash(new byte[] {1});
-	private static final IpfsFile H2 = MockSingleNode.generateHash(new byte[] {2});
+	private static final IpfsFile H1 = _generateHash(new byte[] {1});
+	private static final IpfsFile H2 = _generateHash(new byte[] {2});
 
 	@Test
 	public void readRoot() throws Throwable
@@ -113,7 +116,7 @@ public class TestV2DataModel
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>5</publishedSecondsUtc>\n"
 				+ "    <discussionUrl>http://example.com/</discussionUrl>\n"
-				+ "    <publisherKey>" + MockKeys.K0.toPublicKey() + "</publisherKey>\n"
+				+ "    <publisherKey>" + K0.toPublicKey() + "</publisherKey>\n"
 				+ "    <replyTo>" + H1.toSafeString() + "</replyTo>\n"
 				+ "</record>\n"
 		;
@@ -122,7 +125,7 @@ public class TestV2DataModel
 		Assert.assertEquals("name", record.getName());
 		Assert.assertEquals(5L, record.getPublishedSecondsUtc());
 		Assert.assertEquals("http://example.com/", record.getDiscussionUrl());
-		Assert.assertEquals(MockKeys.K0.toPublicKey(), record.getPublisherKey());
+		Assert.assertEquals(K0.toPublicKey(), record.getPublisherKey());
 		Assert.assertEquals(H1.toSafeString(), record.getReplyTo());
 	}
 
@@ -134,7 +137,7 @@ public class TestV2DataModel
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>5</publishedSecondsUtc>\n"
 				+ "    <discussionUrl>http://example.com/</discussionUrl>\n"
-				+ "    <publisherKey>" + MockKeys.K0.toPublicKey() + "</publisherKey>\n"
+				+ "    <publisherKey>" + K0.toPublicKey() + "</publisherKey>\n"
 				
 				+ "<extension type=\"cacophony.video\">\n"
 				+ "<video xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/extensions2_video.xsd\">\n"
@@ -161,7 +164,7 @@ public class TestV2DataModel
 		Assert.assertEquals("name", record.getName());
 		Assert.assertEquals(5L, record.getPublishedSecondsUtc());
 		Assert.assertEquals("http://example.com/", record.getDiscussionUrl());
-		Assert.assertEquals(MockKeys.K0.toPublicKey(), record.getPublisherKey());
+		Assert.assertEquals(K0.toPublicKey(), record.getPublisherKey());
 		Assert.assertEquals(H1.toSafeString(), record.getReplyTo());
 		CacophonyExtensionVideo extension = wrapper.video();
 		List<VideoFormat> videos = extension.getFormat();
@@ -178,7 +181,7 @@ public class TestV2DataModel
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>5</publishedSecondsUtc>\n"
 				+ "    <discussionUrl>http://example.com/</discussionUrl>\n"
-				+ "    <publisherKey>" + MockKeys.K0.toPublicKey() + "</publisherKey>\n"
+				+ "    <publisherKey>" + K0.toPublicKey() + "</publisherKey>\n"
 
 				+ "<extension type=\"unknown type\">\n"
 				+ "we will pretent that this\n"
@@ -195,7 +198,7 @@ public class TestV2DataModel
 		Assert.assertEquals("name", record.getName());
 		Assert.assertEquals(5L, record.getPublishedSecondsUtc());
 		Assert.assertEquals("http://example.com/", record.getDiscussionUrl());
-		Assert.assertEquals(MockKeys.K0.toPublicKey(), record.getPublisherKey());
+		Assert.assertEquals(K0.toPublicKey(), record.getPublisherKey());
 		Assert.assertEquals(H1.toSafeString(), record.getReplyTo());
 		
 		ExtensionReference ref = record.getExtension();
@@ -215,7 +218,7 @@ public class TestV2DataModel
 		record.setName("name");
 		record.setPublishedSecondsUtc(5L);
 		record.setDiscussionUrl("http://example.com/");
-		record.setPublisherKey(MockKeys.K0.toPublicKey());
+		record.setPublisherKey(K0.toPublicKey());
 		record.setReplyTo(H1.toSafeString());
 		byte[] data = GlobalData2.serializeRecord(new CacophonyExtendedRecord(record, null));
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
@@ -223,7 +226,7 @@ public class TestV2DataModel
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>5</publishedSecondsUtc>\n"
 				+ "    <discussionUrl>http://example.com/</discussionUrl>\n"
-				+ "    <publisherKey>" + MockKeys.K0.toPublicKey() + "</publisherKey>\n"
+				+ "    <publisherKey>" + K0.toPublicKey() + "</publisherKey>\n"
 				+ "    <replyTo>" + H1.toSafeString() + "</replyTo>\n"
 				+ "</record>\n"
 		;
@@ -237,17 +240,17 @@ public class TestV2DataModel
 		record.setName("name");
 		record.setPublishedSecondsUtc(5L);
 		record.setDiscussionUrl("http://example.com/");
-		record.setPublisherKey(MockKeys.K0.toPublicKey());
+		record.setPublisherKey(K0.toPublicKey());
 		record.setReplyTo(H1.toSafeString());
 		CacophonyExtensionVideo video = new CacophonyExtensionVideo();
 		VideoFormat one = new VideoFormat();
-		IpfsFile file1 = MockSingleNode.generateHash(new byte[] { 1 });
+		IpfsFile file1 = _generateHash(new byte[] { 1 });
 		one.setCid(file1.toSafeString());
 		one.setHeight(1);
 		one.setWidth(1);
 		one.setMime("video/webm");
 		VideoFormat two = new VideoFormat();
-		IpfsFile file2 = MockSingleNode.generateHash(new byte[] { 2 });
+		IpfsFile file2 = _generateHash(new byte[] { 2 });
 		two.setCid(file2.toSafeString());
 		two.setHeight(2);
 		two.setWidth(2);
@@ -260,7 +263,7 @@ public class TestV2DataModel
 				+ "    <name>name</name>\n"
 				+ "    <publishedSecondsUtc>5</publishedSecondsUtc>\n"
 				+ "    <discussionUrl>http://example.com/</discussionUrl>\n"
-				+ "    <publisherKey>" + MockKeys.K0.toPublicKey() + "</publisherKey>\n"
+				+ "    <publisherKey>" + K0.toPublicKey() + "</publisherKey>\n"
 				+ "    <extension type=\"cacophony.video\">\n"
 				+ "        <video xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/extensions2_video.xsd\">\n"
 				+ "            <format>\n"
@@ -286,7 +289,7 @@ public class TestV2DataModel
 	@Test
 	public void readDescription() throws Throwable
 	{
-		IpfsFile pic = MockSingleNode.generateHash(new byte[] { 1 });
+		IpfsFile pic = _generateHash(new byte[] { 1 });
 		String raw = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<description xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/description2.xsd\">\n"
 				+ "    <name>name</name>\n"
@@ -307,7 +310,7 @@ public class TestV2DataModel
 	@Test
 	public void writeDescription() throws Throwable
 	{
-		IpfsFile pic = MockSingleNode.generateHash(new byte[] { 1 });
+		IpfsFile pic = _generateHash(new byte[] { 1 });
 		CacophonyDescription description = new CacophonyDescription();
 		description.setName("name");
 		PictureReference ref = new PictureReference();
@@ -334,15 +337,15 @@ public class TestV2DataModel
 	{
 		String raw = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<recommendations xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/recommendations2.xsd\">\n"
-				+ "    <user>" + MockKeys.K0.toPublicKey() + "</user>\n"
-				+ "    <user>" + MockKeys.K1.toPublicKey() + "</user>\n"
+				+ "    <user>" + K0.toPublicKey() + "</user>\n"
+				+ "    <user>" + K1.toPublicKey() + "</user>\n"
 				+ "</recommendations>\n"
 		;
 		CacophonyRecommendations recommendations = GlobalData2.deserializeRecommendations(raw.getBytes());
 		List<String> list = recommendations.getUser();
 		Assert.assertEquals(2, list.size());
-		Assert.assertEquals(MockKeys.K0.toPublicKey(), list.get(0));
-		Assert.assertEquals(MockKeys.K1.toPublicKey(), list.get(1));
+		Assert.assertEquals(K0.toPublicKey(), list.get(0));
+		Assert.assertEquals(K1.toPublicKey(), list.get(1));
 	}
 
 	@Test
@@ -350,13 +353,13 @@ public class TestV2DataModel
 	{
 		CacophonyRecommendations recommendations = new CacophonyRecommendations();
 		List<String> list = recommendations.getUser();
-		list.add(MockKeys.K0.toPublicKey());
-		list.add(MockKeys.K1.toPublicKey());
+		list.add(K0.toPublicKey());
+		list.add(K1.toPublicKey());
 		byte[] data = GlobalData2.serializeRecommendations(recommendations);
 		String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 				+ "<recommendations xmlns=\"https://raw.githubusercontent.com/jmdisher/Cacophony/master/xsd/recommendations2.xsd\">\n"
-				+ "    <user>" + MockKeys.K0.toPublicKey() + "</user>\n"
-				+ "    <user>" + MockKeys.K1.toPublicKey() + "</user>\n"
+				+ "    <user>" + K0.toPublicKey() + "</user>\n"
+				+ "    <user>" + K1.toPublicKey() + "</user>\n"
 				+ "</recommendations>\n"
 		;
 		Assert.assertEquals(expected, new String(data));
@@ -374,17 +377,17 @@ public class TestV2DataModel
 		record1.setName(post1Title);
 		record1.setDescription(post1Desc);
 		record1.setPublishedSecondsUtc(publishedSeconds1);
-		record1.setPublisherKey(MockKeys.K0.toPublicKey());
+		record1.setPublisherKey(K0.toPublicKey());
 		byte[] data_record1 = GlobalData2.serializeRecord(new CacophonyExtendedRecord(record1, null));
-		IpfsFile record1Cid = MockSingleNode.generateHash(data_record1);
+		IpfsFile record1Cid = _generateHash(data_record1);
 		
-		IpfsFile video = MockSingleNode.generateHash(new byte[] { 3 });
+		IpfsFile video = _generateHash(new byte[] { 3 });
 		VideoFormat videoFormat = new VideoFormat();
 		videoFormat.setMime("video/webm");
 		videoFormat.setHeight(480);
 		videoFormat.setWidth(640);
 		videoFormat.setCid(video.toSafeString());
-		IpfsFile audio = MockSingleNode.generateHash(new byte[] { 4 });
+		IpfsFile audio = _generateHash(new byte[] { 4 });
 		VideoFormat audioFormat = new VideoFormat();
 		audioFormat.setMime("audio/ogg");
 		audioFormat.setCid(audio.toSafeString());
@@ -395,33 +398,33 @@ public class TestV2DataModel
 		String post2Title = "Post with content";
 		String post2Desc = "This is a\nmuch\nbigger post";
 		long publishedSeconds2 = 2L;
-		IpfsFile thumbnail = MockSingleNode.generateHash(new byte[] { 2 });
+		IpfsFile thumbnail = _generateHash(new byte[] { 2 });
 		CacophonyRecord record2 = new CacophonyRecord();
 		record2.setName(post2Title);
 		record2.setDescription(post2Desc);
 		record2.setPublishedSecondsUtc(publishedSeconds2);
-		record2.setPublisherKey(MockKeys.K0.toPublicKey());
+		record2.setPublisherKey(K0.toPublicKey());
 		ThumbnailReference thumbRef = new ThumbnailReference();
 		thumbRef.setMime("image/jpeg");
 		thumbRef.setValue(thumbnail.toSafeString());
 		record2.setThumbnail(thumbRef);
 		byte[] data_record2 = GlobalData2.serializeRecord(new CacophonyExtendedRecord(record2, extension));
-		IpfsFile record2Cid = MockSingleNode.generateHash(data_record2);
+		IpfsFile record2Cid = _generateHash(data_record2);
 		
 		CacophonyRecords records = new CacophonyRecords();
 		records.getRecord().add(record1Cid.toSafeString());
 		records.getRecord().add(record2Cid.toSafeString());
 		byte[] data_records = GlobalData2.serializeRecords(records);
-		IpfsFile recordsCid = MockSingleNode.generateHash(data_records);
+		IpfsFile recordsCid = _generateHash(data_records);
 		
 		CacophonyRecommendations recommendations = new CacophonyRecommendations();
-		recommendations.getUser().add(MockKeys.K1.toPublicKey());
+		recommendations.getUser().add(K1.toPublicKey());
 		byte[] data_recommendations = GlobalData2.serializeRecommendations(recommendations);
-		IpfsFile recommendationsCid = MockSingleNode.generateHash(data_recommendations);
+		IpfsFile recommendationsCid = _generateHash(data_recommendations);
 		
 		String userName = "user name";
 		String userDescription = "This is\nthe user description";
-		IpfsFile userPic = MockSingleNode.generateHash(new byte[] { 1 });
+		IpfsFile userPic = _generateHash(new byte[] { 1 });
 		CacophonyDescription description = new CacophonyDescription();
 		description.setName(userName);
 		description.setDescription(userDescription);
@@ -430,7 +433,7 @@ public class TestV2DataModel
 		picRef.setValue(userPic.toSafeString());
 		description.setPicture(picRef);
 		byte[] data_description = GlobalData2.serializeDescription(description);
-		IpfsFile descriptionCid = MockSingleNode.generateHash(data_description);
+		IpfsFile descriptionCid = _generateHash(data_description);
 		
 		CacophonyRoot root = new CacophonyRoot();
 		root.setVersion(2);
@@ -448,7 +451,21 @@ public class TestV2DataModel
 		root.getData().add(dataDescription);
 		byte[] data_root = GlobalData2.serializeRoot(root);
 		Assert.assertNotNull(data_root);
-		IpfsFile rootCid = MockSingleNode.generateHash(data_root);
+		IpfsFile rootCid = _generateHash(data_root);
 		Assert.assertEquals(IpfsFile.fromIpfsCid("QmXWb8sYdQXTTX8BoM3oVzxnvCbx3NDCQVD774TuMEVR59"), rootCid);
+	}
+
+
+	private static final IpfsKey K0 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14Y");
+	private static final IpfsKey K1 = IpfsKey.fromPublicKey("z5AanNVJCxnSSsLjo4tuHNWSmYs3TXBgKWxVqdyNFgwb1br5PBWo14F");
+
+	private static IpfsFile _generateHash(byte[] data)
+	{
+		int hashCode = Arrays.hashCode(data);
+		byte[] hash = new byte[34];
+		ByteBuffer buffer = ByteBuffer.wrap(hash);
+		buffer.put((byte)18).put((byte)32);
+		buffer.putInt(hashCode).putInt(hashCode).putInt(hashCode).putInt(hashCode);
+		return IpfsFile.fromIpfsCid(Cid.cast(hash).toString());
 	}
 }
