@@ -73,7 +73,7 @@
 			</fileset>
 			<manifest>
 				<attribute name="Main-Class" value="com.jeffdisher.cacophony.Cacophony"/>
-				<attribute name="Class-Path" value="lib/java-cid-v1.3.7.jar lib/java-ipfs-http-client-1.4.4.jar lib/java-multihash-v1.3.4.jar lib/java-multiaddr-v1.4.12.jar lib/java-multibase-v1.1.1.jar lib/minimal-json-0.9.5.jar lib/rest-server-0.3.1-jar-with-dependencies.jar lib/slf4j-nop-2.0.6.jar lib/jaxb-api-2.3.1.jar lib/jaxb-impl-2.3.4.jar lib/javax.activation-api-1.2.0.jar"/>
+				<attribute name="Class-Path" value="lib/java-cid-v1.3.7.jar lib/java-ipfs-http-client-1.4.4.jar lib/java-multihash-v1.3.4.jar lib/java-multiaddr-v1.4.12.jar lib/java-multibase-v1.1.1.jar lib/minimal-json-0.9.5.jar lib/rest-server-0.3.1-jar-with-dependencies.jar lib/slf4j-nop-2.0.6.jar lib/jaxb-api-2.3.1.jar lib/jaxb-impl-2.3.4.jar lib/javax.activation-api-1.2.0.jar lib/cacophony-common-4.1.jar lib/cacophony-data-4.1.jar lib/cacophony-net-4.1.jar"/>
 			</manifest>
 		</jar>
 	</target>
@@ -141,6 +141,9 @@
 				<include name="jaxb-api-2.3.1.jar" />
 				<include name="jaxb-impl-2.3.4.jar" />
 				<include name="javax.activation-api-1.2.0.jar" />
+				<include name="cacophony-common-4.1.jar" />
+				<include name="cacophony-data-4.1.jar" />
+				<include name="cacophony-net-4.1.jar" />
 			</fileset>
 		</copy>
 		
