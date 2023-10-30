@@ -130,6 +130,12 @@ requireSubstring "$USER_INFO" "{\"name\":\"Updated name\","
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" -XPOST "http://127.0.0.1:8001/server/stop"
 wait $SERVER_PID
 
+echo "Verify the local storage looks as expected via OpcodeLogReader..."
+OPCODE_COUNT=$(java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.OpcodeLogReader "$USER1/opcodes.v4.gzlog" | wc -l)
+requireSubstring "$OPCODE_COUNT" "11"
+OPCODE_COUNT=$(java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.OpcodeLogReader "$USER2/opcodes.v4.gzlog" | wc -l)
+requireSubstring "$OPCODE_COUNT" "10"
+
 
 kill $PID1
 kill $PID2

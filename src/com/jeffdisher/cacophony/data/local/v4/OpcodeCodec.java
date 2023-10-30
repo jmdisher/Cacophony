@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -114,6 +115,28 @@ public class OpcodeCodec
 	 */
 	public static void decodeWholeStream(InputStream input, OpcodeContext context) throws IOException
 	{
+		_decodeStream(input, (IDataOpcode opcode) -> {
+			opcode.apply(context);
+		});
+	}
+
+	/**
+	 * Decodes the previously-written stream from input, passing the decoded opcodes to the given consumer.  This is
+	 * primarily just to support tools and tests which want to see the details of what is on the disk but not interpret
+	 * it.
+	 * 
+	 * @param input The stream used for input.
+	 * @param consumer The consumer which will be given each opcode.
+	 * @throws IOException Something went wrong reading the stream.
+	 */
+	public static void decodeStreamCustom(InputStream input, Consumer<IDataOpcode> consumer) throws IOException
+	{
+		_decodeStream(input, consumer);
+	}
+
+
+	private static void _decodeStream(InputStream input, Consumer<IDataOpcode> consumer) throws IOException
+	{
 		try (GZIPInputStream stream = new GZIPInputStream(input))
 		{
 			// We loop until EOF.
@@ -125,7 +148,7 @@ public class OpcodeCodec
 				int length = wrap.getInt();
 				byte[] frame = stream.readNBytes(length);
 				IDataOpcode opcode = _OPCODE_TABLE[ord].apply(new OpcodeDeserializer(ByteBuffer.wrap(frame)));
-				opcode.apply(context);
+				consumer.accept(opcode);
 			}
 		}
 		catch (BufferUnderflowException e)
