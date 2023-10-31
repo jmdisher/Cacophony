@@ -160,6 +160,18 @@ public class TestExplicitCacheData
 		Assert.assertEquals(6, unpinCount[0]);
 	}
 
+	@Test
+	public void simpleReplacements() throws Throwable
+	{
+		ExplicitCacheData start = new ExplicitCacheData();
+		_addStreamRecord(start, F1, F2, null, null, 5L);
+		CachedRecordInfo info = new CachedRecordInfo(F1, false, F3, null, null, 6L);
+		start.replaceStreamRecord(F1, info);
+		ExplicitCacheData explicitCache = _codec(start);
+		CachedRecordInfo read = explicitCache.getRecordInfo(F1);
+		Assert.assertEquals(info.combinedSizeBytes(), read.combinedSizeBytes());
+	}
+
 
 	private static byte[] _serialize(ExplicitCacheData start) throws IOException
 	{

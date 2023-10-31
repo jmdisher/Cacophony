@@ -272,7 +272,15 @@ public class ExplicitCacheData implements IExplicitCacheReading
 	 */
 	public void addStreamRecord(IpfsFile streamCid, CachedRecordInfo recordInfo)
 	{
-		Assert.assertTrue(!_recordInfo.containsKey(streamCid));
+		// NOTE:  There was a bug in the 4.1 release which allowed duplicate stream records to end up in the opcode stream so we just take the last one we see, since it should be the most populated.
+		// As of 4.1.1-rc1, this bug shouldn't appear but the work-around is in place, for now.
+		if (_recordInfo.containsKey(streamCid))
+		{
+			// This is the bogus case so remove this from the old info and proceed.
+			CachedRecordInfo stale = _recordInfo.get(streamCid);
+			_lru.remove(streamCid);
+			_totalCacheInBytes -= stale.combinedSizeBytes();
+		}
 		_recordInfo.put(streamCid, recordInfo);
 		_lru.add(streamCid);
 		_totalCacheInBytes += recordInfo.combinedSizeBytes();
@@ -292,7 +300,9 @@ public class ExplicitCacheData implements IExplicitCacheReading
 		CachedRecordInfo oldInfo = _recordInfo.remove(streamCid);
 		_totalCacheInBytes -= oldInfo.combinedSizeBytes();
 		_recordInfo.put(streamCid, recordInfo);
-		_lru.add(streamCid);
+		// We want to remove and add this so that is the same as an LRU update - the lock isn't required in this mutable
+		// path but should be harmless since this is rare and avoids duplication.
+		_updateLru(streamCid);
 		_totalCacheInBytes += recordInfo.combinedSizeBytes();
 	}
 
