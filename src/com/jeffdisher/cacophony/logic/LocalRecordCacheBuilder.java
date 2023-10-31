@@ -200,7 +200,7 @@ public class LocalRecordCacheBuilder
 		// (in theory, multiple users could have an identical element only cached in some of them which could be
 		//  displayed for all of them - we will currently ignore that case and only add the last entry).
 		List<IpfsFile> cids = records.getRecordList();
-		List<FutureRead<AbstractRecord>> loads = new ArrayList<>();
+		List<FutureCid<AbstractRecord>> loads = new ArrayList<>();
 		for (IpfsFile cid : cids)
 		{
 			// We want to use the known publication time, but only if this record elemt was pinned.
@@ -209,7 +209,7 @@ public class LocalRecordCacheBuilder
 				// We have the element record so we must have cached the record.
 				Assert.assertTrue(cid.equals(elementsCachedForUser.get(cid).elementHash()));
 				FutureRead<AbstractRecord> future = access.loadCached(cid, AbstractRecord.DESERIALIZER);
-				loads.add(future);
+				loads.add(new FutureCid<>(cid, future));
 			}
 			else
 			{
@@ -221,13 +221,12 @@ public class LocalRecordCacheBuilder
 				);
 			}
 		}
-		Iterator<IpfsFile> cidIterator = cids.iterator();
-		for (FutureRead<AbstractRecord> future : loads)
+		for (FutureCid<AbstractRecord> future : loads)
 		{
-			IpfsFile cid = cidIterator.next();
+			IpfsFile cid = future.cid();
 			try
 			{
-				AbstractRecord record = future.get();
+				AbstractRecord record = future.future().get();
 				cacheUpdater.newFolloweePostObserved(followeeKey
 						, cid
 						, record.getPublishedSecondsUtc()
@@ -308,6 +307,10 @@ public class LocalRecordCacheBuilder
 
 
 	private static record FutureKey<T>(IpfsKey publicKey, FutureRead<T> future)
+	{
+	}
+
+	private static record FutureCid<T>(IpfsFile cid, FutureRead<T> future)
 	{
 	}
 }
