@@ -144,6 +144,11 @@ public class FolloweeRefreshLogic
 						{
 							_unpinLeavesAndElement(support, cachedData);
 						}
+						else if (support.hasRecordBeenProcessed(removed))
+						{
+							// If this was processed, but there is no cache data, it means that this was skipped so just remove it.
+							support.removeElementFromCache(removed, null, null, null, null, 0);
+						}
 						// We also want to remove the knowledge of it.
 						support.removeRecordForFollowee(removed);
 						removedRecords.add(removed);

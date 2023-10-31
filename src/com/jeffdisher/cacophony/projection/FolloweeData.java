@@ -217,6 +217,11 @@ public class FolloweeData implements IFolloweeReading
 				boolean didRemoveSkipped = _permanentlySkippedRecordsByFollowee.get(followeeKey).remove(elementCid);
 				Assert.assertTrue(didRemoveSkipped);
 			}
+			else
+			{
+				// Note that it may not be in any collection, yet still valid to remove, if the element was removed
+				// before we tried to cache it or was removed while we were retrying a temporary failure.
+			}
 		}
 	}
 

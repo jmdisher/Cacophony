@@ -1254,10 +1254,26 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(0, testSupport.permanentSkips.size());
 		Assert.assertEquals(1, testSupport.temporarySkips.size());
 		
-		// Fix the record.
+		// Add another record, break it, and fix the previous one.
+		IpfsFile post2 = _storeRecord(data, "post2", null, null);
+		index = _addElementToStream(data, index, post2);
 		data.put(post1, break1);
+		data.remove(post2);
 		
-		// Synchronize again.
+		// Synchronize again - note that we will need to synchronize twice since we only add new elements OR retry old elements in each pass.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		result = testSupport.getList();
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(2, testSupport.temporarySkips.size());
+		// Second iteration - we should see the fixed element added here.
 		oldIndexElement = newIndexElement;
 		newIndexElement = index;
 		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
@@ -1270,7 +1286,7 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
 		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
 		Assert.assertEquals(0, testSupport.permanentSkips.size());
-		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		Assert.assertEquals(1, testSupport.temporarySkips.size());
 		
 		// Stop following.
 		oldIndexElement = newIndexElement;
@@ -1281,7 +1297,7 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(0, result.length);
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
 		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
-		Assert.assertEquals(2, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(3, testSupport.getAndClearRecordsDisappeared().length);
 		Assert.assertEquals(0, testSupport.permanentSkips.size());
 		Assert.assertEquals(0, testSupport.temporarySkips.size());
 	}
@@ -1737,8 +1753,20 @@ public class TestFolloweeRefreshLogic
 					match = i;
 				}
 			}
-			Assert.assertTrue(match >= 0);
-			_list.remove(match);
+			if (match >= 0)
+			{
+				_list.remove(match);
+			}
+			else
+			{
+				// This must be one of the skipped types.
+				boolean didRemove = this.permanentSkips.remove(elementHash);
+				if (!didRemove)
+				{
+					didRemove = this.temporarySkips.remove(elementHash);
+					Assert.assertTrue(didRemove);
+				}
+			}
 		}
 		@Override
 		public void addSkippedRecord(IpfsFile recordCid, boolean isPermanent)

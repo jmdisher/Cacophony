@@ -315,7 +315,7 @@ public class CacheUpdater
 	 * 
 	 * @param publicKey The public key of the followee.
 	 * @param cid The CID of the post removed.
-	 * @param record The record at CID which is now removed.
+	 * @param record The record at CID which is now removed (could be null if we never succesfully loaded it).
 	 */
 	public void removedFolloweePost(IpfsKey publicKey
 			, IpfsFile cid
@@ -346,7 +346,10 @@ public class CacheUpdater
 			}
 			_recordCache.recordMetaDataReleased(cid);
 		}
-		IpfsFile replyTo = record.getReplyTo();
+		IpfsFile replyTo = (null != record)
+				? record.getReplyTo()
+				: null
+		;
 		if ((null != _replyForest) && (null != replyTo))
 		{
 			_replyForest.removePost(cid, replyTo);
