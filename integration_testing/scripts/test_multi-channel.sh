@@ -119,12 +119,12 @@ requireSubstring "$USER_INFO1" "{\"name\":\"Test1 User\",\"description\":\"The t
 USER_INFO2=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/server/unknownUser/$PUBLIC_KEY2")
 requireSubstring "$USER_INFO2" "{\"name\":\"Quick user\",\"description\":\"The quick user\","
 
-echo "Check the list of home channels..."
+echo "Check the list of home channels (the last one should be implicitly selected since we had no default)..."
 CHANNEL_LIST=$(curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1"  --no-progress-meter -XGET "http://127.0.0.1:8001/home/channels")
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"quick\",\"publicKey\":\"$PUBLIC_KEY2\","
 requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Quick user\",\"userPicUrl\":null}"
 requireSubstring "$CHANNEL_LIST" "{\"keyName\":\"test1\",\"publicKey\":\"$PUBLIC_KEY1\","
-requireSubstring "$CHANNEL_LIST" ",\"isSelected\":false,\"name\":\"Test1 User\",\"userPicUrl\":null}"
+requireSubstring "$CHANNEL_LIST" ",\"isSelected\":true,\"name\":\"Test1 User\",\"userPicUrl\":null}"
 
 echo "Make sure that we can set the quick user as selected..."
 curl --cookie "$COOKIES1" --cookie-jar "$COOKIES1" --no-progress-meter --fail -XPOST "http://127.0.0.1:8001/home/channel/set/$PUBLIC_KEY2"

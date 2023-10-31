@@ -115,6 +115,26 @@ public class InteractiveServer
 		
 		// Create the context object which we will use for any command invocation from the interactive server.
 		Context serverContext = startingContext.cloneWithExtras(localRecordCache, userInfoCache, entryRegistry, cacheUpdater, explicitCacheManager);
+		// If there is no selected key, but we do have local channels, choose the last one (this decision is arbitrary
+		// but better than leaving nothing selected - setting the key name environment variable is the generic way of
+		// controlling this but that isn't typical in the interactive use-case).
+		if (null == serverContext.getSelectedKey())
+		{
+			IpfsKey channelKey = null;
+			try (IReadingAccess access = Context.readAccess(serverContext))
+			{
+				List<IReadingAccess.HomeUserTuple> homeChannels = access.readHomeUserData();
+				int channelCount = homeChannels.size();
+				if (channelCount > 0)
+				{
+					channelKey = homeChannels.get(channelCount - 1).publicKey();
+				}
+			}
+			if (null != channelKey)
+			{
+				serverContext.setSelectedKey(channelKey);
+			}
+		}
 		CommandRunner runner = new CommandRunner(serverContext, COMMAND_RUNNER_THREAD_COUNT);
 		
 		// We will create a handoff connector for the status operations from the background operations.
