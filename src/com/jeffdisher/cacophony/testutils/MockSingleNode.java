@@ -126,6 +126,13 @@ public class MockSingleNode implements IConnection
 	}
 
 	@Override
+	public InputStream loadDataAsStream(IpfsFile file) throws IpfsConnectionException
+	{
+		// We don't call this.
+		throw Assert.unreachable();
+	}
+
+	@Override
 	public void publish(String keyName, IpfsKey publicKey, IpfsFile file) throws IpfsConnectionException
 	{
 		IpfsKey key = _keys.get(keyName);
