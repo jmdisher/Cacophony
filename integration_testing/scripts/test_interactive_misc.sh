@@ -352,7 +352,7 @@ requireSubstring "$USER_INFO" "{\"name\":\"name\",\"description\":\"My descripti
 
 echo "Stop the user 2 server."
 curl --cookie "$COOKIES2" --cookie-jar "$COOKIES2" -XPOST "http://127.0.0.1:8002/server/stop"
-wait $SERVER_PID
+wait $SERVER2_PID
 wait $ENTRIES2_PID
 
 
