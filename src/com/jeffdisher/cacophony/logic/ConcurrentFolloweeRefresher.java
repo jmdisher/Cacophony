@@ -1,6 +1,8 @@
 package com.jeffdisher.cacophony.logic;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,6 +44,7 @@ public class ConcurrentFolloweeRefresher
 	private boolean _didSetup;
 	private ConcurrentTransaction _transaction;
 	private Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
+	private List<IpfsFile> _initialFailuresToRetry;
 	private Set<IpfsFile> _initialFailureSet;
 	private long _currentCacheUsageInBytes;
 	private FutureResolve _keyResolve;
@@ -117,6 +120,12 @@ public class ConcurrentFolloweeRefresher
 				? followees.snapshotAllElementsForFollowee(_followeeKey)
 				: Collections.emptyMap()
 		;
+		// Get the list of temporary failures, in case we decide to retry any.
+		_initialFailuresToRetry = (null != _previousRoot)
+				? new ArrayList<>(followees.getSkippedRecords(_followeeKey, true))
+				: Collections.emptyList()
+		;
+		
 		// Get all the skipped records, not just the temporary ones.
 		_initialFailureSet = (null != _previousRoot)
 				? followees.getSkippedRecords(_followeeKey, false)
@@ -155,6 +164,7 @@ public class ConcurrentFolloweeRefresher
 				, _followeeKey
 				, isExistingFollowee
 				, _cachedEntriesForFollowee
+				, _initialFailuresToRetry
 				, _initialFailureSet
 		);
 		boolean refreshWasSuccess = false;

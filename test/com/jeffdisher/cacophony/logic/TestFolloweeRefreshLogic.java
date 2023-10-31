@@ -1194,6 +1194,98 @@ public class TestFolloweeRefreshLogic
 		Assert.assertEquals(0, testSupport.temporarySkips.size());
 	}
 
+	@Test
+	public void temporaryTimeout() throws Throwable
+	{
+		// Create a user with a single record.
+		Map<IpfsFile, byte[]> data = new HashMap<>();
+		IpfsFile index = _buildEmptyUser(data);
+		IpfsFile post0 = _storeRecord(data, "post0", null, null);
+		index = _addElementToStream(data, index, post0);
+		
+		// Start following - note that this first sync always synchronizes 0 records.
+		PrefsData prefs = PrefsData.defaultPrefs();
+		FollowingCacheElement[] originalElements = new FollowingCacheElement[0];
+		IpfsFile oldIndexElement = null;
+		IpfsFile newIndexElement = index;
+		long currentCacheUsageInBytes = 0L;
+		TestSupport testSupport = new TestSupport(data, originalElements);
+		boolean moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		// The first sync always leaves more to do if there are any records, at all.
+		Assert.assertTrue(moreToDo);
+		FollowingCacheElement[] result = testSupport.getList();
+		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Do the initial normal synchronization.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		result = testSupport.getList();
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Add a record and break it.
+		IpfsFile post1 = _storeRecord(data, "post1", null, null);
+		index = _addElementToStream(data, index, post1);
+		byte[] break1 = data.remove(post1);
+		
+		// Synchronize again.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		result = testSupport.getList();
+		Assert.assertEquals(1, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(1, testSupport.temporarySkips.size());
+		
+		// Fix the record.
+		data.put(post1, break1);
+		
+		// Synchronize again.
+		oldIndexElement = newIndexElement;
+		newIndexElement = index;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		result = testSupport.getList();
+		Assert.assertEquals(2, result.length);
+		Assert.assertEquals(post0, result[0].elementHash());
+		Assert.assertEquals(post1, result[1].elementHash());
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(1, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(0, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+		
+		// Stop following.
+		oldIndexElement = newIndexElement;
+		newIndexElement = null;
+		moreToDo = FolloweeRefreshLogic.refreshFollowee(testSupport, prefs, oldIndexElement, newIndexElement, currentCacheUsageInBytes);
+		Assert.assertFalse(moreToDo);
+		result = testSupport.getList();
+		Assert.assertEquals(0, result.length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsObserved().length);
+		Assert.assertEquals(0, testSupport.getAndClearNewRecordsPinned().length);
+		Assert.assertEquals(2, testSupport.getAndClearRecordsDisappeared().length);
+		Assert.assertEquals(0, testSupport.permanentSkips.size());
+		Assert.assertEquals(0, testSupport.temporarySkips.size());
+	}
+
 
 	private void _commonSizeCheck(Map<IpfsFile, byte[]> data, IpfsFile indexHash) throws IpfsConnectionException, FailedDeserializationException
 	{
@@ -1669,7 +1761,7 @@ public class TestFolloweeRefreshLogic
 			;
 		}
 		@Override
-		public IpfsFile getAndResetNextTemporarySkip()
+		public IpfsFile getAndResetNextInitialTemporarySkip()
 		{
 			return this.temporarySkips.isEmpty()
 					? null

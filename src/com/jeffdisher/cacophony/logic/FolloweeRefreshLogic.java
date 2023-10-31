@@ -206,7 +206,7 @@ public class FolloweeRefreshLogic
 			// We didn't select anything so see if there are some temporary skips we can retry.
 			if (newestFirstSelection.isEmpty())
 			{
-				IpfsFile recordCid = support.getAndResetNextTemporarySkip();
+				IpfsFile recordCid = support.getAndResetNextInitialTemporarySkip();
 				while (null != recordCid)
 				{
 					// We know that this isn't processed, nor could be it a duplicate.
@@ -214,7 +214,7 @@ public class FolloweeRefreshLogic
 					if (newestFirstSelection.size() < maximumRecordsToSynchronize)
 					{
 						// We have more space so continue.
-						recordCid = support.getAndResetNextTemporarySkip();
+						recordCid = support.getAndResetNextInitialTemporarySkip();
 					}
 					else
 					{
@@ -926,9 +926,11 @@ public class FolloweeRefreshLogic
 		 * Since this removes the tracking that this was previously skipped, the caller will either need to call
 		 * cacheRecordForFollowee(), to mark this as now valid, or re-call addSkippedRecord() in order to make sure that
 		 * it is accounted for.
+		 * NOTE:  This ONLY operates on the records INITIALLY marked as temporary skipped, not the list built as the
+		 * refresh runs.
 		 * 
 		 * @return A previously temporarily skipped record or null, if there are no such records.
 		 */
-		IpfsFile getAndResetNextTemporarySkip();
+		IpfsFile getAndResetNextInitialTemporarySkip();
 	}
 }

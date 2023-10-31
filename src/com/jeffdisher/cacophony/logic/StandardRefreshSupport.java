@@ -34,12 +34,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	private final boolean _isExistingFollowee;
 
 	private final Map<IpfsFile, FollowingCacheElement> _cachedEntriesForFollowee;
+	private final List<IpfsFile> _initialFailuresToRetry;
 	private final Set<IpfsFile> _initialFailureSet;
 
 	private final Set<IpfsFile> _elementsToRemoveFromCache;
 	private final List<FollowingCacheElement> _elementsToAddToCache;
 	private final List<Consumer<CacheUpdater>> _pendingCacheUpdates;
 
+	private final List<IpfsFile> _elementsRetried;
 	private final List<IpfsFile> _temporarilySkippedRecords;
 	private final List<IpfsFile> _permanentlySkippedRecords;
 
@@ -51,13 +53,15 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	 * @param followeeKey The public key of the followee to refresh.
 	 * @param isExistingFollowee True if this is someone we are already following (false if they are new).
 	 * @param cachedEntriesForFollowee The map of entries we have cached something about, for this user.
-	 * @param initialFailureSet The initial set of elements we have previously failed to load.
+	 * @param initialFailureToRetry The initial list of elements we previously failed temporarily and may retry.
+	 * @param initialFailureSet The initial set of elements we have previously failed to load (both permanent and temporary).
 	 */
 	public StandardRefreshSupport(ILogger logger
 			, ConcurrentTransaction transaction
 			, IpfsKey followeeKey
 			, boolean isExistingFollowee
 			, Map<IpfsFile, FollowingCacheElement> cachedEntriesForFollowee
+			, List<IpfsFile> initialFailuresToRetry
 			, Set<IpfsFile> initialFailureSet
 	)
 	{
@@ -71,12 +75,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		_followeeKey = followeeKey;
 		_isExistingFollowee = isExistingFollowee;
 		_cachedEntriesForFollowee = cachedEntriesForFollowee;
+		_initialFailuresToRetry = initialFailuresToRetry;
 		_initialFailureSet = initialFailureSet;
 		
 		_elementsToRemoveFromCache = new HashSet<>();
 		_elementsToAddToCache = new ArrayList<>();
 		_pendingCacheUpdates = new ArrayList<>();
 		
+		_elementsRetried = new ArrayList<>();
 		_temporarilySkippedRecords = new ArrayList<>();
 		_permanentlySkippedRecords = new ArrayList<>();
 	}
@@ -88,10 +94,18 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 	 */
 	public void commitFolloweeChanges(FolloweeData followees)
 	{
+		// Update the state of any records we decided to retry, removing them from the skipped state (although they may be re-added, below).
+		for (IpfsFile retried : _elementsRetried)
+		{
+			followees.removeTemporarilySkippedRecord(_followeeKey, retried);
+		}
+		
+		// Handle anything removed.
 		for (IpfsFile cid : _elementsToRemoveFromCache)
 		{
 			followees.removeElement(_followeeKey, cid);
 		}
+		// Handle anything added.
 		for (FollowingCacheElement elt : _elementsToAddToCache)
 		{
 			followees.addElement(_followeeKey, elt);
@@ -238,11 +252,14 @@ public class StandardRefreshSupport implements FolloweeRefreshLogic.IRefreshSupp
 		;
 	}
 	@Override
-	public IpfsFile getAndResetNextTemporarySkip()
+	public IpfsFile getAndResetNextInitialTemporarySkip()
 	{
-		return _temporarilySkippedRecords.isEmpty()
-				? null
-				: _temporarilySkippedRecords.remove(0)
-		;
+		IpfsFile toRetry = null;
+		if (!_initialFailuresToRetry.isEmpty())
+		{
+			toRetry = _initialFailuresToRetry.remove(0);
+			_elementsRetried.add(toRetry);
+		}
+		return toRetry;
 	}
 }

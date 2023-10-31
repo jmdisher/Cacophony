@@ -15,9 +15,11 @@ PATH_TO_JAR="$3"
 
 USER1=/tmp/user1
 USER2=/tmp/user2
+TEMP_FILE=/tmp/temp_file
 
 rm -rf "$USER1"
 rm -rf "$USER2"
+rm -f "$TEMP_FILE"
 
 # The Class-Path entry in the Cacophony.jar points to lib/ so we need to copy this into the root, first.
 cp "$PATH_TO_JAR" Cacophony.jar
@@ -114,6 +116,48 @@ REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/12
 requireSubstring "$REFRESH_NEXT_OUTPUT" "Refreshing followee IpfsKey($PUBLIC1)"
 REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee 2>&1)
 requireSubstring "$REFRESH_NEXT_OUTPUT" "Usage error in running command: Not following any users"
+
+echo "Verify that failing to refresh a single record will result in us correctly seeing it once it is available..."
+# Make a basic post as user1.
+OUTPUT=$(CACOPHONY_STORAGE="$USER1" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5001" java -Xmx32m -jar Cacophony.jar --publishToThisChannel --name "NEW_POST" --description "empty description")
+checkPreviousCommand "publishToThisChannel"
+CID1=$(echo "$OUTPUT" | grep "Post with name" | cut -d \( -f 2 | cut -d \) -f 1)
+# Capture the file locally, remove it from the server and GC the server (should make it fail to find).
+REPO_PATH=$(getIpfsRepoPath "1")
+IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" get --output "$TEMP_FILE" "$CID1" >& /dev/null
+IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" pin rm "$CID1" >& /dev/null
+IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" repo gc >& /dev/null
+# Refresh on user2.
+echo "(note, the next few calls will time out, so this will appear to stall)"
+REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee)
+requireSubstring "$REFRESH_NEXT_OUTPUT" "Refreshing followee IpfsKey($PUBLIC1)"
+# Check that we don't know anything about this post.
+LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
+requireSubstring "$LIST_OUTPUT" "Element CID: $CID1 (not cached)"
+POST_DATA=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --showPost --elementCid "$CID1")
+if [ $# -ne 3 ]; then
+	echo -e "\033[31;40mERROR Expected033[00m"
+	exit 1
+fi
+# Also verify that the local storage shows it missing.
+SKIPPED_OPCODES=$(java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.OpcodeLogReader "$USER2/opcodes.v4.gzlog" | grep Opcode_SkipFolloweeRecord)
+SKIPPED_COUNT=$(echo "$SKIPPED_OPCODES" | wc -l)
+requireSubstring "$SKIPPED_OPCODES" "Opcode_SkipFolloweeRecord[recordCid=IpfsFile($CID1), isPermanent=false]"
+requireSubstring "$SKIPPED_COUNT" "1"
+# Upload it back to the original server.
+IPFS_PATH="$REPO_PATH" "$PATH_TO_IPFS" add "$TEMP_FILE" >& /dev/null
+# Re-run the refresh.
+REFRESH_NEXT_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --refreshNextFollowee)
+requireSubstring "$REFRESH_NEXT_OUTPUT" "Refreshing followee IpfsKey($PUBLIC1)"
+# Check that the data is now available.
+LIST_OUTPUT=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --listFollowee --publicKey "$PUBLIC1")
+requireSubstring "$LIST_OUTPUT" "Element CID: $CID1 (image: (none)"
+POST_DATA=$(CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --showPost --elementCid "$CID1")
+requireSubstring "$POST_DATA" "Cached state: Fully cached"
+requireSubstring "$POST_DATA" "Name: NEW_POST"
+# Also verify that the local storage no longer has the skip.
+SKIPPED_COUNT=$(java -Xmx32m -cp build/main:build/test:lib/* com.jeffdisher.cacophony.testutils.OpcodeLogReader "$USER2/opcodes.v4.gzlog" | grep Opcode_SkipFolloweeRecord | wc -l)
+requireSubstring "$SKIPPED_COUNT" "0"
 
 echo "Shrink the cache and force a cache cleaning to verify it doesn't break anything..."
 CACOPHONY_STORAGE="$USER2" CACOPHONY_IPFS_CONNECT="/ip4/127.0.0.1/tcp/5002" java -Xmx32m -jar Cacophony.jar --setGlobalPrefs --followeeCacheTargetBytes 2000000
